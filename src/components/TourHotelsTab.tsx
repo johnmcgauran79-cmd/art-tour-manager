@@ -1,0 +1,131 @@
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MapPin, Calendar, Bed, Edit, FileText } from "lucide-react";
+import { useHotels } from "@/hooks/useHotels";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
+
+interface TourHotelsTabProps {
+  tourId: string;
+  onAddHotel: () => void;
+  onEditHotel: (hotel: any) => void;
+  onRoomingList: (hotel: any) => void;
+}
+
+export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList }: TourHotelsTabProps) => {
+  const { data: hotels } = useHotels(tourId);
+
+  const calculateNights = (checkIn: string, checkOut: string) => {
+    if (!checkIn || !checkOut) return 0;
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    const diffTime = checkOutDate.getTime() - checkInDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Hotels</h3>
+        <Button 
+          onClick={onAddHotel}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+        >
+          Add Hotel
+        </Button>
+      </div>
+
+      {hotels && hotels.length > 0 ? (
+        <div className="grid gap-4">
+          {hotels.map((hotel) => (
+            <Card key={hotel.id}>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-base">{hotel.name}</CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEditHotel(hotel)}
+                      className="flex items-center gap-1"
+                    >
+                      <Edit className="h-3 w-3" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onRoomingList(hotel)}
+                      className="flex items-center gap-1"
+                    >
+                      <FileText className="h-3 w-3" />
+                      Rooming List
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  {hotel.address && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{hotel.address}</span>
+                    </div>
+                  )}
+                  {hotel.default_check_in && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Check-in: {formatDateToDDMMYYYY(hotel.default_check_in)}</span>
+                    </div>
+                  )}
+                  {hotel.default_check_out && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Check-out: {formatDateToDDMMYYYY(hotel.default_check_out)}</span>
+                    </div>
+                  )}
+                  {hotel.default_check_in && hotel.default_check_out && (
+                    <div className="flex items-center gap-1">
+                      <Bed className="h-4 w-4 text-muted-foreground" />
+                      <span>Nights: {calculateNights(hotel.default_check_in, hotel.default_check_out)}</span>
+                    </div>
+                  )}
+                  {hotel.default_room_type && (
+                    <div className="flex items-center gap-1">
+                      <Bed className="h-4 w-4 text-muted-foreground" />
+                      <span>Room Type: {hotel.default_room_type}</span>
+                    </div>
+                  )}
+                  {hotel.extra_night_price && (
+                    <div className="flex items-center gap-1">
+                      <span>Extra Night: ${hotel.extra_night_price}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    <Bed className="h-4 w-4 text-muted-foreground" />
+                    <span>Rooms Reserved: {hotel.rooms_reserved || 0}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Bed className="h-4 w-4 text-muted-foreground" />
+                    <span>Rooms Booked: {hotel.rooms_booked || 0}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No hotels added yet.</p>
+          <Button 
+            onClick={onAddHotel}
+            className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            Add First Hotel
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
