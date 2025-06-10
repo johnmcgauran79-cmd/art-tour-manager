@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateForInput } from "@/lib/utils";
 
 interface Tour {
   id: string;
@@ -41,6 +42,10 @@ interface EditTourModalProps {
 export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
+    start_date: "",
+    end_date: "",
+    days: "",
+    nights: "",
     location: "",
     pickup_point: "",
     status: "pending",
@@ -62,10 +67,22 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
 
   const updateTour = useMutation({
     mutationFn: async (tourData: any) => {
+      // Calculate days and nights from start and end dates
+      const startDate = new Date(tourData.start_date);
+      const endDate = new Date(tourData.end_date);
+      const timeDiff = endDate.getTime() - startDate.getTime();
+      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      const days = daysDiff + 1; // Include both start and end days
+      const nights = daysDiff;
+
       const { data, error } = await supabase
         .from('tours')
         .update({
           name: tourData.name,
+          start_date: tourData.start_date,
+          end_date: tourData.end_date,
+          days: days,
+          nights: nights,
           location: tourData.location || null,
           pickup_point: tourData.pickup_point || null,
           status: tourData.status,
@@ -110,6 +127,10 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
     if (tour && open) {
       setFormData({
         name: tour.name,
+        start_date: formatDateForInput(tour.start_date), // Will need to extract from tour data
+        end_date: formatDateForInput(tour.end_date), // Will need to extract from tour data
+        days: "",
+        nights: "",
         location: tour.location,
         pickup_point: tour.pickupPoint,
         status: tour.status,
@@ -168,7 +189,29 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickup_point">Pickup Point</Label>
+              <Label htmlFor="start_date">Start Date</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => handleInputChange("start_date", e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_date">End Date</Label>
+              <Input
+                id="end_date"
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => handleInputChange("end_date", e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pickup_point">Start Location</Label>
               <Input
                 id="pickup_point"
                 value={formData.pickup_point}

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,11 +45,45 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     setEditHotelModalOpen(true);
   };
 
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    const formatOptions: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    };
+
+    const startFormatted = start.toLocaleDateString('en-GB', formatOptions);
+    const endFormatted = end.toLocaleDateString('en-GB', formatOptions);
+
+    // Add ordinal suffix to day
+    const addOrdinalSuffix = (day: number) => {
+      if (day > 3 && day < 21) return day + 'th';
+      switch (day % 10) {
+        case 1: return day + 'st';
+        case 2: return day + 'nd';
+        case 3: return day + 'rd';
+        default: return day + 'th';
+      }
+    };
+
+    const startDay = addOrdinalSuffix(start.getDate());
+    const endDay = addOrdinalSuffix(end.getDate());
+
+    const startFinal = startFormatted.replace(start.getDate().toString(), startDay);
+    const endFinal = endFormatted.replace(end.getDate().toString(), endDay);
+
+    return `${startFinal} to ${endFinal}`;
+  };
+
   // Transform the database tour data to match the expected interface
   const transformedTour = tour ? {
     id: tour.id,
     name: tour.name,
-    dates: `${new Date(tour.start_date).toLocaleDateString()} - ${new Date(tour.end_date).toLocaleDateString()}`,
+    dates: formatDateRange(tour.start_date, tour.end_date),
     duration: `${tour.days} days / ${tour.nights} nights`,
     location: tour.location || "",
     pickupPoint: tour.pickup_point || "",
@@ -123,7 +156,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                     {transformedTour?.pickupPoint && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>Pickup: {transformedTour.pickupPoint}</span>
+                        <span>Start Location: {transformedTour.pickupPoint}</span>
                       </div>
                     )}
                   </CardContent>
