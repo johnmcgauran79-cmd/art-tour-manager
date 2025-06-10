@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Calendar, Eye } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { EditBookingModal } from "./EditBookingModal";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -118,16 +118,10 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
                       </TableCell>
                       <TableCell>{booking.passenger_count}</TableCell>
                       <TableCell>
-                        {booking.check_in_date ? 
-                          new Date(booking.check_in_date).toLocaleDateString() : 
-                          'TBD'
-                        }
+                        {formatDateToDDMMYYYY(booking.check_in_date)}
                       </TableCell>
                       <TableCell>
-                        {booking.check_out_date ? 
-                          new Date(booking.check_out_date).toLocaleDateString() : 
-                          'TBD'
-                        }
+                        {formatDateToDDMMYYYY(booking.check_out_date)}
                       </TableCell>
                       <TableCell>{booking.total_nights || '-'}</TableCell>
                       <TableCell>

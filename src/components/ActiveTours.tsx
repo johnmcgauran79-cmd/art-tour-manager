@@ -1,3 +1,4 @@
+
 import { useTours } from "@/hooks/useTours";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Calendar, MapPin, Users, Plus } from "lucide-react";
 import { useState } from "react";
 import { TourDetailModal } from "@/components/TourDetailModal";
 import { AddTourModal } from "@/components/AddTourModal";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 export const ActiveTours = () => {
   const { data: tours, isLoading } = useTours();
@@ -70,7 +72,7 @@ export const ActiveTours = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{new Date(tour.start_date).toLocaleDateString()}</span>
+                        <span>{formatDateToDDMMYYYY(tour.start_date)}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4 text-muted-foreground" />

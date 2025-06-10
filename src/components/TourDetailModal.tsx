@@ -15,6 +15,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { EditTourModal } from "@/components/EditTourModal";
 import { Tour } from "@/hooks/useTours";
+import { formatDateRange } from "@/lib/utils";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -101,6 +102,8 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     instalmentDate: tour.instalment_date || "",
     finalPaymentDate: tour.final_payment_date || "",
     totalCapacity: tour.capacity || 0,
+    startDate: tour.start_date,
+    endDate: tour.end_date,
   } : null;
 
   return (

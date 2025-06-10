@@ -31,6 +31,8 @@ interface Tour {
   instalmentDate: string;
   finalPaymentDate: string;
   totalCapacity: number;
+  startDate: string;
+  endDate: string;
 }
 
 interface EditTourModalProps {
@@ -127,8 +129,8 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
     if (tour && open) {
       setFormData({
         name: tour.name,
-        start_date: formatDateForInput(tour.start_date), // Will need to extract from tour data
-        end_date: formatDateForInput(tour.end_date), // Will need to extract from tour data
+        start_date: formatDateForInput(tour.startDate),
+        end_date: formatDateForInput(tour.endDate),
         days: "",
         nights: "",
         location: tour.location,
