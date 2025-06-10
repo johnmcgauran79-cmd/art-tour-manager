@@ -501,6 +501,8 @@ export type Database = {
           final_payment_date: string | null
           id: string
           inclusions: string | null
+          instalment_amount: number | null
+          instalment_date: string | null
           instalment_details: string | null
           location: string | null
           name: string
@@ -524,6 +526,8 @@ export type Database = {
           final_payment_date?: string | null
           id?: string
           inclusions?: string | null
+          instalment_amount?: number | null
+          instalment_date?: string | null
           instalment_details?: string | null
           location?: string | null
           name: string
@@ -547,6 +551,8 @@ export type Database = {
           final_payment_date?: string | null
           id?: string
           inclusions?: string | null
+          instalment_amount?: number | null
+          instalment_date?: string | null
           instalment_details?: string | null
           location?: string | null
           name?: string
