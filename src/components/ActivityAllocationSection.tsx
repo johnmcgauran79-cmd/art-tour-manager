@@ -26,7 +26,7 @@ export const ActivityAllocationSection = ({
   } = useActivityBookings(bookingId);
   
   const [allocations, setAllocations] = useState<Record<string, number>>({});
-  const [savingActivity, setSavingActivity] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -48,39 +48,45 @@ export const ActivityAllocationSection = ({
     setAllocations(prev => ({ ...prev, [activityId]: numValue }));
   };
 
-  const handleSaveAllocation = async (activityId: string) => {
-    const passengers = allocations[activityId] || 0;
-    const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
+  const handleSaveAllAllocations = async () => {
+    if (!activities) return;
 
-    setSavingActivity(activityId);
+    setIsSaving(true);
 
     try {
-      if (existingBooking) {
-        await updateActivityBooking.mutateAsync({
-          id: existingBooking.id,
-          passengers_attending: passengers
-        });
-      } else if (passengers > 0) {
-        await createActivityBooking.mutateAsync({
-          booking_id: bookingId,
-          activity_id: activityId,
-          passengers_attending: passengers
-        });
-      }
+      const promises = activities.map(async (activity) => {
+        const passengers = allocations[activity.id] || 0;
+        const existingBooking = activityBookings?.find(ab => ab.activity_id === activity.id);
+
+        if (existingBooking) {
+          return updateActivityBooking.mutateAsync({
+            id: existingBooking.id,
+            passengers_attending: passengers
+          });
+        } else if (passengers > 0) {
+          return createActivityBooking.mutateAsync({
+            booking_id: bookingId,
+            activity_id: activity.id,
+            passengers_attending: passengers
+          });
+        }
+      });
+
+      await Promise.all(promises.filter(Boolean));
       
       toast({
         title: "Success",
-        description: "Activity allocation updated successfully.",
+        description: "All activity allocations updated successfully.",
       });
     } catch (error) {
       console.error('Activity booking error:', error);
       toast({
         title: "Error",
-        description: "Failed to update activity allocation. Please try again.",
+        description: "Failed to update activity allocations. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setSavingActivity(null);
+      setIsSaving(false);
     }
   };
 
@@ -100,7 +106,6 @@ export const ActivityAllocationSection = ({
             <TableHead>Activity Name</TableHead>
             <TableHead>Date</TableHead>
             <TableHead className="w-32">Pax Attending</TableHead>
-            <TableHead className="w-20">Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -122,20 +127,20 @@ export const ActivityAllocationSection = ({
                   className="w-20"
                 />
               </TableCell>
-              <TableCell>
-                <Button
-                  onClick={() => handleSaveAllocation(activity.id)}
-                  disabled={savingActivity === activity.id}
-                  size="sm"
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
-                >
-                  {savingActivity === activity.id ? "..." : "Save"}
-                </Button>
-              </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSaveAllAllocations}
+          disabled={isSaving}
+          className="bg-slate-900 hover:bg-slate-800 text-white"
+        >
+          {isSaving ? "Updating..." : "Update All Activities"}
+        </Button>
+      </div>
     </div>
   );
 };
