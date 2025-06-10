@@ -23,7 +23,6 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
     contact_name: "",
     contact_phone: "",
     contact_email: "",
-    rooms_available: "",
     rooms_reserved: "",
     booking_status: "pending",
     default_room_type: "",
@@ -48,7 +47,6 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           contact_name: hotelData.contact_name || null,
           contact_phone: hotelData.contact_phone || null,
           contact_email: hotelData.contact_email || null,
-          rooms_available: hotelData.rooms_available ? parseInt(hotelData.rooms_available) : null,
           rooms_reserved: hotelData.rooms_reserved ? parseInt(hotelData.rooms_reserved) : null,
           booking_status: hotelData.booking_status,
           default_room_type: hotelData.default_room_type || null,
@@ -77,7 +75,6 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
         contact_name: "",
         contact_phone: "",
         contact_email: "",
-        rooms_available: "",
         rooms_reserved: "",
         booking_status: "pending",
         default_room_type: "",
@@ -171,20 +168,10 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
+                  <SelectItem value="booked">Booked</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="rooms_available">Rooms Available</Label>
-              <Input
-                id="rooms_available"
-                type="number"
-                value={formData.rooms_available}
-                onChange={(e) => handleInputChange("rooms_available", e.target.value)}
-              />
             </div>
 
             <div className="space-y-2">
