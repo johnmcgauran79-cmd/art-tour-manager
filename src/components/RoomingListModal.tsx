@@ -49,13 +49,15 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
             passenger_3_name,
             group_name,
             status,
+            created_at,
             customers (first_name, last_name)
           )
         `)
         .eq('hotel_id', hotel.id)
         .eq('allocated', true)
         .eq('bookings.tour_id', tourId)
-        .neq('bookings.status', 'cancelled');
+        .neq('bookings.status', 'cancelled')
+        .order('bookings(created_at)', { ascending: true });
       
       if (error) {
         console.error('Error fetching hotel bookings for rooming list:', error);
@@ -68,9 +70,10 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
   });
 
   const getRoomingData = () => {
-    return hotelBookingsData.map(hotelBooking => {
+    return hotelBookingsData.map((hotelBooking, index) => {
       const booking = hotelBooking.bookings;
       return {
+        roomNumber: index + 1,
         leadPassenger: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
         passenger2: booking.passenger_2_name,
         passenger3: booking.passenger_3_name,
@@ -94,8 +97,9 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
 
   const handleExportToTable = () => {
     const csvContent = [
-      ['Lead Passenger', 'Passenger 2', 'Passenger 3', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'],
+      ['Room #', 'Lead Passenger', 'Passenger 2', 'Passenger 3', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'],
       ...roomingData.map(row => [
+        row.roomNumber.toString(),
         row.leadPassenger,
         row.passenger2 || '',
         row.passenger3 || '',
@@ -156,6 +160,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Room #</TableHead>
                     <TableHead>Lead Passenger</TableHead>
                     <TableHead>Other Passengers</TableHead>
                     <TableHead>Group</TableHead>
@@ -171,6 +176,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                 <TableBody>
                   {roomingData.map((room, index) => (
                     <TableRow key={index}>
+                      <TableCell className="font-medium">{room.roomNumber}</TableCell>
                       <TableCell className="font-medium">{room.leadPassenger}</TableCell>
                       <TableCell>
                         <div className="space-y-1">
