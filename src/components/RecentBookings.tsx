@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Plus, Calendar, Eye } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { AllBookingsModal } from "./AllBookingsModal";
+import { EditBookingModal } from "./EditBookingModal";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -25,11 +26,13 @@ interface RecentBookingsProps {
 
 export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
   const [showAllBookings, setShowAllBookings] = useState(false);
+  const [showEditBooking, setShowEditBooking] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const { data: bookings, isLoading } = useBookings();
 
   const handleBookingClick = (booking: any) => {
-    console.log('Edit booking:', booking.id);
-    // TODO: Implement booking edit modal
+    setSelectedBooking(booking);
+    setShowEditBooking(true);
   };
 
   if (isLoading) {
@@ -142,6 +145,12 @@ export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
         open={showAllBookings}
         onOpenChange={setShowAllBookings}
         onBookingClick={handleBookingClick}
+      />
+
+      <EditBookingModal 
+        booking={selectedBooking} 
+        open={showEditBooking} 
+        onOpenChange={setShowEditBooking} 
       />
     </>
   );

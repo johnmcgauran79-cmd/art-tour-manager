@@ -151,3 +151,70 @@ export const useCreateBooking = () => {
     },
   });
 };
+
+export const useUpdateBooking = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      toast({
+        title: "Booking Updated",
+        description: "Booking has been successfully updated.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update booking. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error updating booking:', error);
+    },
+  });
+};
+
+export const useDeleteBooking = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('bookings')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      toast({
+        title: "Booking Deleted",
+        description: "Booking has been successfully deleted.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete booking. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error deleting booking:', error);
+    },
+  });
+};

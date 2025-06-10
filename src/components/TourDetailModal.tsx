@@ -11,9 +11,11 @@ import { AddHotelModal } from "@/components/AddHotelModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
+import { EditBookingModal } from "@/components/EditBookingModal";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { useActivities, Activity } from "@/hooks/useActivities";
 import { useBookings } from "@/hooks/useBookings";
+import { useHotelBookings } from "@/hooks/useHotelBookings";
 
 interface Tour {
   id: string;
@@ -67,6 +69,8 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [showAddActivity, setShowAddActivity] = useState(false);
   const [showEditActivity, setShowEditActivity] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+  const [showEditBooking, setShowEditBooking] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   const { data: hotels = [], isLoading: hotelsLoading } = useHotels(tour?.id || "");
   const { data: activities = [], isLoading: activitiesLoading } = useActivities(tour?.id || "");
@@ -90,8 +94,36 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   };
 
   const handleBookingClick = (booking: any) => {
-    console.log('Edit booking:', booking.id);
-    // TODO: Implement booking edit modal
+    setSelectedBooking(booking);
+    setShowEditBooking(true);
+  };
+
+  // Component to display bedding type for each booking
+  const BookingBeddingCell = ({ booking }: { booking: any }) => {
+    const { data: hotelBookings = [] } = useHotelBookings(booking.id);
+    
+    if (!booking.accommodation_required || hotelBookings.length === 0) {
+      return <span>-</span>;
+    }
+
+    const beddingTypes = hotelBookings
+      .filter(hb => hb.allocated)
+      .map(hb => hb.bedding)
+      .filter(Boolean);
+
+    if (beddingTypes.length === 0) {
+      return <span>Not allocated</span>;
+    }
+
+    return (
+      <div className="space-y-1">
+        {beddingTypes.map((bedding, index) => (
+          <div key={index} className="capitalize text-sm">
+            {bedding}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -412,8 +444,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           </TableCell>
                           <TableCell>{booking.total_nights || '-'}</TableCell>
                           <TableCell>
-                            {/* TODO: Get bedding type from hotel_bookings */}
-                            Double
+                            <BookingBeddingCell booking={booking} />
                           </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(booking.status || 'pending')}>
@@ -464,6 +495,12 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         activity={selectedActivity} 
         open={showEditActivity} 
         onOpenChange={setShowEditActivity} 
+      />
+
+      <EditBookingModal 
+        booking={selectedBooking} 
+        open={showEditBooking} 
+        onOpenChange={setShowEditBooking} 
       />
     </>
   );
