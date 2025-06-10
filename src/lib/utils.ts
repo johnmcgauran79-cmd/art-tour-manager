@@ -70,6 +70,17 @@ export function formatDateToLongFormat(dateString: string): string {
   return `${dayWithSuffix} ${month} ${year}`;
 }
 
+export function formatDateToMonthYear(dateString: string): string {
+  if (!dateString) return 'TBD';
+  
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString('en-GB', { month: 'long' });
+  const year = date.getFullYear();
+  
+  return `${day} ${month} ${year}`;
+}
+
 export function formatDateRange(startDate: string, endDate: string): string {
   if (!startDate || !endDate) return 'TBD';
   
