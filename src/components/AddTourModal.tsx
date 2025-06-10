@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useCreateTour } from "@/hooks/useTours";
 
 interface AddTourModalProps {
   open: boolean;
@@ -16,52 +15,66 @@ interface AddTourModalProps {
 export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
-    startDate: "",
-    endDate: "",
-    duration: "",
+    start_date: "",
+    end_date: "",
+    days: "",
+    nights: "",
     location: "",
-    pickupPoint: "",
-    status: "available",
-    capacity: "",
+    pickup_point: "",
+    status: "pending" as const,
     notes: "",
     inclusions: "",
     exclusions: "",
-    singlePrice: "",
-    doublePrice: "",
-    deposit: "",
-    finalPaymentDate: ""
+    price_single: "",
+    price_double: "",
+    price_twin: "",
+    deposit_required: "",
+    final_payment_date: ""
   });
 
-  const { toast } = useToast();
+  const createTour = useCreateTour();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Here you would typically save to a database
-    console.log("Creating new tour:", formData);
-    
-    toast({
-      title: "Tour Created",
-      description: `${formData.name} has been successfully created.`,
+    createTour.mutate({
+      name: formData.name,
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      days: parseInt(formData.days),
+      nights: parseInt(formData.nights),
+      location: formData.location || null,
+      pickup_point: formData.pickup_point || null,
+      status: formData.status,
+      notes: formData.notes || null,
+      inclusions: formData.inclusions || null,
+      exclusions: formData.exclusions || null,
+      price_single: formData.price_single ? parseFloat(formData.price_single) : null,
+      price_double: formData.price_double ? parseFloat(formData.price_double) : null,
+      price_twin: formData.price_twin ? parseFloat(formData.price_twin) : null,
+      deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
+      instalment_details: null,
+      final_payment_date: formData.final_payment_date || null,
     });
 
     // Reset form and close modal
     setFormData({
       name: "",
-      startDate: "",
-      endDate: "",
-      duration: "",
+      start_date: "",
+      end_date: "",
+      days: "",
+      nights: "",
       location: "",
-      pickupPoint: "",
-      status: "available",
-      capacity: "",
+      pickup_point: "",
+      status: "pending",
       notes: "",
       inclusions: "",
       exclusions: "",
-      singlePrice: "",
-      doublePrice: "",
-      deposit: "",
-      finalPaymentDate: ""
+      price_single: "",
+      price_double: "",
+      price_twin: "",
+      deposit_required: "",
+      final_payment_date: ""
     });
     onOpenChange(false);
   };
@@ -78,6 +91,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Tour Name</Label>
@@ -97,63 +111,62 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 value={formData.location}
                 onChange={(e) => handleInputChange("location", e.target.value)}
                 placeholder="e.g., Melbourne, VIC"
-                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
+              <Label htmlFor="start_date">Start Date</Label>
               <Input
-                id="startDate"
+                id="start_date"
                 type="date"
-                value={formData.startDate}
-                onChange={(e) => handleInputChange("startDate", e.target.value)}
+                value={formData.start_date}
+                onChange={(e) => handleInputChange("start_date", e.target.value)}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="end_date">End Date</Label>
               <Input
-                id="endDate"
+                id="end_date"
                 type="date"
-                value={formData.endDate}
-                onChange={(e) => handleInputChange("endDate", e.target.value)}
+                value={formData.end_date}
+                onChange={(e) => handleInputChange("end_date", e.target.value)}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="duration">Duration</Label>
+              <Label htmlFor="days">Days</Label>
               <Input
-                id="duration"
-                value={formData.duration}
-                onChange={(e) => handleInputChange("duration", e.target.value)}
-                placeholder="e.g., 6 days, 5 nights"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="capacity">Total Capacity</Label>
-              <Input
-                id="capacity"
+                id="days"
                 type="number"
-                value={formData.capacity}
-                onChange={(e) => handleInputChange("capacity", e.target.value)}
-                placeholder="e.g., 35"
+                value={formData.days}
+                onChange={(e) => handleInputChange("days", e.target.value)}
+                placeholder="e.g., 6"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickupPoint">Pickup Point</Label>
+              <Label htmlFor="nights">Nights</Label>
               <Input
-                id="pickupPoint"
-                value={formData.pickupPoint}
-                onChange={(e) => handleInputChange("pickupPoint", e.target.value)}
-                placeholder="e.g., Sydney Airport"
+                id="nights"
+                type="number"
+                value={formData.nights}
+                onChange={(e) => handleInputChange("nights", e.target.value)}
+                placeholder="e.g., 5"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pickup_point">Pickup Point</Label>
+              <Input
+                id="pickup_point"
+                value={formData.pickup_point}
+                onChange={(e) => handleInputChange("pickup_point", e.target.value)}
+                placeholder="e.g., Sydney Airport"
               />
             </div>
 
@@ -164,10 +177,11 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="sold-out">Sold Out</SelectItem>
+                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="sold_out">Sold Out</SelectItem>
                   <SelectItem value="closed">Closed</SelectItem>
+                  <SelectItem value="past">Past</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -175,47 +189,64 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="singlePrice">Single Price ($)</Label>
+              <Label htmlFor="price_single">Single Price ($)</Label>
               <Input
-                id="singlePrice"
+                id="price_single"
                 type="number"
-                value={formData.singlePrice}
-                onChange={(e) => handleInputChange("singlePrice", e.target.value)}
+                step="0.01"
+                value={formData.price_single}
+                onChange={(e) => handleInputChange("price_single", e.target.value)}
                 placeholder="e.g., 2500"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="doublePrice">Double Price ($)</Label>
+              <Label htmlFor="price_double">Double Price ($)</Label>
               <Input
-                id="doublePrice"
+                id="price_double"
                 type="number"
-                value={formData.doublePrice}
-                onChange={(e) => handleInputChange("doublePrice", e.target.value)}
+                step="0.01"
+                value={formData.price_double}
+                onChange={(e) => handleInputChange("price_double", e.target.value)}
                 placeholder="e.g., 2000"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="deposit">Deposit Required ($)</Label>
+              <Label htmlFor="price_twin">Twin Price ($)</Label>
               <Input
-                id="deposit"
+                id="price_twin"
                 type="number"
-                value={formData.deposit}
-                onChange={(e) => handleInputChange("deposit", e.target.value)}
-                placeholder="e.g., 500"
+                step="0.01"
+                value={formData.price_twin}
+                onChange={(e) => handleInputChange("price_twin", e.target.value)}
+                placeholder="e.g., 2000"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="finalPaymentDate">Final Payment Date</Label>
-            <Input
-              id="finalPaymentDate"
-              type="date"
-              value={formData.finalPaymentDate}
-              onChange={(e) => handleInputChange("finalPaymentDate", e.target.value)}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="deposit_required">Deposit Required ($)</Label>
+              <Input
+                id="deposit_required"
+                type="number"
+                step="0.01"
+                value={formData.deposit_required}
+                onChange={(e) => handleInputChange("deposit_required", e.target.value)}
+                placeholder="e.g., 500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="final_payment_date">Final Payment Date</Label>
+              <Input
+                id="final_payment_date"
+                type="date"
+                value={formData.final_payment_date}
+                onChange={(e) => handleInputChange("final_payment_date", e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -255,7 +286,9 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Tour</Button>
+            <Button type="submit" disabled={createTour.isPending}>
+              {createTour.isPending ? "Creating..." : "Create Tour"}
+            </Button>
           </div>
         </form>
       </DialogContent>

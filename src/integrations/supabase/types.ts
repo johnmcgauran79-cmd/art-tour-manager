@@ -9,7 +9,500 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      activities: {
+        Row: {
+          activity_date: string | null
+          activity_status: Database["public"]["Enums"]["activity_status"] | null
+          collection_location: string | null
+          collection_time: string | null
+          created_at: string | null
+          dropoff_location: string | null
+          end_time: string | null
+          guide_email: string | null
+          guide_name: string | null
+          guide_phone: string | null
+          hospitality_inclusions: string | null
+          id: string
+          location: string | null
+          name: string
+          notes: string | null
+          operations_notes: string | null
+          pickup_location: string | null
+          pickup_location_transport: string | null
+          pickup_time: string | null
+          spots_available: number | null
+          spots_booked: number | null
+          spots_remaining: number | null
+          start_time: string | null
+          tour_id: string | null
+          transport_company: string | null
+          transport_contact_name: string | null
+          transport_email: string | null
+          transport_notes: string | null
+          transport_phone: string | null
+          transport_status:
+            | Database["public"]["Enums"]["transport_status"]
+            | null
+          updated_at: string | null
+        }
+        Insert: {
+          activity_date?: string | null
+          activity_status?:
+            | Database["public"]["Enums"]["activity_status"]
+            | null
+          collection_location?: string | null
+          collection_time?: string | null
+          created_at?: string | null
+          dropoff_location?: string | null
+          end_time?: string | null
+          guide_email?: string | null
+          guide_name?: string | null
+          guide_phone?: string | null
+          hospitality_inclusions?: string | null
+          id?: string
+          location?: string | null
+          name: string
+          notes?: string | null
+          operations_notes?: string | null
+          pickup_location?: string | null
+          pickup_location_transport?: string | null
+          pickup_time?: string | null
+          spots_available?: number | null
+          spots_booked?: number | null
+          spots_remaining?: number | null
+          start_time?: string | null
+          tour_id?: string | null
+          transport_company?: string | null
+          transport_contact_name?: string | null
+          transport_email?: string | null
+          transport_notes?: string | null
+          transport_phone?: string | null
+          transport_status?:
+            | Database["public"]["Enums"]["transport_status"]
+            | null
+          updated_at?: string | null
+        }
+        Update: {
+          activity_date?: string | null
+          activity_status?:
+            | Database["public"]["Enums"]["activity_status"]
+            | null
+          collection_location?: string | null
+          collection_time?: string | null
+          created_at?: string | null
+          dropoff_location?: string | null
+          end_time?: string | null
+          guide_email?: string | null
+          guide_name?: string | null
+          guide_phone?: string | null
+          hospitality_inclusions?: string | null
+          id?: string
+          location?: string | null
+          name?: string
+          notes?: string | null
+          operations_notes?: string | null
+          pickup_location?: string | null
+          pickup_location_transport?: string | null
+          pickup_time?: string | null
+          spots_available?: number | null
+          spots_booked?: number | null
+          spots_remaining?: number | null
+          start_time?: string | null
+          tour_id?: string | null
+          transport_company?: string | null
+          transport_contact_name?: string | null
+          transport_email?: string | null
+          transport_notes?: string | null
+          transport_phone?: string | null
+          transport_status?:
+            | Database["public"]["Enums"]["transport_status"]
+            | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_bookings: {
+        Row: {
+          activity_id: string | null
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          passengers_attending: number
+          updated_at: string | null
+        }
+        Insert: {
+          activity_id?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          passengers_attending?: number
+          updated_at?: string | null
+        }
+        Update: {
+          activity_id?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          passengers_attending?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_bookings_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          accommodation_required: boolean | null
+          booking_agent: string | null
+          created_at: string | null
+          extra_requests: string | null
+          group_name: string | null
+          id: string
+          invoice_notes: string | null
+          lead_passenger_id: string | null
+          passenger_2_name: string | null
+          passenger_3_name: string | null
+          passenger_count: number
+          status: Database["public"]["Enums"]["booking_status"] | null
+          tour_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accommodation_required?: boolean | null
+          booking_agent?: string | null
+          created_at?: string | null
+          extra_requests?: string | null
+          group_name?: string | null
+          id?: string
+          invoice_notes?: string | null
+          lead_passenger_id?: string | null
+          passenger_2_name?: string | null
+          passenger_3_name?: string | null
+          passenger_count?: number
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          tour_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accommodation_required?: boolean | null
+          booking_agent?: string | null
+          created_at?: string | null
+          extra_requests?: string | null
+          group_name?: string | null
+          id?: string
+          invoice_notes?: string | null
+          lead_passenger_id?: string | null
+          passenger_2_name?: string | null
+          passenger_3_name?: string | null
+          passenger_count?: number
+          status?: Database["public"]["Enums"]["booking_status"] | null
+          tour_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_lead_passenger_id_fkey"
+            columns: ["lead_passenger_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          city: string | null
+          country: string | null
+          created_at: string | null
+          dietary_requirements: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string | null
+          spouse_name: string | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          dietary_requirements?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone?: string | null
+          spouse_name?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          dietary_requirements?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string | null
+          spouse_name?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hotel_bookings: {
+        Row: {
+          bedding: Database["public"]["Enums"]["bedding_type"] | null
+          booking_id: string | null
+          check_in_date: string | null
+          check_out_date: string | null
+          confirmation_number: string | null
+          created_at: string | null
+          hotel_id: string | null
+          id: string
+          nights: number | null
+          required: boolean | null
+          room_requests: string | null
+          room_type: string | null
+          room_upgrade: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bedding?: Database["public"]["Enums"]["bedding_type"] | null
+          booking_id?: string | null
+          check_in_date?: string | null
+          check_out_date?: string | null
+          confirmation_number?: string | null
+          created_at?: string | null
+          hotel_id?: string | null
+          id?: string
+          nights?: number | null
+          required?: boolean | null
+          room_requests?: string | null
+          room_type?: string | null
+          room_upgrade?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bedding?: Database["public"]["Enums"]["bedding_type"] | null
+          booking_id?: string | null
+          check_in_date?: string | null
+          check_out_date?: string | null
+          confirmation_number?: string | null
+          created_at?: string | null
+          hotel_id?: string | null
+          id?: string
+          nights?: number | null
+          required?: boolean | null
+          room_requests?: string | null
+          room_type?: string | null
+          room_upgrade?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_bookings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_bookings_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotels: {
+        Row: {
+          address: string | null
+          booking_status:
+            | Database["public"]["Enums"]["hotel_booking_status"]
+            | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          contract_url: string | null
+          created_at: string | null
+          default_check_in: string | null
+          default_check_out: string | null
+          default_room_type: string | null
+          extra_night_price: number | null
+          id: string
+          name: string
+          operations_notes: string | null
+          rooms_available: number | null
+          rooms_booked: number | null
+          rooms_reserved: number | null
+          tour_id: string | null
+          updated_at: string | null
+          upgrade_options: string | null
+        }
+        Insert: {
+          address?: string | null
+          booking_status?:
+            | Database["public"]["Enums"]["hotel_booking_status"]
+            | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          default_check_in?: string | null
+          default_check_out?: string | null
+          default_room_type?: string | null
+          extra_night_price?: number | null
+          id?: string
+          name: string
+          operations_notes?: string | null
+          rooms_available?: number | null
+          rooms_booked?: number | null
+          rooms_reserved?: number | null
+          tour_id?: string | null
+          updated_at?: string | null
+          upgrade_options?: string | null
+        }
+        Update: {
+          address?: string | null
+          booking_status?:
+            | Database["public"]["Enums"]["hotel_booking_status"]
+            | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          contract_url?: string | null
+          created_at?: string | null
+          default_check_in?: string | null
+          default_check_out?: string | null
+          default_room_type?: string | null
+          extra_night_price?: number | null
+          id?: string
+          name?: string
+          operations_notes?: string | null
+          rooms_available?: number | null
+          rooms_booked?: number | null
+          rooms_reserved?: number | null
+          tour_id?: string | null
+          updated_at?: string | null
+          upgrade_options?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotels_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tours: {
+        Row: {
+          created_at: string | null
+          days: number
+          deposit_required: number | null
+          end_date: string
+          exclusions: string | null
+          final_payment_date: string | null
+          id: string
+          inclusions: string | null
+          instalment_details: string | null
+          location: string | null
+          name: string
+          nights: number
+          notes: string | null
+          pickup_point: string | null
+          price_double: number | null
+          price_single: number | null
+          price_twin: number | null
+          start_date: string
+          status: Database["public"]["Enums"]["tour_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          days: number
+          deposit_required?: number | null
+          end_date: string
+          exclusions?: string | null
+          final_payment_date?: string | null
+          id?: string
+          inclusions?: string | null
+          instalment_details?: string | null
+          location?: string | null
+          name: string
+          nights: number
+          notes?: string | null
+          pickup_point?: string | null
+          price_double?: number | null
+          price_single?: number | null
+          price_twin?: number | null
+          start_date: string
+          status?: Database["public"]["Enums"]["tour_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          days?: number
+          deposit_required?: number | null
+          end_date?: string
+          exclusions?: string | null
+          final_payment_date?: string | null
+          id?: string
+          inclusions?: string | null
+          instalment_details?: string | null
+          location?: string | null
+          name?: string
+          nights?: number
+          notes?: string | null
+          pickup_point?: string | null
+          price_double?: number | null
+          price_single?: number | null
+          price_twin?: number | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["tour_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +511,27 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      activity_status:
+        | "pending"
+        | "booked"
+        | "paid_deposit"
+        | "fully_paid"
+        | "confirmed"
+      bedding_type: "single" | "double" | "twin"
+      booking_status:
+        | "pending"
+        | "invoiced"
+        | "deposited"
+        | "paid"
+        | "cancelled"
+      hotel_booking_status: "enquiry_sent" | "booked" | "pending"
+      tour_status: "pending" | "available" | "closed" | "sold_out" | "past"
+      transport_status:
+        | "pending"
+        | "booked"
+        | "paid_deposit"
+        | "fully_paid"
+        | "confirmed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +646,25 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      activity_status: [
+        "pending",
+        "booked",
+        "paid_deposit",
+        "fully_paid",
+        "confirmed",
+      ],
+      bedding_type: ["single", "double", "twin"],
+      booking_status: ["pending", "invoiced", "deposited", "paid", "cancelled"],
+      hotel_booking_status: ["enquiry_sent", "booked", "pending"],
+      tour_status: ["pending", "available", "closed", "sold_out", "past"],
+      transport_status: [
+        "pending",
+        "booked",
+        "paid_deposit",
+        "fully_paid",
+        "confirmed",
+      ],
+    },
   },
 } as const

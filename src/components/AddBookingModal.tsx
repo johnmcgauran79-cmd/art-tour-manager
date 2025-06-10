@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,18 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useToast } from "@/hooks/use-toast";
+import { useTours } from "@/hooks/useTours";
+import { useCreateBooking } from "@/hooks/useBookings";
 
 interface AddBookingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const mockTours = [
-  { id: "1", name: "Melbourne Cup Carnival 2024" },
-  { id: "2", name: "Formula 1 Australian Grand Prix" },
-  { id: "3", name: "Bathurst 1000 Experience" }
-];
 
 export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) => {
   const [formData, setFormData] = useState({
@@ -36,16 +30,24 @@ export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) =>
     notes: ""
   });
 
-  const { toast } = useToast();
+  const { data: tours } = useTours();
+  const createBooking = useCreateBooking();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log("Creating new booking:", formData);
-    
-    toast({
-      title: "Booking Created",
-      description: `Booking for ${formData.leadPassenger} has been successfully created.`,
+    createBooking.mutate({
+      tour_id: formData.tourId,
+      lead_passenger_name: formData.leadPassenger,
+      lead_passenger_email: formData.leadEmail,
+      passenger_count: parseInt(formData.passengers),
+      passenger_2_name: formData.passenger2Name || undefined,
+      passenger_3_name: formData.passenger3Name || undefined,
+      group_name: formData.groupName || undefined,
+      booking_agent: formData.bookingAgent || undefined,
+      status: formData.status,
+      extra_requests: formData.extraRequests || undefined,
+      accommodation_required: formData.accommodationRequired,
     });
 
     // Reset form and close modal
@@ -85,7 +87,7 @@ export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) =>
                 <SelectValue placeholder="Choose a tour..." />
               </SelectTrigger>
               <SelectContent>
-                {mockTours.map((tour) => (
+                {tours?.map((tour) => (
                   <SelectItem key={tour.id} value={tour.id}>
                     {tour.name}
                   </SelectItem>
@@ -231,7 +233,9 @@ export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) =>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Booking</Button>
+            <Button type="submit" disabled={createBooking.isPending}>
+              {createBooking.isPending ? "Creating..." : "Create Booking"}
+            </Button>
           </div>
         </form>
       </DialogContent>
