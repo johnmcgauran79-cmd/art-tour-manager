@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
+import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -88,7 +90,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
         if (formData.accommodationRequired) {
           setActiveTab("accommodation");
         } else {
-          handleClose();
+          setActiveTab("activities");
         }
       }
     });
@@ -128,9 +130,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Booking Details</TabsTrigger>
             <TabsTrigger value="accommodation" disabled={!createdBookingId}>Hotel Allocation</TabsTrigger>
+            <TabsTrigger value="activities" disabled={!createdBookingId}>Activities</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-6">
@@ -309,7 +312,11 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={createBooking.isPending}>
+                <Button 
+                  type="submit" 
+                  disabled={createBooking.isPending}
+                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                >
                   {createBooking.isPending ? "Creating..." : "Create Booking"}
                 </Button>
               </div>
@@ -327,7 +334,30 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   defaultCheckOut={formData.checkOutDate}
                 />
                 <div className="flex justify-end gap-2 pt-4">
-                  <Button onClick={handleClose}>
+                  <Button 
+                    onClick={() => setActiveTab("activities")}
+                    className="bg-slate-900 hover:bg-slate-800 text-white"
+                  >
+                    Next: Activities
+                  </Button>
+                </div>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="activities" className="space-y-4">
+            {createdBookingId && formData.tourId && (
+              <>
+                <ActivityAllocationSection
+                  tourId={formData.tourId}
+                  bookingId={createdBookingId}
+                  passengerCount={parseInt(formData.passengers)}
+                />
+                <div className="flex justify-end gap-2 pt-4">
+                  <Button 
+                    onClick={handleClose}
+                    className="bg-slate-900 hover:bg-slate-800 text-white"
+                  >
                     Complete Booking
                   </Button>
                 </div>

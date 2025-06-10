@@ -319,7 +319,11 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={updateTour.isPending}>
+            <Button 
+              type="submit" 
+              disabled={updateTour.isPending}
+              className="bg-slate-900 hover:bg-slate-800 text-white"
+            >
               {updateTour.isPending ? "Updating..." : "Update Tour"}
             </Button>
           </div>
