@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2 } from "lucide-react";
+import { Trash2, Edit } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
+import { EditContactModal } from "@/components/EditContactModal";
 
 interface Booking {
   id: string;
@@ -37,6 +38,7 @@ interface Booking {
     first_name: string;
     last_name: string;
     email: string;
+    phone: string;
   };
 }
 
@@ -51,6 +53,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     lead_passenger_first_name: '',
     lead_passenger_last_name: '',
     lead_passenger_email: '',
+    lead_passenger_phone: '',
     passenger_count: 1,
     passenger_2_name: '',
     passenger_3_name: '',
@@ -65,6 +68,8 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [showEditContact, setShowEditContact] = useState(false);
+  const [contactToEdit, setContactToEdit] = useState<any>(null);
 
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
@@ -76,6 +81,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
         lead_passenger_first_name: booking.customers?.first_name || '',
         lead_passenger_last_name: booking.customers?.last_name || '',
         lead_passenger_email: booking.customers?.email || '',
+        lead_passenger_phone: booking.customers?.phone || '',
         passenger_count: booking.passenger_count,
         passenger_2_name: booking.passenger_2_name || '',
         passenger_3_name: booking.passenger_3_name || '',
@@ -146,6 +152,31 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     }
   };
 
+  const handleEditContact = () => {
+    if (!booking?.customers) return;
+    
+    const contact = {
+      id: booking.lead_passenger_id,
+      first_name: formData.lead_passenger_first_name,
+      last_name: formData.lead_passenger_last_name,
+      email: formData.lead_passenger_email,
+      phone: formData.lead_passenger_phone,
+    };
+    setContactToEdit(contact);
+    setShowEditContact(true);
+  };
+
+  const handleContactUpdated = (updatedContact: any) => {
+    // Update form data with the updated contact info
+    setFormData(prev => ({
+      ...prev,
+      lead_passenger_first_name: updatedContact.first_name,
+      lead_passenger_last_name: updatedContact.last_name,
+      lead_passenger_email: updatedContact.email,
+      lead_passenger_phone: updatedContact.phone || '',
+    }));
+  };
+
   if (!booking) return null;
 
   return (
@@ -171,41 +202,72 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
 
             <TabsContent value="details" className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-medium">Lead Passenger Details</h3>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditContact}
+                      disabled={!booking?.lead_passenger_id}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Contact
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="lead_passenger_first_name">Lead Passenger First Name</Label>
+                      <Input
+                        id="lead_passenger_first_name"
+                        value={formData.lead_passenger_first_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_first_name: e.target.value }))}
+                        disabled
+                        className="bg-gray-100"
+                        title="Customer details are managed separately in the Contacts section"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead_passenger_last_name">Lead Passenger Last Name</Label>
+                      <Input
+                        id="lead_passenger_last_name"
+                        value={formData.lead_passenger_last_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_last_name: e.target.value }))}
+                        disabled
+                        className="bg-gray-100"
+                        title="Customer details are managed separately in the Contacts section"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead_passenger_email">Lead Passenger Email</Label>
+                      <Input
+                        id="lead_passenger_email"
+                        type="email"
+                        value={formData.lead_passenger_email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_email: e.target.value }))}
+                        disabled
+                        className="bg-gray-100"
+                        title="Customer details are managed separately in the Contacts section"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="lead_passenger_phone">Lead Passenger Phone</Label>
+                      <Input
+                        id="lead_passenger_phone"
+                        type="tel"
+                        value={formData.lead_passenger_phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_phone: e.target.value }))}
+                        disabled
+                        className="bg-gray-100"
+                        title="Customer details are managed separately in the Contacts section"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="lead_passenger_first_name">Lead Passenger First Name</Label>
-                    <Input
-                      id="lead_passenger_first_name"
-                      value={formData.lead_passenger_first_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_first_name: e.target.value }))}
-                      disabled
-                      className="bg-gray-100"
-                      title="Customer details are managed separately in the Contacts section"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lead_passenger_last_name">Lead Passenger Last Name</Label>
-                    <Input
-                      id="lead_passenger_last_name"
-                      value={formData.lead_passenger_last_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_last_name: e.target.value }))}
-                      disabled
-                      className="bg-gray-100"
-                      title="Customer details are managed separately in the Contacts section"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="lead_passenger_email">Lead Passenger Email</Label>
-                    <Input
-                      id="lead_passenger_email"
-                      type="email"
-                      value={formData.lead_passenger_email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_email: e.target.value }))}
-                      disabled
-                      className="bg-gray-100"
-                      title="Customer details are managed separately in the Contacts section"
-                    />
-                  </div>
                   <div>
                     <Label htmlFor="passenger_count">Passenger Count</Label>
                     <Input
@@ -363,6 +425,13 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           isLoading={cancelBooking.isPending}
         />
       </Dialog>
+
+      <EditContactModal
+        contact={contactToEdit}
+        open={showEditContact}
+        onOpenChange={setShowEditContact}
+        onContactUpdated={handleContactUpdated}
+      />
     </>
   );
 };
