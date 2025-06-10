@@ -68,7 +68,7 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
               <CardTitle>{showOnlyActive ? 'Active Tours' : 'All Tours'}</CardTitle>
               <CardDescription>
                 {showOnlyActive 
-                  ? 'Tours that are not past and have start dates in the future'
+                  ? 'Current active tours'
                   : 'Complete list of all tours'
                 }
               </CardDescription>
