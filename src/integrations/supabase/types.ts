@@ -186,6 +186,7 @@ export type Database = {
           passenger_2_name: string | null
           passenger_3_name: string | null
           passenger_count: number
+          revenue: number | null
           status: Database["public"]["Enums"]["booking_status"] | null
           total_nights: number | null
           tour_id: string | null
@@ -205,6 +206,7 @@ export type Database = {
           passenger_2_name?: string | null
           passenger_3_name?: string | null
           passenger_count?: number
+          revenue?: number | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
@@ -224,6 +226,7 @@ export type Database = {
           passenger_2_name?: string | null
           passenger_3_name?: string | null
           passenger_count?: number
+          revenue?: number | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null

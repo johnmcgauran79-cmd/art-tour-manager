@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Building, MapPin, DollarSign, TrendingUp } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
@@ -26,13 +25,13 @@ export const DashboardMetrics = () => {
   const totalPassengers = bookings?.filter(b => b.status !== 'cancelled')
     .reduce((sum, booking) => sum + booking.passenger_count, 0) || 0;
 
-  // Calculate estimated revenue (using average of double price across tours)
-  const estimatedRevenue = tours?.reduce((sum, tour) => {
-    const tourBookings = bookings?.filter(b => b.tour_id === tour.id && b.status !== 'cancelled') || [];
-    const tourPassengers = tourBookings.reduce((pSum, booking) => pSum + booking.passenger_count, 0);
-    const avgPrice = tour.price_double || tour.price_single || 0;
-    return sum + (tourPassengers * avgPrice);
-  }, 0) || 0;
+  // Calculate estimated revenue from bookings this month using the new revenue field
+  const estimatedRevenue = bookings?.filter(booking => {
+    const bookingDate = new Date(booking.created_at);
+    return bookingDate.getMonth() === currentMonth && 
+           bookingDate.getFullYear() === currentYear &&
+           booking.status !== 'cancelled';
+  }).reduce((sum, booking) => sum + (booking.revenue || 0), 0) || 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -59,7 +58,7 @@ export const DashboardMetrics = () => {
             ${estimatedRevenue.toLocaleString()}
           </div>
           <p className="text-xs text-muted-foreground">
-            From current bookings
+            From bookings this month
           </p>
         </CardContent>
       </Card>

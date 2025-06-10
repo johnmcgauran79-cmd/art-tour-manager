@@ -9,8 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
+import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
+import { CancelBookingDialog } from "@/components/CancelBookingDialog";
 
 interface Booking {
   id: string;
@@ -58,8 +60,11 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     check_out_date: '',
   });
 
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
+  const cancelBooking = useCancelBooking();
 
   useEffect(() => {
     if (booking) {
@@ -93,6 +98,28 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     });
   };
 
+  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled') => {
+    if (newStatus === 'cancelled' && booking?.status !== 'cancelled') {
+      setShowCancelDialog(true);
+    } else {
+      setFormData(prev => ({ ...prev, status: newStatus }));
+    }
+  };
+
+  const handleCancelConfirm = (reason: string) => {
+    if (!booking) return;
+    
+    cancelBooking.mutate({
+      bookingId: booking.id,
+      cancellationReason: reason
+    }, {
+      onSuccess: () => {
+        setShowCancelDialog(false);
+        onOpenChange(false);
+      }
+    });
+  };
+
   const handleDelete = () => {
     if (!booking) return;
     if (confirm('Are you sure you want to delete this booking?')) {
@@ -104,129 +131,130 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   if (!booking) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            Edit Booking - {booking.customers?.first_name} {booking.customers?.last_name}
-            <Button onClick={handleDelete} variant="destructive" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Booking
-            </Button>
-          </DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              Edit Booking - {booking.customers?.first_name} {booking.customers?.last_name}
+              <Button onClick={handleDelete} variant="destructive" size="sm">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Booking
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
 
-        <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="details">Booking Details</TabsTrigger>
-            <TabsTrigger value="accommodation">Hotel Allocation</TabsTrigger>
-            <TabsTrigger value="activities">Activities</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="details" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details">Booking Details</TabsTrigger>
+              <TabsTrigger value="accommodation">Hotel Allocation</TabsTrigger>
+              <TabsTrigger value="activities">Activities</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="details" className="space-y-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="passenger_count">Passenger Count</Label>
-                  <Input
-                    id="passenger_count"
-                    type="number"
-                    min="1"
-                    value={formData.passenger_count}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_count: parseInt(e.target.value) || 1 }))}
-                  />
+            <TabsContent value="details" className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="passenger_count">Passenger Count</Label>
+                    <Input
+                      id="passenger_count"
+                      type="number"
+                      min="1"
+                      value={formData.passenger_count}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passenger_count: parseInt(e.target.value) || 1 }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="status">Status</Label>
+                    <Select value={formData.status} onValueChange={handleStatusChange}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="invoiced">Invoiced</SelectItem>
+                        <SelectItem value="deposited">Deposited</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="passenger_2_name">Passenger 2 Name</Label>
+                    <Input
+                      id="passenger_2_name"
+                      value={formData.passenger_2_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passenger_2_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="passenger_3_name">Passenger 3 Name</Label>
+                    <Input
+                      id="passenger_3_name"
+                      value={formData.passenger_3_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passenger_3_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="group_name">Group Name</Label>
+                    <Input
+                      id="group_name"
+                      value={formData.group_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, group_name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="booking_agent">Booking Agent</Label>
+                    <Input
+                      id="booking_agent"
+                      value={formData.booking_agent}
+                      onChange={(e) => setFormData(prev => ({ ...prev, booking_agent: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="check_in_date">Check In Date</Label>
+                    <Input
+                      id="check_in_date"
+                      type="date"
+                      value={formData.check_in_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, check_in_date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="check_out_date">Check Out Date</Label>
+                    <Input
+                      id="check_out_date"
+                      type="date"
+                      value={formData.check_out_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, check_out_date: e.target.value }))}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value: 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled') => setFormData(prev => ({ ...prev, status: value }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="invoiced">Invoiced</SelectItem>
-                      <SelectItem value="deposited">Deposited</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="passenger_2_name">Passenger 2 Name</Label>
-                  <Input
-                    id="passenger_2_name"
-                    value={formData.passenger_2_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_2_name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="passenger_3_name">Passenger 3 Name</Label>
-                  <Input
-                    id="passenger_3_name"
-                    value={formData.passenger_3_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_3_name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="group_name">Group Name</Label>
-                  <Input
-                    id="group_name"
-                    value={formData.group_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, group_name: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="booking_agent">Booking Agent</Label>
-                  <Input
-                    id="booking_agent"
-                    value={formData.booking_agent}
-                    onChange={(e) => setFormData(prev => ({ ...prev, booking_agent: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="check_in_date">Check In Date</Label>
-                  <Input
-                    id="check_in_date"
-                    type="date"
-                    value={formData.check_in_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, check_in_date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="check_out_date">Check Out Date</Label>
-                  <Input
-                    id="check_out_date"
-                    type="date"
-                    value={formData.check_out_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, check_out_date: e.target.value }))}
-                  />
-                </div>
-              </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="accommodation_required"
-                  checked={formData.accommodation_required}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, accommodation_required: checked }))}
-                />
-                <Label htmlFor="accommodation_required">Accommodation Required</Label>
-              </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="accommodation_required"
+                    checked={formData.accommodation_required}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, accommodation_required: checked }))}
+                  />
+                  <Label htmlFor="accommodation_required">Accommodation Required</Label>
+                </div>
 
-              <div>
-                <Label htmlFor="extra_requests">Extra Requests</Label>
-                <Textarea
-                  id="extra_requests"
-                  value={formData.extra_requests}
-                  onChange={(e) => setFormData(prev => ({ ...prev, extra_requests: e.target.value }))}
-                />
-              </div>
+                <div>
+                  <Label htmlFor="extra_requests">Extra Requests</Label>
+                  <Textarea
+                    id="extra_requests"
+                    value={formData.extra_requests}
+                    onChange={(e) => setFormData(prev => ({ ...prev, extra_requests: e.target.value }))}
+                  />
+                </div>
 
-              <div>
-                <Label htmlFor="invoice_notes">Invoice Notes</Label>
-                <Textarea
-                  id="invoice_notes"
-                  value={formData.invoice_notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, invoice_notes: e.target.value }))}
+                <div>
+                  <Label htmlFor="invoice_notes">Invoice Notes</Label>
+                  <Textarea
+                    id="invoice_notes"
+                    value={formData.invoice_notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, invoice_notes: e.target.value }))}
                 />
               </div>
 
@@ -270,6 +298,14 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           </TabsContent>
         </Tabs>
       </DialogContent>
-    </Dialog>
+
+      <CancelBookingDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        onConfirm={handleCancelConfirm}
+        bookingId={booking.id}
+        isLoading={cancelBooking.isPending}
+      />
+    </>
   );
 };
