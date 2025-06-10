@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Settings, FileText } from "lucide-react";
+import { Calendar, Users, Settings, FileText, Contact } from "lucide-react";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { ActiveTours } from "@/components/ActiveTours";
 import { RecentBookings } from "@/components/RecentBookings";
@@ -9,6 +9,7 @@ import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { BookingsTable } from "@/components/BookingsTable";
 import { ToursTable } from "@/components/ToursTable";
+import { ContactsTable } from "@/components/ContactsTable";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -54,7 +55,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Dashboard
@@ -66,6 +67,10 @@ const Index = () => {
             <TabsTrigger value="bookings" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Bookings
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center gap-2">
+              <Contact className="h-4 w-4" />
+              Contacts
             </TabsTrigger>
             <TabsTrigger value="operations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -85,6 +90,10 @@ const Index = () => {
 
           <TabsContent value="bookings" className="space-y-6">
             <BookingsTable onAddBooking={() => setShowAddBooking(true)} />
+          </TabsContent>
+
+          <TabsContent value="contacts" className="space-y-6">
+            <ContactsTable />
           </TabsContent>
 
           <TabsContent value="operations" className="space-y-6">
