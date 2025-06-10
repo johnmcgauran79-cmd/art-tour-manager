@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -34,7 +35,7 @@ export const HotelAllocationSection = ({
   const updateBooking = useUpdateBooking();
 
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
-  const [pendingUpdates, setPendingUpdates] = useState<{[key: string]: boolean}>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{[key: string]: boolean}>({});
 
   const updateBookingDates = async (bookingsToCheck = hotelBookings) => {
     console.log('Updating booking dates, hotel bookings:', bookingsToCheck);
@@ -117,28 +118,43 @@ export const HotelAllocationSection = ({
   const handleFieldChange = (hotelBookingId: string, field: string, value: any) => {
     const fieldKey = `${hotelBookingId}-${field}`;
     setEditingFields(prev => ({ ...prev, [fieldKey]: value }));
-    setPendingUpdates(prev => ({ ...prev, [fieldKey]: true }));
+    setHasUnsavedChanges(prev => ({ ...prev, [hotelBookingId]: true }));
   };
 
-  const saveFieldUpdate = (hotelBookingId: string, field: string) => {
-    const fieldKey = `${hotelBookingId}-${field}`;
-    const value = editingFields[fieldKey];
+  const saveAllChanges = (hotelBookingId: string) => {
+    // Collect all changes for this hotel booking
+    const updates: any = {};
     
+    Object.keys(editingFields).forEach(key => {
+      if (key.startsWith(`${hotelBookingId}-`)) {
+        const field = key.replace(`${hotelBookingId}-`, '');
+        updates[field] = editingFields[key];
+      }
+    });
+
+    if (Object.keys(updates).length === 0) return;
+
     updateHotelBooking.mutate({
       id: hotelBookingId,
-      [field]: value,
+      ...updates,
     }, {
       onSuccess: async () => {
         onUpdate?.();
-        setPendingUpdates(prev => ({ ...prev, [fieldKey]: false }));
+        setHasUnsavedChanges(prev => ({ ...prev, [hotelBookingId]: false }));
+        
+        // Clear editing fields for this hotel booking
         setEditingFields(prev => {
           const newState = { ...prev };
-          delete newState[fieldKey];
+          Object.keys(newState).forEach(key => {
+            if (key.startsWith(`${hotelBookingId}-`)) {
+              delete newState[key];
+            }
+          });
           return newState;
         });
         
         // If check-in or check-out date was updated, sync booking dates
-        if (field === 'check_in_date' || field === 'check_out_date') {
+        if (updates.check_in_date || updates.check_out_date) {
           // Refetch hotel bookings and then update booking dates
           const { data: updatedHotelBookings } = await refetchHotelBookings();
           if (updatedHotelBookings) {
@@ -152,11 +168,6 @@ export const HotelAllocationSection = ({
   const getFieldValue = (hotelBooking: any, field: string) => {
     const fieldKey = `${hotelBooking.id}-${field}`;
     return editingFields[fieldKey] !== undefined ? editingFields[fieldKey] : hotelBooking[field] || '';
-  };
-
-  const hasPendingUpdate = (hotelBookingId: string, field: string) => {
-    const fieldKey = `${hotelBookingId}-${field}`;
-    return pendingUpdates[fieldKey] || false;
   };
 
   if (!accommodationRequired) {
@@ -190,41 +201,19 @@ export const HotelAllocationSection = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label>Check In Date</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={getFieldValue(hotelBooking, 'check_in_date')}
-                        onChange={(e) => handleFieldChange(hotelBooking.id, 'check_in_date', e.target.value)}
-                      />
-                      {hasPendingUpdate(hotelBooking.id, 'check_in_date') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'check_in_date')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Input
+                      type="date"
+                      value={getFieldValue(hotelBooking, 'check_in_date')}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'check_in_date', e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label>Check Out Date</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="date"
-                        value={getFieldValue(hotelBooking, 'check_out_date')}
-                        onChange={(e) => handleFieldChange(hotelBooking.id, 'check_out_date', e.target.value)}
-                      />
-                      {hasPendingUpdate(hotelBooking.id, 'check_out_date') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'check_out_date')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Input
+                      type="date"
+                      value={getFieldValue(hotelBooking, 'check_out_date')}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'check_out_date', e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label>Nights</Label>
@@ -232,106 +221,63 @@ export const HotelAllocationSection = ({
                   </div>
                   <div>
                     <Label>Bedding Type</Label>
-                    <div className="flex gap-2">
-                      <Select 
-                        value={getFieldValue(hotelBooking, 'bedding')} 
-                        onValueChange={(value) => handleFieldChange(hotelBooking.id, 'bedding', value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="single">Single</SelectItem>
-                          <SelectItem value="double">Double</SelectItem>
-                          <SelectItem value="twin">Twin</SelectItem>
-                          <SelectItem value="triple">Triple</SelectItem>
-                          <SelectItem value="family">Family</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {hasPendingUpdate(hotelBooking.id, 'bedding') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'bedding')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Select 
+                      value={getFieldValue(hotelBooking, 'bedding')} 
+                      onValueChange={(value) => handleFieldChange(hotelBooking.id, 'bedding', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="single">Single</SelectItem>
+                        <SelectItem value="double">Double</SelectItem>
+                        <SelectItem value="twin">Twin</SelectItem>
+                        <SelectItem value="triple">Triple</SelectItem>
+                        <SelectItem value="family">Family</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label>Room Type</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={getFieldValue(hotelBooking, 'room_type')}
-                        onChange={(e) => handleFieldChange(hotelBooking.id, 'room_type', e.target.value)}
-                      />
-                      {hasPendingUpdate(hotelBooking.id, 'room_type') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'room_type')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Input
+                      value={getFieldValue(hotelBooking, 'room_type')}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'room_type', e.target.value)}
+                    />
                   </div>
                   <div>
                     <Label>Room Upgrade</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={getFieldValue(hotelBooking, 'room_upgrade')}
-                        onChange={(e) => handleFieldChange(hotelBooking.id, 'room_upgrade', e.target.value)}
-                      />
-                      {hasPendingUpdate(hotelBooking.id, 'room_upgrade') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'room_upgrade')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Input
+                      value={getFieldValue(hotelBooking, 'room_upgrade')}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'room_upgrade', e.target.value)}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label>Confirmation Number</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        value={getFieldValue(hotelBooking, 'confirmation_number')}
-                        onChange={(e) => handleFieldChange(hotelBooking.id, 'confirmation_number', e.target.value)}
-                      />
-                      {hasPendingUpdate(hotelBooking.id, 'confirmation_number') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'confirmation_number')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Input
+                      value={getFieldValue(hotelBooking, 'confirmation_number')}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'confirmation_number', e.target.value)}
+                    />
                   </div>
                   <div className="md:col-span-2">
                     <Label>Room Requests</Label>
-                    <div className="flex gap-2">
-                      <Textarea
-                        value={getFieldValue(hotelBooking, 'room_requests')}
-                        onChange={(e) => handleFieldChange(hotelBooking.id, 'room_requests', e.target.value)}
-                      />
-                      {hasPendingUpdate(hotelBooking.id, 'room_requests') && (
-                        <Button 
-                          size="sm" 
-                          onClick={() => saveFieldUpdate(hotelBooking.id, 'room_requests')}
-                          disabled={updateHotelBooking.isPending}
-                        >
-                          Save
-                        </Button>
-                      )}
-                    </div>
+                    <Textarea
+                      value={getFieldValue(hotelBooking, 'room_requests')}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'room_requests', e.target.value)}
+                    />
                   </div>
                 </div>
+                
+                {hasUnsavedChanges[hotelBooking.id] && (
+                  <div className="flex justify-end pt-4 border-t">
+                    <Button 
+                      onClick={() => saveAllChanges(hotelBooking.id)}
+                      disabled={updateHotelBooking.isPending}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      {updateHotelBooking.isPending ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             )}
           </Card>
