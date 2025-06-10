@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +33,26 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   });
 
   const createTour = useCreateTour();
+
+  // Auto-calculate days and nights when start and end dates change
+  useEffect(() => {
+    if (formData.start_date && formData.end_date) {
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.end_date);
+      
+      if (endDate > startDate) {
+        const timeDiff = endDate.getTime() - startDate.getTime();
+        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // Include both start and end days
+        const nightsDiff = daysDiff - 1;
+        
+        setFormData(prev => ({
+          ...prev,
+          days: daysDiff.toString(),
+          nights: nightsDiff.toString()
+        }));
+      }
+    }
+  }, [formData.start_date, formData.end_date]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,28 +169,28 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="days">Days *</Label>
+              <Label htmlFor="days">Days (Auto-calculated)</Label>
               <Input
                 id="days"
                 type="number"
                 min="1"
                 value={formData.days}
                 onChange={(e) => handleInputChange("days", e.target.value)}
-                placeholder="e.g., 6"
-                required
+                placeholder="Auto-calculated from dates"
+                readOnly
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nights">Nights *</Label>
+              <Label htmlFor="nights">Nights (Auto-calculated)</Label>
               <Input
                 id="nights"
                 type="number"
                 min="0"
                 value={formData.nights}
                 onChange={(e) => handleInputChange("nights", e.target.value)}
-                placeholder="e.g., 5"
-                required
+                placeholder="Auto-calculated from dates"
+                readOnly
               />
             </div>
 

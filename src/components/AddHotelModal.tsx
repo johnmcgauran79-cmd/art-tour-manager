@@ -50,8 +50,8 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           rooms_reserved: hotelData.rooms_reserved ? parseInt(hotelData.rooms_reserved) : null,
           booking_status: hotelData.booking_status,
           default_room_type: hotelData.default_room_type || null,
-          default_check_in: hotelData.default_check_in || null,
-          default_check_out: hotelData.default_check_out || null,
+          default_check_in: hotelData.default_check_in,
+          default_check_out: hotelData.default_check_out,
           extra_night_price: hotelData.extra_night_price ? parseFloat(hotelData.extra_night_price) : null,
           operations_notes: hotelData.operations_notes || null,
           upgrade_options: hotelData.upgrade_options || null,
@@ -63,7 +63,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels', tourId] });
       toast({
         title: "Hotel Added",
         description: "Hotel has been successfully added to the tour.",
@@ -167,9 +167,11 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="contracted">Contracted</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -205,22 +207,24 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="default_check_in">Default Check-in Date</Label>
+              <Label htmlFor="default_check_in">Default Check-in Date *</Label>
               <Input
                 id="default_check_in"
                 type="date"
                 value={formData.default_check_in}
                 onChange={(e) => handleInputChange("default_check_in", e.target.value)}
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="default_check_out">Default Check-out Date</Label>
+              <Label htmlFor="default_check_out">Default Check-out Date *</Label>
               <Input
                 id="default_check_out"
                 type="date"
                 value={formData.default_check_out}
                 onChange={(e) => handleInputChange("default_check_out", e.target.value)}
+                required
               />
             </div>
           </div>

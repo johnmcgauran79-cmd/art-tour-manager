@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,6 +9,7 @@ import { Plus, Building, Calendar, Users, MapPin, Phone, Mail, Edit } from "luci
 import { EditTourModal } from "@/components/EditTourModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
+import { useHotels } from "@/hooks/useHotels";
 
 interface Tour {
   id: string;
@@ -38,25 +40,6 @@ interface TourDetailModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const mockHotels = [
-  {
-    id: "1",
-    name: "Crown Towers Melbourne",
-    address: "8 Whiteman St, Southbank VIC 3006",
-    contact: {
-      phone: "(03) 9292 6868",
-      email: "reservations@crownmelbourne.com.au"
-    },
-    bookingStatus: "confirmed",
-    roomsReserved: 20,
-    roomsBooked: 15,
-    checkIn: "Nov 2, 2024",
-    checkOut: "Nov 8, 2024",
-    roomType: "Superior King",
-    extraNightPrice: 280
-  }
-];
 
 const mockActivities = [
   {
@@ -113,6 +96,8 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [showEditTour, setShowEditTour] = useState(false);
   const [showAddHotel, setShowAddHotel] = useState(false);
   const [showAddActivity, setShowAddActivity] = useState(false);
+
+  const { data: hotels = [], isLoading: hotelsLoading } = useHotels(tour?.id || "");
 
   if (!tour) return null;
 
@@ -242,54 +227,70 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               </div>
               
               <div className="space-y-4">
-                {mockHotels.map((hotel) => (
-                  <Card key={hotel.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit hotel:', hotel.id)}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        {hotel.name}
-                        <Badge className="bg-green-100 text-green-800">
-                          {hotel.bookingStatus}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription>{hotel.address}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-sm font-medium">Contact</p>
-                          <div className="text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-3 w-3" />
-                              {hotel.contact.phone}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-3 w-3" />
-                              {hotel.contact.email}
+                {hotelsLoading ? (
+                  <p>Loading hotels...</p>
+                ) : hotels.length === 0 ? (
+                  <p className="text-muted-foreground">No hotels added yet.</p>
+                ) : (
+                  hotels.map((hotel) => (
+                    <Card key={hotel.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit hotel:', hotel.id)}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          {hotel.name}
+                          <Badge className={
+                            hotel.booking_status === "paid" ? "bg-green-100 text-green-800" :
+                            hotel.booking_status === "contracted" ? "bg-blue-100 text-blue-800" :
+                            hotel.booking_status === "enquiry_sent" ? "bg-yellow-100 text-yellow-800" :
+                            hotel.booking_status === "cancelled" ? "bg-red-100 text-red-800" :
+                            "bg-gray-100 text-gray-800"
+                          }>
+                            {hotel.booking_status}
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>{hotel.address}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <p className="text-sm font-medium">Contact</p>
+                            <div className="text-sm text-muted-foreground">
+                              {hotel.contact_phone && (
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-3 w-3" />
+                                  {hotel.contact_phone}
+                                </div>
+                              )}
+                              {hotel.contact_email && (
+                                <div className="flex items-center gap-2">
+                                  <Mail className="h-3 w-3" />
+                                  {hotel.contact_email}
+                                </div>
+                              )}
                             </div>
                           </div>
+                          <div>
+                            <p className="text-sm font-medium">Rooms</p>
+                            <p className="text-sm text-muted-foreground">
+                              {hotel.rooms_booked || 0}/{hotel.rooms_reserved || 0} booked
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {(hotel.rooms_reserved || 0) - (hotel.rooms_booked || 0)} available
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">Stay Period</p>
+                            <p className="text-sm text-muted-foreground">
+                              {hotel.default_check_in} - {hotel.default_check_out}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Room Type: {hotel.default_room_type || "Not specified"}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">Rooms</p>
-                          <p className="text-sm text-muted-foreground">
-                            {hotel.roomsBooked}/{hotel.roomsReserved} booked
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {hotel.roomsReserved - hotel.roomsBooked} available
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Stay Period</p>
-                          <p className="text-sm text-muted-foreground">
-                            {hotel.checkIn} - {hotel.checkOut}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Room Type: {hotel.roomType}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
 
