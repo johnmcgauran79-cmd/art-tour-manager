@@ -35,12 +35,13 @@ export const ActivityAllocationSection = ({
       
       activities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
-        initialAllocations[activity.id] = existingBooking?.passengers_attending || 0;
+        // Default to passenger count if no existing booking, otherwise use existing value
+        initialAllocations[activity.id] = existingBooking?.passengers_attending || passengerCount;
       });
       
       setAllocations(initialAllocations);
     }
-  }, [activities, activityBookings]);
+  }, [activities, activityBookings, passengerCount]);
 
   const handleAllocationChange = (activityId: string, value: string) => {
     const numValue = Math.max(0, parseInt(value) || 0);
@@ -75,7 +76,7 @@ export const ActivityAllocationSection = ({
       console.error('Activity booking error:', error);
       toast({
         title: "Error",
-        description: "Failed to update activity allocation.",
+        description: "Failed to update activity allocation. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -93,16 +94,11 @@ export const ActivityAllocationSection = ({
 
   return (
     <div className="space-y-4">
-      <div className="mb-4">
-        <h3 className="text-lg font-semibold">Activity Allocations</h3>
-      </div>
-
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Activity Name</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead>Location</TableHead>
             <TableHead className="w-32">Pax Attending</TableHead>
             <TableHead className="w-20">Action</TableHead>
           </TableRow>
@@ -117,12 +113,11 @@ export const ActivityAllocationSection = ({
                   : 'TBD'
                 }
               </TableCell>
-              <TableCell>{activity.location || 'TBD'}</TableCell>
               <TableCell>
                 <Input
                   type="number"
                   min="0"
-                  value={allocations[activity.id] || 0}
+                  value={allocations[activity.id] || passengerCount}
                   onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
                   className="w-20"
                 />
