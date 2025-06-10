@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Calendar, Eye } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { EditBookingModal } from "./EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -71,7 +70,6 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
                 <Plus className="h-4 w-4 mr-2" />
                 Add Booking
               </Button>
-              <Calendar className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardTitle>
           <CardDescription>
