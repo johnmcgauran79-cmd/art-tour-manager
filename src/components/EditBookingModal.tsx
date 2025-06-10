@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -255,57 +256,58 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                     id="invoice_notes"
                     value={formData.invoice_notes}
                     onChange={(e) => setFormData(prev => ({ ...prev, invoice_notes: e.target.value }))}
-                />
-              </div>
+                  />
+                </div>
 
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={updateBooking.isPending}>
+                    {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="accommodation" className="space-y-4">
+              <HotelAllocationSection
+                tourId={booking.tour_id}
+                bookingId={booking.id}
+                accommodationRequired={formData.accommodation_required}
+                defaultCheckIn={formData.check_in_date}
+                defaultCheckOut={formData.check_out_date}
+              />
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={updateBooking.isPending}>
-                  {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                  Close
                 </Button>
               </div>
-            </form>
-          </TabsContent>
+            </TabsContent>
 
-          <TabsContent value="accommodation" className="space-y-4">
-            <HotelAllocationSection
-              tourId={booking.tour_id}
-              bookingId={booking.id}
-              accommodationRequired={formData.accommodation_required}
-              defaultCheckIn={formData.check_in_date}
-              defaultCheckOut={formData.check_out_date}
-            />
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-            </div>
-          </TabsContent>
+            <TabsContent value="activities" className="space-y-4">
+              <ActivityAllocationSection
+                tourId={booking.tour_id}
+                bookingId={booking.id}
+                passengerCount={formData.passenger_count}
+              />
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
 
-          <TabsContent value="activities" className="space-y-4">
-            <ActivityAllocationSection
-              tourId={booking.tour_id}
-              bookingId={booking.id}
-              passengerCount={formData.passenger_count}
-            />
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-
-      <CancelBookingDialog
-        open={showCancelDialog}
-        onOpenChange={setShowCancelDialog}
-        onConfirm={handleCancelConfirm}
-        bookingId={booking.id}
-        isLoading={cancelBooking.isPending}
-      />
+        <CancelBookingDialog
+          open={showCancelDialog}
+          onOpenChange={setShowCancelDialog}
+          onConfirm={handleCancelConfirm}
+          bookingId={booking.id}
+          isLoading={cancelBooking.isPending}
+        />
+      </Dialog>
     </>
   );
 };
