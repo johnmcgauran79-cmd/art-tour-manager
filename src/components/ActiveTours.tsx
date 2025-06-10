@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -67,15 +68,10 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
   const handleViewTour = (tour: Tour) => {
     const { passengersBooked } = getBookingStats(tour.id);
     
-    // If tour has bookings, show bookings list by default
-    if (passengersBooked > 0) {
-      setShowBookingsList({show: true, tourId: tour.id, tourName: tour.name});
-    } else {
-      // Otherwise show tour detail modal
-      const transformedTour = transformTourForModal(tour, passengersBooked);
-      setSelectedTour(transformedTour);
-      setShowTourDetail(true);
-    }
+    // Always show tour detail modal when clicking on tour
+    const transformedTour = transformTourForModal(tour, passengersBooked);
+    setSelectedTour(transformedTour);
+    setShowTourDetail(true);
   };
 
   if (toursLoading) {
