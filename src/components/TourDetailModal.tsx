@@ -1,11 +1,13 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Building, Calendar, Users, MapPin, Phone, Mail } from "lucide-react";
+import { Plus, Building, Calendar, Users, MapPin, Phone, Mail, Edit } from "lucide-react";
+import { EditTourModal } from "@/components/EditTourModal";
+import { AddHotelModal } from "@/components/AddHotelModal";
+import { AddActivityModal } from "@/components/AddActivityModal";
 
 interface Tour {
   id: string;
@@ -19,6 +21,16 @@ interface Tour {
   totalCapacity: number;
   roomsAvailable: number;
   notes: string;
+  inclusions: string;
+  exclusions: string;
+  pricing: {
+    single: number;
+    double: number;
+    twin: number;
+  };
+  deposit: number;
+  finalPaymentDate: string;
+  instalmentDetails: string;
 }
 
 interface TourDetailModalProps {
@@ -98,230 +110,295 @@ const mockBookings = [
 
 export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalProps) => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [showEditTour, setShowEditTour] = useState(false);
+  const [showAddHotel, setShowAddHotel] = useState(false);
+  const [showAddActivity, setShowAddActivity] = useState(false);
 
   if (!tour) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">{tour.name}</DialogTitle>
-        </DialogHeader>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="hotels">Hotels</TabsTrigger>
-            <TabsTrigger value="activities">Activities</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tour Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span>{tour.dates}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{tour.location}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span>{tour.passengersBooked}/{tour.totalCapacity} passengers</span>
-                  </div>
-                  <Badge className="w-fit">
-                    Status: {tour.status}
-                  </Badge>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button className="w-full justify-start">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add/Edit Hotel
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add/Edit Activity
-                  </Button>
-                  <Button className="w-full justify-start" variant="outline">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add/Edit Booking
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {tour.notes && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notes</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p>{tour.notes}</p>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="hotels" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Hotels</h3>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Hotel
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl">{tour.name}</DialogTitle>
+              <Button onClick={() => setShowEditTour(true)} variant="outline" size="sm">
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Tour
               </Button>
             </div>
-            
-            <div className="space-y-4">
-              {mockHotels.map((hotel) => (
-                <Card key={hotel.id}>
+          </DialogHeader>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="hotels">Hotels</TabsTrigger>
+              <TabsTrigger value="activities">Activities</TabsTrigger>
+              <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {hotel.name}
-                      <Badge className="bg-green-100 text-green-800">
-                        {hotel.bookingStatus}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>{hotel.address}</CardDescription>
+                    <CardTitle>Tour Details</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm font-medium">Contact</p>
-                        <div className="text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-3 w-3" />
-                            {hotel.contact.phone}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-3 w-3" />
-                            {hotel.contact.email}
-                          </div>
-                        </div>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Rooms</p>
-                        <p className="text-sm text-muted-foreground">
-                          {hotel.roomsBooked}/{hotel.roomsReserved} booked
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {hotel.roomsReserved - hotel.roomsBooked} available
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Stay Period</p>
-                        <p className="text-sm text-muted-foreground">
-                          {hotel.checkIn} - {hotel.checkOut}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Room Type: {hotel.roomType}
-                        </p>
-                      </div>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>{tour.dates}</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span>{tour.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>{tour.passengersBooked}/{tour.totalCapacity} passengers</span>
+                    </div>
+                    <Badge className="w-fit">
+                      Status: {tour.status}
+                    </Badge>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </TabsContent>
 
-          <TabsContent value="activities" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Activities</h3>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Activity
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              {mockActivities.map((activity) => (
-                <Card key={activity.id}>
+                <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {activity.name}
-                      <Badge className={activity.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                        {activity.status}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>{activity.location}</CardDescription>
+                    <CardTitle>Pricing Information</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium">Date:</span> {activity.date}
+                  <CardContent className="space-y-2">
+                    {tour.pricing.single > 0 && (
+                      <div className="flex justify-between">
+                        <span>Single:</span>
+                        <span>${tour.pricing.single}</span>
                       </div>
-                      <div>
-                        <span className="font-medium">Time:</span> {activity.startTime} - {activity.endTime}
+                    )}
+                    {tour.pricing.double > 0 && (
+                      <div className="flex justify-between">
+                        <span>Double:</span>
+                        <span>${tour.pricing.double}</span>
                       </div>
-                      <div>
-                        <span className="font-medium">Capacity:</span> {activity.spotsBooked}/{activity.spotsAvailable}
+                    )}
+                    {tour.pricing.twin > 0 && (
+                      <div className="flex justify-between">
+                        <span>Twin:</span>
+                        <span>${tour.pricing.twin}</span>
                       </div>
-                      <div>
-                        <span className="font-medium">Available:</span> {activity.spotsAvailable - activity.spotsBooked}
+                    )}
+                    {tour.deposit > 0 && (
+                      <div className="flex justify-between font-semibold">
+                        <span>Deposit Required:</span>
+                        <span>${tour.deposit}</span>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="bookings" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Bookings</h3>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Booking
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              {mockBookings.map((booking) => (
-                <Card key={booking.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      {booking.leadPassenger}
-                      <Badge className={booking.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                        {booking.status}
-                      </Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      {booking.passengers} passengers • {booking.nights} nights
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div>
-                        <span className="font-medium">Second Passenger:</span> {booking.secondPassenger}
-                      </div>
-                      <div>
-                        <span className="font-medium">Check-in:</span> {booking.checkIn}
-                      </div>
-                      <div>
-                        <span className="font-medium">Check-out:</span> {booking.checkOut}
-                      </div>
-                    </div>
-                    {booking.notes && (
-                      <p className="text-sm text-muted-foreground mt-2">{booking.notes}</p>
                     )}
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
+              </div>
+
+              {tour.inclusions && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Inclusions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{tour.inclusions}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {tour.exclusions && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Exclusions</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{tour.exclusions}</p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {tour.notes && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Notes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p>{tour.notes}</p>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            <TabsContent value="hotels" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold cursor-pointer hover:text-blue-600" onClick={() => console.log('Edit hotels')}>
+                  Hotels
+                </h3>
+                <Button onClick={() => setShowAddHotel(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Hotel
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                {mockHotels.map((hotel) => (
+                  <Card key={hotel.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit hotel:', hotel.id)}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {hotel.name}
+                        <Badge className="bg-green-100 text-green-800">
+                          {hotel.bookingStatus}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>{hotel.address}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-sm font-medium">Contact</p>
+                          <div className="text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-3 w-3" />
+                              {hotel.contact.phone}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Mail className="h-3 w-3" />
+                              {hotel.contact.email}
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Rooms</p>
+                          <p className="text-sm text-muted-foreground">
+                            {hotel.roomsBooked}/{hotel.roomsReserved} booked
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {hotel.roomsReserved - hotel.roomsBooked} available
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">Stay Period</p>
+                          <p className="text-sm text-muted-foreground">
+                            {hotel.checkIn} - {hotel.checkOut}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Room Type: {hotel.roomType}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="activities" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold cursor-pointer hover:text-blue-600" onClick={() => console.log('Edit activities')}>
+                  Activities
+                </h3>
+                <Button onClick={() => setShowAddActivity(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Activity
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                {mockActivities.map((activity) => (
+                  <Card key={activity.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit activity:', activity.id)}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {activity.name}
+                        <Badge className={activity.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                          {activity.status}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>{activity.location}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Date:</span> {activity.date}
+                        </div>
+                        <div>
+                          <span className="font-medium">Time:</span> {activity.startTime} - {activity.endTime}
+                        </div>
+                        <div>
+                          <span className="font-medium">Capacity:</span> {activity.spotsBooked}/{activity.spotsAvailable}
+                        </div>
+                        <div>
+                          <span className="font-medium">Available:</span> {activity.spotsAvailable - activity.spotsBooked}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="bookings" className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold cursor-pointer hover:text-blue-600" onClick={() => console.log('Edit bookings')}>
+                  Bookings
+                </h3>
+              </div>
+              
+              <div className="space-y-4">
+                {mockBookings.map((booking) => (
+                  <Card key={booking.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit booking:', booking.id)}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        {booking.leadPassenger}
+                        <Badge className={booking.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
+                          {booking.status}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription>
+                        {booking.passengers} passengers • {booking.nights} nights
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Second Passenger:</span> {booking.secondPassenger}
+                        </div>
+                        <div>
+                          <span className="font-medium">Check-in:</span> {booking.checkIn}
+                        </div>
+                        <div>
+                          <span className="font-medium">Check-out:</span> {booking.checkOut}
+                        </div>
+                      </div>
+                      {booking.notes && (
+                        <p className="text-sm text-muted-foreground mt-2">{booking.notes}</p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <EditTourModal 
+        tour={tour} 
+        open={showEditTour} 
+        onOpenChange={setShowEditTour} 
+      />
+
+      <AddHotelModal 
+        tourId={tour.id} 
+        open={showAddHotel} 
+        onOpenChange={setShowAddHotel} 
+      />
+
+      <AddActivityModal 
+        tourId={tour.id} 
+        open={showAddActivity} 
+        onOpenChange={setShowAddActivity} 
+      />
+    </>
   );
 };

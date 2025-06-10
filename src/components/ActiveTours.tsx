@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Building, MapPin, Eye } from "lucide-react";
+import { Calendar, Users, Building, MapPin, Edit } from "lucide-react";
 import { TourDetailModal } from "@/components/TourDetailModal";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
@@ -112,7 +112,12 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg">{tour.name}</h3>
+                          <h3 
+                            className="font-semibold text-lg text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"
+                            onClick={() => handleViewTour(tour)}
+                          >
+                            {tour.name}
+                          </h3>
                           <Badge className={getStatusColor(tour.status || 'pending')}>
                             {(tour.status || 'pending').replace("_", " ")}
                           </Badge>
@@ -141,16 +146,6 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
                           <p className="text-sm text-muted-foreground mt-2">{tour.notes}</p>
                         )}
                       </div>
-
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleViewTour(tour)}
-                        className="ml-4"
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
                     </div>
                   </div>
                 );
