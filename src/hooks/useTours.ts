@@ -30,12 +30,17 @@ export const useTours = () => {
   return useQuery({
     queryKey: ['tours'],
     queryFn: async () => {
+      console.log('Fetching tours...');
       const { data, error } = await supabase
         .from('tours')
         .select('*')
         .order('start_date', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching tours:', error);
+        throw error;
+      }
+      console.log('Tours fetched successfully:', data);
       return data as Tour[];
     },
   });
@@ -47,29 +52,36 @@ export const useCreateTour = () => {
 
   return useMutation({
     mutationFn: async (tourData: Omit<Tour, 'id' | 'created_at' | 'updated_at'>) => {
+      console.log('Creating tour with data:', tourData);
+      
       const { data, error } = await supabase
         .from('tours')
         .insert([tourData])
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error creating tour:', error);
+        throw error;
+      }
+      
+      console.log('Tour created successfully:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       toast({
         title: "Tour Created",
-        description: "Tour has been successfully created.",
+        description: `${data.name} has been successfully created.`,
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Error in mutation:', error);
       toast({
-        title: "Error",
-        description: "Failed to create tour. Please try again.",
+        title: "Error Creating Tour",
+        description: error.message || "Failed to create tour. Please try again.",
         variant: "destructive",
       });
-      console.error('Error creating tour:', error);
     },
   });
 };

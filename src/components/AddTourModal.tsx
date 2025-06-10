@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -34,49 +35,61 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
 
   const createTour = useCreateTour();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    createTour.mutate({
-      name: formData.name,
-      start_date: formData.start_date,
-      end_date: formData.end_date,
-      days: parseInt(formData.days),
-      nights: parseInt(formData.nights),
-      location: formData.location || null,
-      pickup_point: formData.pickup_point || null,
-      status: formData.status,
-      notes: formData.notes || null,
-      inclusions: formData.inclusions || null,
-      exclusions: formData.exclusions || null,
-      price_single: formData.price_single ? parseFloat(formData.price_single) : null,
-      price_double: formData.price_double ? parseFloat(formData.price_double) : null,
-      price_twin: formData.price_twin ? parseFloat(formData.price_twin) : null,
-      deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
-      instalment_details: null,
-      final_payment_date: formData.final_payment_date || null,
-    });
+    try {
+      console.log('Form data being submitted:', formData);
+      
+      // Validate required fields
+      if (!formData.name || !formData.start_date || !formData.end_date || !formData.days || !formData.nights) {
+        console.error('Missing required fields');
+        return;
+      }
 
-    // Reset form and close modal
-    setFormData({
-      name: "",
-      start_date: "",
-      end_date: "",
-      days: "",
-      nights: "",
-      location: "",
-      pickup_point: "",
-      status: "pending",
-      notes: "",
-      inclusions: "",
-      exclusions: "",
-      price_single: "",
-      price_double: "",
-      price_twin: "",
-      deposit_required: "",
-      final_payment_date: ""
-    });
-    onOpenChange(false);
+      await createTour.mutateAsync({
+        name: formData.name,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        days: parseInt(formData.days),
+        nights: parseInt(formData.nights),
+        location: formData.location || null,
+        pickup_point: formData.pickup_point || null,
+        status: formData.status,
+        notes: formData.notes || null,
+        inclusions: formData.inclusions || null,
+        exclusions: formData.exclusions || null,
+        price_single: formData.price_single ? parseFloat(formData.price_single) : null,
+        price_double: formData.price_double ? parseFloat(formData.price_double) : null,
+        price_twin: formData.price_twin ? parseFloat(formData.price_twin) : null,
+        deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
+        instalment_details: null,
+        final_payment_date: formData.final_payment_date || null,
+      });
+
+      // Reset form and close modal on success
+      setFormData({
+        name: "",
+        start_date: "",
+        end_date: "",
+        days: "",
+        nights: "",
+        location: "",
+        pickup_point: "",
+        status: "pending",
+        notes: "",
+        inclusions: "",
+        exclusions: "",
+        price_single: "",
+        price_double: "",
+        price_twin: "",
+        deposit_required: "",
+        final_payment_date: ""
+      });
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error creating tour:', error);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -94,7 +107,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Tour Name</Label>
+              <Label htmlFor="name">Tour Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -115,7 +128,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
+              <Label htmlFor="start_date">Start Date *</Label>
               <Input
                 id="start_date"
                 type="date"
@@ -126,7 +139,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date">End Date</Label>
+              <Label htmlFor="end_date">End Date *</Label>
               <Input
                 id="end_date"
                 type="date"
@@ -137,10 +150,11 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="days">Days</Label>
+              <Label htmlFor="days">Days *</Label>
               <Input
                 id="days"
                 type="number"
+                min="1"
                 value={formData.days}
                 onChange={(e) => handleInputChange("days", e.target.value)}
                 placeholder="e.g., 6"
@@ -149,10 +163,11 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="nights">Nights</Label>
+              <Label htmlFor="nights">Nights *</Label>
               <Input
                 id="nights"
                 type="number"
+                min="0"
                 value={formData.nights}
                 onChange={(e) => handleInputChange("nights", e.target.value)}
                 placeholder="e.g., 5"
@@ -194,6 +209,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 id="price_single"
                 type="number"
                 step="0.01"
+                min="0"
                 value={formData.price_single}
                 onChange={(e) => handleInputChange("price_single", e.target.value)}
                 placeholder="e.g., 2500"
@@ -206,6 +222,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 id="price_double"
                 type="number"
                 step="0.01"
+                min="0"
                 value={formData.price_double}
                 onChange={(e) => handleInputChange("price_double", e.target.value)}
                 placeholder="e.g., 2000"
@@ -218,6 +235,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 id="price_twin"
                 type="number"
                 step="0.01"
+                min="0"
                 value={formData.price_twin}
                 onChange={(e) => handleInputChange("price_twin", e.target.value)}
                 placeholder="e.g., 2000"
@@ -232,6 +250,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 id="deposit_required"
                 type="number"
                 step="0.01"
+                min="0"
                 value={formData.deposit_required}
                 onChange={(e) => handleInputChange("deposit_required", e.target.value)}
                 placeholder="e.g., 500"
