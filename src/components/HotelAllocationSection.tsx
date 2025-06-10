@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -29,7 +28,7 @@ export const HotelAllocationSection = ({
   onUpdate
 }: HotelAllocationSectionProps) => {
   const { data: hotels = [] } = useHotels(tourId);
-  const { data: hotelBookings = [] } = useHotelBookings(bookingId);
+  const { data: hotelBookings = [], refetch: refetchHotelBookings } = useHotelBookings(bookingId);
   const createHotelBooking = useCreateHotelBooking();
   const updateHotelBooking = useUpdateHotelBooking();
   const updateBooking = useUpdateBooking();
@@ -37,11 +36,11 @@ export const HotelAllocationSection = ({
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
   const [pendingUpdates, setPendingUpdates] = useState<{[key: string]: boolean}>({});
 
-  const updateBookingDates = async () => {
-    console.log('Updating booking dates, hotel bookings:', hotelBookings);
+  const updateBookingDates = async (bookingsToCheck = hotelBookings) => {
+    console.log('Updating booking dates, hotel bookings:', bookingsToCheck);
     
     // Get all allocated hotel bookings
-    const allocatedHotelBookings = hotelBookings.filter(hb => hb.allocated);
+    const allocatedHotelBookings = bookingsToCheck.filter(hb => hb.allocated);
     console.log('Allocated hotel bookings:', allocatedHotelBookings);
     
     if (allocatedHotelBookings.length === 0) return;
@@ -83,9 +82,13 @@ export const HotelAllocationSection = ({
         id: existingHotelBooking.id,
         allocated,
       }, {
-        onSuccess: () => {
+        onSuccess: async () => {
           onUpdate?.();
-          updateBookingDates();
+          // Refetch hotel bookings and then update booking dates
+          const { data: updatedHotelBookings } = await refetchHotelBookings();
+          if (updatedHotelBookings) {
+            updateBookingDates(updatedHotelBookings);
+          }
         }
       });
     } else if (allocated) {
@@ -99,9 +102,13 @@ export const HotelAllocationSection = ({
         bedding: 'double',
         required: true,
       }, {
-        onSuccess: () => {
+        onSuccess: async () => {
           onUpdate?.();
-          updateBookingDates();
+          // Refetch hotel bookings and then update booking dates
+          const { data: updatedHotelBookings } = await refetchHotelBookings();
+          if (updatedHotelBookings) {
+            updateBookingDates(updatedHotelBookings);
+          }
         }
       });
     }
@@ -121,7 +128,7 @@ export const HotelAllocationSection = ({
       id: hotelBookingId,
       [field]: value,
     }, {
-      onSuccess: () => {
+      onSuccess: async () => {
         onUpdate?.();
         setPendingUpdates(prev => ({ ...prev, [fieldKey]: false }));
         setEditingFields(prev => {
@@ -132,9 +139,11 @@ export const HotelAllocationSection = ({
         
         // If check-in or check-out date was updated, sync booking dates
         if (field === 'check_in_date' || field === 'check_out_date') {
-          setTimeout(() => {
-            updateBookingDates();
-          }, 100); // Small delay to ensure hotel booking is updated first
+          // Refetch hotel bookings and then update booking dates
+          const { data: updatedHotelBookings } = await refetchHotelBookings();
+          if (updatedHotelBookings) {
+            updateBookingDates(updatedHotelBookings);
+          }
         }
       }
     });
