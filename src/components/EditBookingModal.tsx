@@ -48,6 +48,9 @@ interface EditBookingModalProps {
 
 export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingModalProps) => {
   const [formData, setFormData] = useState({
+    lead_passenger_first_name: '',
+    lead_passenger_last_name: '',
+    lead_passenger_email: '',
     passenger_count: 1,
     passenger_2_name: '',
     passenger_3_name: '',
@@ -70,6 +73,9 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   useEffect(() => {
     if (booking) {
       setFormData({
+        lead_passenger_first_name: booking.customers?.first_name || '',
+        lead_passenger_last_name: booking.customers?.last_name || '',
+        lead_passenger_email: booking.customers?.email || '',
         passenger_count: booking.passenger_count,
         passenger_2_name: booking.passenger_2_name || '',
         passenger_3_name: booking.passenger_3_name || '',
@@ -91,7 +97,18 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
 
     updateBooking.mutate({
       id: booking.id,
-      ...formData,
+      // Only include the booking fields, not the customer fields
+      passenger_count: formData.passenger_count,
+      passenger_2_name: formData.passenger_2_name,
+      passenger_3_name: formData.passenger_3_name,
+      group_name: formData.group_name,
+      booking_agent: formData.booking_agent,
+      status: formData.status,
+      extra_requests: formData.extra_requests,
+      invoice_notes: formData.invoice_notes,
+      accommodation_required: formData.accommodation_required,
+      check_in_date: formData.check_in_date,
+      check_out_date: formData.check_out_date,
     }, {
       onSuccess: () => {
         onOpenChange(false);
@@ -137,7 +154,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              Edit Booking - {booking.customers?.first_name} {booking.customers?.last_name}
+              Edit Booking - {formData.lead_passenger_first_name} {formData.lead_passenger_last_name}
               <Button onClick={handleDelete} variant="destructive" size="sm">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Booking
@@ -155,6 +172,40 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
             <TabsContent value="details" className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="lead_passenger_first_name">Lead Passenger First Name</Label>
+                    <Input
+                      id="lead_passenger_first_name"
+                      value={formData.lead_passenger_first_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_first_name: e.target.value }))}
+                      disabled
+                      className="bg-gray-100"
+                      title="Customer details are managed separately in the Contacts section"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lead_passenger_last_name">Lead Passenger Last Name</Label>
+                    <Input
+                      id="lead_passenger_last_name"
+                      value={formData.lead_passenger_last_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_last_name: e.target.value }))}
+                      disabled
+                      className="bg-gray-100"
+                      title="Customer details are managed separately in the Contacts section"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lead_passenger_email">Lead Passenger Email</Label>
+                    <Input
+                      id="lead_passenger_email"
+                      type="email"
+                      value={formData.lead_passenger_email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_email: e.target.value }))}
+                      disabled
+                      className="bg-gray-100"
+                      title="Customer details are managed separately in the Contacts section"
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="passenger_count">Passenger Count</Label>
                     <Input
