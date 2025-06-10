@@ -36,7 +36,7 @@ export const useDuplicateTour = () => {
         nights: originalTour.nights,
         location: originalTour.location,
         pickup_point: originalTour.pickup_point,
-        status: 'pending',
+        status: 'pending' as const,
         notes: originalTour.notes,
         inclusions: originalTour.inclusions,
         exclusions: originalTour.exclusions,
@@ -58,7 +58,7 @@ export const useDuplicateTour = () => {
 
       const { data: newTour, error: createError } = await supabase
         .from('tours')
-        .insert([newTourData])
+        .insert(newTourData)
         .select()
         .single();
 
@@ -81,8 +81,7 @@ export const useDuplicateTour = () => {
           contact_phone: hotel.contact_phone,
           contact_email: hotel.contact_email,
           rooms_reserved: hotel.rooms_reserved,
-          rooms_available: hotel.rooms_available,
-          booking_status: 'pending',
+          booking_status: 'pending' as const,
           default_room_type: hotel.default_room_type,
           default_check_in: hotel.default_check_in ? 
             new Date(new Date(hotel.default_check_in).getFullYear() + 1, 
@@ -129,8 +128,8 @@ export const useDuplicateTour = () => {
           collection_location: activity.collection_location,
           dropoff_location: activity.dropoff_location,
           spots_available: activity.spots_available,
-          activity_status: 'pending',
-          transport_status: 'pending',
+          activity_status: 'pending' as const,
+          transport_status: 'pending' as const,
           guide_name: activity.guide_name,
           guide_phone: activity.guide_phone,
           guide_email: activity.guide_email,
