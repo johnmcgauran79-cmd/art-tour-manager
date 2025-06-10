@@ -230,9 +230,14 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                 />
               </div>
 
-              <Button type="submit" disabled={updateBooking.isPending}>
-                {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
-              </Button>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateBooking.isPending}>
+                  {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                </Button>
+              </div>
             </form>
           </TabsContent>
 
@@ -244,6 +249,11 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               defaultCheckIn={formData.check_in_date}
               defaultCheckOut={formData.check_out_date}
             />
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="activities" className="space-y-4">
@@ -252,6 +262,11 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               bookingId={booking.id}
               passengerCount={formData.passenger_count}
             />
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

@@ -437,7 +437,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             />
           </div>
 
-          <div className="flex justify-between">
+          <div className="flex justify-between pt-4 border-t">
             <Button 
               type="button" 
               variant="destructive" 
