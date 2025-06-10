@@ -47,6 +47,29 @@ export function formatDisplayDate(dateString: string): string {
   return `${weekday} ${dayWithSuffix} ${month} ${year}`;
 }
 
+export function formatDateToLongFormat(dateString: string): string {
+  if (!dateString) return 'TBD';
+  
+  const date = new Date(dateString);
+  const day = date.getDate();
+  const month = date.toLocaleDateString('en-GB', { month: 'long' });
+  const year = date.getFullYear();
+  
+  // Add ordinal suffix to day
+  const addOrdinalSuffix = (day: number) => {
+    if (day > 3 && day < 21) return day + 'th';
+    switch (day % 10) {
+      case 1: return day + 'st';
+      case 2: return day + 'nd';
+      case 3: return day + 'rd';
+      default: return day + 'th';
+    }
+  };
+
+  const dayWithSuffix = addOrdinalSuffix(day);
+  return `${dayWithSuffix} ${month} ${year}`;
+}
+
 export function formatDateRange(startDate: string, endDate: string): string {
   if (!startDate || !endDate) return 'TBD';
   

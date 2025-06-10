@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Users, DollarSign, Clock, Bed, Edit } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Clock, Bed, Edit, FileText } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { useActivities } from "@/hooks/useActivities";
 import { useHotels } from "@/hooks/useHotels";
@@ -15,8 +15,9 @@ import { AddHotelModal } from "@/components/AddHotelModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { EditTourModal } from "@/components/EditTourModal";
+import { RoomingListModal } from "@/components/RoomingListModal";
 import { Tour } from "@/hooks/useTours";
-import { formatDateRange, formatDisplayDate, formatDateToDDMMYYYY } from "@/lib/utils";
+import { formatDateRange, formatDisplayDate, formatDateToDDMMYYYY, formatDateToLongFormat } from "@/lib/utils";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -31,6 +32,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [editActivityModalOpen, setEditActivityModalOpen] = useState(false);
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [editTourModalOpen, setEditTourModalOpen] = useState(false);
+  const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
 
@@ -42,9 +44,14 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     setEditActivityModalOpen(true);
   };
 
-  const handleHotelClick = (hotel: any) => {
+  const handleEditHotel = (hotel: any) => {
     setSelectedHotel(hotel);
     setEditHotelModalOpen(true);
+  };
+
+  const handleRoomingList = (hotel: any) => {
+    setSelectedHotel(hotel);
+    setRoomingListModalOpen(true);
   };
 
   const formatTime = (timeString: string) => {
@@ -54,6 +61,15 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
     const ampm = hour24 >= 12 ? 'pm' : 'am';
     return `${hour12}:${minutes}${ampm}`;
+  };
+
+  const calculateNights = (checkIn: string, checkOut: string) => {
+    if (!checkIn || !checkOut) return 0;
+    const checkInDate = new Date(checkIn);
+    const checkOutDate = new Date(checkOut);
+    const diffTime = checkOutDate.getTime() - checkInDate.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
   };
 
   // Transform the database tour data to match the expected interface
@@ -150,44 +166,39 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                     <div className="space-y-1">
                       {transformedTour?.pricing.single > 0 && (
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>Single: {transformedTour.pricing.single}</span>
+                          <span>Single: ${transformedTour.pricing.single}</span>
                         </div>
                       )}
                       {transformedTour?.pricing.double > 0 && (
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>Double: {transformedTour.pricing.double}</span>
+                          <span>Double: ${transformedTour.pricing.double}</span>
                         </div>
                       )}
                       {transformedTour?.pricing.twin > 0 && (
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>Twin: {transformedTour.pricing.twin}</span>
+                          <span>Twin: ${transformedTour.pricing.twin}</span>
                         </div>
                       )}
                       {transformedTour?.deposit > 0 && (
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>Deposit: {transformedTour.deposit}</span>
+                          <span>Deposit: ${transformedTour.deposit}</span>
                         </div>
                       )}
                       {transformedTour?.instalmentAmount > 0 && (
                         <div className="flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-muted-foreground" />
-                          <span>Instalment: {transformedTour.instalmentAmount}</span>
+                          <span>Instalment: ${transformedTour.instalmentAmount}</span>
                         </div>
                       )}
                       {transformedTour?.instalmentDate && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>Instalment Date: {formatDateToDDMMYYYY(transformedTour.instalmentDate)}</span>
+                          <span>Instalment Date: {formatDateToLongFormat(transformedTour.instalmentDate)}</span>
                         </div>
                       )}
                       {transformedTour?.finalPaymentDate && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>Final Payment: {formatDateToDDMMYYYY(transformedTour.finalPaymentDate)}</span>
+                          <span>Final Payment: {formatDateToLongFormat(transformedTour.finalPaymentDate)}</span>
                         </div>
                       )}
                     </div>
@@ -273,7 +284,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           {activity.activity_date && (
                             <div className="flex items-center gap-1">
                               <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span>{formatDisplayDate(activity.activity_date)}</span>
+                              <span>{formatDateToLongFormat(activity.activity_date)}</span>
                             </div>
                           )}
                           {activity.start_time && (
@@ -318,10 +329,31 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               {hotels && hotels.length > 0 ? (
                 <div className="grid gap-4">
                   {hotels.map((hotel) => (
-                    <Card key={hotel.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => handleHotelClick(hotel)}>
+                    <Card key={hotel.id}>
                       <CardHeader>
-                        <CardTitle className="text-base">{hotel.name}</CardTitle>
+                        <div className="flex justify-between items-center">
+                          <CardTitle className="text-base">{hotel.name}</CardTitle>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditHotel(hotel)}
+                              className="flex items-center gap-1"
+                            >
+                              <Edit className="h-3 w-3" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRoomingList(hotel)}
+                              className="flex items-center gap-1"
+                            >
+                              <FileText className="h-3 w-3" />
+                              Rooming List
+                            </Button>
+                          </div>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -343,6 +375,12 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                               <span>Check-out: {formatDateToDDMMYYYY(hotel.default_check_out)}</span>
                             </div>
                           )}
+                          {hotel.default_check_in && hotel.default_check_out && (
+                            <div className="flex items-center gap-1">
+                              <Bed className="h-4 w-4 text-muted-foreground" />
+                              <span>Nights: {calculateNights(hotel.default_check_in, hotel.default_check_out)}</span>
+                            </div>
+                          )}
                           {hotel.default_room_type && (
                             <div className="flex items-center gap-1">
                               <Bed className="h-4 w-4 text-muted-foreground" />
@@ -351,17 +389,16 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           )}
                           {hotel.extra_night_price && (
                             <div className="flex items-center gap-1">
-                              <DollarSign className="h-4 w-4 text-muted-foreground" />
-                              <span>Extra Night: {hotel.extra_night_price}</span>
+                              <span>Extra Night: ${hotel.extra_night_price}</span>
                             </div>
                           )}
                           <div className="flex items-center gap-1">
                             <Bed className="h-4 w-4 text-muted-foreground" />
-                            <span>Booked: {hotel.rooms_booked || 0}</span>
+                            <span>Rooms Reserved: {hotel.rooms_booked || 0}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Bed className="h-4 w-4 text-muted-foreground" />
-                            <span>Available: {hotel.rooms_available || 0}</span>
+                            <span>Rooms Booked: {hotel.rooms_available || 0}</span>
                           </div>
                         </div>
                       </CardContent>
@@ -428,6 +465,15 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           open={editHotelModalOpen}
           onOpenChange={setEditHotelModalOpen}
           hotel={selectedHotel}
+        />
+      )}
+
+      {selectedHotel && (
+        <RoomingListModal
+          open={roomingListModalOpen}
+          onOpenChange={setRoomingListModalOpen}
+          hotel={selectedHotel}
+          tourId={tour?.id || ""}
         />
       )}
 
