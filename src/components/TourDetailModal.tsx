@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +13,7 @@ import { EditHotelModal } from "@/components/EditHotelModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
+import { AddBookingModal } from "@/components/AddBookingModal";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { useActivities, Activity } from "@/hooks/useActivities";
 import { useBookings } from "@/hooks/useBookings";
@@ -71,6 +73,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [showEditBooking, setShowEditBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [showAddBooking, setShowAddBooking] = useState(false);
 
   const { data: hotels = [], isLoading: hotelsLoading } = useHotels(tour?.id || "");
   const { data: activities = [], isLoading: activitiesLoading } = useActivities(tour?.id || "");
@@ -390,6 +393,10 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 <h3 className="text-lg font-semibold">
                   Bookings ({tourBookings.length})
                 </h3>
+                <Button onClick={() => setShowAddBooking(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Booking
+                </Button>
               </div>
               
               {bookingsLoading ? (
@@ -501,6 +508,12 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         booking={selectedBooking} 
         open={showEditBooking} 
         onOpenChange={setShowEditBooking} 
+      />
+
+      <AddBookingModal 
+        open={showAddBooking} 
+        onOpenChange={setShowAddBooking}
+        preSelectedTourId={tour?.id}
       />
     </>
   );

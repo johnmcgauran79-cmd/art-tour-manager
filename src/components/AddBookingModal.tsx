@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +13,10 @@ import { useCreateBooking } from "@/hooks/useBookings";
 interface AddBookingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preSelectedTourId?: string;
 }
 
-export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) => {
+export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBookingModalProps) => {
   const [formData, setFormData] = useState({
     tourId: "",
     leadPassenger: "",
@@ -32,6 +34,12 @@ export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) =>
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
+
+  useEffect(() => {
+    if (preSelectedTourId && open) {
+      setFormData(prev => ({ ...prev, tourId: preSelectedTourId }));
+    }
+  }, [preSelectedTourId, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +60,7 @@ export const AddBookingModal = ({ open, onOpenChange }: AddBookingModalProps) =>
 
     // Reset form and close modal
     setFormData({
-      tourId: "",
+      tourId: preSelectedTourId || "",
       leadPassenger: "",
       leadEmail: "",
       passengers: "2",

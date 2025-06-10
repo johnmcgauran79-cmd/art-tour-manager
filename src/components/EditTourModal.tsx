@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,6 +27,7 @@ interface Tour {
   };
   deposit: number;
   finalPaymentDate: string;
+  totalCapacity: number;
 }
 
 interface EditTourModalProps {
@@ -49,7 +49,8 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
     price_double: "",
     price_twin: "",
     deposit_required: "",
-    final_payment_date: ""
+    final_payment_date: "",
+    capacity: ""
   });
 
   const queryClient = useQueryClient();
@@ -72,6 +73,7 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
           price_twin: tourData.price_twin ? parseFloat(tourData.price_twin) : null,
           deposit_required: tourData.deposit_required ? parseFloat(tourData.deposit_required) : null,
           final_payment_date: tourData.final_payment_date || null,
+          capacity: tourData.capacity ? parseInt(tourData.capacity) : null,
         })
         .eq('id', tour?.id)
         .select()
@@ -112,7 +114,8 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
         price_double: tour.pricing.double?.toString() || "",
         price_twin: tour.pricing.twin?.toString() || "",
         deposit_required: tour.deposit?.toString() || "",
-        final_payment_date: tour.finalPaymentDate
+        final_payment_date: tour.finalPaymentDate,
+        capacity: tour.totalCapacity?.toString() || ""
       });
     }
   }, [tour, open]);
@@ -166,6 +169,17 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="capacity">Max Capacity</Label>
+              <Input
+                id="capacity"
+                type="number"
+                value={formData.capacity}
+                onChange={(e) => handleInputChange("capacity", e.target.value)}
+                placeholder="e.g., 50"
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
               <Label htmlFor="status">Status</Label>
               <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
                 <SelectTrigger>
