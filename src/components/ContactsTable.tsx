@@ -6,10 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Plus, Mail, Phone, MapPin } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
+import { EditContactModal } from "@/components/EditContactModal";
 
 export const ContactsTable = () => {
   const { data: customers, isLoading } = useCustomers();
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showEditContact, setShowEditContact] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+
+  const handleContactClick = (contact: any) => {
+    setSelectedContact(contact);
+    setShowEditContact(true);
+  };
 
   if (isLoading) {
     return <div>Loading contacts...</div>;
@@ -50,11 +58,12 @@ export const ContactsTable = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>First Name</TableHead>
+                  <TableHead>Surname</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Phone</TableHead>
-                  <TableHead>Location</TableHead>
                   <TableHead>Spouse</TableHead>
+                  <TableHead>State</TableHead>
                   <TableHead>Dietary Requirements</TableHead>
                   <TableHead>Notes</TableHead>
                 </TableRow>
@@ -64,9 +73,13 @@ export const ContactsTable = () => {
                   <TableRow 
                     key={customer.id}
                     className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleContactClick(customer)}
                   >
                     <TableCell className="font-medium">
-                      {customer.first_name} {customer.last_name}
+                      {customer.first_name}
+                    </TableCell>
+                    <TableCell>
+                      {customer.last_name}
                     </TableCell>
                     <TableCell>
                       {customer.email ? (
@@ -89,21 +102,10 @@ export const ContactsTable = () => {
                       )}
                     </TableCell>
                     <TableCell>
-                      {customer.city || customer.state || customer.country ? (
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">
-                            {[customer.city, customer.state, customer.country]
-                              .filter(Boolean)
-                              .join(', ')}
-                          </span>
-                        </div>
-                      ) : (
-                        '-'
-                      )}
+                      {customer.spouse_name || '-'}
                     </TableCell>
                     <TableCell>
-                      {customer.spouse_name || '-'}
+                      {customer.state || '-'}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs truncate" title={customer.dietary_requirements || ''}>
@@ -126,6 +128,12 @@ export const ContactsTable = () => {
       <AddContactModal
         open={showAddContact}
         onOpenChange={setShowAddContact}
+      />
+
+      <EditContactModal
+        contact={selectedContact}
+        open={showEditContact}
+        onOpenChange={setShowEditContact}
       />
     </>
   );

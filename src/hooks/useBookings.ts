@@ -85,6 +85,7 @@ export const useCreateBooking = () => {
       tour_id: string;
       lead_passenger_name: string;
       lead_passenger_email: string;
+      lead_passenger_phone?: string;
       passenger_count: number;
       passenger_2_name?: string;
       passenger_3_name?: string;
@@ -110,6 +111,19 @@ export const useCreateBooking = () => {
 
       if (existingCustomer) {
         customerId = existingCustomer.id;
+        
+        // Update the existing customer with any new information
+        const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
+        const lastName = lastNameParts.join(' ') || '';
+
+        await supabase
+          .from('customers')
+          .update({
+            first_name: firstName,
+            last_name: lastName,
+            phone: bookingData.lead_passenger_phone || null,
+          })
+          .eq('id', existingCustomer.id);
       } else {
         const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
         const lastName = lastNameParts.join(' ') || '';
@@ -120,6 +134,7 @@ export const useCreateBooking = () => {
             first_name: firstName,
             last_name: lastName,
             email: bookingData.lead_passenger_email,
+            phone: bookingData.lead_passenger_phone || null,
           }])
           .select()
           .single();
@@ -155,6 +170,7 @@ export const useCreateBooking = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({
         title: "Booking Created",
         description: "Booking has been successfully created.",

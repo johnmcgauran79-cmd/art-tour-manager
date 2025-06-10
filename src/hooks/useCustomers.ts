@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +74,47 @@ export const useCreateCustomer = () => {
       toast({
         title: "Error Creating Contact",
         description: error.message || "Failed to create contact. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateCustomer = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, ...customerData }: Partial<Customer> & { id: string }) => {
+      console.log('Updating customer with data:', { id, customerData });
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .update(customerData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error updating customer:', error);
+        throw error;
+      }
+      
+      console.log('Customer updated successfully:', data);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({
+        title: "Contact Updated",
+        description: `${data.first_name} ${data.last_name} has been successfully updated.`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error in mutation:', error);
+      toast({
+        title: "Error Updating Contact",
+        description: error.message || "Failed to update contact. Please try again.",
         variant: "destructive",
       });
     },
