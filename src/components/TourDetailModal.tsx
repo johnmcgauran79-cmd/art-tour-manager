@@ -370,7 +370,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                     <TableHeader>
                       <TableRow>
                         <TableHead>Lead Passenger</TableHead>
-                        <TableHead>All Passengers</TableHead>
+                        <TableHead>Other Passengers</TableHead>
                         <TableHead>Pax</TableHead>
                         <TableHead>Check In</TableHead>
                         <TableHead>Check Out</TableHead>
@@ -392,7 +392,6 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
-                              <div>{booking.customers?.first_name} {booking.customers?.last_name}</div>
                               {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
                               {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
                               {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}

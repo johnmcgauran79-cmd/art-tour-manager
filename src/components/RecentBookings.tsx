@@ -1,9 +1,12 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Calendar } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Plus, Calendar, Eye } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
+import { AllBookingsModal } from "./AllBookingsModal";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -21,7 +24,13 @@ interface RecentBookingsProps {
 }
 
 export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
+  const [showAllBookings, setShowAllBookings] = useState(false);
   const { data: bookings, isLoading } = useBookings();
+
+  const handleBookingClick = (booking: any) => {
+    console.log('Edit booking:', booking.id);
+    // TODO: Implement booking edit modal
+  };
 
   if (isLoading) {
     return (
@@ -36,62 +45,104 @@ export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
   const recentBookings = (bookings || []).slice(0, 5);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          Recent Bookings
-          <div className="flex items-center gap-2">
-            <Button onClick={onAddBooking} className="bg-green-600 hover:bg-green-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Booking
-            </Button>
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-          </div>
-        </CardTitle>
-        <CardDescription>
-          Latest 5 bookings in the system
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {recentBookings.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No bookings found. Create your first booking to get started!
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {recentBookings.map((booking) => (
-              <div key={booking.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg">
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Recent Bookings
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setShowAllBookings(true)} variant="outline" size="sm">
+                <Eye className="h-4 w-4 mr-2" />
+                View All
+              </Button>
+              <Button onClick={onAddBooking} className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Booking
+              </Button>
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardTitle>
+          <CardDescription>
+            Latest 5 bookings in the system
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentBookings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No bookings found. Create your first booking to get started!
+            </div>
+          ) : (
+            <div className="border rounded-lg">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tour</TableHead>
+                    <TableHead>Lead Passenger</TableHead>
+                    <TableHead>Other Passengers</TableHead>
+                    <TableHead>Pax</TableHead>
+                    <TableHead>Check In</TableHead>
+                    <TableHead>Check Out</TableHead>
+                    <TableHead>Nights</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentBookings.map((booking) => (
+                    <TableRow 
+                      key={booking.id} 
+                      className="cursor-pointer hover:bg-accent/50"
+                      onClick={() => handleBookingClick(booking)}
+                    >
+                      <TableCell>{booking.tours?.name || 'No Tour'}</TableCell>
+                      <TableCell>
                         {booking.customers?.first_name} {booking.customers?.last_name}
-                      </h3>
-                      <Badge className={getStatusColor(booking.status || 'pending')}>
-                        {(booking.status || 'pending').replace("_", " ")}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{booking.passenger_count} passengers</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span>{booking.tours?.name}</span>
-                      </div>
-                      <div className="text-muted-foreground">
-                        {booking.group_name && `Group: ${booking.group_name}`}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
+                          {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
+                          {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}
+                        </div>
+                      </TableCell>
+                      <TableCell>{booking.passenger_count}</TableCell>
+                      <TableCell>
+                        {booking.check_in_date ? 
+                          new Date(booking.check_in_date).toLocaleDateString() : 
+                          'TBD'
+                        }
+                      </TableCell>
+                      <TableCell>
+                        {booking.check_out_date ? 
+                          new Date(booking.check_out_date).toLocaleDateString() : 
+                          'TBD'
+                        }
+                      </TableCell>
+                      <TableCell>{booking.total_nights || '-'}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(booking.status || 'pending')}>
+                          {(booking.status || 'pending').replace("_", " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate" title={booking.extra_requests || ''}>
+                          {booking.extra_requests || '-'}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AllBookingsModal 
+        open={showAllBookings}
+        onOpenChange={setShowAllBookings}
+        onBookingClick={handleBookingClick}
+      />
+    </>
   );
 };

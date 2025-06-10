@@ -16,6 +16,9 @@ export interface Booking {
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
+  check_in_date: string | null;
+  check_out_date: string | null;
+  total_nights: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -35,6 +38,29 @@ export const useBookings = () => {
       
       if (error) throw error;
       return data;
+    },
+  });
+};
+
+export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) => {
+  return useQuery({
+    queryKey: ['bookings', 'paginated', page, pageSize],
+    queryFn: async () => {
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+      
+      const { data, error, count } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          tours (name),
+          customers (first_name, last_name, email)
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(start, end);
+      
+      if (error) throw error;
+      return { data: data || [], count: count || 0 };
     },
   });
 };
