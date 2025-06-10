@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -6,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Building, Calendar, Users, MapPin, Phone, Mail, Edit } from "lucide-react";
+import { Plus, Building, Calendar, Users, MapPin, Phone, Mail, Edit, FileText } from "lucide-react";
 import { EditTourModal } from "@/components/EditTourModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
@@ -14,6 +13,7 @@ import { AddActivityModal } from "@/components/AddActivityModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
+import { RoomingListModal } from "@/components/RoomingListModal";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { useActivities, Activity } from "@/hooks/useActivities";
 import { useBookings } from "@/hooks/useBookings";
@@ -74,6 +74,8 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [showEditBooking, setShowEditBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [showAddBooking, setShowAddBooking] = useState(false);
+  const [showRoomingList, setShowRoomingList] = useState(false);
+  const [selectedHotelForRooming, setSelectedHotelForRooming] = useState<Hotel | null>(null);
 
   const { data: hotels = [], isLoading: hotelsLoading } = useHotels(tour?.id || "");
   const { data: activities = [], isLoading: activitiesLoading } = useActivities(tour?.id || "");
@@ -86,7 +88,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     .filter(booking => booking.tour_id === tour.id)
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  const handleHotelClick = (hotel: Hotel) => {
+  const handleHotelEdit = (hotel: Hotel) => {
     setSelectedHotel(hotel);
     setShowEditHotel(true);
   };
@@ -99,6 +101,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const handleBookingClick = (booking: any) => {
     setSelectedBooking(booking);
     setShowEditBooking(true);
+  };
+
+  const handleRoomingList = (hotel: Hotel) => {
+    setSelectedHotelForRooming(hotel);
+    setShowRoomingList(true);
   };
 
   // Component to display bedding type for each booking
@@ -261,9 +268,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
             <TabsContent value="hotels" className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold cursor-pointer hover:text-blue-600" onClick={() => console.log('Edit hotels')}>
-                  Hotels
-                </h3>
+                <h3 className="text-lg font-semibold">Hotels</h3>
                 <Button onClick={() => setShowAddHotel(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Hotel
@@ -277,19 +282,37 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   <p className="text-muted-foreground">No hotels added yet.</p>
                 ) : (
                   hotels.map((hotel) => (
-                    <Card key={hotel.id} className="cursor-pointer hover:bg-accent/50" onClick={() => handleHotelClick(hotel)}>
+                    <Card key={hotel.id}>
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
                           {hotel.name}
-                          <Badge className={
-                            hotel.booking_status === "paid" ? "bg-green-100 text-green-800" :
-                            hotel.booking_status === "contracted" ? "bg-blue-100 text-blue-800" :
-                            hotel.booking_status === "enquiry_sent" ? "bg-yellow-100 text-yellow-800" :
-                            hotel.booking_status === "cancelled" ? "bg-red-100 text-red-800" :
-                            "bg-gray-100 text-gray-800"
-                          }>
-                            {hotel.booking_status}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              onClick={() => handleRoomingList(hotel)} 
+                              variant="outline" 
+                              size="sm"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Rooming List
+                            </Button>
+                            <Button 
+                              onClick={() => handleHotelEdit(hotel)} 
+                              variant="outline" 
+                              size="sm"
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                            <Badge className={
+                              hotel.booking_status === "paid" ? "bg-green-100 text-green-800" :
+                              hotel.booking_status === "contracted" ? "bg-blue-100 text-blue-800" :
+                              hotel.booking_status === "enquiry_sent" ? "bg-yellow-100 text-yellow-800" :
+                              hotel.booking_status === "cancelled" ? "bg-red-100 text-red-800" :
+                              "bg-gray-100 text-gray-800"
+                            }>
+                              {hotel.booking_status}
+                            </Badge>
+                          </div>
                         </CardTitle>
                         <CardDescription>{hotel.address}</CardDescription>
                       </CardHeader>
@@ -514,6 +537,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         open={showAddBooking} 
         onOpenChange={setShowAddBooking}
         preSelectedTourId={tour?.id}
+      />
+
+      <RoomingListModal
+        hotel={selectedHotelForRooming}
+        tourId={tour.id}
+        open={showRoomingList}
+        onOpenChange={setShowRoomingList}
       />
     </>
   );

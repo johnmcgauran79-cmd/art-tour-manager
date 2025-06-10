@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +21,16 @@ export interface Booking {
   created_at: string;
   updated_at: string;
 }
+
+// Helper function to calculate nights
+const calculateNights = (checkIn: string | null, checkOut: string | null): number | null => {
+  if (!checkIn || !checkOut) return null;
+  const checkInDate = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+  const diffTime = checkOutDate.getTime() - checkInDate.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays > 0 ? diffDays : null;
+};
 
 export const useBookings = () => {
   return useQuery({
@@ -85,6 +94,9 @@ export const useCreateBooking = () => {
       check_in_date?: string;
       check_out_date?: string;
     }) => {
+      // Calculate nights
+      const totalNights = calculateNights(bookingData.check_in_date || null, bookingData.check_out_date || null);
+
       // First, create or find the customer
       let customerId: string;
       
@@ -130,6 +142,7 @@ export const useCreateBooking = () => {
           accommodation_required: bookingData.accommodation_required,
           check_in_date: bookingData.check_in_date,
           check_out_date: bookingData.check_out_date,
+          total_nights: totalNights,
         }])
         .select()
         .single();
@@ -164,9 +177,25 @@ export const useUpdateBooking = () => {
     mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
       console.log('Updating booking with data:', { id, updates });
       
+      // Calculate nights if check-in/out dates are being updated
+      const finalUpdates = { ...updates };
+      if (updates.check_in_date !== undefined || updates.check_out_date !== undefined) {
+        // Get current booking data to ensure we have both dates
+        const { data: currentBooking } = await supabase
+          .from('bookings')
+          .select('check_in_date, check_out_date')
+          .eq('id', id)
+          .single();
+        
+        const checkInDate = updates.check_in_date !== undefined ? updates.check_in_date : currentBooking?.check_in_date;
+        const checkOutDate = updates.check_out_date !== undefined ? updates.check_out_date : currentBooking?.check_out_date;
+        
+        finalUpdates.total_nights = calculateNights(checkInDate, checkOutDate);
+      }
+      
       const { data, error } = await supabase
         .from('bookings')
-        .update(updates)
+        .update(finalUpdates)
         .eq('id', id)
         .select()
         .single();
