@@ -227,6 +227,17 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="pax_attending">Pax Attending (Read Only)</Label>
+              <Input
+                id="pax_attending"
+                type="number"
+                value={activity?.spots_booked || 0}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="start_time">Start Time</Label>
               <Input
                 id="start_time"
