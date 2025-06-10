@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Building, Calendar, Users, MapPin, Phone, Mail, Edit } from "lucide-react";
 import { EditTourModal } from "@/components/EditTourModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -13,6 +13,7 @@ import { AddActivityModal } from "@/components/AddActivityModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { useActivities, Activity } from "@/hooks/useActivities";
+import { useBookings } from "@/hooks/useBookings";
 
 interface Tour {
   id: string;
@@ -46,30 +47,16 @@ interface TourDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const mockBookings = [
-  {
-    id: "1",
-    leadPassenger: "John Smith",
-    secondPassenger: "Mary Smith",
-    passengers: 2,
-    checkIn: "Nov 2, 2024",
-    checkOut: "Nov 8, 2024",
-    nights: 6,
-    status: "confirmed",
-    notes: "Anniversary celebration"
-  },
-  {
-    id: "2",
-    leadPassenger: "David Wilson",
-    secondPassenger: "Sarah Wilson",
-    passengers: 2,
-    checkIn: "Nov 2, 2024",
-    checkOut: "Nov 8, 2024",
-    nights: 6,
-    status: "deposited",
-    notes: "Dietary requirements: Vegetarian"
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "paid": return "bg-green-100 text-green-800";
+    case "deposited": return "bg-blue-100 text-blue-800";
+    case "invoiced": return "bg-yellow-100 text-yellow-800";
+    case "pending": return "bg-gray-100 text-gray-800";
+    case "cancelled": return "bg-red-100 text-red-800";
+    default: return "bg-gray-100 text-gray-800";
   }
-];
+};
 
 export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalProps) => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -83,8 +70,14 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
   const { data: hotels = [], isLoading: hotelsLoading } = useHotels(tour?.id || "");
   const { data: activities = [], isLoading: activitiesLoading } = useActivities(tour?.id || "");
+  const { data: allBookings = [], isLoading: bookingsLoading } = useBookings();
 
   if (!tour) return null;
+
+  // Filter bookings for this tour and sort by created date
+  const tourBookings = allBookings
+    .filter(booking => booking.tour_id === tour.id)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
   const handleHotelClick = (hotel: Hotel) => {
     setSelectedHotel(hotel);
@@ -94,6 +87,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const handleActivityClick = (activity: Activity) => {
     setSelectedActivity(activity);
     setShowEditActivity(true);
+  };
+
+  const handleBookingClick = (booking: any) => {
+    console.log('Edit booking:', booking.id);
+    // TODO: Implement booking edit modal
   };
 
   return (
@@ -357,44 +355,83 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
             <TabsContent value="bookings" className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold cursor-pointer hover:text-blue-600" onClick={() => console.log('Edit bookings')}>
-                  Bookings
+                <h3 className="text-lg font-semibold">
+                  Bookings ({tourBookings.length})
                 </h3>
               </div>
               
-              <div className="space-y-4">
-                {mockBookings.map((booking) => (
-                  <Card key={booking.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit booking:', booking.id)}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        {booking.leadPassenger}
-                        <Badge className={booking.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}>
-                          {booking.status}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription>
-                        {booking.passengers} passengers • {booking.nights} nights
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium">Second Passenger:</span> {booking.secondPassenger}
-                        </div>
-                        <div>
-                          <span className="font-medium">Check-in:</span> {booking.checkIn}
-                        </div>
-                        <div>
-                          <span className="font-medium">Check-out:</span> {booking.checkOut}
-                        </div>
-                      </div>
-                      {booking.notes && (
-                        <p className="text-sm text-muted-foreground mt-2">{booking.notes}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              {bookingsLoading ? (
+                <p>Loading bookings...</p>
+              ) : tourBookings.length === 0 ? (
+                <p className="text-muted-foreground">No bookings found for this tour.</p>
+              ) : (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Lead Passenger</TableHead>
+                        <TableHead>All Passengers</TableHead>
+                        <TableHead>Pax</TableHead>
+                        <TableHead>Check In</TableHead>
+                        <TableHead>Check Out</TableHead>
+                        <TableHead>Nights</TableHead>
+                        <TableHead>Bedding</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tourBookings.map((booking) => (
+                        <TableRow 
+                          key={booking.id} 
+                          className="cursor-pointer hover:bg-accent/50"
+                          onClick={() => handleBookingClick(booking)}
+                        >
+                          <TableCell>
+                            {booking.customers?.first_name} {booking.customers?.last_name}
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div>{booking.customers?.first_name} {booking.customers?.last_name}</div>
+                              {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
+                              {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
+                              {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}
+                            </div>
+                          </TableCell>
+                          <TableCell>{booking.passenger_count}</TableCell>
+                          <TableCell>
+                            {booking.check_in_date ? 
+                              new Date(booking.check_in_date).toLocaleDateString() : 
+                              'TBD'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {booking.check_out_date ? 
+                              new Date(booking.check_out_date).toLocaleDateString() : 
+                              'TBD'
+                            }
+                          </TableCell>
+                          <TableCell>{booking.total_nights || '-'}</TableCell>
+                          <TableCell>
+                            {/* TODO: Get bedding type from hotel_bookings */}
+                            Double
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(booking.status || 'pending')}>
+                              {(booking.status || 'pending').replace("_", " ")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="max-w-xs truncate" title={booking.extra_requests || ''}>
+                              {booking.extra_requests || '-'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </DialogContent>
