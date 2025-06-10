@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -314,7 +315,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                 <Button 
                   type="submit" 
                   disabled={createBooking.isPending}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                 >
                   {createBooking.isPending ? "Creating..." : "Create Booking"}
                 </Button>
@@ -342,7 +343,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   </Button>
                   <Button 
                     onClick={() => setActiveTab("activities")}
-                    className="bg-slate-900 hover:bg-slate-800 text-white"
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                   >
                     Next: Activities
                   </Button>
@@ -369,7 +370,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   </Button>
                   <Button 
                     onClick={handleClose}
-                    className="bg-slate-900 hover:bg-slate-800 text-white"
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                   >
                     Complete Booking
                   </Button>

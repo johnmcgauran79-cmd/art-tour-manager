@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -252,7 +253,11 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createHotel.isPending}>
+            <Button 
+              type="submit" 
+              disabled={createHotel.isPending}
+              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            >
               {createHotel.isPending ? "Adding..." : "Add Hotel"}
             </Button>
           </div>

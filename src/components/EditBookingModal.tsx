@@ -263,7 +263,11 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={updateBooking.isPending}>
+                  <Button 
+                    type="submit" 
+                    disabled={updateBooking.isPending}
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                  >
                     {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
                   </Button>
                 </div>

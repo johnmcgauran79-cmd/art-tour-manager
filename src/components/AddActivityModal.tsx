@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -362,7 +363,11 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={createActivity.isPending}>
+            <Button 
+              type="submit" 
+              disabled={createActivity.isPending}
+              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            >
               {createActivity.isPending ? "Adding..." : "Add Activity"}
             </Button>
           </div>
