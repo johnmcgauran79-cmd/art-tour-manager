@@ -4,8 +4,7 @@ import { useActivities } from "@/hooks/useActivities";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
 interface ActivityAllocationSectionProps {
@@ -27,6 +26,7 @@ export const ActivityAllocationSection = ({
   } = useActivityBookings(bookingId);
   
   const [allocations, setAllocations] = useState<Record<string, number>>({});
+  const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export const ActivityAllocationSection = ({
       
       setAllocations(initialAllocations);
     }
-  }, [activities, activityBookings, passengerCount]);
+  }, [activities, activityBookings]);
 
   const handleAllocationChange = (activityId: string, value: string) => {
     const numValue = Math.max(0, parseInt(value) || 0);
@@ -51,13 +51,15 @@ export const ActivityAllocationSection = ({
     const passengers = allocations[activityId] || 0;
     const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
 
+    setSavingActivity(activityId);
+
     try {
       if (existingBooking) {
         await updateActivityBooking.mutateAsync({
           id: existingBooking.id,
           passengers_attending: passengers
         });
-      } else {
+      } else if (passengers > 0) {
         await createActivityBooking.mutateAsync({
           booking_id: bookingId,
           activity_id: activityId,
@@ -70,11 +72,14 @@ export const ActivityAllocationSection = ({
         description: "Activity allocation updated successfully.",
       });
     } catch (error) {
+      console.error('Activity booking error:', error);
       toast({
         title: "Error",
         description: "Failed to update activity allocation.",
         variant: "destructive",
       });
+    } finally {
+      setSavingActivity(null);
     }
   };
 
@@ -90,56 +95,52 @@ export const ActivityAllocationSection = ({
     <div className="space-y-4">
       <div className="mb-4">
         <h3 className="text-lg font-semibold">Activity Allocations</h3>
-        <p className="text-sm text-muted-foreground">
-          Allocate passengers to activities (Booking has {passengerCount} passengers, but you can invite additional guests)
-        </p>
       </div>
 
-      {activities.map((activity) => (
-        <Card key={activity.id}>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">{activity.name}</CardTitle>
-            {activity.location && (
-              <p className="text-sm text-muted-foreground">{activity.location}</p>
-            )}
-            {activity.activity_date && (
-              <p className="text-sm text-muted-foreground">
-                Date: {new Date(activity.activity_date).toLocaleDateString()}
-              </p>
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="flex-1">
-                <Label htmlFor={`activity-${activity.id}`} className="text-sm">
-                  Passengers Attending
-                </Label>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Activity Name</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>Location</TableHead>
+            <TableHead className="w-32">Pax Attending</TableHead>
+            <TableHead className="w-20">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {activities.map((activity) => (
+            <TableRow key={activity.id}>
+              <TableCell className="font-medium">{activity.name}</TableCell>
+              <TableCell>
+                {activity.activity_date 
+                  ? new Date(activity.activity_date).toLocaleDateString()
+                  : 'TBD'
+                }
+              </TableCell>
+              <TableCell>{activity.location || 'TBD'}</TableCell>
+              <TableCell>
                 <Input
-                  id={`activity-${activity.id}`}
                   type="number"
                   min="0"
                   value={allocations[activity.id] || 0}
                   onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
                   className="w-20"
                 />
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                <span>Available: {activity.spots_available || 0}</span><br />
-                <span>Total Booked: {activity.spots_booked || 0}</span>
-              </div>
-              
-              <Button
-                onClick={() => handleSaveAllocation(activity.id)}
-                disabled={createActivityBooking.isPending || updateActivityBooking.isPending}
-                className="bg-slate-900 hover:bg-slate-800 text-white"
-              >
-                {createActivityBooking.isPending || updateActivityBooking.isPending ? "Saving..." : "Save"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              </TableCell>
+              <TableCell>
+                <Button
+                  onClick={() => handleSaveAllocation(activity.id)}
+                  disabled={savingActivity === activity.id}
+                  size="sm"
+                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                >
+                  {savingActivity === activity.id ? "..." : "Save"}
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };

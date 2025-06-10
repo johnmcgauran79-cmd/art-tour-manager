@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -134,7 +133,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                     type="number"
                     min="1"
                     value={formData.passenger_count}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_count: parseInt(e.target.value) }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_count: parseInt(e.target.value) || 1 }))}
                   />
                 </div>
                 <div>
