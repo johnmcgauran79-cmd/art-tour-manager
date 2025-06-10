@@ -1,10 +1,11 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface TourActivitiesTabProps {
@@ -15,6 +16,46 @@ interface TourActivitiesTabProps {
 
 export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: TourActivitiesTabProps) => {
   const { data: activities } = useActivities(tourId);
+  const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (activities && activities.length > 0) {
+      fetchPaxAttendingForActivities();
+    }
+  }, [activities]);
+
+  const fetchPaxAttendingForActivities = async () => {
+    if (!activities) return;
+
+    const activityIds = activities.map(activity => activity.id);
+    
+    const { data, error } = await supabase
+      .from('activity_bookings')
+      .select(`
+        activity_id,
+        passengers_attending,
+        bookings!inner(status)
+      `)
+      .in('activity_id', activityIds)
+      .neq('bookings.status', 'cancelled');
+
+    if (error) {
+      console.error('Error fetching pax attending data:', error);
+      return;
+    }
+
+    // Group by activity_id and sum passengers_attending
+    const paxData: Record<string, number> = {};
+    data.forEach(booking => {
+      const activityId = booking.activity_id;
+      if (!paxData[activityId]) {
+        paxData[activityId] = 0;
+      }
+      paxData[activityId] += booking.passengers_attending || 0;
+    });
+
+    setPaxAttendingData(paxData);
+  };
 
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
@@ -66,10 +107,10 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                   <TableCell>
                     {activity.start_time ? formatTime(activity.start_time) : '-'}
                   </TableCell>
-                  <TableCell>{activity.spots_booked || 0}</TableCell>
+                  <TableCell>{activity.spots_available || 0}</TableCell>
                   <TableCell>
                     <span className="text-muted-foreground">
-                      {activity.spots_booked || 0}
+                      {paxAttendingData[activity.id] || 0}
                     </span>
                   </TableCell>
                   <TableCell>

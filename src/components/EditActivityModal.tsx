@@ -44,6 +44,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     transport_notes: ""
   });
 
+  const [paxAttending, setPaxAttending] = useState(0);
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -60,7 +62,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         pickup_location: activity.pickup_location || "",
         collection_location: activity.collection_location || "",
         dropoff_location: activity.dropoff_location || "",
-        spots_booked: activity.spots_booked?.toString() || "",
+        spots_booked: activity.spots_available?.toString() || "",
         activity_status: activity.activity_status || "pending",
         transport_status: activity.transport_status || "pending",
         guide_name: activity.guide_name || "",
@@ -75,8 +77,30 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         operations_notes: activity.operations_notes || "",
         transport_notes: activity.transport_notes || ""
       });
+
+      // Fetch the actual pax attending from activity_bookings
+      fetchPaxAttending(activity.id);
     }
   }, [activity]);
+
+  const fetchPaxAttending = async (activityId: string) => {
+    const { data, error } = await supabase
+      .from('activity_bookings')
+      .select(`
+        passengers_attending,
+        bookings!inner(status)
+      `)
+      .eq('activity_id', activityId)
+      .neq('bookings.status', 'cancelled');
+
+    if (error) {
+      console.error('Error fetching pax attending:', error);
+      setPaxAttending(0);
+    } else {
+      const total = data.reduce((sum, booking) => sum + (booking.passengers_attending || 0), 0);
+      setPaxAttending(total);
+    }
+  };
 
   const updateActivity = useMutation({
     mutationFn: async (activityData: any) => {
@@ -93,7 +117,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           pickup_location: activityData.pickup_location || null,
           collection_location: activityData.collection_location || null,
           dropoff_location: activityData.dropoff_location || null,
-          spots_booked: activityData.spots_booked ? parseInt(activityData.spots_booked) : 0,
+          spots_available: activityData.spots_available ? parseInt(activityData.spots_available) : 0,
           activity_status: activityData.activity_status,
           transport_status: activityData.transport_status,
           guide_name: activityData.guide_name || null,
@@ -162,7 +186,10 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updateActivity.mutate(formData);
+    updateActivity.mutate({
+      ...formData,
+      spots_available: formData.spots_booked ? parseInt(formData.spots_booked) : 0
+    });
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -176,9 +203,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
   };
 
   if (!activity) return null;
-
-  // Calculate pax attending from the activity data (this comes from the database calculation)
-  const paxAttending = activity.spots_booked || 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
