@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/utils";
+import { Trash2 } from "lucide-react";
 
 interface Tour {
   id: string;
@@ -128,6 +130,33 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
     },
   });
 
+  const deleteTour = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('tours')
+        .delete()
+        .eq('id', tour?.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      toast({
+        title: "Tour Deleted",
+        description: "Tour has been successfully deleted.",
+      });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete tour. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error deleting tour:', error);
+    },
+  });
+
   useEffect(() => {
     if (tour && open) {
       setFormData({
@@ -162,6 +191,10 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleDelete = () => {
+    deleteTour.mutate();
   };
 
   if (!tour) return null;
@@ -374,17 +407,49 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={updateTour.isPending}
-              className="bg-slate-900 hover:bg-slate-800 text-white"
-            >
-              {updateTour.isPending ? "Updating..." : "Update Tour"}
-            </Button>
+          <div className="flex justify-between gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  type="button" 
+                  variant="destructive"
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Tour
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to delete this tour?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the tour "{tour.name}" and all associated data including bookings, activities, and hotels.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Tour
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={updateTour.isPending}
+                className="bg-slate-900 hover:bg-slate-800 text-white"
+              >
+                {updateTour.isPending ? "Updating..." : "Update Tour"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

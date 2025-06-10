@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateTour } from "@/hooks/useTours";
+import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 
 interface AddTourModalProps {
   open: boolean;
@@ -35,6 +36,9 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     final_payment_date: "",
     capacity: "50"
   });
+  
+  const [createdTour, setCreatedTour] = useState<any>(null);
+  const [showTourDetail, setShowTourDetail] = useState(false);
 
   const createTour = useCreateTour();
 
@@ -70,7 +74,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         return;
       }
 
-      await createTour.mutateAsync({
+      const newTour = await createTour.mutateAsync({
         name: formData.name,
         tour_host: formData.tour_host,
         start_date: formData.start_date,
@@ -94,7 +98,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: formData.capacity ? parseInt(formData.capacity) : 50,
       });
 
-      // Reset form and close modal on success
+      // Reset form
       setFormData({
         name: "",
         tour_host: "",
@@ -117,6 +121,10 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         final_payment_date: "",
         capacity: "50"
       });
+      
+      // Set the created tour and show detail modal with hotels tab
+      setCreatedTour(newTour);
+      setShowTourDetail(true);
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating tour:', error);
@@ -128,268 +136,282 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Add New Tour</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Tour</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Tour Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
+                  placeholder="e.g., Melbourne Cup Carnival 2024"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tour_host">Tour Host *</Label>
+                <Input
+                  id="tour_host"
+                  value={formData.tour_host}
+                  onChange={(e) => handleInputChange("tour_host", e.target.value)}
+                  placeholder="e.g., John Smith"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => handleInputChange("location", e.target.value)}
+                  placeholder="e.g., Melbourne, VIC"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="start_date">Start Date *</Label>
+                <Input
+                  id="start_date"
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => handleInputChange("start_date", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="end_date">End Date *</Label>
+                <Input
+                  id="end_date"
+                  type="date"
+                  value={formData.end_date}
+                  onChange={(e) => handleInputChange("end_date", e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="days">Days (Auto-calculated)</Label>
+                <Input
+                  id="days"
+                  type="number"
+                  min="1"
+                  value={formData.days}
+                  onChange={(e) => handleInputChange("days", e.target.value)}
+                  placeholder="Auto-calculated from dates"
+                  readOnly
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="nights">Nights (Auto-calculated)</Label>
+                <Input
+                  id="nights"
+                  type="number"
+                  min="0"
+                  value={formData.nights}
+                  onChange={(e) => handleInputChange("nights", e.target.value)}
+                  placeholder="Auto-calculated from dates"
+                  readOnly
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pickup_point">Starting Location</Label>
+                <Input
+                  id="pickup_point"
+                  value={formData.pickup_point}
+                  onChange={(e) => handleInputChange("pickup_point", e.target.value)}
+                  placeholder="e.g., Sydney Airport"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capacity">Tour Capacity</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  min="1"
+                  value={formData.capacity}
+                  onChange={(e) => handleInputChange("capacity", e.target.value)}
+                  placeholder="e.g., 50"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="sold_out">Sold Out</SelectItem>
+                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="past">Past</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="price_single">Single Price ($)</Label>
+                <Input
+                  id="price_single"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price_single}
+                  onChange={(e) => handleInputChange("price_single", e.target.value)}
+                  placeholder="e.g., 2500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price_double">Double Price ($)</Label>
+                <Input
+                  id="price_double"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price_double}
+                  onChange={(e) => handleInputChange("price_double", e.target.value)}
+                  placeholder="e.g., 2000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="price_twin">Twin Price ($)</Label>
+                <Input
+                  id="price_twin"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price_twin}
+                  onChange={(e) => handleInputChange("price_twin", e.target.value)}
+                  placeholder="e.g., 2000"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="deposit_required">Deposit Required ($)</Label>
+                <Input
+                  id="deposit_required"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.deposit_required}
+                  onChange={(e) => handleInputChange("deposit_required", e.target.value)}
+                  placeholder="e.g., 500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
+                <Input
+                  id="instalment_amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.instalment_amount}
+                  onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
+                  placeholder="e.g., 1000"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="instalment_date">Instalment Due Date</Label>
+                <Input
+                  id="instalment_date"
+                  type="date"
+                  value={formData.instalment_date}
+                  onChange={(e) => handleInputChange("instalment_date", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="final_payment_date">Final Payment Date</Label>
+                <Input
+                  id="final_payment_date"
+                  type="date"
+                  value={formData.final_payment_date}
+                  onChange={(e) => handleInputChange("final_payment_date", e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="name">Tour Name *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="e.g., Melbourne Cup Carnival 2024"
-                required
+              <Label htmlFor="inclusions">Inclusions</Label>
+              <Textarea
+                id="inclusions"
+                value={formData.inclusions}
+                onChange={(e) => handleInputChange("inclusions", e.target.value)}
+                placeholder="List what's included in the tour package..."
+                rows={3}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tour_host">Tour Host *</Label>
-              <Input
-                id="tour_host"
-                value={formData.tour_host}
-                onChange={(e) => handleInputChange("tour_host", e.target.value)}
-                placeholder="e.g., John Smith"
-                required
+              <Label htmlFor="exclusions">Exclusions</Label>
+              <Textarea
+                id="exclusions"
+                value={formData.exclusions}
+                onChange={(e) => handleInputChange("exclusions", e.target.value)}
+                placeholder="List what's not included in the tour package..."
+                rows={3}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => handleInputChange("location", e.target.value)}
-                placeholder="e.g., Melbourne, VIC"
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder="Additional notes about the tour..."
+                rows={3}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date *</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={formData.start_date}
-                onChange={(e) => handleInputChange("start_date", e.target.value)}
-                required
-              />
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createTour.isPending}>
+                {createTour.isPending ? "Creating..." : "Create Tour & Add Hotels"}
+              </Button>
             </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-            <div className="space-y-2">
-              <Label htmlFor="end_date">End Date *</Label>
-              <Input
-                id="end_date"
-                type="date"
-                value={formData.end_date}
-                onChange={(e) => handleInputChange("end_date", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="days">Days (Auto-calculated)</Label>
-              <Input
-                id="days"
-                type="number"
-                min="1"
-                value={formData.days}
-                onChange={(e) => handleInputChange("days", e.target.value)}
-                placeholder="Auto-calculated from dates"
-                readOnly
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="nights">Nights (Auto-calculated)</Label>
-              <Input
-                id="nights"
-                type="number"
-                min="0"
-                value={formData.nights}
-                onChange={(e) => handleInputChange("nights", e.target.value)}
-                placeholder="Auto-calculated from dates"
-                readOnly
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pickup_point">Starting Location</Label>
-              <Input
-                id="pickup_point"
-                value={formData.pickup_point}
-                onChange={(e) => handleInputChange("pickup_point", e.target.value)}
-                placeholder="e.g., Sydney Airport"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="capacity">Tour Capacity</Label>
-              <Input
-                id="capacity"
-                type="number"
-                min="1"
-                value={formData.capacity}
-                onChange={(e) => handleInputChange("capacity", e.target.value)}
-                placeholder="e.g., 50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="sold_out">Sold Out</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                  <SelectItem value="past">Past</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price_single">Single Price ($)</Label>
-              <Input
-                id="price_single"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price_single}
-                onChange={(e) => handleInputChange("price_single", e.target.value)}
-                placeholder="e.g., 2500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price_double">Double Price ($)</Label>
-              <Input
-                id="price_double"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price_double}
-                onChange={(e) => handleInputChange("price_double", e.target.value)}
-                placeholder="e.g., 2000"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="price_twin">Twin Price ($)</Label>
-              <Input
-                id="price_twin"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.price_twin}
-                onChange={(e) => handleInputChange("price_twin", e.target.value)}
-                placeholder="e.g., 2000"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="deposit_required">Deposit Required ($)</Label>
-              <Input
-                id="deposit_required"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.deposit_required}
-                onChange={(e) => handleInputChange("deposit_required", e.target.value)}
-                placeholder="e.g., 500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
-              <Input
-                id="instalment_amount"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.instalment_amount}
-                onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
-                placeholder="e.g., 1000"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="instalment_date">Instalment Due Date</Label>
-              <Input
-                id="instalment_date"
-                type="date"
-                value={formData.instalment_date}
-                onChange={(e) => handleInputChange("instalment_date", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="final_payment_date">Final Payment Date</Label>
-              <Input
-                id="final_payment_date"
-                type="date"
-                value={formData.final_payment_date}
-                onChange={(e) => handleInputChange("final_payment_date", e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="inclusions">Inclusions</Label>
-            <Textarea
-              id="inclusions"
-              value={formData.inclusions}
-              onChange={(e) => handleInputChange("inclusions", e.target.value)}
-              placeholder="List what's included in the tour package..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="exclusions">Exclusions</Label>
-            <Textarea
-              id="exclusions"
-              value={formData.exclusions}
-              onChange={(e) => handleInputChange("exclusions", e.target.value)}
-              placeholder="List what's not included in the tour package..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
-              placeholder="Additional notes about the tour..."
-              rows={3}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createTour.isPending}>
-              {createTour.isPending ? "Creating..." : "Create Tour"}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+      <TourDetailModalWithHotelsTab
+        tour={createdTour}
+        open={showTourDetail}
+        onOpenChange={(open) => {
+          setShowTourDetail(open);
+          if (!open) {
+            setCreatedTour(null);
+          }
+        }}
+        defaultTab="hotels"
+      />
+    </>
   );
 };

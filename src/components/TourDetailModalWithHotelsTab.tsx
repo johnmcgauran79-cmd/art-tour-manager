@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -18,13 +18,19 @@ import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { Tour } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
 
-interface TourDetailModalProps {
+interface TourDetailModalWithHotelsTabProps {
   tour: Tour | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTab?: string;
 }
 
-export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalProps) => {
+export const TourDetailModalWithHotelsTab = ({ 
+  tour, 
+  open, 
+  onOpenChange, 
+  defaultTab = "overview" 
+}: TourDetailModalWithHotelsTabProps) => {
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [addActivityModalOpen, setAddActivityModalOpen] = useState(false);
   const [addHotelModalOpen, setAddHotelModalOpen] = useState(false);
@@ -96,7 +102,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="hotels">Hotels</TabsTrigger>
