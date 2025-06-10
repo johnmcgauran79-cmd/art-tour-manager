@@ -37,7 +37,8 @@ const transformTourForModal = (tour: Tour, passengersBooked: number) => ({
   pickupPoint: tour.pickup_point || 'TBD',
   status: tour.status || 'pending',
   passengersBooked,
-  totalCapacity: 50, // Default capacity - you may want to add this to your database
+  totalCapacity: tour.capacity || 50,
+  roomsAvailable: 0,
   notes: tour.notes || '',
   inclusions: tour.inclusions || '',
   exclusions: tour.exclusions || '',
@@ -49,6 +50,8 @@ const transformTourForModal = (tour: Tour, passengersBooked: number) => ({
   deposit: tour.deposit_required || 0,
   finalPaymentDate: tour.final_payment_date || '',
   instalmentDetails: tour.instalment_details || '',
+  days: tour.days,
+  nights: tour.nights,
 });
 
 export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
@@ -105,7 +108,8 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
             <div className="space-y-4">
               {displayTours.map((tour) => {
                 const { passengersBooked } = getBookingStats(tour.id);
-                const duration = `${tour.days} days, ${tour.nights} nights`;
+                const tourCapacity = tour.capacity || 50;
+                const spotsRemaining = tourCapacity - passengersBooked;
                 
                 return (
                   <div key={tour.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
@@ -123,10 +127,14 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
                           </Badge>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span>{formatDateRange(tour.start_date, tour.end_date)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <span>{tour.days} days, {tour.nights} nights</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -137,8 +145,8 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
                             <span>{passengersBooked} passengers booked</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Building className="h-4 w-4 text-muted-foreground" />
-                            <span>{duration}</span>
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <span>{spotsRemaining} spots remaining</span>
                           </div>
                         </div>
 

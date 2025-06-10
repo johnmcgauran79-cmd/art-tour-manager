@@ -436,6 +436,7 @@ export type Database = {
       }
       tours: {
         Row: {
+          capacity: number | null
           created_at: string | null
           days: number
           deposit_required: number | null
@@ -458,6 +459,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          capacity?: number | null
           created_at?: string | null
           days: number
           deposit_required?: number | null
@@ -480,6 +482,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          capacity?: number | null
           created_at?: string | null
           days?: number
           deposit_required?: number | null

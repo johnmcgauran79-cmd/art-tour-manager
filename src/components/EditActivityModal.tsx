@@ -328,6 +328,58 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             </div>
           </div>
 
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Transport Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="pickup_time">Pick Up Time</Label>
+                <Input
+                  id="pickup_time"
+                  type="time"
+                  value={formData.pickup_time}
+                  onChange={(e) => handleInputChange("pickup_time", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="collection_time">Collection Time</Label>
+                <Input
+                  id="collection_time"
+                  type="time"
+                  value={formData.collection_time}
+                  onChange={(e) => handleInputChange("collection_time", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pickup_location">Pick Up Location</Label>
+                <Input
+                  id="pickup_location"
+                  value={formData.pickup_location}
+                  onChange={(e) => handleInputChange("pickup_location", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="collection_location">Collection Location</Label>
+                <Input
+                  id="collection_location"
+                  value={formData.collection_location}
+                  onChange={(e) => handleInputChange("collection_location", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="dropoff_location">Drop Off Location</Label>
+                <Input
+                  id="dropoff_location"
+                  value={formData.dropoff_location}
+                  onChange={(e) => handleInputChange("dropoff_location", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="hospitality_inclusions">Hospitality Inclusions</Label>
             <Textarea

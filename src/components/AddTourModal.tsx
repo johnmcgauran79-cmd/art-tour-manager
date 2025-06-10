@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     price_double: "",
     price_twin: "",
     deposit_required: "",
-    final_payment_date: ""
+    final_payment_date: "",
+    capacity: "50"
   });
 
   const createTour = useCreateTour();
@@ -84,6 +86,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
         instalment_details: null,
         final_payment_date: formData.final_payment_date || null,
+        capacity: formData.capacity ? parseInt(formData.capacity) : 50,
       });
 
       // Reset form and close modal on success
@@ -103,7 +106,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         price_double: "",
         price_twin: "",
         deposit_required: "",
-        final_payment_date: ""
+        final_payment_date: "",
+        capacity: "50"
       });
       onOpenChange(false);
     } catch (error) {
@@ -195,12 +199,24 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pickup_point">Pickup Point</Label>
+              <Label htmlFor="pickup_point">Starting Location</Label>
               <Input
                 id="pickup_point"
                 value={formData.pickup_point}
                 onChange={(e) => handleInputChange("pickup_point", e.target.value)}
                 placeholder="e.g., Sydney Airport"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="capacity">Tour Capacity</Label>
+              <Input
+                id="capacity"
+                type="number"
+                min="1"
+                value={formData.capacity}
+                onChange={(e) => handleInputChange("capacity", e.target.value)}
+                placeholder="e.g., 50"
               />
             </div>
 

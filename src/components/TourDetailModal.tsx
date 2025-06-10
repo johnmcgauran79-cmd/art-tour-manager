@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -35,6 +36,8 @@ interface Tour {
   deposit: number;
   finalPaymentDate: string;
   instalmentDetails: string;
+  days: number;
+  nights: number;
 }
 
 interface TourDetailModalProps {
@@ -127,6 +130,10 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                       <span>{tour.dates}</span>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-muted-foreground" />
+                      <span>{tour.days} days, {tour.nights} nights</span>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
                       <span>{tour.location}</span>
                     </div>
@@ -167,6 +174,18 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                       <div className="flex justify-between font-semibold">
                         <span>Deposit Required:</span>
                         <span>${tour.deposit}</span>
+                      </div>
+                    )}
+                    {tour.instalmentDetails && (
+                      <div className="flex justify-between">
+                        <span>Instalment Due:</span>
+                        <span>{tour.instalmentDetails}</span>
+                      </div>
+                    )}
+                    {tour.finalPaymentDate && (
+                      <div className="flex justify-between">
+                        <span>Due Date:</span>
+                        <span>{tour.finalPaymentDate}</span>
                       </div>
                     )}
                   </CardContent>
