@@ -26,10 +26,10 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
   const filteredTours = tours?.filter(tour => {
     if (!showOnlyActive) return true;
     
-    // Active tours are not cancelled and have start date in the future
+    // Active tours are not past and have start date in the future
     const today = new Date();
     const startDate = new Date(tour.start_date);
-    return tour.status !== 'cancelled' && startDate > today;
+    return tour.status !== 'past' && startDate > today;
   }) || [];
 
   // Calculate total passengers attending for each tour
@@ -68,7 +68,7 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
               <CardTitle>{showOnlyActive ? 'Active Tours' : 'All Tours'}</CardTitle>
               <CardDescription>
                 {showOnlyActive 
-                  ? 'Tours that are not cancelled and have start dates in the future'
+                  ? 'Tours that are not past and have start dates in the future'
                   : 'Complete list of all tours'
                 }
               </CardDescription>

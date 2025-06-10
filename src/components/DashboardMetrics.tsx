@@ -20,10 +20,10 @@ export const DashboardMetrics = () => {
            booking.status !== 'cancelled';
   }).length || 0;
 
-  // Active tours are not cancelled and have start date in the future
+  // Active tours are not past and have start date in the future
   const activeTours = tours?.filter(tour => {
     const startDate = new Date(tour.start_date);
-    return tour.status !== 'cancelled' && startDate > today;
+    return tour.status !== 'past' && startDate > today;
   }).length || 0;
 
   const totalPassengers = bookings?.filter(b => b.status !== 'cancelled')
@@ -75,7 +75,7 @@ export const DashboardMetrics = () => {
         <CardContent>
           <div className="text-2xl font-bold">{activeTours}</div>
           <p className="text-xs text-muted-foreground">
-            Not cancelled with future start dates
+            Not past with future start dates
           </p>
         </CardContent>
       </Card>

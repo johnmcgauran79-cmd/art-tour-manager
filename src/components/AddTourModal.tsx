@@ -15,6 +15,7 @@ interface AddTourModalProps {
 export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
+    tour_host: "",
     start_date: "",
     end_date: "",
     days: "",
@@ -64,13 +65,14 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
       console.log('Form data being submitted:', formData);
       
       // Validate required fields
-      if (!formData.name || !formData.start_date || !formData.end_date || !formData.days || !formData.nights) {
+      if (!formData.name || !formData.tour_host || !formData.start_date || !formData.end_date || !formData.days || !formData.nights) {
         console.error('Missing required fields');
         return;
       }
 
       await createTour.mutateAsync({
         name: formData.name,
+        tour_host: formData.tour_host,
         start_date: formData.start_date,
         end_date: formData.end_date,
         days: parseInt(formData.days),
@@ -95,6 +97,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
       // Reset form and close modal on success
       setFormData({
         name: "",
+        tour_host: "",
         start_date: "",
         end_date: "",
         days: "",
@@ -141,6 +144,17 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="e.g., Melbourne Cup Carnival 2024"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tour_host">Tour Host *</Label>
+              <Input
+                id="tour_host"
+                value={formData.tour_host}
+                onChange={(e) => handleInputChange("tour_host", e.target.value)}
+                placeholder="e.g., John Smith"
                 required
               />
             </div>
