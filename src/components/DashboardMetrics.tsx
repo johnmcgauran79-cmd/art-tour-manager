@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Building, MapPin, DollarSign, TrendingUp } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
@@ -10,6 +11,7 @@ export const DashboardMetrics = () => {
   // Calculate metrics
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
+  const today = new Date();
   
   const bookingsThisMonth = bookings?.filter(booking => {
     const bookingDate = new Date(booking.created_at);
@@ -18,9 +20,11 @@ export const DashboardMetrics = () => {
            booking.status !== 'cancelled';
   }).length || 0;
 
-  const activeTours = tours?.filter(tour => 
-    tour.status === 'available' || tour.status === 'pending'
-  ).length || 0;
+  // Active tours are not cancelled and have start date in the future
+  const activeTours = tours?.filter(tour => {
+    const startDate = new Date(tour.start_date);
+    return tour.status !== 'cancelled' && startDate > today;
+  }).length || 0;
 
   const totalPassengers = bookings?.filter(b => b.status !== 'cancelled')
     .reduce((sum, booking) => sum + booking.passenger_count, 0) || 0;
@@ -71,7 +75,7 @@ export const DashboardMetrics = () => {
         <CardContent>
           <div className="text-2xl font-bold">{activeTours}</div>
           <p className="text-xs text-muted-foreground">
-            Available and pending tours
+            Not cancelled with future start dates
           </p>
         </CardContent>
       </Card>

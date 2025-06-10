@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -74,6 +73,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     totalCapacity: tour.capacity || 0,
     startDate: tour.start_date,
     endDate: tour.end_date,
+    tourHost: tour.tour_host,
   } : null;
 
   return (

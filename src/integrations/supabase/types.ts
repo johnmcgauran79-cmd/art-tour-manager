@@ -517,6 +517,7 @@ export type Database = {
           price_twin: number | null
           start_date: string
           status: Database["public"]["Enums"]["tour_status"] | null
+          tour_host: string
           updated_at: string | null
         }
         Insert: {
@@ -542,6 +543,7 @@ export type Database = {
           price_twin?: number | null
           start_date: string
           status?: Database["public"]["Enums"]["tour_status"] | null
+          tour_host?: string
           updated_at?: string | null
         }
         Update: {
@@ -567,6 +569,7 @@ export type Database = {
           price_twin?: number | null
           start_date?: string
           status?: Database["public"]["Enums"]["tour_status"] | null
+          tour_host?: string
           updated_at?: string | null
         }
         Relationships: []

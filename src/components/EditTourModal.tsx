@@ -33,6 +33,7 @@ interface Tour {
   totalCapacity: number;
   startDate: string;
   endDate: string;
+  tourHost: string;
 }
 
 interface EditTourModalProps {
@@ -44,6 +45,7 @@ interface EditTourModalProps {
 export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
+    tour_host: "",
     start_date: "",
     end_date: "",
     days: "",
@@ -81,6 +83,7 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
         .from('tours')
         .update({
           name: tourData.name,
+          tour_host: tourData.tour_host,
           start_date: tourData.start_date,
           end_date: tourData.end_date,
           days: days,
@@ -129,6 +132,7 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
     if (tour && open) {
       setFormData({
         name: tour.name,
+        tour_host: tour.tourHost || "",
         start_date: formatDateForInput(tour.startDate),
         end_date: formatDateForInput(tour.endDate),
         days: "",
@@ -177,6 +181,16 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
                 id="name"
                 value={formData.name}
                 onChange={(e) => handleInputChange("name", e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tour_host">Tour Host</Label>
+              <Input
+                id="tour_host"
+                value={formData.tour_host}
+                onChange={(e) => handleInputChange("tour_host", e.target.value)}
                 required
               />
             </div>

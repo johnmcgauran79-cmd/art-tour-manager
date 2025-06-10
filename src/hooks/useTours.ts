@@ -25,6 +25,7 @@ export interface Tour {
   instalment_date: string | null;
   final_payment_date: string | null;
   capacity: number | null;
+  tour_host: string;
   created_at: string;
   updated_at: string;
 }

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Users, Settings, FileText } from "lucide-react";
@@ -7,6 +8,7 @@ import { RecentBookings } from "@/components/RecentBookings";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { BookingsTable } from "@/components/BookingsTable";
+import { ToursTable } from "@/components/ToursTable";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -74,7 +76,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
-            <ActiveTours />
+            <ToursTable showOnlyActive={false} />
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-6">
