@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Mail, Phone, MapPin } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, Mail, Phone, Search } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
@@ -13,11 +14,23 @@ export const ContactsTable = () => {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleContactClick = (contact: any) => {
     setSelectedContact(contact);
     setShowEditContact(true);
   };
+
+  // Filter customers based on search term
+  const filteredCustomers = customers?.filter(customer => {
+    if (!searchTerm) return true;
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      customer.first_name?.toLowerCase().includes(searchLower) ||
+      customer.last_name?.toLowerCase().includes(searchLower) ||
+      customer.email?.toLowerCase().includes(searchLower)
+    );
+  }) || [];
 
   if (isLoading) {
     return <div>Loading contacts...</div>;
@@ -42,6 +55,15 @@ export const ContactsTable = () => {
               Add Contact
             </Button>
           </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by first name, surname, or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {!customers || customers.length === 0 ? (
@@ -53,6 +75,10 @@ export const ContactsTable = () => {
               >
                 Add Your First Contact
               </Button>
+            </div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No contacts match your search.</p>
             </div>
           ) : (
             <Table>
@@ -69,7 +95,7 @@ export const ContactsTable = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
+                {filteredCustomers.map((customer) => (
                   <TableRow 
                     key={customer.id}
                     className="cursor-pointer hover:bg-muted/50"
