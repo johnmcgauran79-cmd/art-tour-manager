@@ -106,7 +106,7 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
                     <TableCell>{booking.total_nights || '-'}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(booking.status || 'pending')}>
-                        {(booking.status || 'pending').replace("_", " ")}
+                        {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                       </Badge>
                     </TableCell>
                     <TableCell>

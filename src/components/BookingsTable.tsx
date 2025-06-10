@@ -117,7 +117,7 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
                         <TableCell>{booking.total_nights || '-'}</TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(booking.status || 'pending')}>
-                            {(booking.status || 'pending').replace("_", " ")}
+                            {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                           </Badge>
                         </TableCell>
                         <TableCell>{booking.booking_agent || '-'}</TableCell>

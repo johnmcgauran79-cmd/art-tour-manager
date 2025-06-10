@@ -97,7 +97,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                   <td className="p-3">{booking.total_nights || '-'}</td>
                   <td className="p-3">
                     <Badge className={getStatusColor(booking.status || 'pending')}>
-                      {(booking.status || 'pending').replace("_", " ")}
+                      {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                     </Badge>
                   </td>
                   <td className="p-3 max-w-xs">

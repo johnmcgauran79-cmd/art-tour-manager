@@ -121,7 +121,7 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
                     <TableCell>{getTotalPassengers(tour.id)}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(tour.status)}>
-                        {tour.status.replace('_', ' ')}
+                        {tour.status.replace('_', ' ').toUpperCase()}
                       </Badge>
                     </TableCell>
                   </TableRow>

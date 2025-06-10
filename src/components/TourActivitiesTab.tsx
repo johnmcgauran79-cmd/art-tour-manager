@@ -115,7 +115,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                   </TableCell>
                   <TableCell>
                     <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
-                      {activity.activity_status}
+                      {activity.activity_status.toUpperCase()}
                     </Badge>
                   </TableCell>
                   <TableCell>

@@ -66,7 +66,7 @@ export const OperationsDashboard = () => {
                 {tour.overbooked && (
                   <Badge className="bg-red-100 text-red-800">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    Overbooked
+                    OVERBOOKED
                   </Badge>
                 )}
               </div>
@@ -77,7 +77,7 @@ export const OperationsDashboard = () => {
                   <div className="flex items-center gap-2">
                     {getStatusIcon(tour.hotelStatus)}
                     <Badge className={getStatusColor(tour.hotelStatus)}>
-                      {tour.hotelStatus.replace("-", " ")}
+                      {tour.hotelStatus.replace("-", " ").toUpperCase()}
                     </Badge>
                   </div>
                 </div>
@@ -87,7 +87,7 @@ export const OperationsDashboard = () => {
                   <div className="flex items-center gap-2">
                     {getStatusIcon(tour.activityStatus)}
                     <Badge className={getStatusColor(tour.activityStatus)}>
-                      {tour.activityStatus.replace("-", " ")}
+                      {tour.activityStatus.replace("-", " ").toUpperCase()}
                     </Badge>
                   </div>
                 </div>

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,7 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
                       <TableCell>{booking.total_nights || '-'}</TableCell>
                       <TableCell>
                         <Badge className={getStatusColor(booking.status || 'pending')}>
-                          {(booking.status || 'pending').replace("_", " ")}
+                          {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                         </Badge>
                       </TableCell>
                       <TableCell>
