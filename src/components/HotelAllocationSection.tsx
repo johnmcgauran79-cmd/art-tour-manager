@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useHotels } from "@/hooks/useHotels";
 import { useHotelBookings, useCreateHotelBooking, useUpdateHotelBooking } from "@/hooks/useHotelBookings";
+import { useUpdateBooking } from "@/hooks/useBookings";
 
 interface HotelAllocationSectionProps {
   tourId: string;
@@ -31,9 +32,40 @@ export const HotelAllocationSection = ({
   const { data: hotelBookings = [] } = useHotelBookings(bookingId);
   const createHotelBooking = useCreateHotelBooking();
   const updateHotelBooking = useUpdateHotelBooking();
+  const updateBooking = useUpdateBooking();
 
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
   const [pendingUpdates, setPendingUpdates] = useState<{[key: string]: boolean}>({});
+
+  const updateBookingDates = async () => {
+    // Get all allocated hotel bookings
+    const allocatedHotelBookings = hotelBookings.filter(hb => hb.allocated);
+    
+    if (allocatedHotelBookings.length === 0) return;
+
+    // Find earliest check-in and latest check-out
+    const checkInDates = allocatedHotelBookings
+      .map(hb => hb.check_in_date)
+      .filter(date => date !== null)
+      .sort();
+    
+    const checkOutDates = allocatedHotelBookings
+      .map(hb => hb.check_out_date)
+      .filter(date => date !== null)
+      .sort();
+
+    if (checkInDates.length === 0 || checkOutDates.length === 0) return;
+
+    const earliestCheckIn = checkInDates[0];
+    const latestCheckOut = checkOutDates[checkOutDates.length - 1];
+
+    // Update the booking with new dates
+    updateBooking.mutate({
+      id: bookingId,
+      check_in_date: earliestCheckIn,
+      check_out_date: latestCheckOut,
+    });
+  };
 
   const handleHotelAllocation = (hotelId: string, allocated: boolean) => {
     const existingHotelBooking = hotelBookings.find(hb => hb.hotel_id === hotelId);
@@ -44,7 +76,10 @@ export const HotelAllocationSection = ({
         id: existingHotelBooking.id,
         allocated,
       }, {
-        onSuccess: () => onUpdate?.()
+        onSuccess: () => {
+          onUpdate?.();
+          updateBookingDates();
+        }
       });
     } else if (allocated) {
       createHotelBooking.mutate({
@@ -57,7 +92,10 @@ export const HotelAllocationSection = ({
         bedding: 'double',
         required: true,
       }, {
-        onSuccess: () => onUpdate?.()
+        onSuccess: () => {
+          onUpdate?.();
+          updateBookingDates();
+        }
       });
     }
   };
@@ -84,6 +122,13 @@ export const HotelAllocationSection = ({
           delete newState[fieldKey];
           return newState;
         });
+        
+        // If check-in or check-out date was updated, sync booking dates
+        if (field === 'check_in_date' || field === 'check_out_date') {
+          setTimeout(() => {
+            updateBookingDates();
+          }, 100); // Small delay to ensure hotel booking is updated first
+        }
       }
     });
   };
