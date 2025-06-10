@@ -30,6 +30,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     price_double: "",
     price_twin: "",
     deposit_required: "",
+    instalment_amount: "",
+    instalment_date: "",
     final_payment_date: "",
     capacity: "50"
   });
@@ -85,6 +87,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         price_twin: formData.price_twin ? parseFloat(formData.price_twin) : null,
         deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
         instalment_details: null,
+        instalment_amount: formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
+        instalment_date: formData.instalment_date || null,
         final_payment_date: formData.final_payment_date || null,
         capacity: formData.capacity ? parseInt(formData.capacity) : 50,
       });
@@ -106,6 +110,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         price_double: "",
         price_twin: "",
         deposit_required: "",
+        instalment_amount: "",
+        instalment_date: "",
         final_payment_date: "",
         capacity: "50"
       });
@@ -289,6 +295,31 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 value={formData.deposit_required}
                 onChange={(e) => handleInputChange("deposit_required", e.target.value)}
                 placeholder="e.g., 500"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
+              <Input
+                id="instalment_amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.instalment_amount}
+                onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
+                placeholder="e.g., 1000"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="instalment_date">Instalment Due Date</Label>
+              <Input
+                id="instalment_date"
+                type="date"
+                value={formData.instalment_date}
+                onChange={(e) => handleInputChange("instalment_date", e.target.value)}
               />
             </div>
 

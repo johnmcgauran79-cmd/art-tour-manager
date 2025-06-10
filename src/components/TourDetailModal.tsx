@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +19,7 @@ import { useHotels, Hotel } from "@/hooks/useHotels";
 import { useActivities, Activity } from "@/hooks/useActivities";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface Tour {
   id: string;
@@ -39,6 +41,8 @@ interface Tour {
     twin: number;
   };
   deposit: number;
+  instalmentAmount: number;
+  instalmentDate: string;
   finalPaymentDate: string;
   instalmentDetails: string;
   days: number;
@@ -216,16 +220,28 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                         <span>${tour.deposit}</span>
                       </div>
                     )}
-                    {tour.instalmentDetails && (
+                    {tour.instalmentAmount > 0 && (
+                      <div className="flex justify-between">
+                        <span>Instalment Amount:</span>
+                        <span>${tour.instalmentAmount}</span>
+                      </div>
+                    )}
+                    {tour.instalmentDate && (
                       <div className="flex justify-between">
                         <span>Instalment Due:</span>
+                        <span>{formatDateToDDMMYYYY(tour.instalmentDate)}</span>
+                      </div>
+                    )}
+                    {tour.instalmentDetails && (
+                      <div className="flex justify-between">
+                        <span>Instalment Details:</span>
                         <span>{tour.instalmentDetails}</span>
                       </div>
                     )}
                     {tour.finalPaymentDate && (
                       <div className="flex justify-between">
-                        <span>Due Date:</span>
-                        <span>{tour.finalPaymentDate}</span>
+                        <span>Final Payment Due:</span>
+                        <span>{formatDateToDDMMYYYY(tour.finalPaymentDate)}</span>
                       </div>
                     )}
                   </CardContent>
@@ -462,13 +478,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           <TableCell>{booking.passenger_count}</TableCell>
                           <TableCell>
                             {booking.check_in_date ? 
-                              new Date(booking.check_in_date).toLocaleDateString() : 
+                              formatDateToDDMMYYYY(booking.check_in_date) : 
                               'TBD'
                             }
                           </TableCell>
                           <TableCell>
                             {booking.check_out_date ? 
-                              new Date(booking.check_out_date).toLocaleDateString() : 
+                              formatDateToDDMMYYYY(booking.check_out_date) : 
                               'TBD'
                             }
                           </TableCell>

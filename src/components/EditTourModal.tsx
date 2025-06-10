@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,8 @@ interface Tour {
     twin: number;
   };
   deposit: number;
+  instalmentAmount: number;
+  instalmentDate: string;
   finalPaymentDate: string;
   totalCapacity: number;
 }
@@ -49,6 +52,8 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
     price_double: "",
     price_twin: "",
     deposit_required: "",
+    instalment_amount: "",
+    instalment_date: "",
     final_payment_date: "",
     capacity: ""
   });
@@ -72,6 +77,8 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
           price_double: tourData.price_double ? parseFloat(tourData.price_double) : null,
           price_twin: tourData.price_twin ? parseFloat(tourData.price_twin) : null,
           deposit_required: tourData.deposit_required ? parseFloat(tourData.deposit_required) : null,
+          instalment_amount: tourData.instalment_amount ? parseFloat(tourData.instalment_amount) : null,
+          instalment_date: tourData.instalment_date || null,
           final_payment_date: tourData.final_payment_date || null,
           capacity: tourData.capacity ? parseInt(tourData.capacity) : null,
         })
@@ -114,6 +121,8 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
         price_double: tour.pricing.double?.toString() || "",
         price_twin: tour.pricing.twin?.toString() || "",
         deposit_required: tour.deposit?.toString() || "",
+        instalment_amount: tour.instalmentAmount?.toString() || "",
+        instalment_date: tour.instalmentDate,
         final_payment_date: tour.finalPaymentDate,
         capacity: tour.totalCapacity?.toString() || ""
       });
@@ -240,6 +249,29 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
                 step="0.01"
                 value={formData.deposit_required}
                 onChange={(e) => handleInputChange("deposit_required", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
+              <Input
+                id="instalment_amount"
+                type="number"
+                step="0.01"
+                value={formData.instalment_amount}
+                onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="instalment_date">Instalment Due Date</Label>
+              <Input
+                id="instalment_date"
+                type="date"
+                value={formData.instalment_date}
+                onChange={(e) => handleInputChange("instalment_date", e.target.value)}
               />
             </div>
 
