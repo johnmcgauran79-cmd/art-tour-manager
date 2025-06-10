@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,8 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Plus, Building, Calendar, Users, MapPin, Phone, Mail, Edit } from "lucide-react";
 import { EditTourModal } from "@/components/EditTourModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
+import { EditHotelModal } from "@/components/EditHotelModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
-import { useHotels } from "@/hooks/useHotels";
+import { EditActivityModal } from "@/components/EditActivityModal";
+import { useHotels, Hotel } from "@/hooks/useHotels";
+import { useActivities, Activity } from "@/hooks/useActivities";
 
 interface Tour {
   id: string;
@@ -41,31 +43,6 @@ interface TourDetailModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const mockActivities = [
-  {
-    id: "1",
-    name: "Melbourne Cup Day - Flemington",
-    date: "Nov 5, 2024",
-    spotsAvailable: 35,
-    spotsBooked: 28,
-    location: "Flemington Racecourse",
-    startTime: "10:00 AM",
-    endTime: "6:00 PM",
-    status: "confirmed"
-  },
-  {
-    id: "2",
-    name: "Crown Oaks Day",
-    date: "Nov 7, 2024",
-    spotsAvailable: 35,
-    spotsBooked: 25,
-    location: "Flemington Racecourse",
-    startTime: "11:00 AM",
-    endTime: "5:00 PM",
-    status: "pending"
-  }
-];
-
 const mockBookings = [
   {
     id: "1",
@@ -95,11 +72,26 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [activeTab, setActiveTab] = useState("overview");
   const [showEditTour, setShowEditTour] = useState(false);
   const [showAddHotel, setShowAddHotel] = useState(false);
+  const [showEditHotel, setShowEditHotel] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
   const [showAddActivity, setShowAddActivity] = useState(false);
+  const [showEditActivity, setShowEditActivity] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
   const { data: hotels = [], isLoading: hotelsLoading } = useHotels(tour?.id || "");
+  const { data: activities = [], isLoading: activitiesLoading } = useActivities(tour?.id || "");
 
   if (!tour) return null;
+
+  const handleHotelClick = (hotel: Hotel) => {
+    setSelectedHotel(hotel);
+    setShowEditHotel(true);
+  };
+
+  const handleActivityClick = (activity: Activity) => {
+    setSelectedActivity(activity);
+    setShowEditActivity(true);
+  };
 
   return (
     <>
@@ -233,7 +225,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   <p className="text-muted-foreground">No hotels added yet.</p>
                 ) : (
                   hotels.map((hotel) => (
-                    <Card key={hotel.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit hotel:', hotel.id)}>
+                    <Card key={hotel.id} className="cursor-pointer hover:bg-accent/50" onClick={() => handleHotelClick(hotel)}>
                       <CardHeader>
                         <CardTitle className="flex items-center justify-between">
                           {hotel.name}
@@ -306,35 +298,41 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               </div>
               
               <div className="space-y-4">
-                {mockActivities.map((activity) => (
-                  <Card key={activity.id} className="cursor-pointer hover:bg-accent/50" onClick={() => console.log('Edit activity:', activity.id)}>
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        {activity.name}
-                        <Badge className={activity.status === "confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
-                          {activity.status}
-                        </Badge>
-                      </CardTitle>
-                      <CardDescription>{activity.location}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="font-medium">Date:</span> {activity.date}
+                {activitiesLoading ? (
+                  <p>Loading activities...</p>
+                ) : activities.length === 0 ? (
+                  <p className="text-muted-foreground">No activities added yet.</p>
+                ) : (
+                  activities.map((activity) => (
+                    <Card key={activity.id} className="cursor-pointer hover:bg-accent/50" onClick={() => handleActivityClick(activity)}>
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          {activity.name}
+                          <Badge className={activity.activity_status === "confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}>
+                            {activity.activity_status}
+                          </Badge>
+                        </CardTitle>
+                        <CardDescription>{activity.location}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium">Date:</span> {activity.activity_date || "Not set"}
+                          </div>
+                          <div>
+                            <span className="font-medium">Time:</span> {activity.start_time && activity.end_time ? `${activity.start_time} - ${activity.end_time}` : "Not set"}
+                          </div>
+                          <div>
+                            <span className="font-medium">Spots Booked:</span> {activity.spots_booked || 0}
+                          </div>
+                          <div>
+                            <span className="font-medium">Transport:</span> {activity.transport_status}
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium">Time:</span> {activity.startTime} - {activity.endTime}
-                        </div>
-                        <div>
-                          <span className="font-medium">Capacity:</span> {activity.spotsBooked}/{activity.spotsAvailable}
-                        </div>
-                        <div>
-                          <span className="font-medium">Available:</span> {activity.spotsAvailable - activity.spotsBooked}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
 
@@ -395,10 +393,22 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         onOpenChange={setShowAddHotel} 
       />
 
+      <EditHotelModal 
+        hotel={selectedHotel} 
+        open={showEditHotel} 
+        onOpenChange={setShowEditHotel} 
+      />
+
       <AddActivityModal 
         tourId={tour.id} 
         open={showAddActivity} 
         onOpenChange={setShowAddActivity} 
+      />
+
+      <EditActivityModal 
+        activity={selectedActivity} 
+        open={showEditActivity} 
+        onOpenChange={setShowEditActivity} 
       />
     </>
   );

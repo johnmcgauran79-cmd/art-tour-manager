@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Activity } from "@/hooks/useActivities";
 
-interface AddActivityModalProps {
-  tourId: string;
+interface EditActivityModalProps {
+  activity: Activity | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModalProps) => {
+export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivityModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -46,12 +48,42 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const createActivity = useMutation({
+  useEffect(() => {
+    if (activity) {
+      setFormData({
+        name: activity.name || "",
+        location: activity.location || "",
+        activity_date: activity.activity_date || "",
+        start_time: activity.start_time || "",
+        end_time: activity.end_time || "",
+        pickup_time: activity.pickup_time || "",
+        collection_time: activity.collection_time || "",
+        pickup_location: activity.pickup_location || "",
+        collection_location: activity.collection_location || "",
+        dropoff_location: activity.dropoff_location || "",
+        spots_booked: activity.spots_booked?.toString() || "",
+        activity_status: activity.activity_status || "pending",
+        transport_status: activity.transport_status || "pending",
+        guide_name: activity.guide_name || "",
+        guide_phone: activity.guide_phone || "",
+        guide_email: activity.guide_email || "",
+        transport_company: activity.transport_company || "",
+        transport_contact_name: activity.transport_contact_name || "",
+        transport_phone: activity.transport_phone || "",
+        transport_email: activity.transport_email || "",
+        hospitality_inclusions: activity.hospitality_inclusions || "",
+        notes: activity.notes || "",
+        operations_notes: activity.operations_notes || "",
+        transport_notes: activity.transport_notes || ""
+      });
+    }
+  }, [activity]);
+
+  const updateActivity = useMutation({
     mutationFn: async (activityData: any) => {
       const { data, error } = await supabase
         .from('activities')
-        .insert([{
-          tour_id: tourId,
+        .update({
           name: activityData.name,
           location: activityData.location || null,
           activity_date: activityData.activity_date || null,
@@ -76,7 +108,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
           notes: activityData.notes || null,
           operations_notes: activityData.operations_notes || null,
           transport_notes: activityData.transport_notes || null,
-        }])
+        })
+        .eq('id', activity?.id)
         .select()
         .single();
 
@@ -84,63 +117,72 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['activities', tourId] });
+      queryClient.invalidateQueries({ queryKey: ['activities', activity?.tour_id] });
       toast({
-        title: "Activity Added",
-        description: "Activity has been successfully added to the tour.",
+        title: "Activity Updated",
+        description: "Activity has been successfully updated.",
       });
       onOpenChange(false);
-      setFormData({
-        name: "",
-        location: "",
-        activity_date: "",
-        start_time: "",
-        end_time: "",
-        pickup_time: "",
-        collection_time: "",
-        pickup_location: "",
-        collection_location: "",
-        dropoff_location: "",
-        spots_booked: "",
-        activity_status: "pending",
-        transport_status: "pending",
-        guide_name: "",
-        guide_phone: "",
-        guide_email: "",
-        transport_company: "",
-        transport_contact_name: "",
-        transport_phone: "",
-        transport_email: "",
-        hospitality_inclusions: "",
-        notes: "",
-        operations_notes: "",
-        transport_notes: ""
-      });
     },
     onError: (error) => {
       toast({
         title: "Error",
-        description: "Failed to add activity. Please try again.",
+        description: "Failed to update activity. Please try again.",
         variant: "destructive",
       });
-      console.error('Error creating activity:', error);
+      console.error('Error updating activity:', error);
+    },
+  });
+
+  const deleteActivity = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('activities')
+        .delete()
+        .eq('id', activity?.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities', activity?.tour_id] });
+      toast({
+        title: "Activity Deleted",
+        description: "Activity has been successfully deleted.",
+      });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete activity. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error deleting activity:', error);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    createActivity.mutate(formData);
+    updateActivity.mutate(formData);
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleDelete = () => {
+    if (confirm("Are you sure you want to delete this activity?")) {
+      deleteActivity.mutate();
+    }
+  };
+
+  if (!activity) return null;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Activity</DialogTitle>
+          <DialogTitle>Edit Activity</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -306,13 +348,23 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
             />
           </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+          <div className="flex justify-between">
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleDelete}
+              disabled={deleteActivity.isPending}
+            >
+              {deleteActivity.isPending ? "Deleting..." : "Delete Activity"}
             </Button>
-            <Button type="submit" disabled={createActivity.isPending}>
-              {createActivity.isPending ? "Adding..." : "Add Activity"}
-            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateActivity.isPending}>
+                {updateActivity.isPending ? "Updating..." : "Update Activity"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
