@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -178,6 +177,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
 
   if (!activity) return null;
 
+  // Calculate pax attending from the activity data (this comes from the database calculation)
+  const paxAttending = activity.spots_booked || 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -231,7 +233,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
               <Input
                 id="pax_attending"
                 type="number"
-                value={activity?.spots_booked || 0}
+                value={paxAttending}
                 disabled
                 className="bg-muted"
               />
