@@ -22,6 +22,7 @@ export interface Tour {
   deposit_required: number | null;
   instalment_details: string | null;
   final_payment_date: string | null;
+  capacity: number | null;
   created_at: string;
   updated_at: string;
 }
