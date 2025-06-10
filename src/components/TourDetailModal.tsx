@@ -17,7 +17,7 @@ import { EditHotelModal } from "@/components/EditHotelModal";
 import { EditTourModal } from "@/components/EditTourModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { Tour } from "@/hooks/useTours";
-import { formatDateRange, formatDisplayDate, formatDateToDDMMYYYY, formatDateToLongFormat } from "@/lib/utils";
+import { formatDateRange, formatDisplayDate, formatDateToDDMMYYYY, formatDateToLongFormat, formatDateToMonthYear } from "@/lib/utils";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -198,7 +198,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                       {transformedTour?.finalPaymentDate && (
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-muted-foreground" />
-                          <span>Final Payment: {formatDateToLongFormat(transformedTour.finalPaymentDate)}</span>
+                          <span>Final Payment: {formatDateToMonthYear(transformedTour.finalPaymentDate)}</span>
                         </div>
                       )}
                     </div>
@@ -394,11 +394,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           )}
                           <div className="flex items-center gap-1">
                             <Bed className="h-4 w-4 text-muted-foreground" />
-                            <span>Rooms Reserved: {hotel.rooms_booked || 0}</span>
+                            <span>Rooms Reserved: {hotel.rooms_reserved || 0}</span>
                           </div>
                           <div className="flex items-center gap-1">
                             <Bed className="h-4 w-4 text-muted-foreground" />
-                            <span>Rooms Booked: {hotel.rooms_available || 0}</span>
+                            <span>Rooms Booked: {hotel.rooms_booked || 0}</span>
                           </div>
                         </div>
                       </CardContent>
