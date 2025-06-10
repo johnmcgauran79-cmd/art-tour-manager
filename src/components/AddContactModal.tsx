@@ -42,6 +42,9 @@ export const AddContactModal = ({ open, onOpenChange }: AddContactModalProps) =>
       spouse_name: formData.spouse_name || null,
       dietary_requirements: formData.dietary_requirements || null,
       notes: formData.notes || null,
+      // Add missing fields required by Customer interface
+      crm_id: null,
+      last_synced_at: null,
     };
 
     createCustomer.mutate(customerData, {
