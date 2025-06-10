@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, MapPin, Users, DollarSign, Clock, Bed } from "lucide-react";
+import { Calendar, MapPin, Users, DollarSign, Clock, Bed, Edit } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { useActivities } from "@/hooks/useActivities";
 import { useHotels } from "@/hooks/useHotels";
@@ -13,29 +14,8 @@ import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
-
-interface Tour {
-  id: string;
-  name: string;
-  dates: string;
-  duration: string;
-  location: string;
-  pickupPoint: string;
-  status: string;
-  notes: string;
-  inclusions: string;
-  exclusions: string;
-  pricing: {
-    single: number;
-    double: number;
-    twin: number;
-  };
-  deposit: number;
-  instalmentAmount: number;
-  instalmentDate: string;
-  finalPaymentDate: string;
-  totalCapacity: number;
-}
+import { EditTourModal } from "@/components/EditTourModal";
+import { Tour } from "@/hooks/useTours";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -49,6 +29,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [addHotelModalOpen, setAddHotelModalOpen] = useState(false);
   const [editActivityModalOpen, setEditActivityModalOpen] = useState(false);
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
+  const [editTourModalOpen, setEditTourModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
 
@@ -65,12 +46,47 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     setEditHotelModalOpen(true);
   };
 
+  // Transform the database tour data to match the expected interface
+  const transformedTour = tour ? {
+    id: tour.id,
+    name: tour.name,
+    dates: `${new Date(tour.start_date).toLocaleDateString()} - ${new Date(tour.end_date).toLocaleDateString()}`,
+    duration: `${tour.days} days / ${tour.nights} nights`,
+    location: tour.location || "",
+    pickupPoint: tour.pickup_point || "",
+    status: tour.status,
+    notes: tour.notes || "",
+    inclusions: tour.inclusions || "",
+    exclusions: tour.exclusions || "",
+    pricing: {
+      single: tour.price_single || 0,
+      double: tour.price_double || 0,
+      twin: tour.price_twin || 0,
+    },
+    deposit: tour.deposit_required || 0,
+    instalmentAmount: tour.instalment_amount || 0,
+    instalmentDate: tour.instalment_date || "",
+    finalPaymentDate: tour.final_payment_date || "",
+    totalCapacity: tour.capacity || 0,
+  } : null;
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{tour?.name}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>{tour?.name}</DialogTitle>
+              <Button
+                onClick={() => setEditTourModalOpen(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Edit Tour
+              </Button>
+            </div>
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="w-full">
@@ -90,60 +106,98 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   <CardContent className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{tour?.dates}</span>
+                      <span>{transformedTour?.dates}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span>{transformedTour?.duration}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{tour?.location}</span>
+                      <span>{transformedTour?.location}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{tour?.totalCapacity}</span>
+                      <span>Capacity: {transformedTour?.totalCapacity}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>{tour?.pricing?.single}</span>
-                    </div>
+                    {transformedTour?.pickupPoint && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>Pickup: {transformedTour.pickupPoint}</span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Tour Status</CardTitle>
+                    <CardTitle>Pricing & Status</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <Badge variant="secondary">{tour?.status}</Badge>
+                  <CardContent className="space-y-2">
+                    <Badge variant="secondary">{transformedTour?.status}</Badge>
+                    <div className="space-y-1">
+                      {transformedTour?.pricing.single > 0 && (
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span>Single: ${transformedTour.pricing.single}</span>
+                        </div>
+                      )}
+                      {transformedTour?.pricing.double > 0 && (
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span>Double: ${transformedTour.pricing.double}</span>
+                        </div>
+                      )}
+                      {transformedTour?.pricing.twin > 0 && (
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span>Twin: ${transformedTour.pricing.twin}</span>
+                        </div>
+                      )}
+                      {transformedTour?.deposit > 0 && (
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 text-muted-foreground" />
+                          <span>Deposit: ${transformedTour.deposit}</span>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Inclusions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {tour?.inclusions}
-                  </CardContent>
-                </Card>
+                {transformedTour?.inclusions && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Inclusions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="whitespace-pre-wrap">{transformedTour.inclusions}</div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Exclusions</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {tour?.exclusions}
-                  </CardContent>
-                </Card>
+                {transformedTour?.exclusions && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Exclusions</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="whitespace-pre-wrap">{transformedTour.exclusions}</div>
+                    </CardContent>
+                  </Card>
+                )}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Notes</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {tour?.notes}
-                  </CardContent>
-                </Card>
+                {transformedTour?.notes && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Notes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="whitespace-pre-wrap">{transformedTour.notes}</div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
 
@@ -152,7 +206,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 <h3 className="text-lg font-semibold">Activities</h3>
                 <Button 
                   onClick={() => setAddActivityModalOpen(true)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Add Activity
                 </Button>
@@ -212,7 +266,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   <p className="text-muted-foreground">No activities added yet.</p>
                   <Button 
                     onClick={() => setAddActivityModalOpen(true)} 
-                    className="mt-4 bg-slate-900 hover:bg-slate-800 text-white"
+                    className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     Add First Activity
                   </Button>
@@ -225,7 +279,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 <h3 className="text-lg font-semibold">Hotels</h3>
                 <Button 
                   onClick={() => setAddHotelModalOpen(true)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Add Hotel
                 </Button>
@@ -261,7 +315,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   <p className="text-muted-foreground">No hotels added yet.</p>
                   <Button 
                     onClick={() => setAddHotelModalOpen(true)}
-                    className="mt-4 bg-slate-900 hover:bg-slate-800 text-white"
+                    className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     Add First Hotel
                   </Button>
@@ -274,7 +328,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 <h3 className="text-lg font-semibold">Bookings</h3>
                 <Button 
                   onClick={() => setAddBookingModalOpen(true)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   Add Booking
                 </Button>
@@ -316,6 +370,14 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           open={editHotelModalOpen}
           onOpenChange={setEditHotelModalOpen}
           hotel={selectedHotel}
+        />
+      )}
+
+      {transformedTour && (
+        <EditTourModal
+          open={editTourModalOpen}
+          onOpenChange={setEditTourModalOpen}
+          tour={transformedTour}
         />
       )}
     </>
