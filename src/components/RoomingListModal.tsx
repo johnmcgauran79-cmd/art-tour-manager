@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Printer } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
-import { useHotelBookings } from "@/hooks/useHotelBookings";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Hotel {
   id: string;
@@ -30,44 +31,60 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     booking.accommodation_required
   );
 
-  // Get hotel bookings for each booking
-  const getRoomingData = () => {
-    const roomingData: any[] = [];
-    
-    tourBookings.forEach(booking => {
-      // This is a simplified approach - in practice, you'd want to fetch hotel bookings
-      // for each booking ID and filter by hotel ID
-      const hotelBooking = {
-        booking_id: booking.id,
-        hotel_id: hotel?.id,
-        allocated: true, // Assuming allocated for rooming list
-        check_in_date: booking.check_in_date,
-        check_out_date: booking.check_out_date,
-        bedding: 'double', // Default
-        room_type: 'Standard',
-        room_upgrade: null,
-        room_requests: null,
-        nights: booking.total_nights
-      };
-
-      if (hotelBooking.allocated) {
-        roomingData.push({
-          leadPassenger: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
-          passenger2: booking.passenger_2_name,
-          passenger3: booking.passenger_3_name,
-          groupName: booking.group_name,
-          checkIn: booking.check_in_date ? new Date(booking.check_in_date).toLocaleDateString() : '-',
-          checkOut: booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString() : '-',
-          nights: booking.total_nights || '-',
-          bedding: hotelBooking.bedding || '-',
-          roomType: hotelBooking.room_type || '-',
-          roomUpgrade: hotelBooking.room_upgrade || '-',
-          roomRequests: hotelBooking.room_requests || '-',
-        });
+  // Fetch hotel bookings for this specific hotel and tour
+  const { data: hotelBookingsData = [] } = useQuery({
+    queryKey: ['hotel-bookings-for-rooming', hotel?.id, tourId],
+    queryFn: async () => {
+      if (!hotel?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('hotel_bookings')
+        .select(`
+          *,
+          bookings!inner (
+            id,
+            tour_id,
+            passenger_count,
+            passenger_2_name,
+            passenger_3_name,
+            group_name,
+            status,
+            customers (first_name, last_name)
+          )
+        `)
+        .eq('hotel_id', hotel.id)
+        .eq('allocated', true)
+        .eq('bookings.tour_id', tourId)
+        .neq('bookings.status', 'cancelled');
+      
+      if (error) {
+        console.error('Error fetching hotel bookings for rooming list:', error);
+        throw error;
       }
-    });
+      
+      return data || [];
+    },
+    enabled: !!hotel?.id && !!tourId && open,
+  });
 
-    return roomingData;
+  const getRoomingData = () => {
+    return hotelBookingsData.map(hotelBooking => {
+      const booking = hotelBooking.bookings;
+      return {
+        leadPassenger: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
+        passenger2: booking.passenger_2_name,
+        passenger3: booking.passenger_3_name,
+        groupName: booking.group_name,
+        checkIn: hotelBooking.check_in_date ? new Date(hotelBooking.check_in_date).toLocaleDateString() : '-',
+        checkOut: hotelBooking.check_out_date ? new Date(hotelBooking.check_out_date).toLocaleDateString() : '-',
+        nights: hotelBooking.nights || '-',
+        bedding: hotelBooking.bedding || '-',
+        roomType: hotelBooking.room_type || '-',
+        roomUpgrade: hotelBooking.room_upgrade || '-',
+        roomRequests: hotelBooking.room_requests || '-',
+        confirmationNumber: hotelBooking.confirmation_number || '-',
+      };
+    });
   };
 
   const roomingData = getRoomingData();
@@ -78,7 +95,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
 
   const handleExportToTable = () => {
     const csvContent = [
-      ['Lead Passenger', 'Passenger 2', 'Passenger 3', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'],
+      ['Lead Passenger', 'Passenger 2', 'Passenger 3', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests', 'Confirmation'],
       ...roomingData.map(row => [
         row.leadPassenger,
         row.passenger2 || '',
@@ -90,7 +107,8 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         row.bedding,
         row.roomType,
         row.roomUpgrade,
-        row.roomRequests
+        row.roomRequests,
+        row.confirmationNumber
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -107,7 +125,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Rooming List - {hotel.name}</DialogTitle>
@@ -128,7 +146,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
           <div className="text-sm text-muted-foreground">
             <p><strong>Hotel:</strong> {hotel.name}</p>
             {hotel.address && <p><strong>Address:</strong> {hotel.address}</p>}
-            <p><strong>Total Guests:</strong> {roomingData.length}</p>
+            <p><strong>Total Rooms:</strong> {roomingData.length}</p>
           </div>
 
           {roomingData.length === 0 ? (
@@ -149,6 +167,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                     <TableHead>Bedding</TableHead>
                     <TableHead>Room Type</TableHead>
                     <TableHead>Upgrade</TableHead>
+                    <TableHead>Confirmation</TableHead>
                     <TableHead>Requests</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -169,6 +188,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                       <TableCell className="capitalize">{room.bedding}</TableCell>
                       <TableCell>{room.roomType}</TableCell>
                       <TableCell>{room.roomUpgrade}</TableCell>
+                      <TableCell>{room.confirmationNumber}</TableCell>
                       <TableCell>
                         <div className="max-w-xs truncate" title={room.roomRequests}>
                           {room.roomRequests}
