@@ -26,6 +26,10 @@ const Index = () => {
     };
   }, []);
 
+  const handleViewAllTours = () => {
+    setActiveTab("tours");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -72,7 +76,7 @@ const Index = () => {
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
             <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
-            <ActiveTours />
+            <ActiveTours onViewAll={handleViewAllTours} />
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
