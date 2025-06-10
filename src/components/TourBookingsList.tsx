@@ -7,6 +7,7 @@ import { Edit, Trash2, Plus } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -91,8 +92,8 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                     </div>
                   </td>
                   <td className="p-3">{booking.passenger_count}</td>
-                  <td className="p-3">{booking.check_in_date || 'TBD'}</td>
-                  <td className="p-3">{booking.check_out_date || 'TBD'}</td>
+                  <td className="p-3">{formatDateToDDMMYYYY(booking.check_in_date)}</td>
+                  <td className="p-3">{formatDateToDDMMYYYY(booking.check_out_date)}</td>
                   <td className="p-3">{booking.total_nights || '-'}</td>
                   <td className="p-3">
                     <Badge className={getStatusColor(booking.status || 'pending')}>

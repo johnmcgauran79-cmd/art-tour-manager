@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePaginatedBookings } from "@/hooks/useBookings";
 import { EditBookingModal } from "./EditBookingModal";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -97,16 +98,10 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
                     </TableCell>
                     <TableCell>{booking.passenger_count}</TableCell>
                     <TableCell>
-                      {booking.check_in_date ? 
-                        new Date(booking.check_in_date).toLocaleDateString() : 
-                        'TBD'
-                      }
+                      {formatDateToDDMMYYYY(booking.check_in_date)}
                     </TableCell>
                     <TableCell>
-                      {booking.check_out_date ? 
-                        new Date(booking.check_out_date).toLocaleDateString() : 
-                        'TBD'
-                      }
+                      {formatDateToDDMMYYYY(booking.check_out_date)}
                     </TableCell>
                     <TableCell>{booking.total_nights || '-'}</TableCell>
                     <TableCell>
