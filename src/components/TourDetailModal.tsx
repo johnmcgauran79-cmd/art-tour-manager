@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { Calendar, MapPin, Users, DollarSign, Clock, Bed, Edit, FileText } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { useActivities } from "@/hooks/useActivities";
@@ -18,6 +19,9 @@ import { EditTourModal } from "@/components/EditTourModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { Tour } from "@/hooks/useTours";
 import { formatDateRange, formatDisplayDate, formatDateToDDMMYYYY, formatDateToLongFormat, formatDateToMonthYear } from "@/lib/utils";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -35,9 +39,42 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [editingSpots, setEditingSpots] = useState<Record<string, boolean>>({});
+  const [spotsValues, setSpotsValues] = useState<Record<string, string>>({});
 
   const { data: activities } = useActivities(tour?.id || "");
   const { data: hotels } = useHotels(tour?.id || "");
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const updateActivitySpots = useMutation({
+    mutationFn: async ({ activityId, spotsBooked }: { activityId: string; spotsBooked: number }) => {
+      const { data, error } = await supabase
+        .from('activities')
+        .update({ spots_booked: spotsBooked })
+        .eq('id', activityId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities', tour?.id] });
+      toast({
+        title: "Success",
+        description: "Spots booked updated successfully.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating spots booked:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update spots booked. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -52,6 +89,22 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const handleRoomingList = (hotel: any) => {
     setSelectedHotel(hotel);
     setRoomingListModalOpen(true);
+  };
+
+  const handleSpotsEdit = (activityId: string, currentSpots: number) => {
+    setEditingSpots(prev => ({ ...prev, [activityId]: true }));
+    setSpotsValues(prev => ({ ...prev, [activityId]: currentSpots.toString() }));
+  };
+
+  const handleSpotsSave = async (activityId: string) => {
+    const newSpots = parseInt(spotsValues[activityId]) || 0;
+    await updateActivitySpots.mutateAsync({ activityId, spotsBooked: newSpots });
+    setEditingSpots(prev => ({ ...prev, [activityId]: false }));
+  };
+
+  const handleSpotsCancel = (activityId: string) => {
+    setEditingSpots(prev => ({ ...prev, [activityId]: false }));
+    setSpotsValues(prev => ({ ...prev, [activityId]: "" }));
   };
 
   const formatTime = (timeString: string) => {
@@ -125,6 +178,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
             </TabsList>
 
+            
             <TabsContent value="overview" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card>
@@ -254,53 +308,98 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               </div>
 
               {activities && activities.length > 0 ? (
-                <div className="grid gap-4">
-                  {activities.map((activity) => (
-                    <Card key={activity.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => handleActivityClick(activity)}>
-                      <CardHeader>
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base">{activity.name}</CardTitle>
-                          <div className="flex gap-2">
-                            <Badge variant="outline">
-                              Pax Attending: {activity.spots_booked || 0}
-                            </Badge>
-                            {activity.spots_available && (
-                              <Badge variant="secondary">
-                                Available: {activity.spots_available}
-                              </Badge>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Activity Name</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time</TableHead>
+                        <TableHead>Spots Available</TableHead>
+                        <TableHead>Spots Booked</TableHead>
+                        <TableHead>Pax Attending</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {activities.map((activity) => (
+                        <TableRow key={activity.id} className="cursor-pointer hover:bg-muted/50">
+                          <TableCell className="font-medium">{activity.name}</TableCell>
+                          <TableCell>{activity.location || '-'}</TableCell>
+                          <TableCell>
+                            {activity.activity_date 
+                              ? formatDateToDDMMYYYY(activity.activity_date)
+                              : 'TBD'
+                            }
+                          </TableCell>
+                          <TableCell>
+                            {activity.start_time ? formatTime(activity.start_time) : '-'}
+                          </TableCell>
+                          <TableCell>{activity.spots_available || '-'}</TableCell>
+                          <TableCell>
+                            {editingSpots[activity.id] ? (
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={spotsValues[activity.id] || ''}
+                                  onChange={(e) => setSpotsValues(prev => ({ 
+                                    ...prev, 
+                                    [activity.id]: e.target.value 
+                                  }))}
+                                  className="w-16 h-7"
+                                  min="0"
+                                />
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleSpotsSave(activity.id)}
+                                >
+                                  ✓
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => handleSpotsCancel(activity.id)}
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            ) : (
+                              <div 
+                                className="cursor-pointer hover:bg-muted/50 px-2 py-1 rounded"
+                                onClick={() => handleSpotsEdit(activity.id, activity.spots_booked || 0)}
+                              >
+                                {activity.spots_booked || 0}
+                              </div>
                             )}
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                          {activity.location && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-4 w-4 text-muted-foreground" />
-                              <span>{activity.location}</span>
-                            </div>
-                          )}
-                          {activity.activity_date && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4 text-muted-foreground" />
-                              <span>{formatDateToLongFormat(activity.activity_date)}</span>
-                            </div>
-                          )}
-                          {activity.start_time && (
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-4 w-4 text-muted-foreground" />
-                              <span>{formatTime(activity.start_time)}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <span>{activity.spots_booked || 0}/{activity.spots_available || 0}</span>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-muted-foreground">
+                              {activity.spots_booked || 0}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
+                              {activity.activity_status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleActivityClick(activity)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               ) : (
                 <div className="text-center py-8">
@@ -315,6 +414,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               )}
             </TabsContent>
 
+            
             <TabsContent value="hotels" className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Hotels</h3>
@@ -434,6 +534,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         </DialogContent>
       </Dialog>
 
+      
       <AddBookingModal
         open={addBookingModalOpen}
         onOpenChange={setAddBookingModalOpen}
