@@ -29,6 +29,12 @@ export const useHotels = (tourId: string) => {
     queryKey: ['hotels', tourId],
     queryFn: async () => {
       console.log('Fetching hotels for tour:', tourId);
+      
+      if (!tourId || tourId.trim() === '') {
+        console.log('No tour ID provided, returning empty array');
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('hotels')
         .select('*')
@@ -42,5 +48,6 @@ export const useHotels = (tourId: string) => {
       console.log('Hotels fetched successfully:', data);
       return data as Hotel[];
     },
+    enabled: !!tourId && tourId.trim() !== '',
   });
 };

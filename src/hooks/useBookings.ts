@@ -82,6 +82,8 @@ export const useCreateBooking = () => {
       status: string;
       extra_requests?: string;
       accommodation_required: boolean;
+      check_in_date?: string;
+      check_out_date?: string;
     }) => {
       // First, create or find the customer
       let customerId: string;
@@ -126,6 +128,8 @@ export const useCreateBooking = () => {
           status: bookingData.status as any,
           extra_requests: bookingData.extra_requests,
           accommodation_required: bookingData.accommodation_required,
+          check_in_date: bookingData.check_in_date,
+          check_out_date: bookingData.check_out_date,
         }])
         .select()
         .single();
@@ -158,6 +162,8 @@ export const useUpdateBooking = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
+      console.log('Updating booking with data:', { id, updates });
+      
       const { data, error } = await supabase
         .from('bookings')
         .update(updates)
@@ -165,12 +171,17 @@ export const useUpdateBooking = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating booking:', error);
+        throw error;
+      }
+      console.log('Booking updated successfully:', data);
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       toast({
         title: "Booking Updated",
         description: "Booking has been successfully updated.",

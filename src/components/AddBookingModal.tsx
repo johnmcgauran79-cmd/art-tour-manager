@@ -29,6 +29,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     status: "pending",
     extraRequests: "",
     accommodationRequired: true,
+    checkInDate: "",
+    checkOutDate: "",
     notes: ""
   });
 
@@ -37,9 +39,28 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
 
   useEffect(() => {
     if (preSelectedTourId && open) {
-      setFormData(prev => ({ ...prev, tourId: preSelectedTourId }));
+      const selectedTour = tours?.find(tour => tour.id === preSelectedTourId);
+      setFormData(prev => ({ 
+        ...prev, 
+        tourId: preSelectedTourId,
+        checkInDate: selectedTour?.start_date || "",
+        checkOutDate: selectedTour?.end_date || ""
+      }));
     }
-  }, [preSelectedTourId, open]);
+  }, [preSelectedTourId, open, tours]);
+
+  useEffect(() => {
+    if (formData.tourId && tours) {
+      const selectedTour = tours.find(tour => tour.id === formData.tourId);
+      if (selectedTour) {
+        setFormData(prev => ({
+          ...prev,
+          checkInDate: selectedTour.start_date || "",
+          checkOutDate: selectedTour.end_date || ""
+        }));
+      }
+    }
+  }, [formData.tourId, tours]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +77,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       status: formData.status,
       extra_requests: formData.extraRequests || undefined,
       accommodation_required: formData.accommodationRequired,
+      check_in_date: formData.checkInDate || undefined,
+      check_out_date: formData.checkOutDate || undefined,
     });
 
     // Reset form and close modal
@@ -71,6 +94,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       status: "pending",
       extraRequests: "",
       accommodationRequired: true,
+      checkInDate: "",
+      checkOutDate: "",
       notes: ""
     });
     onOpenChange(false);
@@ -203,6 +228,26 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="checkInDate">Check In Date</Label>
+              <Input
+                id="checkInDate"
+                type="date"
+                value={formData.checkInDate}
+                onChange={(e) => handleInputChange("checkInDate", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="checkOutDate">Check Out Date</Label>
+              <Input
+                id="checkOutDate"
+                type="date"
+                value={formData.checkOutDate}
+                onChange={(e) => handleInputChange("checkOutDate", e.target.value)}
+              />
             </div>
           </div>
 
