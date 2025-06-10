@@ -2,23 +2,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import type { Database } from "@/integrations/supabase/types";
 
-export interface HotelBooking {
-  id: string;
-  booking_id: string;
-  hotel_id: string;
-  allocated: boolean;
-  check_in_date: string | null;
-  check_out_date: string | null;
-  nights: number | null;
-  bedding: 'single' | 'double' | 'twin' | 'triple' | 'family';
-  room_type: string | null;
-  room_upgrade: string | null;
-  room_requests: string | null;
-  confirmation_number: string | null;
-  required: boolean;
-  created_at: string;
-  updated_at: string;
+type HotelBookingRow = Database['public']['Tables']['hotel_bookings']['Row'];
+type HotelBookingInsert = Database['public']['Tables']['hotel_bookings']['Insert'];
+type HotelBookingUpdate = Database['public']['Tables']['hotel_bookings']['Update'];
+
+export interface HotelBooking extends HotelBookingRow {
+  hotels?: {
+    name: string;
+    default_check_in: string | null;
+    default_check_out: string | null;
+    default_room_type: string | null;
+  };
 }
 
 export const useHotelBookings = (bookingId: string) => {
@@ -40,7 +36,7 @@ export const useHotelBookings = (bookingId: string) => {
         throw error;
       }
       console.log('Hotel bookings fetched successfully:', data);
-      return data;
+      return data as HotelBooking[];
     },
     enabled: !!bookingId,
   });
@@ -51,7 +47,7 @@ export const useCreateHotelBooking = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (hotelBookingData: Partial<HotelBooking>) => {
+    mutationFn: async (hotelBookingData: HotelBookingInsert) => {
       const { data, error } = await supabase
         .from('hotel_bookings')
         .insert(hotelBookingData)
@@ -85,7 +81,7 @@ export const useUpdateHotelBooking = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<HotelBooking> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: HotelBookingUpdate & { id: string }) => {
       const { data, error } = await supabase
         .from('hotel_bookings')
         .update(updates)
