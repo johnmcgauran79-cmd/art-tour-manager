@@ -1,19 +1,15 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Calendar, Users, Building, MapPin, Settings } from "lucide-react";
+import { Calendar, Users, Settings } from "lucide-react";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { ActiveTours } from "@/components/ActiveTours";
+import { RecentBookings } from "@/components/RecentBookings";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
-import { AddTourModal } from "@/components/AddTourModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [showAddTour, setShowAddTour] = useState(false);
   const [showAddBooking, setShowAddBooking] = useState(false);
 
   return (
@@ -25,16 +21,6 @@ const Index = () => {
             <div>
               <h1 className="text-2xl font-bold text-foreground">Australian Racing Tours</h1>
               <p className="text-muted-foreground">Tour Management System</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowAddTour(true)} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Tour
-              </Button>
-              <Button onClick={() => setShowAddBooking(true)} variant="outline">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Booking
-              </Button>
             </div>
           </div>
         </div>
@@ -60,6 +46,7 @@ const Index = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
+            <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
             <ActiveTours />
           </TabsContent>
 
@@ -74,7 +61,6 @@ const Index = () => {
       </div>
 
       {/* Modals */}
-      <AddTourModal open={showAddTour} onOpenChange={setShowAddTour} />
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
     </div>
   );

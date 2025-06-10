@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Building, MapPin, Edit } from "lucide-react";
+import { Calendar, Users, Building, MapPin, Plus } from "lucide-react";
 import { TourDetailModal } from "@/components/TourDetailModal";
+import { TourBookingsList } from "@/components/TourBookingsList";
+import { AddTourModal } from "@/components/AddTourModal";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 
@@ -57,15 +58,24 @@ const transformTourForModal = (tour: Tour, passengersBooked: number) => ({
 export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
   const [selectedTour, setSelectedTour] = useState<any>(null);
   const [showTourDetail, setShowTourDetail] = useState(false);
+  const [showBookingsList, setShowBookingsList] = useState<{show: boolean, tourId: string, tourName: string}>({show: false, tourId: '', tourName: ''});
+  const [showAddTour, setShowAddTour] = useState(false);
   
   const { data: tours, isLoading: toursLoading } = useTours();
   const { data: bookings } = useBookings();
 
   const handleViewTour = (tour: Tour) => {
     const { passengersBooked } = getBookingStats(tour.id);
-    const transformedTour = transformTourForModal(tour, passengersBooked);
-    setSelectedTour(transformedTour);
-    setShowTourDetail(true);
+    
+    // If tour has bookings, show bookings list by default
+    if (passengersBooked > 0) {
+      setShowBookingsList({show: true, tourId: tour.id, tourName: tour.name});
+    } else {
+      // Otherwise show tour detail modal
+      const transformedTour = transformTourForModal(tour, passengersBooked);
+      setSelectedTour(transformedTour);
+      setShowTourDetail(true);
+    }
   };
 
   if (toursLoading) {
@@ -87,13 +97,37 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
     return { passengersBooked, bookings: tourBookings.length };
   };
 
+  // If showing bookings list, render that instead
+  if (showBookingsList.show) {
+    return (
+      <div className="space-y-4">
+        <Button 
+          variant="outline" 
+          onClick={() => setShowBookingsList({show: false, tourId: '', tourName: ''})}
+        >
+          ← Back to Tours
+        </Button>
+        <TourBookingsList 
+          tourId={showBookingsList.tourId} 
+          tourName={showBookingsList.tourName} 
+        />
+      </div>
+    );
+  }
+
   return (
     <>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             {showAll ? "All Tours" : "Active Tours"}
-            <Calendar className="h-5 w-5 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <Button onClick={() => setShowAddTour(true)} className="bg-blue-600 hover:bg-blue-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Tour
+              </Button>
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+            </div>
           </CardTitle>
           <CardDescription>
             {showAll ? "Complete list of tours" : "Current and upcoming tour departures"}
@@ -112,14 +146,15 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
                 const spotsRemaining = tourCapacity - passengersBooked;
                 
                 return (
-                  <div key={tour.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                  <div 
+                    key={tour.id} 
+                    className="border rounded-lg p-4 hover:bg-accent/50 transition-colors cursor-pointer"
+                    onClick={() => handleViewTour(tour)}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 
-                            className="font-semibold text-lg text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"
-                            onClick={() => handleViewTour(tour)}
-                          >
+                          <h3 className="font-semibold text-lg text-blue-600 hover:text-blue-800 transition-colors">
                             {tour.name}
                           </h3>
                           <Badge className={getStatusColor(tour.status || 'pending')}>
@@ -168,6 +203,8 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
         open={showTourDetail} 
         onOpenChange={setShowTourDetail} 
       />
+
+      <AddTourModal open={showAddTour} onOpenChange={setShowAddTour} />
     </>
   );
 };

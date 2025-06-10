@@ -175,6 +175,8 @@ export type Database = {
         Row: {
           accommodation_required: boolean | null
           booking_agent: string | null
+          check_in_date: string | null
+          check_out_date: string | null
           created_at: string | null
           extra_requests: string | null
           group_name: string | null
@@ -185,12 +187,15 @@ export type Database = {
           passenger_3_name: string | null
           passenger_count: number
           status: Database["public"]["Enums"]["booking_status"] | null
+          total_nights: number | null
           tour_id: string | null
           updated_at: string | null
         }
         Insert: {
           accommodation_required?: boolean | null
           booking_agent?: string | null
+          check_in_date?: string | null
+          check_out_date?: string | null
           created_at?: string | null
           extra_requests?: string | null
           group_name?: string | null
@@ -201,12 +206,15 @@ export type Database = {
           passenger_3_name?: string | null
           passenger_count?: number
           status?: Database["public"]["Enums"]["booking_status"] | null
+          total_nights?: number | null
           tour_id?: string | null
           updated_at?: string | null
         }
         Update: {
           accommodation_required?: boolean | null
           booking_agent?: string | null
+          check_in_date?: string | null
+          check_out_date?: string | null
           created_at?: string | null
           extra_requests?: string | null
           group_name?: string | null
@@ -217,6 +225,7 @@ export type Database = {
           passenger_3_name?: string | null
           passenger_count?: number
           status?: Database["public"]["Enums"]["booking_status"] | null
+          total_nights?: number | null
           tour_id?: string | null
           updated_at?: string | null
         }
@@ -237,16 +246,56 @@ export type Database = {
           },
         ]
       }
+      crm_sync_log: {
+        Row: {
+          contact_id: string | null
+          created_at: string | null
+          crm_contact_id: string | null
+          error_message: string | null
+          id: string
+          sync_action: string | null
+          sync_status: string | null
+        }
+        Insert: {
+          contact_id?: string | null
+          created_at?: string | null
+          crm_contact_id?: string | null
+          error_message?: string | null
+          id?: string
+          sync_action?: string | null
+          sync_status?: string | null
+        }
+        Update: {
+          contact_id?: string | null
+          created_at?: string | null
+          crm_contact_id?: string | null
+          error_message?: string | null
+          id?: string
+          sync_action?: string | null
+          sync_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_sync_log_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           city: string | null
           country: string | null
           created_at: string | null
+          crm_id: string | null
           dietary_requirements: string | null
           email: string | null
           first_name: string
           id: string
           last_name: string
+          last_synced_at: string | null
           notes: string | null
           phone: string | null
           spouse_name: string | null
@@ -257,11 +306,13 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
           first_name: string
           id?: string
           last_name: string
+          last_synced_at?: string | null
           notes?: string | null
           phone?: string | null
           spouse_name?: string | null
@@ -272,11 +323,13 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
           first_name?: string
           id?: string
           last_name?: string
+          last_synced_at?: string | null
           notes?: string | null
           phone?: string | null
           spouse_name?: string | null
@@ -287,6 +340,7 @@ export type Database = {
       }
       hotel_bookings: {
         Row: {
+          allocated: boolean | null
           bedding: Database["public"]["Enums"]["bedding_type"] | null
           booking_id: string | null
           check_in_date: string | null
@@ -303,6 +357,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          allocated?: boolean | null
           bedding?: Database["public"]["Enums"]["bedding_type"] | null
           booking_id?: string | null
           check_in_date?: string | null
@@ -319,6 +374,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          allocated?: boolean | null
           bedding?: Database["public"]["Enums"]["bedding_type"] | null
           booking_id?: string | null
           check_in_date?: string | null
@@ -511,7 +567,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_nights: {
+        Args: { check_in: string; check_out: string }
+        Returns: number
+      }
     }
     Enums: {
       activity_status:
