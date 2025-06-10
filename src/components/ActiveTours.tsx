@@ -27,15 +27,41 @@ const formatDateRange = (startDate: string, endDate: string) => {
   return `${startMonth} - ${endMonth}`;
 };
 
+// Transform database Tour to TourDetailModal expected format
+const transformTourForModal = (tour: Tour, passengersBooked: number) => ({
+  id: tour.id,
+  name: tour.name,
+  dates: formatDateRange(tour.start_date, tour.end_date),
+  duration: `${tour.days} days, ${tour.nights} nights`,
+  location: tour.location || 'Location TBD',
+  pickupPoint: tour.pickup_point || 'TBD',
+  status: tour.status || 'pending',
+  passengersBooked,
+  totalCapacity: 50, // Default capacity - you may want to add this to your database
+  notes: tour.notes || '',
+  inclusions: tour.inclusions || '',
+  exclusions: tour.exclusions || '',
+  pricing: {
+    single: tour.price_single || 0,
+    double: tour.price_double || 0,
+    twin: tour.price_twin || 0,
+  },
+  deposit: tour.deposit_required || 0,
+  finalPaymentDate: tour.final_payment_date || '',
+  instalmentDetails: tour.instalment_details || '',
+});
+
 export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
-  const [selectedTour, setSelectedTour] = useState<Tour | null>(null);
+  const [selectedTour, setSelectedTour] = useState<any>(null);
   const [showTourDetail, setShowTourDetail] = useState(false);
   
   const { data: tours, isLoading: toursLoading } = useTours();
   const { data: bookings } = useBookings();
 
   const handleViewTour = (tour: Tour) => {
-    setSelectedTour(tour);
+    const { passengersBooked } = getBookingStats(tour.id);
+    const transformedTour = transformTourForModal(tour, passengersBooked);
+    setSelectedTour(transformedTour);
     setShowTourDetail(true);
   };
 
@@ -87,8 +113,8 @@ export const ActiveTours = ({ showAll = false }: { showAll?: boolean }) => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-lg">{tour.name}</h3>
-                          <Badge className={getStatusColor(tour.status)}>
-                            {tour.status.replace("_", " ")}
+                          <Badge className={getStatusColor(tour.status || 'pending')}>
+                            {(tour.status || 'pending').replace("_", " ")}
                           </Badge>
                         </div>
                         
