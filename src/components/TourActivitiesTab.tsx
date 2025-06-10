@@ -72,7 +72,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
         <h3 className="text-lg font-semibold">Activities</h3>
         <Button 
           onClick={onAddActivity}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
         >
           Add Activity
         </Button>
@@ -137,7 +137,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
           <p className="text-muted-foreground">No activities added yet.</p>
           <Button 
             onClick={onAddActivity} 
-            className="mt-4 bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="mt-4 bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
           >
             Add First Activity
           </Button>

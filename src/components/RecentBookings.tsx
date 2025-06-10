@@ -67,7 +67,7 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
                 <Eye className="h-4 w-4 mr-2" />
                 View All
               </Button>
-              <Button onClick={onAddBooking} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Booking
               </Button>
