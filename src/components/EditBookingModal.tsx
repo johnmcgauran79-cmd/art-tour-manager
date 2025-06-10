@@ -52,7 +52,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: 'pending' as const,
+    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled',
     extra_requests: '',
     invoice_notes: '',
     accommodation_required: true,
@@ -170,7 +170,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value: any) => setFormData(prev => ({ ...prev, status: value }))}>
+                  <Select value={formData.status} onValueChange={(value: 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled') => setFormData(prev => ({ ...prev, status: value }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>

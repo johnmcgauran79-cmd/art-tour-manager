@@ -54,7 +54,7 @@ export const useCreateHotelBooking = () => {
     mutationFn: async (hotelBookingData: Partial<HotelBooking>) => {
       const { data, error } = await supabase
         .from('hotel_bookings')
-        .insert([hotelBookingData])
+        .insert(hotelBookingData)
         .select()
         .single();
 
