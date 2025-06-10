@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Calendar, Eye } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
-import { AllBookingsModal } from "./AllBookingsModal";
 import { EditBookingModal } from "./EditBookingModal";
 
 const getStatusColor = (status: string) => {
@@ -22,10 +21,10 @@ const getStatusColor = (status: string) => {
 
 interface RecentBookingsProps {
   onAddBooking: () => void;
+  onViewAllBookings?: () => void;
 }
 
-export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
-  const [showAllBookings, setShowAllBookings] = useState(false);
+export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookingsProps) => {
   const [showEditBooking, setShowEditBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const { data: bookings, isLoading } = useBookings();
@@ -33,6 +32,15 @@ export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
   const handleBookingClick = (booking: any) => {
     setSelectedBooking(booking);
     setShowEditBooking(true);
+  };
+
+  const handleViewAll = () => {
+    if (onViewAllBookings) {
+      onViewAllBookings();
+    } else {
+      // Trigger navigation to bookings tab by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('navigate-to-bookings'));
+    }
   };
 
   if (isLoading) {
@@ -54,7 +62,7 @@ export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
           <CardTitle className="flex items-center justify-between">
             Recent Bookings
             <div className="flex items-center gap-2">
-              <Button onClick={() => setShowAllBookings(true)} variant="outline" size="sm">
+              <Button onClick={handleViewAll} variant="outline" size="sm">
                 <Eye className="h-4 w-4 mr-2" />
                 View All
               </Button>
@@ -140,12 +148,6 @@ export const RecentBookings = ({ onAddBooking }: RecentBookingsProps) => {
           )}
         </CardContent>
       </Card>
-
-      <AllBookingsModal 
-        open={showAllBookings}
-        onOpenChange={setShowAllBookings}
-        onBookingClick={handleBookingClick}
-      />
 
       <EditBookingModal 
         booking={selectedBooking} 

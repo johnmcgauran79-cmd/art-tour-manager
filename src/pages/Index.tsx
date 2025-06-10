@@ -1,16 +1,29 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Settings } from "lucide-react";
+import { Calendar, Users, Settings, FileText } from "lucide-react";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { ActiveTours } from "@/components/ActiveTours";
 import { RecentBookings } from "@/components/RecentBookings";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { AddBookingModal } from "@/components/AddBookingModal";
+import { BookingsTable } from "@/components/BookingsTable";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddBooking, setShowAddBooking] = useState(false);
+
+  useEffect(() => {
+    const handleNavigateToBookings = () => {
+      setActiveTab("bookings");
+    };
+
+    window.addEventListener('navigate-to-bookings', handleNavigateToBookings);
+    
+    return () => {
+      window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -29,7 +42,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Dashboard
@@ -37,6 +50,10 @@ const Index = () => {
             <TabsTrigger value="tours" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Tours
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Bookings
             </TabsTrigger>
             <TabsTrigger value="operations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -52,6 +69,10 @@ const Index = () => {
 
           <TabsContent value="tours" className="space-y-6">
             <ActiveTours showAll={true} />
+          </TabsContent>
+
+          <TabsContent value="bookings" className="space-y-6">
+            <BookingsTable onAddBooking={() => setShowAddBooking(true)} />
           </TabsContent>
 
           <TabsContent value="operations" className="space-y-6">
