@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Edit } from "lucide-react";
+import { Edit, Copy } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -16,6 +15,7 @@ import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
 import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { Tour } from "@/hooks/useTours";
+import { useDuplicateTour } from "@/hooks/useDuplicateTour";
 import { formatDateRange } from "@/lib/utils";
 
 interface TourDetailModalProps {
@@ -35,6 +35,8 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
 
+  const duplicateTour = useDuplicateTour();
+
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
     setEditActivityModalOpen(true);
@@ -48,6 +50,12 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const handleRoomingList = (hotel: any) => {
     setSelectedHotel(hotel);
     setRoomingListModalOpen(true);
+  };
+
+  const handleDuplicateTour = () => {
+    if (tour) {
+      duplicateTour.mutate(tour.id);
+    }
   };
 
   // Transform the database tour data to match the expected interface
@@ -84,15 +92,27 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>{tour?.name}</DialogTitle>
-              <Button
-                onClick={() => setEditTourModalOpen(true)}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Edit className="h-4 w-4" />
-                Edit Tour
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleDuplicateTour}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  disabled={duplicateTour.isPending}
+                >
+                  <Copy className="h-4 w-4" />
+                  {duplicateTour.isPending ? "Duplicating..." : "Duplicate Tour"}
+                </Button>
+                <Button
+                  onClick={() => setEditTourModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Tour
+                </Button>
+              </div>
             </div>
           </DialogHeader>
 
