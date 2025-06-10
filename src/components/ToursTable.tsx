@@ -75,7 +75,7 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
             </div>
             <Button 
               onClick={() => setShowAddTour(true)}
-              className="bg-slate-900 hover:bg-slate-800 text-white"
+              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Tour
@@ -90,7 +90,7 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
               </p>
               <Button 
                 onClick={() => setShowAddTour(true)}
-                className="bg-slate-900 hover:bg-slate-800 text-white"
+                className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
               >
                 Create Your First Tour
               </Button>
