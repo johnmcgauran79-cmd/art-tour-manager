@@ -1,7 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Users, Clock } from "lucide-react";
+import { Calendar, MapPin, Users, Clock, User } from "lucide-react";
 import { formatDateToLongFormat, formatDateToMonthYear } from "@/lib/utils";
 
 interface TourOverviewTabProps {
@@ -12,6 +11,7 @@ interface TourOverviewTabProps {
     pickupPoint: string;
     totalCapacity: number;
     status: string;
+    tourHost: string;
     pricing: {
       single: number;
       double: number;
@@ -47,6 +47,10 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             <div className="flex items-center gap-2">
               <MapPin className="h-4 w-4 text-muted-foreground" />
               <span>{tour.location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <span>Tour Host: {tour.tourHost}</span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />

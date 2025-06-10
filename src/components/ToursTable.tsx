@@ -105,6 +105,7 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
                   <TableHead>Location</TableHead>
                   <TableHead>Total Pax</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -123,6 +124,11 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
                       <Badge className={getStatusColor(tour.status)}>
                         {tour.status.replace('_', ' ').toUpperCase()}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-xs truncate" title={tour.notes || ''}>
+                        {tour.notes || '-'}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
