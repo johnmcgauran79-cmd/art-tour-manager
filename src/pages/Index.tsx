@@ -28,12 +28,19 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="border-b bg-card">
+      <div className="border-b bg-primary">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Australian Racing Tours</h1>
-              <p className="text-muted-foreground">Tour Management System</p>
+            <div className="flex items-center gap-4">
+              <img 
+                src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" 
+                alt="Australian Racing Tours Logo" 
+                className="h-12 w-12"
+              />
+              <div>
+                <h1 className="text-2xl font-bold text-primary-foreground">Australian Racing Tours</h1>
+                <p className="text-primary-foreground/80">Tour Management System</p>
+              </div>
             </div>
           </div>
         </div>
