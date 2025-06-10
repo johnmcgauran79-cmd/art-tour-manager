@@ -82,7 +82,6 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         roomType: hotelBooking.room_type || '-',
         roomUpgrade: hotelBooking.room_upgrade || '-',
         roomRequests: hotelBooking.room_requests || '-',
-        confirmationNumber: hotelBooking.confirmation_number || '-',
       };
     });
   };
@@ -95,7 +94,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
 
   const handleExportToTable = () => {
     const csvContent = [
-      ['Lead Passenger', 'Passenger 2', 'Passenger 3', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests', 'Confirmation'],
+      ['Lead Passenger', 'Passenger 2', 'Passenger 3', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'],
       ...roomingData.map(row => [
         row.leadPassenger,
         row.passenger2 || '',
@@ -107,8 +106,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         row.bedding,
         row.roomType,
         row.roomUpgrade,
-        row.roomRequests,
-        row.confirmationNumber
+        row.roomRequests
       ])
     ].map(row => row.join(',')).join('\n');
 
@@ -167,7 +165,6 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                     <TableHead>Bedding</TableHead>
                     <TableHead>Room Type</TableHead>
                     <TableHead>Upgrade</TableHead>
-                    <TableHead>Confirmation</TableHead>
                     <TableHead>Requests</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -188,7 +185,6 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                       <TableCell className="capitalize">{room.bedding}</TableCell>
                       <TableCell>{room.roomType}</TableCell>
                       <TableCell>{room.roomUpgrade}</TableCell>
-                      <TableCell>{room.confirmationNumber}</TableCell>
                       <TableCell>
                         <div className="max-w-xs truncate" title={room.roomRequests}>
                           {room.roomRequests}
