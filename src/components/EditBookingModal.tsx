@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
+import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 
 interface Booking {
   id: string;
@@ -116,9 +118,10 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
         </DialogHeader>
 
         <Tabs defaultValue="details" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="details">Booking Details</TabsTrigger>
             <TabsTrigger value="accommodation">Hotel Allocation</TabsTrigger>
+            <TabsTrigger value="activities">Activities</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4">
@@ -241,6 +244,14 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               accommodationRequired={formData.accommodation_required}
               defaultCheckIn={formData.check_in_date}
               defaultCheckOut={formData.check_out_date}
+            />
+          </TabsContent>
+
+          <TabsContent value="activities" className="space-y-4">
+            <ActivityAllocationSection
+              tourId={booking.tour_id}
+              bookingId={booking.id}
+              passengerCount={formData.passenger_count}
             />
           </TabsContent>
         </Tabs>

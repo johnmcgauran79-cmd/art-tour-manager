@@ -35,7 +35,7 @@ export const ActivityAllocationSection = ({
       
       activities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
-        initialAllocations[activity.id] = existingBooking?.passengers_attending || passengerCount;
+        initialAllocations[activity.id] = existingBooking?.passengers_attending || 0;
       });
       
       setAllocations(initialAllocations);
@@ -43,7 +43,7 @@ export const ActivityAllocationSection = ({
   }, [activities, activityBookings, passengerCount]);
 
   const handleAllocationChange = (activityId: string, value: string) => {
-    const numValue = Math.max(0, Math.min(passengerCount, parseInt(value) || 0));
+    const numValue = Math.max(0, parseInt(value) || 0);
     setAllocations(prev => ({ ...prev, [activityId]: numValue }));
   };
 
@@ -91,7 +91,7 @@ export const ActivityAllocationSection = ({
       <div className="mb-4">
         <h3 className="text-lg font-semibold">Activity Allocations</h3>
         <p className="text-sm text-muted-foreground">
-          Allocate passengers to activities (Max: {passengerCount} passengers)
+          Allocate passengers to activities (Booking has {passengerCount} passengers, but you can invite additional guests)
         </p>
       </div>
 
@@ -118,7 +118,6 @@ export const ActivityAllocationSection = ({
                   id={`activity-${activity.id}`}
                   type="number"
                   min="0"
-                  max={passengerCount}
                   value={allocations[activity.id] || 0}
                   onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
                   className="w-20"
@@ -127,7 +126,7 @@ export const ActivityAllocationSection = ({
               
               <div className="text-sm text-muted-foreground">
                 <span>Available: {activity.spots_available || 0}</span><br />
-                <span>Booked: {activity.spots_booked || 0}</span>
+                <span>Total Booked: {activity.spots_booked || 0}</span>
               </div>
               
               <Button
