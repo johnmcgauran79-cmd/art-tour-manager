@@ -4,7 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Eye } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { TourDetailModal } from "@/components/TourDetailModal";
@@ -13,9 +13,10 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface ToursTableProps {
   showOnlyActive?: boolean;
+  onViewAll?: () => void;
 }
 
-export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
+export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProps) => {
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
   const [selectedTour, setSelectedTour] = useState<any>(null);
@@ -73,13 +74,21 @@ export const ToursTable = ({ showOnlyActive = false }: ToursTableProps) => {
                 }
               </CardDescription>
             </div>
-            <Button 
-              onClick={() => setShowAddTour(true)}
-              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Tour
-            </Button>
+            <div className="flex items-center gap-2">
+              {showOnlyActive && onViewAll && (
+                <Button onClick={onViewAll} variant="outline" size="sm">
+                  <Eye className="h-4 w-4 mr-2" />
+                  View All
+                </Button>
+              )}
+              <Button 
+                onClick={() => setShowAddTour(true)}
+                className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Tour
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
