@@ -46,37 +46,28 @@ export const DashboardMetrics = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{bookingsThisMonth}</div>
-          <p className="text-xs text-muted-foreground">
-            New bookings in {new Date().toLocaleDateString('en-US', { month: 'long' })}
-          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Estimated Revenue</CardTitle>
+          <CardTitle className="text-sm font-medium">Estimated Monthly Revenue</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
             ${estimatedRevenue.toLocaleString()}
           </div>
-          <p className="text-xs text-muted-foreground">
-            From bookings this month
-          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Active Tours</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Active Tours</CardTitle>
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{activeTours}</div>
-          <p className="text-xs text-muted-foreground">
-            Not past with future start dates
-          </p>
         </CardContent>
       </Card>
 
@@ -87,9 +78,6 @@ export const DashboardMetrics = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalPassengers}</div>
-          <p className="text-xs text-muted-foreground">
-            Across all active bookings
-          </p>
         </CardContent>
       </Card>
     </div>
