@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Users, Settings, FileText } from "lucide-react";
@@ -75,7 +74,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
-            <ActiveTours showAll={true} />
+            <ActiveTours />
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-6">

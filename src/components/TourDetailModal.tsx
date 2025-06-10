@@ -249,7 +249,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                           )}
                           <div className="flex items-center gap-1">
                             <Bed className="h-4 w-4 text-muted-foreground" />
-                            <span>{hotel.rooms_available}</span>
+                            <span>Rooms: {hotel.rooms_available || 0}</span>
                           </div>
                         </div>
                       </CardContent>
@@ -279,7 +279,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   Add Booking
                 </Button>
               </div>
-              <TourBookingsList tourId={tour.id} />
+              <TourBookingsList tourId={tour?.id || ""} tourName={tour?.name || ""} />
             </TabsContent>
           </Tabs>
         </DialogContent>

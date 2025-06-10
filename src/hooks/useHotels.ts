@@ -13,6 +13,7 @@ export interface Hotel {
   contact_email: string | null;
   rooms_reserved: number | null;
   rooms_booked: number | null;
+  rooms_available: number | null;
   booking_status: string;
   default_room_type: string | null;
   default_check_in: string | null;
