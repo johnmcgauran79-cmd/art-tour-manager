@@ -38,26 +38,33 @@ export const HotelAllocationSection = ({
   const [pendingUpdates, setPendingUpdates] = useState<{[key: string]: boolean}>({});
 
   const updateBookingDates = async () => {
+    console.log('Updating booking dates, hotel bookings:', hotelBookings);
+    
     // Get all allocated hotel bookings
     const allocatedHotelBookings = hotelBookings.filter(hb => hb.allocated);
+    console.log('Allocated hotel bookings:', allocatedHotelBookings);
     
     if (allocatedHotelBookings.length === 0) return;
 
-    // Find earliest check-in and latest check-out
-    const checkInDates = allocatedHotelBookings
+    // Find earliest check-in and latest check-out using proper date comparison
+    const validCheckInDates = allocatedHotelBookings
       .map(hb => hb.check_in_date)
       .filter(date => date !== null)
-      .sort();
+      .map(date => new Date(date))
+      .sort((a, b) => a.getTime() - b.getTime());
     
-    const checkOutDates = allocatedHotelBookings
+    const validCheckOutDates = allocatedHotelBookings
       .map(hb => hb.check_out_date)
       .filter(date => date !== null)
-      .sort();
+      .map(date => new Date(date))
+      .sort((a, b) => b.getTime() - a.getTime());
 
-    if (checkInDates.length === 0 || checkOutDates.length === 0) return;
+    if (validCheckInDates.length === 0 || validCheckOutDates.length === 0) return;
 
-    const earliestCheckIn = checkInDates[0];
-    const latestCheckOut = checkOutDates[checkOutDates.length - 1];
+    const earliestCheckIn = validCheckInDates[0].toISOString().split('T')[0];
+    const latestCheckOut = validCheckOutDates[0].toISOString().split('T')[0];
+
+    console.log('Calculated dates - earliest check-in:', earliestCheckIn, 'latest check-out:', latestCheckOut);
 
     // Update the booking with new dates
     updateBooking.mutate({
