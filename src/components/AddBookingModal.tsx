@@ -8,12 +8,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit } from "lucide-react";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Edit, ChevronDown, Check } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
+import { useCustomers } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { EditContactModal } from "@/components/EditContactModal";
+import { cn } from "@/lib/utils";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -43,9 +47,20 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
   const [activeTab, setActiveTab] = useState("details");
   const [showEditContact, setShowEditContact] = useState(false);
   const [contactToEdit, setContactToEdit] = useState<any>(null);
+  const [contactPopoverOpen, setContactPopoverOpen] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string>("");
 
   const { data: tours } = useTours();
+  const { data: customers } = useCustomers();
   const createBooking = useCreateBooking();
+
+  // Filter customers based on lead passenger input
+  const filteredContacts = customers?.filter(customer => {
+    if (!formData.leadPassenger) return false;
+    const searchTerm = formData.leadPassenger.toLowerCase();
+    const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
+    return fullName.includes(searchTerm);
+  }) || [];
 
   useEffect(() => {
     if (preSelectedTourId && open) {
@@ -71,6 +86,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       }
     }
   }, [formData.tourId, tours]);
+
+  const handleContactSelect = (customer: any) => {
+    setSelectedContactId(customer.id);
+    setFormData(prev => ({
+      ...prev,
+      leadPassenger: `${customer.first_name} ${customer.last_name}`,
+      leadEmail: customer.email || "",
+      leadPhone: customer.phone || "",
+    }));
+    setContactPopoverOpen(false);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,16 +148,26 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     });
     setCreatedBookingId(null);
     setActiveTab("details");
+    setSelectedContactId("");
     onOpenChange(false);
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear selected contact if manually editing the name
+    if (field === "leadPassenger" && typeof value === "string") {
+      const selectedContact = customers?.find(c => c.id === selectedContactId);
+      if (selectedContact && value !== `${selectedContact.first_name} ${selectedContact.last_name}`) {
+        setSelectedContactId("");
+      }
+    }
   };
 
   const handleEditContact = () => {
-    // Create a contact object from current form data
-    const contact = {
+    // Create a contact object from current form data or use selected contact
+    const selectedContact = customers?.find(c => c.id === selectedContactId);
+    const contact = selectedContact || {
       first_name: formData.leadPassenger.split(' ')[0] || '',
       last_name: formData.leadPassenger.split(' ').slice(1).join(' ') || '',
       email: formData.leadEmail,
@@ -149,6 +185,11 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       leadEmail: updatedContact.email || '',
       leadPhone: updatedContact.phone || '',
     }));
+    
+    // Update selected contact ID if it was an existing contact
+    if (updatedContact.id) {
+      setSelectedContactId(updatedContact.id);
+    }
   };
 
   return (
@@ -203,13 +244,58 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="leadPassenger">Lead Passenger Name</Label>
-                      <Input
-                        id="leadPassenger"
-                        value={formData.leadPassenger}
-                        onChange={(e) => handleInputChange("leadPassenger", e.target.value)}
-                        placeholder="e.g., John Smith"
-                        required
-                      />
+                      <Popover open={contactPopoverOpen} onOpenChange={setContactPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <div className="relative">
+                            <Input
+                              id="leadPassenger"
+                              value={formData.leadPassenger}
+                              onChange={(e) => {
+                                handleInputChange("leadPassenger", e.target.value);
+                                setContactPopoverOpen(e.target.value.length > 0);
+                              }}
+                              placeholder="e.g., John Smith"
+                              required
+                              className="pr-8"
+                            />
+                            {filteredContacts.length > 0 && formData.leadPassenger && (
+                              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0" align="start">
+                          <Command>
+                            <CommandList>
+                              {filteredContacts.length === 0 ? (
+                                <CommandEmpty>No contacts found.</CommandEmpty>
+                              ) : (
+                                <CommandGroup>
+                                  {filteredContacts.map((customer) => (
+                                    <CommandItem
+                                      key={customer.id}
+                                      onSelect={() => handleContactSelect(customer)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Check
+                                        className={cn(
+                                          "mr-2 h-4 w-4",
+                                          selectedContactId === customer.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span>{customer.first_name} {customer.last_name}</span>
+                                        <span className="text-sm text-muted-foreground">
+                                          {customer.email} {customer.phone && `• ${customer.phone}`}
+                                        </span>
+                                      </div>
+                                    </CommandItem>
+                                  ))}
+                                </CommandGroup>
+                              )}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                     </div>
 
                     <div className="space-y-2">
