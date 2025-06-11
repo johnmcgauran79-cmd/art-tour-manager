@@ -4,7 +4,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 }
 
 serve(async (req) => {
@@ -14,6 +14,21 @@ serve(async (req) => {
   }
 
   try {
+    // Check for API key in header (optional - for external integrations like Zapier)
+    const apiKey = req.headers.get('x-api-key');
+    const expectedApiKey = Deno.env.get('CRM_SYNC_API_KEY');
+    
+    // If an API key is set, require it for external requests
+    if (expectedApiKey && apiKey !== expectedApiKey) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing API key' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
