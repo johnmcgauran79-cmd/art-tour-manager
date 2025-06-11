@@ -14,12 +14,39 @@ serve(async (req) => {
   }
 
   try {
+    console.log('=== SYNC CRM CONTACTS FUNCTION CALLED ===');
+    console.log('Request method:', req.method);
+    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+    
+    // Log the raw request body for debugging
+    const requestText = await req.text();
+    console.log('Raw request body:', requestText);
+    
+    let requestData;
+    try {
+      requestData = JSON.parse(requestText);
+      console.log('Parsed request data:', requestData);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON in request body', details: parseError.message }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     // Check for API key in header (optional - for external integrations like Zapier)
     const apiKey = req.headers.get('x-api-key');
     const expectedApiKey = Deno.env.get('CRM_SYNC_API_KEY');
     
+    console.log('API Key from request:', apiKey ? 'Present' : 'Missing');
+    console.log('Expected API Key:', expectedApiKey ? 'Set in environment' : 'Not set in environment');
+    
     // If an API key is set, require it for external requests
     if (expectedApiKey && apiKey !== expectedApiKey) {
+      console.log('API key validation failed');
       return new Response(
         JSON.stringify({ error: 'Invalid or missing API key' }),
         { 
@@ -34,16 +61,20 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { contacts } = await req.json()
-    console.log('Received contacts for sync:', contacts)
+    const { contacts } = requestData;
+    console.log('Extracted contacts:', contacts);
 
     if (!contacts || !Array.isArray(contacts)) {
-      throw new Error('Invalid contacts data provided')
+      console.error('Invalid contacts data:', { contacts, type: typeof contacts });
+      throw new Error('Invalid contacts data provided - expected an array of contacts');
     }
+
+    console.log(`Processing ${contacts.length} contacts`);
 
     const results = []
 
     for (const contact of contacts) {
+      console.log('Processing contact:', contact);
       try {
         // Check if contact already exists by CRM ID or email
         const { data: existingContact } = await supabase
@@ -53,6 +84,7 @@ serve(async (req) => {
           .single()
 
         if (existingContact) {
+          console.log('Updating existing contact:', existingContact.id);
           // Update existing contact
           const { data: updatedContact, error: updateError } = await supabase
             .from('customers')
@@ -82,6 +114,7 @@ serve(async (req) => {
 
           results.push({ action: 'updated', contact: updatedContact })
         } else {
+          console.log('Creating new contact');
           // Create new contact
           const { data: newContact, error: insertError } = await supabase
             .from('customers')
@@ -125,12 +158,16 @@ serve(async (req) => {
       }
     }
 
+    const response = {
+      success: true, 
+      message: `Processed ${contacts.length} contacts`,
+      results 
+    };
+    
+    console.log('Final response:', response);
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Processed ${contacts.length} contacts`,
-        results 
-      }),
+      JSON.stringify(response),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
@@ -139,7 +176,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in sync-crm-contacts function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message, stack: error.stack }),
       { 
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
