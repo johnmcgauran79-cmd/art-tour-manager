@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Plus, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { usePaginatedBookings } from "@/hooks/useBookings";
 import { EditBookingModal } from "./EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -28,12 +29,20 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [showEditBooking, setShowEditBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const pageSize = 50;
   
   const { data: paginatedData, isLoading } = usePaginatedBookings(currentPage, pageSize);
   const bookings = paginatedData?.data || [];
   const totalCount = paginatedData?.count || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Filter bookings based on search query
+  const filteredBookings = bookings.filter(booking => {
+    if (!searchQuery) return true;
+    const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+    return leadPassengerName.includes(searchQuery.toLowerCase());
+  });
 
   const handleBookingClick = (booking: any) => {
     setSelectedBooking(booking);
@@ -64,11 +73,22 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
           <CardDescription>
             Complete list of all bookings from most recent to oldest
           </CardDescription>
+          <div className="flex items-center space-x-2 mt-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search by lead passenger name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-          {bookings.length === 0 ? (
+          {filteredBookings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No bookings found. Create your first booking to get started!
+              {searchQuery ? "No bookings found matching your search." : "No bookings found. Create your first booking to get started!"}
             </div>
           ) : (
             <>
@@ -90,7 +110,7 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {bookings.map((booking) => (
+                    {filteredBookings.map((booking) => (
                       <TableRow 
                         key={booking.id} 
                         className="cursor-pointer hover:bg-accent/50"
@@ -137,31 +157,37 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
 
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} bookings
+                  {searchQuery ? (
+                    `Showing ${filteredBookings.length} of ${totalCount} bookings`
+                  ) : (
+                    `Showing ${(currentPage - 1) * pageSize + 1} to ${Math.min(currentPage * pageSize, totalCount)} of ${totalCount} bookings`
+                  )}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Previous
-                  </Button>
-                  <span className="text-sm">
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
+                {!searchQuery && (
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <span className="text-sm">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </>
           )}
