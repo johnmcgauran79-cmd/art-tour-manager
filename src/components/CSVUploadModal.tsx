@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Download, AlertCircle } from "lucide-react";
-import { useCreateCustomer, useUpdateCustomer, useCustomers } from "@/hooks/useCustomers";
+import { useCreateCustomer, useUpdateCustomer, useCustomers, formatAustralianMobile } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -136,12 +136,12 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         continue;
       }
 
-      // Ensure we have the expected structure with proper field mapping
+      // Ensure we have the expected structure with proper field mapping and format phone numbers
       const formattedContact: CSVContact = {
         first_name: contact.first_name,
         last_name: contact.last_name,
         email: contact.email || undefined,
-        phone: contact.phone || undefined,
+        phone: contact.phone ? formatAustralianMobile(contact.phone) || contact.phone : undefined,
         city: contact.city || undefined,
         state: contact.state || undefined,
         country: contact.country || undefined,
@@ -152,6 +152,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
 
       console.log(`Final formatted contact:`, formattedContact);
       console.log(`Email specifically:`, formattedContact.email);
+      console.log(`Phone specifically (formatted):`, formattedContact.phone);
       contacts.push(formattedContact);
     }
 
@@ -159,7 +160,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     console.log(`\n=== FINAL RESULTS ===`);
     console.log(`Total contacts parsed: ${contacts.length}`);
     contacts.forEach((contact, index) => {
-      console.log(`Contact ${index + 1}: ${contact.first_name} ${contact.last_name} - Email: ${contact.email || 'NO EMAIL'}`);
+      console.log(`Contact ${index + 1}: ${contact.first_name} ${contact.last_name} - Email: ${contact.email || 'NO EMAIL'} - Phone: ${contact.phone || 'NO PHONE'}`);
     });
     
     return contacts;
@@ -369,7 +370,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         <DialogHeader>
           <DialogTitle>Bulk Import Contacts from CSV</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple contacts at once.
+            Upload a CSV file to import multiple contacts at once. Australian mobile numbers (9 digits starting with 4) will be automatically formatted.
           </DialogDescription>
         </DialogHeader>
 

@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,21 @@ export interface Customer {
   created_at: string;
   updated_at: string;
 }
+
+// Function to format Australian mobile numbers
+export const formatAustralianMobile = (phone: string | null): string | null => {
+  if (!phone) return phone;
+  
+  // Remove all non-digit characters
+  const digitsOnly = phone.replace(/\D/g, '');
+  
+  // Check if it's a 9-digit number starting with 4
+  if (digitsOnly.length === 9 && digitsOnly.startsWith('4')) {
+    return '0' + digitsOnly;
+  }
+  
+  return phone;
+};
 
 export const useCustomers = () => {
   return useQuery({
@@ -48,9 +64,15 @@ export const useCreateCustomer = () => {
     mutationFn: async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
       console.log('Creating customer with data:', customerData);
       
+      // Format phone number if provided
+      const formattedData = {
+        ...customerData,
+        phone: formatAustralianMobile(customerData.phone)
+      };
+      
       const { data, error } = await supabase
         .from('customers')
-        .insert([customerData])
+        .insert([formattedData])
         .select()
         .single();
 
@@ -88,9 +110,15 @@ export const useUpdateCustomer = () => {
     mutationFn: async ({ id, ...customerData }: Partial<Customer> & { id: string }) => {
       console.log('Updating customer with data:', { id, customerData });
       
+      // Format phone number if provided
+      const formattedData = {
+        ...customerData,
+        phone: customerData.phone ? formatAustralianMobile(customerData.phone) : customerData.phone
+      };
+      
       const { data, error } = await supabase
         .from('customers')
-        .update(customerData)
+        .update(formattedData)
         .eq('id', id)
         .select()
         .single();
@@ -115,6 +143,64 @@ export const useUpdateCustomer = () => {
       toast({
         title: "Error Updating Contact",
         description: error.message || "Failed to update contact. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// New mutation to bulk update phone numbers
+export const useBulkUpdatePhoneNumbers = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (customers: Customer[]) => {
+      const updates = [];
+      
+      for (const customer of customers) {
+        const formattedPhone = formatAustralianMobile(customer.phone);
+        
+        // Only update if the phone number changed
+        if (formattedPhone !== customer.phone) {
+          updates.push({
+            id: customer.id,
+            phone: formattedPhone
+          });
+        }
+      }
+      
+      console.log(`Updating ${updates.length} phone numbers...`);
+      
+      // Update each customer individually
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('customers')
+          .update({ phone: update.phone })
+          .eq('id', update.id);
+          
+        if (error) {
+          console.error('Error updating customer phone:', error);
+          throw error;
+        }
+      }
+      
+      return updates.length;
+    },
+    onSuccess: (updateCount) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      if (updateCount > 0) {
+        toast({
+          title: "Phone Numbers Updated",
+          description: `Updated ${updateCount} Australian mobile number${updateCount !== 1 ? 's' : ''} to proper format.`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      console.error('Error in bulk update:', error);
+      toast({
+        title: "Error Updating Phone Numbers",
+        description: error.message || "Failed to update phone numbers. Please try again.",
         variant: "destructive",
       });
     },

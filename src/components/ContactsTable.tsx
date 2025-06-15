@@ -1,25 +1,46 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Mail, Phone, Search, Upload } from "lucide-react";
-import { useCustomers } from "@/hooks/useCustomers";
+import { Plus, Mail, Phone, Search, Upload, PhoneCall } from "lucide-react";
+import { useCustomers, useBulkUpdatePhoneNumbers, formatAustralianMobile } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
 import { CSVUploadModal } from "@/components/CSVUploadModal";
 
 export const ContactsTable = () => {
   const { data: customers, isLoading } = useCustomers();
+  const bulkUpdatePhones = useBulkUpdatePhoneNumbers();
   const [showAddContact, setShowAddContact] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [hasUnformattedPhones, setHasUnformattedPhones] = useState(false);
 
   const handleContactClick = (contact: any) => {
     setSelectedContact(contact);
     setShowEditContact(true);
+  };
+
+  // Check for unformatted Australian mobile numbers
+  useEffect(() => {
+    if (customers) {
+      const needsFormatting = customers.some(customer => {
+        if (!customer.phone) return false;
+        const digitsOnly = customer.phone.replace(/\D/g, '');
+        return digitsOnly.length === 9 && digitsOnly.startsWith('4');
+      });
+      setHasUnformattedPhones(needsFormatting);
+    }
+  }, [customers]);
+
+  const handleBulkPhoneUpdate = () => {
+    if (customers) {
+      bulkUpdatePhones.mutate(customers);
+    }
   };
 
   // Filter customers based on search term
@@ -51,6 +72,17 @@ export const ContactsTable = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
+              {hasUnformattedPhones && (
+                <Button 
+                  onClick={handleBulkPhoneUpdate}
+                  disabled={bulkUpdatePhones.isPending}
+                  variant="outline"
+                  className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+                >
+                  <PhoneCall className="h-4 w-4 mr-2" />
+                  Format AU Numbers
+                </Button>
+              )}
               <Button 
                 onClick={() => setShowCSVUpload(true)}
                 variant="outline"
@@ -118,56 +150,67 @@ export const ContactsTable = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCustomers.map((customer) => (
-                  <TableRow 
-                    key={customer.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleContactClick(customer)}
-                  >
-                    <TableCell className="font-medium">
-                      {customer.first_name}
-                    </TableCell>
-                    <TableCell>
-                      {customer.last_name}
-                    </TableCell>
-                    <TableCell>
-                      {customer.email ? (
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.email}</span>
+                {filteredCustomers.map((customer) => {
+                  // Format phone number for display
+                  const displayPhone = formatAustralianMobile(customer.phone);
+                  const phoneChanged = displayPhone !== customer.phone;
+                  
+                  return (
+                    <TableRow 
+                      key={customer.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleContactClick(customer)}
+                    >
+                      <TableCell className="font-medium">
+                        {customer.first_name}
+                      </TableCell>
+                      <TableCell>
+                        {customer.last_name}
+                      </TableCell>
+                      <TableCell>
+                        {customer.email ? (
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">{customer.email}</span>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {displayPhone ? (
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span className={`text-sm ${phoneChanged ? 'text-blue-600 font-medium' : ''}`}>
+                              {displayPhone}
+                            </span>
+                            {phoneChanged && (
+                              <span className="text-xs text-muted-foreground">(formatted)</span>
+                            )}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {customer.spouse_name || '-'}
+                      </TableCell>
+                      <TableCell>
+                        {customer.state || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate" title={customer.dietary_requirements || ''}>
+                          {customer.dietary_requirements || '-'}
                         </div>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {customer.phone ? (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">{customer.phone}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs truncate" title={customer.notes || ''}>
+                          {customer.notes || '-'}
                         </div>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {customer.spouse_name || '-'}
-                    </TableCell>
-                    <TableCell>
-                      {customer.state || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate" title={customer.dietary_requirements || ''}>
-                        {customer.dietary_requirements || '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate" title={customer.notes || ''}>
-                        {customer.notes || '-'}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
