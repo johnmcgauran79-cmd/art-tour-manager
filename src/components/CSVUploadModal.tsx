@@ -64,7 +64,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       const contact: any = {};
 
       headers.forEach((header, index) => {
-        if (values[index]) {
+        if (values[index] && values[index] !== '') {
           contact[header] = values[index];
         }
       });
@@ -96,10 +96,20 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     }
 
     setFile(selectedFile);
+    setErrors([]);
     
-    const text = await selectedFile.text();
-    const parsedContacts = parseCSV(text);
-    setPreview(parsedContacts.slice(0, 5)); // Show first 5 rows as preview
+    try {
+      const text = await selectedFile.text();
+      const parsedContacts = parseCSV(text);
+      setPreview(parsedContacts.slice(0, 5)); // Show first 5 rows as preview
+    } catch (error) {
+      console.error('Error reading file:', error);
+      toast({
+        title: "File Error",
+        description: "Could not read the CSV file. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUpload = async () => {
@@ -123,13 +133,18 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
 
       let successCount = 0;
       let errorCount = 0;
-      const errors: string[] = [];
+      const importErrors: string[] = [];
 
-      // Process contacts one by one to avoid overwhelming the database
-      for (const contact of contacts) {
+      console.log(`Starting import of ${contacts.length} contacts...`);
+
+      // Process contacts sequentially to avoid overwhelming the database
+      for (let i = 0; i < contacts.length; i++) {
+        const contact = contacts[i];
+        
         try {
-          console.log('Creating contact:', contact);
+          console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact.first_name, contact.last_name);
           
+          // Prepare customer data with proper null handling
           const customerData = {
             first_name: contact.first_name,
             last_name: contact.last_name,
@@ -145,58 +160,73 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
             last_synced_at: null,
           };
 
-          await new Promise((resolve, reject) => {
+          // Use a Promise to handle the mutation properly
+          await new Promise<void>((resolve, reject) => {
             createCustomer.mutate(customerData, {
-              onSuccess: () => {
+              onSuccess: (data) => {
                 successCount++;
-                console.log('Contact created successfully:', contact.first_name, contact.last_name);
-                resolve(true);
+                console.log(`✓ Contact created: ${contact.first_name} ${contact.last_name}`, data);
+                resolve();
               },
-              onError: (error) => {
+              onError: (error: any) => {
                 errorCount++;
-                const errorMsg = `Failed to create ${contact.first_name} ${contact.last_name}: ${error.message}`;
-                errors.push(errorMsg);
-                console.error('Error creating contact:', error);
-                reject(error);
+                const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Unknown error'}`;
+                importErrors.push(errorMsg);
+                console.error(`✗ Error creating contact:`, error);
+                // Don't reject, just resolve to continue with next contact
+                resolve();
               }
             });
           });
 
-          // Add a small delay to prevent overwhelming the server
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error('Failed to create contact:', contact, error);
+          // Small delay to prevent overwhelming the server
+          if (i < contacts.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+
+        } catch (error: any) {
+          errorCount++;
+          const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Processing error'}`;
+          importErrors.push(errorMsg);
+          console.error('Processing error for contact:', contact, error);
         }
       }
 
+      console.log(`Import completed. Success: ${successCount}, Errors: ${errorCount}`);
+
+      // Show results
       if (successCount > 0) {
         toast({
           title: "Import Complete",
-          description: `Successfully imported ${successCount} contacts. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+          description: `Successfully imported ${successCount} contact${successCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`,
         });
 
-        // Close modal and reset state on success
-        onOpenChange(false);
-        setFile(null);
-        setPreview([]);
-        setErrors([]);
+        // If mostly successful, close the modal
+        if (errorCount === 0 || successCount > errorCount) {
+          onOpenChange(false);
+          setFile(null);
+          setPreview([]);
+          setErrors([]);
+        }
       } else {
         toast({
           title: "Import Failed",
-          description: "No contacts were successfully imported. Please check the file format and try again.",
+          description: "No contacts were successfully imported. Please check the errors below.",
           variant: "destructive",
         });
       }
 
-      if (errors.length > 0) {
-        console.error('Import errors:', errors);
+      // Show detailed errors if any
+      if (importErrors.length > 0) {
+        console.error('Import errors:', importErrors);
+        setErrors(importErrors);
       }
 
-    } catch (error) {
-      console.error('Error processing CSV:', error);
+    } catch (error: any) {
+      console.error('Critical error processing CSV:', error);
       toast({
         title: "Import Failed",
-        description: "An error occurred while processing the CSV file.",
+        description: `An error occurred: ${error?.message || 'Unknown error'}`,
         variant: "destructive",
       });
     }
@@ -245,13 +275,15 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                <div>Found {errors.length} error(s):</div>
-                <ul className="list-disc list-inside mt-2">
-                  {errors.slice(0, 5).map((error, index) => (
+                <div className="font-medium mb-2">
+                  {errors.length === 1 ? 'Import Error:' : `${errors.length} Import Errors:`}
+                </div>
+                <ul className="list-disc list-inside space-y-1">
+                  {errors.slice(0, 10).map((error, index) => (
                     <li key={index} className="text-sm">{error}</li>
                   ))}
-                  {errors.length > 5 && (
-                    <li className="text-sm">...and {errors.length - 5} more</li>
+                  {errors.length > 10 && (
+                    <li className="text-sm font-medium">...and {errors.length - 10} more errors</li>
                   )}
                 </ul>
               </AlertDescription>
@@ -300,7 +332,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={!file || isProcessing || errors.length > 0}
+              disabled={!file || isProcessing || (errors.length > 0 && preview.length === 0)}
               className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
             >
               {isProcessing ? (
