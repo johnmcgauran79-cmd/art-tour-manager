@@ -123,50 +123,75 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
 
       let successCount = 0;
       let errorCount = 0;
+      const errors: string[] = [];
 
+      // Process contacts one by one to avoid overwhelming the database
       for (const contact of contacts) {
         try {
+          console.log('Creating contact:', contact);
+          
+          const customerData = {
+            first_name: contact.first_name,
+            last_name: contact.last_name,
+            email: contact.email || null,
+            phone: contact.phone || null,
+            city: contact.city || null,
+            state: contact.state || null,
+            country: contact.country || null,
+            spouse_name: contact.spouse_name || null,
+            dietary_requirements: contact.dietary_requirements || null,
+            notes: contact.notes || null,
+            crm_id: null,
+            last_synced_at: null,
+          };
+
           await new Promise((resolve, reject) => {
-            createCustomer.mutate({
-              ...contact,
-              email: contact.email || null,
-              phone: contact.phone || null,
-              city: contact.city || null,
-              state: contact.state || null,
-              country: contact.country || null,
-              spouse_name: contact.spouse_name || null,
-              dietary_requirements: contact.dietary_requirements || null,
-              notes: contact.notes || null,
-              crm_id: null,
-              last_synced_at: null,
-            }, {
+            createCustomer.mutate(customerData, {
               onSuccess: () => {
                 successCount++;
+                console.log('Contact created successfully:', contact.first_name, contact.last_name);
                 resolve(true);
               },
               onError: (error) => {
                 errorCount++;
+                const errorMsg = `Failed to create ${contact.first_name} ${contact.last_name}: ${error.message}`;
+                errors.push(errorMsg);
                 console.error('Error creating contact:', error);
                 reject(error);
               }
             });
           });
+
+          // Add a small delay to prevent overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 100));
         } catch (error) {
           console.error('Failed to create contact:', contact, error);
         }
       }
 
-      toast({
-        title: "Import Complete",
-        description: `Successfully imported ${successCount} contacts. ${errorCount} failed.`,
-      });
-
       if (successCount > 0) {
+        toast({
+          title: "Import Complete",
+          description: `Successfully imported ${successCount} contacts. ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+        });
+
+        // Close modal and reset state on success
         onOpenChange(false);
         setFile(null);
         setPreview([]);
         setErrors([]);
+      } else {
+        toast({
+          title: "Import Failed",
+          description: "No contacts were successfully imported. Please check the file format and try again.",
+          variant: "destructive",
+        });
       }
+
+      if (errors.length > 0) {
+        console.error('Import errors:', errors);
+      }
+
     } catch (error) {
       console.error('Error processing CSV:', error);
       toast({
