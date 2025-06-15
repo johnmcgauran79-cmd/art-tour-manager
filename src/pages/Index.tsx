@@ -11,10 +11,13 @@ import { BookingsTable } from "@/components/BookingsTable";
 import { ToursTable } from "@/components/ToursTable";
 import { ContactsTable } from "@/components/ContactsTable";
 import { UserManagement } from "@/components/UserManagement";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddBooking, setShowAddBooking] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
 
   useEffect(() => {
     const handleNavigateToBookings = () => {
@@ -49,6 +52,16 @@ const Index = () => {
                 <p className="text-primary-foreground/80">Tour Management System</p>
               </div>
             </div>
+            {/* Users icon button shows user management modal */}
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="Manage Users"
+              className="text-primary-foreground"
+              onClick={() => setShowUserManagement(true)}
+            >
+              <UserCog className="h-6 w-6" />
+            </Button>
           </div>
         </div>
       </div>
@@ -56,7 +69,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5"> {/* Now just 5 tabs */}
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Dashboard
@@ -76,10 +89,6 @@ const Index = () => {
             <TabsTrigger value="operations" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Operations
-            </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
-              <UserCog className="h-4 w-4" />
-              Users
             </TabsTrigger>
           </TabsList>
 
@@ -104,15 +113,16 @@ const Index = () => {
           <TabsContent value="operations" className="space-y-6">
             <OperationsDashboard />
           </TabsContent>
-
-          <TabsContent value="users" className="space-y-6">
-            <UserManagement />
-          </TabsContent>
         </Tabs>
       </div>
 
       {/* Modals */}
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
+      <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
+        <DialogContent className="max-w-2xl p-0">
+          <UserManagement />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
