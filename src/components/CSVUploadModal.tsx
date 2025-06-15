@@ -56,10 +56,14 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length < 2) return [];
 
-    // Parse headers - handle quoted headers and trim whitespace
+    // Parse headers and normalize to lowercase for case-insensitive matching
     const headerLine = lines[0];
-    const headers = headerLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
-    console.log('CSV Headers found:', headers);
+    const rawHeaders = headerLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+    const headers = rawHeaders.map(h => h.toLowerCase());
+    
+    console.log('=== CSV HEADER ANALYSIS ===');
+    console.log('Raw headers from CSV:', rawHeaders);
+    console.log('Normalized headers (lowercase):', headers);
     console.log('Email header index:', headers.indexOf('email'));
 
     const contacts: CSVContact[] = [];
@@ -99,7 +103,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       // Map headers to values with detailed logging
       headers.forEach((header, index) => {
         const rawValue = values[index];
-        console.log(`  ${header} [${index}]: "${rawValue}" (type: ${typeof rawValue}, length: ${rawValue?.length || 0})`);
+        console.log(`  ${header} [${index}]: "${rawValue}" (raw header: "${rawHeaders[index]}")`);
         
         // Clean the value
         let cleanValue = rawValue;
@@ -112,7 +116,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
           }
         }
         
-        console.log(`    Cleaned value: "${cleanValue}"`);
+        console.log(`    Cleaned value for ${header}: "${cleanValue}"`);
         
         // Only add non-empty values
         if (cleanValue && cleanValue !== '' && cleanValue !== 'undefined' && cleanValue !== 'null') {
@@ -124,7 +128,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       });
 
       console.log(`Final contact object:`, contact);
-      console.log(`Email in contact:`, contact.email);
+      console.log(`Email in contact (should be lowercase key):`, contact.email);
 
       // Validate required fields
       if (!contact.first_name || !contact.last_name) {
@@ -132,7 +136,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         continue;
       }
 
-      // Ensure we have the expected structure
+      // Ensure we have the expected structure with proper field mapping
       const formattedContact: CSVContact = {
         first_name: contact.first_name,
         last_name: contact.last_name,
@@ -146,7 +150,8 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         notes: contact.notes || undefined,
       };
 
-      console.log(`Final formatted contact with email:`, formattedContact);
+      console.log(`Final formatted contact:`, formattedContact);
+      console.log(`Email specifically:`, formattedContact.email);
       contacts.push(formattedContact);
     }
 
