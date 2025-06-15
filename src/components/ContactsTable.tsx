@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -153,8 +152,7 @@ export const ContactsTable = () => {
                 {filteredCustomers.map((customer) => {
                   // Format phone number for display
                   const displayPhone = formatAustralianMobile(customer.phone);
--                  const phoneChanged = displayPhone !== customer.phone;
-                  
+
                   return (
                     <TableRow 
                       key={customer.id}
@@ -181,13 +179,7 @@ export const ContactsTable = () => {
                         {displayPhone ? (
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4 text-muted-foreground" />
--                            <span className={`text-sm ${phoneChanged ? 'text-blue-600 font-medium' : ''}`}>
--                              {displayPhone}
--                            </span>
--                            {phoneChanged && (
--                              <span className="text-xs text-muted-foreground">(formatted)</span>
--                            )}
-+                            <span className="text-sm">{displayPhone}</span>
+                            <span className="text-sm">{displayPhone}</span>
                           </div>
                         ) : (
                           '-'
