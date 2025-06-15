@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Download, AlertCircle } from "lucide-react";
-import { useCreateCustomer } from "@/hooks/useCustomers";
+import { useCreateCustomer, useUpdateCustomer, useCustomers } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -32,6 +32,8 @@ export const CSVUploadModal = ({ open, onOpenChange }: CSVUploadModalProps) => {
   const [errors, setErrors] = useState<string[]>([]);
   const [preview, setPreview] = useState<CSVContact[]>([]);
   const createCustomer = useCreateCustomer();
+  const updateCustomer = useUpdateCustomer();
+  const { data: existingCustomers } = useCustomers();
   const { toast } = useToast();
 
   const downloadTemplate = () => {
@@ -213,6 +215,8 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       }
 
       let successCount = 0;
+      let updateCount = 0;
+      let createCount = 0;
       let errorCount = 0;
       const importErrors: string[] = [];
 
@@ -225,6 +229,13 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         try {
           console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact);
           
+          // Check if contact already exists based on first_name and last_name
+          const existingContact = existingCustomers?.find(
+            customer => 
+              customer.first_name.toLowerCase() === contact.first_name.toLowerCase() &&
+              customer.last_name.toLowerCase() === contact.last_name.toLowerCase()
+          );
+
           // Prepare customer data with proper null handling
           const customerData = {
             first_name: contact.first_name,
@@ -241,26 +252,54 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
             last_synced_at: null,
           };
 
-          console.log('Customer data being sent to database:', customerData);
+          console.log('Customer data being processed:', customerData);
 
-          // Use a Promise to handle the mutation properly
-          await new Promise<void>((resolve, reject) => {
-            createCustomer.mutate(customerData, {
-              onSuccess: (data) => {
-                successCount++;
-                console.log(`✓ Contact created: ${contact.first_name} ${contact.last_name}`, data);
-                resolve();
-              },
-              onError: (error: any) => {
-                errorCount++;
-                const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Unknown error'}`;
-                importErrors.push(errorMsg);
-                console.error(`✗ Error creating contact:`, error);
-                // Don't reject, just resolve to continue with next contact
-                resolve();
-              }
+          if (existingContact) {
+            // Update existing contact
+            console.log(`Updating existing contact: ${contact.first_name} ${contact.last_name}`);
+            
+            await new Promise<void>((resolve, reject) => {
+              updateCustomer.mutate(
+                { id: existingContact.id, ...customerData },
+                {
+                  onSuccess: (data) => {
+                    successCount++;
+                    updateCount++;
+                    console.log(`✓ Contact updated: ${contact.first_name} ${contact.last_name}`, data);
+                    resolve();
+                  },
+                  onError: (error: any) => {
+                    errorCount++;
+                    const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Update error'}`;
+                    importErrors.push(errorMsg);
+                    console.error(`✗ Error updating contact:`, error);
+                    resolve(); // Continue with next contact
+                  }
+                }
+              );
             });
-          });
+          } else {
+            // Create new contact
+            console.log(`Creating new contact: ${contact.first_name} ${contact.last_name}`);
+            
+            await new Promise<void>((resolve, reject) => {
+              createCustomer.mutate(customerData, {
+                onSuccess: (data) => {
+                  successCount++;
+                  createCount++;
+                  console.log(`✓ Contact created: ${contact.first_name} ${contact.last_name}`, data);
+                  resolve();
+                },
+                onError: (error: any) => {
+                  errorCount++;
+                  const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Creation error'}`;
+                  importErrors.push(errorMsg);
+                  console.error(`✗ Error creating contact:`, error);
+                  resolve(); // Continue with next contact
+                }
+              });
+            });
+          }
 
           // Small delay to prevent overwhelming the server
           if (i < contacts.length - 1) {
@@ -275,13 +314,15 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         }
       }
 
-      console.log(`Import completed. Success: ${successCount}, Errors: ${errorCount}`);
+      console.log(`Import completed. Success: ${successCount} (${createCount} created, ${updateCount} updated), Errors: ${errorCount}`);
 
       // Show results
       if (successCount > 0) {
+        const resultMessage = `Successfully processed ${successCount} contact${successCount !== 1 ? 's' : ''} (${createCount} created, ${updateCount} updated)${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`;
+        
         toast({
           title: "Import Complete",
-          description: `Successfully imported ${successCount} contact${successCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`,
+          description: resultMessage,
         });
 
         // If mostly successful, close the modal
@@ -294,7 +335,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       } else {
         toast({
           title: "Import Failed",
-          description: "No contacts were successfully imported. Please check the errors below.",
+          description: "No contacts were successfully processed. Please check the errors below.",
           variant: "destructive",
         });
       }
