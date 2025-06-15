@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -55,19 +54,51 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length < 2) return [];
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    // Parse headers - handle quoted headers and trim whitespace
+    const headerLine = lines[0];
+    const headers = headerLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+    console.log('CSV Headers found:', headers);
+
     const contacts: CSVContact[] = [];
     const validationErrors: string[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+      const line = lines[i].trim();
+      if (!line) continue; // Skip empty lines
+
+      // Simple CSV parsing - split by comma and handle basic quoted values
+      const values = [];
+      let currentValue = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if ((char === '"' || char === "'") && (j === 0 || line[j-1] === ',')) {
+          inQuotes = true;
+        } else if ((char === '"' || char === "'") && inQuotes && (j === line.length - 1 || line[j+1] === ',')) {
+          inQuotes = false;
+        } else if (char === ',' && !inQuotes) {
+          values.push(currentValue.trim());
+          currentValue = '';
+        } else {
+          currentValue += char;
+        }
+      }
+      values.push(currentValue.trim()); // Add the last value
+
+      console.log(`Row ${i} values:`, values);
+
       const contact: any = {};
 
+      // Map headers to values
       headers.forEach((header, index) => {
-        if (values[index] && values[index] !== '') {
-          contact[header] = values[index];
+        const value = values[index];
+        if (value && value !== '' && value !== '""' && value !== "''") {
+          contact[header] = value;
         }
       });
+
+      console.log(`Parsed contact for row ${i}:`, contact);
 
       // Validate required fields
       if (!contact.first_name || !contact.last_name) {
@@ -75,7 +106,22 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         continue;
       }
 
-      contacts.push(contact as CSVContact);
+      // Ensure we have the expected structure
+      const formattedContact: CSVContact = {
+        first_name: contact.first_name,
+        last_name: contact.last_name,
+        email: contact.email || undefined,
+        phone: contact.phone || undefined,
+        city: contact.city || undefined,
+        state: contact.state || undefined,
+        country: contact.country || undefined,
+        spouse_name: contact.spouse_name || undefined,
+        dietary_requirements: contact.dietary_requirements || undefined,
+        notes: contact.notes || undefined,
+      };
+
+      console.log(`Final formatted contact:`, formattedContact);
+      contacts.push(formattedContact);
     }
 
     setErrors(validationErrors);
@@ -100,7 +146,9 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     
     try {
       const text = await selectedFile.text();
+      console.log('Raw CSV text:', text.substring(0, 200) + '...');
       const parsedContacts = parseCSV(text);
+      console.log('Parsed contacts for preview:', parsedContacts);
       setPreview(parsedContacts.slice(0, 5)); // Show first 5 rows as preview
     } catch (error) {
       console.error('Error reading file:', error);
@@ -142,7 +190,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         const contact = contacts[i];
         
         try {
-          console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact.first_name, contact.last_name);
+          console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact);
           
           // Prepare customer data with proper null handling
           const customerData = {
@@ -159,6 +207,8 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
             crm_id: null,
             last_synced_at: null,
           };
+
+          console.log('Customer data being sent to database:', customerData);
 
           // Use a Promise to handle the mutation properly
           await new Promise<void>((resolve, reject) => {
