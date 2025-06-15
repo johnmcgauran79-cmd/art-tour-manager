@@ -58,6 +58,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     const headerLine = lines[0];
     const headers = headerLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
     console.log('CSV Headers found:', headers);
+    console.log('Email header index:', headers.indexOf('email'));
 
     const contacts: CSVContact[] = [];
     const validationErrors: string[] = [];
@@ -65,6 +66,9 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue; // Skip empty lines
+
+      console.log(`\n=== Processing Row ${i} ===`);
+      console.log('Raw line:', line);
 
       // Simple CSV parsing - split by comma and handle basic quoted values
       const values = [];
@@ -86,19 +90,39 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       }
       values.push(currentValue.trim()); // Add the last value
 
-      console.log(`Row ${i} values:`, values);
+      console.log(`Parsed values (${values.length}):`, values);
 
       const contact: any = {};
 
-      // Map headers to values
+      // Map headers to values with detailed logging
       headers.forEach((header, index) => {
-        const value = values[index];
-        if (value && value !== '' && value !== '""' && value !== "''") {
-          contact[header] = value;
+        const rawValue = values[index];
+        console.log(`  ${header} [${index}]: "${rawValue}" (type: ${typeof rawValue}, length: ${rawValue?.length || 0})`);
+        
+        // Clean the value
+        let cleanValue = rawValue;
+        if (cleanValue) {
+          cleanValue = cleanValue.trim();
+          // Remove surrounding quotes
+          if ((cleanValue.startsWith('"') && cleanValue.endsWith('"')) || 
+              (cleanValue.startsWith("'") && cleanValue.endsWith("'"))) {
+            cleanValue = cleanValue.slice(1, -1);
+          }
+        }
+        
+        console.log(`    Cleaned value: "${cleanValue}"`);
+        
+        // Only add non-empty values
+        if (cleanValue && cleanValue !== '' && cleanValue !== 'undefined' && cleanValue !== 'null') {
+          contact[header] = cleanValue;
+          console.log(`    ✓ Added to contact: ${header} = "${cleanValue}"`);
+        } else {
+          console.log(`    ✗ Skipped empty/invalid value for ${header}`);
         }
       });
 
-      console.log(`Parsed contact for row ${i}:`, contact);
+      console.log(`Final contact object:`, contact);
+      console.log(`Email in contact:`, contact.email);
 
       // Validate required fields
       if (!contact.first_name || !contact.last_name) {
@@ -120,11 +144,17 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         notes: contact.notes || undefined,
       };
 
-      console.log(`Final formatted contact:`, formattedContact);
+      console.log(`Final formatted contact with email:`, formattedContact);
       contacts.push(formattedContact);
     }
 
     setErrors(validationErrors);
+    console.log(`\n=== FINAL RESULTS ===`);
+    console.log(`Total contacts parsed: ${contacts.length}`);
+    contacts.forEach((contact, index) => {
+      console.log(`Contact ${index + 1}: ${contact.first_name} ${contact.last_name} - Email: ${contact.email || 'NO EMAIL'}`);
+    });
+    
     return contacts;
   };
 
@@ -146,9 +176,12 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     
     try {
       const text = await selectedFile.text();
-      console.log('Raw CSV text:', text.substring(0, 200) + '...');
+      console.log('=== RAW CSV CONTENT ===');
+      console.log('First 500 characters:', text.substring(0, 500));
+      console.log('Total length:', text.length);
+      
       const parsedContacts = parseCSV(text);
-      console.log('Parsed contacts for preview:', parsedContacts);
+      console.log('=== PREVIEW CONTACTS ===', parsedContacts.slice(0, 5));
       setPreview(parsedContacts.slice(0, 5)); // Show first 5 rows as preview
     } catch (error) {
       console.error('Error reading file:', error);
