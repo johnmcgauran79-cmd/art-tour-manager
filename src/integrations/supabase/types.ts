@@ -574,6 +574,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -583,6 +604,13 @@ export type Database = {
         Args: { check_in: string; check_out: string }
         Returns: number
       }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_status:
@@ -591,6 +619,7 @@ export type Database = {
         | "paid_deposit"
         | "fully_paid"
         | "confirmed"
+      app_role: "admin" | "manager" | "booking_agent"
       bedding_type: "single" | "double" | "twin"
       booking_status:
         | "pending"
@@ -728,6 +757,7 @@ export const Constants = {
         "fully_paid",
         "confirmed",
       ],
+      app_role: ["admin", "manager", "booking_agent"],
       bedding_type: ["single", "double", "twin"],
       booking_status: ["pending", "invoiced", "deposited", "paid", "cancelled"],
       hotel_booking_status: ["enquiry_sent", "booked", "pending"],
