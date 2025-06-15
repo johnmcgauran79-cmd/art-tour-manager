@@ -1,18 +1,19 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Mail, Phone, Search } from "lucide-react";
+import { Plus, Mail, Phone, Search, Upload } from "lucide-react";
 import { useCustomers } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
+import { CSVUploadModal } from "@/components/CSVUploadModal";
 
 export const ContactsTable = () => {
   const { data: customers, isLoading } = useCustomers();
   const [showAddContact, setShowAddContact] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -47,13 +48,23 @@ export const ContactsTable = () => {
                 Complete list of all customer contacts
               </CardDescription>
             </div>
-            <Button 
-              onClick={() => setShowAddContact(true)}
-              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Contact
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowCSVUpload(true)}
+                variant="outline"
+                className="border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-brand-yellow"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+              <Button 
+                onClick={() => setShowAddContact(true)}
+                className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Contact
+              </Button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -69,12 +80,22 @@ export const ContactsTable = () => {
           {!customers || customers.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No contacts found.</p>
-              <Button 
-                onClick={() => setShowAddContact(true)}
-                className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-              >
-                Add Your First Contact
-              </Button>
+              <div className="flex justify-center gap-2">
+                <Button 
+                  onClick={() => setShowCSVUpload(true)}
+                  variant="outline"
+                  className="border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-brand-yellow"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import from CSV
+                </Button>
+                <Button 
+                  onClick={() => setShowAddContact(true)}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Add Your First Contact
+                </Button>
+              </div>
             </div>
           ) : filteredCustomers.length === 0 ? (
             <div className="text-center py-8">
@@ -160,6 +181,11 @@ export const ContactsTable = () => {
         contact={selectedContact}
         open={showEditContact}
         onOpenChange={setShowEditContact}
+      />
+
+      <CSVUploadModal
+        open={showCSVUpload}
+        onOpenChange={setShowCSVUpload}
       />
     </>
   );
