@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -25,7 +24,7 @@ export interface Customer {
 export const formatAustralianMobile = (phone: string | null): string | null => {
   if (!phone) return phone;
   
-  // Remove all non-digit characters
+  // Remove all non-digit characters (spaces, parentheses, dashes, etc.)
   const digitsOnly = phone.replace(/\D/g, '');
   
   // Check if it's a 9-digit number starting with 4
@@ -33,7 +32,8 @@ export const formatAustralianMobile = (phone: string | null): string | null => {
     return '0' + digitsOnly;
   }
   
-  return phone;
+  // Return the cleaned number (digits only) for other cases
+  return digitsOnly || phone;
 };
 
 export const useCustomers = () => {
