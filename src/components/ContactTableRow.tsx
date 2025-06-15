@@ -1,8 +1,7 @@
 
 import { Phone, Mail } from "lucide-react";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { formatAustralianMobile } from "@/hooks/useCustomers";
-import { Customer } from "@/hooks/useCustomers";
+import { formatAustralianMobile, Customer } from "@/hooks/useCustomers";
 
 interface ContactTableRowProps {
   customer: Customer;

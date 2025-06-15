@@ -1,10 +1,10 @@
+
 import { useState, useEffect } from "react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Mail, Phone, Search, Upload, PhoneCall } from "lucide-react";
-import { useCustomers, useBulkUpdatePhoneNumbers, formatAustralianMobile } from "@/hooks/useCustomers";
+import { Plus, Search, Upload, PhoneCall } from "lucide-react";
+import { useCustomers, useBulkUpdatePhoneNumbers } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
 import { CSVUploadModal } from "@/components/CSVUploadModal";
@@ -25,13 +25,13 @@ export const ContactsTable = () => {
     setShowEditContact(true);
   };
 
-  // Check for unformatted Australian mobile numbers
+  // Detect if any AU mobile numbers need formatting (9 digits, starts with 4)
   useEffect(() => {
     if (customers) {
-      const needsFormatting = customers.some(customer => {
+      const needsFormatting = customers.some((customer) => {
         if (!customer.phone) return false;
-        const digitsOnly = customer.phone.replace(/\D/g, '');
-        return digitsOnly.length === 9 && digitsOnly.startsWith('4');
+        const digitsOnly = customer.phone.replace(/\D/g, "");
+        return digitsOnly.length === 9 && digitsOnly.startsWith("4");
       });
       setHasUnformattedPhones(needsFormatting);
     }
@@ -43,16 +43,17 @@ export const ContactsTable = () => {
     }
   };
 
-  // Filter customers based on search term
-  const filteredCustomers = customers?.filter(customer => {
-    if (!searchTerm) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      customer.first_name?.toLowerCase().includes(searchLower) ||
-      customer.last_name?.toLowerCase().includes(searchLower) ||
-      customer.email?.toLowerCase().includes(searchLower)
-    );
-  }) || [];
+  // Filter customers by search
+  const filteredCustomers =
+    customers?.filter((customer) => {
+      if (!searchTerm) return true;
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        customer.first_name?.toLowerCase().includes(searchLower) ||
+        customer.last_name?.toLowerCase().includes(searchLower) ||
+        customer.email?.toLowerCase().includes(searchLower)
+      );
+    }) || [];
 
   const totalContacts = customers?.length || 0;
 
@@ -73,7 +74,7 @@ export const ContactsTable = () => {
             </div>
             <div className="flex gap-2">
               {hasUnformattedPhones && (
-                <Button 
+                <Button
                   onClick={handleBulkPhoneUpdate}
                   disabled={bulkUpdatePhones.isPending}
                   variant="outline"
@@ -83,7 +84,7 @@ export const ContactsTable = () => {
                   Format AU Numbers
                 </Button>
               )}
-              <Button 
+              <Button
                 onClick={() => setShowCSVUpload(true)}
                 variant="outline"
                 className="border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-brand-yellow"
@@ -91,7 +92,7 @@ export const ContactsTable = () => {
                 <Upload className="h-4 w-4 mr-2" />
                 Import CSV
               </Button>
-              <Button 
+              <Button
                 onClick={() => setShowAddContact(true)}
                 className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
               >
@@ -115,7 +116,7 @@ export const ContactsTable = () => {
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No contacts found.</p>
               <div className="flex justify-center gap-2">
-                <Button 
+                <Button
                   onClick={() => setShowCSVUpload(true)}
                   variant="outline"
                   className="border-brand-navy text-brand-navy hover:bg-brand-navy hover:text-brand-yellow"
@@ -123,7 +124,7 @@ export const ContactsTable = () => {
                   <Upload className="h-4 w-4 mr-2" />
                   Import from CSV
                 </Button>
-                <Button 
+                <Button
                   onClick={() => setShowAddContact(true)}
                   className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                 >
@@ -136,13 +137,20 @@ export const ContactsTable = () => {
               <p className="text-muted-foreground">No contacts match your search.</p>
             </div>
           ) : (
-            <ContactsTableContent customers={filteredCustomers} onContactClick={handleContactClick} />
+            <ContactsTableContent
+              customers={filteredCustomers}
+              onContactClick={handleContactClick}
+            />
           )}
         </CardContent>
       </Card>
 
       <AddContactModal open={showAddContact} onOpenChange={setShowAddContact} />
-      <EditContactModal contact={selectedContact} open={showEditContact} onOpenChange={setShowEditContact} />
+      <EditContactModal
+        contact={selectedContact}
+        open={showEditContact}
+        onOpenChange={setShowEditContact}
+      />
       <CSVUploadModal open={showCSVUpload} onOpenChange={setShowCSVUpload} />
     </>
   );
