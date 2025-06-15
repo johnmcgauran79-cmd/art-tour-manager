@@ -33,6 +33,8 @@ export const ContactsTable = () => {
     );
   }) || [];
 
+  const totalContacts = customers?.length || 0;
+
   if (isLoading) {
     return <div>Loading contacts...</div>;
   }
@@ -43,7 +45,7 @@ export const ContactsTable = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>All Contacts</CardTitle>
+              <CardTitle>All {totalContacts} Contacts</CardTitle>
               <CardDescription>
                 Complete list of all customer contacts
               </CardDescription>
