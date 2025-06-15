@@ -8,6 +8,7 @@ import { useCustomers, useBulkUpdatePhoneNumbers, formatAustralianMobile } from 
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
 import { CSVUploadModal } from "@/components/CSVUploadModal";
+import { ContactsTableContent } from "./ContactsTableContent";
 
 export const ContactsTable = () => {
   const { data: customers, isLoading } = useCustomers();
@@ -135,96 +136,14 @@ export const ContactsTable = () => {
               <p className="text-muted-foreground">No contacts match your search.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>First Name</TableHead>
-                  <TableHead>Surname</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Spouse</TableHead>
-                  <TableHead>State</TableHead>
-                  <TableHead>Dietary Requirements</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.map((customer) => {
-                  // Format phone number for display
-                  const displayPhone = formatAustralianMobile(customer.phone);
-
-                  return (
-                    <TableRow 
-                      key={customer.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleContactClick(customer)}
-                    >
-                      <TableCell className="font-medium">
-                        {customer.first_name}
-                      </TableCell>
-                      <TableCell>
-                        {customer.last_name}
-                      </TableCell>
-                      <TableCell>
-                        {customer.email ? (
-                          <div className="flex items-center gap-2">
-                            <Mail className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{customer.email}</span>
-                          </div>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {displayPhone ? (
-                          <div className="flex items-center gap-2">
-                            <Phone className="h-4 w-4 text-muted-foreground" />
-                            <span className="text-sm">{displayPhone}</span>
-                          </div>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {customer.spouse_name || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {customer.state || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate" title={customer.dietary_requirements || ''}>
-                          {customer.dietary_requirements || '-'}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate" title={customer.notes || ''}>
-                          {customer.notes || '-'}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+            <ContactsTableContent customers={filteredCustomers} onContactClick={handleContactClick} />
           )}
         </CardContent>
       </Card>
 
-      <AddContactModal
-        open={showAddContact}
-        onOpenChange={setShowAddContact}
-      />
-
-      <EditContactModal
-        contact={selectedContact}
-        open={showEditContact}
-        onOpenChange={setShowEditContact}
-      />
-
-      <CSVUploadModal
-        open={showCSVUpload}
-        onOpenChange={setShowCSVUpload}
-      />
+      <AddContactModal open={showAddContact} onOpenChange={setShowAddContact} />
+      <EditContactModal contact={selectedContact} open={showEditContact} onOpenChange={setShowEditContact} />
+      <CSVUploadModal open={showCSVUpload} onOpenChange={setShowCSVUpload} />
     </>
   );
 };
