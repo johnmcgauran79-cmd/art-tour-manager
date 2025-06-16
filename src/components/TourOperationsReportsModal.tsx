@@ -47,7 +47,6 @@ export const TourOperationsReportsModal = ({
     setSelectedHotel(hotel);
     setHotelSelectionOpen(false);
     setRoomingListModalOpen(true);
-    onOpenChange(false);
   };
 
   const renderReportTable = (report: any) => {
@@ -84,8 +83,12 @@ export const TourOperationsReportsModal = ({
     return (
       <>
         <HotelSelectionDialog
-          open={open}
-          onOpenChange={onOpenChange}
+          open={open && !roomingListModalOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              onOpenChange(false);
+            }
+          }}
           hotels={hotels}
           tourName={tourName}
           onHotelSelect={handleHotelSelect}
@@ -95,7 +98,14 @@ export const TourOperationsReportsModal = ({
           hotel={selectedHotel}
           tourId={tourId}
           open={roomingListModalOpen}
-          onOpenChange={setRoomingListModalOpen}
+          onOpenChange={(open) => {
+            setRoomingListModalOpen(open);
+            if (!open) {
+              // When rooming list closes, close the main modal too
+              onOpenChange(false);
+              setSelectedHotel(null);
+            }
+          }}
         />
       </>
     );
