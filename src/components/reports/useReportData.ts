@@ -1,12 +1,12 @@
 
 import { useBookings } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { Phone, Utensils, Users } from "lucide-react";
+import { Phone, Utensils, Users, ClipboardList } from "lucide-react";
 import React from "react";
 
 interface ReportItem {
   id: string;
-  type: 'contacts' | 'dietary' | 'summary' | 'hotel';
+  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist';
   title: string;
   description: string;
   icon: React.ReactNode;
@@ -50,6 +50,43 @@ export const useReportData = (tourId: string): ReportItem[] => {
     groupName: booking.group_name || ''
   }));
 
+  // Individual Passenger List Report
+  const passengerList = tourBookings.flatMap(booking => {
+    const passengers = [];
+    
+    // Add lead passenger
+    passengers.push({
+      name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+      bookingReference: booking.id.substring(0, 8),
+      groupName: booking.group_name || '',
+      dietaryRequirements: booking.customers?.dietary_requirements || '',
+      notes: ''
+    });
+
+    // Add additional passengers
+    if (booking.passenger_2_name) {
+      passengers.push({
+        name: booking.passenger_2_name,
+        bookingReference: booking.id.substring(0, 8),
+        groupName: booking.group_name || '',
+        dietaryRequirements: '',
+        notes: ''
+      });
+    }
+
+    if (booking.passenger_3_name) {
+      passengers.push({
+        name: booking.passenger_3_name,
+        bookingReference: booking.id.substring(0, 8),
+        groupName: booking.group_name || '',
+        dietaryRequirements: '',
+        notes: ''
+      });
+    }
+
+    return passengers;
+  }).sort((a, b) => a.name.localeCompare(b.name));
+
   return [
     {
       id: 'contacts',
@@ -77,6 +114,15 @@ export const useReportData = (tourId: string): ReportItem[] => {
       icon: React.createElement(Users, { className: "h-5 w-5 text-purple-600" }),
       count: passengerSummary.length,
       data: passengerSummary
+    },
+    {
+      id: 'passengerlist',
+      type: 'passengerlist',
+      title: 'Individual Passenger List',
+      description: 'All passengers listed individually with space for notes',
+      icon: React.createElement(ClipboardList, { className: "h-5 w-5 text-orange-600" }),
+      count: passengerList.length,
+      data: passengerList
     }
   ];
 };

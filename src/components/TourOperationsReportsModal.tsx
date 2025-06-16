@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { RoomingListModal } from "@/components/RoomingListModal";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
 import { PassengerSummaryReport } from "@/components/reports/PassengerSummaryReport";
+import { PassengerListReport } from "@/components/reports/PassengerListReport";
 import { HotelSelectionDialog } from "@/components/reports/HotelSelectionDialog";
 import { useReportData } from "@/components/reports/useReportData";
 import { exportReportToCSV, printReport } from "@/components/reports/ReportExportUtils";
@@ -18,7 +18,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null;
   hotelId?: string;
 }
 
@@ -57,6 +57,8 @@ export const TourOperationsReportsModal = ({
         return <DietaryReport data={report.data} />;
       case 'summary':
         return <PassengerSummaryReport data={report.data} />;
+      case 'passengerlist':
+        return <PassengerListReport data={report.data} />;
       default:
         return null;
     }
@@ -136,6 +138,9 @@ export const TourOperationsReportsModal = ({
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">{displayReport.description}</span>
+              {reportType === 'passengerlist' && (
+                <Badge variant="outline" className="text-xs">Perfect for printing with blank spaces for notes</Badge>
+              )}
             </div>
             
             <div className="border rounded-lg">

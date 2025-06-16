@@ -1,7 +1,7 @@
 
 interface ReportItem {
   id: string;
-  type: 'contacts' | 'dietary' | 'summary' | 'hotel';
+  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist';
   title: string;
   description: string;
   count: number;
@@ -41,6 +41,16 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
         status: item.status,
         groupname: item.groupName,
         notes: item.notes
+      }));
+      break;
+    case 'passengerlist':
+      headers = ['Passenger Name', 'Booking Reference', 'Group', 'Dietary Requirements', 'Notes'];
+      csvData = report.data.map(item => ({
+        passengername: item.name,
+        bookingreference: item.bookingReference,
+        group: item.groupName,
+        dietaryrequirements: item.dietaryRequirements,
+        notes: ''
       }));
       break;
   }
@@ -118,6 +128,24 @@ export const printReport = (report: ReportItem, tourName: string) => {
         </table>
       `;
       break;
+    case 'passengerlist':
+      tableHTML = `
+        <table class="passenger-list">
+          <thead><tr><th>Passenger Name</th><th>Booking Ref</th><th>Group</th><th>Dietary Requirements</th><th>Notes / Meal Orders</th></tr></thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr class="passenger-row">
+                <td>${item.name}</td>
+                <td>${item.bookingReference}</td>
+                <td>${item.groupName || '-'}</td>
+                <td>${item.dietaryRequirements || '-'}</td>
+                <td class="notes-column">_________________________</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
   }
 
   const printWindow = window.open('', '_blank');
@@ -137,11 +165,17 @@ export const printReport = (report: ReportItem, tourName: string) => {
             .status.deposited { background-color: #dbeafe; color: #1e40af; }
             .status.invoiced { background-color: #fef3c7; color: #92400e; }
             .status.pending { background-color: #f3f4f6; color: #374151; }
-            @media print { body { margin: 0; } }
+            .passenger-list .passenger-row { height: 50px; }
+            .passenger-list .notes-column { border-left: 3px solid #333; min-height: 40px; }
+            @media print { 
+              body { margin: 0; }
+              .passenger-list .passenger-row { page-break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
           <h1>${report.title} - ${tourName}</h1>
+          ${report.type === 'passengerlist' ? '<p><strong>Instructions:</strong> Use the blank spaces in the Notes column to write meal orders, preferences, or other tour-related notes for each passenger.</p>' : ''}
           ${tableHTML}
         </body>
       </html>

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, Eye, FileText } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
@@ -17,7 +17,7 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
 
@@ -35,7 +35,12 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
     phone: booking.customers?.phone || ''
   }));
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel') => {
+  // Calculate total individual passengers
+  const totalPassengers = tourBookings.reduce((total, booking) => {
+    return total + booking.passenger_count;
+  }, 0);
+
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
@@ -61,7 +66,7 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div 
               className="text-center p-6 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('contacts')}
@@ -94,19 +99,29 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
             </div>
             <div 
               className="text-center p-6 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('hotel')}
+              onClick={() => handleReportClick('passengerlist')}
             >
               <div className="bg-orange-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-orange-200 transition-colors">
-                <Hotel className="h-8 w-8 text-orange-600" />
+                <ClipboardList className="h-8 w-8 text-orange-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-orange-700">Hotel Reports</p>
+              <p className="font-semibold text-gray-800 group-hover:text-orange-700">Passenger List</p>
+              <p className="text-sm text-gray-600">{totalPassengers} passengers</p>
+            </div>
+            <div 
+              className="text-center p-6 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('hotel')}
+            >
+              <div className="bg-indigo-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-indigo-200 transition-colors">
+                <Hotel className="h-8 w-8 text-indigo-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-indigo-700">Hotel Reports</p>
               <p className="text-sm text-gray-600">{hotels?.length || 0} hotels</p>
             </div>
           </div>
           <div className="mt-6 p-4 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
             <p className="text-sm text-brand-navy">
               <strong className="text-brand-navy">Quick Access:</strong> Click on any report type above to view the specific report data. 
-              Hotel Reports will show rooming lists for each hotel assigned to this tour.
+              The Passenger List report is perfect for printing with space to write meal orders and notes next to each passenger name.
             </p>
           </div>
         </CardContent>
