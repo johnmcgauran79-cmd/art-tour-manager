@@ -4,25 +4,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Upload, PhoneCall, ChevronsLeft, ChevronsRight } from "lucide-react";
-import { useCustomers, useBulkUpdatePhoneNumbers } from "@/hooks/useCustomers";
+import { Plus, Search, Upload, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { useCustomers, findDuplicateContacts } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
 import { CSVUploadModal } from "@/components/CSVUploadModal";
+import { MergeDuplicatesModal } from "@/components/MergeDuplicatesModal";
 import { ContactsTableContent } from "./ContactsTableContent";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { merge } from "lucide-react";
 
 const CONTACTS_PER_PAGE = 100;
 
 export const ContactsTable = () => {
   const { data: customers, isLoading } = useCustomers();
-  const bulkUpdatePhones = useBulkUpdatePhoneNumbers();
   const [showAddContact, setShowAddContact] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [showCSVUpload, setShowCSVUpload] = useState(false);
+  const [showMergeDuplicates, setShowMergeDuplicates] = useState(false);
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [hasUnformattedPhones, setHasUnformattedPhones] = useState(false);
+  const [duplicateGroups, setDuplicateGroups] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
 
   const handleContactClick = (contact: any) => {
@@ -30,22 +32,16 @@ export const ContactsTable = () => {
     setShowEditContact(true);
   };
 
-  // Detect if any AU mobile numbers need formatting (9 digits, starts with 4)
+  // Find duplicates when customers data changes
   useEffect(() => {
     if (customers) {
-      const needsFormatting = customers.some((customer) => {
-        if (!customer.phone) return false;
-        const digitsOnly = customer.phone.replace(/\D/g, "");
-        return digitsOnly.length === 9 && digitsOnly.startsWith("4");
-      });
-      setHasUnformattedPhones(needsFormatting);
+      const duplicates = findDuplicateContacts(customers);
+      setDuplicateGroups(duplicates);
     }
   }, [customers]);
 
-  const handleBulkPhoneUpdate = () => {
-    if (customers) {
-      bulkUpdatePhones.mutate(customers);
-    }
+  const handleShowDuplicates = () => {
+    setShowMergeDuplicates(true);
   };
 
   // Filter customers by search - check all relevant fields
@@ -127,15 +123,14 @@ export const ContactsTable = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              {hasUnformattedPhones && (
+              {duplicateGroups.length > 0 && (
                 <Button
-                  onClick={handleBulkPhoneUpdate}
-                  disabled={bulkUpdatePhones.isPending}
+                  onClick={handleShowDuplicates}
                   variant="outline"
-                  className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
+                  className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
                 >
-                  <PhoneCall className="h-4 w-4 mr-2" />
-                  Format AU Numbers
+                  <merge className="h-4 w-4 mr-2" />
+                  Remove Duplicates ({duplicateGroups.length})
                 </Button>
               )}
               <Button
@@ -305,6 +300,11 @@ export const ContactsTable = () => {
         onOpenChange={setShowEditContact}
       />
       <CSVUploadModal open={showCSVUpload} onOpenChange={setShowCSVUpload} />
+      <MergeDuplicatesModal 
+        open={showMergeDuplicates} 
+        onOpenChange={setShowMergeDuplicates}
+        duplicateGroups={duplicateGroups}
+      />
     </>
   );
 };

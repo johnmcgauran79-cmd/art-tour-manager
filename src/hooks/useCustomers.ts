@@ -20,6 +20,12 @@ export interface Customer {
   updated_at: string;
 }
 
+export interface DuplicateGroup {
+  key: string;
+  contacts: Customer[];
+  mergedContact: Customer;
+}
+
 // Function to format Australian mobile numbers
 export const formatAustralianMobile = (phone: string | null): string | null => {
   if (!phone) return phone;
@@ -34,6 +40,67 @@ export const formatAustralianMobile = (phone: string | null): string | null => {
   
   // Return the cleaned number (digits only) for other cases
   return digitsOnly || phone;
+};
+
+// Function to merge contact data, preferring non-null values
+const mergeContactData = (contacts: Customer[]): Customer => {
+  const merged = { ...contacts[0] }; // Start with first contact
+  
+  contacts.forEach(contact => {
+    // Merge each field, preferring non-null/non-empty values
+    if (!merged.email && contact.email) merged.email = contact.email;
+    if (!merged.phone && contact.phone) merged.phone = contact.phone;
+    if (!merged.city && contact.city) merged.city = contact.city;
+    if (!merged.state && contact.state) merged.state = contact.state;
+    if (!merged.country && contact.country) merged.country = contact.country;
+    if (!merged.spouse_name && contact.spouse_name) merged.spouse_name = contact.spouse_name;
+    if (!merged.dietary_requirements && contact.dietary_requirements) merged.dietary_requirements = contact.dietary_requirements;
+    if (!merged.crm_id && contact.crm_id) merged.crm_id = contact.crm_id;
+    
+    // For notes, concatenate if both exist
+    if (contact.notes && contact.notes !== merged.notes) {
+      if (merged.notes) {
+        merged.notes = `${merged.notes}\n---\n${contact.notes}`;
+      } else {
+        merged.notes = contact.notes;
+      }
+    }
+    
+    // Use the most recent update date
+    if (contact.updated_at > merged.updated_at) {
+      merged.updated_at = contact.updated_at;
+    }
+  });
+  
+  return merged;
+};
+
+// Function to find duplicate contacts
+export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] => {
+  const duplicateMap = new Map<string, Customer[]>();
+  
+  customers.forEach(customer => {
+    const key = `${customer.first_name.toLowerCase().trim()}_${customer.last_name.toLowerCase().trim()}`;
+    
+    if (!duplicateMap.has(key)) {
+      duplicateMap.set(key, []);
+    }
+    duplicateMap.get(key)!.push(customer);
+  });
+  
+  // Only return groups with more than one contact
+  const duplicateGroups: DuplicateGroup[] = [];
+  duplicateMap.forEach((contacts, key) => {
+    if (contacts.length > 1) {
+      duplicateGroups.push({
+        key,
+        contacts,
+        mergedContact: mergeContactData(contacts)
+      });
+    }
+  });
+  
+  return duplicateGroups;
 };
 
 export const useCustomers = () => {
@@ -214,58 +281,76 @@ export const useDeleteCustomer = () => {
   });
 };
 
-// New mutation to bulk update phone numbers
-export const useBulkUpdatePhoneNumbers = () => {
+// New mutation to merge duplicate contacts
+export const useMergeDuplicateContacts = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (customers: Customer[]) => {
-      const updates = [];
+    mutationFn: async (duplicateGroups: DuplicateGroup[]) => {
+      let totalMerged = 0;
       
-      for (const customer of customers) {
-        const formattedPhone = formatAustralianMobile(customer.phone);
+      for (const group of duplicateGroups) {
+        const { contacts, mergedContact } = group;
         
-        // Only update if the phone number changed
-        if (formattedPhone !== customer.phone) {
-          updates.push({
-            id: customer.id,
-            phone: formattedPhone
-          });
-        }
-      }
-      
-      console.log(`Updating ${updates.length} phone numbers...`);
-      
-      // Update each customer individually
-      for (const update of updates) {
-        const { error } = await supabase
+        // Keep the oldest contact (first one) and update it with merged data
+        const primaryContact = contacts[0];
+        const contactsToDelete = contacts.slice(1);
+        
+        console.log(`Merging ${contacts.length} contacts for ${mergedContact.first_name} ${mergedContact.last_name}`);
+        
+        // Update the primary contact with merged data
+        const { error: updateError } = await supabase
           .from('customers')
-          .update({ phone: update.phone })
-          .eq('id', update.id);
+          .update({
+            email: mergedContact.email,
+            phone: mergedContact.phone,
+            city: mergedContact.city,
+            state: mergedContact.state,
+            country: mergedContact.country,
+            spouse_name: mergedContact.spouse_name,
+            dietary_requirements: mergedContact.dietary_requirements,
+            notes: mergedContact.notes,
+            crm_id: mergedContact.crm_id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', primaryContact.id);
           
-        if (error) {
-          console.error('Error updating customer phone:', error);
-          throw error;
+        if (updateError) {
+          console.error('Error updating primary contact:', updateError);
+          throw updateError;
         }
+        
+        // Delete the duplicate contacts
+        for (const contact of contactsToDelete) {
+          const { error: deleteError } = await supabase
+            .from('customers')
+            .delete()
+            .eq('id', contact.id);
+            
+          if (deleteError) {
+            console.error('Error deleting duplicate contact:', deleteError);
+            throw deleteError;
+          }
+        }
+        
+        totalMerged += contactsToDelete.length;
       }
       
-      return updates.length;
+      return { groupsProcessed: duplicateGroups.length, contactsMerged: totalMerged };
     },
-    onSuccess: (updateCount) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      if (updateCount > 0) {
-        toast({
-          title: "Phone Numbers Updated",
-          description: `Updated ${updateCount} Australian mobile number${updateCount !== 1 ? 's' : ''} to proper format.`,
-        });
-      }
+      toast({
+        title: "Duplicates Merged Successfully",
+        description: `Processed ${result.groupsProcessed} duplicate groups and merged ${result.contactsMerged} contacts.`,
+      });
     },
     onError: (error: any) => {
-      console.error('Error in bulk update:', error);
+      console.error('Error in merge duplicates:', error);
       toast({
-        title: "Error Updating Phone Numbers",
-        description: error.message || "Failed to update phone numbers. Please try again.",
+        title: "Error Merging Duplicates",
+        description: error.message || "Failed to merge duplicate contacts. Please try again.",
         variant: "destructive",
       });
     },
