@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
-import { User } from "@supabase/supabase-js";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, Eye, UserX } from "lucide-react";
+import { Trash2, UserX } from "lucide-react";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
@@ -30,11 +29,16 @@ export function UserManagement() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<{ [userId: string]: boolean }>({});
   const [deleting, setDeleting] = useState<{ [userId: string]: boolean }>({});
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const fetchUsersAndRoles = async () => {
     setLoading(true);
     
     try {
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      setCurrentUserId(currentUser?.id || null);
+
       // Fetch users from profiles table (which gets auto-created when users sign up)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -256,7 +260,7 @@ export function UserManagement() {
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     <span>{user.email}</span>
-                    {user.id === (users.find(u => u.role === 'admin')?.id) && (
+                    {currentUserId && user.id === currentUserId && (
                       <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                         YOU
                       </span>
