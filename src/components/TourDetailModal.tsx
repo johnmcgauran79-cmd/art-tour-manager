@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -222,6 +223,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   <Edit className="h-4 w-4" />
                   Edit Tour
                 </Button>
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">
+                    Close
+                  </Button>
+                </DialogClose>
               </div>
             </div>
           </DialogHeader>

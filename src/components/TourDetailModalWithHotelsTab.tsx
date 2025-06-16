@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Edit, MapPin, Calendar, Users, FileText, Settings } from "lucide-react";
@@ -97,15 +97,22 @@ export const TourDetailModalWithHotelsTab = ({
                 </div>
                 <DialogTitle className="text-brand-navy">{tour?.name}</DialogTitle>
               </div>
-              <Button
-                onClick={() => setEditTourModalOpen(true)}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
-              >
-                <Edit className="h-4 w-4" />
-                Edit Tour
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setEditTourModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Tour
+                </Button>
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">
+                    Close
+                  </Button>
+                </DialogClose>
+              </div>
             </div>
           </DialogHeader>
 
