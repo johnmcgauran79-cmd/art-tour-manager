@@ -2,12 +2,14 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, AlertTriangle, DollarSign, Calendar } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { TourDetailModal } from "@/components/TourDetailModal";
+import { AllDeadlinesModal } from "@/components/AllDeadlinesModal";
 
 interface Deadline {
   id: string;
@@ -25,6 +27,7 @@ export const UpcomingDeadlinesWidget = () => {
   const { data: bookings } = useBookings();
   const [selectedTour, setSelectedTour] = useState(null);
   const [tourDetailModalOpen, setTourDetailModalOpen] = useState(false);
+  const [allDeadlinesModalOpen, setAllDeadlinesModalOpen] = useState(false);
 
   const getDeadlines = (): Deadline[] => {
     const deadlines: Deadline[] = [];
@@ -130,13 +133,25 @@ export const UpcomingDeadlinesWidget = () => {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Upcoming Deadlines
-          </CardTitle>
-          <CardDescription>
-            Important dates and payment deadlines in the next 30 days
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                Upcoming Deadlines
+              </CardTitle>
+              <CardDescription>
+                Next 5 important dates and payment deadlines
+              </CardDescription>
+            </div>
+            {deadlines.length > 5 && (
+              <Button 
+                variant="outline" 
+                onClick={() => setAllDeadlinesModalOpen(true)}
+              >
+                View All
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {deadlines.length === 0 ? (
@@ -155,7 +170,7 @@ export const UpcomingDeadlinesWidget = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {deadlines.slice(0, 8).map((deadline) => (
+                {deadlines.slice(0, 5).map((deadline) => (
                   <TableRow
                     key={deadline.id}
                     className="cursor-pointer hover:bg-accent/50 transition-colors"
@@ -177,13 +192,6 @@ export const UpcomingDeadlinesWidget = () => {
               </TableBody>
             </Table>
           )}
-          {deadlines.length > 8 && (
-            <div className="text-center pt-4">
-              <p className="text-sm text-muted-foreground">
-                +{deadlines.length - 8} more deadlines
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -191,6 +199,11 @@ export const UpcomingDeadlinesWidget = () => {
         tour={selectedTour}
         open={tourDetailModalOpen}
         onOpenChange={setTourDetailModalOpen}
+      />
+
+      <AllDeadlinesModal
+        open={allDeadlinesModalOpen}
+        onOpenChange={setAllDeadlinesModalOpen}
       />
     </>
   );
