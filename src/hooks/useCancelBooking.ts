@@ -14,7 +14,7 @@ export const useCancelBooking = () => {
       // Start a transaction to ensure all operations succeed or fail together
       const { data: booking, error: fetchError } = await supabase
         .from('bookings')
-        .select('invoice_notes')
+        .select('extra_requests')
         .eq('id', bookingId)
         .single();
 
@@ -23,8 +23,8 @@ export const useCancelBooking = () => {
         throw fetchError;
       }
 
-      // Prepare the cancellation note
-      const existingNotes = booking.invoice_notes || '';
+      // Prepare the cancellation note for the notes/extra_requests field
+      const existingNotes = booking.extra_requests || '';
       const cancellationNote = `CANCELLED: ${cancellationReason}`;
       const updatedNotes = existingNotes 
         ? `${existingNotes}\n\n${cancellationNote}`
@@ -39,7 +39,7 @@ export const useCancelBooking = () => {
           check_in_date: null,
           check_out_date: null,
           total_nights: null,
-          invoice_notes: updatedNotes,
+          extra_requests: updatedNotes,
           revenue: 0
         })
         .eq('id', bookingId);
