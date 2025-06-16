@@ -26,7 +26,9 @@ export function AdminSetup() {
           return;
         }
         
-        setHasAdmins(data && data.length > 0);
+        const adminsExist = data && data.length > 0;
+        console.log('Admins exist check:', adminsExist, data);
+        setHasAdmins(adminsExist);
       } catch (error) {
         console.error('Unexpected error checking for admins:', error);
       } finally {
@@ -35,17 +37,19 @@ export function AdminSetup() {
     };
 
     checkForAdmins();
-  }, [userRole]);
+  }, []);
 
   // Don't show setup if user already has a role or if admins exist
   if (checkingAdmins) {
     return null; // Loading, don't show anything yet
   }
 
+  // Hide if user already has a role OR if any admins exist in the system
   if (userRole || hasAdmins) {
-    return null; // Hide component if user has role or admins exist
+    return null;
   }
 
+  // Only show if no admins exist and current user has no role
   const handleMakeAdmin = async () => {
     if (!user) {
       toast({
@@ -78,6 +82,8 @@ export function AdminSetup() {
           title: "Admin Role Assigned",
           description: "You are now an admin! Refresh the page to see changes.",
         });
+        // Update local state to hide the component immediately
+        setHasAdmins(true);
       }
     } catch (error) {
       console.error('Unexpected error:', error);

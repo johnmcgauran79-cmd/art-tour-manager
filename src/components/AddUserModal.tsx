@@ -61,12 +61,34 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       // Store current session to restore it later
       const { data: { session: currentSession } } = await supabase.auth.getSession();
 
+      if (!currentSession) {
+        toast({
+          title: "Authentication Error",
+          description: "You must be logged in to create users.",
+          variant: "destructive"
+        });
+        setIsCreating(false);
+        return;
+      }
+
       // Generate temporary password
       const password = await generateTempPassword();
       setTempPassword(password);
 
-      // Sign up the user normally
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      // Create a new Supabase client instance for admin operations
+      const { createClient } = await import('@supabase/supabase-js');
+      const adminClient = createClient(
+        supabase.supabaseUrl,
+        supabase.supabaseKey,
+        {
+          auth: {
+            persistSession: false
+          }
+        }
+      );
+
+      // Sign up the user with the admin client
+      const { data: signUpData, error: signUpError } = await adminClient.auth.signUp({
         email,
         password,
         options: {
@@ -97,17 +119,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         return;
       }
 
-      // Immediately sign out the new user and restore admin session
-      await supabase.auth.signOut();
-      
-      if (currentSession) {
-        await supabase.auth.setSession({
-          access_token: currentSession.access_token,
-          refresh_token: currentSession.refresh_token
-        });
-      }
-
-      // Update the profile to mark as admin-created
+      // Update the profile to mark as admin-created using the original session
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ must_change_password: true })
