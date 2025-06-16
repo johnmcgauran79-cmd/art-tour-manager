@@ -1,5 +1,3 @@
-
-
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +14,7 @@ import { ToursTable } from "@/components/ToursTable";
 import { ContactsTable } from "@/components/ContactsTable";
 import { UserManagement } from "@/components/UserManagement";
 import { PasswordChangeModal } from "@/components/PasswordChangeModal";
+import { SystemLogModal } from "@/components/SystemLogModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AdminSetup } from "@/components/AdminSetup";
@@ -26,8 +25,8 @@ const Index = () => {
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showSystemLog, setShowSystemLog] = useState(false);
 
-  // Move useEffect to the top, before any conditional returns
   useEffect(() => {
     const handleNavigateToBookings = () => {
       setActiveTab("bookings");
@@ -102,6 +101,18 @@ const Index = () => {
                   Change Password Required
                 </Button>
               )}
+              {/* System log icon button - only for admins */}
+              {isAdmin && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="System Logs"
+                  className="text-primary-foreground"
+                  onClick={() => setShowSystemLog(true)}
+                >
+                  <Settings className="h-6 w-6" />
+                </Button>
+              )}
               {/* Users icon button shows user management modal - only for admins */}
               {isAdmin && (
                 <Button
@@ -131,7 +142,7 @@ const Index = () => {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5"> {/* Now just 5 tabs */}
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Dashboard
@@ -181,11 +192,14 @@ const Index = () => {
       {/* Modals */}
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
       {isAdmin && (
-        <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <UserManagement />
-          </DialogContent>
-        </Dialog>
+        <>
+          <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
+            <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
+              <UserManagement />
+            </DialogContent>
+          </Dialog>
+          <SystemLogModal open={showSystemLog} onOpenChange={setShowSystemLog} />
+        </>
       )}
       <PasswordChangeModal 
         open={showPasswordChange} 
@@ -197,4 +211,3 @@ const Index = () => {
 };
 
 export default Index;
-
