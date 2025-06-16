@@ -299,7 +299,20 @@ export const useMergeDuplicateContacts = () => {
         
         console.log(`Merging ${contacts.length} contacts for ${mergedContact.first_name} ${mergedContact.last_name}`);
         
-        // Update the primary contact with merged data
+        // First, delete the duplicate contacts to avoid unique constraint violations
+        for (const contact of contactsToDelete) {
+          const { error: deleteError } = await supabase
+            .from('customers')
+            .delete()
+            .eq('id', contact.id);
+            
+          if (deleteError) {
+            console.error('Error deleting duplicate contact:', deleteError);
+            throw deleteError;
+          }
+        }
+        
+        // Then update the primary contact with merged data
         const { error: updateError } = await supabase
           .from('customers')
           .update({
@@ -319,19 +332,6 @@ export const useMergeDuplicateContacts = () => {
         if (updateError) {
           console.error('Error updating primary contact:', updateError);
           throw updateError;
-        }
-        
-        // Delete the duplicate contacts
-        for (const contact of contactsToDelete) {
-          const { error: deleteError } = await supabase
-            .from('customers')
-            .delete()
-            .eq('id', contact.id);
-            
-          if (deleteError) {
-            console.error('Error deleting duplicate contact:', deleteError);
-            throw deleteError;
-          }
         }
         
         totalMerged += contactsToDelete.length;
