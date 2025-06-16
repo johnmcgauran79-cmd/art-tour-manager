@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Upload, PhoneCall, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Upload, PhoneCall } from "lucide-react";
 import { useCustomers, useBulkUpdatePhoneNumbers } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
@@ -47,7 +47,7 @@ export const ContactsTable = () => {
     }
   };
 
-  // Filter customers by search
+  // Filter customers by search - check all relevant fields
   const filteredCustomers =
     customers?.filter((customer) => {
       if (!searchTerm) return true;
@@ -55,7 +55,10 @@ export const ContactsTable = () => {
       return (
         customer.first_name?.toLowerCase().includes(searchLower) ||
         customer.last_name?.toLowerCase().includes(searchLower) ||
-        customer.email?.toLowerCase().includes(searchLower)
+        customer.email?.toLowerCase().includes(searchLower) ||
+        customer.phone?.toLowerCase().includes(searchLower) ||
+        customer.city?.toLowerCase().includes(searchLower) ||
+        customer.state?.toLowerCase().includes(searchLower)
       );
     }) || [];
 
@@ -74,6 +77,10 @@ export const ContactsTable = () => {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
+
+  console.log(`Total customers from API: ${customers?.length || 0}`);
+  console.log(`Filtered customers: ${filteredCustomers.length}`);
+  console.log(`Current page: ${currentPage}, Total pages: ${totalPages}`);
 
   if (isLoading) {
     return <div>Loading contacts...</div>;
@@ -127,7 +134,7 @@ export const ContactsTable = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by first name, surname, or email..."
+              placeholder="Search by name, email, phone, city, or state..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"

@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,10 +41,12 @@ export const useCustomers = () => {
   return useQuery({
     queryKey: ['customers'],
     queryFn: async () => {
-      console.log('Fetching customers...');
-      const { data, error } = await supabase
+      console.log('Fetching all customers...');
+      
+      // Remove any limit to get ALL customers
+      const { data, error, count } = await supabase
         .from('customers')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('last_name', { ascending: true })
         .order('first_name', { ascending: true });
       
@@ -51,7 +54,8 @@ export const useCustomers = () => {
         console.error('Error fetching customers:', error);
         throw error;
       }
-      console.log('Customers fetched successfully:', data);
+      
+      console.log(`Total customers fetched: ${data?.length || 0}, Database count: ${count}`);
       return data as Customer[];
     },
   });
