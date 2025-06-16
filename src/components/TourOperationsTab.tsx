@@ -7,6 +7,7 @@ import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList } from "luc
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
+import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -66,66 +67,69 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-3">
             <div 
-              className="text-center p-6 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+              className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('contacts')}
             >
-              <div className="bg-blue-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-blue-200 transition-colors">
-                <Phone className="h-8 w-8 text-blue-600" />
+              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-blue-200 transition-colors">
+                <Phone className="h-5 w-5 text-blue-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-blue-700">Contact Lists</p>
-              <p className="text-sm text-gray-600">{contactList.length} contacts</p>
+              <p className="font-semibold text-gray-800 group-hover:text-blue-700 text-xs">Contact Lists</p>
+              <p className="text-xs text-gray-600">{contactList.length} contacts</p>
             </div>
             <div 
-              className="text-center p-6 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
+              className="text-center p-3 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('dietary')}
             >
-              <div className="bg-green-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-green-200 transition-colors">
-                <Utensils className="h-8 w-8 text-green-600" />
+              <div className="bg-green-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-green-200 transition-colors">
+                <Utensils className="h-5 w-5 text-green-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-green-700">Dietary Requirements</p>
-              <p className="text-sm text-gray-600">{dietaryRequirements.length} special diets</p>
+              <p className="font-semibold text-gray-800 group-hover:text-green-700 text-xs">Dietary Requirements</p>
+              <p className="text-xs text-gray-600">{dietaryRequirements.length} special diets</p>
             </div>
             <div 
-              className="text-center p-6 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
+              className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('summary')}
             >
-              <div className="bg-purple-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-purple-200 transition-colors">
-                <Users className="h-8 w-8 text-purple-600" />
+              <div className="bg-purple-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-purple-200 transition-colors">
+                <Users className="h-5 w-5 text-purple-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-purple-700">Passenger Summary</p>
-              <p className="text-sm text-gray-600">{tourBookings.length} bookings</p>
+              <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Passenger Summary</p>
+              <p className="text-xs text-gray-600">{tourBookings.length} bookings</p>
             </div>
             <div 
-              className="text-center p-6 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
+              className="text-center p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('passengerlist')}
             >
-              <div className="bg-orange-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-orange-200 transition-colors">
-                <ClipboardList className="h-8 w-8 text-orange-600" />
+              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-orange-200 transition-colors">
+                <ClipboardList className="h-5 w-5 text-orange-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-orange-700">Passenger List</p>
-              <p className="text-sm text-gray-600">{totalPassengers} passengers</p>
+              <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">Passenger List</p>
+              <p className="text-xs text-gray-600">{totalPassengers} passengers</p>
             </div>
             <div 
-              className="text-center p-6 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
+              className="text-center p-3 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('hotel')}
             >
-              <div className="bg-indigo-100 p-3 rounded-full mx-auto mb-3 w-fit group-hover:bg-indigo-200 transition-colors">
-                <Hotel className="h-8 w-8 text-indigo-600" />
+              <div className="bg-indigo-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-indigo-200 transition-colors">
+                <Hotel className="h-5 w-5 text-indigo-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-indigo-700">Hotel Reports</p>
-              <p className="text-sm text-gray-600">{hotels?.length || 0} hotels</p>
+              <p className="font-semibold text-gray-800 group-hover:text-indigo-700 text-xs">Hotel Reports</p>
+              <p className="text-xs text-gray-600">{hotels?.length || 0} hotels</p>
             </div>
           </div>
-          <div className="mt-6 p-4 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
-            <p className="text-sm text-brand-navy">
+          <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
+            <p className="text-xs text-brand-navy">
               <strong className="text-brand-navy">Quick Access:</strong> Click on any report type above to view the specific report data. 
               The Passenger List report is perfect for printing with space to write meal orders and notes next to each passenger name.
             </p>
           </div>
         </CardContent>
       </Card>
+
+      {/* Tour Deadlines Widget */}
+      <TourDeadlinesWidget tourId={tourId} />
 
       <TourOperationsReportsModal
         tourId={tourId}
