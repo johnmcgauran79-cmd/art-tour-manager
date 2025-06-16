@@ -1,3 +1,4 @@
+
 // Utility functions for input sanitization and validation
 
 export const sanitizeText = (input: string): string => {
@@ -56,18 +57,20 @@ export const validateInput = {
 };
 
 export const sanitizeFormData = <T extends Record<string, any>>(data: T): T => {
-  const sanitized = { ...data };
+  const sanitized = {} as T;
   
-  Object.keys(sanitized).forEach(key => {
-    const value = sanitized[key];
+  Object.keys(data).forEach(key => {
+    const value = data[key];
     if (typeof value === 'string') {
       if (key.includes('email')) {
-        sanitized[key] = sanitizeEmail(value);
+        (sanitized as any)[key] = sanitizeEmail(value);
       } else if (key.includes('phone')) {
-        sanitized[key] = sanitizePhone(value);
+        (sanitized as any)[key] = sanitizePhone(value);
       } else {
-        sanitized[key] = sanitizeText(value);
+        (sanitized as any)[key] = sanitizeText(value);
       }
+    } else {
+      (sanitized as any)[key] = value;
     }
   });
   

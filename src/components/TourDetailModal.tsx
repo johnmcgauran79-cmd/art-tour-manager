@@ -24,6 +24,7 @@ import { TourOperationsReportsModal } from "@/components/TourOperationsReportsMo
 import { useAuth } from "@/hooks/useAuth";
 import { useSecureDeleteTour } from "@/hooks/useSecureTours";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface TourDetailModalProps {
   tour: Tour | null;
