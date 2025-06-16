@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -245,7 +246,7 @@ export function UserManagement() {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="w-full max-w-none p-6">
         <h2 className="text-xl font-semibold mb-4">User Management</h2>
         <div className="text-center">Loading users...</div>
       </div>
@@ -253,7 +254,7 @@ export function UserManagement() {
   }
 
   return (
-    <div className="p-6">
+    <div className="w-full max-w-none p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-semibold">User Management</h2>
@@ -275,16 +276,16 @@ export function UserManagement() {
         </div>
       </div>
 
-      <div className="shadow border rounded-lg bg-white overflow-x-auto">
+      <div className="shadow border rounded-lg bg-white overflow-x-auto w-full">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Email</TableHead>
-              <TableHead>Current Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Member Since</TableHead>
-              <TableHead>Assign Role</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="min-w-[200px]">Email</TableHead>
+              <TableHead className="min-w-[120px]">Current Role</TableHead>
+              <TableHead className="min-w-[140px]">Status</TableHead>
+              <TableHead className="min-w-[120px]">Member Since</TableHead>
+              <TableHead className="min-w-[140px]">Assign Role</TableHead>
+              <TableHead className="min-w-[300px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -292,9 +293,9 @@ export function UserManagement() {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <span>{user.email}</span>
+                    <span className="truncate">{user.email}</span>
                     {currentUserId && user.id === currentUserId && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded whitespace-nowrap">
                         YOU
                       </span>
                     )}
@@ -302,7 +303,7 @@ export function UserManagement() {
                 </TableCell>
                 <TableCell>
                   {user.role ? (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
                       user.role === 'admin' ? 'bg-red-100 text-red-800' :
                       user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
                       'bg-green-100 text-green-800'
@@ -315,11 +316,11 @@ export function UserManagement() {
                 </TableCell>
                 <TableCell>
                   {user.must_change_password ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
                       Must Change Password
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
                       Active
                     </span>
                   )}
@@ -347,12 +348,12 @@ export function UserManagement() {
                   </select>
                 </TableCell>
                 <TableCell>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handlePasswordReset(user.id, user.email)}
-                      className="h-8"
+                      className="h-8 whitespace-nowrap"
                     >
                       <KeyRound className="h-3 w-3 mr-1" />
                       Reset Password
@@ -364,7 +365,7 @@ export function UserManagement() {
                         variant="outline"
                         onClick={() => handleRemoveRole(user.id)}
                         disabled={updating[user.id]}
-                        className="h-8"
+                        className="h-8 whitespace-nowrap"
                       >
                         <UserX className="h-3 w-3 mr-1" />
                         {updating[user.id] ? "Removing..." : "Remove Role"}
@@ -377,7 +378,7 @@ export function UserManagement() {
                           size="sm"
                           variant="outline"
                           disabled={deleting[user.id] || user.id === currentUserId}
-                          className="h-8 border-red-200 text-red-600 hover:bg-red-50"
+                          className="h-8 border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap"
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
                           Delete
