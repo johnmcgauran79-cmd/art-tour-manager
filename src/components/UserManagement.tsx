@@ -5,7 +5,8 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, UserX } from "lucide-react";
+import { Trash2, UserX, UserPlus } from "lucide-react";
+import { AddUserModal } from "./AddUserModal";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
@@ -15,6 +16,7 @@ type UserRow = {
   role: RoleType | null;
   created_at: string;
   last_sign_in_at: string | null;
+  must_change_password?: boolean;
 };
 
 const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
@@ -29,6 +31,7 @@ export function UserManagement() {
   const [updating, setUpdating] = useState<{ [userId: string]: boolean }>({});
   const [deleting, setDeleting] = useState<{ [userId: string]: boolean }>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showAddUser, setShowAddUser] = useState(false);
 
   const fetchUsersAndRoles = async () => {
     setLoading(true);
@@ -41,7 +44,7 @@ export function UserManagement() {
       // Fetch users from profiles table (which gets auto-created when users sign up)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, email, created_at');
+        .select('id, email, created_at, must_change_password');
       
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
@@ -84,6 +87,7 @@ export function UserManagement() {
           role: userRole?.role || null,
           created_at: profile.created_at || "",
           last_sign_in_at: authUser?.last_sign_in_at || null,
+          must_change_password: profile.must_change_password || false,
         };
       });
       
@@ -237,8 +241,17 @@ export function UserManagement() {
             Manage user accounts, roles, and permissions
           </p>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Total Users: {users.length}
+        <div className="flex items-center gap-4">
+          <Button
+            onClick={() => setShowAddUser(true)}
+            className="flex items-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            Add User
+          </Button>
+          <div className="text-sm text-muted-foreground">
+            Total Users: {users.length}
+          </div>
         </div>
       </div>
 
@@ -248,6 +261,7 @@ export function UserManagement() {
             <TableRow>
               <TableHead>Email</TableHead>
               <TableHead>Current Role</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Member Since</TableHead>
               <TableHead>Last Sign In</TableHead>
               <TableHead>Assign Role</TableHead>
@@ -278,6 +292,17 @@ export function UserManagement() {
                     </span>
                   ) : (
                     <span className="text-gray-500 text-sm">No role assigned</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {user.must_change_password ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                      Must Change Password
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Active
+                    </span>
                   )}
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
@@ -372,7 +397,14 @@ export function UserManagement() {
 
       <div className="mt-4 text-sm text-muted-foreground">
         <p><strong>Note:</strong> Admin accounts cannot be deleted for security reasons. Remove admin role first if needed.</p>
+        <p><strong>Temporary Passwords:</strong> Users with temporary passwords must change them on first login.</p>
       </div>
+
+      <AddUserModal
+        open={showAddUser}
+        onOpenChange={setShowAddUser}
+        onUserAdded={fetchUsersAndRoles}
+      />
     </div>
   );
 }

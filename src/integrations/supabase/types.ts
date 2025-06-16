@@ -500,6 +500,7 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          must_change_password: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -508,6 +509,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          must_change_password?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -516,6 +518,7 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          must_change_password?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -630,6 +633,10 @@ export type Database = {
       calculate_nights: {
         Args: { check_in: string; check_out: string }
         Returns: number
+      }
+      generate_temp_password: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       has_role: {
         Args: {

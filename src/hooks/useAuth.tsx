@@ -1,4 +1,5 @@
 
+
 import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +9,7 @@ interface Profile {
   email: string | null;
   first_name: string | null;
   last_name: string | null;
+  must_change_password?: boolean;
 }
 
 interface UserRole {
@@ -20,6 +22,7 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: string | null;
   loading: boolean;
+  mustChangePassword: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -33,6 +36,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -51,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } else {
           setProfile(null);
           setUserRole(null);
+          setMustChangePassword(false);
         }
         
         setLoading(false);
@@ -86,6 +91,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       setProfile(data);
+      setMustChangePassword(data?.must_change_password || false);
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -145,6 +151,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     profile,
     userRole,
     loading,
+    mustChangePassword,
     signIn,
     signUp,
     signOut,
@@ -160,3 +167,4 @@ export const useAuth = () => {
   }
   return context;
 };
+

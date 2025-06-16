@@ -1,4 +1,5 @@
 
+
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,15 +15,17 @@ import { BookingsTable } from "@/components/BookingsTable";
 import { ToursTable } from "@/components/ToursTable";
 import { ContactsTable } from "@/components/ContactsTable";
 import { UserManagement } from "@/components/UserManagement";
+import { PasswordChangeModal } from "@/components/PasswordChangeModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AdminSetup } from "@/components/AdminSetup";
 
 const Index = () => {
-  const { user, loading, userRole } = useAuth();
+  const { user, loading, userRole, mustChangePassword } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
 
   // Move useEffect to the top, before any conditional returns
   useEffect(() => {
@@ -36,6 +39,13 @@ const Index = () => {
       window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
     };
   }, []);
+
+  // Show password change modal if user must change password
+  useEffect(() => {
+    if (user && mustChangePassword && !showPasswordChange) {
+      setShowPasswordChange(true);
+    }
+  }, [user, mustChangePassword, showPasswordChange]);
 
   // Redirect to login if not authenticated
   if (loading) {
@@ -54,6 +64,11 @@ const Index = () => {
 
   const handleViewAllTours = () => {
     setActiveTab("tours");
+  };
+
+  const handlePasswordChanged = () => {
+    // Refresh the auth context to update mustChangePassword status
+    window.location.reload();
   };
 
   // Check if user is admin
@@ -77,6 +92,16 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              {/* Password change notification */}
+              {mustChangePassword && (
+                <Button
+                  variant="ghost"
+                  className="text-primary-foreground border border-primary-foreground/20"
+                  onClick={() => setShowPasswordChange(true)}
+                >
+                  Change Password Required
+                </Button>
+              )}
               {/* Users icon button shows user management modal - only for admins */}
               {isAdmin && (
                 <Button
@@ -157,13 +182,19 @@ const Index = () => {
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
       {isAdmin && (
         <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
             <UserManagement />
           </DialogContent>
         </Dialog>
       )}
+      <PasswordChangeModal 
+        open={showPasswordChange} 
+        onOpenChange={setShowPasswordChange}
+        onPasswordChanged={handlePasswordChanged}
+      />
     </div>
   );
 };
 
 export default Index;
+
