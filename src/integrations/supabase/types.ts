@@ -446,6 +446,7 @@ export type Database = {
           booking_status:
             | Database["public"]["Enums"]["hotel_booking_status"]
             | null
+          cancellation_policy: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
@@ -455,7 +456,9 @@ export type Database = {
           default_check_out: string | null
           default_room_type: string | null
           extra_night_price: number | null
+          final_rooms_cutoff_date: string | null
           id: string
+          initial_rooms_cutoff_date: string | null
           name: string
           operations_notes: string | null
           rooms_available: number | null
@@ -470,6 +473,7 @@ export type Database = {
           booking_status?:
             | Database["public"]["Enums"]["hotel_booking_status"]
             | null
+          cancellation_policy?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -479,7 +483,9 @@ export type Database = {
           default_check_out?: string | null
           default_room_type?: string | null
           extra_night_price?: number | null
+          final_rooms_cutoff_date?: string | null
           id?: string
+          initial_rooms_cutoff_date?: string | null
           name: string
           operations_notes?: string | null
           rooms_available?: number | null
@@ -494,6 +500,7 @@ export type Database = {
           booking_status?:
             | Database["public"]["Enums"]["hotel_booking_status"]
             | null
+          cancellation_policy?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -503,7 +510,9 @@ export type Database = {
           default_check_out?: string | null
           default_room_type?: string | null
           extra_night_price?: number | null
+          final_rooms_cutoff_date?: string | null
           id?: string
+          initial_rooms_cutoff_date?: string | null
           name?: string
           operations_notes?: string | null
           rooms_available?: number | null

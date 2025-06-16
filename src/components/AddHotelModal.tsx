@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,10 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
     default_check_out: "",
     extra_night_price: "",
     operations_notes: "",
-    upgrade_options: ""
+    upgrade_options: "",
+    cancellation_policy: "",
+    initial_rooms_cutoff_date: "",
+    final_rooms_cutoff_date: ""
   });
 
   const queryClient = useQueryClient();
@@ -54,6 +58,9 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           extra_night_price: hotelData.extra_night_price ? parseFloat(hotelData.extra_night_price) : null,
           operations_notes: hotelData.operations_notes || null,
           upgrade_options: hotelData.upgrade_options || null,
+          cancellation_policy: hotelData.cancellation_policy || null,
+          initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
+          final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
         }])
         .select()
         .single();
@@ -81,7 +88,10 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
         default_check_out: "",
         extra_night_price: "",
         operations_notes: "",
-        upgrade_options: ""
+        upgrade_options: "",
+        cancellation_policy: "",
+        initial_rooms_cutoff_date: "",
+        final_rooms_cutoff_date: ""
       });
     },
     onError: (error) => {
@@ -226,6 +236,36 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="initial_rooms_cutoff_date">Initial Rooms Cutoff Date</Label>
+              <Input
+                id="initial_rooms_cutoff_date"
+                type="date"
+                value={formData.initial_rooms_cutoff_date}
+                onChange={(e) => handleInputChange("initial_rooms_cutoff_date", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="final_rooms_cutoff_date">Final Rooms Cutoff Date</Label>
+              <Input
+                id="final_rooms_cutoff_date"
+                type="date"
+                value={formData.final_rooms_cutoff_date}
+                onChange={(e) => handleInputChange("final_rooms_cutoff_date", e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cancellation_policy">Cancellation Policy</Label>
+            <Textarea
+              id="cancellation_policy"
+              value={formData.cancellation_policy}
+              onChange={(e) => handleInputChange("cancellation_policy", e.target.value)}
+              rows={3}
+            />
           </div>
 
           <div className="space-y-2">

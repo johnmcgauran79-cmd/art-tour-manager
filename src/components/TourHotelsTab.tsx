@@ -111,6 +111,28 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList }
                     <span>Rooms Booked: {hotel.rooms_booked || 0}</span>
                   </div>
                 </div>
+
+                {/* Third row with new fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t">
+                  {(hotel as any).initial_rooms_cutoff_date && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Initial Cutoff: {formatDateToDDMMYYYY((hotel as any).initial_rooms_cutoff_date)}</span>
+                    </div>
+                  )}
+                  {(hotel as any).final_rooms_cutoff_date && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>Final Cutoff: {formatDateToDDMMYYYY((hotel as any).final_rooms_cutoff_date)}</span>
+                    </div>
+                  )}
+                  {(hotel as any).cancellation_policy && (
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span>Cancellation: {(hotel as any).cancellation_policy}</span>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
