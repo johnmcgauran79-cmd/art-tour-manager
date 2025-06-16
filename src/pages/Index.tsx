@@ -18,7 +18,6 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AdminSetup } from "@/components/AdminSetup";
-import { QuickActionsPanel } from "@/components/QuickActionsPanel";
 import { UpcomingDeadlinesWidget } from "@/components/UpcomingDeadlinesWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
@@ -173,19 +172,7 @@ const Index = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <QuickActionsPanel
-                onAddBooking={() => setShowAddBooking(true)}
-                onAddTour={() => setShowAddTour(true)}
-                onAddContact={() => setShowAddContact(true)}
-                onViewBookings={() => setActiveTab("bookings")}
-                onViewTours={() => setActiveTab("tours")}
-                onViewContacts={() => setActiveTab("contacts")}
-              />
-              <UpcomingDeadlinesWidget />
-            </div>
-            
+            <UpcomingDeadlinesWidget />
             <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
             <ActiveTours onViewAll={handleViewAllTours} />
           </TabsContent>
