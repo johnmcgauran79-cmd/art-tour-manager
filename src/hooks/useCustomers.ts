@@ -44,6 +44,7 @@ export const useCustomers = () => {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
+        .order('last_name', { ascending: true })
         .order('first_name', { ascending: true });
       
       if (error) {

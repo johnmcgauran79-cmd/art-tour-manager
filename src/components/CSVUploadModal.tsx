@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -224,6 +225,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       let updateCount = 0;
       let createCount = 0;
       let errorCount = 0;
+      let duplicateEmailCount = 0;
       const importErrors: string[] = [];
 
       console.log(`Starting import of ${contacts.length} contacts...`);
@@ -235,12 +237,22 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         try {
           console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact);
           
-          // Check if contact already exists based on first_name and last_name
-          const existingContact = existingCustomers?.find(
-            customer => 
-              customer.first_name.toLowerCase() === contact.first_name.toLowerCase() &&
-              customer.last_name.toLowerCase() === contact.last_name.toLowerCase()
-          );
+          // Check if contact already exists based on email first, then name
+          let existingContact = null;
+          if (contact.email) {
+            existingContact = existingCustomers?.find(
+              customer => customer.email?.toLowerCase() === contact.email?.toLowerCase()
+            );
+          }
+          
+          // If no email match, check by name
+          if (!existingContact) {
+            existingContact = existingCustomers?.find(
+              customer => 
+                customer.first_name.toLowerCase() === contact.first_name.toLowerCase() &&
+                customer.last_name.toLowerCase() === contact.last_name.toLowerCase()
+            );
+          }
 
           // Prepare customer data with proper null handling
           const customerData = {
@@ -276,7 +288,14 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
                   },
                   onError: (error: any) => {
                     errorCount++;
-                    const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Update error'}`;
+                    let errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Update error'}`;
+                    
+                    // Check for duplicate email error
+                    if (error?.message?.includes('customers_email_key')) {
+                      duplicateEmailCount++;
+                      errorMsg = `${contact.first_name} ${contact.last_name}: Duplicate email (${contact.email})`;
+                    }
+                    
                     importErrors.push(errorMsg);
                     console.error(`✗ Error updating contact:`, error);
                     resolve(); // Continue with next contact
@@ -298,7 +317,14 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
                 },
                 onError: (error: any) => {
                   errorCount++;
-                  const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Creation error'}`;
+                  let errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Creation error'}`;
+                  
+                  // Check for duplicate email error
+                  if (error?.message?.includes('customers_email_key')) {
+                    duplicateEmailCount++;
+                    errorMsg = `${contact.first_name} ${contact.last_name}: Duplicate email (${contact.email})`;
+                  }
+                  
                   importErrors.push(errorMsg);
                   console.error(`✗ Error creating contact:`, error);
                   resolve(); // Continue with next contact
@@ -309,7 +335,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
 
           // Small delay to prevent overwhelming the server
           if (i < contacts.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
 
         } catch (error: any) {
@@ -320,11 +346,19 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         }
       }
 
-      console.log(`Import completed. Success: ${successCount} (${createCount} created, ${updateCount} updated), Errors: ${errorCount}`);
+      console.log(`Import completed. Success: ${successCount} (${createCount} created, ${updateCount} updated), Errors: ${errorCount}, Duplicate emails: ${duplicateEmailCount}`);
 
       // Show results
       if (successCount > 0) {
-        const resultMessage = `Successfully processed ${successCount} contact${successCount !== 1 ? 's' : ''} (${createCount} created, ${updateCount} updated)${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`;
+        let resultMessage = `Successfully processed ${successCount} contact${successCount !== 1 ? 's' : ''} (${createCount} created, ${updateCount} updated)`;
+        
+        if (duplicateEmailCount > 0) {
+          resultMessage += `. ${duplicateEmailCount} failed due to duplicate emails`;
+        }
+        
+        if (errorCount > duplicateEmailCount) {
+          resultMessage += `. ${errorCount - duplicateEmailCount} other errors`;
+        }
         
         toast({
           title: "Import Complete",
@@ -341,7 +375,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       } else {
         toast({
           title: "Import Failed",
-          description: "No contacts were successfully processed. Please check the errors below.",
+          description: `No contacts were successfully processed. ${duplicateEmailCount > 0 ? `${duplicateEmailCount} duplicate emails found.` : ''} Please check the errors below.`,
           variant: "destructive",
         });
       }
@@ -370,7 +404,9 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         <DialogHeader>
           <DialogTitle>Bulk Import Contacts from CSV</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to import multiple contacts at once. Australian mobile numbers (9 digits starting with 4) will be automatically formatted.
+            Upload a CSV file to import multiple contacts at once. Australian mobile numbers (9 digits starting with 4) will be automatically formatted. 
+            <br />
+            <strong>Note:</strong> Contacts with duplicate emails will be skipped to maintain data integrity.
           </DialogDescription>
         </DialogHeader>
 
@@ -408,12 +444,12 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
                 <div className="font-medium mb-2">
                   {errors.length === 1 ? 'Import Error:' : `${errors.length} Import Errors:`}
                 </div>
-                <ul className="list-disc list-inside space-y-1">
-                  {errors.slice(0, 10).map((error, index) => (
+                <ul className="list-disc list-inside space-y-1 max-h-40 overflow-y-auto">
+                  {errors.slice(0, 20).map((error, index) => (
                     <li key={index} className="text-sm">{error}</li>
                   ))}
-                  {errors.length > 10 && (
-                    <li className="text-sm font-medium">...and {errors.length - 10} more errors</li>
+                  {errors.length > 20 && (
+                    <li className="text-sm font-medium">...and {errors.length - 20} more errors</li>
                   )}
                 </ul>
               </AlertDescription>
