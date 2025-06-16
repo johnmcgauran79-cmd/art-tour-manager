@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -165,6 +165,11 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
                 <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">
+                  Close
+                </Button>
+              </DialogClose>
             </div>
           </DialogTitle>
         </DialogHeader>
