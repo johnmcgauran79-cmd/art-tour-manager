@@ -65,7 +65,6 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     console.log('=== CSV HEADER ANALYSIS ===');
     console.log('Raw headers from CSV:', rawHeaders);
     console.log('Normalized headers (lowercase):', headers);
-    console.log('Email header index:', headers.indexOf('email'));
 
     const contacts: CSVContact[] = [];
     const validationErrors: string[] = [];
@@ -129,7 +128,6 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       });
 
       console.log(`Final contact object:`, contact);
-      console.log(`Email in contact (should be lowercase key):`, contact.email);
 
       // Validate required fields
       if (!contact.first_name || !contact.last_name) {
@@ -152,17 +150,12 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       };
 
       console.log(`Final formatted contact:`, formattedContact);
-      console.log(`Email specifically:`, formattedContact.email);
-      console.log(`Phone specifically (formatted):`, formattedContact.phone);
       contacts.push(formattedContact);
     }
 
     setErrors(validationErrors);
     console.log(`\n=== FINAL RESULTS ===`);
     console.log(`Total contacts parsed: ${contacts.length}`);
-    contacts.forEach((contact, index) => {
-      console.log(`Contact ${index + 1}: ${contact.first_name} ${contact.last_name} - Email: ${contact.email || 'NO EMAIL'} - Phone: ${contact.phone || 'NO PHONE'}`);
-    });
     
     return contacts;
   };
@@ -202,6 +195,25 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     }
   };
 
+  const findExistingCustomer = (contact: CSVContact) => {
+    if (!existingCustomers) return null;
+    
+    // First check by email if provided
+    if (contact.email) {
+      const emailMatch = existingCustomers.find(
+        customer => customer.email?.toLowerCase() === contact.email?.toLowerCase()
+      );
+      if (emailMatch) return emailMatch;
+    }
+    
+    // Then check by name
+    return existingCustomers.find(
+      customer => 
+        customer.first_name.toLowerCase() === contact.first_name.toLowerCase() &&
+        customer.last_name.toLowerCase() === contact.last_name.toLowerCase()
+    );
+  };
+
   const handleUpload = async () => {
     if (!file) return;
 
@@ -224,8 +236,8 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       let successCount = 0;
       let updateCount = 0;
       let createCount = 0;
+      let skipCount = 0;
       let errorCount = 0;
-      let duplicateEmailCount = 0;
       const importErrors: string[] = [];
 
       console.log(`Starting import of ${contacts.length} contacts...`);
@@ -237,22 +249,8 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         try {
           console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact);
           
-          // Check if contact already exists based on email first, then name
-          let existingContact = null;
-          if (contact.email) {
-            existingContact = existingCustomers?.find(
-              customer => customer.email?.toLowerCase() === contact.email?.toLowerCase()
-            );
-          }
-          
-          // If no email match, check by name
-          if (!existingContact) {
-            existingContact = existingCustomers?.find(
-              customer => 
-                customer.first_name.toLowerCase() === contact.first_name.toLowerCase() &&
-                customer.last_name.toLowerCase() === contact.last_name.toLowerCase()
-            );
-          }
+          // Find existing contact
+          const existingContact = findExistingCustomer(contact);
 
           // Prepare customer data with proper null handling
           const customerData = {
@@ -273,36 +271,47 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
           console.log('Customer data being processed:', customerData);
 
           if (existingContact) {
-            // Update existing contact
-            console.log(`Updating existing contact: ${contact.first_name} ${contact.last_name}`);
-            
-            await new Promise<void>((resolve, reject) => {
-              updateCustomer.mutate(
-                { id: existingContact.id, ...customerData },
-                {
-                  onSuccess: (data) => {
-                    successCount++;
-                    updateCount++;
-                    console.log(`✓ Contact updated: ${contact.first_name} ${contact.last_name}`, data);
-                    resolve();
-                  },
-                  onError: (error: any) => {
-                    errorCount++;
-                    let errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Update error'}`;
-                    
-                    // Check for duplicate email error
-                    if (error?.message?.includes('customers_email_key')) {
-                      duplicateEmailCount++;
-                      errorMsg = `${contact.first_name} ${contact.last_name}: Duplicate email (${contact.email})`;
-                    }
-                    
-                    importErrors.push(errorMsg);
-                    console.error(`✗ Error updating contact:`, error);
-                    resolve(); // Continue with next contact
-                  }
-                }
-              );
+            // Check if any fields need updating
+            const fieldsToUpdate = Object.keys(customerData).filter(key => {
+              const newValue = customerData[key as keyof typeof customerData];
+              const existingValue = existingContact[key as keyof typeof existingContact];
+              
+              // Only update if new value is not null/empty and different from existing
+              if (newValue === null || newValue === '') return false;
+              if (existingValue === newValue) return false;
+              
+              return true;
             });
+
+            if (fieldsToUpdate.length > 0) {
+              // Update existing contact
+              console.log(`Updating existing contact: ${contact.first_name} ${contact.last_name} (fields: ${fieldsToUpdate.join(', ')})`);
+              
+              await new Promise<void>((resolve, reject) => {
+                updateCustomer.mutate(
+                  { id: existingContact.id, ...customerData },
+                  {
+                    onSuccess: (data) => {
+                      successCount++;
+                      updateCount++;
+                      console.log(`✓ Contact updated: ${contact.first_name} ${contact.last_name}`, data);
+                      resolve();
+                    },
+                    onError: (error: any) => {
+                      errorCount++;
+                      const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Update error'}`;
+                      importErrors.push(errorMsg);
+                      console.error(`✗ Error updating contact:`, error);
+                      resolve(); // Continue with next contact
+                    }
+                  }
+                );
+              });
+            } else {
+              // No changes needed
+              skipCount++;
+              console.log(`↷ No changes needed for: ${contact.first_name} ${contact.last_name}`);
+            }
           } else {
             // Create new contact
             console.log(`Creating new contact: ${contact.first_name} ${contact.last_name}`);
@@ -317,14 +326,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
                 },
                 onError: (error: any) => {
                   errorCount++;
-                  let errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Creation error'}`;
-                  
-                  // Check for duplicate email error
-                  if (error?.message?.includes('customers_email_key')) {
-                    duplicateEmailCount++;
-                    errorMsg = `${contact.first_name} ${contact.last_name}: Duplicate email (${contact.email})`;
-                  }
-                  
+                  const errorMsg = `${contact.first_name} ${contact.last_name}: ${error?.message || 'Creation error'}`;
                   importErrors.push(errorMsg);
                   console.error(`✗ Error creating contact:`, error);
                   resolve(); // Continue with next contact
@@ -335,7 +337,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
 
           // Small delay to prevent overwhelming the server
           if (i < contacts.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 50));
           }
 
         } catch (error: any) {
@@ -346,18 +348,14 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
         }
       }
 
-      console.log(`Import completed. Success: ${successCount} (${createCount} created, ${updateCount} updated), Errors: ${errorCount}, Duplicate emails: ${duplicateEmailCount}`);
+      console.log(`Import completed. Success: ${successCount} (${createCount} created, ${updateCount} updated, ${skipCount} skipped), Errors: ${errorCount}`);
 
       // Show results
-      if (successCount > 0) {
-        let resultMessage = `Successfully processed ${successCount} contact${successCount !== 1 ? 's' : ''} (${createCount} created, ${updateCount} updated)`;
+      if (successCount > 0 || skipCount > 0) {
+        let resultMessage = `Successfully processed ${successCount + skipCount} contact${successCount + skipCount !== 1 ? 's' : ''} (${createCount} created, ${updateCount} updated, ${skipCount} unchanged)`;
         
-        if (duplicateEmailCount > 0) {
-          resultMessage += `. ${duplicateEmailCount} failed due to duplicate emails`;
-        }
-        
-        if (errorCount > duplicateEmailCount) {
-          resultMessage += `. ${errorCount - duplicateEmailCount} other errors`;
+        if (errorCount > 0) {
+          resultMessage += `. ${errorCount} errors occurred`;
         }
         
         toast({
@@ -375,7 +373,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       } else {
         toast({
           title: "Import Failed",
-          description: `No contacts were successfully processed. ${duplicateEmailCount > 0 ? `${duplicateEmailCount} duplicate emails found.` : ''} Please check the errors below.`,
+          description: `No contacts were successfully processed. Please check the errors below.`,
           variant: "destructive",
         });
       }
@@ -406,7 +404,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
           <DialogDescription>
             Upload a CSV file to import multiple contacts at once. Australian mobile numbers (9 digits starting with 4) will be automatically formatted. 
             <br />
-            <strong>Note:</strong> Contacts with duplicate emails will be skipped to maintain data integrity.
+            <strong>Note:</strong> Contacts with duplicate emails will be updated with new information instead of creating duplicates.
           </DialogDescription>
         </DialogHeader>
 
