@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { RefreshCw, Download } from "lucide-react";
+import type { Json } from "@/integrations/supabase/types";
 
 interface AuditLogEntry {
   id: string;
@@ -15,7 +16,7 @@ interface AuditLogEntry {
   operation_type: string;
   table_name: string;
   record_id?: string;
-  details?: Record<string, any>;
+  details?: Json;
   timestamp: string;
   user_email?: string;
 }
@@ -133,6 +134,12 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
     window.URL.revokeObjectURL(url);
   };
 
+  const formatDetails = (details: Json) => {
+    if (!details) return '-';
+    if (typeof details === 'string') return details;
+    return JSON.stringify(details, null, 2);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-hidden">
@@ -210,13 +217,9 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
                         {log.record_id ? log.record_id.slice(0, 8) + '...' : '-'}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {log.details ? (
-                          <pre className="text-xs bg-gray-50 p-1 rounded max-w-xs overflow-x-auto">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
-                        ) : (
-                          '-'
-                        )}
+                        <pre className="text-xs bg-gray-50 p-1 rounded max-w-xs overflow-x-auto">
+                          {formatDetails(log.details)}
+                        </pre>
                       </TableCell>
                     </TableRow>
                   ))
