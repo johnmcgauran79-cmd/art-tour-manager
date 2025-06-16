@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Settings } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Settings, Trash2 } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -20,6 +21,10 @@ import { Tour } from "@/hooks/useTours";
 import { useDuplicateTour } from "@/hooks/useDuplicateTour";
 import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -40,6 +45,39 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
 
+  const { userRole } = useAuth();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const deleteTour = useMutation({
+    mutationFn: async () => {
+      if (!tour) throw new Error("No tour selected");
+      
+      const { error } = await supabase
+        .from('tours')
+        .delete()
+        .eq('id', tour.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      toast({
+        title: "Tour Deleted",
+        description: "Tour has been successfully deleted.",
+      });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete tour. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error deleting tour:', error);
+    },
+  });
+
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
     setEditActivityModalOpen(true);
@@ -56,11 +94,22 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   };
 
   const handleDuplicateTour = () => {
-    setDuplicateDialogOpen(true);
+    if (userRole === 'admin' || userRole === 'manager') {
+      setDuplicateDialogOpen(true);
+    } else {
+      toast({
+        title: "Access Denied",
+        description: "Only admin and manager users can duplicate tours.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteTour = () => {
+    deleteTour.mutate();
   };
 
   const handleTourCreated = (newTour: any) => {
-    // Transform the new tour data and open edit modal
     const transformedNewTour = {
       id: newTour.id,
       name: newTour.name,
@@ -87,14 +136,10 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       tourHost: newTour.tour_host,
     };
     
-    // Close current modal and open edit modal for new tour
     onOpenChange(false);
     setEditTourModalOpen(true);
-    // We need to pass the new tour to edit modal, but since we're updating the same state,
-    // we'll need to handle this differently. For now, let's just close and let user find the new tour.
   };
 
-  // Transform the database tour data to match the expected interface
   const transformedTour = tour ? {
     id: tour.id,
     name: tour.name,
@@ -134,15 +179,49 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 <DialogTitle className="text-brand-navy">{tour?.name}</DialogTitle>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleDuplicateTour}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-                >
-                  <Copy className="h-4 w-4" />
-                  Duplicate Tour
-                </Button>
+                {(userRole === 'admin' || userRole === 'manager') && (
+                  <Button
+                    onClick={handleDuplicateTour}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    <Copy className="h-4 w-4" />
+                    Duplicate Tour
+                  </Button>
+                )}
+                {userRole === 'admin' && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 border-red-200 text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Tour
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure you want to delete this tour?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete the tour "{tour?.name}" and all associated data including bookings, activities, and hotels.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleDeleteTour}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          disabled={deleteTour.isPending}
+                        >
+                          {deleteTour.isPending ? "Deleting..." : "Delete Tour"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
                 <Button
                   onClick={() => setEditTourModalOpen(true)}
                   variant="outline"
