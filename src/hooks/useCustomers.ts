@@ -250,6 +250,22 @@ export const useDeleteCustomer = () => {
     mutationFn: async (id: string) => {
       console.log('Deleting customer with id:', id);
       
+      // First check if the customer has any bookings
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('lead_passenger_id', id)
+        .limit(1);
+
+      if (bookingsError) {
+        console.error('Error checking for bookings:', bookingsError);
+        throw new Error('Failed to check for existing bookings');
+      }
+
+      if (bookings && bookings.length > 0) {
+        throw new Error('Cannot delete contact with existing tour bookings. Please cancel or transfer their bookings first.');
+      }
+
       const { error } = await supabase
         .from('customers')
         .delete()
@@ -257,6 +273,9 @@ export const useDeleteCustomer = () => {
 
       if (error) {
         console.error('Supabase error deleting customer:', error);
+        if (error.code === '23503') {
+          throw new Error('Cannot delete contact as it is referenced by other records. Please remove all related bookings first.');
+        }
         throw error;
       }
       

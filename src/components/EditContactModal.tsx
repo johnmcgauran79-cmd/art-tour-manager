@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Trash2 } from "lucide-react";
 import { useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
 import { Customer } from "@/hooks/useCustomers";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditContactModalProps {
   contact: Partial<Customer> | null;
@@ -29,9 +31,47 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
     dietary_requirements: "",
     notes: "",
   });
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [hasBookings, setHasBookings] = useState(false);
 
   const updateCustomer = useUpdateCustomer();
   const deleteCustomer = useDeleteCustomer();
+  const { toast } = useToast();
+
+  // Check user role
+  useEffect(() => {
+    const checkUserRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        setUserRole(roleData?.role || null);
+      }
+    };
+    
+    checkUserRole();
+  }, []);
+
+  // Check if contact has bookings
+  useEffect(() => {
+    const checkBookings = async () => {
+      if (contact?.id) {
+        const { data } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('lead_passenger_id', contact.id)
+          .limit(1);
+        
+        setHasBookings(data && data.length > 0);
+      }
+    };
+    
+    checkBookings();
+  }, [contact?.id]);
 
   useEffect(() => {
     if (contact) {
@@ -85,12 +125,25 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
   const handleDelete = () => {
     if (!contact?.id) return;
     
+    // Check if contact has bookings
+    if (hasBookings) {
+      toast({
+        title: "Cannot Delete Contact",
+        description: "This contact has tour bookings and cannot be deleted. Please cancel or transfer their bookings first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     deleteCustomer.mutate(contact.id, {
       onSuccess: () => {
         onOpenChange(false);
       },
     });
   };
+
+  // Check if user can delete (only admin or manager)
+  const canDelete = userRole === 'admin' || userRole === 'manager';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,41 +156,59 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                 Update contact information.
               </DialogDescription>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to delete {contact?.first_name} {contact?.last_name}? 
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={deleteCustomer.isPending}
-                    className="bg-red-600 hover:bg-red-700"
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
                   >
-                    {deleteCustomer.isPending ? "Deleting..." : "Delete Contact"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {hasBookings ? (
+                        <>
+                          This contact has tour bookings and cannot be deleted. Please cancel or transfer their bookings first.
+                        </>
+                      ) : (
+                        <>
+                          Are you sure you want to delete {contact?.first_name} {contact?.last_name}? 
+                          This action cannot be undone.
+                        </>
+                      )}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    {!hasBookings && (
+                      <AlertDialogAction
+                        onClick={handleDelete}
+                        disabled={deleteCustomer.isPending}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        {deleteCustomer.isPending ? "Deleting..." : "Delete Contact"}
+                      </AlertDialogAction>
+                    )}
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+            {!canDelete && (
+              <div className="text-sm text-muted-foreground">
+                Only managers and admins can delete contacts
+              </div>
+            )}
           </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
