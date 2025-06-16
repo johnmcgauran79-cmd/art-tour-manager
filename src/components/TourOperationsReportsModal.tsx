@@ -101,9 +101,9 @@ export const TourOperationsReportsModal = ({
           onOpenChange={(open) => {
             setRoomingListModalOpen(open);
             if (!open) {
-              // When rooming list closes, close the main modal too
-              onOpenChange(false);
+              // When rooming list closes, go back to hotel selection
               setSelectedHotel(null);
+              setHotelSelectionOpen(true);
             }
           }}
         />
