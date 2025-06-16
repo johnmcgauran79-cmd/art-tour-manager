@@ -181,11 +181,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    // Only allow closing if not creating or if user created (admin can close after creation)
-    if (!newOpen && (isCreating || (!userCreated && tempPassword))) {
-      return; // Prevent closing during creation or before admin closes the success dialog
-    }
-    if (!newOpen) {
+    // Only allow closing if not currently creating a user
+    if (!newOpen && !isCreating) {
       handleClose();
     }
   };
