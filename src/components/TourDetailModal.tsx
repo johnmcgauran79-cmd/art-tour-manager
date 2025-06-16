@@ -44,6 +44,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
+  const [tourForEdit, setTourForEdit] = useState<any>(null);
 
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
@@ -136,10 +137,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       tourHost: newTour.tour_host,
     };
     
+    // Close the current detail modal and open edit modal for the new tour
     onOpenChange(false);
+    setTourForEdit(transformedNewTour);
     setEditTourModalOpen(true);
   };
 
+  // Use tourForEdit for the edit modal if it exists, otherwise use the transformed current tour
   const transformedTour = tour ? {
     id: tour.id,
     name: tour.name,
@@ -341,13 +345,16 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         />
       )}
 
-      {transformedTour && (
-        <EditTourModal
-          open={editTourModalOpen}
-          onOpenChange={setEditTourModalOpen}
-          tour={transformedTour}
-        />
-      )}
+      <EditTourModal
+        open={editTourModalOpen}
+        onOpenChange={(open) => {
+          setEditTourModalOpen(open);
+          if (!open) {
+            setTourForEdit(null);
+          }
+        }}
+        tour={tourForEdit || transformedTour}
+      />
 
       <DuplicateTourDialog
         open={duplicateDialogOpen}
