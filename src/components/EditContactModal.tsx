@@ -199,11 +199,6 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                 </AlertDialogContent>
               </AlertDialog>
             )}
-            {!canDelete && (
-              <div className="text-sm text-muted-foreground">
-                Only managers and admins can delete contacts
-              </div>
-            )}
           </div>
         </DialogHeader>
 
