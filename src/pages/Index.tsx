@@ -15,9 +15,10 @@ import { ContactsTable } from "@/components/ContactsTable";
 import { UserManagement } from "@/components/UserManagement";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { AdminSetup } from "@/components/AdminSetup";
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, userRole } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
@@ -53,6 +54,9 @@ const Index = () => {
     setActiveTab("tours");
   };
 
+  // Check if user is admin
+  const isAdmin = userRole === 'admin';
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -71,16 +75,18 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              {/* Users icon button shows user management modal */}
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label="Manage Users"
-                className="text-primary-foreground"
-                onClick={() => setShowUserManagement(true)}
-              >
-                <UserCog className="h-6 w-6" />
-              </Button>
+              {/* Users icon button shows user management modal - only for admins */}
+              {isAdmin && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label="Manage Users"
+                  className="text-primary-foreground"
+                  onClick={() => setShowUserManagement(true)}
+                >
+                  <UserCog className="h-6 w-6" />
+                </Button>
+              )}
               {/* User dropdown */}
               <UserDropdown />
             </div>
@@ -90,6 +96,13 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-6">
+        {/* Show admin setup if user has no role */}
+        {!userRole && (
+          <div className="mb-6">
+            <AdminSetup />
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5"> {/* Now just 5 tabs */}
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
@@ -140,11 +153,13 @@ const Index = () => {
 
       {/* Modals */}
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
-      <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
-        <DialogContent className="max-w-2xl p-0">
-          <UserManagement />
-        </DialogContent>
-      </Dialog>
+      {isAdmin && (
+        <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <UserManagement />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
