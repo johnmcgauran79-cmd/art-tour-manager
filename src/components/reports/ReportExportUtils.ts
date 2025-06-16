@@ -1,4 +1,3 @@
-
 interface ReportItem {
   id: string;
   type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist';
@@ -44,11 +43,9 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'passengerlist':
-      headers = ['Passenger Name', 'Booking Reference', 'Group', 'Dietary Requirements', 'Notes'];
+      headers = ['Passenger Name', 'Dietary Requirements', 'Notes'];
       csvData = report.data.map(item => ({
         passengername: item.name,
-        bookingreference: item.bookingReference,
-        group: item.groupName,
         dietaryrequirements: item.dietaryRequirements,
         notes: ''
       }));
@@ -131,13 +128,11 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'passengerlist':
       tableHTML = `
         <table class="passenger-list">
-          <thead><tr><th>Passenger Name</th><th>Booking Ref</th><th>Group</th><th>Dietary Requirements</th><th>Notes / Meal Orders</th></tr></thead>
+          <thead><tr><th>Passenger Name</th><th>Dietary Requirements</th><th>Notes / Meal Orders</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr class="passenger-row">
                 <td>${item.name}</td>
-                <td>${item.bookingReference}</td>
-                <td>${item.groupName || '-'}</td>
                 <td>${item.dietaryRequirements || '-'}</td>
                 <td class="notes-column">_________________________</td>
               </tr>
