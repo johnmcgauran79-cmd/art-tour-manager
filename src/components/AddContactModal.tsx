@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -177,24 +176,26 @@ export const AddContactModal = ({ open, onOpenChange }: AddContactModalProps) =>
               rows={3}
             />
           </div>
+        </form>
 
-          <div className="flex justify-end gap-2 pt-4">
+        <DialogFooter>
+          <DialogClose asChild>
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
             >
-              Cancel
+              Close
             </Button>
-            <Button
-              type="submit"
-              disabled={createCustomer.isPending}
-              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-            >
-              {createCustomer.isPending ? "Creating..." : "Create Contact"}
-            </Button>
-          </div>
-        </form>
+          </DialogClose>
+          <Button
+            type="submit"
+            disabled={createCustomer.isPending}
+            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            onClick={handleSubmit}
+          >
+            {createCustomer.isPending ? "Creating..." : "Create Contact"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

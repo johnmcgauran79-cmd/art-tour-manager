@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -304,25 +303,27 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               />
             </div>
           </div>
+        </form>
 
-          <div className="flex justify-end gap-3">
+        <DialogFooter>
+          <DialogClose asChild>
             <Button
               type="button"
               variant="outline"
-              onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              Close
             </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-            >
-              {isLoading ? "Creating..." : "Create Tour"}
-            </Button>
-          </div>
-        </form>
+          </DialogClose>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            onClick={handleSubmit}
+          >
+            {isLoading ? "Creating..." : "Create Tour"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

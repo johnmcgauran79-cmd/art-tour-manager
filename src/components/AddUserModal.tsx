@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -250,13 +249,14 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
 
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                disabled={isCreating}
-              >
-                Cancel
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  disabled={isCreating}
+                >
+                  Close
+                </Button>
+              </DialogClose>
               <Button
                 onClick={handleCreateUser}
                 disabled={isCreating}
@@ -308,9 +308,11 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
             </div>
 
             <DialogFooter>
-              <Button onClick={handleClose}>
-                Close
-              </Button>
+              <DialogClose asChild>
+                <Button onClick={handleClose}>
+                  Close
+                </Button>
+              </DialogClose>
             </DialogFooter>
           </>
         )}

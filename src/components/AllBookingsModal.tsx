@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -148,6 +147,13 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
               </Button>
             </div>
           </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">
+                Close
+              </Button>
+            </DialogClose>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

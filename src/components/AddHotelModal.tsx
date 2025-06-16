@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -248,20 +247,23 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
               rows={3}
             />
           </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              disabled={createHotel.isPending}
-              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-            >
-              {createHotel.isPending ? "Adding..." : "Add Hotel"}
-            </Button>
-          </div>
         </form>
+
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button type="button" variant="outline">
+              Close
+            </Button>
+          </DialogClose>
+          <Button 
+            type="submit" 
+            disabled={createHotel.isPending}
+            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            onClick={handleSubmit}
+          >
+            {createHotel.isPending ? "Adding..." : "Add Hotel"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

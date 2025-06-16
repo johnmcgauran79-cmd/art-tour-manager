@@ -1,8 +1,7 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 
 interface AdminPasswordResetModalProps {
@@ -135,13 +134,15 @@ export function AdminPasswordResetModal({ open, onOpenChange, userId, userEmail 
             </div>
 
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                disabled={isResetting}
-              >
-                Cancel
-              </Button>
+              <DialogClose asChild>
+                <Button
+                  variant="outline"
+                  onClick={handleClose}
+                  disabled={isResetting}
+                >
+                  Close
+                </Button>
+              </DialogClose>
               <Button
                 onClick={handlePasswordReset}
                 disabled={isResetting}
@@ -186,9 +187,11 @@ export function AdminPasswordResetModal({ open, onOpenChange, userId, userEmail 
             </div>
 
             <DialogFooter>
-              <Button onClick={handleClose}>
-                Close
-              </Button>
+              <DialogClose asChild>
+                <Button onClick={handleClose}>
+                  Close
+                </Button>
+              </DialogClose>
             </DialogFooter>
           </>
         )}

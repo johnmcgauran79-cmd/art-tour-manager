@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -359,18 +358,21 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Close
+              </Button>
+            </DialogClose>
             <Button 
               type="submit" 
               disabled={createActivity.isPending}
               className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+              onClick={handleSubmit}
             >
               {createActivity.isPending ? "Adding..." : "Add Activity"}
             </Button>
-          </div>
+          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
