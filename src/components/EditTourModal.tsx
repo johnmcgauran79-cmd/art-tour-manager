@@ -42,9 +42,10 @@ interface EditTourModalProps {
   tour: Tour | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onTourDeleted?: () => void;
 }
 
-export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) => {
+export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditTourModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
     tour_host: "",
@@ -146,6 +147,10 @@ export const EditTourModal = ({ tour, open, onOpenChange }: EditTourModalProps) 
         description: "Tour has been successfully deleted.",
       });
       onOpenChange(false);
+      // Call the callback to close the parent modal
+      if (onTourDeleted) {
+        onTourDeleted();
+      }
     },
     onError: (error) => {
       toast({

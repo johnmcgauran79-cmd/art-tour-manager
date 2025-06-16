@@ -83,6 +83,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       secureDeleteTour.mutate({
         tourId: tour.id,
         tourName: tour.name
+      }, {
+        onSuccess: () => {
+          // Close the modal after successful deletion
+          onOpenChange(false);
+        }
       });
     }
   };
@@ -118,6 +123,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     onOpenChange(false);
     setTourForEdit(transformedNewTour);
     setEditTourModalOpen(true);
+  };
+
+  const handleTourDeleted = () => {
+    // Close the modal when tour is deleted from EditTourModal
+    onOpenChange(false);
   };
 
   // Use tourForEdit for the edit modal if it exists, otherwise use the transformed current tour
@@ -331,6 +341,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           }
         }}
         tour={tourForEdit || transformedTour}
+        onTourDeleted={handleTourDeleted}
       />
 
       <DuplicateTourDialog
