@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -42,7 +43,7 @@ export const useBookings = () => {
         .select(`
           *,
           tours (name),
-          customers (first_name, last_name, email, phone)
+          customers (first_name, last_name, email, phone, dietary_requirements)
         `)
         .order('created_at', { ascending: false });
       
@@ -64,7 +65,7 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) =>
         .select(`
           *,
           tours (name),
-          customers (first_name, last_name, email, phone)
+          customers (first_name, last_name, email, phone, dietary_requirements)
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(start, end);
