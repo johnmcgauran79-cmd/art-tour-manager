@@ -180,8 +180,18 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     onOpenChange(false);
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    // Only allow closing if not creating or if user created (admin can close after creation)
+    if (!newOpen && (isCreating || (!userCreated && tempPassword))) {
+      return; // Prevent closing during creation or before admin closes the success dialog
+    }
+    if (!newOpen) {
+      handleClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={() => {}} disableCloseOnOutsideClick>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{userCreated ? "User Created Successfully" : "Add New User"}</DialogTitle>

@@ -104,8 +104,18 @@ export function AdminPasswordResetModal({ open, onOpenChange, userId, userEmail 
     onOpenChange(false);
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    // Only allow closing if not resetting or if admin explicitly closes
+    if (!newOpen && (isResetting || (resetComplete && newTempPassword))) {
+      return; // Prevent closing during reset or before admin closes the success dialog
+    }
+    if (!newOpen) {
+      handleClose();
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={() => {}} disableCloseOnOutsideClick>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
