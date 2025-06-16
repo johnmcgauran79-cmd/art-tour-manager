@@ -147,10 +147,18 @@ export const AllDeadlinesModal = ({ open, onOpenChange }: AllDeadlinesModalProps
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              All Upcoming Deadlines
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                <DialogTitle>All Upcoming Deadlines</DialogTitle>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+              >
+                Close
+              </Button>
+            </div>
             <DialogDescription>
               Complete list of important dates and payment deadlines in the next 30 days
             </DialogDescription>
@@ -249,15 +257,6 @@ export const AllDeadlinesModal = ({ open, onOpenChange }: AllDeadlinesModalProps
               </div>
             </>
           )}
-
-          <div className="flex justify-end mt-6">
-            <Button 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-            >
-              Close
-            </Button>
-          </div>
         </DialogContent>
       </Dialog>
 
