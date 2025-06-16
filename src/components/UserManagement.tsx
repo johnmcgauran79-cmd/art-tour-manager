@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -283,11 +284,11 @@ export function UserManagement() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50">
-                  <TableHead className="w-[280px] font-semibold text-gray-700">Email Address</TableHead>
-                  <TableHead className="w-[140px] font-semibold text-gray-700">Current Role</TableHead>
+                  <TableHead className="w-[220px] font-semibold text-gray-700">Email Address</TableHead>
+                  <TableHead className="w-[180px] font-semibold text-gray-700">Current Role</TableHead>
                   <TableHead className="w-[160px] font-semibold text-gray-700">Account Status</TableHead>
                   <TableHead className="w-[130px] font-semibold text-gray-700">Member Since</TableHead>
-                  <TableHead className="w-[160px] font-semibold text-gray-700">Assign New Role</TableHead>
+                  <TableHead className="w-[200px] font-semibold text-gray-700">Assign New Role</TableHead>
                   <TableHead className="w-[400px] font-semibold text-gray-700">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -296,7 +297,7 @@ export function UserManagement() {
                   <TableRow key={user.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <span className="truncate max-w-[240px]" title={user.email}>{user.email}</span>
+                        <span className="truncate max-w-[180px]" title={user.email}>{user.email}</span>
                         {currentUserId && user.id === currentUserId && (
                           <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
                             YOU
