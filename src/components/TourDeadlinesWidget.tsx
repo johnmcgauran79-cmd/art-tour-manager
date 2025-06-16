@@ -9,7 +9,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface Deadline {
   id: string;
-  type: 'tour_start' | 'tour_end' | 'instalment' | 'final_payment' | 'hotel_cutoff';
+  type: 'tour_start' | 'tour_end' | 'instalment' | 'final_payment' | 'hotel_checkin' | 'hotel_checkout' | 'initial_cutoff' | 'final_cutoff';
   title: string;
   date: string;
   description: string;
@@ -85,24 +85,66 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
       });
     }
 
-    // Hotel cutoff dates (if available)
+    // Hotel dates
     hotels?.forEach(hotel => {
+      // Hotel check-in date
       if (hotel.default_check_in) {
-        const cutoffDate = new Date(hotel.default_check_in);
-        cutoffDate.setDate(cutoffDate.getDate() - 7); // Assume 7 days before check-in as cutoff
-        
-        const daysUntilCutoff = Math.ceil((cutoffDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-        if (daysUntilCutoff >= 0) {
-          deadlines.push({
-            id: `hotel-cutoff-${hotel.id}`,
-            type: 'hotel_cutoff',
-            title: 'Hotel Booking Cutoff',
-            date: cutoffDate.toISOString().split('T')[0],
-            description: hotel.name,
-            priority: daysUntilCutoff <= 3 ? 'high' : daysUntilCutoff <= 7 ? 'medium' : 'low',
-            hotelName: hotel.name,
-          });
-        }
+        const checkinDate = new Date(hotel.default_check_in);
+        const daysUntilCheckin = Math.ceil((checkinDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        deadlines.push({
+          id: `hotel-checkin-${hotel.id}`,
+          type: 'hotel_checkin',
+          title: 'Hotel Check-in',
+          date: hotel.default_check_in,
+          description: hotel.name,
+          priority: daysUntilCheckin <= 7 ? 'high' : daysUntilCheckin <= 14 ? 'medium' : 'low',
+          hotelName: hotel.name,
+        });
+      }
+
+      // Hotel check-out date
+      if (hotel.default_check_out) {
+        const checkoutDate = new Date(hotel.default_check_out);
+        const daysUntilCheckout = Math.ceil((checkoutDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        deadlines.push({
+          id: `hotel-checkout-${hotel.id}`,
+          type: 'hotel_checkout',
+          title: 'Hotel Check-out',
+          date: hotel.default_check_out,
+          description: hotel.name,
+          priority: daysUntilCheckout <= 7 ? 'high' : daysUntilCheckout <= 14 ? 'medium' : 'low',
+          hotelName: hotel.name,
+        });
+      }
+
+      // Initial rooms cutoff date
+      if ((hotel as any).initial_rooms_cutoff_date) {
+        const initialCutoffDate = new Date((hotel as any).initial_rooms_cutoff_date);
+        const daysUntilInitialCutoff = Math.ceil((initialCutoffDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        deadlines.push({
+          id: `initial-cutoff-${hotel.id}`,
+          type: 'initial_cutoff',
+          title: 'Initial Rooms Cutoff',
+          date: (hotel as any).initial_rooms_cutoff_date,
+          description: hotel.name,
+          priority: daysUntilInitialCutoff <= 3 ? 'high' : daysUntilInitialCutoff <= 7 ? 'medium' : 'low',
+          hotelName: hotel.name,
+        });
+      }
+
+      // Final rooms cutoff date
+      if ((hotel as any).final_rooms_cutoff_date) {
+        const finalCutoffDate = new Date((hotel as any).final_rooms_cutoff_date);
+        const daysUntilFinalCutoff = Math.ceil((finalCutoffDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        deadlines.push({
+          id: `final-cutoff-${hotel.id}`,
+          type: 'final_cutoff',
+          title: 'Final Rooms Cutoff',
+          date: (hotel as any).final_rooms_cutoff_date,
+          description: hotel.name,
+          priority: daysUntilFinalCutoff <= 3 ? 'high' : daysUntilFinalCutoff <= 7 ? 'medium' : 'low',
+          hotelName: hotel.name,
+        });
       }
     });
 
