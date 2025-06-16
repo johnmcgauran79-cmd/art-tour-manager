@@ -15,6 +15,7 @@ import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
 import { TourBookingsTab } from "@/components/TourBookingsTab";
+import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { Tour } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
 
@@ -103,11 +104,12 @@ export const TourDetailModalWithHotelsTab = ({
           </DialogHeader>
 
           <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="hotels">Hotels</TabsTrigger>
               <TabsTrigger value="activities">Activities</TabsTrigger>
               <TabsTrigger value="bookings">Bookings</TabsTrigger>
+              <TabsTrigger value="operations">Operations</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -136,6 +138,13 @@ export const TourDetailModalWithHotelsTab = ({
                 tourId={tour?.id || ""}
                 tourName={tour?.name || ""}
                 onAddBooking={() => setAddBookingModalOpen(true)}
+              />
+            </TabsContent>
+
+            <TabsContent value="operations" className="space-y-4">
+              <TourOperationsTab
+                tourId={tour?.id || ""}
+                tourName={tour?.name || ""}
               />
             </TabsContent>
           </Tabs>
