@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileText } from "lucide-react";
@@ -142,6 +141,11 @@ export const TourOperationsReportsModal = ({
                   <FileText className="h-4 w-4" />
                   Print/PDF
                 </Button>
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">
+                    Close
+                  </Button>
+                </DialogClose>
               </div>
             </div>
           </DialogHeader>
@@ -165,7 +169,14 @@ export const TourOperationsReportsModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">
+                Close
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-gray-600">Click on individual report types in the Operations tab to view specific reports.</p>

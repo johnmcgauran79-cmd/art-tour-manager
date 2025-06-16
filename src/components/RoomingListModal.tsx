@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Printer } from "lucide-react";
@@ -140,6 +139,11 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                 <Printer className="h-4 w-4 mr-2" />
                 Print/PDF
               </Button>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">
+                  Close
+                </Button>
+              </DialogClose>
             </div>
           </div>
         </DialogHeader>

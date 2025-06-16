@@ -1,6 +1,7 @@
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Hotel } from "lucide-react";
 
 interface HotelSelectionDialogProps {
@@ -26,7 +27,14 @@ export const HotelSelectionDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Select Hotel - {tourName}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Select Hotel - {tourName}</DialogTitle>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">
+                Close
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
         <div className="space-y-4">
           <p className="text-gray-600">Select a hotel to view its rooming list:</p>

@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -68,9 +67,11 @@ export const CancelBookingDialog = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleCancel} disabled={isLoading}>
-            Keep Booking
-          </Button>
+          <DialogClose asChild>
+            <Button variant="outline" disabled={isLoading}>
+              Keep Booking
+            </Button>
+          </DialogClose>
           <Button 
             variant="destructive" 
             onClick={handleConfirm}
