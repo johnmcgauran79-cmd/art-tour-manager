@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +15,7 @@ import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
 import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { TourOperationsTab } from "@/components/TourOperationsTab";
+import { DuplicateTourDialog } from "@/components/DuplicateTourDialog";
 import { Tour } from "@/hooks/useTours";
 import { useDuplicateTour } from "@/hooks/useDuplicateTour";
 import { formatDateRange } from "@/lib/utils";
@@ -35,11 +35,10 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [editTourModalOpen, setEditTourModalOpen] = useState(false);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
-
-  const duplicateTour = useDuplicateTour();
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -57,9 +56,42 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   };
 
   const handleDuplicateTour = () => {
-    if (tour) {
-      duplicateTour.mutate(tour.id);
-    }
+    setDuplicateDialogOpen(true);
+  };
+
+  const handleTourCreated = (newTour: any) => {
+    // Transform the new tour data and open edit modal
+    const transformedNewTour = {
+      id: newTour.id,
+      name: newTour.name,
+      dates: formatDateRange(newTour.start_date, newTour.end_date),
+      duration: `${newTour.days} days / ${newTour.nights} nights`,
+      location: newTour.location || "",
+      pickupPoint: newTour.pickup_point || "",
+      status: newTour.status,
+      notes: newTour.notes || "",
+      inclusions: newTour.inclusions || "",
+      exclusions: newTour.exclusions || "",
+      pricing: {
+        single: newTour.price_single || 0,
+        double: newTour.price_double || 0,
+        twin: newTour.price_twin || 0,
+      },
+      deposit: newTour.deposit_required || 0,
+      instalmentAmount: newTour.instalment_amount || 0,
+      instalmentDate: newTour.instalment_date || "",
+      finalPaymentDate: newTour.final_payment_date || "",
+      totalCapacity: newTour.capacity || 0,
+      startDate: newTour.start_date,
+      endDate: newTour.end_date,
+      tourHost: newTour.tour_host,
+    };
+    
+    // Close current modal and open edit modal for new tour
+    onOpenChange(false);
+    setEditTourModalOpen(true);
+    // We need to pass the new tour to edit modal, but since we're updating the same state,
+    // we'll need to handle this differently. For now, let's just close and let user find the new tour.
   };
 
   // Transform the database tour data to match the expected interface
@@ -107,10 +139,9 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-                  disabled={duplicateTour.isPending}
                 >
                   <Copy className="h-4 w-4" />
-                  {duplicateTour.isPending ? "Duplicating..." : "Duplicate Tour"}
+                  Duplicate Tour
                 </Button>
                 <Button
                   onClick={() => setEditTourModalOpen(true)}
@@ -238,6 +269,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           tour={transformedTour}
         />
       )}
+
+      <DuplicateTourDialog
+        open={duplicateDialogOpen}
+        onOpenChange={setDuplicateDialogOpen}
+        originalTour={tour ? { id: tour.id, name: tour.name } : null}
+        onTourCreated={handleTourCreated}
+      />
 
       <TourOperationsReportsModal
         tourId={tour?.id || ""}

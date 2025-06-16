@@ -8,7 +8,7 @@ export const useDuplicateTour = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (originalTourId: string) => {
+    mutationFn: async ({ originalTourId, newName }: { originalTourId: string; newName?: string }) => {
       console.log('Duplicating tour:', originalTourId);
 
       // Fetch the original tour
@@ -26,9 +26,12 @@ export const useDuplicateTour = () => {
       const newStartDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
       const newEndDate = new Date(endDate.getFullYear() + 1, endDate.getMonth(), endDate.getDate());
 
+      // Use provided name or default naming convention
+      const tourName = newName || `${originalTour.name} ${newStartDate.getFullYear()}`;
+
       // Create new tour with updated dates
       const newTourData = {
-        name: `${originalTour.name} ${newStartDate.getFullYear()}`,
+        name: tourName,
         tour_host: originalTour.tour_host,
         start_date: newStartDate.toISOString().split('T')[0],
         end_date: newEndDate.toISOString().split('T')[0],
