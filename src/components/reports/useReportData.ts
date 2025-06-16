@@ -2,6 +2,7 @@
 import { useBookings } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Phone, Utensils, Users } from "lucide-react";
+import React from "react";
 
 interface ReportItem {
   id: string;
@@ -55,7 +56,7 @@ export const useReportData = (tourId: string): ReportItem[] => {
       type: 'contacts',
       title: 'Contact List for WhatsApp',
       description: 'Contact information for all passengers',
-      icon: <Phone className="h-5 w-5 text-blue-600" />,
+      icon: React.createElement(Phone, { className: "h-5 w-5 text-blue-600" }),
       count: contactList.length,
       data: contactList
     },
@@ -64,7 +65,7 @@ export const useReportData = (tourId: string): ReportItem[] => {
       type: 'dietary',
       title: 'Dietary Requirements',
       description: 'Special dietary needs for all passengers',
-      icon: <Utensils className="h-5 w-5 text-green-600" />,
+      icon: React.createElement(Utensils, { className: "h-5 w-5 text-green-600" }),
       count: dietaryRequirements.length,
       data: dietaryRequirements
     },
@@ -73,7 +74,7 @@ export const useReportData = (tourId: string): ReportItem[] => {
       type: 'summary',
       title: 'Passenger Summary',
       description: 'Complete booking details for all passengers',
-      icon: <Users className="h-5 w-5 text-purple-600" />,
+      icon: React.createElement(Users, { className: "h-5 w-5 text-purple-600" }),
       count: passengerSummary.length,
       data: passengerSummary
     }
