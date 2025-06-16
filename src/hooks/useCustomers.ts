@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -148,6 +147,45 @@ export const useUpdateCustomer = () => {
       toast({
         title: "Error Updating Contact",
         description: error.message || "Failed to update contact. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useDeleteCustomer = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      console.log('Deleting customer with id:', id);
+      
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Supabase error deleting customer:', error);
+        throw error;
+      }
+      
+      console.log('Customer deleted successfully');
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({
+        title: "Contact Deleted",
+        description: "The contact has been successfully deleted.",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error in delete mutation:', error);
+      toast({
+        title: "Error Deleting Contact",
+        description: error.message || "Failed to delete contact. Please try again.",
         variant: "destructive",
       });
     },

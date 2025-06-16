@@ -1,11 +1,12 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useUpdateCustomer } from "@/hooks/useCustomers";
+import { Trash2 } from "lucide-react";
+import { useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
 import { Customer } from "@/hooks/useCustomers";
 
 interface EditContactModalProps {
@@ -30,6 +31,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
   });
 
   const updateCustomer = useUpdateCustomer();
+  const deleteCustomer = useDeleteCustomer();
 
   useEffect(() => {
     if (contact) {
@@ -80,14 +82,59 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleDelete = () => {
+    if (!contact?.id) return;
+    
+    deleteCustomer.mutate(contact.id, {
+      onSuccess: () => {
+        onOpenChange(false);
+      },
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Edit Contact</DialogTitle>
-          <DialogDescription>
-            Update contact information.
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>Edit Contact</DialogTitle>
+              <DialogDescription>
+                Update contact information.
+              </DialogDescription>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete {contact?.first_name} {contact?.last_name}? 
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={deleteCustomer.isPending}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    {deleteCustomer.isPending ? "Deleting..." : "Delete Contact"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
