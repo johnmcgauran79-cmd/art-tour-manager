@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -73,20 +74,15 @@ export function UserManagement() {
         return;
       }
 
-      // Get auth user data for last sign in times (this requires admin access)
-      const { data: authUsersResponse, error: authError } = await supabase.auth.admin.listUsers();
-      
-      // Merge users with their roles and auth data
+      // Merge users with their roles (without auth admin data since we can't access it from frontend)
       const usersWithRoles: UserRow[] = (profilesData || []).map((profile) => {
         const userRole = rolesData?.find(r => r.user_id === profile.id);
-        const authUsers = authUsersResponse?.users || [];
-        const authUser = authUsers.find(user => user.id === profile.id);
         return {
           id: profile.id,
           email: profile.email || "(No email)",
           role: userRole?.role || null,
           created_at: profile.created_at || "",
-          last_sign_in_at: authUser?.last_sign_in_at || null,
+          last_sign_in_at: null, // We'll remove this since we can't access auth admin data
           must_change_password: profile.must_change_password || false,
         };
       });
@@ -184,14 +180,31 @@ export function UserManagement() {
     setDeleting((prev) => ({ ...prev, [userId]: true }));
     
     try {
-      // Delete from auth.users (this will cascade to profiles and user_roles)
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+      // Get the current session token
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (authError) {
-        console.error('User deletion error:', authError);
+      if (!session) {
         toast({ 
           title: "Delete Failed", 
-          description: authError.message,
+          description: "You must be logged in to delete users.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Call our Edge Function to delete the user
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('User deletion error:', error);
+        toast({ 
+          title: "Delete Failed", 
+          description: error.message || "Failed to delete user.",
           variant: "destructive"
         });
       } else {
@@ -263,7 +276,6 @@ export function UserManagement() {
               <TableHead>Current Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Member Since</TableHead>
-              <TableHead>Last Sign In</TableHead>
               <TableHead>Assign Role</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -308,9 +320,6 @@ export function UserManagement() {
                 <TableCell className="text-sm text-muted-foreground">
                   {formatDate(user.created_at)}
                 </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDateTime(user.last_sign_in_at)}
-                </TableCell>
                 <TableCell>
                   <select
                     className="border rounded px-2 py-1 text-sm min-w-[120px]"
@@ -350,7 +359,7 @@ export function UserManagement() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={deleting[user.id] || user.role === 'admin'}
+                          disabled={deleting[user.id] || user.id === currentUserId}
                           className="h-8 border-red-200 text-red-600 hover:bg-red-50"
                         >
                           <Trash2 className="h-3 w-3 mr-1" />
@@ -396,7 +405,7 @@ export function UserManagement() {
       </div>
 
       <div className="mt-4 text-sm text-muted-foreground">
-        <p><strong>Note:</strong> Admin accounts cannot be deleted for security reasons. Remove admin role first if needed.</p>
+        <p><strong>Note:</strong> You cannot delete your own account for security reasons.</p>
         <p><strong>Temporary Passwords:</strong> Users with temporary passwords must change them on first login.</p>
       </div>
 
