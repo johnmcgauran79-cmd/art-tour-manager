@@ -62,29 +62,30 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       const password = await generateTempPassword();
       setTempPassword(password);
 
-      // Create user with admin privileges
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      // Sign up the user normally
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        email_confirm: true,
-        user_metadata: {
-          first_name: firstName,
-          last_name: lastName,
-          admin_created: true
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            admin_created: true
+          }
         }
       });
 
-      if (authError) {
-        console.error('Error creating user:', authError);
+      if (signUpError) {
+        console.error('Error creating user:', signUpError);
         toast({
           title: "User Creation Failed",
-          description: authError.message,
+          description: signUpError.message,
           variant: "destructive"
         });
         return;
       }
 
-      if (!authData.user) {
+      if (!signUpData.user) {
         toast({
           title: "User Creation Failed",
           description: "No user data returned from creation.",
@@ -93,11 +94,21 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         return;
       }
 
+      // Update the profile to mark as admin-created
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ must_change_password: true })
+        .eq('id', signUpData.user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+      }
+
       // Assign role to the user
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
-          user_id: authData.user.id,
+          user_id: signUpData.user.id,
           role: role
         });
 
