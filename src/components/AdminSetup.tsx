@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 export function AdminSetup() {
   const { user } = useAuth();
-  const [making Admin, setMakingAdmin] = useState(false);
+  const [makingAdmin, setMakingAdmin] = useState(false);
 
   const handleMakeAdmin = async () => {
     if (!user) {
