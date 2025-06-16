@@ -18,7 +18,6 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
   const { data: hotels } = useHotels(tourId);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | null>(null);
-  const [selectedHotelId, setSelectedHotelId] = useState<string | undefined>(undefined);
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
 
@@ -26,23 +25,18 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
   const dietaryRequirements = tourBookings
     .map(booking => ({
       name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-      dietary: booking.customers?.dietary_requirements || '',
-      passengerCount: booking.passenger_count,
-      additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean)
+      dietary: booking.customers?.dietary_requirements || ''
     }))
     .filter(item => item.dietary && item.dietary.trim() !== '');
 
   // Get contact list for WhatsApp export
   const contactList = tourBookings.map(booking => ({
     name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-    phone: booking.customers?.phone || '',
-    email: booking.customers?.email || '',
-    passengerCount: booking.passenger_count
+    phone: booking.customers?.phone || ''
   }));
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel', hotelId?: string) => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel') => {
     setSelectedReportType(reportType);
-    setSelectedHotelId(hotelId);
     setReportsModalOpen(true);
   };
 
@@ -50,7 +44,6 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
     setReportsModalOpen(open);
     if (!open) {
       setSelectedReportType(null);
-      setSelectedHotelId(undefined);
     }
   };
 
@@ -113,7 +106,7 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
           <div className="mt-6 p-4 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
             <p className="text-sm text-brand-navy">
               <strong className="text-brand-navy">Quick Access:</strong> Click on any report type above to view the specific report data. 
-              Each report can be exported as CSV or printed as PDF for tour operations coordination.
+              Hotel Reports will show rooming lists for each hotel assigned to this tour.
             </p>
           </div>
         </CardContent>
@@ -125,7 +118,6 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
         open={reportsModalOpen}
         onOpenChange={handleModalClose}
         reportType={selectedReportType}
-        hotelId={selectedHotelId}
       />
     </div>
   );

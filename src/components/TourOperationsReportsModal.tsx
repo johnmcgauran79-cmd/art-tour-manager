@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { RoomingListModal } from "@/components/RoomingListModal";
 
 interface TourOperationsReportsModalProps {
   tourId: string;
@@ -47,6 +49,8 @@ export const TourOperationsReportsModal = ({
   const { data: hotelBookings } = useHotelBookings('');
   
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
+  const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
+  const [selectedHotel, setSelectedHotel] = useState<any>(null);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && booking.status !== 'cancelled'
@@ -56,33 +60,31 @@ export const TourOperationsReportsModal = ({
   const generateReports = (): ReportItem[] => {
     const reports: ReportItem[] = [];
 
-    // Contact List Report
+    // Contact List Report - simplified to first name, last name, phone only
     const contactList = tourBookings.map(booking => ({
-      name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-      phone: booking.customers?.phone || '',
-      email: booking.customers?.email || '',
-      passengerCount: booking.passenger_count
+      firstName: booking.customers?.first_name || '',
+      lastName: booking.customers?.last_name || '',
+      phone: booking.customers?.phone || ''
     }));
 
     reports.push({
       id: 'contacts',
       type: 'contacts',
       title: 'Contact List for WhatsApp',
-      description: 'Complete contact information for all passengers',
+      description: 'Contact information for all passengers',
       icon: <Phone className="h-5 w-5 text-blue-600" />,
       count: contactList.length,
       data: contactList
     });
 
-    // Dietary Requirements Report
+    // Dietary Requirements Report - simplified to lead passenger, additional passengers, dietary requirements
     const dietaryRequirements = tourBookings
       .map(booking => ({
-        name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-        dietary: booking.customers?.dietary_requirements || '',
-        passengerCount: booking.passenger_count,
-        additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean)
+        leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+        additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean),
+        dietaryRequirements: booking.customers?.dietary_requirements || ''
       }))
-      .filter(item => item.dietary && item.dietary.trim() !== '');
+      .filter(item => item.dietaryRequirements && item.dietaryRequirements.trim() !== '');
 
     reports.push({
       id: 'dietary',
@@ -117,39 +119,6 @@ export const TourOperationsReportsModal = ({
       data: passengerSummary
     });
 
-    // Hotel Rooming Lists
-    if (hotels && hotels.length > 0) {
-      hotels.forEach((hotel) => {
-        const hotelGuests = tourBookings.filter(booking => {
-          return hotelBookings?.some(hb => hb.booking_id === booking.id && hb.hotel_id === hotel.id);
-        });
-
-        if (hotelGuests.length > 0) {
-          const roomingData = hotelGuests.map((guest, index) => ({
-            room: `Room ${index + 1}`,
-            guestName: `${guest.customers?.first_name} ${guest.customers?.last_name}`,
-            checkIn: formatDateToDDMMYYYY(guest.check_in_date),
-            checkOut: formatDateToDDMMYYYY(guest.check_out_date),
-            nights: guest.total_nights || 0,
-            roomType: 'Standard',
-            specialRequests: guest.extra_requests || ''
-          }));
-
-          reports.push({
-            id: `hotel-${hotel.id}`,
-            type: 'hotel',
-            title: `${hotel.name} - Rooming List`,
-            description: `Room assignments for ${hotel.name}`,
-            icon: <Hotel className="h-5 w-5 text-orange-600" />,
-            count: hotelGuests.length,
-            data: roomingData,
-            hotelId: hotel.id,
-            hotelName: hotel.name
-          });
-        }
-      });
-    }
-
     return reports;
   };
 
@@ -159,8 +128,9 @@ export const TourOperationsReportsModal = ({
   const getDisplayReport = (): ReportItem | null => {
     if (!reportType) return null;
     
-    if (reportType === 'hotel' && hotelId) {
-      return reports.find(r => r.type === 'hotel' && r.hotelId === hotelId) || null;
+    if (reportType === 'hotel') {
+      // Handle hotel reports differently - show hotel selection or direct rooming list
+      return null;
     }
     
     return reports.find(r => r.type === reportType) || null;
@@ -174,21 +144,19 @@ export const TourOperationsReportsModal = ({
 
     switch (report.type) {
       case 'contacts':
-        headers = ['Name', 'Phone', 'Email', 'Passenger Count'];
+        headers = ['First Name', 'Last Name', 'Phone'];
         csvData = report.data.map(item => ({
-          name: item.name,
-          phone: item.phone,
-          email: item.email,
-          passengercount: item.passengerCount
+          firstname: item.firstName,
+          lastname: item.lastName,
+          phone: item.phone
         }));
         break;
       case 'dietary':
-        headers = ['Name', 'Dietary Requirements', 'Passenger Count', 'Additional Passengers'];
+        headers = ['Lead Passenger', 'Additional Passengers', 'Dietary Requirements'];
         csvData = report.data.map(item => ({
-          name: item.name,
-          dietaryrequirements: item.dietary,
-          passengercount: item.passengerCount,
-          additionalpassengers: item.additionalPassengers.join(', ')
+          leadpassenger: item.leadPassenger,
+          additionalpassengers: item.additionalPassengers.join(', '),
+          dietaryrequirements: item.dietaryRequirements
         }));
         break;
       case 'summary':
@@ -203,18 +171,6 @@ export const TourOperationsReportsModal = ({
           status: item.status,
           groupname: item.groupName,
           notes: item.notes
-        }));
-        break;
-      case 'hotel':
-        headers = ['Room', 'Guest Name', 'Check In', 'Check Out', 'Nights', 'Room Type', 'Special Requests'];
-        csvData = report.data.map(item => ({
-          room: item.room,
-          guestname: item.guestName,
-          checkin: item.checkIn,
-          checkout: item.checkOut,
-          nights: item.nights,
-          roomtype: item.roomType,
-          specialrequests: item.specialRequests
         }));
         break;
     }
@@ -241,14 +197,13 @@ export const TourOperationsReportsModal = ({
       case 'contacts':
         tableHTML = `
           <table>
-            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Passengers</th></tr></thead>
+            <thead><tr><th>First Name</th><th>Last Name</th><th>Phone</th></tr></thead>
             <tbody>
               ${report.data.map(item => `
                 <tr>
-                  <td>${item.name}</td>
+                  <td>${item.firstName}</td>
+                  <td>${item.lastName}</td>
                   <td>${item.phone}</td>
-                  <td>${item.email}</td>
-                  <td>${item.passengerCount}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -258,14 +213,13 @@ export const TourOperationsReportsModal = ({
       case 'dietary':
         tableHTML = `
           <table>
-            <thead><tr><th>Name</th><th>Dietary Requirements</th><th>Passengers</th><th>Additional Passengers</th></tr></thead>
+            <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Dietary Requirements</th></tr></thead>
             <tbody>
               ${report.data.map(item => `
                 <tr>
-                  <td>${item.name}</td>
-                  <td>${item.dietary}</td>
-                  <td>${item.passengerCount}</td>
+                  <td>${item.leadPassenger}</td>
                   <td>${item.additionalPassengers.join(', ')}</td>
+                  <td>${item.dietaryRequirements}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -288,25 +242,6 @@ export const TourOperationsReportsModal = ({
                   <td><span class="status ${item.status}">${item.status.toUpperCase()}</span></td>
                   <td>${item.groupName}</td>
                   <td>${item.notes}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        `;
-        break;
-      case 'hotel':
-        tableHTML = `
-          <table>
-            <thead><tr><th>Room</th><th>Guest Name</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Special Requests</th></tr></thead>
-            <tbody>
-              ${report.data.map(item => `
-                <tr>
-                  <td>${item.room}</td>
-                  <td>${item.guestName}</td>
-                  <td>${item.checkIn}</td>
-                  <td>${item.checkOut}</td>
-                  <td>${item.nights}</td>
-                  <td>${item.specialRequests}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -353,19 +288,17 @@ export const TourOperationsReportsModal = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>First Name</TableHead>
+                <TableHead>Last Name</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Passengers</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {report.data.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.name}</TableCell>
+                  <TableCell>{item.firstName}</TableCell>
+                  <TableCell>{item.lastName}</TableCell>
                   <TableCell>{item.phone || '-'}</TableCell>
-                  <TableCell>{item.email || '-'}</TableCell>
-                  <TableCell>{item.passengerCount}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -376,19 +309,17 @@ export const TourOperationsReportsModal = ({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Dietary Requirements</TableHead>
-                <TableHead>Passengers</TableHead>
+                <TableHead>Lead Passenger</TableHead>
                 <TableHead>Additional Passengers</TableHead>
+                <TableHead>Dietary Requirements</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {report.data.map((item, index) => (
                 <TableRow key={index}>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.dietary}</TableCell>
-                  <TableCell>{item.passengerCount}</TableCell>
+                  <TableCell>{item.leadPassenger}</TableCell>
                   <TableCell>{item.additionalPassengers.join(', ') || '-'}</TableCell>
+                  <TableCell>{item.dietaryRequirements}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -440,39 +371,18 @@ export const TourOperationsReportsModal = ({
             </TableBody>
           </Table>
         );
-      case 'hotel':
-        return (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Room</TableHead>
-                <TableHead>Guest Name</TableHead>
-                <TableHead>Check In</TableHead>
-                <TableHead>Check Out</TableHead>
-                <TableHead>Nights</TableHead>
-                <TableHead>Special Requests</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {report.data.map((item, index) => (
-                <TableRow key={index}>
-                  <TableCell>{item.room}</TableCell>
-                  <TableCell>{item.guestName}</TableCell>
-                  <TableCell>{item.checkIn}</TableCell>
-                  <TableCell>{item.checkOut}</TableCell>
-                  <TableCell>{item.nights}</TableCell>
-                  <TableCell>{item.specialRequests || '-'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        );
       default:
         return null;
     }
   };
 
-  // If showing individual report
+  const handleHotelClick = (hotel: any) => {
+    setSelectedHotel(hotel);
+    setRoomingListModalOpen(true);
+    onOpenChange(false);
+  };
+
+  // If showing individual report (not hotel)
   if (displayReport) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -521,7 +431,67 @@ export const TourOperationsReportsModal = ({
     );
   }
 
-  // Fallback to full management view
+  // If showing hotel reports - show hotel selection
+  if (reportType === 'hotel' && hotels) {
+    if (hotels.length === 1) {
+      // If only one hotel, directly open rooming list
+      const hotel = hotels[0];
+      return (
+        <RoomingListModal
+          hotel={hotel}
+          tourId={tourId}
+          open={open}
+          onOpenChange={onOpenChange}
+        />
+      );
+    }
+
+    // Multiple hotels - show selection dialog
+    return (
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Select Hotel - {tourName}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-gray-600">Select a hotel to view its rooming list:</p>
+              <div className="grid gap-3">
+                {hotels.map((hotel) => (
+                  <Card 
+                    key={hotel.id} 
+                    className="cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleHotelClick(hotel)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <Hotel className="h-5 w-5 text-orange-600" />
+                        <div>
+                          <h3 className="font-medium">{hotel.name}</h3>
+                          {hotel.address && (
+                            <p className="text-sm text-gray-600">{hotel.address}</p>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <RoomingListModal
+          hotel={selectedHotel}
+          tourId={tourId}
+          open={roomingListModalOpen}
+          onOpenChange={setRoomingListModalOpen}
+        />
+      </>
+    );
+  }
+
+  // Fallback to management view
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
