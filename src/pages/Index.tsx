@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +24,19 @@ const Index = () => {
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
 
+  // Move useEffect to the top, before any conditional returns
+  useEffect(() => {
+    const handleNavigateToBookings = () => {
+      setActiveTab("bookings");
+    };
+
+    window.addEventListener('navigate-to-bookings', handleNavigateToBookings);
+    
+    return () => {
+      window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
+    };
+  }, []);
+
   // Redirect to login if not authenticated
   if (loading) {
     return (
@@ -37,18 +51,6 @@ const Index = () => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
-  useEffect(() => {
-    const handleNavigateToBookings = () => {
-      setActiveTab("bookings");
-    };
-
-    window.addEventListener('navigate-to-bookings', handleNavigateToBookings);
-    
-    return () => {
-      window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
-    };
-  }, []);
 
   const handleViewAllTours = () => {
     setActiveTab("tours");
