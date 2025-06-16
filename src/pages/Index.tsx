@@ -1,7 +1,9 @@
-
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, Users, Settings, FileText, Contact, UserCog } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { ActiveTours } from "@/components/ActiveTours";
 import { RecentBookings } from "@/components/RecentBookings";
@@ -15,9 +17,25 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
+
+  // Redirect to login if not authenticated
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   useEffect(() => {
     const handleNavigateToBookings = () => {
@@ -52,16 +70,20 @@ const Index = () => {
                 <p className="text-primary-foreground/80">Tour Management System</p>
               </div>
             </div>
-            {/* Users icon button shows user management modal */}
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label="Manage Users"
-              className="text-primary-foreground"
-              onClick={() => setShowUserManagement(true)}
-            >
-              <UserCog className="h-6 w-6" />
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* Users icon button shows user management modal */}
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label="Manage Users"
+                className="text-primary-foreground"
+                onClick={() => setShowUserManagement(true)}
+              >
+                <UserCog className="h-6 w-6" />
+              </Button>
+              {/* User dropdown */}
+              <UserDropdown />
+            </div>
           </div>
         </div>
       </div>
