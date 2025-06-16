@@ -171,6 +171,36 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          details: Json | null
+          id: string
+          operation_type: string
+          record_id: string | null
+          table_name: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          details?: Json | null
+          id?: string
+          operation_type: string
+          record_id?: string | null
+          table_name: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          details?: Json | null
+          id?: string
+          operation_type?: string
+          record_id?: string | null
+          table_name?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           accommodation_required: boolean | null
@@ -644,6 +674,15 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      log_sensitive_operation: {
+        Args: {
+          operation_type: string
+          table_name: string
+          record_id: string
+          details?: Json
+        }
+        Returns: undefined
       }
     }
     Enums: {

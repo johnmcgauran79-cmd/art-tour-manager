@@ -22,8 +22,7 @@ import { useDuplicateTour } from "@/hooks/useDuplicateTour";
 import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { useAuth } from "@/hooks/useAuth";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useSecureDeleteTour } from "@/hooks/useSecureTours";
 import { useToast } from "@/hooks/use-toast";
 
 interface TourDetailModalProps {
@@ -49,35 +48,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  const deleteTour = useMutation({
-    mutationFn: async () => {
-      if (!tour) throw new Error("No tour selected");
-      
-      const { error } = await supabase
-        .from('tours')
-        .delete()
-        .eq('id', tour.id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tours'] });
-      toast({
-        title: "Tour Deleted",
-        description: "Tour has been successfully deleted.",
-      });
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete tour. Please try again.",
-        variant: "destructive",
-      });
-      console.error('Error deleting tour:', error);
-    },
-  });
+  const secureDeleteTour = useSecureDeleteTour();
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -107,7 +78,12 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   };
 
   const handleDeleteTour = () => {
-    deleteTour.mutate();
+    if (tour) {
+      secureDeleteTour.mutate({
+        tourId: tour.id,
+        tourName: tour.name
+      });
+    }
   };
 
   const handleTourCreated = (newTour: any) => {
@@ -210,7 +186,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to delete this tour?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the tour "{tour?.name}" and all associated data including bookings, activities, and hotels.
+                          This action cannot be undone. This will permanently delete the tour "{tour?.name}" and all associated data including bookings, activities, and hotels. This action will be logged for security audit.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -218,9 +194,9 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                         <AlertDialogAction 
                           onClick={handleDeleteTour}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          disabled={deleteTour.isPending}
+                          disabled={secureDeleteTour.isPending}
                         >
-                          {deleteTour.isPending ? "Deleting..." : "Delete Tour"}
+                          {secureDeleteTour.isPending ? "Deleting..." : "Delete Tour"}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
