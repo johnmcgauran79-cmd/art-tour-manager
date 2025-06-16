@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -246,186 +245,196 @@ export function UserManagement() {
 
   if (loading) {
     return (
-      <div className="w-full max-w-none p-6">
-        <h2 className="text-xl font-semibold mb-4">User Management</h2>
-        <div className="text-center">Loading users...</div>
+      <div className="min-h-screen w-full flex items-center justify-center p-6">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-4">User Management</h2>
+          <div>Loading users...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-none p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-semibold">User Management</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage user accounts, roles, and permissions
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <Button
-            onClick={() => setShowAddUser(true)}
-            className="flex items-center gap-2"
-          >
-            <UserPlus className="h-4 w-4" />
-            Add User
-          </Button>
-          <div className="text-sm text-muted-foreground">
-            Total Users: {users.length}
+    <div className="min-h-screen w-full p-6 bg-gray-50">
+      <div className="max-w-[1600px] mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">User Management</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Manage user accounts, roles, and permissions
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setShowAddUser(true)}
+              className="flex items-center gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Add User
+            </Button>
+            <div className="text-sm text-gray-500 bg-white px-3 py-1 rounded-md border">
+              Total Users: {users.length}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="shadow border rounded-lg bg-white overflow-x-auto w-full">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[200px]">Email</TableHead>
-              <TableHead className="min-w-[120px]">Current Role</TableHead>
-              <TableHead className="min-w-[140px]">Status</TableHead>
-              <TableHead className="min-w-[120px]">Member Since</TableHead>
-              <TableHead className="min-w-[140px]">Assign Role</TableHead>
-              <TableHead className="min-w-[300px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate">{user.email}</span>
-                    {currentUserId && user.id === currentUserId && (
-                      <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded whitespace-nowrap">
-                        YOU
-                      </span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {user.role ? (
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${
-                      user.role === 'admin' ? 'bg-red-100 text-red-800' :
-                      user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {ROLE_OPTIONS.find(opt => opt.value === user.role)?.label || user.role}
-                    </span>
-                  ) : (
-                    <span className="text-gray-500 text-sm">No role assigned</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {user.must_change_password ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
-                      Must Change Password
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 whitespace-nowrap">
-                      Active
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {formatDate(user.created_at)}
-                </TableCell>
-                <TableCell>
-                  <select
-                    className="border rounded px-2 py-1 text-sm min-w-[120px]"
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        handleRoleChange(user.id, e.target.value as RoleType);
-                      }
-                    }}
-                    disabled={updating[user.id]}
-                  >
-                    <option value="">Select role...</option>
-                    {ROLE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2 flex-wrap">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handlePasswordReset(user.id, user.email)}
-                      className="h-8 whitespace-nowrap"
-                    >
-                      <KeyRound className="h-3 w-3 mr-1" />
-                      Reset Password
-                    </Button>
-                    
-                    {user.role && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRemoveRole(user.id)}
+        <div className="bg-white shadow-sm border rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="w-[280px] font-semibold text-gray-700">Email Address</TableHead>
+                  <TableHead className="w-[140px] font-semibold text-gray-700">Current Role</TableHead>
+                  <TableHead className="w-[160px] font-semibold text-gray-700">Account Status</TableHead>
+                  <TableHead className="w-[130px] font-semibold text-gray-700">Member Since</TableHead>
+                  <TableHead className="w-[160px] font-semibold text-gray-700">Assign New Role</TableHead>
+                  <TableHead className="w-[400px] font-semibold text-gray-700">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-gray-50">
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate max-w-[240px]" title={user.email}>{user.email}</span>
+                        {currentUserId && user.id === currentUserId && (
+                          <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">
+                            YOU
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {user.role ? (
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          user.role === 'admin' ? 'bg-red-100 text-red-800' :
+                          user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {ROLE_OPTIONS.find(opt => opt.value === user.role)?.label || user.role}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-sm italic">No role assigned</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.must_change_password ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                          Must Change Password
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Active
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {formatDate(user.created_at)}
+                    </TableCell>
+                    <TableCell>
+                      <select
+                        className="border rounded-md px-3 py-1.5 text-sm w-full bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            handleRoleChange(user.id, e.target.value as RoleType);
+                          }
+                        }}
                         disabled={updating[user.id]}
-                        className="h-8 whitespace-nowrap"
                       >
-                        <UserX className="h-3 w-3 mr-1" />
-                        {updating[user.id] ? "Removing..." : "Remove Role"}
-                      </Button>
-                    )}
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
+                        <option value="">Select role...</option>
+                        {ROLE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2 flex-wrap">
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={deleting[user.id] || user.id === currentUserId}
-                          className="h-8 border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap"
+                          onClick={() => handlePasswordReset(user.id, user.email)}
+                          className="h-8 text-xs"
                         >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Delete
+                          <KeyRound className="h-3 w-3 mr-1" />
+                          Reset Password
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete User Account</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to permanently delete the user account for{" "}
-                            <strong>{user.email}</strong>? This action cannot be undone and will:
-                            <ul className="list-disc list-inside mt-2 space-y-1">
-                              <li>Delete their user account completely</li>
-                              <li>Remove all their data and permissions</li>
-                              <li>Prevent them from logging in</li>
-                            </ul>
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteUser(user.id, user.email)}
-                            className="bg-red-600 hover:bg-red-700"
-                            disabled={deleting[user.id]}
+                        
+                        {user.role && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveRole(user.id)}
+                            disabled={updating[user.id]}
+                            className="h-8 text-xs"
                           >
-                            {deleting[user.id] ? "Deleting..." : "Delete User"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        {users.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No users found. Users will appear here after they sign up.
+                            <UserX className="h-3 w-3 mr-1" />
+                            {updating[user.id] ? "Removing..." : "Remove Role"}
+                          </Button>
+                        )}
+                        
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={deleting[user.id] || user.id === currentUserId}
+                              className="h-8 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Delete
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to permanently delete the user account for{" "}
+                                <strong>{user.email}</strong>? This action cannot be undone and will:
+                                <ul className="list-disc list-inside mt-2 space-y-1">
+                                  <li>Delete their user account completely</li>
+                                  <li>Remove all their data and permissions</li>
+                                  <li>Prevent them from logging in</li>
+                                </ul>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.id, user.email)}
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={deleting[user.id]}
+                              >
+                                {deleting[user.id] ? "Deleting..." : "Delete User"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        )}
-      </div>
+          {users.length === 0 && (
+            <div className="text-center py-12 text-gray-500">
+              <UserPlus className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+              <p className="text-sm">Users will appear here after they sign up or are added.</p>
+            </div>
+          )}
+        </div>
 
-      <div className="mt-4 text-sm text-muted-foreground">
-        <p><strong>Note:</strong> You cannot delete your own account for security reasons.</p>
-        <p><strong>Temporary Passwords:</strong> Users with temporary passwords must change them on first login.</p>
-        <p><strong>Password Reset:</strong> Resetting a user's password generates a new temporary password they must change on login.</p>
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="text-sm text-blue-800 space-y-2">
+            <p><strong>Security Note:</strong> You cannot delete your own account for security reasons.</p>
+            <p><strong>Temporary Passwords:</strong> Users with temporary passwords must change them on first login.</p>
+            <p><strong>Password Reset:</strong> Resetting a user's password generates a new temporary password they must change on login.</p>
+          </div>
+        </div>
       </div>
 
       <AddUserModal
