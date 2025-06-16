@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,10 +28,12 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const filteredTours = tours?.filter(tour => {
     if (!showOnlyActive) return true;
     
-    // Active tours are not past and have start date in the future
+    // Active tours are not past and have end date in the future or today
     const today = new Date();
-    const startDate = new Date(tour.start_date);
-    return tour.status !== 'past' && startDate > today;
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    const endDate = new Date(tour.end_date);
+    endDate.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    return tour.status !== 'past' && endDate >= today;
   }) || [];
 
   // Further filter tours based on search query

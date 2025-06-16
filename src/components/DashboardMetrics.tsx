@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Building, MapPin, DollarSign, TrendingUp } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
@@ -12,6 +11,7 @@ export const DashboardMetrics = () => {
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
   const today = new Date();
+  today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
   
   const bookingsThisMonth = bookings?.filter(booking => {
     const bookingDate = new Date(booking.created_at);
@@ -20,10 +20,11 @@ export const DashboardMetrics = () => {
            booking.status !== 'cancelled';
   }).length || 0;
 
-  // Active tours are not past and have start date in the future
+  // Active tours are not past and have end date in the future or today
   const activeTours = tours?.filter(tour => {
-    const startDate = new Date(tour.start_date);
-    return tour.status !== 'past' && startDate > today;
+    const endDate = new Date(tour.end_date);
+    endDate.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    return tour.status !== 'past' && endDate >= today;
   }).length || 0;
 
   const totalPassengers = bookings?.filter(b => b.status !== 'cancelled')
