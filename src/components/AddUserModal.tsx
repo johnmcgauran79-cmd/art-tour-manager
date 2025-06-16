@@ -117,22 +117,23 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
         console.error('Error updating profile:', profileError);
       }
 
-      // Assign role to the user
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: signUpData.user.id,
-          role: role
-        });
+      // Update the user's role (the trigger already created a booking_agent role)
+      // We'll update it to the selected role if it's different
+      if (role !== "booking_agent") {
+        const { error: roleError } = await supabase
+          .from("user_roles")
+          .update({ role: role })
+          .eq("user_id", signUpData.user.id);
 
-      if (roleError) {
-        console.error('Error assigning role:', roleError);
-        toast({
-          title: "Role Assignment Failed",
-          description: roleError.message,
-          variant: "destructive"
-        });
-        return;
+        if (roleError) {
+          console.error('Error updating role:', roleError);
+          toast({
+            title: "Role Assignment Failed",
+            description: roleError.message,
+            variant: "destructive"
+          });
+          return;
+        }
       }
 
       toast({
