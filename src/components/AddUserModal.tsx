@@ -58,6 +58,9 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     setIsCreating(true);
     
     try {
+      // Store current session to restore it later
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+
       // Generate temporary password
       const password = await generateTempPassword();
       setTempPassword(password);
@@ -92,6 +95,16 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
           variant: "destructive"
         });
         return;
+      }
+
+      // Immediately sign out the new user and restore admin session
+      await supabase.auth.signOut();
+      
+      if (currentSession) {
+        await supabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token
+        });
       }
 
       // Update the profile to mark as admin-created
