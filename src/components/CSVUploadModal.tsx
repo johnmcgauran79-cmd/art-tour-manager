@@ -4,27 +4,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Download, AlertCircle } from "lucide-react";
-import { useCreateCustomer, useUpdateCustomer, useCustomers, formatAustralianMobile } from "@/hooks/useCustomers";
+import { Upload } from "lucide-react";
+import { useCreateCustomer, useUpdateCustomer, useCustomers } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { parseCSV, CSVContact } from "@/utils/csvParser";
+import { findExistingCustomer, prepareCustomerData, getFieldsToUpdate } from "@/utils/contactProcessor";
+import { CSVTemplateDownload } from "./CSVTemplateDownload";
+import { CSVPreviewTable } from "./CSVPreviewTable";
+import { CSVErrorDisplay } from "./CSVErrorDisplay";
 
 interface CSVUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-interface CSVContact {
-  first_name: string;
-  last_name: string;
-  email?: string;
-  phone?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  spouse_name?: string;
-  dietary_requirements?: string;
-  notes?: string;
 }
 
 export const CSVUploadModal = ({ open, onOpenChange }: CSVUploadModalProps) => {
@@ -36,129 +27,6 @@ export const CSVUploadModal = ({ open, onOpenChange }: CSVUploadModalProps) => {
   const updateCustomer = useUpdateCustomer();
   const { data: existingCustomers } = useCustomers();
   const { toast } = useToast();
-
-  const downloadTemplate = () => {
-    const template = `first_name,last_name,email,phone,city,state,country,spouse_name,dietary_requirements,notes
-John,Doe,john@email.com,555-1234,Sydney,NSW,Australia,Jane,Vegetarian,VIP client
-Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular customer`;
-    
-    const blob = new Blob([template], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'contacts_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  };
-
-  const parseCSV = (text: string): CSVContact[] => {
-    const lines = text.split('\n').filter(line => line.trim());
-    if (lines.length < 2) return [];
-
-    // Parse headers and normalize to lowercase for case-insensitive matching
-    const headerLine = lines[0];
-    const rawHeaders = headerLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
-    const headers = rawHeaders.map(h => h.toLowerCase());
-    
-    console.log('=== CSV HEADER ANALYSIS ===');
-    console.log('Raw headers from CSV:', rawHeaders);
-    console.log('Normalized headers (lowercase):', headers);
-
-    const contacts: CSVContact[] = [];
-    const validationErrors: string[] = [];
-
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue; // Skip empty lines
-
-      console.log(`\n=== Processing Row ${i} ===`);
-      console.log('Raw line:', line);
-
-      // Simple CSV parsing - split by comma and handle basic quoted values
-      const values = [];
-      let currentValue = '';
-      let inQuotes = false;
-      
-      for (let j = 0; j < line.length; j++) {
-        const char = line[j];
-        if ((char === '"' || char === "'") && (j === 0 || line[j-1] === ',')) {
-          inQuotes = true;
-        } else if ((char === '"' || char === "'") && inQuotes && (j === line.length - 1 || line[j+1] === ',')) {
-          inQuotes = false;
-        } else if (char === ',' && !inQuotes) {
-          values.push(currentValue.trim());
-          currentValue = '';
-        } else {
-          currentValue += char;
-        }
-      }
-      values.push(currentValue.trim()); // Add the last value
-
-      console.log(`Parsed values (${values.length}):`, values);
-
-      const contact: any = {};
-
-      // Map headers to values with detailed logging
-      headers.forEach((header, index) => {
-        const rawValue = values[index];
-        console.log(`  ${header} [${index}]: "${rawValue}" (raw header: "${rawHeaders[index]}")`);
-        
-        // Clean the value
-        let cleanValue = rawValue;
-        if (cleanValue) {
-          cleanValue = cleanValue.trim();
-          // Remove surrounding quotes
-          if ((cleanValue.startsWith('"') && cleanValue.endsWith('"')) || 
-              (cleanValue.startsWith("'") && cleanValue.endsWith("'"))) {
-            cleanValue = cleanValue.slice(1, -1);
-          }
-        }
-        
-        console.log(`    Cleaned value for ${header}: "${cleanValue}"`);
-        
-        // Only add non-empty values
-        if (cleanValue && cleanValue !== '' && cleanValue !== 'undefined' && cleanValue !== 'null') {
-          contact[header] = cleanValue;
-          console.log(`    ✓ Added to contact: ${header} = "${cleanValue}"`);
-        } else {
-          console.log(`    ✗ Skipped empty/invalid value for ${header}`);
-        }
-      });
-
-      console.log(`Final contact object:`, contact);
-
-      // Validate required fields
-      if (!contact.first_name || !contact.last_name) {
-        validationErrors.push(`Row ${i + 1}: first_name and last_name are required`);
-        continue;
-      }
-
-      // Ensure we have the expected structure with proper field mapping and format phone numbers
-      const formattedContact: CSVContact = {
-        first_name: contact.first_name,
-        last_name: contact.last_name,
-        email: contact.email || undefined,
-        phone: contact.phone ? formatAustralianMobile(contact.phone) || contact.phone : undefined,
-        city: contact.city || undefined,
-        state: contact.state || undefined,
-        country: contact.country || undefined,
-        spouse_name: contact.spouse_name || undefined,
-        dietary_requirements: contact.dietary_requirements || undefined,
-        notes: contact.notes || undefined,
-      };
-
-      console.log(`Final formatted contact:`, formattedContact);
-      contacts.push(formattedContact);
-    }
-
-    setErrors(validationErrors);
-    console.log(`\n=== FINAL RESULTS ===`);
-    console.log(`Total contacts parsed: ${contacts.length}`);
-    
-    return contacts;
-  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -182,9 +50,10 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       console.log('First 500 characters:', text.substring(0, 500));
       console.log('Total length:', text.length);
       
-      const parsedContacts = parseCSV(text);
-      console.log('=== PREVIEW CONTACTS ===', parsedContacts.slice(0, 5));
-      setPreview(parsedContacts.slice(0, 5)); // Show first 5 rows as preview
+      const { contacts, errors: parseErrors } = parseCSV(text);
+      console.log('=== PREVIEW CONTACTS ===', contacts.slice(0, 5));
+      setPreview(contacts.slice(0, 5)); // Show first 5 rows as preview
+      setErrors(parseErrors);
     } catch (error) {
       console.error('Error reading file:', error);
       toast({
@@ -195,25 +64,6 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     }
   };
 
-  const findExistingCustomer = (contact: CSVContact) => {
-    if (!existingCustomers) return null;
-    
-    // First check by email if provided
-    if (contact.email) {
-      const emailMatch = existingCustomers.find(
-        customer => customer.email?.toLowerCase() === contact.email?.toLowerCase()
-      );
-      if (emailMatch) return emailMatch;
-    }
-    
-    // Then check by name
-    return existingCustomers.find(
-      customer => 
-        customer.first_name.toLowerCase() === contact.first_name.toLowerCase() &&
-        customer.last_name.toLowerCase() === contact.last_name.toLowerCase()
-    );
-  };
-
   const handleUpload = async () => {
     if (!file) return;
 
@@ -221,7 +71,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
     
     try {
       const text = await file.text();
-      const contacts = parseCSV(text);
+      const { contacts, errors: parseErrors } = parseCSV(text);
       
       if (contacts.length === 0) {
         toast({
@@ -238,7 +88,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
       let createCount = 0;
       let skipCount = 0;
       let errorCount = 0;
-      const importErrors: string[] = [];
+      const importErrors: string[] = [...parseErrors];
 
       console.log(`Starting import of ${contacts.length} contacts...`);
 
@@ -250,38 +100,16 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
           console.log(`Processing contact ${i + 1}/${contacts.length}:`, contact);
           
           // Find existing contact
-          const existingContact = findExistingCustomer(contact);
+          const existingContact = findExistingCustomer(contact, existingCustomers);
 
           // Prepare customer data with proper null handling
-          const customerData = {
-            first_name: contact.first_name,
-            last_name: contact.last_name,
-            email: contact.email || null,
-            phone: contact.phone || null,
-            city: contact.city || null,
-            state: contact.state || null,
-            country: contact.country || null,
-            spouse_name: contact.spouse_name || null,
-            dietary_requirements: contact.dietary_requirements || null,
-            notes: contact.notes || null,
-            crm_id: null,
-            last_synced_at: null,
-          };
+          const customerData = prepareCustomerData(contact);
 
           console.log('Customer data being processed:', customerData);
 
           if (existingContact) {
             // Check if any fields need updating
-            const fieldsToUpdate = Object.keys(customerData).filter(key => {
-              const newValue = customerData[key as keyof typeof customerData];
-              const existingValue = existingContact[key as keyof typeof existingContact];
-              
-              // Only update if new value is not null/empty and different from existing
-              if (newValue === null || newValue === '') return false;
-              if (existingValue === newValue) return false;
-              
-              return true;
-            });
+            const fieldsToUpdate = getFieldsToUpdate(customerData, existingContact);
 
             if (fieldsToUpdate.length > 0) {
               // Update existing contact
@@ -410,18 +238,7 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
 
         <div className="space-y-6">
           {/* Template Download */}
-          <div className="flex items-center justify-between p-4 border rounded-lg">
-            <div>
-              <h3 className="font-medium">Download Template</h3>
-              <p className="text-sm text-muted-foreground">
-                Download a sample CSV template with the correct format.
-              </p>
-            </div>
-            <Button onClick={downloadTemplate} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Download Template
-            </Button>
-          </div>
+          <CSVTemplateDownload />
 
           {/* File Upload */}
           <div className="space-y-2">
@@ -435,55 +252,10 @@ Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular 
           </div>
 
           {/* Errors */}
-          {errors.length > 0 && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <div className="font-medium mb-2">
-                  {errors.length === 1 ? 'Import Error:' : `${errors.length} Import Errors:`}
-                </div>
-                <ul className="list-disc list-inside space-y-1 max-h-40 overflow-y-auto">
-                  {errors.slice(0, 20).map((error, index) => (
-                    <li key={index} className="text-sm">{error}</li>
-                  ))}
-                  {errors.length > 20 && (
-                    <li className="text-sm font-medium">...and {errors.length - 20} more errors</li>
-                  )}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
+          <CSVErrorDisplay errors={errors} />
 
           {/* Preview */}
-          {preview.length > 0 && (
-            <div className="space-y-2">
-              <Label>Preview (first 5 rows)</Label>
-              <div className="border rounded-lg overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="p-2 text-left">First Name</th>
-                      <th className="p-2 text-left">Last Name</th>
-                      <th className="p-2 text-left">Email</th>
-                      <th className="p-2 text-left">Phone</th>
-                      <th className="p-2 text-left">State</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {preview.map((contact, index) => (
-                      <tr key={index} className="border-t">
-                        <td className="p-2">{contact.first_name}</td>
-                        <td className="p-2">{contact.last_name}</td>
-                        <td className="p-2">{contact.email || '-'}</td>
-                        <td className="p-2">{contact.phone || '-'}</td>
-                        <td className="p-2">{contact.state || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          <CSVPreviewTable contacts={preview} />
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4">
