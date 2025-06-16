@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -215,26 +214,28 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="default_check_in">Default Check-in Date *</Label>
-              <Input
-                id="default_check_in"
-                type="date"
-                value={formData.default_check_in}
-                onChange={(e) => handleInputChange("default_check_in", e.target.value)}
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="default_check_in">Default Check-in Date *</Label>
+                <Input
+                  id="default_check_in"
+                  type="date"
+                  value={formData.default_check_in}
+                  onChange={(e) => handleInputChange("default_check_in", e.target.value)}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="default_check_out">Default Check-out Date *</Label>
-              <Input
-                id="default_check_out"
-                type="date"
-                value={formData.default_check_out}
-                onChange={(e) => handleInputChange("default_check_out", e.target.value)}
-                required
-              />
+              <div className="space-y-2">
+                <Label htmlFor="default_check_out">Default Check-out Date *</Label>
+                <Input
+                  id="default_check_out"
+                  type="date"
+                  value={formData.default_check_out}
+                  onChange={(e) => handleInputChange("default_check_out", e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
