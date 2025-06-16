@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -148,9 +149,9 @@ export const UpcomingDeadlinesWidget = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Reason</TableHead>
-                  <TableHead>Date</TableHead>
                   <TableHead>Tour Name</TableHead>
                   <TableHead>Days Remaining</TableHead>
+                  <TableHead>Date</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -161,7 +162,6 @@ export const UpcomingDeadlinesWidget = () => {
                     onClick={() => handleRowClick(deadline)}
                   >
                     <TableCell className="font-medium">{deadline.title}</TableCell>
-                    <TableCell>{formatDateToDDMMYYYY(deadline.date)}</TableCell>
                     <TableCell>{deadline.tourName || 'N/A'}</TableCell>
                     <TableCell>
                       <Badge 
@@ -171,6 +171,7 @@ export const UpcomingDeadlinesWidget = () => {
                         {getDaysUntil(deadline.date)}
                       </Badge>
                     </TableCell>
+                    <TableCell>{formatDateToDDMMYYYY(deadline.date)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
