@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Clock, AlertTriangle, DollarSign, Calendar } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
@@ -14,6 +15,7 @@ interface Deadline {
   description: string;
   priority: 'high' | 'medium' | 'low';
   tourName?: string;
+  tourId?: string;
 }
 
 export const UpcomingDeadlinesWidget = () => {
@@ -39,6 +41,7 @@ export const UpcomingDeadlinesWidget = () => {
           description: tour.name,
           priority: daysUntil <= 7 ? 'high' : daysUntil <= 14 ? 'medium' : 'low',
           tourName: tour.name,
+          tourId: tour.id,
         });
       }
 
@@ -55,6 +58,7 @@ export const UpcomingDeadlinesWidget = () => {
             description: `${tour.name} - $${tour.instalment_amount}`,
             priority: daysUntil <= 3 ? 'high' : daysUntil <= 7 ? 'medium' : 'low',
             tourName: tour.name,
+            tourId: tour.id,
           });
         }
       }
@@ -72,6 +76,7 @@ export const UpcomingDeadlinesWidget = () => {
             description: tour.name,
             priority: daysUntil <= 3 ? 'high' : daysUntil <= 7 ? 'medium' : 'low',
             tourName: tour.name,
+            tourId: tour.id,
           });
         }
       }
@@ -82,19 +87,6 @@ export const UpcomingDeadlinesWidget = () => {
   };
 
   const deadlines = getDeadlines();
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'payment':
-      case 'instalment':
-      case 'final_payment':
-        return <DollarSign className="h-4 w-4" />;
-      case 'tour_start':
-        return <Calendar className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
-    }
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -120,6 +112,14 @@ export const UpcomingDeadlinesWidget = () => {
     return `${daysUntil} days`;
   };
 
+  const handleRowClick = (deadline: Deadline) => {
+    if (deadline.tourId) {
+      // Navigate to tours tab and potentially open tour details
+      // For now, we'll dispatch a custom event to navigate to tours
+      window.dispatchEvent(new CustomEvent('navigate-to-tours', { detail: { tourId: deadline.tourId } }));
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -138,39 +138,43 @@ export const UpcomingDeadlinesWidget = () => {
             <p>No upcoming deadlines in the next 30 days</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {deadlines.slice(0, 8).map((deadline) => (
-              <div
-                key={deadline.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0">
-                    {getIcon(deadline.type)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-sm">{deadline.title}</p>
-                    <p className="text-sm text-muted-foreground truncate">{deadline.description}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateToDDMMYYYY(deadline.date)}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant="outline" 
-                    className={`text-xs ${getPriorityColor(deadline.priority)}`}
-                  >
-                    {getDaysUntil(deadline.date)}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-            {deadlines.length > 8 && (
-              <div className="text-center pt-2">
-                <p className="text-sm text-muted-foreground">
-                  +{deadlines.length - 8} more deadlines
-                </p>
-              </div>
-            )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Reason</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Tour Name</TableHead>
+                <TableHead>Days Remaining</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {deadlines.slice(0, 8).map((deadline) => (
+                <TableRow
+                  key={deadline.id}
+                  className="cursor-pointer hover:bg-accent/50 transition-colors"
+                  onClick={() => handleRowClick(deadline)}
+                >
+                  <TableCell className="font-medium">{deadline.title}</TableCell>
+                  <TableCell>{formatDateToDDMMYYYY(deadline.date)}</TableCell>
+                  <TableCell>{deadline.tourName || 'N/A'}</TableCell>
+                  <TableCell>
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs ${getPriorityColor(deadline.priority)}`}
+                    >
+                      {getDaysUntil(deadline.date)}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        {deadlines.length > 8 && (
+          <div className="text-center pt-4">
+            <p className="text-sm text-muted-foreground">
+              +{deadlines.length - 8} more deadlines
+            </p>
           </div>
         )}
       </CardContent>

@@ -37,10 +37,18 @@ const Index = () => {
       setActiveTab("bookings");
     };
 
+    const handleNavigateToTours = (event: CustomEvent) => {
+      setActiveTab("tours");
+      // You could potentially store the tourId to highlight or open a specific tour
+      console.log('Navigate to tour:', event.detail?.tourId);
+    };
+
     window.addEventListener('navigate-to-bookings', handleNavigateToBookings);
+    window.addEventListener('navigate-to-tours', handleNavigateToTours as EventListener);
     
     return () => {
       window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
+      window.removeEventListener('navigate-to-tours', handleNavigateToTours as EventListener);
     };
   }, []);
 
