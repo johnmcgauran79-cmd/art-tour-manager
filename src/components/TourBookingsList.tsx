@@ -20,6 +20,17 @@ const getStatusColor = (status: string) => {
   }
 };
 
+const getStatusOrder = (status: string) => {
+  switch (status) {
+    case "pending": return 1;
+    case "invoiced": return 2;
+    case "deposited": return 3;
+    case "paid": return 4;
+    case "cancelled": return 5;
+    default: return 6;
+  }
+};
+
 interface TourBookingsListProps {
   tourId: string;
   tourName: string;
@@ -54,7 +65,22 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
     );
   }
 
-  const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId);
+  const tourBookings = (allBookings || [])
+    .filter(booking => booking.tour_id === tourId)
+    .sort((a, b) => {
+      // First sort by status order
+      const statusOrderA = getStatusOrder(a.status || 'pending');
+      const statusOrderB = getStatusOrder(b.status || 'pending');
+      
+      if (statusOrderA !== statusOrderB) {
+        return statusOrderA - statusOrderB;
+      }
+      
+      // Within same status, sort by most recent booking (created_at descending)
+      const dateA = new Date(a.created_at);
+      const dateB = new Date(b.created_at);
+      return dateB.getTime() - dateA.getTime();
+    });
 
   return (
     <>
