@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,8 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | null;
+  hotelId?: string;
 }
 
 type ReportType = 'contacts' | 'dietary' | 'summary' | 'hotel';
@@ -37,14 +38,15 @@ export const TourOperationsReportsModal = ({
   tourId, 
   tourName, 
   open, 
-  onOpenChange 
+  onOpenChange,
+  reportType = null,
+  hotelId = undefined
 }: TourOperationsReportsModalProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
   const { data: hotelBookings } = useHotelBookings('');
   
   const [selectedReports, setSelectedReports] = useState<string[]>([]);
-  const [viewingReport, setViewingReport] = useState<ReportItem | null>(null);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && booking.status !== 'cancelled'
@@ -153,189 +155,175 @@ export const TourOperationsReportsModal = ({
 
   const reports = generateReports();
 
-  const handleSelectReport = (reportId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedReports(prev => [...prev, reportId]);
-    } else {
-      setSelectedReports(prev => prev.filter(id => id !== reportId));
-    }
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedReports(reports.map(r => r.id));
-    } else {
-      setSelectedReports([]);
-    }
-  };
-
-  const exportSelectedToCSV = () => {
-    const selectedReportData = reports.filter(r => selectedReports.includes(r.id));
+  // Get the specific report to display
+  const getDisplayReport = (): ReportItem | null => {
+    if (!reportType) return null;
     
-    selectedReportData.forEach(report => {
-      let headers: string[] = [];
-      let csvData: any[] = [];
-
-      switch (report.type) {
-        case 'contacts':
-          headers = ['Name', 'Phone', 'Email', 'Passenger Count'];
-          csvData = report.data.map(item => ({
-            name: item.name,
-            phone: item.phone,
-            email: item.email,
-            passengercount: item.passengerCount
-          }));
-          break;
-        case 'dietary':
-          headers = ['Name', 'Dietary Requirements', 'Passenger Count', 'Additional Passengers'];
-          csvData = report.data.map(item => ({
-            name: item.name,
-            dietaryrequirements: item.dietary,
-            passengercount: item.passengerCount,
-            additionalpassengers: item.additionalPassengers.join(', ')
-          }));
-          break;
-        case 'summary':
-          headers = ['Lead Passenger', 'Additional Passengers', 'Passenger Count', 'Check In', 'Check Out', 'Nights', 'Status', 'Group Name', 'Notes'];
-          csvData = report.data.map(item => ({
-            leadpassenger: item.leadPassenger,
-            additionalpassengers: item.additionalPassengers.join(', '),
-            passengercount: item.passengerCount,
-            checkin: item.checkIn,
-            checkout: item.checkOut,
-            nights: item.nights,
-            status: item.status,
-            groupname: item.groupName,
-            notes: item.notes
-          }));
-          break;
-        case 'hotel':
-          headers = ['Room', 'Guest Name', 'Check In', 'Check Out', 'Nights', 'Room Type', 'Special Requests'];
-          csvData = report.data.map(item => ({
-            room: item.room,
-            guestname: item.guestName,
-            checkin: item.checkIn,
-            checkout: item.checkOut,
-            nights: item.nights,
-            roomtype: item.roomType,
-            specialrequests: item.specialRequests
-          }));
-          break;
-      }
-
-      const csvContent = [
-        headers.join(','),
-        ...csvData.map(row => headers.map(header => {
-          const value = row[header.toLowerCase().replace(/\s+/g, '')] || '';
-          return `"${String(value).replace(/"/g, '""')}"`;
-        }).join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `${tourName}_${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
-      link.click();
-    });
+    if (reportType === 'hotel' && hotelId) {
+      return reports.find(r => r.type === 'hotel' && r.hotelId === hotelId) || null;
+    }
+    
+    return reports.find(r => r.type === reportType) || null;
   };
 
-  const printSelected = () => {
-    const selectedReportData = reports.filter(r => selectedReports.includes(r.id));
+  const displayReport = getDisplayReport();
+
+  const exportReportToCSV = (report: ReportItem) => {
+    let headers: string[] = [];
+    let csvData: any[] = [];
+
+    switch (report.type) {
+      case 'contacts':
+        headers = ['Name', 'Phone', 'Email', 'Passenger Count'];
+        csvData = report.data.map(item => ({
+          name: item.name,
+          phone: item.phone,
+          email: item.email,
+          passengercount: item.passengerCount
+        }));
+        break;
+      case 'dietary':
+        headers = ['Name', 'Dietary Requirements', 'Passenger Count', 'Additional Passengers'];
+        csvData = report.data.map(item => ({
+          name: item.name,
+          dietaryrequirements: item.dietary,
+          passengercount: item.passengerCount,
+          additionalpassengers: item.additionalPassengers.join(', ')
+        }));
+        break;
+      case 'summary':
+        headers = ['Lead Passenger', 'Additional Passengers', 'Passenger Count', 'Check In', 'Check Out', 'Nights', 'Status', 'Group Name', 'Notes'];
+        csvData = report.data.map(item => ({
+          leadpassenger: item.leadPassenger,
+          additionalpassengers: item.additionalPassengers.join(', '),
+          passengercount: item.passengerCount,
+          checkin: item.checkIn,
+          checkout: item.checkOut,
+          nights: item.nights,
+          status: item.status,
+          groupname: item.groupName,
+          notes: item.notes
+        }));
+        break;
+      case 'hotel':
+        headers = ['Room', 'Guest Name', 'Check In', 'Check Out', 'Nights', 'Room Type', 'Special Requests'];
+        csvData = report.data.map(item => ({
+          room: item.room,
+          guestname: item.guestName,
+          checkin: item.checkIn,
+          checkout: item.checkOut,
+          nights: item.nights,
+          roomtype: item.roomType,
+          specialrequests: item.specialRequests
+        }));
+        break;
+    }
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header.toLowerCase().replace(/\s+/g, '')] || '';
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${tourName}_${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
+    link.click();
+  };
+
+  const printReport = (report: ReportItem) => {
+    let tableHTML = '';
     
-    const printContent = selectedReportData.map(report => {
-      let tableHTML = '';
-      
-      switch (report.type) {
-        case 'contacts':
-          tableHTML = `
-            <table>
-              <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Passengers</th></tr></thead>
-              <tbody>
-                ${report.data.map(item => `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td>${item.phone}</td>
-                    <td>${item.email}</td>
-                    <td>${item.passengerCount}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          `;
-          break;
-        case 'dietary':
-          tableHTML = `
-            <table>
-              <thead><tr><th>Name</th><th>Dietary Requirements</th><th>Passengers</th><th>Additional Passengers</th></tr></thead>
-              <tbody>
-                ${report.data.map(item => `
-                  <tr>
-                    <td>${item.name}</td>
-                    <td>${item.dietary}</td>
-                    <td>${item.passengerCount}</td>
-                    <td>${item.additionalPassengers.join(', ')}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          `;
-          break;
-        case 'summary':
-          tableHTML = `
-            <table>
-              <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Pax</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Status</th><th>Group</th><th>Notes</th></tr></thead>
-              <tbody>
-                ${report.data.map(item => `
-                  <tr>
-                    <td>${item.leadPassenger}</td>
-                    <td>${item.additionalPassengers.join(', ')}</td>
-                    <td>${item.passengerCount}</td>
-                    <td>${item.checkIn}</td>
-                    <td>${item.checkOut}</td>
-                    <td>${item.nights}</td>
-                    <td><span class="status ${item.status}">${item.status.toUpperCase()}</span></td>
-                    <td>${item.groupName}</td>
-                    <td>${item.notes}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          `;
-          break;
-        case 'hotel':
-          tableHTML = `
-            <table>
-              <thead><tr><th>Room</th><th>Guest Name</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Special Requests</th></tr></thead>
-              <tbody>
-                ${report.data.map(item => `
-                  <tr>
-                    <td>${item.room}</td>
-                    <td>${item.guestName}</td>
-                    <td>${item.checkIn}</td>
-                    <td>${item.checkOut}</td>
-                    <td>${item.nights}</td>
-                    <td>${item.specialRequests}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          `;
-          break;
-      }
-      
-      return `<h2>${report.title}</h2>${tableHTML}`;
-    }).join('<div style="page-break-before: always;"></div>');
+    switch (report.type) {
+      case 'contacts':
+        tableHTML = `
+          <table>
+            <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Passengers</th></tr></thead>
+            <tbody>
+              ${report.data.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.phone}</td>
+                  <td>${item.email}</td>
+                  <td>${item.passengerCount}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        break;
+      case 'dietary':
+        tableHTML = `
+          <table>
+            <thead><tr><th>Name</th><th>Dietary Requirements</th><th>Passengers</th><th>Additional Passengers</th></tr></thead>
+            <tbody>
+              ${report.data.map(item => `
+                <tr>
+                  <td>${item.name}</td>
+                  <td>${item.dietary}</td>
+                  <td>${item.passengerCount}</td>
+                  <td>${item.additionalPassengers.join(', ')}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        break;
+      case 'summary':
+        tableHTML = `
+          <table>
+            <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Pax</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Status</th><th>Group</th><th>Notes</th></tr></thead>
+            <tbody>
+              ${report.data.map(item => `
+                <tr>
+                  <td>${item.leadPassenger}</td>
+                  <td>${item.additionalPassengers.join(', ')}</td>
+                  <td>${item.passengerCount}</td>
+                  <td>${item.checkIn}</td>
+                  <td>${item.checkOut}</td>
+                  <td>${item.nights}</td>
+                  <td><span class="status ${item.status}">${item.status.toUpperCase()}</span></td>
+                  <td>${item.groupName}</td>
+                  <td>${item.notes}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        break;
+      case 'hotel':
+        tableHTML = `
+          <table>
+            <thead><tr><th>Room</th><th>Guest Name</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Special Requests</th></tr></thead>
+            <tbody>
+              ${report.data.map(item => `
+                <tr>
+                  <td>${item.room}</td>
+                  <td>${item.guestName}</td>
+                  <td>${item.checkIn}</td>
+                  <td>${item.checkOut}</td>
+                  <td>${item.nights}</td>
+                  <td>${item.specialRequests}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+        break;
+    }
 
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write(`
         <html>
           <head>
-            <title>${tourName} - Operations Reports</title>
+            <title>${report.title} - ${tourName}</title>
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; }
               h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-              h2 { color: #666; margin-top: 30px; }
               table { width: 100%; border-collapse: collapse; margin-top: 15px; }
               th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
               th { background-color: #f2f2f2; font-weight: bold; }
@@ -348,8 +336,8 @@ export const TourOperationsReportsModal = ({
             </style>
           </head>
           <body>
-            <h1>${tourName} - Operations Reports</h1>
-            ${printContent}
+            <h1>${report.title} - ${tourName}</h1>
+            ${tableHTML}
           </body>
         </html>
       `);
@@ -484,37 +472,35 @@ export const TourOperationsReportsModal = ({
     }
   };
 
-  if (viewingReport) {
+  // If showing individual report
+  if (displayReport) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{viewingReport.title}</DialogTitle>
+              <div className="flex items-center gap-3">
+                {displayReport.icon}
+                <DialogTitle>{displayReport.title}</DialogTitle>
+                <Badge variant="secondary">{displayReport.count} items</Badge>
+              </div>
               <div className="flex items-center gap-2">
-                <Button onClick={() => setViewingReport(null)} variant="outline" size="sm">
-                  Back to Reports
-                </Button>
                 <Button 
-                  onClick={() => {
-                    setSelectedReports([viewingReport.id]);
-                    exportSelectedToCSV();
-                  }}
+                  onClick={() => exportReportToCSV(displayReport)}
                   variant="outline" 
                   size="sm"
+                  className="flex items-center gap-2"
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4" />
                   Export CSV
                 </Button>
                 <Button 
-                  onClick={() => {
-                    setSelectedReports([viewingReport.id]);
-                    printSelected();
-                  }}
+                  onClick={() => printReport(displayReport)}
                   variant="outline" 
                   size="sm"
+                  className="flex items-center gap-2"
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="h-4 w-4" />
                   Print/PDF
                 </Button>
               </div>
@@ -523,13 +509,11 @@ export const TourOperationsReportsModal = ({
           
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              {viewingReport.icon}
-              <span className="text-sm text-gray-600">{viewingReport.description}</span>
-              <Badge variant="secondary">{viewingReport.count} items</Badge>
+              <span className="text-sm text-gray-600">{displayReport.description}</span>
             </div>
             
             <div className="border rounded-lg">
-              {renderReportTable(viewingReport)}
+              {renderReportTable(displayReport)}
             </div>
           </div>
         </DialogContent>
@@ -537,79 +521,15 @@ export const TourOperationsReportsModal = ({
     );
   }
 
+  // Fallback to full management view
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={exportSelectedToCSV}
-                disabled={selectedReports.length === 0}
-                variant="outline" 
-                size="sm"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Export Selected ({selectedReports.length})
-              </Button>
-              <Button 
-                onClick={printSelected}
-                disabled={selectedReports.length === 0}
-                variant="outline" 
-                size="sm"
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Print Selected ({selectedReports.length})
-              </Button>
-            </div>
-          </div>
+          <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
         </DialogHeader>
-
         <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Checkbox 
-              id="select-all"
-              checked={selectedReports.length === reports.length}
-              onCheckedChange={handleSelectAll}
-            />
-            <label htmlFor="select-all" className="text-sm font-medium">
-              Select All Reports ({reports.length})
-            </label>
-          </div>
-
-          <div className="grid gap-4">
-            {reports.map((report) => (
-              <Card key={report.id} className="cursor-pointer hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Checkbox 
-                        checked={selectedReports.includes(report.id)}
-                        onCheckedChange={(checked) => handleSelectReport(report.id, checked as boolean)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      {report.icon}
-                      <div>
-                        <CardTitle className="text-lg">{report.title}</CardTitle>
-                        <p className="text-sm text-gray-600">{report.description}</p>
-                      </div>
-                      <Badge variant="secondary">{report.count} items</Badge>
-                    </div>
-                    <Button
-                      onClick={() => setViewingReport(report)}
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Eye className="h-4 w-4" />
-                      View Report
-                    </Button>
-                  </div>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
+          <p className="text-gray-600">Click on individual report types in the Operations tab to view specific reports.</p>
         </div>
       </DialogContent>
     </Dialog>
