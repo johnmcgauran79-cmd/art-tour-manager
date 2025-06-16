@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -46,6 +45,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [tourForEdit, setTourForEdit] = useState<any>(null);
+  const [currentTab, setCurrentTab] = useState("overview");
 
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
@@ -129,6 +129,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const handleTourDeleted = () => {
     // Close the modal when tour is deleted from EditTourModal
     onOpenChange(false);
+  };
+
+  const handleNavigateFromDeadlines = (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => {
+    setCurrentTab(destination.value);
+    
+    // If navigating to a specific hotel, we could store the hotelId for future use
+    // For now, just switching to the hotels tab is sufficient
   };
 
   // Use tourForEdit for the edit modal if it exists, otherwise use the transformed current tour
@@ -232,7 +239,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5 bg-gray-50">
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
@@ -289,6 +296,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               <TourOperationsTab
                 tourId={tour?.id || ""}
                 tourName={tour?.name || ""}
+                onNavigate={handleNavigateFromDeadlines}
               />
             </TabsContent>
           </Tabs>

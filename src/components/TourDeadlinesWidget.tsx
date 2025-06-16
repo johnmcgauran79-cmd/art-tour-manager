@@ -15,13 +15,15 @@ interface Deadline {
   description: string;
   priority: 'high' | 'medium' | 'low';
   hotelName?: string;
+  hotelId?: string;
 }
 
 interface TourDeadlinesWidgetProps {
   tourId: string;
+  onNavigate?: (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => void;
 }
 
-export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
+export const TourDeadlinesWidget = ({ tourId, onNavigate }: TourDeadlinesWidgetProps) => {
   const { data: tours } = useTours();
   const { data: hotels } = useHotels(tourId);
 
@@ -99,6 +101,7 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
           description: hotel.name,
           priority: daysUntilCheckin <= 7 ? 'high' : daysUntilCheckin <= 14 ? 'medium' : 'low',
           hotelName: hotel.name,
+          hotelId: hotel.id,
         });
       }
 
@@ -114,6 +117,7 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
           description: hotel.name,
           priority: daysUntilCheckout <= 7 ? 'high' : daysUntilCheckout <= 14 ? 'medium' : 'low',
           hotelName: hotel.name,
+          hotelId: hotel.id,
         });
       }
 
@@ -129,6 +133,7 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
           description: hotel.name,
           priority: daysUntilInitialCutoff <= 3 ? 'high' : daysUntilInitialCutoff <= 7 ? 'medium' : 'low',
           hotelName: hotel.name,
+          hotelId: hotel.id,
         });
       }
 
@@ -144,6 +149,7 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
           description: hotel.name,
           priority: daysUntilFinalCutoff <= 3 ? 'high' : daysUntilFinalCutoff <= 7 ? 'medium' : 'low',
           hotelName: hotel.name,
+          hotelId: hotel.id,
         });
       }
     });
@@ -178,6 +184,29 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
     return `${daysUntil} days`;
   };
 
+  const handleDeadlineClick = (deadline: Deadline) => {
+    if (!onNavigate) return;
+
+    switch (deadline.type) {
+      case 'tour_start':
+      case 'tour_end':
+      case 'instalment':
+      case 'final_payment':
+        // Navigate to overview tab for tour-related dates
+        onNavigate({ type: 'tab', value: 'overview' });
+        break;
+      case 'hotel_checkin':
+      case 'hotel_checkout':
+      case 'initial_cutoff':
+      case 'final_cutoff':
+        // Navigate to hotels tab for hotel-related dates
+        onNavigate({ type: 'tab', value: 'hotels', hotelId: deadline.hotelId });
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <Card className="border-brand-navy/20 shadow-lg">
       <CardHeader>
@@ -208,7 +237,11 @@ export const TourDeadlinesWidget = ({ tourId }: TourDeadlinesWidgetProps) => {
               </TableHeader>
               <TableBody>
                 {deadlines.map((deadline) => (
-                  <TableRow key={deadline.id}>
+                  <TableRow 
+                    key={deadline.id}
+                    className="cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => handleDeadlineClick(deadline)}
+                  >
                     <TableCell className="font-medium">{deadline.title}</TableCell>
                     <TableCell>{deadline.description}</TableCell>
                     <TableCell>

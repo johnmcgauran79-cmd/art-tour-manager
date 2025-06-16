@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,9 +11,10 @@ import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
 interface TourOperationsTabProps {
   tourId: string;
   tourName: string;
+  onNavigate?: (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => void;
 }
 
-export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) => {
+export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperationsTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
@@ -129,7 +129,7 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
       </Card>
 
       {/* Tour Deadlines Widget */}
-      <TourDeadlinesWidget tourId={tourId} />
+      <TourDeadlinesWidget tourId={tourId} onNavigate={onNavigate} />
 
       <TourOperationsReportsModal
         tourId={tourId}
