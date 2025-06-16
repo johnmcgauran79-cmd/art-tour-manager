@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Edit, Copy } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Settings } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -94,13 +95,18 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
-              <DialogTitle>{tour?.name}</DialogTitle>
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-brand-navy/10 rounded-lg flex items-center justify-center">
+                  <MapPin className="h-5 w-5 text-brand-navy" />
+                </div>
+                <DialogTitle className="text-brand-navy">{tour?.name}</DialogTitle>
+              </div>
               <div className="flex items-center gap-2">
                 <Button
                   onClick={handleDuplicateTour}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                   disabled={duplicateTour.isPending}
                 >
                   <Copy className="h-4 w-4" />
@@ -110,7 +116,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   onClick={() => setEditTourModalOpen(true)}
                   variant="outline"
                   size="sm"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
                 >
                   <Edit className="h-4 w-4" />
                   Edit Tour
@@ -120,12 +126,27 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           </DialogHeader>
 
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="hotels">Hotels</TabsTrigger>
-              <TabsTrigger value="activities">Activities</TabsTrigger>
-              <TabsTrigger value="bookings">Bookings</TabsTrigger>
-              <TabsTrigger value="operations">Operations</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 bg-gray-50">
+              <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                <FileText className="h-4 w-4" />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="hotels" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                <MapPin className="h-4 w-4" />
+                Hotels
+              </TabsTrigger>
+              <TabsTrigger value="activities" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                <Calendar className="h-4 w-4" />
+                Activities
+              </TabsTrigger>
+              <TabsTrigger value="bookings" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                <Users className="h-4 w-4" />
+                Bookings
+              </TabsTrigger>
+              <TabsTrigger value="operations" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                <Settings className="h-4 w-4" />
+                Operations
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
