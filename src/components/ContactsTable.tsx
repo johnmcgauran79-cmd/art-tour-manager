@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Upload, PhoneCall } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Search, Upload, PhoneCall, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useCustomers, useBulkUpdatePhoneNumbers } from "@/hooks/useCustomers";
 import { AddContactModal } from "@/components/AddContactModal";
 import { EditContactModal } from "@/components/EditContactModal";
@@ -75,7 +76,30 @@ export const ContactsTable = () => {
   const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handlePageSelect = (value: string) => {
+    const page = parseInt(value);
+    handlePageChange(page);
+  };
+
+  // Generate page numbers to show (show current page and surrounding pages)
+  const getVisiblePages = () => {
+    const maxVisible = 5;
+    const half = Math.floor(maxVisible / 2);
+    
+    let start = Math.max(1, currentPage - half);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    
+    // Adjust start if we're near the end
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
   console.log(`Total customers from API: ${customers?.length || 0}`);
@@ -173,9 +197,45 @@ export const ContactsTable = () => {
                 onContactClick={handleContactClick}
               />
               {totalPages > 1 && (
-                <div className="mt-4">
+                <div className="mt-4 space-y-4">
+                  {/* Page selector dropdown */}
+                  <div className="flex items-center justify-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Go to page:</span>
+                      <Select value={currentPage.toString()} onValueChange={handlePageSelect}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <SelectItem key={page} value={page.toString()}>
+                              {page}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-sm text-muted-foreground">of {totalPages}</span>
+                    </div>
+                  </div>
+
+                  {/* Pagination controls */}
                   <Pagination>
                     <PaginationContent>
+                      {/* First page button */}
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(1)}
+                          disabled={currentPage === 1}
+                          className="gap-1"
+                        >
+                          <ChevronsLeft className="h-4 w-4" />
+                          First
+                        </Button>
+                      </PaginationItem>
+                      
+                      {/* Previous button */}
                       <PaginationItem>
                         <PaginationPrevious 
                           href="#"
@@ -187,36 +247,24 @@ export const ContactsTable = () => {
                         />
                       </PaginationItem>
                       
-                      {/* Show page numbers */}
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNumber;
-                        if (totalPages <= 5) {
-                          pageNumber = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNumber = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNumber = totalPages - 4 + i;
-                        } else {
-                          pageNumber = currentPage - 2 + i;
-                        }
-                        
-                        return (
-                          <PaginationItem key={pageNumber}>
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                handlePageChange(pageNumber);
-                              }}
-                              isActive={currentPage === pageNumber}
-                              className="cursor-pointer"
-                            >
-                              {pageNumber}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
+                      {/* Page numbers */}
+                      {getVisiblePages().map((pageNumber) => (
+                        <PaginationItem key={pageNumber}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePageChange(pageNumber);
+                            }}
+                            isActive={currentPage === pageNumber}
+                            className="cursor-pointer"
+                          >
+                            {pageNumber}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
                       
+                      {/* Next button */}
                       <PaginationItem>
                         <PaginationNext 
                           href="#"
@@ -226,6 +274,20 @@ export const ContactsTable = () => {
                           }}
                           className={currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
                         />
+                      </PaginationItem>
+
+                      {/* Last page button */}
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(totalPages)}
+                          disabled={currentPage === totalPages}
+                          className="gap-1"
+                        >
+                          Last
+                          <ChevronsRight className="h-4 w-4" />
+                        </Button>
                       </PaginationItem>
                     </PaginationContent>
                   </Pagination>
