@@ -78,8 +78,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       // Create a new Supabase client instance for admin operations
       const { createClient } = await import('@supabase/supabase-js');
       const adminClient = createClient(
-        supabase.supabaseUrl,
-        supabase.supabaseKey,
+        "https://upqvgtuxfzsrwjahklij.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwcXZndHV4ZnpzcndqYWhrbGlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk1MTg3OTIsImV4cCI6MjA2NTA5NDc5Mn0.2XXCeilTJt-_0UdN_TCiT3Zyie_ci9Iwx6F7ZTsH0XQ",
         {
           auth: {
             persistSession: false
