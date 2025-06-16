@@ -155,7 +155,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
       });
 
       setUserCreated(true);
-      onUserAdded();
+      // DON'T call onUserAdded() here - wait for user to close manually
 
     } catch (error) {
       console.error('Unexpected error creating user:', error);
@@ -178,6 +178,10 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     setTempPassword("");
     setUserCreated(false);
     onOpenChange(false);
+    // Only refresh the user list when manually closing
+    if (userCreated) {
+      onUserAdded();
+    }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
