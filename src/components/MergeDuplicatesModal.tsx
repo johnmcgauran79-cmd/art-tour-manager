@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DuplicateGroup, useMergeDuplicateContacts } from "@/hooks/useCustomers";
-import { merge } from "lucide-react";
+import { Merge } from "lucide-react";
 
 interface MergeDuplicatesModalProps {
   open: boolean;
@@ -58,7 +58,7 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
       <DialogContent className="max-w-4xl max-h-[80vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <merge className="h-5 w-5" />
+            <Merge className="h-5 w-5" />
             Merge Duplicate Contacts
           </DialogTitle>
           <DialogDescription>

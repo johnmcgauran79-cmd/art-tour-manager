@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +11,7 @@ import { CSVUploadModal } from "@/components/CSVUploadModal";
 import { MergeDuplicatesModal } from "@/components/MergeDuplicatesModal";
 import { ContactsTableContent } from "./ContactsTableContent";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { merge } from "lucide-react";
+import { Merge } from "lucide-react";
 
 const CONTACTS_PER_PAGE = 100;
 
@@ -129,7 +128,7 @@ export const ContactsTable = () => {
                   variant="outline"
                   className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white"
                 >
-                  <merge className="h-4 w-4 mr-2" />
+                  <Merge className="h-4 w-4 mr-2" />
                   Remove Duplicates ({duplicateGroups.length})
                 </Button>
               )}
