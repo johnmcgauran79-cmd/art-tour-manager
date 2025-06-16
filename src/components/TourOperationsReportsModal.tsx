@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -138,9 +139,6 @@ export const TourOperationsReportsModal = ({
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">{displayReport.description}</span>
-              {reportType === 'passengerlist' && (
-                <Badge variant="outline" className="text-xs">Perfect for printing with blank spaces for notes</Badge>
-              )}
             </div>
             
             <div className="border rounded-lg">
