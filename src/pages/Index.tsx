@@ -18,11 +18,17 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AdminSetup } from "@/components/AdminSetup";
+import { QuickActionsPanel } from "@/components/QuickActionsPanel";
+import { UpcomingDeadlinesWidget } from "@/components/UpcomingDeadlinesWidget";
+import { AddTourModal } from "@/components/AddTourModal";
+import { AddContactModal } from "@/components/AddContactModal";
 
 const Index = () => {
   const { user, loading, userRole, mustChangePassword } = useAuth();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAddBooking, setShowAddBooking] = useState(false);
+  const [showAddTour, setShowAddTour] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [showSystemLog, setShowSystemLog] = useState(false);
@@ -167,6 +173,19 @@ const Index = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <QuickActionsPanel
+                onAddBooking={() => setShowAddBooking(true)}
+                onAddTour={() => setShowAddTour(true)}
+                onAddContact={() => setShowAddContact(true)}
+                onViewBookings={() => setActiveTab("bookings")}
+                onViewTours={() => setActiveTab("tours")}
+                onViewContacts={() => setActiveTab("contacts")}
+              />
+              <UpcomingDeadlinesWidget />
+            </div>
+            
             <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
             <ActiveTours onViewAll={handleViewAllTours} />
           </TabsContent>
@@ -191,6 +210,8 @@ const Index = () => {
 
       {/* Modals */}
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
+      <AddTourModal open={showAddTour} onOpenChange={setShowAddTour} />
+      <AddContactModal open={showAddContact} onOpenChange={setShowAddContact} />
       {isAdmin && (
         <>
           <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
