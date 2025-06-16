@@ -85,8 +85,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         instalment_amount: formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
         instalment_date: formData.instalment_date || null,
         final_payment_date: formData.final_payment_date || null,
-        capacity: formData.capacity ? parseInt(formData.capacity) : 0,
-        status: "upcoming",
+        capacity: formData.capacity ? parseInt(formData.capacity) : null,
+        status: "pending",
       });
 
       if (error) throw error;
