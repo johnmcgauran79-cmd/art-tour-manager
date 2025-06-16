@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -72,12 +71,12 @@ export function UserManagement() {
       }
 
       // Get auth user data for last sign in times (this requires admin access)
-      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      const { data: authUsersResponse, error: authError } = await supabase.auth.admin.listUsers();
       
       // Merge users with their roles and auth data
       const usersWithRoles: UserRow[] = (profilesData || []).map((profile) => {
         const userRole = rolesData?.find(r => r.user_id === profile.id);
-        const authUser = authUsers?.users?.find(u => u.id === profile.id);
+        const authUser = authUsersResponse?.users?.find(authU => authU.id === profile.id);
         return {
           id: profile.id,
           email: profile.email || "(No email)",
