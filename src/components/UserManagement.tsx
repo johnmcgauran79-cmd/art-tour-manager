@@ -76,7 +76,8 @@ export function UserManagement() {
       // Merge users with their roles and auth data
       const usersWithRoles: UserRow[] = (profilesData || []).map((profile) => {
         const userRole = rolesData?.find(r => r.user_id === profile.id);
-        const authUser = authUsersResponse?.users?.find(authU => authU.id === profile.id);
+        const authUsers = authUsersResponse?.users || [];
+        const authUser = authUsers.find(user => user.id === profile.id);
         return {
           id: profile.id,
           email: profile.email || "(No email)",
