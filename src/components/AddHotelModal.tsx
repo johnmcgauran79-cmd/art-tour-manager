@@ -239,22 +239,12 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cancellation_policy">Cancellation Policy</Label>
-            <Textarea
-              id="cancellation_policy"
-              value={formData.cancellation_policy}
-              onChange={(e) => handleInputChange("cancellation_policy", e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="upgrade_options">Upgrade Options</Label>
             <Textarea
               id="upgrade_options"
               value={formData.upgrade_options}
               onChange={(e) => handleInputChange("upgrade_options", e.target.value)}
-              rows={3}
+              rows={2}
             />
           </div>
 
@@ -278,6 +268,16 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                 onChange={(e) => handleInputChange("final_rooms_cutoff_date", e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cancellation_policy">Cancellation Policy</Label>
+            <Textarea
+              id="cancellation_policy"
+              value={formData.cancellation_policy}
+              onChange={(e) => handleInputChange("cancellation_policy", e.target.value)}
+              rows={3}
+            />
           </div>
 
           <div className="space-y-2">
