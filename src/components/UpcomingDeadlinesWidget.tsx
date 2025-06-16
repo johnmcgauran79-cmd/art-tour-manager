@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -143,14 +142,12 @@ export const UpcomingDeadlinesWidget = () => {
                 Next 5 important dates and payment deadlines
               </CardDescription>
             </div>
-            {deadlines.length > 5 && (
-              <Button 
-                variant="outline" 
-                onClick={() => setAllDeadlinesModalOpen(true)}
-              >
-                View All
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              onClick={() => setAllDeadlinesModalOpen(true)}
+            >
+              View All
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
