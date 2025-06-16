@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
       }
     )
 
-    // Verify the request is from an authenticated admin user
+    // Verify the request is from an authenticated user
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(
@@ -34,14 +34,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Create client with anon key to verify the requesting user
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    )
-
-    // Get the current user from the auth header
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
+    // Get the current user from the auth header using service role client
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(
       authHeader.replace('Bearer ', '')
     )
 
@@ -52,8 +46,8 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check if the requesting user is an admin
-    const { data: userRole, error: roleError } = await supabase
+    // Check if the requesting user is an admin using service role client
+    const { data: userRole, error: roleError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
