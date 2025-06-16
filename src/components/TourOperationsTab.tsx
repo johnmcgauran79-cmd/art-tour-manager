@@ -25,7 +25,7 @@ export const TourOperationsTab = ({ tourId, tourName }: TourOperationsTabProps) 
   const dietaryRequirements = tourBookings
     .map(booking => ({
       name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-      dietary: booking.customers?.dietary_requirements,
+      dietary: booking.customers?.dietary_requirements || '',
       passengerCount: booking.passenger_count,
       additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean)
     }))
