@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,8 +5,9 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, UserX, UserPlus } from "lucide-react";
+import { Trash2, UserX, UserPlus, KeyRound } from "lucide-react";
 import { AddUserModal } from "./AddUserModal";
+import { AdminPasswordResetModal } from "./AdminPasswordResetModal";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
@@ -33,6 +33,8 @@ export function UserManagement() {
   const [deleting, setDeleting] = useState<{ [userId: string]: boolean }>({});
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
 
   const fetchUsersAndRoles = async () => {
     setLoading(true);
@@ -226,6 +228,11 @@ export function UserManagement() {
     }
   };
 
+  const handlePasswordReset = (userId: string, userEmail: string) => {
+    setSelectedUser({ id: userId, email: userEmail });
+    setShowPasswordReset(true);
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
     return new Date(dateString).toLocaleDateString();
@@ -341,6 +348,16 @@ export function UserManagement() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handlePasswordReset(user.id, user.email)}
+                      className="h-8"
+                    >
+                      <KeyRound className="h-3 w-3 mr-1" />
+                      Reset Password
+                    </Button>
+                    
                     {user.role && (
                       <Button
                         size="sm"
@@ -407,6 +424,7 @@ export function UserManagement() {
       <div className="mt-4 text-sm text-muted-foreground">
         <p><strong>Note:</strong> You cannot delete your own account for security reasons.</p>
         <p><strong>Temporary Passwords:</strong> Users with temporary passwords must change them on first login.</p>
+        <p><strong>Password Reset:</strong> Resetting a user's password generates a new temporary password they must change on login.</p>
       </div>
 
       <AddUserModal
@@ -414,6 +432,18 @@ export function UserManagement() {
         onOpenChange={setShowAddUser}
         onUserAdded={fetchUsersAndRoles}
       />
+
+      {selectedUser && (
+        <AdminPasswordResetModal
+          open={showPasswordReset}
+          onOpenChange={(open) => {
+            setShowPasswordReset(open);
+            if (!open) setSelectedUser(null);
+          }}
+          userId={selectedUser.id}
+          userEmail={selectedUser.email}
+        />
+      )}
     </div>
   );
 }

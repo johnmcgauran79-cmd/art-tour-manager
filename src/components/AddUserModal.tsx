@@ -30,6 +30,7 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [role, setRole] = useState<RoleType>("booking_agent");
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
+  const [userCreated, setUserCreated] = useState(false);
 
   const generateTempPassword = async () => {
     try {
@@ -150,17 +151,11 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
 
       toast({
         title: "User Created Successfully",
-        description: `User ${email} created with temporary password: ${password}. They must change this on first login.`,
+        description: `User ${email} created successfully. Share the temporary password with them.`,
       });
 
-      // Reset form
-      setEmail("");
-      setFirstName("");
-      setLastName("");
-      setRole("booking_agent");
-      
+      setUserCreated(true);
       onUserAdded();
-      onOpenChange(false);
 
     } catch (error) {
       console.error('Unexpected error creating user:', error);
@@ -174,88 +169,140 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     }
   };
 
+  const handleClose = () => {
+    // Reset form
+    setEmail("");
+    setFirstName("");
+    setLastName("");
+    setRole("booking_agent");
+    setTempPassword("");
+    setUserCreated(false);
+    onOpenChange(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={() => {}} disableCloseOnOutsideClick>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
+          <DialogTitle>{userCreated ? "User Created Successfully" : "Add New User"}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="user@example.com"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="firstName">First Name *</Label>
-            <Input
-              id="firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="John"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="lastName">Last Name *</Label>
-            <Input
-              id="lastName"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              placeholder="Doe"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value: RoleType) => setRole(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ROLE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {tempPassword && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <p className="text-sm font-medium text-yellow-800">
-                Temporary Password: <code className="bg-yellow-100 px-1 rounded">{tempPassword}</code>
-              </p>
-              <p className="text-xs text-yellow-600 mt-1">
-                Share this with the user. They must change it on first login.
-              </p>
+        {!userCreated ? (
+          <>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="user@example.com"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First Name *</Label>
+                <Input
+                  id="firstName"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="John"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name *</Label>
+                <Input
+                  id="lastName"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Doe"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select value={role} onValueChange={(value: RoleType) => setRole(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROLE_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
-        </div>
 
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isCreating}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreateUser}
-            disabled={isCreating}
-          >
-            {isCreating ? "Creating..." : "Create User"}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isCreating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateUser}
+                disabled={isCreating}
+              >
+                {isCreating ? "Creating..." : "Create User"}
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded">
+                <p className="text-sm font-medium text-green-800 mb-2">
+                  User created successfully!
+                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-green-700">
+                    <strong>Email:</strong> {email}
+                  </p>
+                  <p className="text-sm text-green-700">
+                    <strong>Name:</strong> {firstName} {lastName}
+                  </p>
+                  <p className="text-sm text-green-700">
+                    <strong>Role:</strong> {ROLE_OPTIONS.find(opt => opt.value === role)?.label}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded">
+                <p className="text-sm font-medium text-yellow-800 mb-2">
+                  Temporary Password
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="bg-yellow-100 px-2 py-1 rounded text-sm font-mono">
+                    {tempPassword}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => navigator.clipboard.writeText(tempPassword)}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <p className="text-xs text-yellow-600 mt-2">
+                  Share this password with the user. They must change it on first login.
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button onClick={handleClose}>
+                Close
+              </Button>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
