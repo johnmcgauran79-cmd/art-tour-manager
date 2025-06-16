@@ -236,26 +236,6 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                 required
               />
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="initial_rooms_cutoff_date">Initial Rooms Cutoff Date</Label>
-              <Input
-                id="initial_rooms_cutoff_date"
-                type="date"
-                value={formData.initial_rooms_cutoff_date}
-                onChange={(e) => handleInputChange("initial_rooms_cutoff_date", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="final_rooms_cutoff_date">Final Rooms Cutoff Date</Label>
-              <Input
-                id="final_rooms_cutoff_date"
-                type="date"
-                value={formData.final_rooms_cutoff_date}
-                onChange={(e) => handleInputChange("final_rooms_cutoff_date", e.target.value)}
-              />
-            </div>
           </div>
 
           <div className="space-y-2">
@@ -276,6 +256,28 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
               onChange={(e) => handleInputChange("upgrade_options", e.target.value)}
               rows={3}
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="initial_rooms_cutoff_date">Initial Rooms Cutoff Date</Label>
+              <Input
+                id="initial_rooms_cutoff_date"
+                type="date"
+                value={formData.initial_rooms_cutoff_date}
+                onChange={(e) => handleInputChange("initial_rooms_cutoff_date", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="final_rooms_cutoff_date">Final Rooms Cutoff Date</Label>
+              <Input
+                id="final_rooms_cutoff_date"
+                type="date"
+                value={formData.final_rooms_cutoff_date}
+                onChange={(e) => handleInputChange("final_rooms_cutoff_date", e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

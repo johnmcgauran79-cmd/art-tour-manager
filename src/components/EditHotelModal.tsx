@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -256,46 +255,28 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="default_check_in">Default Check-in Date *</Label>
-              <Input
-                id="default_check_in"
-                type="date"
-                value={formData.default_check_in}
-                onChange={(e) => handleInputChange("default_check_in", e.target.value)}
-                required
-              />
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="default_check_in">Default Check-in Date *</Label>
+                <Input
+                  id="default_check_in"
+                  type="date"
+                  value={formData.default_check_in}
+                  onChange={(e) => handleInputChange("default_check_in", e.target.value)}
+                  required
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="default_check_out">Default Check-out Date *</Label>
-              <Input
-                id="default_check_out"
-                type="date"
-                value={formData.default_check_out}
-                onChange={(e) => handleInputChange("default_check_out", e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="initial_rooms_cutoff_date">Initial Rooms Cutoff Date</Label>
-              <Input
-                id="initial_rooms_cutoff_date"
-                type="date"
-                value={formData.initial_rooms_cutoff_date}
-                onChange={(e) => handleInputChange("initial_rooms_cutoff_date", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="final_rooms_cutoff_date">Final Rooms Cutoff Date</Label>
-              <Input
-                id="final_rooms_cutoff_date"
-                type="date"
-                value={formData.final_rooms_cutoff_date}
-                onChange={(e) => handleInputChange("final_rooms_cutoff_date", e.target.value)}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="default_check_out">Default Check-out Date *</Label>
+                <Input
+                  id="default_check_out"
+                  type="date"
+                  value={formData.default_check_out}
+                  onChange={(e) => handleInputChange("default_check_out", e.target.value)}
+                  required
+                />
+              </div>
             </div>
           </div>
 
@@ -317,6 +298,28 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
               onChange={(e) => handleInputChange("upgrade_options", e.target.value)}
               rows={3}
             />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="initial_rooms_cutoff_date">Initial Rooms Cutoff Date</Label>
+              <Input
+                id="initial_rooms_cutoff_date"
+                type="date"
+                value={formData.initial_rooms_cutoff_date}
+                onChange={(e) => handleInputChange("initial_rooms_cutoff_date", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="final_rooms_cutoff_date">Final Rooms Cutoff Date</Label>
+              <Input
+                id="final_rooms_cutoff_date"
+                type="date"
+                value={formData.final_rooms_cutoff_date}
+                onChange={(e) => handleInputChange("final_rooms_cutoff_date", e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
