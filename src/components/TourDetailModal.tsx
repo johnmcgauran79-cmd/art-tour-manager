@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +18,7 @@ import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { Tour } from "@/hooks/useTours";
 import { useDuplicateTour } from "@/hooks/useDuplicateTour";
 import { formatDateRange } from "@/lib/utils";
+import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -36,6 +36,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [reportsModalOpen, setReportsModalOpen] = useState(false);
 
   const duplicateTour = useDuplicateTour();
 
@@ -216,6 +217,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           tour={transformedTour}
         />
       )}
+
+      <TourOperationsReportsModal
+        tourId={tour?.id || ""}
+        tourName={tour?.name || ""}
+        open={reportsModalOpen}
+        onOpenChange={setReportsModalOpen}
+      />
     </>
   );
 };

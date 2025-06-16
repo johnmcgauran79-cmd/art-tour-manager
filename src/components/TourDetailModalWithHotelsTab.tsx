@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +17,7 @@ import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { Tour } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
+import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 
 interface TourDetailModalWithHotelsTabProps {
   tour: Tour | null;
