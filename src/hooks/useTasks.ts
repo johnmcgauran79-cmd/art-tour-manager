@@ -63,7 +63,8 @@ export const useMyTasks = () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      // Get tasks assigned to the user
+      const { data: assignedTasks, error: assignedError } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -74,12 +75,39 @@ export const useMyTasks = () => {
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching my tasks:', error);
-        throw error;
+      if (assignedError) {
+        console.error('Error fetching assigned tasks:', assignedError);
+        throw assignedError;
       }
 
-      return data as Task[];
+      // Get unallocated tasks (tasks with no assignments)
+      const { data: unallocatedTasks, error: unallocatedError } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          tours (name),
+          task_assignments (user_id)
+        `)
+        .order('priority', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (unallocatedError) {
+        console.error('Error fetching unallocated tasks:', unallocatedError);
+        throw unallocatedError;
+      }
+
+      // Filter out tasks that have assignments
+      const filteredUnallocatedTasks = unallocatedTasks?.filter(task => 
+        !task.task_assignments || task.task_assignments.length === 0
+      ) || [];
+
+      // Combine assigned and unallocated tasks, removing duplicates
+      const allTasks = [...(assignedTasks || []), ...filteredUnallocatedTasks];
+      const uniqueTasks = allTasks.filter((task, index, self) => 
+        index === self.findIndex(t => t.id === task.id)
+      );
+
+      return uniqueTasks as Task[];
     },
   });
 };
