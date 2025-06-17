@@ -69,8 +69,8 @@ export const MyTasksWidget = () => {
     if (!task.due_date) return false;
     const dueDate = new Date(task.due_date);
     const today = new Date();
-    const threeDaysFromNow = new Date(today.getTime() + (3 * 24 * 60 * 60 * 1000));
-    return dueDate >= today && dueDate <= threeDaysFromNow;
+    const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+    return dueDate >= today && dueDate <= sevenDaysFromNow;
   });
 
   // Sort tasks by due date and take top 10
@@ -100,7 +100,7 @@ export const MyTasksWidget = () => {
         break;
       case 'due_soon':
         filtered = dueSoonTasks;
-        title = "Due Soon (Next 3 Days)";
+        title = "Due Soon (Next 7 Days)";
         break;
     }
 
