@@ -1,15 +1,15 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList, Settings } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList, Settings, Plus } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useTasks } from "@/hooks/useTasks";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
 import { TasksList } from "@/components/TasksList";
+import { AddTaskModal } from "@/components/AddTaskModal";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -22,6 +22,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const { data: hotels } = useHotels(tourId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
+  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
@@ -150,6 +151,14 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
                 Operations Control
               </Badge>
             </div>
+            <Button
+              onClick={() => setAddTaskModalOpen(true)}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Task
+            </Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -200,6 +209,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         loading={tasksLoading}
         title={`${tourName} - Tasks`}
         showTourName={false}
+        onCreateTask={() => setAddTaskModalOpen(true)}
       />
 
       {/* Tour Deadlines Widget */}
@@ -211,6 +221,12 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         open={reportsModalOpen}
         onOpenChange={handleModalClose}
         reportType={selectedReportType}
+      />
+
+      <AddTaskModal
+        open={addTaskModalOpen}
+        onOpenChange={setAddTaskModalOpen}
+        tourId={tourId}
       />
     </div>
   );
