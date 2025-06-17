@@ -20,17 +20,32 @@ export const useTaskComments = (taskId: string) => {
   return useQuery({
     queryKey: ['task-comments', taskId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the comments
+      const { data: comments, error: commentsError } = await supabase
         .from('task_comments')
-        .select(`
-          *,
-          profiles (first_name, last_name, email)
-        `)
+        .select('*')
         .eq('task_id', taskId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      return (data || []) as TaskComment[];
+      if (commentsError) throw commentsError;
+
+      // Then get profile data for each comment
+      const commentsWithProfiles = await Promise.all(
+        (comments || []).map(async (comment) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name, email')
+            .eq('id', comment.user_id)
+            .single();
+
+          return {
+            ...comment,
+            profiles: profile
+          };
+        })
+      );
+
+      return commentsWithProfiles as TaskComment[];
     },
     enabled: !!taskId,
   });
