@@ -129,7 +129,16 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Task</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Add New Task</DialogTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+            >
+              Close
+            </Button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

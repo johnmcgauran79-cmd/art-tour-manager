@@ -1,7 +1,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 import { Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 
@@ -30,9 +29,8 @@ export const FilteredTasksModal = ({
               variant="ghost"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="h-6 w-6 p-0"
             >
-              <X className="h-4 w-4" />
+              Close
             </Button>
           </div>
         </DialogHeader>
