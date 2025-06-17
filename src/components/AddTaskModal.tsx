@@ -29,6 +29,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [category, setCategory] = useState<'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general'>('operations');
   const [dueDate, setDueDate] = useState<Date>();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const createTask = useCreateTask();
 
@@ -98,6 +99,11 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
   };
 
+  const handleDateSelect = (date: Date | undefined) => {
+    setDueDate(date);
+    setIsDatePickerOpen(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -154,7 +160,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
 
             <div className="space-y-2">
               <Label>Due Date</Label>
-              <Popover>
+              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
@@ -171,7 +177,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                   <Calendar
                     mode="single"
                     selected={dueDate}
-                    onSelect={setDueDate}
+                    onSelect={handleDateSelect}
                     initialFocus
                   />
                 </PopoverContent>
