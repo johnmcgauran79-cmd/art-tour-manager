@@ -24,10 +24,6 @@ export interface Task {
   };
   task_assignments?: Array<{
     user_id: string;
-    profiles?: {
-      first_name: string | null;
-      last_name: string | null;
-    };
   }>;
 }
 
@@ -40,10 +36,7 @@ export const useTasks = (tourId?: string) => {
         .select(`
           *,
           tours (name),
-          task_assignments (
-            user_id,
-            profiles (first_name, last_name)
-          )
+          task_assignments (user_id)
         `)
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
@@ -76,10 +69,7 @@ export const useMyTasks = () => {
         .select(`
           *,
           tours (name),
-          task_assignments!inner (
-            user_id,
-            profiles (first_name, last_name)
-          )
+          task_assignments!inner (user_id)
         `)
         .eq('task_assignments.user_id', user.user.id)
         .order('priority', { ascending: false })
@@ -171,13 +161,13 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: async (data: {
       taskId: string;
-      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date'>>;
+      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at'>>;
     }) => {
       const updateData = { ...data.updates };
       
       // If marking as completed, set completed_at
-      if (data.updates.status === 'completed' && !updateData.completed_at) {
-        (updateData as any).completed_at = new Date().toISOString();
+      if (data.updates.status === 'completed' && !data.updates.completed_at) {
+        updateData.completed_at = new Date().toISOString();
       }
       
       const { data: task, error } = await supabase
