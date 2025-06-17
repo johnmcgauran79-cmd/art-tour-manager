@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -182,10 +181,10 @@ const Index = () => {
 
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
-            <UpcomingDeadlinesWidget />
             <MyTasksWidget />
-            <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
+            <UpcomingDeadlinesWidget />
             <ActiveTours onViewAll={handleViewAllTours} />
+            <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
