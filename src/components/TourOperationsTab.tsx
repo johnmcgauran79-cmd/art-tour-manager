@@ -2,14 +2,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList, Settings, Plus } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, Task } from "@/hooks/useTasks";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
-import { TasksList } from "@/components/TasksList";
+import { TasksTable } from "@/components/TasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
+import { TaskDetailModal } from "@/components/TaskDetailModal";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -23,6 +24,8 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
@@ -55,6 +58,18 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     setReportsModalOpen(open);
     if (!open) {
       setSelectedReportType(null);
+    }
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setSelectedTask(task);
+    setTaskDetailModalOpen(true);
+  };
+
+  const handleTaskDetailModalClose = (open: boolean) => {
+    setTaskDetailModalOpen(open);
+    if (!open) {
+      setSelectedTask(null);
     }
   };
 
@@ -203,13 +218,14 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         </CardContent>
       </Card>
 
-      {/* Tour Tasks List */}
-      <TasksList
+      {/* Tour Tasks Table */}
+      <TasksTable
         tasks={tasks || []}
         loading={tasksLoading}
         title={`${tourName} - Tasks`}
         showTourName={false}
         onCreateTask={() => setAddTaskModalOpen(true)}
+        onTaskClick={handleTaskClick}
       />
 
       {/* Tour Deadlines Widget */}
@@ -227,6 +243,12 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         open={addTaskModalOpen}
         onOpenChange={setAddTaskModalOpen}
         tourId={tourId}
+      />
+
+      <TaskDetailModal
+        task={selectedTask}
+        open={taskDetailModalOpen}
+        onOpenChange={handleTaskDetailModalClose}
       />
     </div>
   );
