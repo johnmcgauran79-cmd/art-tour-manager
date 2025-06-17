@@ -13,7 +13,7 @@ export interface TaskComment {
     first_name: string;
     last_name: string;
     email: string;
-  };
+  } | null;
 }
 
 export const useTaskComments = (taskId: string) => {
@@ -30,7 +30,7 @@ export const useTaskComments = (taskId: string) => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data as TaskComment[];
+      return (data || []) as TaskComment[];
     },
     enabled: !!taskId,
   });
