@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Plus, AlertTriangle, Clock, Flag } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
+import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 
 export const MyTasksWidget = () => {
   const { data: tasks, isLoading } = useMyTasks();
@@ -58,20 +59,6 @@ export const MyTasksWidget = () => {
   };
 
   const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
-  
-  // Calculate task counts for headers
-  const overdueTasks = pendingTasks.filter(task => 
-    task.due_date && new Date(task.due_date) < new Date()
-  );
-  const criticalTasks = pendingTasks.filter(task => task.priority === 'critical');
-  const highPriorityTasks = pendingTasks.filter(task => task.priority === 'high');
-  const dueSoonTasks = pendingTasks.filter(task => {
-    if (!task.due_date) return false;
-    const dueDate = new Date(task.due_date);
-    const today = new Date();
-    const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
-    return dueDate >= today && dueDate <= sevenDaysFromNow;
-  });
 
   // Sort tasks by due date and take top 10
   const sortedTasks = [...pendingTasks].sort((a, b) => {
@@ -87,19 +74,27 @@ export const MyTasksWidget = () => {
 
     switch (type) {
       case 'overdue':
-        filtered = overdueTasks;
+        filtered = pendingTasks.filter(task => 
+          task.due_date && new Date(task.due_date) < new Date()
+        );
         title = "Overdue Tasks";
         break;
       case 'critical':
-        filtered = criticalTasks;
+        filtered = pendingTasks.filter(task => task.priority === 'critical');
         title = "Critical Priority Tasks";
         break;
       case 'high':
-        filtered = highPriorityTasks;
+        filtered = pendingTasks.filter(task => task.priority === 'high');
         title = "High Priority Tasks";
         break;
       case 'due_soon':
-        filtered = dueSoonTasks;
+        filtered = pendingTasks.filter(task => {
+          if (!task.due_date) return false;
+          const dueDate = new Date(task.due_date);
+          const today = new Date();
+          const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+          return dueDate >= today && dueDate <= sevenDaysFromNow;
+        });
         title = "Due Soon (Next 7 Days)";
         break;
     }
@@ -131,59 +126,11 @@ export const MyTasksWidget = () => {
             </Button>
           </div>
           
-          {/* Task Category Headers */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-            <div 
-              className="flex items-center gap-3 p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleCategoryClick('overdue')}
-            >
-              <div className="bg-red-100 p-2 rounded-full group-hover:bg-red-200 transition-colors flex-shrink-0">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-gray-800 group-hover:text-red-700 text-sm">Overdue</p>
-                <p className="text-xs text-gray-600">{overdueTasks.length} tasks</p>
-              </div>
-            </div>
-            
-            <div 
-              className="flex items-center gap-3 p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleCategoryClick('critical')}
-            >
-              <div className="bg-purple-100 p-2 rounded-full group-hover:bg-purple-200 transition-colors flex-shrink-0">
-                <Flag className="h-4 w-4 text-purple-600" />
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-sm">Critical</p>
-                <p className="text-xs text-gray-600">{criticalTasks.length} tasks</p>
-              </div>
-            </div>
-            
-            <div 
-              className="flex items-center gap-3 p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleCategoryClick('high')}
-            >
-              <div className="bg-orange-100 p-2 rounded-full group-hover:bg-orange-200 transition-colors flex-shrink-0">
-                <Flag className="h-4 w-4 text-orange-600" />
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-sm">High Priority</p>
-                <p className="text-xs text-gray-600">{highPriorityTasks.length} tasks</p>
-              </div>
-            </div>
-            
-            <div 
-              className="flex items-center gap-3 p-3 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleCategoryClick('due_soon')}
-            >
-              <div className="bg-yellow-100 p-2 rounded-full group-hover:bg-yellow-200 transition-colors flex-shrink-0">
-                <Clock className="h-4 w-4 text-yellow-600" />
-              </div>
-              <div className="flex flex-col">
-                <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-sm">Due Soon</p>
-                <p className="text-xs text-gray-600">{dueSoonTasks.length} tasks</p>
-              </div>
-            </div>
+          <div className="mt-4">
+            <TaskCategoriesGrid 
+              tasks={pendingTasks}
+              onCategoryClick={handleCategoryClick}
+            />
           </div>
         </CardHeader>
         
