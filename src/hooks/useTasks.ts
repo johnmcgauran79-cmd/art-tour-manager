@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -102,26 +101,37 @@ export const useCreateTask = () => {
       console.log('useCreateTask mutation called with:', taskData);
       
       const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('User not authenticated');
+      if (!user.user) {
+        console.error('User not authenticated');
+        throw new Error('User not authenticated');
+      }
+
+      console.log('Authenticated user:', user.user.id);
 
       // Create the task first
+      const taskInsertData = {
+        title: taskData.title,
+        description: taskData.description || null,
+        priority: taskData.priority,
+        category: taskData.category,
+        due_date: taskData.due_date || null,
+        tour_id: taskData.tour_id || null,
+        created_by: user.user.id,
+        status: 'not_started' as const,
+        is_automated: false,
+      };
+
+      console.log('Inserting task with data:', taskInsertData);
+
       const { data: task, error: taskError } = await supabase
         .from('tasks')
-        .insert({
-          title: taskData.title,
-          description: taskData.description,
-          priority: taskData.priority,
-          category: taskData.category,
-          due_date: taskData.due_date,
-          tour_id: taskData.tour_id,
-          created_by: user.user.id,
-        })
+        .insert(taskInsertData)
         .select()
         .single();
 
       if (taskError) {
         console.error('Error creating task:', taskError);
-        throw taskError;
+        throw new Error(`Failed to create task: ${taskError.message}`);
       }
 
       console.log('Task created successfully:', task);
@@ -136,13 +146,15 @@ export const useCreateTask = () => {
           assigned_by: user.user.id,
         }));
 
+        console.log('Assignment data:', assignments);
+
         const { error: assignmentError } = await supabase
           .from('task_assignments')
           .insert(assignments);
 
         if (assignmentError) {
           console.error('Error creating task assignments:', assignmentError);
-          throw assignmentError;
+          throw new Error(`Failed to create task assignments: ${assignmentError.message}`);
         }
 
         console.log('Task assignments created successfully');
@@ -162,7 +174,7 @@ export const useCreateTask = () => {
       console.error('Error creating task:', error);
       toast({
         title: "Error",
-        description: "Failed to create task. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create task. Please try again.",
         variant: "destructive",
       });
     },

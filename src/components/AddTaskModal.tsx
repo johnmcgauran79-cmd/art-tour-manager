@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -50,10 +49,13 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      console.log('Title is empty, not submitting');
+      return;
+    }
 
     try {
-      console.log('Creating task with data:', {
+      console.log('Submitting task with data:', {
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
@@ -73,6 +75,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         assignee_ids: selectedUsers,
       });
 
+      console.log('Task created successfully, resetting form');
+
       // Reset form
       setTitle("");
       setDescription("");
@@ -83,7 +87,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       
       onOpenChange(false);
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('Error in handleSubmit:', error);
     }
   };
 
