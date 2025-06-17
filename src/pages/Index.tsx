@@ -86,6 +86,7 @@ const Index = () => {
 
   // Check if user is admin
   const isAdmin = userRole === 'admin';
+  const isBookingAgent = userRole === 'booking_agent';
 
   return (
     <div className="min-h-screen bg-background">
@@ -182,9 +183,21 @@ const Index = () => {
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
             <MyTasksWidget />
-            <UpcomingDeadlinesWidget />
-            <ActiveTours onViewAll={handleViewAllTours} />
-            <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
+            
+            {/* Conditional rendering based on user role */}
+            {isBookingAgent ? (
+              <>
+                <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
+                <UpcomingDeadlinesWidget />
+                <ActiveTours onViewAll={handleViewAllTours} />
+              </>
+            ) : (
+              <>
+                <UpcomingDeadlinesWidget />
+                <ActiveTours onViewAll={handleViewAllTours} />
+                <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
