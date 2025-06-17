@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, Users } from "lucide-react";
+import { CalendarIcon, Users, Link } from "lucide-react";
 import { format } from "date-fns";
-import { useCreateTask } from "@/hooks/useTasks";
+import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useTours } from "@/hooks/useTours";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,12 +31,16 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [dueDate, setDueDate] = useState<Date>();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
+  const [dependsOnTaskId, setDependsOnTaskId] = useState<string | undefined>();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const createTask = useCreateTask();
 
   // Fetch tours for the dropdown
   const { data: tours } = useTours();
+
+  // Fetch existing tasks for dependency selection
+  const { data: existingTasks } = useTasks();
 
   // Fetch users for assignment - simplified query to avoid relation issues
   const { data: users } = useQuery({
@@ -72,6 +77,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         category,
         due_date: dueDate?.toISOString(),
         tour_id: selectedTourId,
+        depends_on_task_id: dependsOnTaskId,
         assignee_ids: selectedUsers,
       });
 
@@ -82,6 +88,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         category,
         due_date: dueDate?.toISOString(),
         tour_id: selectedTourId,
+        depends_on_task_id: dependsOnTaskId,
         assignee_ids: selectedUsers,
       });
 
@@ -95,6 +102,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setDueDate(undefined);
       setSelectedUsers([]);
       setSelectedTourId(tourId); // Reset to prop value
+      setDependsOnTaskId(undefined);
       
       onOpenChange(false);
     } catch (error) {
@@ -124,6 +132,13 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     const tour = tours?.find(t => t.id === selectedTourId);
     return tour ? tour.name : "Unknown tour";
   };
+
+  // Filter tasks for dependency selection (exclude completed and current task if editing)
+  const availableDependentTasks = existingTasks?.filter(task => 
+    task.status !== 'completed' && 
+    task.status !== 'cancelled' &&
+    task.status !== 'archived'
+  ) || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -238,6 +253,30 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                 </SelectContent>
               </Select>
             )}
+          </div>
+
+          {/* Task Dependency */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Depends on Task (optional)
+            </Label>
+            <Select value={dependsOnTaskId || "none"} onValueChange={(value) => setDependsOnTaskId(value === "none" ? undefined : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a task this depends on" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No dependency</SelectItem>
+                {availableDependentTasks.map((task) => (
+                  <SelectItem key={task.id} value={task.id}>
+                    {task.title} ({task.status.replace('_', ' ')})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              This task will be blocked until the selected task is completed.
+            </p>
           </div>
 
           <div className="space-y-2">

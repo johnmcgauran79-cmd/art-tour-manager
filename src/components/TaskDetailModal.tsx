@@ -4,10 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle } from "lucide-react";
-import { Task, useUpdateTask } from "@/hooks/useTasks";
+import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link } from "lucide-react";
+import { Task, useUpdateTask, useTasks } from "@/hooks/useTasks";
 import { formatDistanceToNow, format } from "date-fns";
+import { TaskCommentsSection } from "@/components/TaskCommentsSection";
+import { TaskAttachmentsSection } from "@/components/TaskAttachmentsSection";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -17,14 +19,13 @@ interface TaskDetailModalProps {
 
 export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalProps) => {
   const [status, setStatus] = useState<Task['status']>('not_started');
-  const [notes, setNotes] = useState("");
   
   const updateTask = useUpdateTask();
+  const { data: allTasks } = useTasks();
 
   useEffect(() => {
     if (task) {
       setStatus(task.status);
-      setNotes("");
     }
   }, [task]);
 
@@ -55,6 +56,8 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-200';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -65,6 +68,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
   };
 
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
+  const isBlocked = task.dependent_task && task.dependent_task.status !== 'completed';
 
   const handleUpdateStatus = () => {
     updateTask.mutate({
@@ -82,9 +86,16 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
     onOpenChange(false);
   };
 
+  const getDependentTaskInfo = () => {
+    if (!task.dependent_task) return null;
+    return allTasks?.find(t => t.id === task.depends_on_task_id);
+  };
+
+  const dependentTask = getDependentTaskInfo();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
@@ -115,6 +126,12 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
                   <AlertTriangle className="h-3 w-3 mr-1" />
                   Overdue
+                </Badge>
+              )}
+              {isBlocked && (
+                <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+                  <Link className="h-3 w-3 mr-1" />
+                  Blocked
                 </Badge>
               )}
             </div>
@@ -163,6 +180,19 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
               </div>
             )}
 
+            {dependentTask && (
+              <div className="flex items-center gap-2 text-sm col-span-2">
+                <Link className="h-4 w-4 text-gray-500" />
+                <span className="font-medium">Depends on:</span>
+                <span className="flex items-center gap-2">
+                  {dependentTask.title}
+                  <Badge variant="outline" className={`text-xs ${getStatusColor(dependentTask.status)}`}>
+                    {formatStatus(dependentTask.status)}
+                  </Badge>
+                </span>
+              </div>
+            )}
+
             {task.completed_at && (
               <div className="flex items-center gap-2 text-sm text-green-600">
                 <CheckCircle className="h-4 w-4" />
@@ -173,7 +203,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
           </div>
 
           {/* Status Update */}
-          {task.status !== 'completed' && (
+          {task.status !== 'completed' && !isBlocked && (
             <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium">Update Task Status</h3>
               <div className="flex gap-3">
@@ -187,6 +217,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                     <SelectItem value="waiting">Waiting</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
                 
@@ -210,23 +241,28 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           )}
 
-          {/* Notes Section */}
-          <div className="space-y-2 border-t pt-4">
-            <h3 className="font-medium">Add Notes</h3>
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any notes or comments about this task..."
-              rows={3}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={!notes.trim()}
-            >
-              Add Note
-            </Button>
-          </div>
+          {isBlocked && (
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-3">
+              <p className="text-sm text-orange-800">
+                <AlertTriangle className="h-4 w-4 inline mr-1" />
+                This task is blocked and cannot be started until the dependent task "{dependentTask?.title}" is completed.
+              </p>
+            </div>
+          )}
+
+          {/* Tabbed sections for comments and attachments */}
+          <Tabs defaultValue="comments" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="comments">Comments</TabsTrigger>
+              <TabsTrigger value="attachments">Attachments</TabsTrigger>
+            </TabsList>
+            <TabsContent value="comments" className="space-y-4">
+              <TaskCommentsSection taskId={task.id} />
+            </TabsContent>
+            <TabsContent value="attachments" className="space-y-4">
+              <TaskAttachmentsSection taskId={task.id} />
+            </TabsContent>
+          </Tabs>
         </div>
       </DialogContent>
     </Dialog>

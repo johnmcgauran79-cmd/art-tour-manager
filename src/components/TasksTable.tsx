@@ -1,14 +1,12 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ClipboardList, Plus, Filter, Calendar, User, MapPin } from "lucide-react";
+import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, ClipboardList } from "lucide-react";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 interface TasksTableProps {
   tasks: Task[];
@@ -16,6 +14,8 @@ interface TasksTableProps {
   showTourName?: boolean;
   onCreateTask?: () => void;
   onTaskClick?: (task: Task) => void;
+  selectedTasks?: string[];
+  onTaskSelection?: (taskId: string, selected: boolean) => void;
   title?: string;
 }
 
@@ -25,34 +25,11 @@ export const TasksTable = ({
   showTourName = false, 
   onCreateTask, 
   onTaskClick,
+  selectedTasks = [],
+  onTaskSelection,
   title = "Tasks" 
 }: TasksTableProps) => {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [priorityFilter, setPriorityFilter] = useState<string>("all");
-  
   const updateTask = useUpdateTask();
-
-  // Filter out completed and cancelled tasks by default
-  const activeTasks = tasks.filter(task => 
-    task.status !== 'completed' && task.status !== 'cancelled'
-  );
-
-  const filteredTasks = activeTasks.filter(task => {
-    if (statusFilter !== "all" && task.status !== statusFilter) return false;
-    if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
-    return true;
-  });
-
-  const taskCounts = {
-    total: activeTasks.length,
-    pending: activeTasks.filter(t => t.status === 'not_started').length,
-    inProgress: activeTasks.filter(t => t.status === 'in_progress').length,
-    overdue: activeTasks.filter(t => 
-      t.due_date && 
-      new Date(t.due_date) < new Date() && 
-      t.status !== 'completed'
-    ).length,
-  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -71,10 +48,16 @@ export const TasksTable = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'in_progress':
         return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'waiting':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'archived':
+        return 'bg-gray-100 text-gray-800 border-gray-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -84,13 +67,10 @@ export const TasksTable = ({
     return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const handleCompleteTask = (taskId: string, e: React.MouseEvent | boolean) => {
-    if (typeof e !== 'boolean') {
-      e.stopPropagation();
-    }
-    
+  const handleMarkComplete = (e: React.MouseEvent, taskId: string) => {
+    e.stopPropagation();
     updateTask.mutate({
-      taskId,
+      taskId: taskId,
       updates: { status: 'completed' }
     });
   };
@@ -101,224 +81,176 @@ export const TasksTable = ({
     }
   };
 
-  const isOverdue = (task: Task) => {
-    return task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
+  const handleTaskSelect = (taskId: string, checked: boolean) => {
+    if (onTaskSelection) {
+      onTaskSelection(taskId, checked);
+    }
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
-            Loading tasks...
-          </div>
-        </CardContent>
-      </Card>
+      <div className="text-center py-4 text-muted-foreground">
+        Loading tasks...
+      </div>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
+        <p>No tasks found</p>
+        {onCreateTask && (
+          <Button onClick={onCreateTask} className="mt-2">
+            Create your first task
+          </Button>
+        )}
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-brand-navy" />
-            <CardTitle className="text-brand-navy">{title}</CardTitle>
-            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-              {taskCounts.total} active tasks
-            </Badge>
-          </div>
-          {onCreateTask && (
-            <Button
-              onClick={onCreateTask}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Task
-            </Button>
-          )}
-        </div>
-        
-        {/* Task Statistics */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-2 border border-gray-200 rounded-lg">
-            <div className="text-lg font-semibold text-gray-900">{taskCounts.pending}</div>
-            <div className="text-xs text-gray-600">Pending</div>
-          </div>
-          <div className="text-center p-2 border border-blue-200 rounded-lg">
-            <div className="text-lg font-semibold text-blue-700">{taskCounts.inProgress}</div>
-            <div className="text-xs text-blue-600">In Progress</div>
-          </div>
-          <div className="text-center p-2 border border-red-200 rounded-lg">
-            <div className="text-lg font-semibold text-red-700">{taskCounts.overdue}</div>
-            <div className="text-xs text-red-600">Overdue</div>
-          </div>
-        </div>
-        
-        {/* Filters */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-500" />
-            <span className="text-sm text-gray-500">Filters:</span>
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="not_started">Not Started</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="waiting">Waiting</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="Priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Priority</SelectItem>
-              <SelectItem value="critical">Critical</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </CardHeader>
-      
-      <CardContent>
-        {filteredTasks.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No active tasks found</p>
-            {onCreateTask && (
-              <Button
-                onClick={onCreateTask}
-                variant="outline"
-                className="mt-4"
-              >
-                Create your first task
-              </Button>
+    <div className="space-y-4">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {onTaskSelection && (
+              <TableHead className="w-12">
+                <span className="sr-only">Select</span>
+              </TableHead>
             )}
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">Complete</TableHead>
-                <TableHead>Task</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Category</TableHead>
-                {showTourName && <TableHead>Tour</TableHead>}
-                <TableHead>Due Date</TableHead>
-                <TableHead>Assigned</TableHead>
-                <TableHead>Created</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTasks.map((task) => (
-                <TableRow
-                  key={task.id}
-                  className={`cursor-pointer hover:bg-muted/50 ${
-                    isOverdue(task) ? 'bg-red-50 border-l-4 border-l-red-500' : ''
-                  }`}
-                  onClick={() => handleRowClick(task)}
-                >
+            <TableHead>Task</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Priority</TableHead>
+            <TableHead>Category</TableHead>
+            {showTourName && <TableHead>Tour</TableHead>}
+            <TableHead>Due Date</TableHead>
+            <TableHead>Assigned</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {tasks.map((task) => {
+            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
+            const isBlocked = task.dependent_task && task.dependent_task.status !== 'completed';
+            const isSelected = selectedTasks.includes(task.id);
+
+            return (
+              <TableRow 
+                key={task.id} 
+                className={`cursor-pointer hover:bg-gray-50 ${
+                  isOverdue ? 'bg-red-50' : ''
+                } ${task.status === 'completed' ? 'opacity-60' : ''} ${
+                  isSelected ? 'bg-blue-50' : ''
+                }`}
+                onClick={() => handleRowClick(task)}
+              >
+                {onTaskSelection && (
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
-                      checked={false}
-                      onCheckedChange={(checked) => {
-                        if (checked === true) {
-                          handleCompleteTask(task.id, true);
-                        }
-                      }}
-                      aria-label="Mark task as complete"
+                      checked={isSelected}
+                      onCheckedChange={(checked) => handleTaskSelect(task.id, !!checked)}
                     />
                   </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-sm text-muted-foreground truncate max-w-xs">
-                          {task.description}
-                        </div>
-                      )}
+                )}
+                <TableCell>
+                  <div>
+                    <div className="font-medium text-sm">{task.title}</div>
+                    {task.description && (
+                      <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">
+                        {task.description}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 mt-1">
                       {task.is_automated && (
-                        <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-200 mt-1">
+                        <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-200">
                           Auto
                         </Badge>
                       )}
+                      {isBlocked && (
+                        <Badge variant="outline" className="text-xs bg-orange-100 text-orange-800 border-orange-200">
+                          <Link className="h-3 w-3 mr-1" />
+                          Blocked
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
+                    {formatStatus(task.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
+                    {task.priority}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm capitalize">{task.category}</span>
+                </TableCell>
+                {showTourName && (
+                  <TableCell>
+                    <div className="flex items-center gap-1 text-sm">
+                      {task.tours ? (
+                        <>
+                          <MapPin className="h-3 w-3 text-gray-500" />
+                          {task.tours.name}
+                        </>
+                      ) : (
+                        <span className="text-gray-500">Unassigned</span>
+                      )}
                     </div>
                   </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
-                      {task.priority}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
-                      {formatStatus(task.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm capitalize">{task.category}</span>
-                  </TableCell>
-                  {showTourName && (
-                    <TableCell>
-                      {task.tours ? (
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="h-3 w-3" />
-                          {task.tours.name}
+                )}
+                <TableCell>
+                  {task.due_date ? (
+                    <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {format(new Date(task.due_date), 'MMM dd')}
+                      </div>
+                      <div className="text-xs">
+                        {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
+                      </div>
+                      {isOverdue && (
+                        <div className="flex items-center gap-1 text-xs">
+                          <AlertTriangle className="h-3 w-3" />
+                          Overdue
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
                       )}
-                    </TableCell>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-sm">No due date</span>
                   )}
-                  <TableCell>
-                    {task.due_date ? (
-                      <div className={`text-sm ${isOverdue(task) ? 'text-red-600 font-semibold' : 'text-muted-foreground'}`}>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
-                        </div>
-                        {isOverdue(task) && <span className="text-xs">(Overdue)</span>}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {task.task_assignments && task.task_assignments.length > 0 ? (
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <User className="h-3 w-3" />
-                        {task.task_assignments.length} user{task.task_assignments.length > 1 ? 's' : ''}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">Unassigned</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+                </TableCell>
+                <TableCell>
+                  {task.task_assignments && task.task_assignments.length > 0 ? (
+                    <div className="flex items-center gap-1 text-sm">
+                      <User className="h-3 w-3 text-gray-500" />
+                      {task.task_assignments.length}
+                    </div>
+                  ) : (
+                    <span className="text-gray-500 text-sm">Unassigned</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {task.status !== 'completed' && !isBlocked && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => handleMarkComplete(e, task.id)}
+                      className="text-green-600 border-green-300 hover:bg-green-50"
+                    >
+                      <CheckCircle className="h-4 w-4" />
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
   );
 };

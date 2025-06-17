@@ -407,6 +407,47 @@ export type Database = {
         }
         Relationships: []
       }
+      hotel_attachments: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          hotel_id: string
+          id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          hotel_id: string
+          id?: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          hotel_id?: string
+          id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_attachments_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotel_bookings: {
         Row: {
           allocated: boolean | null
@@ -630,6 +671,47 @@ export type Database = {
           },
         ]
       }
+      task_attachments: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          task_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          task_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          task_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           comment: string
@@ -705,6 +787,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string
+          depends_on_task_id: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -722,6 +805,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by: string
+          depends_on_task_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -739,6 +823,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string
+          depends_on_task_id?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -752,6 +837,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tasks_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_parent_task_id_fkey"
             columns: ["parent_task_id"]
             isOneToOne: false
@@ -760,6 +852,47 @@ export type Database = {
           },
           {
             foreignKeyName: "tasks_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_attachments: {
+        Row: {
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          tour_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          tour_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          tour_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_attachments_tour_id_fkey"
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
@@ -939,6 +1072,7 @@ export type Database = {
         | "waiting"
         | "completed"
         | "cancelled"
+        | "archived"
       tour_status: "pending" | "available" | "closed" | "sold_out" | "past"
       transport_status:
         | "pending"
@@ -1087,6 +1221,7 @@ export const Constants = {
         "waiting",
         "completed",
         "cancelled",
+        "archived",
       ],
       tour_status: ["pending", "available", "closed", "sold_out", "past"],
       transport_status: [

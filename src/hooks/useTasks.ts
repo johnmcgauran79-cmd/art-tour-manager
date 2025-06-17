@@ -6,7 +6,7 @@ export interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: 'not_started' | 'in_progress' | 'waiting' | 'completed' | 'cancelled';
+  status: 'not_started' | 'in_progress' | 'waiting' | 'completed' | 'cancelled' | 'archived';
   priority: 'low' | 'medium' | 'high' | 'critical';
   category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
   due_date: string | null;
@@ -16,6 +16,7 @@ export interface Task {
   is_automated: boolean;
   automated_rule: string | null;
   parent_task_id: string | null;
+  depends_on_task_id: string | null;
   created_at: string;
   updated_at: string;
   tours?: {
@@ -24,24 +25,63 @@ export interface Task {
   task_assignments?: Array<{
     user_id: string;
   }>;
+  dependent_task?: {
+    id: string;
+    title: string;
+    status: string;
+  };
 }
 
-export const useTasks = (tourId?: string) => {
+export const useTasks = (tourId?: string, filters?: {
+  search?: string;
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  startDate?: string;
+  endDate?: string;
+}) => {
   return useQuery({
-    queryKey: ['tasks', tourId],
+    queryKey: ['tasks', tourId, filters],
     queryFn: async () => {
       let query = supabase
         .from('tasks')
         .select(`
           *,
           tours (name),
-          task_assignments (user_id)
+          task_assignments (user_id),
+          dependent_task:tasks!tasks_depends_on_task_id_fkey (
+            id, title, status
+          )
         `)
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (tourId) {
         query = query.eq('tour_id', tourId);
+      }
+
+      if (filters?.search) {
+        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      }
+
+      if (filters?.status && filters.status !== 'all') {
+        query = query.eq('status', filters.status);
+      }
+
+      if (filters?.priority && filters.priority !== 'all') {
+        query = query.eq('priority', filters.priority);
+      }
+
+      if (filters?.startDate) {
+        query = query.gte('due_date', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        query = query.lte('due_date', filters.endDate);
+      }
+
+      if (filters?.assigneeId && filters.assigneeId !== 'all') {
+        query = query.eq('task_assignments.user_id', filters.assigneeId);
       }
 
       const { data, error } = await query;
@@ -69,7 +109,10 @@ export const useMyTasks = () => {
         .select(`
           *,
           tours (name),
-          task_assignments!inner (user_id)
+          task_assignments!inner (user_id),
+          dependent_task:tasks!tasks_depends_on_task_id_fkey (
+            id, title, status
+          )
         `)
         .eq('task_assignments.user_id', user.user.id)
         .order('priority', { ascending: false })
@@ -86,7 +129,10 @@ export const useMyTasks = () => {
         .select(`
           *,
           tours (name),
-          task_assignments (user_id)
+          task_assignments (user_id),
+          dependent_task:tasks!tasks_depends_on_task_id_fkey (
+            id, title, status
+          )
         `)
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
@@ -124,6 +170,7 @@ export const useCreateTask = () => {
       category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
       due_date?: string;
       tour_id?: string;
+      depends_on_task_id?: string;
       assignee_ids?: string[];
     }) => {
       console.log('useCreateTask mutation called with:', taskData);
@@ -144,6 +191,7 @@ export const useCreateTask = () => {
         category: taskData.category,
         due_date: taskData.due_date || null,
         tour_id: taskData.tour_id || null,
+        depends_on_task_id: taskData.depends_on_task_id || null,
         created_by: user.user.id,
         status: 'not_started' as const,
         is_automated: false,
@@ -216,7 +264,7 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: async (data: {
       taskId: string;
-      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at'>>;
+      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id'>>;
     }) => {
       const updateData = { ...data.updates };
       
