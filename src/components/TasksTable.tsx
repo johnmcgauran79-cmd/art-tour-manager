@@ -237,7 +237,11 @@ export const TasksTable = ({
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={false}
-                      onCheckedChange={(checked) => checked && handleCompleteTask(task.id, checked)}
+                      onCheckedChange={(checked) => {
+                        if (checked === true) {
+                          handleCompleteTask(task.id, true);
+                        }
+                      }}
                       aria-label="Mark task as complete"
                     />
                   </TableCell>
