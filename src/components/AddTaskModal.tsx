@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarIcon, Users } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask } from "@/hooks/useTasks";
+import { useTours } from "@/hooks/useTours";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -28,9 +30,13 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [category, setCategory] = useState<'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general'>('operations');
   const [dueDate, setDueDate] = useState<Date>();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const createTask = useCreateTask();
+
+  // Fetch tours for the dropdown
+  const { data: tours } = useTours();
 
   // Fetch users for assignment - simplified query to avoid relation issues
   const { data: users } = useQuery({
@@ -45,6 +51,11 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       return data;
     },
   });
+
+  // Update selectedTourId when tourId prop changes
+  useState(() => {
+    setSelectedTourId(tourId);
+  }, [tourId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,7 +72,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         priority,
         category,
         due_date: dueDate?.toISOString(),
-        tour_id: tourId,
+        tour_id: selectedTourId,
         assignee_ids: selectedUsers,
       });
 
@@ -71,7 +82,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         priority,
         category,
         due_date: dueDate?.toISOString(),
-        tour_id: tourId,
+        tour_id: selectedTourId,
         assignee_ids: selectedUsers,
       });
 
@@ -84,6 +95,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setCategory('operations');
       setDueDate(undefined);
       setSelectedUsers([]);
+      setSelectedTourId(tourId); // Reset to prop value
       
       onOpenChange(false);
     } catch (error) {
@@ -106,6 +118,12 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const handleDateSelect = (date: Date | undefined) => {
     setDueDate(date);
     setIsDatePickerOpen(false);
+  };
+
+  const getSelectedTourName = () => {
+    if (!selectedTourId) return "No tour selected";
+    const tour = tours?.find(t => t.id === selectedTourId);
+    return tour ? tour.name : "Unknown tour";
   };
 
   return (
@@ -187,6 +205,31 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                 </PopoverContent>
               </Popover>
             </div>
+          </div>
+
+          {/* Tour Selection */}
+          <div className="space-y-2">
+            <Label htmlFor="tour">Assign to Tour (optional)</Label>
+            {tourId ? (
+              <div className="p-3 border rounded-md bg-gray-50">
+                <p className="text-sm text-gray-600">This task will be assigned to:</p>
+                <p className="font-medium">{getSelectedTourName()}</p>
+              </div>
+            ) : (
+              <Select value={selectedTourId || "unassigned"} onValueChange={(value) => setSelectedTourId(value === "unassigned" ? undefined : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a tour or leave unassigned" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">No tour (unassigned)</SelectItem>
+                  {tours?.map((tour) => (
+                    <SelectItem key={tour.id} value={tour.id}>
+                      {tour.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
