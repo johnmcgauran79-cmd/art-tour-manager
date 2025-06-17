@@ -24,7 +24,7 @@ export const useTaskComments = (taskId: string) => {
         .from('task_comments')
         .select(`
           *,
-          profiles (first_name, last_name, email)
+          profiles!task_comments_user_id_fkey (first_name, last_name, email)
         `)
         .eq('task_id', taskId)
         .order('created_at', { ascending: true });

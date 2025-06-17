@@ -91,7 +91,13 @@ export const useTasks = (tourId?: string, filters?: {
         throw error;
       }
 
-      return data as Task[];
+      // Transform the data to match our Task interface
+      const transformedData = data?.map(task => ({
+        ...task,
+        dependent_task: task.dependent_task?.[0] || null
+      })) || [];
+
+      return transformedData as Task[];
     },
   });
 };
@@ -153,7 +159,13 @@ export const useMyTasks = () => {
         index === self.findIndex(t => t.id === task.id)
       );
 
-      return uniqueTasks as Task[];
+      // Transform the data to match our Task interface
+      const transformedData = uniqueTasks.map(task => ({
+        ...task,
+        dependent_task: task.dependent_task?.[0] || null
+      }));
+
+      return transformedData as Task[];
     },
   });
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -104,7 +103,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Header with badges */}
           <div className="space-y-3">
             <h2 className="text-xl font-semibold">{task.title}</h2>
             <div className="flex flex-wrap gap-2">
@@ -137,7 +135,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           </div>
 
-          {/* Description */}
           {task.description && (
             <div>
               <h3 className="font-medium mb-2">Description</h3>
@@ -145,7 +142,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           )}
 
-          {/* Task Details */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {task.tours && (
               <div className="flex items-center gap-2 text-sm">
@@ -202,7 +198,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             )}
           </div>
 
-          {/* Status Update */}
           {task.status !== 'completed' && !isBlocked && (
             <div className="space-y-4 border-t pt-4">
               <h3 className="font-medium">Update Task Status</h3>
@@ -250,7 +245,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           )}
 
-          {/* Tabbed sections for comments and attachments */}
           <Tabs defaultValue="comments" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="comments">Comments</TabsTrigger>
