@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -65,11 +66,11 @@ export const useTasks = (tourId?: string, filters?: {
       }
 
       if (filters?.status && filters.status !== 'all') {
-        query = query.eq('status', filters.status);
+        query = query.eq('status', filters.status as 'not_started' | 'in_progress' | 'waiting' | 'completed' | 'cancelled' | 'archived');
       }
 
       if (filters?.priority && filters.priority !== 'all') {
-        query = query.eq('priority', filters.priority);
+        query = query.eq('priority', filters.priority as 'low' | 'medium' | 'high' | 'critical');
       }
 
       if (filters?.startDate) {
