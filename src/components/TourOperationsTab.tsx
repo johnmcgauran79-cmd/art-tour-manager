@@ -11,6 +11,7 @@ import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
 import { TasksTable } from "@/components/TasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
+import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -25,8 +26,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
+  const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
+  const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
 
@@ -73,12 +77,48 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     }
   };
 
+  const handleFilteredTasksModalClose = (open: boolean) => {
+    setFilteredTasksModalOpen(open);
+    if (!open) {
+      setFilteredTasks([]);
+      setFilteredTasksTitle("");
+    }
+  };
+
   // Task statistics
   const activeTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
   const criticalTasks = activeTasks.filter(task => task.priority === 'critical');
   const overdueTasks = activeTasks.filter(task => 
     task.due_date && new Date(task.due_date) < new Date()
   );
+
+  const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue') => {
+    let filtered: Task[] = [];
+    let title = "";
+
+    switch (type) {
+      case 'total':
+        filtered = tasks || [];
+        title = "All Tasks";
+        break;
+      case 'active':
+        filtered = activeTasks;
+        title = "Active Tasks";
+        break;
+      case 'critical':
+        filtered = criticalTasks;
+        title = "Critical Tasks";
+        break;
+      case 'overdue':
+        filtered = overdueTasks;
+        title = "Overdue Tasks";
+        break;
+    }
+
+    setFilteredTasks(filtered);
+    setFilteredTasksTitle(title);
+    setFilteredTasksModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -179,32 +219,44 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         <CardContent>
           {/* Task Statistics Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="text-center p-3 border-2 border-gray-200 rounded-lg">
-              <div className="bg-gray-100 p-2 rounded-full mx-auto mb-2 w-fit">
+            <div 
+              className="text-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleTaskStatsClick('total')}
+            >
+              <div className="bg-gray-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-gray-200 transition-colors">
                 <ClipboardList className="h-5 w-5 text-gray-600" />
               </div>
               <p className="font-semibold text-gray-800 text-xs">Total Tasks</p>
               <p className="text-xs text-gray-600">{tasks?.length || 0} tasks</p>
             </div>
-            <div className="text-center p-3 border-2 border-blue-200 rounded-lg">
-              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit">
+            <div 
+              className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleTaskStatsClick('active')}
+            >
+              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-blue-200 transition-colors">
                 <ClipboardList className="h-5 w-5 text-blue-600" />
               </div>
-              <p className="font-semibold text-gray-800 text-xs">Active Tasks</p>
+              <p className="font-semibold text-gray-800 group-hover:text-blue-700 text-xs">Active Tasks</p>
               <p className="text-xs text-gray-600">{activeTasks.length} pending</p>
             </div>
-            <div className="text-center p-3 border-2 border-red-200 rounded-lg">
-              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit">
+            <div 
+              className="text-center p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleTaskStatsClick('critical')}
+            >
+              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors">
                 <ClipboardList className="h-5 w-5 text-red-600" />
               </div>
-              <p className="font-semibold text-gray-800 text-xs">Critical Tasks</p>
+              <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Critical Tasks</p>
               <p className="text-xs text-gray-600">{criticalTasks.length} urgent</p>
             </div>
-            <div className="text-center p-3 border-2 border-orange-200 rounded-lg">
-              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit">
+            <div 
+              className="text-center p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleTaskStatsClick('overdue')}
+            >
+              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-orange-200 transition-colors">
                 <ClipboardList className="h-5 w-5 text-orange-600" />
               </div>
-              <p className="font-semibold text-gray-800 text-xs">Overdue Tasks</p>
+              <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">Overdue Tasks</p>
               <p className="text-xs text-gray-600">{overdueTasks.length} overdue</p>
             </div>
           </div>
@@ -249,6 +301,14 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         task={selectedTask}
         open={taskDetailModalOpen}
         onOpenChange={handleTaskDetailModalClose}
+      />
+
+      <FilteredTasksModal
+        open={filteredTasksModalOpen}
+        onOpenChange={handleFilteredTasksModalClose}
+        tasks={filteredTasks}
+        title={filteredTasksTitle}
+        onTaskClick={handleTaskClick}
       />
     </div>
   );
