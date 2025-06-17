@@ -55,7 +55,7 @@ export const MyTasksWidget = () => {
         </CardContent>
       </Card>
     );
-  }
+  };
 
   const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
   
@@ -134,47 +134,55 @@ export const MyTasksWidget = () => {
           {/* Task Category Headers */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
             <div 
-              className="text-center p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
+              className="flex items-center gap-3 p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleCategoryClick('overdue')}
             >
-              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors">
+              <div className="bg-red-100 p-2 rounded-full group-hover:bg-red-200 transition-colors flex-shrink-0">
                 <AlertTriangle className="h-4 w-4 text-red-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Overdue</p>
-              <p className="text-xs text-gray-600">{overdueTasks.length} tasks</p>
+              <div className="flex flex-col">
+                <p className="font-semibold text-gray-800 group-hover:text-red-700 text-sm">Overdue</p>
+                <p className="text-xs text-gray-600">{overdueTasks.length} tasks</p>
+              </div>
             </div>
             
             <div 
-              className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
+              className="flex items-center gap-3 p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleCategoryClick('critical')}
             >
-              <div className="bg-purple-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-purple-200 transition-colors">
+              <div className="bg-purple-100 p-2 rounded-full group-hover:bg-purple-200 transition-colors flex-shrink-0">
                 <Flag className="h-4 w-4 text-purple-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Critical</p>
-              <p className="text-xs text-gray-600">{criticalTasks.length} tasks</p>
+              <div className="flex flex-col">
+                <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-sm">Critical</p>
+                <p className="text-xs text-gray-600">{criticalTasks.length} tasks</p>
+              </div>
             </div>
             
             <div 
-              className="text-center p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
+              className="flex items-center gap-3 p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleCategoryClick('high')}
             >
-              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-orange-200 transition-colors">
+              <div className="bg-orange-100 p-2 rounded-full group-hover:bg-orange-200 transition-colors flex-shrink-0">
                 <Flag className="h-4 w-4 text-orange-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">High Priority</p>
-              <p className="text-xs text-gray-600">{highPriorityTasks.length} tasks</p>
+              <div className="flex flex-col">
+                <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-sm">High Priority</p>
+                <p className="text-xs text-gray-600">{highPriorityTasks.length} tasks</p>
+              </div>
             </div>
             
             <div 
-              className="text-center p-3 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
+              className="flex items-center gap-3 p-3 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleCategoryClick('due_soon')}
             >
-              <div className="bg-yellow-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-yellow-200 transition-colors">
+              <div className="bg-yellow-100 p-2 rounded-full group-hover:bg-yellow-200 transition-colors flex-shrink-0">
                 <Clock className="h-4 w-4 text-yellow-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Due Soon</p>
-              <p className="text-xs text-gray-600">{dueSoonTasks.length} tasks</p>
+              <div className="flex flex-col">
+                <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-sm">Due Soon</p>
+                <p className="text-xs text-gray-600">{dueSoonTasks.length} tasks</p>
+              </div>
             </div>
           </div>
         </CardHeader>
