@@ -8,9 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CalendarIcon, Users } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask } from "@/hooks/useTasks";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface AddTaskModalProps {
@@ -25,8 +28,29 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
   const [category, setCategory] = useState<'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general'>('operations');
   const [dueDate, setDueDate] = useState<Date>();
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const createTask = useCreateTask();
+
+  // Fetch users for assignment
+  const { data: users } = useQuery({
+    queryKey: ['users-for-assignment'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          first_name,
+          last_name,
+          email,
+          user_roles (role)
+        `)
+        .order('first_name');
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +58,16 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     if (!title.trim()) return;
 
     try {
+      console.log('Creating task with data:', {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        category,
+        due_date: dueDate?.toISOString(),
+        tour_id: tourId,
+        assignee_ids: selectedUsers,
+      });
+
       await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
@@ -41,6 +75,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         category,
         due_date: dueDate?.toISOString(),
         tour_id: tourId,
+        assignee_ids: selectedUsers,
       });
 
       // Reset form
@@ -49,6 +84,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setPriority('medium');
       setCategory('operations');
       setDueDate(undefined);
+      setSelectedUsers([]);
       
       onOpenChange(false);
     } catch (error) {
@@ -56,9 +92,21 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     }
   };
 
+  const handleUserSelection = (userId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedUsers(prev => [...prev, userId]);
+    } else {
+      setSelectedUsers(prev => prev.filter(id => id !== userId));
+    }
+  };
+
+  const getUserDisplayName = (user: any) => {
+    return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add New Task</DialogTitle>
         </DialogHeader>
@@ -146,6 +194,47 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
               placeholder="Enter task description (optional)"
               rows={3}
             />
+          </div>
+
+          {/* User Assignment Section */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Assign to Users (optional)
+            </Label>
+            <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
+              {users && users.length > 0 ? (
+                <div className="space-y-2">
+                  {users.map((user) => (
+                    <div key={user.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`user-${user.id}`}
+                        checked={selectedUsers.includes(user.id)}
+                        onCheckedChange={(checked) => handleUserSelection(user.id, !!checked)}
+                      />
+                      <Label 
+                        htmlFor={`user-${user.id}`} 
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {getUserDisplayName(user)}
+                        {user.user_roles?.length > 0 && (
+                          <span className="text-xs text-gray-500 ml-2">
+                            ({user.user_roles.map((r: any) => r.role).join(', ')})
+                          </span>
+                        )}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No users available for assignment</p>
+              )}
+            </div>
+            {selectedUsers.length > 0 && (
+              <p className="text-xs text-gray-600">
+                {selectedUsers.length} user(s) selected
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

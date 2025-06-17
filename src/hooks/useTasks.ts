@@ -99,9 +99,12 @@ export const useCreateTask = () => {
       tour_id?: string;
       assignee_ids?: string[];
     }) => {
+      console.log('useCreateTask mutation called with:', taskData);
+      
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
+      // Create the task first
       const { data: task, error: taskError } = await supabase
         .from('tasks')
         .insert({
@@ -116,10 +119,17 @@ export const useCreateTask = () => {
         .select()
         .single();
 
-      if (taskError) throw taskError;
+      if (taskError) {
+        console.error('Error creating task:', taskError);
+        throw taskError;
+      }
+
+      console.log('Task created successfully:', task);
 
       // Add assignments if provided
       if (taskData.assignee_ids && taskData.assignee_ids.length > 0) {
+        console.log('Adding assignments for users:', taskData.assignee_ids);
+        
         const assignments = taskData.assignee_ids.map(userId => ({
           task_id: task.id,
           user_id: userId,
@@ -130,7 +140,12 @@ export const useCreateTask = () => {
           .from('task_assignments')
           .insert(assignments);
 
-        if (assignmentError) throw assignmentError;
+        if (assignmentError) {
+          console.error('Error creating task assignments:', assignmentError);
+          throw assignmentError;
+        }
+
+        console.log('Task assignments created successfully');
       }
 
       return task;
