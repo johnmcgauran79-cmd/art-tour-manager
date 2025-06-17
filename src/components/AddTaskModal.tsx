@@ -32,19 +32,13 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
 
   const createTask = useCreateTask();
 
-  // Fetch users for assignment
+  // Fetch users for assignment - simplified query to avoid relation issues
   const { data: users } = useQuery({
     queryKey: ['users-for-assignment'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          email,
-          user_roles (role)
-        `)
+        .select('id, first_name, last_name, email')
         .order('first_name');
 
       if (error) throw error;
@@ -217,11 +211,6 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                         className="text-sm font-normal cursor-pointer flex-1"
                       >
                         {getUserDisplayName(user)}
-                        {user.user_roles?.length > 0 && (
-                          <span className="text-xs text-gray-500 ml-2">
-                            ({user.user_roles.map((r: any) => r.role).join(', ')})
-                          </span>
-                        )}
                       </Label>
                     </div>
                   ))}
