@@ -279,6 +279,42 @@ export type Database = {
           },
         ]
       }
+      capacity_monitoring_rules: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          rule_name: string
+          rule_type: string
+          task_category: Database["public"]["Enums"]["task_category"]
+          task_description_template: string | null
+          task_priority: Database["public"]["Enums"]["task_priority"]
+          task_title_template: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          rule_name: string
+          rule_type: string
+          task_category?: Database["public"]["Enums"]["task_category"]
+          task_description_template?: string | null
+          task_priority?: Database["public"]["Enums"]["task_priority"]
+          task_title_template: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          rule_name?: string
+          rule_type?: string
+          task_category?: Database["public"]["Enums"]["task_category"]
+          task_description_template?: string | null
+          task_priority?: Database["public"]["Enums"]["task_priority"]
+          task_title_template?: string
+        }
+        Relationships: []
+      }
       crm_sync_log: {
         Row: {
           contact_id: string | null
@@ -562,6 +598,175 @@ export type Database = {
         }
         Relationships: []
       }
+      task_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_templates: {
+        Row: {
+          category: Database["public"]["Enums"]["task_category"]
+          created_at: string
+          days_before_tour: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["task_category"]
+          created_at?: string
+          days_before_tour?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["task_category"]
+          created_at?: string
+          days_before_tour?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          automated_rule: string | null
+          category: Database["public"]["Enums"]["task_category"]
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          is_automated: boolean
+          parent_task_id: string | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          tour_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          automated_rule?: string | null
+          category?: Database["public"]["Enums"]["task_category"]
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_automated?: boolean
+          parent_task_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          automated_rule?: string | null
+          category?: Database["public"]["Enums"]["task_category"]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_automated?: boolean
+          parent_task_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tours: {
         Row: {
           capacity: number | null
@@ -673,6 +878,16 @@ export type Database = {
         Args: { check_in: string; check_out: string }
         Returns: number
       }
+      create_capacity_monitoring_task: {
+        Args: {
+          p_rule_type: string
+          p_tour_id?: string
+          p_hotel_id?: string
+          p_activity_id?: string
+          p_additional_context?: Json
+        }
+        Returns: string
+      }
       generate_temp_password: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -710,6 +925,20 @@ export type Database = {
         | "paid"
         | "cancelled"
       hotel_booking_status: "enquiry_sent" | "booked" | "pending"
+      task_category:
+        | "booking"
+        | "operations"
+        | "finance"
+        | "marketing"
+        | "maintenance"
+        | "general"
+      task_priority: "low" | "medium" | "high" | "critical"
+      task_status:
+        | "not_started"
+        | "in_progress"
+        | "waiting"
+        | "completed"
+        | "cancelled"
       tour_status: "pending" | "available" | "closed" | "sold_out" | "past"
       transport_status:
         | "pending"
@@ -843,6 +1072,22 @@ export const Constants = {
       bedding_type: ["single", "double", "twin"],
       booking_status: ["pending", "invoiced", "deposited", "paid", "cancelled"],
       hotel_booking_status: ["enquiry_sent", "booked", "pending"],
+      task_category: [
+        "booking",
+        "operations",
+        "finance",
+        "marketing",
+        "maintenance",
+        "general",
+      ],
+      task_priority: ["low", "medium", "high", "critical"],
+      task_status: [
+        "not_started",
+        "in_progress",
+        "waiting",
+        "completed",
+        "cancelled",
+      ],
       tour_status: ["pending", "available", "closed", "sold_out", "past"],
       transport_status: [
         "pending",

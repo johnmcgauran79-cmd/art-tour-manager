@@ -1,12 +1,15 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, Eye, FileText, ClipboardList, Settings } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
+import { useTasks } from "@/hooks/useTasks";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
+import { TasksList } from "@/components/TasksList";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -17,6 +20,7 @@ interface TourOperationsTabProps {
 export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperationsTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
+  const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
 
@@ -52,6 +56,13 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
       setSelectedReportType(null);
     }
   };
+
+  // Task statistics
+  const activeTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
+  const criticalTasks = activeTasks.filter(task => task.priority === 'critical');
+  const overdueTasks = activeTasks.filter(task => 
+    task.due_date && new Date(task.due_date) < new Date()
+  );
 
   return (
     <div className="space-y-6">
@@ -127,6 +138,69 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
           </div>
         </CardContent>
       </Card>
+
+      {/* Tour Tasks Management */}
+      <Card className="border-brand-navy/20 shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-brand-navy" />
+              <CardTitle className="text-brand-navy">Tour Task Management</CardTitle>
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                Operations Control
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Task Statistics Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="text-center p-3 border-2 border-gray-200 rounded-lg">
+              <div className="bg-gray-100 p-2 rounded-full mx-auto mb-2 w-fit">
+                <ClipboardList className="h-5 w-5 text-gray-600" />
+              </div>
+              <p className="font-semibold text-gray-800 text-xs">Total Tasks</p>
+              <p className="text-xs text-gray-600">{tasks?.length || 0} tasks</p>
+            </div>
+            <div className="text-center p-3 border-2 border-blue-200 rounded-lg">
+              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit">
+                <ClipboardList className="h-5 w-5 text-blue-600" />
+              </div>
+              <p className="font-semibold text-gray-800 text-xs">Active Tasks</p>
+              <p className="text-xs text-gray-600">{activeTasks.length} pending</p>
+            </div>
+            <div className="text-center p-3 border-2 border-red-200 rounded-lg">
+              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit">
+                <ClipboardList className="h-5 w-5 text-red-600" />
+              </div>
+              <p className="font-semibold text-gray-800 text-xs">Critical Tasks</p>
+              <p className="text-xs text-gray-600">{criticalTasks.length} urgent</p>
+            </div>
+            <div className="text-center p-3 border-2 border-orange-200 rounded-lg">
+              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit">
+                <ClipboardList className="h-5 w-5 text-orange-600" />
+              </div>
+              <p className="font-semibold text-gray-800 text-xs">Overdue Tasks</p>
+              <p className="text-xs text-gray-600">{overdueTasks.length} overdue</p>
+            </div>
+          </div>
+          
+          <div className="p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
+            <p className="text-xs text-brand-navy">
+              <strong className="text-brand-navy">Task Monitoring:</strong> Tasks are automatically created when capacity issues are detected 
+              (hotel overbooking, activity overselling, etc.). Critical tasks require immediate attention from operations team.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tour Tasks List */}
+      <TasksList
+        tasks={tasks || []}
+        loading={tasksLoading}
+        title={`${tourName} - Tasks`}
+        showTourName={false}
+      />
 
       {/* Tour Deadlines Widget */}
       <TourDeadlinesWidget tourId={tourId} onNavigate={onNavigate} />

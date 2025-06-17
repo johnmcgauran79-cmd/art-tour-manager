@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +20,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AdminSetup } from "@/components/AdminSetup";
 import { UpcomingDeadlinesWidget } from "@/components/UpcomingDeadlinesWidget";
+import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
 
@@ -181,6 +183,7 @@ const Index = () => {
           <TabsContent value="dashboard" className="space-y-6">
             <DashboardMetrics />
             <UpcomingDeadlinesWidget />
+            <MyTasksWidget />
             <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
             <ActiveTours onViewAll={handleViewAllTours} />
           </TabsContent>
