@@ -1,321 +1,156 @@
 
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Settings, FileText, Contact, UserCog, Plus, ClipboardList } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { ToursTable } from "@/components/ToursTable";
+import { BookingsTable } from "@/components/BookingsTable";
+import { ContactsTable } from "@/components/ContactsTable";
+import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
-import { OperationsDashboard } from "@/components/OperationsDashboard";
-import { AddBookingModal } from "@/components/AddBookingModal";
-import { BookingsTable } from "@/components/BookingsTable";
-import { ToursTable } from "@/components/ToursTable";
-import { ContactsTable } from "@/components/ContactsTable";
-import { UserManagement } from "@/components/UserManagement";
-import { PasswordChangeModal } from "@/components/PasswordChangeModal";
-import { SystemLogModal } from "@/components/SystemLogModal";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { AdminSetup } from "@/components/AdminSetup";
-import { MyTasksWidget } from "@/components/MyTasksWidget";
-import { AddTourModal } from "@/components/AddTourModal";
-import { AddContactModal } from "@/components/AddContactModal";
-import { AddTaskModal } from "@/components/AddTaskModal";
 import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
+import { EditBookingModal } from "@/components/EditBookingModal";
+import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
+import { useBookings } from "@/hooks/useBookings";
+import { useTours } from "@/hooks/useTours";
 
 const Index = () => {
-  const { user, loading, userRole, mustChangePassword } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard");
-  const [showAddBooking, setShowAddBooking] = useState(false);
-  const [showAddTour, setShowAddTour] = useState(false);
-  const [showAddContact, setShowAddContact] = useState(false);
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [showUserManagement, setShowUserManagement] = useState(false);
-  const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [showSystemLog, setShowSystemLog] = useState(false);
+  const [activeTab, setActiveTab] = useState("tours");
+  const [selectedTour, setSelectedTour] = useState(null);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [tourModalOpen, setTourModalOpen] = useState(false);
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
 
-  useEffect(() => {
-    const handleNavigateToBookings = () => {
-      setActiveTab("bookings");
-    };
+  // Initialize real-time tasks
+  useRealtimeTasks();
 
-    const handleNavigateToTours = (event: CustomEvent) => {
-      setActiveTab("tours");
-      console.log('Navigate to tour:', event.detail?.tourId);
-    };
-
-    const handleOpenBookingDetail = (event: CustomEvent) => {
-      setActiveTab("bookings");
-      console.log('Opening booking detail:', event.detail?.bookingId);
-      // Dispatch event to BookingsTable to open specific booking
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('highlight-booking', { 
-          detail: { bookingId: event.detail?.bookingId } 
-        }));
-      }, 100);
-    };
-
-    window.addEventListener('navigate-to-bookings', handleNavigateToBookings);
-    window.addEventListener('navigate-to-tours', handleNavigateToTours as EventListener);
-    window.addEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
-    
-    return () => {
-      window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
-      window.removeEventListener('navigate-to-tours', handleNavigateToTours as EventListener);
-      window.removeEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
-    };
-  }, []);
-
-  // Show password change modal if user must change password
-  useEffect(() => {
-    if (user && mustChangePassword && !showPasswordChange) {
-      setShowPasswordChange(true);
-    }
-  }, [user, mustChangePassword, showPasswordChange]);
-
-  // Redirect to login if not authenticated
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-lg">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  const handlePasswordChanged = () => {
-    window.location.reload();
-  };
+  // Fetch data for navigation purposes
+  const { data: bookings = [] } = useBookings();
+  const { data: tours = [] } = useTours();
 
   // Handle navigation from notifications
   const handleNavigateToItem = (type: string, itemId: string) => {
-    console.log('Navigate to:', type, itemId);
+    console.log('Navigate to item:', type, itemId);
     
-    switch (type) {
-      case 'booking':
-        setActiveTab('bookings');
-        // Dispatch custom event to highlight specific booking
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('highlight-booking', { detail: { bookingId: itemId } }));
-        }, 100);
-        break;
-      case 'tour':
-        setActiveTab('tours');
-        // Dispatch custom event to highlight specific tour
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('highlight-tour', { detail: { tourId: itemId } }));
-        }, 100);
-        break;
-      case 'task':
-        setActiveTab('operations');
-        // Dispatch custom event to highlight specific task
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('highlight-task', { detail: { taskId: itemId } }));
-        }, 100);
-        break;
-      case 'system':
-        // For system notifications (like contact updates), go to contacts
-        setActiveTab('contacts');
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('highlight-contact', { detail: { contactId: itemId } }));
-        }, 100);
-        break;
-      default:
-        console.log('Unknown notification type:', type);
+    if (type === 'tour') {
+      const tour = tours.find(t => t.id === itemId);
+      if (tour) {
+        setSelectedTour(tour);
+        setTourModalDefaultTab("overview");
+        setTourModalOpen(true);
+      }
+      setActiveTab("tours");
+    } else if (type === 'booking') {
+      const booking = bookings.find(b => b.id === itemId);
+      if (booking) {
+        setSelectedBooking(booking);
+        setBookingModalOpen(true);
+      }
+      setActiveTab("bookings");
+    } else if (type === 'task') {
+      setActiveTab("operations");
+    } else if (type === 'system') {
+      setActiveTab("contacts");
     }
   };
 
-  // Check if user is admin
-  const isAdmin = userRole === 'admin';
+  // Handle opening specific booking detail
+  useEffect(() => {
+    const handleOpenBookingDetail = (event: CustomEvent) => {
+      console.log('Received open-booking-detail event:', event.detail);
+      const { bookingId, hotelId } = event.detail;
+      
+      const booking = bookings.find(b => b.id === bookingId);
+      console.log('Found booking:', booking);
+      
+      if (booking) {
+        setSelectedBooking(booking);
+        setBookingModalOpen(true);
+        
+        // If hotelId is specified, we might want to navigate to hotel tab in the future
+        // For now, just open the booking modal
+        if (hotelId === 'auto-navigate') {
+          console.log('Auto-navigating to hotel allocation tab');
+          // Future enhancement: set default tab to hotel allocation
+        }
+      }
+    };
+
+    window.addEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
+    
+    return () => {
+      window.removeEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
+    };
+  }, [bookings]);
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-primary">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-4">
               <img 
                 src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" 
-                alt="Australian Racing Tours Logo" 
-                className="h-12 w-12"
+                alt="Luxury Tours Logo" 
+                className="h-12 w-auto"
               />
-              <div>
-                <h1 className="text-2xl font-bold text-primary-foreground">Australian Racing Tours</h1>
-                <p className="text-primary-foreground/80">Tour Management System</p>
-              </div>
+              <h1 className="text-2xl font-bold text-brand-navy">
+                Luxury Tours Management
+              </h1>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Password change notification */}
-              {mustChangePassword && (
-                <Button
-                  variant="ghost"
-                  className="text-primary-foreground border border-primary-foreground/20"
-                  onClick={() => setShowPasswordChange(true)}
-                >
-                  Change Password Required
-                </Button>
-              )}
-              {/* System log icon button - only for admins */}
-              {isAdmin && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="System Logs"
-                  className="text-primary-foreground"
-                  onClick={() => setShowSystemLog(true)}
-                >
-                  <Settings className="h-6 w-6" />
-                </Button>
-              )}
-              {/* Users icon button shows user management modal - only for admins */}
-              {isAdmin && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Manage Users"
-                  className="text-primary-foreground"
-                  onClick={() => setShowUserManagement(true)}
-                >
-                  <UserCog className="h-6 w-6" />
-                </Button>
-              )}
-              {/* User dropdown */}
-              <UserDropdown />
-            </div>
+            <UserDropdown />
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-6">
-        {/* Show admin setup if user has no role */}
-        {!userRole && (
-          <div className="mb-6">
-            <AdminSetup />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <DashboardMetrics />
           </div>
-        )}
+          <div className="lg:col-span-1">
+            <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
+          </div>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="tours" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Tours
-            </TabsTrigger>
-            <TabsTrigger value="bookings" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Bookings
-            </TabsTrigger>
-            <TabsTrigger value="contacts" className="flex items-center gap-2">
-              <Contact className="h-4 w-4" />
-              Contacts
-            </TabsTrigger>
-            <TabsTrigger value="operations" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Operations
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="tours">Tours</TabsTrigger>
+            <TabsTrigger value="bookings">Bookings</TabsTrigger>
+            <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            <TabsTrigger value="operations">Operations</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Dashboard Metrics */}
-            <DashboardMetrics />
-            
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-                <CardDescription>
-                  Common tasks and actions you can perform
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-4">
-                  <Button 
-                    onClick={() => setShowAddBooking(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
-                  >
-                    <FileText className="h-5 w-5 mr-2" />
-                    ADD BOOKING
-                  </Button>
-                  <Button 
-                    onClick={() => setShowAddTour(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
-                  >
-                    <Calendar className="h-5 w-5 mr-2" />
-                    ADD TOUR
-                  </Button>
-                  <Button 
-                    onClick={() => setShowAddContact(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
-                  >
-                    <Contact className="h-5 w-5 mr-2" />
-                    ADD CONTACT
-                  </Button>
-                  <Button 
-                    onClick={() => setShowAddTask(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
-                  >
-                    <ClipboardList className="h-5 w-5 mr-2" />
-                    ADD TASK
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* My Notifications Widget */}
-            <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
-
-            {/* My Tasks Widget */}
-            <MyTasksWidget hideAddButton={true} />
+          
+          <TabsContent value="tours" className="space-y-4">
+            <ToursTable />
           </TabsContent>
-
-          <TabsContent value="tours" className="space-y-6">
-            <ToursTable showOnlyActive={false} />
+          
+          <TabsContent value="bookings" className="space-y-4">
+            <BookingsTable />
           </TabsContent>
-
-          <TabsContent value="bookings" className="space-y-6">
-            <BookingsTable onAddBooking={() => setShowAddBooking(true)} />
-          </TabsContent>
-
-          <TabsContent value="contacts" className="space-y-6">
+          
+          <TabsContent value="contacts" className="space-y-4">
             <ContactsTable />
           </TabsContent>
-
-          <TabsContent value="operations" className="space-y-6">
+          
+          <TabsContent value="operations" className="space-y-4">
             <OperationsDashboard />
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Modals */}
-      <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
-      <AddTourModal open={showAddTour} onOpenChange={setShowAddTour} />
-      <AddContactModal open={showAddContact} onOpenChange={setShowAddContact} />
-      <AddTaskModal open={showAddTask} onOpenChange={setShowAddTask} />
-      {isAdmin && (
-        <>
-          <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
-            <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-              <UserManagement />
-            </DialogContent>
-          </Dialog>
-          <SystemLogModal open={showSystemLog} onOpenChange={setShowSystemLog} />
-        </>
-      )}
-      <PasswordChangeModal 
-        open={showPasswordChange} 
-        onOpenChange={setShowPasswordChange}
-        onPasswordChanged={handlePasswordChanged}
+      <TourDetailModalWithHotelsTab
+        tour={selectedTour}
+        open={tourModalOpen}
+        onOpenChange={setTourModalOpen}
+        defaultTab={tourModalDefaultTab}
+      />
+
+      <EditBookingModal
+        booking={selectedBooking}
+        open={bookingModalOpen}
+        onOpenChange={setBookingModalOpen}
       />
     </div>
   );

@@ -382,6 +382,61 @@ export const useRealtimeTasks = () => {
           });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'hotel_bookings'
+        },
+        async (payload) => {
+          console.log('Hotel booking updated:', payload);
+          
+          // Invalidate hotel bookings queries
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          const oldHotelBooking = payload.old as any;
+          const newHotelBooking = payload.new as any;
+          
+          // Get booking, tour, and hotel context
+          const { data: booking } = await supabase
+            .from('bookings')
+            .select('group_name, tours(name)')
+            .eq('id', newHotelBooking.booking_id)
+            .single();
+
+          const { data: hotel } = await supabase
+            .from('hotels')
+            .select('name')
+            .eq('id', newHotelBooking.hotel_id)
+            .single();
+
+          // Check for check-in date changes
+          if (oldHotelBooking.check_in_date !== newHotelBooking.check_in_date) {
+            const checkInDate = newHotelBooking.check_in_date ? new Date(newHotelBooking.check_in_date).toLocaleDateString() : 'Not set';
+            await createNotification(user.id, {
+              title: "Hotel Check-In Date Changed",
+              message: `${booking?.group_name || 'Booking'} at ${hotel?.name || 'hotel'} on "${booking?.tours?.name || 'Unknown Tour'}" - Check-in: ${checkInDate}`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newHotelBooking.booking_id,
+            });
+          }
+
+          // Check for check-out date changes
+          if (oldHotelBooking.check_out_date !== newHotelBooking.check_out_date) {
+            const checkOutDate = newHotelBooking.check_out_date ? new Date(newHotelBooking.check_out_date).toLocaleDateString() : 'Not set';
+            await createNotification(user.id, {
+              title: "Hotel Check-Out Date Changed",
+              message: `${booking?.group_name || 'Booking'} at ${hotel?.name || 'hotel'} on "${booking?.tours?.name || 'Unknown Tour'}" - Check-out: ${checkOutDate}`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newHotelBooking.booking_id,
+            });
+          }
+        }
+      )
       .subscribe();
 
     const hotelsChannel = supabase
