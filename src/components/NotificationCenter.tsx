@@ -10,20 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
+import { Database } from "@/integrations/supabase/types";
 
-interface Notification {
-  id: string;
-  user_id: string;
-  title: string;
-  message: string;
-  type: 'task' | 'tour' | 'booking' | 'system';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  read: boolean;
-  acknowledged: boolean;
-  related_id?: string;
-  created_at: string;
-  updated_at: string;
-}
+type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
 const getNotificationIcon = (type: string, priority: string) => {
   const className = `h-4 w-4 ${
