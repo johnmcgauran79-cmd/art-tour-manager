@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,6 +109,7 @@ export const useRealtimeTasks = () => {
             message: `Task "${deletedTask.title}" has been deleted.`,
             type: 'task',
             priority: 'medium',
+            related_id: deletedTask.id,
           });
         }
       )
@@ -204,6 +206,7 @@ export const useRealtimeTasks = () => {
             message: `Tour "${deletedTour.name}" has been deleted.`,
             type: 'tour',
             priority: 'high',
+            related_id: deletedTour.id,
           });
         }
       )
@@ -235,10 +238,10 @@ export const useRealtimeTasks = () => {
           // Create notification for new booking
           await createNotification(user.id, {
             title: "New Booking",
-            message: `${newBooking.group_name || 'Booking'} for ${tour?.name || 'tour'} created`,
+            message: `${newBooking.group_name || 'Booking'} for tour "${tour?.name || 'Unknown'}"`,
             type: 'booking',
             priority: 'medium',
-            related_id: newBooking.tour_id,
+            related_id: newBooking.id,
           });
         }
       )
@@ -269,20 +272,20 @@ export const useRealtimeTasks = () => {
           if (oldBooking.status !== newBooking.status) {
             await createNotification(user.id, {
               title: "Booking Status Changed",
-              message: `${newBooking.group_name || 'Booking'} for ${tour?.name || 'tour'} now ${newBooking.status}`,
+              message: `${newBooking.group_name || 'Booking'} for tour "${tour?.name || 'Unknown'}" now ${newBooking.status}`,
               type: 'booking',
               priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
-              related_id: newBooking.tour_id,
+              related_id: newBooking.id,
             });
           }
 
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
             await createNotification(user.id, {
               title: "Booking Updated",
-              message: `${newBooking.group_name || 'Booking'} for ${tour?.name || 'tour'} passenger count changed`,
+              message: `${newBooking.group_name || 'Booking'} for tour "${tour?.name || 'Unknown'}" passenger count changed`,
               type: 'booking',
               priority: 'medium',
-              related_id: newBooking.tour_id,
+              related_id: newBooking.id,
             });
           }
         }
@@ -302,11 +305,20 @@ export const useRealtimeTasks = () => {
 
           // Create notification for booking deletion
           const deletedBooking = payload.old as any;
+          
+          // Get tour name for context
+          const { data: tour } = await supabase
+            .from('tours')
+            .select('name')
+            .eq('id', deletedBooking.tour_id)
+            .single();
+
           await createNotification(user.id, {
             title: "Booking Deleted",
-            message: `Booking${deletedBooking.group_name ? ` for ${deletedBooking.group_name}` : ''} has been deleted.`,
+            message: `${deletedBooking.group_name || 'Booking'} for tour "${tour?.name || 'Unknown'}" has been deleted`,
             type: 'booking',
             priority: 'medium',
+            related_id: deletedBooking.id,
           });
         }
       )
@@ -340,37 +352,11 @@ export const useRealtimeTasks = () => {
 
           await createNotification(user.id, {
             title: "Hotel Night Added",
-            message: `Hotel night added for ${booking?.group_name || 'booking'} on ${booking?.tours?.name || 'tour'}`,
+            message: `Hotel night added for ${booking?.group_name || 'booking'} on tour "${booking?.tours?.name || 'Unknown'}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newHotelBooking.booking_id,
           });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'hotel_bookings'
-        },
-        async (payload) => {
-          console.log('Hotel booking change:', payload);
-          
-          // Invalidate hotel bookings queries
-          queryClient.invalidateQueries({ queryKey: ['hotels'] });
-          queryClient.invalidateQueries({ queryKey: ['bookings'] });
-
-          if (payload.eventType === 'INSERT') {
-            const newHotelBooking = payload.new as any;
-            await createNotification(user.id, {
-              title: "New Hotel Night Added",
-              message: `A new hotel night has been added to a booking.`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newHotelBooking.booking_id,
-            });
-          }
         }
       )
       .subscribe();
@@ -393,11 +379,20 @@ export const useRealtimeTasks = () => {
 
           // Create notification for hotel deletion
           const deletedHotel = payload.old as any;
+          
+          // Get tour name for context
+          const { data: tour } = await supabase
+            .from('tours')
+            .select('name')
+            .eq('id', deletedHotel.tour_id)
+            .single();
+
           await createNotification(user.id, {
             title: "Hotel Deleted",
-            message: `Hotel "${deletedHotel.name}" has been deleted.`,
+            message: `Hotel "${deletedHotel.name}" from tour "${tour?.name || 'Unknown'}" has been deleted`,
             type: 'system',
             priority: 'medium',
+            related_id: deletedHotel.tour_id,
           });
         }
       )
@@ -420,9 +415,17 @@ export const useRealtimeTasks = () => {
           queryClient.invalidateQueries({ queryKey: ['activities'] });
 
           const newActivity = payload.new as any;
+          
+          // Get tour name for context
+          const { data: tour } = await supabase
+            .from('tours')
+            .select('name')
+            .eq('id', newActivity.tour_id)
+            .single();
+
           await createNotification(user.id, {
             title: "New Activity Added",
-            message: `${newActivity.name} has been added to a tour.`,
+            message: `${newActivity.name} added to tour "${tour?.name || 'Unknown'}"`,
             type: 'tour',
             priority: 'medium',
             related_id: newActivity.tour_id,
@@ -444,9 +447,17 @@ export const useRealtimeTasks = () => {
 
           // Create notification for activity deletion
           const deletedActivity = payload.old as any;
+          
+          // Get tour name for context
+          const { data: tour } = await supabase
+            .from('tours')
+            .select('name')
+            .eq('id', deletedActivity.tour_id)
+            .single();
+
           await createNotification(user.id, {
             title: "Activity Deleted",
-            message: `Activity "${deletedActivity.name}" has been deleted.`,
+            message: `Activity "${deletedActivity.name}" from tour "${tour?.name || 'Unknown'}" has been deleted`,
             type: 'tour',
             priority: 'medium',
             related_id: deletedActivity.tour_id,
@@ -478,7 +489,7 @@ export const useRealtimeTasks = () => {
           if (oldCustomer.dietary_requirements !== newCustomer.dietary_requirements) {
             await createNotification(user.id, {
               title: "Dietary Requirements Updated",
-              message: `Dietary requirements for ${newCustomer.first_name} ${newCustomer.last_name} have been updated.`,
+              message: `Dietary requirements for ${newCustomer.first_name} ${newCustomer.last_name} have been updated`,
               type: 'system',
               priority: 'medium',
               related_id: newCustomer.id,
@@ -503,9 +514,10 @@ export const useRealtimeTasks = () => {
           const deletedCustomer = payload.old as any;
           await createNotification(user.id, {
             title: "Contact Deleted",
-            message: `Contact ${deletedCustomer.first_name} ${deletedCustomer.last_name} has been deleted.`,
+            message: `Contact ${deletedCustomer.first_name} ${deletedCustomer.last_name} has been deleted`,
             type: 'system',
             priority: 'medium',
+            related_id: deletedCustomer.id,
           });
         }
       )

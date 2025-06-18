@@ -45,12 +45,25 @@ const Index = () => {
       console.log('Navigate to tour:', event.detail?.tourId);
     };
 
+    const handleOpenBookingDetail = (event: CustomEvent) => {
+      setActiveTab("bookings");
+      console.log('Opening booking detail:', event.detail?.bookingId);
+      // Dispatch event to BookingsTable to open specific booking
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('highlight-booking', { 
+          detail: { bookingId: event.detail?.bookingId } 
+        }));
+      }, 100);
+    };
+
     window.addEventListener('navigate-to-bookings', handleNavigateToBookings);
     window.addEventListener('navigate-to-tours', handleNavigateToTours as EventListener);
+    window.addEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
     
     return () => {
       window.removeEventListener('navigate-to-bookings', handleNavigateToBookings);
       window.removeEventListener('navigate-to-tours', handleNavigateToTours as EventListener);
+      window.removeEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
     };
   }, []);
 

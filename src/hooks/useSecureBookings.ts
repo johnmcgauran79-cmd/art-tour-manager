@@ -58,10 +58,10 @@ export const useSecureDeleteBooking = () => {
       if (user?.id && booking) {
         await createNotification(user.id, {
           title: "Booking Deleted",
-          message: `${booking.group_name || 'Booking'} for ${booking.tours?.name || 'tour'} deleted`,
+          message: `${booking.group_name || 'Booking'} for tour "${booking.tours?.name || 'Unknown'}" deleted`,
           type: 'booking',
           priority: 'medium',
-          related_id: booking.tour_id,
+          related_id: id,
         });
       }
     },

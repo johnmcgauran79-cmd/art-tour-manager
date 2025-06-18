@@ -86,9 +86,24 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   });
 
   // Handle notification click to navigate to related item
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = async (notification: Notification) => {
     if (notification.related_id && onNavigateToItem) {
-      onNavigateToItem(notification.type, notification.related_id);
+      // Handle different notification types with proper navigation
+      if (notification.type === 'booking') {
+        // For booking notifications, open the specific booking
+        window.dispatchEvent(new CustomEvent('open-booking-detail', { 
+          detail: { bookingId: notification.related_id } 
+        }));
+      } else if (notification.type === 'tour') {
+        // For tour notifications, navigate to tours tab and highlight
+        onNavigateToItem(notification.type, notification.related_id);
+      } else if (notification.type === 'task') {
+        // For task notifications, navigate to operations tab and highlight
+        onNavigateToItem(notification.type, notification.related_id);
+      } else if (notification.type === 'system') {
+        // For system notifications (like contact updates), go to contacts
+        onNavigateToItem(notification.type, notification.related_id);
+      }
     }
     
     // Mark as read when clicked
