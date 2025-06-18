@@ -2,12 +2,10 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Settings, FileText, Contact, UserCog } from "lucide-react";
+import { Calendar, Users, Settings, FileText, Contact, UserCog, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
-import { ActiveTours } from "@/components/ActiveTours";
-import { RecentBookings } from "@/components/RecentBookings";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { BookingsTable } from "@/components/BookingsTable";
@@ -23,6 +21,7 @@ import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
   const { user, loading, userRole, mustChangePassword } = useAuth();
@@ -41,7 +40,6 @@ const Index = () => {
 
     const handleNavigateToTours = (event: CustomEvent) => {
       setActiveTab("tours");
-      // You could potentially store the tourId to highlight or open a specific tour
       console.log('Navigate to tour:', event.detail?.tourId);
     };
 
@@ -76,18 +74,12 @@ const Index = () => {
     return <Navigate to="/login" replace />;
   }
 
-  const handleViewAllTours = () => {
-    setActiveTab("tours");
-  };
-
   const handlePasswordChanged = () => {
-    // Refresh the auth context to update mustChangePassword status
     window.location.reload();
   };
 
   // Check if user is admin
   const isAdmin = userRole === 'admin';
-  const isBookingAgent = userRole === 'booking_agent';
 
   return (
     <div className="min-h-screen bg-background">
@@ -184,21 +176,64 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
+            {/* Dashboard Metrics */}
             <DashboardMetrics />
-            <MyTasksWidget />
             
-            {/* Conditional rendering based on user role */}
-            {isBookingAgent ? (
-              <>
-                <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
-                <ActiveTours onViewAll={handleViewAllTours} />
-              </>
-            ) : (
-              <>
-                <ActiveTours onViewAll={handleViewAllTours} />
-                <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
-              </>
-            )}
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+                <CardDescription>
+                  Common tasks and actions you can perform
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    onClick={() => setShowAddBooking(true)}
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Booking
+                  </Button>
+                  <Button 
+                    onClick={() => setShowAddTour(true)}
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Tour
+                  </Button>
+                  <Button 
+                    onClick={() => setShowAddContact(true)}
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Contact
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("bookings")}
+                    variant="outline"
+                  >
+                    View All Bookings
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("tours")}
+                    variant="outline"
+                  >
+                    View All Tours
+                  </Button>
+                  <Button 
+                    onClick={() => setActiveTab("contacts")}
+                    variant="outline"
+                  >
+                    View All Contacts
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* My Tasks Widget */}
+            <MyTasksWidget />
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
