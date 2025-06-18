@@ -249,12 +249,12 @@ export const useUpdateCustomer = () => {
         throw error;
       }
       
-      // Check if dietary requirements changed and create notification
+      // Check if dietary requirements changed and create notification (not via realtime to avoid duplicates)
       if (user?.id && currentCustomer && 
           currentCustomer.dietary_requirements !== customerData.dietary_requirements) {
         await createNotification(user.id, {
-          title: "Dietary Requirements Updated",
-          message: `Dietary requirements for ${currentCustomer.first_name} ${currentCustomer.last_name} have been updated.`,
+          title: "Dietary Update",
+          message: `${currentCustomer.first_name} ${currentCustomer.last_name} dietary requirements updated`,
           type: 'system',
           priority: 'medium',
           related_id: id,
@@ -328,11 +328,11 @@ export const useDeleteCustomer = () => {
         throw error;
       }
       
-      // Create notification for deletion
+      // Create notification for deletion (not via realtime to avoid duplicates)
       if (user?.id && customer) {
         await createNotification(user.id, {
           title: "Contact Deleted",
-          message: `Contact ${customer.first_name} ${customer.last_name} has been deleted.`,
+          message: `${customer.first_name} ${customer.last_name} contact deleted`,
           type: 'system',
           priority: 'medium',
         });

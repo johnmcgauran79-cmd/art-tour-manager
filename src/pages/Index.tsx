@@ -87,15 +87,31 @@ const Index = () => {
     switch (type) {
       case 'booking':
         setActiveTab('bookings');
-        // Could implement specific booking selection here
+        // Dispatch custom event to highlight specific booking
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('highlight-booking', { detail: { bookingId: itemId } }));
+        }, 100);
         break;
       case 'tour':
         setActiveTab('tours');
-        // Could implement specific tour selection here
+        // Dispatch custom event to highlight specific tour
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('highlight-tour', { detail: { tourId: itemId } }));
+        }, 100);
         break;
       case 'task':
         setActiveTab('operations');
-        // Could implement specific task selection here
+        // Dispatch custom event to highlight specific task
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('highlight-task', { detail: { taskId: itemId } }));
+        }, 100);
+        break;
+      case 'system':
+        // For system notifications (like contact updates), go to contacts
+        setActiveTab('contacts');
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('highlight-contact', { detail: { contactId: itemId } }));
+        }, 100);
         break;
       default:
         console.log('Unknown notification type:', type);

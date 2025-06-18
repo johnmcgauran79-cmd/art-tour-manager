@@ -54,11 +54,11 @@ export const useSecureDeleteBooking = () => {
 
       if (error) throw error;
 
-      // Create notification for all users
+      // Create notification for the user who deleted it (not via realtime to avoid duplicates)
       if (user?.id && booking) {
         await createNotification(user.id, {
           title: "Booking Deleted",
-          message: `Booking ${booking.group_name || 'Unnamed'} for tour ${booking.tours?.name || 'Unknown'} has been deleted.`,
+          message: `${booking.group_name || 'Booking'} for ${booking.tours?.name || 'tour'} deleted`,
           type: 'booking',
           priority: 'medium',
           related_id: booking.tour_id,

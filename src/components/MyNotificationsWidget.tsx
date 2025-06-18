@@ -14,7 +14,7 @@ import { Database } from "@/integrations/supabase/types";
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
 const getNotificationIcon = (type: string, priority: string) => {
-  const className = `h-4 w-4 ${
+  const className = `h-3 w-3 ${
     priority === 'critical' ? 'text-red-600' : 
     priority === 'high' ? 'text-orange-600' : 
     priority === 'medium' ? 'text-yellow-600' : 
@@ -32,11 +32,11 @@ const getNotificationIcon = (type: string, priority: string) => {
 
 const getPriorityColor = (priority: string) => {
   switch (priority) {
-    case 'critical': return 'bg-red-100 border-red-200 hover:bg-red-50';
-    case 'high': return 'bg-orange-100 border-orange-200 hover:bg-orange-50';
-    case 'medium': return 'bg-yellow-100 border-yellow-200 hover:bg-yellow-50';
-    case 'low': return 'bg-blue-100 border-blue-200 hover:bg-blue-50';
-    default: return 'bg-gray-100 border-gray-200 hover:bg-gray-50';
+    case 'critical': return 'border-l-red-500';
+    case 'high': return 'border-l-orange-500';
+    case 'medium': return 'border-l-yellow-500';
+    case 'low': return 'border-l-blue-500';
+    default: return 'border-l-gray-500';
   }
 };
 
@@ -120,8 +120,8 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   if (isLoading) {
     return (
       <Card className="border-brand-navy/20 shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-brand-navy">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-brand-navy text-lg">
             <Bell className="h-5 w-5" />
             My Notifications
           </CardTitle>
@@ -137,14 +137,14 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
 
   return (
     <Card className="border-brand-navy/20 shadow-lg">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-brand-navy" />
-            <CardTitle className="text-brand-navy">My Notifications</CardTitle>
+            <CardTitle className="text-brand-navy text-lg">My Notifications</CardTitle>
             {notifications.length > 0 && (
-              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                {notifications.length} new
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy text-xs">
+                {notifications.length}
               </Badge>
             )}
           </div>
@@ -155,10 +155,10 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
                   size="sm"
                   onClick={handleBulkAcknowledge}
                   disabled={acknowledgeMutation.isPending}
-                  className="h-8"
+                  className="h-7 text-xs"
                 >
-                  <Check className="h-4 w-4 mr-1" />
-                  Acknowledge Selected
+                  <Check className="h-3 w-3 mr-1" />
+                  Acknowledge ({selectedNotifications.length})
                 </Button>
               )}
               <Button
@@ -166,71 +166,65 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
                 variant="outline"
                 onClick={handleAcknowledgeAll}
                 disabled={acknowledgeMutation.isPending}
-                className="h-8"
+                className="h-7 text-xs"
               >
-                Acknowledge All
+                Clear All
               </Button>
             </div>
           )}
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="pt-0">
         {notifications.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p>No new notifications</p>
-            <p className="text-sm">You're all caught up!</p>
+          <div className="text-center py-6 text-muted-foreground">
+            <Bell className="h-6 w-6 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No new notifications</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`p-3 border rounded-lg transition-colors cursor-pointer ${getPriorityColor(notification.priority)}`}
+                className={`flex items-center gap-2 p-2 border-l-2 ${getPriorityColor(notification.priority)} bg-gray-50/50 hover:bg-gray-100/50 rounded-r transition-colors cursor-pointer`}
               >
-                <div className="flex items-start gap-3">
-                  <Checkbox
-                    checked={selectedNotifications.includes(notification.id)}
-                    onCheckedChange={(checked) => 
-                      handleCheckboxChange(notification.id, checked as boolean)
-                    }
-                    className="mt-1"
-                  />
-                  <div className="mt-0.5">
-                    {getNotificationIcon(notification.type, notification.priority)}
+                <Checkbox
+                  checked={selectedNotifications.includes(notification.id)}
+                  onCheckedChange={(checked) => 
+                    handleCheckboxChange(notification.id, checked as boolean)
+                  }
+                  className="h-3 w-3"
+                />
+                <div className="flex-shrink-0">
+                  {getNotificationIcon(notification.type, notification.priority)}
+                </div>
+                <div 
+                  className="flex-1 min-w-0 flex items-center justify-between"
+                  onClick={() => handleNotificationClick(notification)}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-medium text-xs truncate">
+                      {notification.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      - {notification.message}
+                    </span>
                   </div>
-                  <div 
-                    className="flex-1 min-w-0"
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium text-sm leading-tight">
-                        {notification.title}
-                      </p>
-                      <Badge 
-                        variant="outline" 
-                        className={`text-xs ${
-                          notification.priority === 'critical' ? 'border-red-500 text-red-700' :
-                          notification.priority === 'high' ? 'border-orange-500 text-orange-700' :
-                          notification.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
-                          'border-blue-500 text-blue-700'
-                        }`}
-                      >
-                        {notification.priority}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                      {notification.message}
-                    </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
-                      </span>
-                      <Badge variant="secondary" className="text-xs">
-                        {notification.type}
-                      </Badge>
-                    </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Badge 
+                      variant="outline" 
+                      className={`text-xs px-1 py-0 h-4 ${
+                        notification.priority === 'critical' ? 'border-red-500 text-red-700' :
+                        notification.priority === 'high' ? 'border-orange-500 text-orange-700' :
+                        notification.priority === 'medium' ? 'border-yellow-500 text-yellow-700' :
+                        'border-blue-500 text-blue-700'
+                      }`}
+                    >
+                      {notification.priority}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                    </span>
                   </div>
                 </div>
               </div>

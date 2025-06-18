@@ -90,11 +90,11 @@ export const useCreateTour = () => {
         throw error;
       }
       
-      // Create notification for new tour
+      // Create notification for new tour (not via realtime to avoid duplicates)
       if (user?.id) {
         await createNotification(user.id, {
-          title: "New Tour Created",
-          message: `Tour "${tourData.name}" has been created.`,
+          title: "Tour Created",
+          message: `${tourData.name} tour created successfully`,
           type: 'tour',
           priority: 'medium',
           related_id: data.id,

@@ -49,22 +49,13 @@ export const useRealtimeTasks = () => {
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
           
-          // Show notification for high priority tasks
+          // Show notification for high priority tasks only (avoid duplicates from manual creation)
           const newTask = payload.new as any;
-          if (newTask.priority === 'critical' || newTask.priority === 'high') {
+          if ((newTask.priority === 'critical' || newTask.priority === 'high') && newTask.is_automated) {
             toast({
               title: "New Priority Task",
-              description: `${newTask.title} has been created and requires attention.`,
+              description: `${newTask.title} requires attention.`,
               duration: 5000,
-            });
-
-            // Create persistent notification
-            await createNotification(user.id, {
-              title: "New Priority Task",
-              message: `${newTask.title} has been created and requires attention.`,
-              type: 'task',
-              priority: newTask.priority,
-              related_id: newTask.id,
             });
           }
         }
@@ -90,17 +81,8 @@ export const useRealtimeTasks = () => {
           if (oldTask.status !== newTask.status && newTask.status === 'completed') {
             toast({
               title: "Task Completed",
-              description: `${newTask.title} has been marked as completed.`,
+              description: `${newTask.title} completed.`,
               duration: 3000,
-            });
-
-            // Create persistent notification
-            await createNotification(user.id, {
-              title: "Task Completed",
-              message: `${newTask.title} has been marked as completed.`,
-              type: 'task',
-              priority: 'medium',
-              related_id: newTask.id,
             });
           }
         }
@@ -177,37 +159,6 @@ export const useRealtimeTasks = () => {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'tours'
-        },
-        async (payload) => {
-          console.log('New tour created:', payload.new);
-          
-          // Invalidate tours queries
-          queryClient.invalidateQueries({ queryKey: ['tours'] });
-          
-          // Show notification
-          const newTour = payload.new as any;
-          toast({
-            title: "New Tour Created",
-            description: `${newTour.name} has been created with automated tasks.`,
-            duration: 4000,
-          });
-
-          // Create persistent notification
-          await createNotification(user.id, {
-            title: "New Tour Created",
-            message: `${newTour.name} has been created with automated tasks.`,
-            type: 'tour',
-            priority: 'high',
-            related_id: newTour.id,
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
           event: 'UPDATE',
           schema: 'public',
           table: 'tours'
@@ -223,16 +174,9 @@ export const useRealtimeTasks = () => {
           const newTour = payload.new as any;
           
           if (oldTour.start_date !== newTour.start_date) {
-            toast({
-              title: "Tour Dates Updated",
-              description: `${newTour.name} dates have been updated. Tasks will be regenerated.`,
-              duration: 4000,
-            });
-
-            // Create persistent notification
             await createNotification(user.id, {
               title: "Tour Dates Updated",
-              message: `${newTour.name} dates have been updated. Tasks will be regenerated.`,
+              message: `${newTour.name} dates changed - tasks regenerated`,
               type: 'tour',
               priority: 'high',
               related_id: newTour.id,
@@ -280,14 +224,21 @@ export const useRealtimeTasks = () => {
           // Invalidate bookings queries
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
-          // Create notification for new booking
+          // Get tour name for better context
           const newBooking = payload.new as any;
+          const { data: tour } = await supabase
+            .from('tours')
+            .select('name')
+            .eq('id', newBooking.tour_id)
+            .single();
+
+          // Create notification for new booking
           await createNotification(user.id, {
-            title: "New Booking Created",
-            message: `A new booking has been created${newBooking.group_name ? ` for ${newBooking.group_name}` : ''}.`,
+            title: "New Booking",
+            message: `${newBooking.group_name || 'Booking'} for ${tour?.name || 'tour'} created`,
             type: 'booking',
             priority: 'medium',
-            related_id: newBooking.id,
+            related_id: newBooking.tour_id,
           });
         }
       )
@@ -308,23 +259,30 @@ export const useRealtimeTasks = () => {
           const oldBooking = payload.old as any;
           const newBooking = payload.new as any;
           
+          // Get tour name for context
+          const { data: tour } = await supabase
+            .from('tours')
+            .select('name')
+            .eq('id', newBooking.tour_id)
+            .single();
+
           if (oldBooking.status !== newBooking.status) {
             await createNotification(user.id, {
               title: "Booking Status Changed",
-              message: `Booking status changed from ${oldBooking.status} to ${newBooking.status}${newBooking.group_name ? ` for ${newBooking.group_name}` : ''}.`,
+              message: `${newBooking.group_name || 'Booking'} for ${tour?.name || 'tour'} now ${newBooking.status}`,
               type: 'booking',
               priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
-              related_id: newBooking.id,
+              related_id: newBooking.tour_id,
             });
           }
 
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
             await createNotification(user.id, {
-              title: "Booking Passenger Count Updated",
-              message: `Passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}${newBooking.group_name ? ` for ${newBooking.group_name}` : ''}.`,
+              title: "Booking Updated",
+              message: `${newBooking.group_name || 'Booking'} for ${tour?.name || 'tour'} passenger count changed`,
               type: 'booking',
               priority: 'medium',
-              related_id: newBooking.id,
+              related_id: newBooking.tour_id,
             });
           }
         }
@@ -357,6 +315,38 @@ export const useRealtimeTasks = () => {
     // Listen for hotel booking changes
     const hotelBookingsChannel = supabase
       .channel('hotel-bookings-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'hotel_bookings'
+        },
+        async (payload) => {
+          console.log('Hotel booking change:', payload);
+          
+          // Invalidate hotel bookings queries
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          const newHotelBooking = payload.new as any;
+          
+          // Get booking and tour context
+          const { data: booking } = await supabase
+            .from('bookings')
+            .select('group_name, tours(name)')
+            .eq('id', newHotelBooking.booking_id)
+            .single();
+
+          await createNotification(user.id, {
+            title: "Hotel Night Added",
+            message: `Hotel night added for ${booking?.group_name || 'booking'} on ${booking?.tours?.name || 'tour'}`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: newHotelBooking.booking_id,
+          });
+        }
+      )
       .on(
         'postgres_changes',
         {
