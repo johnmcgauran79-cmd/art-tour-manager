@@ -149,9 +149,14 @@ const Index = () => {
                 alt="Australian Racing Tours Logo" 
                 className="h-12 w-auto"
               />
-              <h1 className="text-2xl font-bold text-white">
-                Australian Racing Tours - Operations and Tour Management System
-              </h1>
+              <div>
+                <h1 className="text-2xl font-bold text-brand-yellow">
+                  Australian Racing Tours
+                </h1>
+                <p className="text-sm text-white">
+                  Tour Operations System Management
+                </p>
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               {isAdmin && (
