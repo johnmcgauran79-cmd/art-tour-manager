@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToursTable } from "@/components/ToursTable";
 import { BookingsTable } from "@/components/BookingsTable";
 import { ContactsTable } from "@/components/ContactsTable";
@@ -16,10 +17,11 @@ import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { SystemLogModal } from "@/components/SystemLogModal";
 import { UserManagement } from "@/components/UserManagement";
+import { AddTaskModal } from "@/components/AddTaskModal";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Users, FileText, Settings, Calendar, MapPin } from "lucide-react";
+import { Plus, Users, FileText, Settings, Calendar, MapPin, X } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -31,6 +33,9 @@ const Index = () => {
   const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [showUserManagement, setShowUserManagement] = useState(false);
+  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [userManagementPopoverOpen, setUserManagementPopoverOpen] = useState(false);
+  const [systemLogPopoverOpen, setSystemLogPopoverOpen] = useState(false);
 
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
@@ -107,25 +112,25 @@ const Index = () => {
       icon: Plus,
       label: "New Tour",
       onClick: () => setActiveTab("tours"),
-      color: "bg-blue-500 hover:bg-blue-600"
+      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
     },
     {
       icon: Calendar,
       label: "New Booking",
       onClick: () => setAddBookingModalOpen(true),
-      color: "bg-green-500 hover:bg-green-600"
+      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
     },
     {
       icon: Users,
       label: "Add Contact",
       onClick: () => setActiveTab("contacts"),
-      color: "bg-purple-500 hover:bg-purple-600"
+      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
     },
     {
-      icon: MapPin,
-      label: "Operations",
-      onClick: () => setActiveTab("operations"),
-      color: "bg-orange-500 hover:bg-orange-600"
+      icon: Plus,
+      label: "Add Task",
+      onClick: () => setAddTaskModalOpen(true),
+      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
     }
   ];
 
@@ -141,34 +146,89 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               <img 
                 src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" 
-                alt="Luxury Tours Logo" 
+                alt="Australian Racing Tours Logo" 
                 className="h-12 w-auto"
               />
               <h1 className="text-2xl font-bold text-white">
-                Luxury Tours Management
+                Australian Racing Tours - Operations and Tour Management System
               </h1>
             </div>
             <div className="flex items-center space-x-4">
               {isAdmin && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowUserManagement(true)}
-                    className="text-white hover:bg-brand-navy/80"
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    User Management
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSystemLogModalOpen(true)}
-                    className="text-white hover:bg-brand-navy/80"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    System Logs
-                  </Button>
+                  <Popover open={userManagementPopoverOpen} onOpenChange={setUserManagementPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-brand-navy/80 p-2"
+                      >
+                        <Users className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-semibold">User Management</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setUserManagementPopoverOpen(false)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Manage user accounts, roles, and permissions for the system.
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setShowUserManagement(true);
+                          setUserManagementPopoverOpen(false);
+                        }}
+                        className="w-full"
+                      >
+                        Open User Management
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
+
+                  <Popover open={systemLogPopoverOpen} onOpenChange={setSystemLogPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-brand-navy/80 p-2"
+                      >
+                        <FileText className="h-5 w-5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-semibold">System Logs</h3>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSystemLogPopoverOpen(false)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        View system activity logs, audit trails, and operational history.
+                      </p>
+                      <Button
+                        onClick={() => {
+                          setSystemLogModalOpen(true);
+                          setSystemLogPopoverOpen(false);
+                        }}
+                        className="w-full"
+                      >
+                        View System Logs
+                      </Button>
+                    </PopoverContent>
+                  </Popover>
                 </>
               )}
               <UserDropdown />
@@ -188,6 +248,9 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
+            {/* Dashboard Metrics */}
+            <DashboardMetrics />
+
             {/* Quick Actions */}
             <Card className="border-brand-navy/20 shadow-lg">
               <CardHeader>
@@ -202,18 +265,15 @@ const Index = () => {
                     <Button
                       key={index}
                       onClick={action.onClick}
-                      className={`${action.color} text-white h-20 flex flex-col items-center justify-center space-y-2 hover:scale-105 transition-transform`}
+                      className={`${action.color} h-10 flex items-center justify-center space-x-2 hover:scale-105 transition-transform`}
                     >
-                      <action.icon className="h-6 w-6" />
+                      <action.icon className="h-4 w-4" />
                       <span className="text-sm font-medium">{action.label}</span>
                     </Button>
                   ))}
                 </div>
               </CardContent>
             </Card>
-
-            {/* Dashboard Metrics */}
-            <DashboardMetrics />
 
             {/* Notifications and Tasks */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -261,6 +321,11 @@ const Index = () => {
       <SystemLogModal
         open={systemLogModalOpen}
         onOpenChange={setSystemLogModalOpen}
+      />
+
+      <AddTaskModal
+        open={addTaskModalOpen}
+        onOpenChange={setAddTaskModalOpen}
       />
     </div>
   );
