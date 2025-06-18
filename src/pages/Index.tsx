@@ -189,34 +189,34 @@ const Index = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <Button 
                     onClick={() => setShowAddBooking(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
                   >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Add Booking
+                    <FileText className="h-5 w-5 mr-2" />
+                    ADD BOOKING
                   </Button>
                   <Button 
                     onClick={() => setShowAddTour(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
                   >
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Add Tour
+                    <Calendar className="h-5 w-5 mr-2" />
+                    ADD TOUR
                   </Button>
                   <Button 
                     onClick={() => setShowAddContact(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
                   >
-                    <Contact className="h-4 w-4 mr-2" />
-                    Add Contact
+                    <Contact className="h-5 w-5 mr-2" />
+                    ADD CONTACT
                   </Button>
                   <Button 
                     onClick={() => setShowAddTask(true)}
-                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow h-16 text-sm font-semibold"
                   >
-                    <ClipboardList className="h-4 w-4 mr-2" />
-                    Add Task
+                    <ClipboardList className="h-5 w-5 mr-2" />
+                    ADD TASK
                   </Button>
                 </div>
               </CardContent>
