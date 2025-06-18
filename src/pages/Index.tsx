@@ -22,6 +22,7 @@ import { UpcomingDeadlinesWidget } from "@/components/UpcomingDeadlinesWidget";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 const Index = () => {
   const { user, loading, userRole, mustChangePassword } = useAuth();
@@ -116,6 +117,8 @@ const Index = () => {
                   Change Password Required
                 </Button>
               )}
+              {/* Notification Center */}
+              <NotificationCenter />
               {/* System log icon button - only for admins */}
               {isAdmin && (
                 <Button
