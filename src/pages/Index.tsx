@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToursTable } from "@/components/ToursTable";
@@ -7,6 +8,7 @@ import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
+import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
@@ -120,6 +122,12 @@ const Index = () => {
           </div>
           <div className="lg:col-span-1">
             <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2">
+            <MyTasksWidget />
           </div>
         </div>
 
