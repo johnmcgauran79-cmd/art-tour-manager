@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +19,6 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AdminSetup } from "@/components/AdminSetup";
-import { UpcomingDeadlinesWidget } from "@/components/UpcomingDeadlinesWidget";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
@@ -191,12 +191,10 @@ const Index = () => {
             {isBookingAgent ? (
               <>
                 <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
-                <UpcomingDeadlinesWidget />
                 <ActiveTours onViewAll={handleViewAllTours} />
               </>
             ) : (
               <>
-                <UpcomingDeadlinesWidget />
                 <ActiveTours onViewAll={handleViewAllTours} />
                 <RecentBookings onAddBooking={() => setShowAddBooking(true)} />
               </>
