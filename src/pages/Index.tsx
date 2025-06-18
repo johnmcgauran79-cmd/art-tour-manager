@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +21,7 @@ import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
-import { NotificationCenter } from "@/components/NotificationCenter";
+import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Index = () => {
@@ -79,6 +80,28 @@ const Index = () => {
     window.location.reload();
   };
 
+  // Handle navigation from notifications
+  const handleNavigateToItem = (type: string, itemId: string) => {
+    console.log('Navigate to:', type, itemId);
+    
+    switch (type) {
+      case 'booking':
+        setActiveTab('bookings');
+        // Could implement specific booking selection here
+        break;
+      case 'tour':
+        setActiveTab('tours');
+        // Could implement specific tour selection here
+        break;
+      case 'task':
+        setActiveTab('operations');
+        // Could implement specific task selection here
+        break;
+      default:
+        console.log('Unknown notification type:', type);
+    }
+  };
+
   // Check if user is admin
   const isAdmin = userRole === 'admin';
 
@@ -110,8 +133,6 @@ const Index = () => {
                   Change Password Required
                 </Button>
               )}
-              {/* Notification Center */}
-              <NotificationCenter />
               {/* System log icon button - only for admins */}
               {isAdmin && (
                 <Button
@@ -221,6 +242,9 @@ const Index = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* My Notifications Widget */}
+            <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
 
             {/* My Tasks Widget */}
             <MyTasksWidget hideAddButton={true} />

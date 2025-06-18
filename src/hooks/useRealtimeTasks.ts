@@ -224,15 +224,122 @@ export const useRealtimeTasks = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
           schema: 'public',
           table: 'bookings'
         },
-        (payload) => {
-          console.log('Booking change:', payload);
+        async (payload) => {
+          console.log('New booking created:', payload.new);
           
           // Invalidate bookings queries
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          // Create notification for new booking
+          const newBooking = payload.new as any;
+          await createNotification(user.id, {
+            title: "New Booking Created",
+            message: `A new booking has been created${newBooking.group_name ? ` for ${newBooking.group_name}` : ''}.`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: newBooking.id,
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings'
+        },
+        async (payload) => {
+          console.log('Booking updated:', payload.new);
+          
+          // Invalidate bookings queries
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          // Check for status changes or other important updates
+          const oldBooking = payload.old as any;
+          const newBooking = payload.new as any;
+          
+          if (oldBooking.status !== newBooking.status) {
+            await createNotification(user.id, {
+              title: "Booking Status Changed",
+              message: `Booking status changed from ${oldBooking.status} to ${newBooking.status}${newBooking.group_name ? ` for ${newBooking.group_name}` : ''}.`,
+              type: 'booking',
+              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+              related_id: newBooking.id,
+            });
+          }
+
+          if (oldBooking.passenger_count !== newBooking.passenger_count) {
+            await createNotification(user.id, {
+              title: "Booking Passenger Count Updated",
+              message: `Passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}${newBooking.group_name ? ` for ${newBooking.group_name}` : ''}.`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Listen for hotel booking changes
+    const hotelBookingsChannel = supabase
+      .channel('hotel-bookings-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'hotel_bookings'
+        },
+        async (payload) => {
+          console.log('Hotel booking change:', payload);
+          
+          // Invalidate hotel bookings queries
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          if (payload.eventType === 'INSERT') {
+            const newHotelBooking = payload.new as any;
+            await createNotification(user.id, {
+              title: "New Hotel Night Added",
+              message: `A new hotel night has been added to a booking.`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newHotelBooking.booking_id,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Listen for activity changes
+    const activitiesChannel = supabase
+      .channel('activities-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activities'
+        },
+        async (payload) => {
+          console.log('New activity created:', payload.new);
+          
+          // Invalidate activities queries
+          queryClient.invalidateQueries({ queryKey: ['activities'] });
+
+          const newActivity = payload.new as any;
+          await createNotification(user.id, {
+            title: "New Activity Added",
+            message: `${newActivity.name} has been added to a tour.`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: newActivity.tour_id,
+          });
         }
       )
       .subscribe();
@@ -242,6 +349,8 @@ export const useRealtimeTasks = () => {
       supabase.removeChannel(tasksChannel);
       supabase.removeChannel(toursChannel);
       supabase.removeChannel(bookingsChannel);
+      supabase.removeChannel(hotelBookingsChannel);
+      supabase.removeChannel(activitiesChannel);
     };
   }, [queryClient, toast, user?.id]);
 };
