@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -154,7 +153,7 @@ const Index = () => {
                   Australian Racing Tours
                 </h1>
                 <p className="text-sm text-white">
-                  Tour Operations System Management
+                  Tour Operations Management System
                 </p>
               </div>
             </div>
