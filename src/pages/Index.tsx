@@ -10,6 +10,7 @@ import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
+import { AddBookingModal } from "@/components/AddBookingModal";
 import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -20,6 +21,7 @@ const Index = () => {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [tourModalOpen, setTourModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
 
   // Initialize real-time tasks
@@ -30,8 +32,8 @@ const Index = () => {
   const { data: tours = [] } = useTours();
 
   // Handle navigation from notifications
-  const handleNavigateToItem = (type: string, itemId: string) => {
-    console.log('Navigate to item:', type, itemId);
+  const handleNavigateToItem = (type: string, itemId: string, hotelId?: string) => {
+    console.log('Navigate to item:', type, itemId, hotelId);
     
     if (type === 'tour') {
       const tour = tours.find(t => t.id === itemId);
@@ -46,6 +48,14 @@ const Index = () => {
       if (booking) {
         setSelectedBooking(booking);
         setBookingModalOpen(true);
+      }
+      setActiveTab("bookings");
+    } else if (type === 'hotel_booking') {
+      const booking = bookings.find(b => b.id === itemId);
+      if (booking) {
+        setSelectedBooking(booking);
+        setBookingModalOpen(true);
+        // Note: Hotel-specific navigation can be enhanced in EditBookingModal
       }
       setActiveTab("bookings");
     } else if (type === 'task') {
@@ -83,6 +93,10 @@ const Index = () => {
       window.removeEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
     };
   }, [bookings]);
+
+  const handleAddBooking = () => {
+    setAddBookingModalOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -127,7 +141,7 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="bookings" className="space-y-4">
-            <BookingsTable />
+            <BookingsTable onAddBooking={handleAddBooking} />
           </TabsContent>
           
           <TabsContent value="contacts" className="space-y-4">
@@ -151,6 +165,11 @@ const Index = () => {
         booking={selectedBooking}
         open={bookingModalOpen}
         onOpenChange={setBookingModalOpen}
+      />
+
+      <AddBookingModal
+        open={addBookingModalOpen}
+        onOpenChange={setAddBookingModalOpen}
       />
     </div>
   );
