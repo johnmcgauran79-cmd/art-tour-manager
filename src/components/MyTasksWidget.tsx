@@ -11,7 +11,11 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 
-export const MyTasksWidget = () => {
+interface MyTasksWidgetProps {
+  hideAddButton?: boolean;
+}
+
+export const MyTasksWidget = ({ hideAddButton = false }: MyTasksWidgetProps) => {
   const { data: tasks, isLoading } = useMyTasks();
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
@@ -116,14 +120,16 @@ export const MyTasksWidget = () => {
                 {pendingTasks.length} active
               </Badge>
             </div>
-            <Button
-              onClick={() => setAddTaskModalOpen(true)}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Task
-            </Button>
+            {!hideAddButton && (
+              <Button
+                onClick={() => setAddTaskModalOpen(true)}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            )}
           </div>
           
           <div className="mt-4">
@@ -159,10 +165,12 @@ export const MyTasksWidget = () => {
         onOpenChange={handleTaskDetailModalClose}
       />
 
-      <AddTaskModal
-        open={addTaskModalOpen}
-        onOpenChange={setAddTaskModalOpen}
-      />
+      {!hideAddButton && (
+        <AddTaskModal
+          open={addTaskModalOpen}
+          onOpenChange={setAddTaskModalOpen}
+        />
+      )}
 
       <FilteredTasksModal
         open={filteredTasksModalOpen}

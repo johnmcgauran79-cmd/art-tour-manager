@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Users, Settings, FileText, Contact, UserCog, Plus } from "lucide-react";
+import { Calendar, Users, Settings, FileText, Contact, UserCog, Plus, ClipboardList } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
@@ -20,6 +20,7 @@ import { AdminSetup } from "@/components/AdminSetup";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
+import { AddTaskModal } from "@/components/AddTaskModal";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
