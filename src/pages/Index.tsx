@@ -10,7 +10,6 @@ import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
-import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 
@@ -22,9 +21,6 @@ const Index = () => {
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
-
-  // Initialize real-time tasks
-  useRealtimeTasks();
 
   // Fetch data for navigation purposes
   const { data: bookings = [] } = useBookings();
