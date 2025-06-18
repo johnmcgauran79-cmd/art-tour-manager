@@ -22,6 +22,7 @@ interface Notification {
   acknowledged: boolean;
   related_id?: string;
   created_at: string;
+  updated_at: string;
 }
 
 const getNotificationIcon = (type: string, priority: string) => {
@@ -49,7 +50,7 @@ export const NotificationCenter = () => {
   // Fetch notifications
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ['notifications', user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<Notification[]> => {
       if (!user?.id) return [];
       
       const { data, error } = await supabase
@@ -60,7 +61,7 @@ export const NotificationCenter = () => {
         .limit(50);
 
       if (error) throw error;
-      return data as Notification[];
+      return data || [];
     },
     enabled: !!user?.id,
   });
