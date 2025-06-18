@@ -3,14 +3,42 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { useAuth } from "@/hooks/useAuth";
+
+const createNotification = async (userId: string, notification: {
+  title: string;
+  message: string;
+  type: 'task' | 'tour' | 'booking' | 'system';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  related_id?: string;
+}) => {
+  const { error } = await supabase
+    .from('user_notifications')
+    .insert({
+      user_id: userId,
+      ...notification,
+    });
+
+  if (error) {
+    console.error('Error creating notification:', error);
+  }
+};
 
 export const useSecureDeleteBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { logOperation } = useAuditLog();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // Get booking details before deletion for notification
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select('group_name, tour_id, tours(name)')
+        .eq('id', id)
+        .single();
+
       // Log the deletion attempt
       logOperation({
         operation_type: 'DELETE_BOOKING',
@@ -25,10 +53,22 @@ export const useSecureDeleteBooking = () => {
         .eq('id', id);
 
       if (error) throw error;
+
+      // Create notification for all users
+      if (user?.id && booking) {
+        await createNotification(user.id, {
+          title: "Booking Deleted",
+          message: `Booking ${booking.group_name || 'Unnamed'} for tour ${booking.tours?.name || 'Unknown'} has been deleted.`,
+          type: 'booking',
+          priority: 'medium',
+          related_id: booking.tour_id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Booking Deleted",
         description: "Booking has been successfully deleted and logged for audit.",

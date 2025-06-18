@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Tour {
   id: string;
@@ -30,6 +31,25 @@ export interface Tour {
   updated_at: string;
 }
 
+const createNotification = async (userId: string, notification: {
+  title: string;
+  message: string;
+  type: 'task' | 'tour' | 'booking' | 'system';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  related_id?: string;
+}) => {
+  const { error } = await supabase
+    .from('user_notifications')
+    .insert({
+      user_id: userId,
+      ...notification,
+    });
+
+  if (error) {
+    console.error('Error creating notification:', error);
+  }
+};
+
 export const useTours = () => {
   return useQuery({
     queryKey: ['tours'],
@@ -53,6 +73,7 @@ export const useTours = () => {
 export const useCreateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (tourData: Omit<Tour, 'id' | 'created_at' | 'updated_at'>) => {
@@ -69,11 +90,23 @@ export const useCreateTour = () => {
         throw error;
       }
       
+      // Create notification for new tour
+      if (user?.id) {
+        await createNotification(user.id, {
+          title: "New Tour Created",
+          message: `Tour "${tourData.name}" has been created.`,
+          type: 'tour',
+          priority: 'medium',
+          related_id: data.id,
+        });
+      }
+      
       console.log('Tour created successfully:', data);
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Tour Created",
         description: `${data.name} has been successfully created.`,

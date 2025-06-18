@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -104,6 +103,30 @@ export const useRealtimeTasks = () => {
               related_id: newTask.id,
             });
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'tasks'
+        },
+        async (payload) => {
+          console.log('Task deleted:', payload.old);
+          
+          // Invalidate tasks queries
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+
+          // Create notification for task deletion
+          const deletedTask = payload.old as any;
+          await createNotification(user.id, {
+            title: "Task Deleted",
+            message: `Task "${deletedTask.title}" has been deleted.`,
+            type: 'task',
+            priority: 'medium',
+          });
         }
       )
       .on(
@@ -217,6 +240,29 @@ export const useRealtimeTasks = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'tours'
+        },
+        async (payload) => {
+          console.log('Tour deleted:', payload.old);
+          
+          // Invalidate tours queries
+          queryClient.invalidateQueries({ queryKey: ['tours'] });
+
+          // Create notification for tour deletion
+          const deletedTour = payload.old as any;
+          await createNotification(user.id, {
+            title: "Tour Deleted",
+            message: `Tour "${deletedTour.name}" has been deleted.`,
+            type: 'tour',
+            priority: 'high',
+          });
+        }
+      )
       .subscribe();
 
     const bookingsChannel = supabase
@@ -283,6 +329,29 @@ export const useRealtimeTasks = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'bookings'
+        },
+        async (payload) => {
+          console.log('Booking deleted:', payload.old);
+          
+          // Invalidate bookings queries
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          // Create notification for booking deletion
+          const deletedBooking = payload.old as any;
+          await createNotification(user.id, {
+            title: "Booking Deleted",
+            message: `Booking${deletedBooking.group_name ? ` for ${deletedBooking.group_name}` : ''} has been deleted.`,
+            type: 'booking',
+            priority: 'medium',
+          });
+        }
+      )
       .subscribe();
 
     // Listen for hotel booking changes
@@ -316,6 +385,34 @@ export const useRealtimeTasks = () => {
       )
       .subscribe();
 
+    // Listen for hotel changes
+    const hotelsChannel = supabase
+      .channel('hotels-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'hotels'
+        },
+        async (payload) => {
+          console.log('Hotel deleted:', payload.old);
+          
+          // Invalidate hotels queries
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
+
+          // Create notification for hotel deletion
+          const deletedHotel = payload.old as any;
+          await createNotification(user.id, {
+            title: "Hotel Deleted",
+            message: `Hotel "${deletedHotel.name}" has been deleted.`,
+            type: 'system',
+            priority: 'medium',
+          });
+        }
+      )
+      .subscribe();
+
     // Listen for activity changes
     const activitiesChannel = supabase
       .channel('activities-realtime')
@@ -342,6 +439,86 @@ export const useRealtimeTasks = () => {
           });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'activities'
+        },
+        async (payload) => {
+          console.log('Activity deleted:', payload.old);
+          
+          // Invalidate activities queries
+          queryClient.invalidateQueries({ queryKey: ['activities'] });
+
+          // Create notification for activity deletion
+          const deletedActivity = payload.old as any;
+          await createNotification(user.id, {
+            title: "Activity Deleted",
+            message: `Activity "${deletedActivity.name}" has been deleted.`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: deletedActivity.tour_id,
+          });
+        }
+      )
+      .subscribe();
+
+    // Listen for customer changes (for dietary requirements)
+    const customersChannel = supabase
+      .channel('customers-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'customers'
+        },
+        async (payload) => {
+          console.log('Customer updated:', payload.new);
+          
+          // Invalidate customers queries
+          queryClient.invalidateQueries({ queryKey: ['customers'] });
+
+          // Check if dietary requirements changed
+          const oldCustomer = payload.old as any;
+          const newCustomer = payload.new as any;
+          
+          if (oldCustomer.dietary_requirements !== newCustomer.dietary_requirements) {
+            await createNotification(user.id, {
+              title: "Dietary Requirements Updated",
+              message: `Dietary requirements for ${newCustomer.first_name} ${newCustomer.last_name} have been updated.`,
+              type: 'system',
+              priority: 'medium',
+              related_id: newCustomer.id,
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'customers'
+        },
+        async (payload) => {
+          console.log('Customer deleted:', payload.old);
+          
+          // Invalidate customers queries
+          queryClient.invalidateQueries({ queryKey: ['customers'] });
+
+          // Create notification for customer deletion
+          const deletedCustomer = payload.old as any;
+          await createNotification(user.id, {
+            title: "Contact Deleted",
+            message: `Contact ${deletedCustomer.first_name} ${deletedCustomer.last_name} has been deleted.`,
+            type: 'system',
+            priority: 'medium',
+          });
+        }
+      )
       .subscribe();
 
     return () => {
@@ -350,7 +527,9 @@ export const useRealtimeTasks = () => {
       supabase.removeChannel(toursChannel);
       supabase.removeChannel(bookingsChannel);
       supabase.removeChannel(hotelBookingsChannel);
+      supabase.removeChannel(hotelsChannel);
       supabase.removeChannel(activitiesChannel);
+      supabase.removeChannel(customersChannel);
     };
   }, [queryClient, toast, user?.id]);
 };

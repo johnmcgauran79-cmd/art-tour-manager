@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Customer {
   id: string;
@@ -25,6 +26,25 @@ export interface DuplicateGroup {
   contacts: Customer[];
   mergedContact: Customer;
 }
+
+const createNotification = async (userId: string, notification: {
+  title: string;
+  message: string;
+  type: 'task' | 'tour' | 'booking' | 'system';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  related_id?: string;
+}) => {
+  const { error } = await supabase
+    .from('user_notifications')
+    .insert({
+      user_id: userId,
+      ...notification,
+    });
+
+  if (error) {
+    console.error('Error creating notification:', error);
+  }
+};
 
 // Function to format Australian mobile numbers
 export const formatAustralianMobile = (phone: string | null): string | null => {
@@ -198,10 +218,18 @@ export const useCreateCustomer = () => {
 export const useUpdateCustomer = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, ...customerData }: Partial<Customer> & { id: string }) => {
       console.log('Updating customer with data:', { id, customerData });
+      
+      // Get the current customer data to compare dietary requirements
+      const { data: currentCustomer } = await supabase
+        .from('customers')
+        .select('dietary_requirements, first_name, last_name')
+        .eq('id', id)
+        .single();
       
       // Format phone number if provided
       const formattedData = {
@@ -221,11 +249,24 @@ export const useUpdateCustomer = () => {
         throw error;
       }
       
+      // Check if dietary requirements changed and create notification
+      if (user?.id && currentCustomer && 
+          currentCustomer.dietary_requirements !== customerData.dietary_requirements) {
+        await createNotification(user.id, {
+          title: "Dietary Requirements Updated",
+          message: `Dietary requirements for ${currentCustomer.first_name} ${currentCustomer.last_name} have been updated.`,
+          type: 'system',
+          priority: 'medium',
+          related_id: id,
+        });
+      }
+      
       console.log('Customer updated successfully:', data);
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Contact Updated",
         description: `${data.first_name} ${data.last_name} has been successfully updated.`,
@@ -245,10 +286,18 @@ export const useUpdateCustomer = () => {
 export const useDeleteCustomer = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
       console.log('Deleting customer with id:', id);
+      
+      // Get customer details before deletion for notification
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('first_name, last_name')
+        .eq('id', id)
+        .single();
       
       // First check if the customer has any bookings
       const { data: bookings, error: bookingsError } = await supabase
@@ -279,11 +328,22 @@ export const useDeleteCustomer = () => {
         throw error;
       }
       
+      // Create notification for deletion
+      if (user?.id && customer) {
+        await createNotification(user.id, {
+          title: "Contact Deleted",
+          message: `Contact ${customer.first_name} ${customer.last_name} has been deleted.`,
+          type: 'system',
+          priority: 'medium',
+        });
+      }
+      
       console.log('Customer deleted successfully');
       return id;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Contact Deleted",
         description: "The contact has been successfully deleted.",
