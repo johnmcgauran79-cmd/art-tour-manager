@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +29,7 @@ const Index = () => {
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showAddTour, setShowAddTour] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [showSystemLog, setShowSystemLog] = useState(false);
@@ -194,47 +194,36 @@ const Index = () => {
                     onClick={() => setShowAddBooking(true)}
                     className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <FileText className="h-4 w-4 mr-2" />
                     Add Booking
                   </Button>
                   <Button 
                     onClick={() => setShowAddTour(true)}
                     className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Calendar className="h-4 w-4 mr-2" />
                     Add Tour
                   </Button>
                   <Button 
                     onClick={() => setShowAddContact(true)}
                     className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Contact className="h-4 w-4 mr-2" />
                     Add Contact
                   </Button>
                   <Button 
-                    onClick={() => setActiveTab("bookings")}
-                    variant="outline"
+                    onClick={() => setShowAddTask(true)}
+                    className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                   >
-                    View All Bookings
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveTab("tours")}
-                    variant="outline"
-                  >
-                    View All Tours
-                  </Button>
-                  <Button 
-                    onClick={() => setActiveTab("contacts")}
-                    variant="outline"
-                  >
-                    View All Contacts
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Add Task
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
             {/* My Tasks Widget */}
-            <MyTasksWidget />
+            <MyTasksWidget hideAddButton={true} />
           </TabsContent>
 
           <TabsContent value="tours" className="space-y-6">
@@ -259,6 +248,7 @@ const Index = () => {
       <AddBookingModal open={showAddBooking} onOpenChange={setShowAddBooking} />
       <AddTourModal open={showAddTour} onOpenChange={setShowAddTour} />
       <AddContactModal open={showAddContact} onOpenChange={setShowAddContact} />
+      <AddTaskModal open={showAddTask} onOpenChange={setShowAddTask} />
       {isAdmin && (
         <>
           <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
