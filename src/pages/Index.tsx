@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToursTable } from "@/components/ToursTable";
 import { BookingsTable } from "@/components/BookingsTable";
 import { ContactsTable } from "@/components/ContactsTable";
@@ -12,17 +14,26 @@ import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
+import { SystemLogModal } from "@/components/SystemLogModal";
+import { UserManagement } from "@/components/UserManagement";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
+import { useAuth } from "@/hooks/useAuth";
+import { Plus, Users, FileText, Settings, Calendar, MapPin } from "lucide-react";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("tours");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [tourModalOpen, setTourModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
+  const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
+  const [showUserManagement, setShowUserManagement] = useState(false);
+
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
 
   // Fetch data for navigation purposes
   const { data: bookings = [] } = useBookings();
@@ -52,7 +63,6 @@ const Index = () => {
       if (booking) {
         setSelectedBooking(booking);
         setBookingModalOpen(true);
-        // Note: Hotel-specific navigation can be enhanced in EditBookingModal
       }
       setActiveTab("bookings");
     } else if (type === 'task') {
@@ -75,11 +85,8 @@ const Index = () => {
         setSelectedBooking(booking);
         setBookingModalOpen(true);
         
-        // If hotelId is specified, we might want to navigate to hotel tab in the future
-        // For now, just open the booking modal
         if (hotelId === 'auto-navigate') {
           console.log('Auto-navigating to hotel allocation tab');
-          // Future enhancement: set default tab to hotel allocation
         }
       }
     };
@@ -95,9 +102,40 @@ const Index = () => {
     setAddBookingModalOpen(true);
   };
 
+  const quickActions = [
+    {
+      icon: Plus,
+      label: "New Tour",
+      onClick: () => setActiveTab("tours"),
+      color: "bg-blue-500 hover:bg-blue-600"
+    },
+    {
+      icon: Calendar,
+      label: "New Booking",
+      onClick: () => setAddBookingModalOpen(true),
+      color: "bg-green-500 hover:bg-green-600"
+    },
+    {
+      icon: Users,
+      label: "Add Contact",
+      onClick: () => setActiveTab("contacts"),
+      color: "bg-purple-500 hover:bg-purple-600"
+    },
+    {
+      icon: MapPin,
+      label: "Operations",
+      onClick: () => setActiveTab("operations"),
+      color: "bg-orange-500 hover:bg-orange-600"
+    }
+  ];
+
+  if (showUserManagement && isAdmin) {
+    return <UserManagement />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white border-b">
+      <div className="bg-brand-navy border-b shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-4">
@@ -106,38 +144,83 @@ const Index = () => {
                 alt="Luxury Tours Logo" 
                 className="h-12 w-auto"
               />
-              <h1 className="text-2xl font-bold text-brand-navy">
+              <h1 className="text-2xl font-bold text-white">
                 Luxury Tours Management
               </h1>
             </div>
-            <UserDropdown />
+            <div className="flex items-center space-x-4">
+              {isAdmin && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowUserManagement(true)}
+                    className="text-white hover:bg-brand-navy/80"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    User Management
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSystemLogModalOpen(true)}
+                    className="text-white hover:bg-brand-navy/80"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    System Logs
+                  </Button>
+                </>
+              )}
+              <UserDropdown />
+            </div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
-            <DashboardMetrics />
-          </div>
-          <div className="lg:col-span-1">
-            <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
-            <MyTasksWidget />
-          </div>
-        </div>
-
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5 mb-8">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="dashboard" className="space-y-8">
+            {/* Quick Actions */}
+            <Card className="border-brand-navy/20 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-brand-navy flex items-center gap-2">
+                  <Settings className="h-6 w-6" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {quickActions.map((action, index) => (
+                    <Button
+                      key={index}
+                      onClick={action.onClick}
+                      className={`${action.color} text-white h-20 flex flex-col items-center justify-center space-y-2 hover:scale-105 transition-transform`}
+                    >
+                      <action.icon className="h-6 w-6" />
+                      <span className="text-sm font-medium">{action.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Dashboard Metrics */}
+            <DashboardMetrics />
+
+            {/* Notifications and Tasks */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
+              <MyTasksWidget />
+            </div>
+          </TabsContent>
           
           <TabsContent value="tours" className="space-y-4">
             <ToursTable />
@@ -173,6 +256,11 @@ const Index = () => {
       <AddBookingModal
         open={addBookingModalOpen}
         onOpenChange={setAddBookingModalOpen}
+      />
+
+      <SystemLogModal
+        open={systemLogModalOpen}
+        onOpenChange={setSystemLogModalOpen}
       />
     </div>
   );
