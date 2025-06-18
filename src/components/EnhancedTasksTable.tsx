@@ -8,7 +8,7 @@ import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskFilters } from "@/components/TaskFilters";
-import { BulkTaskOperations } from "@/components/BulkTaskOperations";
+import { BulkTaskOperationsPanel } from "@/components/BulkTaskOperationsPanel";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface EnhancedTasksTableProps {
@@ -74,6 +74,10 @@ export const EnhancedTasksTable = ({
     }
   };
 
+  const handleClearSelection = () => {
+    setSelectedTasks([]);
+  };
+
   return (
     <>
       <Card className="border-brand-navy/20 shadow-lg">
@@ -110,16 +114,15 @@ export const EnhancedTasksTable = ({
               />
             </CollapsibleContent>
           </Collapsible>
-
-          <BulkTaskOperations
-            tasks={tasks || []}
-            selectedTasks={selectedTasks}
-            onTaskSelection={handleTaskSelection}
-            onSelectAll={handleSelectAll}
-          />
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="space-y-4">
+          <BulkTaskOperationsPanel
+            selectedTasks={selectedTasks}
+            tasks={tasks || []}
+            onClearSelection={handleClearSelection}
+          />
+
           <TasksTable
             tasks={tasks || []}
             loading={isLoading}
@@ -128,6 +131,7 @@ export const EnhancedTasksTable = ({
             title=""
             selectedTasks={selectedTasks}
             onTaskSelection={handleTaskSelection}
+            onSelectAll={handleSelectAll}
           />
         </CardContent>
       </Card>

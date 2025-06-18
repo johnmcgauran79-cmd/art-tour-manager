@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +15,7 @@ interface TasksTableProps {
   onTaskClick?: (task: Task) => void;
   selectedTasks?: string[];
   onTaskSelection?: (taskId: string, selected: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
   title?: string;
 }
 
@@ -27,6 +27,7 @@ export const TasksTable = ({
   onTaskClick,
   selectedTasks = [],
   onTaskSelection,
+  onSelectAll,
   title = "Tasks" 
 }: TasksTableProps) => {
   const updateTask = useUpdateTask();
@@ -75,6 +76,15 @@ export const TasksTable = ({
     });
   };
 
+  const allSelected = tasks.length > 0 && selectedTasks.length === tasks.length;
+  const someSelected = selectedTasks.length > 0 && selectedTasks.length < tasks.length;
+
+  const handleSelectAll = (checked: boolean) => {
+    if (onSelectAll) {
+      onSelectAll(checked);
+    }
+  };
+
   const handleRowClick = (task: Task) => {
     if (onTaskClick) {
       onTaskClick(task);
@@ -116,7 +126,14 @@ export const TasksTable = ({
           <TableRow>
             {onTaskSelection && (
               <TableHead className="w-12">
-                <span className="sr-only">Select</span>
+                <Checkbox
+                  checked={allSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = someSelected;
+                  }}
+                  onCheckedChange={handleSelectAll}
+                  className="data-[state=checked]:bg-primary"
+                />
               </TableHead>
             )}
             <TableHead>Task</TableHead>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,13 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarIcon, Users, Link } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CalendarIcon, Users, Link, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useTours } from "@/hooks/useTours";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
 
 interface AddTaskModalProps {
   open: boolean;
@@ -33,6 +34,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
   const [dependsOnTaskId, setDependsOnTaskId] = useState<string | undefined>();
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
 
   const createTask = useCreateTask();
 
@@ -61,35 +64,55 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     setSelectedTourId(tourId);
   }, [tourId]);
 
+  // Real-time validation
+  useEffect(() => {
+    const taskData = {
+      title: sanitizeTaskInput(title),
+      description: sanitizeTaskInput(description),
+      priority,
+      category,
+      due_date: dueDate?.toISOString(),
+      depends_on_task_id: dependsOnTaskId,
+      assignee_ids: selectedUsers,
+    };
+
+    const validation = validateTaskData(taskData);
+    setValidationErrors(validation.errors);
+    setValidationWarnings(validation.warnings);
+  }, [title, description, priority, category, dueDate, dependsOnTaskId, selectedUsers]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!title.trim()) {
-      console.log('Title is empty, not submitting');
+    const sanitizedTitle = sanitizeTaskInput(title);
+    const sanitizedDescription = sanitizeTaskInput(description);
+    
+    const taskData = {
+      title: sanitizedTitle,
+      description: sanitizedDescription,
+      priority,
+      category,
+      due_date: dueDate?.toISOString(),
+      depends_on_task_id: dependsOnTaskId,
+      assignee_ids: selectedUsers,
+    };
+
+    const validation = validateTaskData(taskData);
+    
+    if (!validation.isValid) {
+      console.log('Validation failed:', validation.errors);
       return;
     }
 
     try {
       console.log('Submitting task with data:', {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priority,
-        category,
-        due_date: dueDate?.toISOString(),
+        ...taskData,
         tour_id: selectedTourId,
-        depends_on_task_id: dependsOnTaskId,
-        assignee_ids: selectedUsers,
       });
 
       await createTask.mutateAsync({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priority,
-        category,
-        due_date: dueDate?.toISOString(),
+        ...taskData,
         tour_id: selectedTourId,
-        depends_on_task_id: dependsOnTaskId,
-        assignee_ids: selectedUsers,
       });
 
       console.log('Task created successfully, resetting form');
@@ -101,8 +124,10 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setCategory('operations');
       setDueDate(undefined);
       setSelectedUsers([]);
-      setSelectedTourId(tourId); // Reset to prop value
+      setSelectedTourId(tourId);
       setDependsOnTaskId(undefined);
+      setValidationErrors([]);
+      setValidationWarnings([]);
       
       onOpenChange(false);
     } catch (error) {
@@ -155,6 +180,33 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </Button>
           </div>
         </DialogHeader>
+
+        {/* Validation Messages */}
+        {validationErrors.length > 0 && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <ul className="list-disc list-inside space-y-1">
+                {validationErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {validationWarnings.length > 0 && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              <ul className="list-disc list-inside space-y-1">
+                {validationWarnings.map((warning, index) => (
+                  <li key={index}>{warning}</li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -336,7 +388,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </Button>
             <Button
               type="submit"
-              disabled={!title.trim() || createTask.isPending}
+              disabled={validationErrors.length > 0 || !title.trim() || createTask.isPending}
             >
               {createTask.isPending ? "Creating..." : "Create Task"}
             </Button>
