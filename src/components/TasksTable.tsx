@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -127,12 +128,10 @@ export const TasksTable = ({
             {onTaskSelection && (
               <TableHead className="w-12">
                 <Checkbox
-                  checked={allSelected}
-                  ref={(el) => {
-                    if (el) el.indeterminate = someSelected;
-                  }}
+                  checked={allSelected || someSelected}
                   onCheckedChange={handleSelectAll}
                   className="data-[state=checked]:bg-primary"
+                  aria-label={allSelected ? "Deselect all" : someSelected ? "Select all" : "Select all"}
                 />
               </TableHead>
             )}
