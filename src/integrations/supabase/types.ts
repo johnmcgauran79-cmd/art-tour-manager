@@ -1025,6 +1025,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_tour_operation_tasks: {
+        Args: { p_tour_id: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _user_id: string

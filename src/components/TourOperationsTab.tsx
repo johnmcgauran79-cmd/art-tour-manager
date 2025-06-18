@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +8,11 @@ import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
-import { TourDeadlinesWidget } from "@/components/TourDeadlinesWidget";
 import { TasksTable } from "@/components/TasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
+import { AutomatedTasksWidget } from "@/components/AutomatedTasksWidget";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -91,8 +92,9 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const overdueTasks = activeTasks.filter(task => 
     task.due_date && new Date(task.due_date) < new Date()
   );
+  const automatedTasks = tasks?.filter(task => task.is_automated) || [];
 
-  const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue') => {
+  const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated') => {
     let filtered: Task[] = [];
     let title = "";
 
@@ -113,6 +115,10 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         filtered = overdueTasks;
         title = "Overdue Tasks";
         break;
+      case 'automated':
+        filtered = automatedTasks;
+        title = "Automated Tasks";
+        break;
     }
 
     setFilteredTasks(filtered);
@@ -122,6 +128,9 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
 
   return (
     <div className="space-y-6">
+      {/* Automated Tasks Widget */}
+      <AutomatedTasksWidget tourId={tourId} />
+
       {/* Operations Reports Summary Card */}
       <Card className="border-brand-navy/20 shadow-lg">
         <CardHeader>
@@ -218,7 +227,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         </CardHeader>
         <CardContent>
           {/* Task Statistics Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div 
               className="text-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleTaskStatsClick('total')}
@@ -259,12 +268,22 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">Overdue Tasks</p>
               <p className="text-xs text-gray-600">{overdueTasks.length} overdue</p>
             </div>
+            <div 
+              className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleTaskStatsClick('automated')}
+            >
+              <div className="bg-purple-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-purple-200 transition-colors">
+                <ClipboardList className="h-5 w-5 text-purple-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Automated Tasks</p>
+              <p className="text-xs text-gray-600">{automatedTasks.length} auto</p>
+            </div>
           </div>
           
           <div className="p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
             <p className="text-xs text-brand-navy">
-              <strong className="text-brand-navy">Task Monitoring:</strong> Tasks are automatically created when capacity issues are detected 
-              (hotel overbooking, activity overselling, etc.). Critical tasks require immediate attention from operations team.
+              <strong className="text-brand-navy">Automated Operations:</strong> Tasks are automatically created based on tour timeline 
+              and capacity monitoring. Real-time notifications keep you informed of priority tasks and deadlines.
             </p>
           </div>
         </CardContent>
@@ -279,9 +298,6 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         onCreateTask={() => setAddTaskModalOpen(true)}
         onTaskClick={handleTaskClick}
       />
-
-      {/* Tour Deadlines Widget */}
-      <TourDeadlinesWidget tourId={tourId} onNavigate={onNavigate} />
 
       <TourOperationsReportsModal
         tourId={tourId}
