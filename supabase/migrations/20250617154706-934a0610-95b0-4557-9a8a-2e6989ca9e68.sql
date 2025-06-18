@@ -17,18 +17,6 @@ CREATE TABLE public.task_attachments (
   uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
 
--- Create hotel attachments table
-CREATE TABLE public.hotel_attachments (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  hotel_id UUID REFERENCES public.hotels(id) ON DELETE CASCADE NOT NULL,
-  file_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_size INTEGER,
-  file_type TEXT,
-  uploaded_by UUID REFERENCES auth.users(id) NOT NULL,
-  uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
-
 -- Create tour attachments table
 CREATE TABLE public.tour_attachments (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -43,7 +31,6 @@ CREATE TABLE public.tour_attachments (
 
 -- Add RLS policies for attachments
 ALTER TABLE public.task_attachments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.hotel_attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tour_attachments ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for task attachments
@@ -71,13 +58,6 @@ FOR INSERT WITH CHECK (
     )
   )
 );
-
--- RLS policies for hotel attachments
-CREATE POLICY "Users can view hotel attachments" ON public.hotel_attachments
-FOR SELECT USING (true);
-
-CREATE POLICY "Users can upload hotel attachments" ON public.hotel_attachments
-FOR INSERT WITH CHECK (auth.uid() = uploaded_by);
 
 -- RLS policies for tour attachments
 CREATE POLICY "Users can view tour attachments" ON public.tour_attachments
