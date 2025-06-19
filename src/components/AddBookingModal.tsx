@@ -233,7 +233,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                       variant="outline"
                       size="sm"
                       onClick={handleEditContact}
-                      disabled={!formData.leadPassenger || !formData.leadEmail}
+                      disabled={!formData.leadPassenger}
                     >
                       <Edit className="h-4 w-4 mr-2" />
                       Edit Contact
@@ -305,7 +305,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                         value={formData.leadEmail}
                         onChange={(e) => handleInputChange("leadEmail", e.target.value)}
                         placeholder="e.g., john@example.com"
-                        required
                       />
                     </div>
 
