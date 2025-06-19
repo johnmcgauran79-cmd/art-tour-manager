@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { useToast } from "@/hooks/use-toast";
@@ -185,25 +183,20 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         →
                       </div>
                       
-                      <Select
-                        key={`${booking.id}-${currentSelectedStatus}`}
+                      <select
                         value={currentSelectedStatus}
-                        onValueChange={(value) => {
-                          console.log('Select onValueChange triggered:', { bookingId: booking.id, value, currentValue: currentSelectedStatus });
-                          handleStatusChange(booking.id, value);
+                        onChange={(e) => {
+                          console.log('Native select onChange triggered:', { bookingId: booking.id, value: e.target.value, currentValue: currentSelectedStatus });
+                          handleStatusChange(booking.id, e.target.value);
                         }}
+                        className="w-[140px] h-10 px-3 py-2 text-sm border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                       >
-                        <SelectTrigger className="w-[140px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200] bg-white border shadow-xl">
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="invoiced">Invoiced</SelectItem>
-                          <SelectItem value="deposited">Deposited</SelectItem>
-                          <SelectItem value="paid">Paid</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <option value="pending">Pending</option>
+                        <option value="invoiced">Invoiced</option>
+                        <option value="deposited">Deposited</option>
+                        <option value="paid">Paid</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
                     </div>
                   </div>
                 );
