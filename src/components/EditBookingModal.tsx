@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -35,10 +34,12 @@ interface Booking {
   created_at: string;
   updated_at: string;
   customers?: {
+    id: string;
     first_name: string;
     last_name: string;
     email: string;
     phone: string;
+    dietary_requirements?: string;
   };
 }
 
@@ -54,6 +55,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     lead_passenger_last_name: '',
     lead_passenger_email: '',
     lead_passenger_phone: '',
+    lead_passenger_dietary_requirements: '',
     passenger_count: 1,
     passenger_2_name: '',
     passenger_3_name: '',
@@ -82,6 +84,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
         lead_passenger_last_name: booking.customers?.last_name || '',
         lead_passenger_email: booking.customers?.email || '',
         lead_passenger_phone: booking.customers?.phone || '',
+        lead_passenger_dietary_requirements: booking.customers?.dietary_requirements || '',
         passenger_count: booking.passenger_count,
         passenger_2_name: booking.passenger_2_name || '',
         passenger_3_name: booking.passenger_3_name || '',
@@ -161,6 +164,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       last_name: formData.lead_passenger_last_name,
       email: formData.lead_passenger_email,
       phone: formData.lead_passenger_phone,
+      dietary_requirements: formData.lead_passenger_dietary_requirements,
     };
     setContactToEdit(contact);
     setShowEditContact(true);
@@ -174,6 +178,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       lead_passenger_last_name: updatedContact.last_name,
       lead_passenger_email: updatedContact.email,
       lead_passenger_phone: updatedContact.phone || '',
+      lead_passenger_dietary_requirements: updatedContact.dietary_requirements || '',
     }));
   };
 
@@ -264,6 +269,19 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                         title="Customer details are managed separately in the Contacts section"
                       />
                     </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="lead_passenger_dietary_requirements">Dietary Requirements</Label>
+                    <Textarea
+                      id="lead_passenger_dietary_requirements"
+                      value={formData.lead_passenger_dietary_requirements}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_dietary_requirements: e.target.value }))}
+                      disabled
+                      className="bg-gray-100"
+                      placeholder="Enter dietary requirements..."
+                      title="Customer details are managed separately in the Contacts section"
+                    />
                   </div>
                 </div>
 
