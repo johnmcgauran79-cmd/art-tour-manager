@@ -86,6 +86,21 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     }
   }, [formData.tourId, tours]);
 
+  // Add effect to sync form data when selected customer data changes
+  useEffect(() => {
+    if (selectedContactId && customers) {
+      const selectedCustomer = customers.find(c => c.id === selectedContactId);
+      if (selectedCustomer) {
+        setFormData(prev => ({
+          ...prev,
+          leadPassenger: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`,
+          leadEmail: selectedCustomer.email || "",
+          leadPhone: selectedCustomer.phone || "",
+        }));
+      }
+    }
+  }, [selectedContactId, customers]);
+
   const handleContactSelect = (customer: any) => {
     setSelectedContactId(customer.id);
     setFormData(prev => ({
