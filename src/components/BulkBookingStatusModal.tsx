@@ -36,37 +36,35 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
 
   useEffect(() => {
     if (open && tourBookings.length > 0) {
-      console.log('Initializing status updates for tour bookings:', tourBookings);
-      // Initialize status updates with current booking statuses
+      console.log('Modal opened, initializing status updates for tour bookings:', tourBookings);
       const initialStatuses: Record<string, string> = {};
       tourBookings.forEach(booking => {
         initialStatuses[booking.id] = booking.status || 'pending';
       });
       setStatusUpdates(initialStatuses);
-      console.log('Initial status updates:', initialStatuses);
+      console.log('Initial status updates set:', initialStatuses);
     }
   }, [open, tourBookings]);
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
-    console.log('Status change for booking:', bookingId, 'new status:', newStatus);
+    console.log('handleStatusChange called:', { bookingId, newStatus });
     setStatusUpdates(prev => {
       const updated = {
         ...prev,
         [bookingId]: newStatus
       };
-      console.log('Updated status state:', updated);
+      console.log('Status updates after change:', updated);
       return updated;
     });
   };
 
   const handleBulkUpdate = async () => {
-    console.log('Starting bulk update with status updates:', statusUpdates);
+    console.log('Starting bulk update with current status updates:', statusUpdates);
     setIsUpdating(true);
     
     try {
       const updates = [];
       
-      // Find bookings that have status changes
       for (const booking of tourBookings) {
         const newStatus = statusUpdates[booking.id];
         console.log(`Checking booking ${booking.id}: current=${booking.status}, new=${newStatus}`);
@@ -121,7 +119,8 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
     return hasChange;
   });
 
-  console.log('Has changes:', hasChanges);
+  console.log('Render - Has changes:', hasChanges);
+  console.log('Current statusUpdates state:', statusUpdates);
 
   if (isLoading) {
     return (
@@ -152,7 +151,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
             <div className="space-y-3">
               {tourBookings.map((booking) => {
                 const currentSelectedStatus = statusUpdates[booking.id] || booking.status || 'pending';
-                console.log(`Rendering booking ${booking.id} with selected status:`, currentSelectedStatus);
+                console.log(`Rendering booking ${booking.id} with status:`, currentSelectedStatus);
                 
                 return (
                   <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -185,15 +184,14 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                       </div>
                       
                       <Select
-                        key={`${booking.id}-${currentSelectedStatus}`}
                         value={currentSelectedStatus}
                         onValueChange={(value) => {
-                          console.log('Select onChange called for booking:', booking.id, 'value:', value);
+                          console.log('Select onValueChange triggered:', { bookingId: booking.id, value });
                           handleStatusChange(booking.id, value);
                         }}
                       >
                         <SelectTrigger className="w-[140px]">
-                          <SelectValue placeholder="Select status" />
+                          <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending">Pending</SelectItem>
