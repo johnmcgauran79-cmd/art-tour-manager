@@ -48,7 +48,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
 
   const createActivity = useMutation({
     mutationFn: async (activityData: any) => {
-      const { data, error } = await supabase
+      // First create the activity
+      const { data: activity, error: activityError } = await supabase
         .from('activities')
         .insert([{
           tour_id: tourId,
@@ -62,7 +63,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
           pickup_location: activityData.pickup_location || null,
           collection_location: activityData.collection_location || null,
           dropoff_location: activityData.dropoff_location || null,
-          spots_booked: activityData.spots_booked ? parseInt(activityData.spots_booked) : 0,
+          spots_booked: 0, // Will be updated by the activity_bookings creation
           activity_status: activityData.activity_status,
           transport_status: activityData.transport_status,
           guide_name: activityData.guide_name || null,
@@ -80,14 +81,42 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         .select()
         .single();
 
-      if (error) throw error;
-      return data;
+      if (activityError) throw activityError;
+
+      // Now get all existing bookings for this tour that are not cancelled
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, passenger_count')
+        .eq('tour_id', tourId)
+        .neq('status', 'cancelled');
+
+      if (bookingsError) throw bookingsError;
+
+      // Create activity bookings for all existing bookings
+      if (bookings && bookings.length > 0) {
+        const activityBookings = bookings.map(booking => ({
+          booking_id: booking.id,
+          activity_id: activity.id,
+          passengers_attending: booking.passenger_count
+        }));
+
+        const { error: activityBookingsError } = await supabase
+          .from('activity_bookings')
+          .insert(activityBookings);
+
+        if (activityBookingsError) throw activityBookingsError;
+
+        console.log(`Created ${activityBookings.length} activity bookings for new activity`);
+      }
+
+      return activity;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activities', tourId] });
+      queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
       toast({
         title: "Activity Added",
-        description: "Activity has been successfully added to the tour.",
+        description: "Activity has been successfully added to the tour and allocated to all existing bookings.",
       });
       onOpenChange(false);
       setFormData({
