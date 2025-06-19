@@ -279,9 +279,13 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Notifications and Tasks */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Notifications - Full Width */}
+            <div className="w-full">
               <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
+            </div>
+
+            {/* Tasks - Full Width */}
+            <div className="w-full">
               <MyTasksWidget />
             </div>
           </TabsContent>
