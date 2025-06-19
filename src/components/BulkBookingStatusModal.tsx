@@ -186,14 +186,14 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                       <Select
                         value={currentSelectedStatus}
                         onValueChange={(value) => {
-                          console.log('Select onValueChange triggered:', { bookingId: booking.id, value });
+                          console.log('Select onValueChange triggered:', { bookingId: booking.id, value, currentValue: currentSelectedStatus });
                           handleStatusChange(booking.id, value);
                         }}
                       >
                         <SelectTrigger className="w-[140px]">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-50 bg-white border shadow-lg">
                           <SelectItem value="pending">Pending</SelectItem>
                           <SelectItem value="invoiced">Invoiced</SelectItem>
                           <SelectItem value="deposited">Deposited</SelectItem>
