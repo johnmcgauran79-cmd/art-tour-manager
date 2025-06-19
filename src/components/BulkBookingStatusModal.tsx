@@ -36,16 +36,19 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
 
   useEffect(() => {
     if (open && tourBookings.length > 0) {
+      console.log('Initializing status updates for tour bookings:', tourBookings);
       // Initialize status updates with current booking statuses
       const initialStatuses: Record<string, string> = {};
       tourBookings.forEach(booking => {
         initialStatuses[booking.id] = booking.status || 'pending';
       });
       setStatusUpdates(initialStatuses);
+      console.log('Initial status updates:', initialStatuses);
     }
   }, [open, tourBookings]);
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
+    console.log('Status change for booking:', bookingId, 'new status:', newStatus);
     setStatusUpdates(prev => ({
       ...prev,
       [bookingId]: newStatus
@@ -53,6 +56,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
   };
 
   const handleBulkUpdate = async () => {
+    console.log('Starting bulk update with status updates:', statusUpdates);
     setIsUpdating(true);
     
     try {
@@ -61,30 +65,41 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
       // Find bookings that have status changes
       for (const booking of tourBookings) {
         const newStatus = statusUpdates[booking.id];
+        console.log(`Checking booking ${booking.id}: current=${booking.status}, new=${newStatus}`);
+        
         if (newStatus && newStatus !== booking.status) {
-          updates.push(
-            updateBooking.mutateAsync({
+          console.log(`Adding update for booking ${booking.id}: ${booking.status} -> ${newStatus}`);
+          updates.push({
+            bookingId: booking.id,
+            updatePromise: updateBooking.mutateAsync({
               id: booking.id,
               status: newStatus as 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled'
             })
-          );
+          });
         }
       }
 
+      console.log(`Found ${updates.length} bookings to update`);
+
       if (updates.length > 0) {
-        await Promise.all(updates);
+        const updatePromises = updates.map(update => update.updatePromise);
+        await Promise.all(updatePromises);
+        console.log('All updates completed successfully');
+        
         toast({
           title: "Success",
           description: `Updated ${updates.length} booking${updates.length > 1 ? 's' : ''}.`,
         });
         onOpenChange(false);
       } else {
+        console.log('No changes detected');
         toast({
           title: "No Changes",
           description: "No booking statuses were changed.",
         });
       }
     } catch (error) {
+      console.error('Error during bulk update:', error);
       toast({
         title: "Error",
         description: "Failed to update booking statuses. Please try again.",
@@ -95,9 +110,14 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
     }
   };
 
-  const hasChanges = tourBookings.some(booking => 
-    statusUpdates[booking.id] && statusUpdates[booking.id] !== booking.status
-  );
+  const hasChanges = tourBookings.some(booking => {
+    const newStatus = statusUpdates[booking.id];
+    const hasChange = newStatus && newStatus !== booking.status;
+    console.log(`Booking ${booking.id} has changes:`, hasChange, `(${booking.status} -> ${newStatus})`);
+    return hasChange;
+  });
+
+  console.log('Has changes:', hasChanges);
 
   if (isLoading) {
     return (
@@ -158,10 +178,13 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                     
                     <Select
                       value={statusUpdates[booking.id] || booking.status || 'pending'}
-                      onValueChange={(value) => handleStatusChange(booking.id, value)}
+                      onValueChange={(value) => {
+                        console.log('Select onChange called:', value);
+                        handleStatusChange(booking.id, value);
+                      }}
                     >
                       <SelectTrigger className="w-[140px]">
-                        <SelectValue />
+                        <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="pending">Pending</SelectItem>
@@ -192,7 +215,10 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
             disabled={isUpdating || !hasChanges || tourBookings.length === 0}
             className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
           >
-            {isUpdating ? "Updating..." : `Update All Changes${hasChanges ? ` (${tourBookings.filter(b => statusUpdates[b.id] && statusUpdates[b.id] !== b.status).length})` : ''}`}
+            {isUpdating ? "Updating..." : `Update All Changes${hasChanges ? ` (${tourBookings.filter(b => {
+              const newStatus = statusUpdates[b.id];
+              return newStatus && newStatus !== b.status;
+            }).length})` : ''}`}
           </Button>
         </DialogFooter>
       </DialogContent>
