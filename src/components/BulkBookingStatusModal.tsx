@@ -191,9 +191,9 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         }}
                       >
                         <SelectTrigger className="w-[140px]">
-                          <SelectValue />
+                          <SelectValue placeholder="Select status" />
                         </SelectTrigger>
-                        <SelectContent className="z-50 bg-white border shadow-lg">
+                        <SelectContent className="z-[100] bg-white border shadow-lg">
                           <SelectItem value="pending">Pending</SelectItem>
                           <SelectItem value="invoiced">Invoiced</SelectItem>
                           <SelectItem value="deposited">Deposited</SelectItem>
