@@ -65,7 +65,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
           updates.push(
             updateBooking.mutateAsync({
               id: booking.id,
-              status: newStatus as any
+              status: newStatus as 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled'
             })
           );
         }
