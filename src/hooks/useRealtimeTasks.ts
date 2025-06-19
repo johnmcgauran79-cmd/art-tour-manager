@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +21,34 @@ const createNotification = async (userId: string, notification: {
   if (error) {
     console.error('Error creating notification:', error);
   }
+};
+
+const getBookingDetails = async (bookingId: string) => {
+  try {
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select(`
+        group_name,
+        lead_passenger_id,
+        tours(name),
+        customers(first_name, last_name)
+      `)
+      .eq('id', bookingId)
+      .single();
+
+    if (booking) {
+      const contactName = booking.customers 
+        ? `${booking.customers.first_name} ${booking.customers.last_name}`
+        : booking.group_name || 'Unknown Contact';
+      const tourName = booking.tours?.name || 'Unknown Tour';
+      
+      return { contactName, tourName };
+    }
+  } catch (error) {
+    console.error('Error fetching booking details:', error);
+  }
+  
+  return { contactName: 'Unknown Contact', tourName: 'Unknown Tour' };
 };
 
 export const useRealtimeTasks = () => {
@@ -227,28 +254,13 @@ export const useRealtimeTasks = () => {
           // Invalidate bookings queries
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
-          // Get tour name for better context
           const newBooking = payload.new as any;
-          let tourName = 'Unknown Tour';
-          
-          try {
-            const { data: tour } = await supabase
-              .from('tours')
-              .select('name')
-              .eq('id', newBooking.tour_id)
-              .single();
-            
-            if (tour?.name) {
-              tourName = tour.name;
-            }
-          } catch (error) {
-            console.error('Error fetching tour name:', error);
-          }
+          const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
           // Create notification for new booking
           await createNotification(user.id, {
             title: "New Booking",
-            message: `${newBooking.group_name || 'New booking'} for "${tourName}"`,
+            message: `New booking for ${contactName} on "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newBooking.id,
@@ -271,29 +283,13 @@ export const useRealtimeTasks = () => {
           const oldBooking = payload.old as any;
           const newBooking = payload.new as any;
           
-          // Get tour name for context
-          let tourName = 'Unknown Tour';
-          try {
-            const { data: tour } = await supabase
-              .from('tours')
-              .select('name')
-              .eq('id', newBooking.tour_id)
-              .single();
-            
-            if (tour?.name) {
-              tourName = tour.name;
-            }
-          } catch (error) {
-            console.error('Error fetching tour name:', error);
-          }
-
-          const bookingName = newBooking.group_name || 'Booking';
+          const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
           // Check for status changes
           if (oldBooking.status !== newBooking.status) {
             await createNotification(user.id, {
               title: "Booking Status Changed",
-              message: `${bookingName} for "${tourName}" now ${newBooking.status}`,
+              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
               type: 'booking',
               priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
               related_id: newBooking.id,
@@ -303,8 +299,8 @@ export const useRealtimeTasks = () => {
           // Check for passenger count changes
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
             await createNotification(user.id, {
-              title: "Booking Updated",
-              message: `${bookingName} for "${tourName}" passenger count: ${newBooking.passenger_count}`,
+              title: "Passenger Count Updated",
+              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -313,10 +309,11 @@ export const useRealtimeTasks = () => {
 
           // Check for check-in date changes
           if (oldBooking.check_in_date !== newBooking.check_in_date) {
-            const checkInDate = newBooking.check_in_date ? new Date(newBooking.check_in_date).toLocaleDateString() : 'Not set';
+            const oldDate = oldBooking.check_in_date ? new Date(oldBooking.check_in_date).toLocaleDateString() : 'Not set';
+            const newDate = newBooking.check_in_date ? new Date(newBooking.check_in_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Check-In Date Changed",
-              message: `${bookingName} for "${tourName}" check-in: ${checkInDate}`,
+              message: `${contactName}'s booking for "${tourName}" check-in changed from ${oldDate} to ${newDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -325,10 +322,11 @@ export const useRealtimeTasks = () => {
 
           // Check for check-out date changes
           if (oldBooking.check_out_date !== newBooking.check_out_date) {
-            const checkOutDate = newBooking.check_out_date ? new Date(newBooking.check_out_date).toLocaleDateString() : 'Not set';
+            const oldDate = oldBooking.check_out_date ? new Date(oldBooking.check_out_date).toLocaleDateString() : 'Not set';
+            const newDate = newBooking.check_out_date ? new Date(newBooking.check_out_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Check-Out Date Changed",
-              message: `${bookingName} for "${tourName}" check-out: ${checkOutDate}`,
+              message: `${contactName}'s booking for "${tourName}" check-out changed from ${oldDate} to ${newDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -349,30 +347,12 @@ export const useRealtimeTasks = () => {
           // Invalidate bookings queries
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
-          // Create notification for booking deletion
           const deletedBooking = payload.old as any;
-          
-          // Get tour name for context
-          let tourName = 'Unknown Tour';
-          try {
-            const { data: tour } = await supabase
-              .from('tours')
-              .select('name')
-              .eq('id', deletedBooking.tour_id)
-              .single();
-            
-            if (tour?.name) {
-              tourName = tour.name;
-            }
-          } catch (error) {
-            console.error('Error fetching tour name:', error);
-          }
-
-          const bookingName = deletedBooking.group_name || 'Booking';
+          const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
           await createNotification(user.id, {
             title: "Booking Deleted",
-            message: `${bookingName} for "${tourName}" has been deleted`,
+            message: `${contactName}'s booking for "${tourName}" has been deleted`,
             type: 'booking',
             priority: 'medium',
             related_id: deletedBooking.id,
@@ -398,31 +378,11 @@ export const useRealtimeTasks = () => {
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
           const newHotelBooking = payload.new as any;
-          
-          // Get booking and tour context
-          let bookingName = 'booking';
-          let tourName = 'Unknown Tour';
-          
-          try {
-            const { data: booking } = await supabase
-              .from('bookings')
-              .select('group_name, tours(name)')
-              .eq('id', newHotelBooking.booking_id)
-              .single();
-
-            if (booking?.group_name) {
-              bookingName = booking.group_name;
-            }
-            if (booking?.tours?.name) {
-              tourName = booking.tours.name;
-            }
-          } catch (error) {
-            console.error('Error fetching booking/tour name:', error);
-          }
+          const { contactName, tourName } = await getBookingDetails(newHotelBooking.booking_id);
 
           await createNotification(user.id, {
             title: "Hotel Night Added",
-            message: `Hotel night added for ${bookingName} on "${tourName}"`,
+            message: `Hotel night added for ${contactName} on "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newHotelBooking.booking_id,
@@ -446,25 +406,11 @@ export const useRealtimeTasks = () => {
           const oldHotelBooking = payload.old as any;
           const newHotelBooking = payload.new as any;
           
-          // Get booking, tour, and hotel context
-          let bookingName = 'Booking';
-          let tourName = 'Unknown Tour';
+          const { contactName, tourName } = await getBookingDetails(newHotelBooking.booking_id);
+
+          // Get hotel name for context
           let hotelName = 'hotel';
-          
           try {
-            const { data: booking } = await supabase
-              .from('bookings')
-              .select('group_name, tours(name)')
-              .eq('id', newHotelBooking.booking_id)
-              .single();
-
-            if (booking?.group_name) {
-              bookingName = booking.group_name;
-            }
-            if (booking?.tours?.name) {
-              tourName = booking.tours.name;
-            }
-
             const { data: hotel } = await supabase
               .from('hotels')
               .select('name')
@@ -475,15 +421,16 @@ export const useRealtimeTasks = () => {
               hotelName = hotel.name;
             }
           } catch (error) {
-            console.error('Error fetching booking/tour/hotel names:', error);
+            console.error('Error fetching hotel name:', error);
           }
 
           // Check for check-in date changes
           if (oldHotelBooking.check_in_date !== newHotelBooking.check_in_date) {
-            const checkInDate = newHotelBooking.check_in_date ? new Date(newHotelBooking.check_in_date).toLocaleDateString() : 'Not set';
+            const oldDate = oldHotelBooking.check_in_date ? new Date(oldHotelBooking.check_in_date).toLocaleDateString() : 'Not set';
+            const newDate = newHotelBooking.check_in_date ? new Date(newHotelBooking.check_in_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Hotel Check-In Date Changed",
-              message: `${bookingName} at ${hotelName} on "${tourName}" - Check-in: ${checkInDate}`,
+              message: `${contactName}'s booking for "${tourName}" at ${hotelName} - Check-in changed from ${oldDate} to ${newDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newHotelBooking.booking_id,
@@ -492,10 +439,11 @@ export const useRealtimeTasks = () => {
 
           // Check for check-out date changes
           if (oldHotelBooking.check_out_date !== newHotelBooking.check_out_date) {
-            const checkOutDate = newHotelBooking.check_out_date ? new Date(newHotelBooking.check_out_date).toLocaleDateString() : 'Not set';
+            const oldDate = oldHotelBooking.check_out_date ? new Date(oldHotelBooking.check_out_date).toLocaleDateString() : 'Not set';
+            const newDate = newHotelBooking.check_out_date ? new Date(newHotelBooking.check_out_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Hotel Check-Out Date Changed",
-              message: `${bookingName} at ${hotelName} on "${tourName}" - Check-out: ${checkOutDate}`,
+              message: `${contactName}'s booking for "${tourName}" at ${hotelName} - Check-out changed from ${oldDate} to ${newDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newHotelBooking.booking_id,
@@ -635,6 +583,57 @@ export const useRealtimeTasks = () => {
       )
       .subscribe();
 
+    const activityBookingsChannel = supabase
+      .channel('activity-bookings-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activity_bookings'
+        },
+        async (payload) => {
+          console.log('Activity booking updated:', payload);
+          
+          // Invalidate activity bookings queries
+          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['bookings'] });
+
+          const oldActivityBooking = payload.old as any;
+          const newActivityBooking = payload.new as any;
+          
+          // Check if passenger count changed
+          if (oldActivityBooking.passengers_attending !== newActivityBooking.passengers_attending) {
+            const { contactName, tourName } = await getBookingDetails(newActivityBooking.booking_id);
+
+            // Get activity name for context
+            let activityName = 'Unknown Activity';
+            try {
+              const { data: activity } = await supabase
+                .from('activities')
+                .select('name')
+                .eq('id', newActivityBooking.activity_id)
+                .single();
+
+              if (activity?.name) {
+                activityName = activity.name;
+              }
+            } catch (error) {
+              console.error('Error fetching activity name:', error);
+            }
+
+            await createNotification(user.id, {
+              title: "Activity Attendance Changed",
+              message: `${contactName}'s attendance for "${activityName}" on "${tourName}" changed from ${oldActivityBooking.passengers_attending} to ${newActivityBooking.passengers_attending} passengers`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newActivityBooking.booking_id,
+            });
+          }
+        }
+      )
+      .subscribe();
+
     const customersChannel = supabase
       .channel('customers-realtime')
       .on(
@@ -699,6 +698,7 @@ export const useRealtimeTasks = () => {
       supabase.removeChannel(hotelBookingsChannel);
       supabase.removeChannel(hotelsChannel);
       supabase.removeChannel(activitiesChannel);
+      supabase.removeChannel(activityBookingsChannel);
       supabase.removeChannel(customersChannel);
     };
   }, [queryClient, toast, user?.id]);
