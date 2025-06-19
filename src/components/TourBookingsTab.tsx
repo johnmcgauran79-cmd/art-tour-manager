@@ -1,9 +1,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Users } from "lucide-react";
+import { Plus, Users, Utensils } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { BulkBookingStatusModal } from "@/components/BulkBookingStatusModal";
+import { BulkDietaryModal } from "@/components/BulkDietaryModal";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -13,6 +14,7 @@ interface TourBookingsTabProps {
 
 export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookingsTabProps) => {
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
+  const [bulkDietaryModalOpen, setBulkDietaryModalOpen] = useState(false);
 
   return (
     <>
@@ -20,6 +22,15 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
           <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setBulkDietaryModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
+            >
+              <Utensils className="h-4 w-4" />
+              Bulk Update Dietary
+            </Button>
             <Button
               onClick={() => setBulkStatusModalOpen(true)}
               variant="outline"
@@ -46,6 +57,12 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
       <BulkBookingStatusModal
         open={bulkStatusModalOpen}
         onOpenChange={setBulkStatusModalOpen}
+        tourId={tourId}
+      />
+
+      <BulkDietaryModal
+        open={bulkDietaryModalOpen}
+        onOpenChange={setBulkDietaryModalOpen}
         tourId={tourId}
       />
     </>
