@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -228,16 +229,26 @@ export const useRealtimeTasks = () => {
 
           // Get tour name for better context
           const newBooking = payload.new as any;
-          const { data: tour } = await supabase
-            .from('tours')
-            .select('name')
-            .eq('id', newBooking.tour_id)
-            .single();
+          let tourName = 'Unknown Tour';
+          
+          try {
+            const { data: tour } = await supabase
+              .from('tours')
+              .select('name')
+              .eq('id', newBooking.tour_id)
+              .single();
+            
+            if (tour?.name) {
+              tourName = tour.name;
+            }
+          } catch (error) {
+            console.error('Error fetching tour name:', error);
+          }
 
           // Create notification for new booking
           await createNotification(user.id, {
             title: "New Booking",
-            message: `${newBooking.group_name || 'Booking'} for "${tour?.name || 'Unknown Tour'}"`,
+            message: `${newBooking.group_name || 'New booking'} for "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newBooking.id,
@@ -261,17 +272,28 @@ export const useRealtimeTasks = () => {
           const newBooking = payload.new as any;
           
           // Get tour name for context
-          const { data: tour } = await supabase
-            .from('tours')
-            .select('name')
-            .eq('id', newBooking.tour_id)
-            .single();
+          let tourName = 'Unknown Tour';
+          try {
+            const { data: tour } = await supabase
+              .from('tours')
+              .select('name')
+              .eq('id', newBooking.tour_id)
+              .single();
+            
+            if (tour?.name) {
+              tourName = tour.name;
+            }
+          } catch (error) {
+            console.error('Error fetching tour name:', error);
+          }
+
+          const bookingName = newBooking.group_name || 'Booking';
 
           // Check for status changes
           if (oldBooking.status !== newBooking.status) {
             await createNotification(user.id, {
               title: "Booking Status Changed",
-              message: `${newBooking.group_name || 'Booking'} for "${tour?.name || 'Unknown Tour'}" now ${newBooking.status}`,
+              message: `${bookingName} for "${tourName}" now ${newBooking.status}`,
               type: 'booking',
               priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
               related_id: newBooking.id,
@@ -282,7 +304,7 @@ export const useRealtimeTasks = () => {
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
             await createNotification(user.id, {
               title: "Booking Updated",
-              message: `${newBooking.group_name || 'Booking'} for "${tour?.name || 'Unknown Tour'}" passenger count: ${newBooking.passenger_count}`,
+              message: `${bookingName} for "${tourName}" passenger count: ${newBooking.passenger_count}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -294,7 +316,7 @@ export const useRealtimeTasks = () => {
             const checkInDate = newBooking.check_in_date ? new Date(newBooking.check_in_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Check-In Date Changed",
-              message: `${newBooking.group_name || 'Booking'} for "${tour?.name || 'Unknown Tour'}" check-in: ${checkInDate}`,
+              message: `${bookingName} for "${tourName}" check-in: ${checkInDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -306,7 +328,7 @@ export const useRealtimeTasks = () => {
             const checkOutDate = newBooking.check_out_date ? new Date(newBooking.check_out_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Check-Out Date Changed",
-              message: `${newBooking.group_name || 'Booking'} for "${tour?.name || 'Unknown Tour'}" check-out: ${checkOutDate}`,
+              message: `${bookingName} for "${tourName}" check-out: ${checkOutDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -331,15 +353,26 @@ export const useRealtimeTasks = () => {
           const deletedBooking = payload.old as any;
           
           // Get tour name for context
-          const { data: tour } = await supabase
-            .from('tours')
-            .select('name')
-            .eq('id', deletedBooking.tour_id)
-            .single();
+          let tourName = 'Unknown Tour';
+          try {
+            const { data: tour } = await supabase
+              .from('tours')
+              .select('name')
+              .eq('id', deletedBooking.tour_id)
+              .single();
+            
+            if (tour?.name) {
+              tourName = tour.name;
+            }
+          } catch (error) {
+            console.error('Error fetching tour name:', error);
+          }
+
+          const bookingName = deletedBooking.group_name || 'Booking';
 
           await createNotification(user.id, {
             title: "Booking Deleted",
-            message: `${deletedBooking.group_name || 'Booking'} for "${tour?.name || 'Unknown Tour'}" has been deleted`,
+            message: `${bookingName} for "${tourName}" has been deleted`,
             type: 'booking',
             priority: 'medium',
             related_id: deletedBooking.id,
@@ -367,15 +400,29 @@ export const useRealtimeTasks = () => {
           const newHotelBooking = payload.new as any;
           
           // Get booking and tour context
-          const { data: booking } = await supabase
-            .from('bookings')
-            .select('group_name, tours(name)')
-            .eq('id', newHotelBooking.booking_id)
-            .single();
+          let bookingName = 'booking';
+          let tourName = 'Unknown Tour';
+          
+          try {
+            const { data: booking } = await supabase
+              .from('bookings')
+              .select('group_name, tours(name)')
+              .eq('id', newHotelBooking.booking_id)
+              .single();
+
+            if (booking?.group_name) {
+              bookingName = booking.group_name;
+            }
+            if (booking?.tours?.name) {
+              tourName = booking.tours.name;
+            }
+          } catch (error) {
+            console.error('Error fetching booking/tour name:', error);
+          }
 
           await createNotification(user.id, {
             title: "Hotel Night Added",
-            message: `Hotel night added for ${booking?.group_name || 'booking'} on "${booking?.tours?.name || 'Unknown Tour'}"`,
+            message: `Hotel night added for ${bookingName} on "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newHotelBooking.booking_id,
@@ -400,24 +447,43 @@ export const useRealtimeTasks = () => {
           const newHotelBooking = payload.new as any;
           
           // Get booking, tour, and hotel context
-          const { data: booking } = await supabase
-            .from('bookings')
-            .select('group_name, tours(name)')
-            .eq('id', newHotelBooking.booking_id)
-            .single();
+          let bookingName = 'Booking';
+          let tourName = 'Unknown Tour';
+          let hotelName = 'hotel';
+          
+          try {
+            const { data: booking } = await supabase
+              .from('bookings')
+              .select('group_name, tours(name)')
+              .eq('id', newHotelBooking.booking_id)
+              .single();
 
-          const { data: hotel } = await supabase
-            .from('hotels')
-            .select('name')
-            .eq('id', newHotelBooking.hotel_id)
-            .single();
+            if (booking?.group_name) {
+              bookingName = booking.group_name;
+            }
+            if (booking?.tours?.name) {
+              tourName = booking.tours.name;
+            }
+
+            const { data: hotel } = await supabase
+              .from('hotels')
+              .select('name')
+              .eq('id', newHotelBooking.hotel_id)
+              .single();
+
+            if (hotel?.name) {
+              hotelName = hotel.name;
+            }
+          } catch (error) {
+            console.error('Error fetching booking/tour/hotel names:', error);
+          }
 
           // Check for check-in date changes
           if (oldHotelBooking.check_in_date !== newHotelBooking.check_in_date) {
             const checkInDate = newHotelBooking.check_in_date ? new Date(newHotelBooking.check_in_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Hotel Check-In Date Changed",
-              message: `${booking?.group_name || 'Booking'} at ${hotel?.name || 'hotel'} on "${booking?.tours?.name || 'Unknown Tour'}" - Check-in: ${checkInDate}`,
+              message: `${bookingName} at ${hotelName} on "${tourName}" - Check-in: ${checkInDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newHotelBooking.booking_id,
@@ -429,7 +495,7 @@ export const useRealtimeTasks = () => {
             const checkOutDate = newHotelBooking.check_out_date ? new Date(newHotelBooking.check_out_date).toLocaleDateString() : 'Not set';
             await createNotification(user.id, {
               title: "Hotel Check-Out Date Changed",
-              message: `${booking?.group_name || 'Booking'} at ${hotel?.name || 'hotel'} on "${booking?.tours?.name || 'Unknown Tour'}" - Check-out: ${checkOutDate}`,
+              message: `${bookingName} at ${hotelName} on "${tourName}" - Check-out: ${checkOutDate}`,
               type: 'booking',
               priority: 'medium',
               related_id: newHotelBooking.booking_id,
@@ -458,15 +524,24 @@ export const useRealtimeTasks = () => {
           const deletedHotel = payload.old as any;
           
           // Get tour name for context
-          const { data: tour } = await supabase
-            .from('tours')
-            .select('name')
-            .eq('id', deletedHotel.tour_id)
-            .single();
+          let tourName = 'Unknown Tour';
+          try {
+            const { data: tour } = await supabase
+              .from('tours')
+              .select('name')
+              .eq('id', deletedHotel.tour_id)
+              .single();
+            
+            if (tour?.name) {
+              tourName = tour.name;
+            }
+          } catch (error) {
+            console.error('Error fetching tour name:', error);
+          }
 
           await createNotification(user.id, {
             title: "Hotel Deleted",
-            message: `Hotel "${deletedHotel.name}" from "${tour?.name || 'Unknown Tour'}" has been deleted`,
+            message: `Hotel "${deletedHotel.name}" from "${tourName}" has been deleted`,
             type: 'system',
             priority: 'medium',
             related_id: deletedHotel.tour_id,
@@ -493,15 +568,24 @@ export const useRealtimeTasks = () => {
           const newActivity = payload.new as any;
           
           // Get tour name for context
-          const { data: tour } = await supabase
-            .from('tours')
-            .select('name')
-            .eq('id', newActivity.tour_id)
-            .single();
+          let tourName = 'Unknown Tour';
+          try {
+            const { data: tour } = await supabase
+              .from('tours')
+              .select('name')
+              .eq('id', newActivity.tour_id)
+              .single();
+            
+            if (tour?.name) {
+              tourName = tour.name;
+            }
+          } catch (error) {
+            console.error('Error fetching tour name:', error);
+          }
 
           await createNotification(user.id, {
             title: "New Activity Added",
-            message: `${newActivity.name} added to "${tour?.name || 'Unknown Tour'}"`,
+            message: `${newActivity.name} added to "${tourName}"`,
             type: 'tour',
             priority: 'medium',
             related_id: newActivity.tour_id,
@@ -525,15 +609,24 @@ export const useRealtimeTasks = () => {
           const deletedActivity = payload.old as any;
           
           // Get tour name for context
-          const { data: tour } = await supabase
-            .from('tours')
-            .select('name')
-            .eq('id', deletedActivity.tour_id)
-            .single();
+          let tourName = 'Unknown Tour';
+          try {
+            const { data: tour } = await supabase
+              .from('tours')
+              .select('name')
+              .eq('id', deletedActivity.tour_id)
+              .single();
+            
+            if (tour?.name) {
+              tourName = tour.name;
+            }
+          } catch (error) {
+            console.error('Error fetching tour name:', error);
+          }
 
           await createNotification(user.id, {
             title: "Activity Deleted",
-            message: `Activity "${deletedActivity.name}" from "${tour?.name || 'Unknown Tour'}" has been deleted`,
+            message: `Activity "${deletedActivity.name}" from "${tourName}" has been deleted`,
             type: 'tour',
             priority: 'medium',
             related_id: deletedActivity.tour_id,
