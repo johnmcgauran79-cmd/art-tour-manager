@@ -49,10 +49,14 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
     console.log('Status change for booking:', bookingId, 'new status:', newStatus);
-    setStatusUpdates(prev => ({
-      ...prev,
-      [bookingId]: newStatus
-    }));
+    setStatusUpdates(prev => {
+      const updated = {
+        ...prev,
+        [bookingId]: newStatus
+      };
+      console.log('Updated status state:', updated);
+      return updated;
+    });
   };
 
   const handleBulkUpdate = async () => {
@@ -146,57 +150,63 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
             </div>
           ) : (
             <div className="space-y-3">
-              {tourBookings.map((booking) => (
-                <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {booking.customers?.first_name} {booking.customers?.last_name}
-                      {booking.group_name && (
-                        <span className="text-sm text-muted-foreground ml-2">
-                          (Group: {booking.group_name})
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {booking.passenger_count} passenger{booking.passenger_count > 1 ? 's' : ''}
-                      {booking.passenger_2_name && ` • ${booking.passenger_2_name}`}
-                      {booking.passenger_3_name && ` • ${booking.passenger_3_name}`}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="text-sm text-muted-foreground">
-                      Current:
-                    </div>
-                    <Badge className={getStatusColor(booking.status || 'pending')}>
-                      {(booking.status || 'pending').replace("_", " ").toUpperCase()}
-                    </Badge>
-                    
-                    <div className="text-sm text-muted-foreground">
-                      →
+              {tourBookings.map((booking) => {
+                const currentSelectedStatus = statusUpdates[booking.id] || booking.status || 'pending';
+                console.log(`Rendering booking ${booking.id} with selected status:`, currentSelectedStatus);
+                
+                return (
+                  <div key={booking.id} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="font-medium">
+                        {booking.customers?.first_name} {booking.customers?.last_name}
+                        {booking.group_name && (
+                          <span className="text-sm text-muted-foreground ml-2">
+                            (Group: {booking.group_name})
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {booking.passenger_count} passenger{booking.passenger_count > 1 ? 's' : ''}
+                        {booking.passenger_2_name && ` • ${booking.passenger_2_name}`}
+                        {booking.passenger_3_name && ` • ${booking.passenger_3_name}`}
+                      </div>
                     </div>
                     
-                    <Select
-                      value={statusUpdates[booking.id] || booking.status || 'pending'}
-                      onValueChange={(value) => {
-                        console.log('Select onChange called:', value);
-                        handleStatusChange(booking.id, value);
-                      }}
-                    >
-                      <SelectTrigger className="w-[140px]">
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="invoiced">Invoiced</SelectItem>
-                        <SelectItem value="deposited">Deposited</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm text-muted-foreground">
+                        Current:
+                      </div>
+                      <Badge className={getStatusColor(booking.status || 'pending')}>
+                        {(booking.status || 'pending').replace("_", " ").toUpperCase()}
+                      </Badge>
+                      
+                      <div className="text-sm text-muted-foreground">
+                        →
+                      </div>
+                      
+                      <Select
+                        key={`${booking.id}-${currentSelectedStatus}`}
+                        value={currentSelectedStatus}
+                        onValueChange={(value) => {
+                          console.log('Select onChange called for booking:', booking.id, 'value:', value);
+                          handleStatusChange(booking.id, value);
+                        }}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="invoiced">Invoiced</SelectItem>
+                          <SelectItem value="deposited">Deposited</SelectItem>
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
