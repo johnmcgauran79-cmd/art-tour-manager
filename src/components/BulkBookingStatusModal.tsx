@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
       setStatusUpdates(initialStatuses);
       console.log('Initial status updates set:', initialStatuses);
     }
-  }, [open, tourBookings]);
+  }, [open, tourId]); // Only depend on open and tourId, not tourBookings
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
     console.log('handleStatusChange called:', { bookingId, newStatus });
