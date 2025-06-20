@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X, Edit } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ActivityAllocationSectionProps {
   tourId: string;
@@ -30,6 +32,7 @@ export const ActivityAllocationSection = ({
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Sort activities by date, then by start time, then by creation date
   const sortedActivities = activities ? [...activities].sort((a, b) => {
@@ -51,20 +54,58 @@ export const ActivityAllocationSection = ({
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   }) : [];
 
-  // Initialize allocations only once when data is first loaded
+  // Initialize allocations when data is loaded
   useEffect(() => {
-    if (sortedActivities.length > 0 && activityBookings !== undefined && Object.keys(allocations).length === 0) {
-      const initialAllocations: Record<string, number> = {};
+    if (sortedActivities.length > 0 && activityBookings !== undefined) {
+      const newAllocations: Record<string, number> = {};
       
       sortedActivities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
         const allocation = existingBooking?.passengers_attending || passengerCount;
-        initialAllocations[activity.id] = allocation;
+        newAllocations[activity.id] = allocation;
       });
       
-      setAllocations(initialAllocations);
+      setAllocations(newAllocations);
     }
-  }, [sortedActivities.length, activityBookings?.length, passengerCount]);
+  }, [sortedActivities, activityBookings, passengerCount]);
+
+  const createNotification = async (activityName: string, newCount: number, oldCount: number) => {
+    if (!user?.id) return;
+
+    try {
+      // Get booking and tour details for context
+      const { data: booking } = await supabase
+        .from('bookings')
+        .select(`
+          group_name,
+          lead_passenger_id,
+          tours(name),
+          customers(first_name, last_name)
+        `)
+        .eq('id', bookingId)
+        .single();
+
+      if (booking) {
+        const contactName = booking.customers 
+          ? `${booking.customers.first_name} ${booking.customers.last_name}`
+          : booking.group_name || 'Unknown Contact';
+        const tourName = booking.tours?.name || 'Unknown Tour';
+
+        await supabase
+          .from('user_notifications')
+          .insert({
+            user_id: user.id,
+            title: "Activity Update",
+            message: `${activityName} - attendance updated from ${oldCount} to ${newCount} pax for ${contactName} on "${tourName}"`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: bookingId,
+          });
+      }
+    } catch (error) {
+      console.error('Error creating notification:', error);
+    }
+  };
 
   const handleAllocationChange = (activityId: string, value: string) => {
     const numValue = Math.max(0, parseInt(value) || 0);
@@ -90,6 +131,11 @@ export const ActivityAllocationSection = ({
     try {
       const passengers = allocations[activityId] || 0;
       const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
+      const oldCount = existingBooking?.passengers_attending || passengerCount;
+      
+      // Get activity name for notification
+      const activity = sortedActivities.find(a => a.id === activityId);
+      const activityName = activity?.name || 'Unknown Activity';
 
       if (existingBooking) {
         await updateActivityBooking.mutateAsync({
@@ -104,10 +150,15 @@ export const ActivityAllocationSection = ({
         });
       }
       
+      // Create notification if the count changed
+      if (oldCount !== passengers) {
+        await createNotification(activityName, passengers, oldCount);
+      }
+      
       setEditingActivity(null);
       toast({
         title: "Success",
-        description: "Activity allocation updated successfully.",
+        description: `${activityName} attendance updated successfully.`,
       });
     } catch (error) {
       console.error('Activity booking error:', error);
