@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { Check, X } from "lucide-react";
 
 interface ActivityAllocationSectionProps {
   tourId: string;
@@ -26,7 +27,8 @@ export const ActivityAllocationSection = ({
   } = useActivityBookings(bookingId);
   
   const [allocations, setAllocations] = useState<Record<string, number>>({});
-  const [isSaving, setIsSaving] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<string | null>(null);
+  const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Sort activities by date, then by start time, then by creation date
@@ -71,46 +73,54 @@ export const ActivityAllocationSection = ({
     setAllocations(prev => ({ ...prev, [activityId]: numValue }));
   };
 
-  const handleSaveAllAllocations = async () => {
-    if (!sortedActivities) return;
-
-    setIsSaving(true);
+  const handleSaveActivity = async (activityId: string) => {
+    setSavingActivity(activityId);
 
     try {
-      const promises = sortedActivities.map(async (activity) => {
-        const passengers = allocations[activity.id] || 0;
-        const existingBooking = activityBookings?.find(ab => ab.activity_id === activity.id);
+      const passengers = allocations[activityId] || 0;
+      const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
 
-        if (existingBooking) {
-          return updateActivityBooking.mutateAsync({
-            id: existingBooking.id,
-            passengers_attending: passengers
-          });
-        } else if (passengers > 0) {
-          return createActivityBooking.mutateAsync({
-            booking_id: bookingId,
-            activity_id: activity.id,
-            passengers_attending: passengers
-          });
-        }
-      });
-
-      await Promise.all(promises.filter(Boolean));
+      if (existingBooking) {
+        await updateActivityBooking.mutateAsync({
+          id: existingBooking.id,
+          passengers_attending: passengers
+        });
+      } else if (passengers > 0) {
+        await createActivityBooking.mutateAsync({
+          booking_id: bookingId,
+          activity_id: activityId,
+          passengers_attending: passengers
+        });
+      }
       
+      setEditingActivity(null);
       toast({
         title: "Success",
-        description: "All activity allocations updated successfully.",
+        description: "Activity allocation updated successfully.",
       });
     } catch (error) {
       console.error('Activity booking error:', error);
       toast({
         title: "Error",
-        description: "Failed to update activity allocations. Please try again.",
+        description: "Failed to update activity allocation. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsSaving(false);
+      setSavingActivity(null);
     }
+  };
+
+  const handleCancelEdit = (activityId: string) => {
+    // Reset to original value
+    const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
+    const originalValue = existingBooking?.passengers_attending || passengerCount;
+    setAllocations(prev => ({ ...prev, [activityId]: originalValue }));
+    setEditingActivity(null);
+  };
+
+  const getOriginalValue = (activityId: string) => {
+    const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
+    return existingBooking?.passengers_attending || passengerCount;
   };
 
   if (!sortedActivities || sortedActivities.length === 0) {
@@ -129,41 +139,83 @@ export const ActivityAllocationSection = ({
             <TableHead>Activity Name</TableHead>
             <TableHead>Date</TableHead>
             <TableHead className="w-32">Pax Attending</TableHead>
+            <TableHead className="w-24">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedActivities.map((activity) => (
-            <TableRow key={activity.id}>
-              <TableCell className="font-medium">{activity.name}</TableCell>
-              <TableCell>
-                {activity.activity_date 
-                  ? new Date(activity.activity_date).toLocaleDateString()
-                  : 'TBD'
-                }
-              </TableCell>
-              <TableCell>
-                <Input
-                  type="number"
-                  min="0"
-                  value={allocations[activity.id] || passengerCount}
-                  onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
-                  className="w-20"
-                />
-              </TableCell>
-            </TableRow>
-          ))}
+          {sortedActivities.map((activity) => {
+            const isEditing = editingActivity === activity.id;
+            const isSaving = savingActivity === activity.id;
+            const currentValue = allocations[activity.id] || passengerCount;
+            const originalValue = getOriginalValue(activity.id);
+            const hasChanged = currentValue !== originalValue;
+
+            return (
+              <TableRow key={activity.id}>
+                <TableCell className="font-medium">{activity.name}</TableCell>
+                <TableCell>
+                  {activity.activity_date 
+                    ? new Date(activity.activity_date).toLocaleDateString()
+                    : 'TBD'
+                  }
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <Input
+                      type="number"
+                      min="0"
+                      value={currentValue}
+                      onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
+                      className="w-20"
+                      disabled={isSaving}
+                    />
+                  ) : (
+                    <div 
+                      className="cursor-pointer hover:bg-muted p-2 rounded w-20 text-center"
+                      onClick={() => setEditingActivity(activity.id)}
+                    >
+                      {currentValue}
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {isEditing ? (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleSaveActivity(activity.id)}
+                        disabled={isSaving || !hasChanged}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Check className="h-4 w-4 text-green-600" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleCancelEdit(activity.id)}
+                        disabled={isSaving}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4 text-red-600" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditingActivity(activity.id)}
+                      className="h-8 px-2 text-xs"
+                    >
+                      Edit
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
-      
-      <div className="flex justify-end">
-        <Button
-          onClick={handleSaveAllAllocations}
-          disabled={isSaving}
-          className="bg-slate-900 hover:bg-slate-800 text-white"
-        >
-          {isSaving ? "Updating..." : "Update All Activities"}
-        </Button>
-      </div>
     </div>
   );
 };
