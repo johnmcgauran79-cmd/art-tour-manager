@@ -18,16 +18,19 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const { data: activities } = useActivities(tourId);
   const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
 
+  // Activities are already sorted by date in the useActivities hook
+  const sortedActivities = activities || [];
+
   useEffect(() => {
-    if (activities && activities.length > 0) {
+    if (sortedActivities && sortedActivities.length > 0) {
       fetchPaxAttendingForActivities();
     }
-  }, [activities]);
+  }, [sortedActivities]);
 
   const fetchPaxAttendingForActivities = async () => {
-    if (!activities) return;
+    if (!sortedActivities) return;
 
-    const activityIds = activities.map(activity => activity.id);
+    const activityIds = sortedActivities.map(activity => activity.id);
     
     const { data, error } = await supabase
       .from('activity_bookings')
@@ -78,7 +81,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
         </Button>
       </div>
 
-      {activities && activities.length > 0 ? (
+      {sortedActivities && sortedActivities.length > 0 ? (
         <div className="border rounded-lg">
           <Table>
             <TableHeader>
@@ -94,7 +97,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activities.map((activity) => (
+              {sortedActivities.map((activity) => (
                 <TableRow key={activity.id} className="cursor-pointer hover:bg-muted/50">
                   <TableCell className="font-medium">{activity.name}</TableCell>
                   <TableCell>{activity.location || '-'}</TableCell>

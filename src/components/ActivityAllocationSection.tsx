@@ -29,11 +29,34 @@ export const ActivityAllocationSection = ({
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  // Sort activities by date, then by start time, then by creation date
+  const sortedActivities = activities ? [...activities].sort((a, b) => {
+    // First sort by activity_date
+    if (a.activity_date && b.activity_date) {
+      const dateComparison = new Date(a.activity_date).getTime() - new Date(b.activity_date).getTime();
+      if (dateComparison !== 0) return dateComparison;
+      
+      // If dates are the same, sort by start_time
+      if (a.start_time && b.start_time) {
+        return a.start_time.localeCompare(b.start_time);
+      }
+      if (a.start_time && !b.start_time) return -1;
+      if (!a.start_time && b.start_time) return 1;
+    }
+    
+    // If one has a date and the other doesn't, prioritize the one with a date
+    if (a.activity_date && !b.activity_date) return -1;
+    if (!a.activity_date && b.activity_date) return 1;
+    
+    // If neither has a date, sort by creation date
+    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+  }) : [];
+
   useEffect(() => {
-    if (activities && activityBookings) {
+    if (sortedActivities && activityBookings) {
       const initialAllocations: Record<string, number> = {};
       
-      activities.forEach(activity => {
+      sortedActivities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
         // Default to passenger count if no existing booking, otherwise use existing value
         initialAllocations[activity.id] = existingBooking?.passengers_attending || passengerCount;
@@ -41,7 +64,7 @@ export const ActivityAllocationSection = ({
       
       setAllocations(initialAllocations);
     }
-  }, [activities, activityBookings, passengerCount]);
+  }, [sortedActivities, activityBookings, passengerCount]);
 
   const handleAllocationChange = (activityId: string, value: string) => {
     const numValue = Math.max(0, parseInt(value) || 0);
@@ -49,12 +72,12 @@ export const ActivityAllocationSection = ({
   };
 
   const handleSaveAllAllocations = async () => {
-    if (!activities) return;
+    if (!sortedActivities) return;
 
     setIsSaving(true);
 
     try {
-      const promises = activities.map(async (activity) => {
+      const promises = sortedActivities.map(async (activity) => {
         const passengers = allocations[activity.id] || 0;
         const existingBooking = activityBookings?.find(ab => ab.activity_id === activity.id);
 
@@ -90,7 +113,7 @@ export const ActivityAllocationSection = ({
     }
   };
 
-  if (!activities || activities.length === 0) {
+  if (!sortedActivities || sortedActivities.length === 0) {
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">No activities available for this tour.</p>
@@ -109,7 +132,7 @@ export const ActivityAllocationSection = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {activities.map((activity) => (
+          {sortedActivities.map((activity) => (
             <TableRow key={activity.id}>
               <TableCell className="font-medium">{activity.name}</TableCell>
               <TableCell>

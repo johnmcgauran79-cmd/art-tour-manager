@@ -43,6 +43,8 @@ export const useActivities = (tourId: string) => {
         .from('activities')
         .select('*')
         .eq('tour_id', tourId)
+        .order('activity_date', { ascending: true, nullsFirst: false })
+        .order('start_time', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: true });
       
       if (error) {
