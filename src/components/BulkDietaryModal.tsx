@@ -212,7 +212,7 @@ export const BulkDietaryModal = ({ open, onOpenChange, tourId }: BulkDietaryModa
             }).length})` : ''}`}
           </Button>
         </DialogFooter>
-      </Dialog>
+      </DialogContent>
     </Dialog>
   );
 };
