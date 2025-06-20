@@ -31,16 +31,6 @@ export const ActivityAllocationSection = ({
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const { toast } = useToast();
 
-  console.log('ActivityAllocationSection rendered with:', {
-    tourId,
-    bookingId,
-    passengerCount,
-    activities: activities?.length,
-    activityBookings: activityBookings?.length,
-    editingActivity,
-    allocations
-  });
-
   // Sort activities by date, then by start time, then by creation date
   const sortedActivities = activities ? [...activities].sort((a, b) => {
     // First sort by activity_date
@@ -61,42 +51,32 @@ export const ActivityAllocationSection = ({
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   }) : [];
 
+  // Initialize allocations only once when data is first loaded
   useEffect(() => {
-    console.log('Effect triggered - setting allocations');
-    if (sortedActivities && activityBookings !== undefined) {
+    if (sortedActivities.length > 0 && activityBookings !== undefined && Object.keys(allocations).length === 0) {
       const initialAllocations: Record<string, number> = {};
       
       sortedActivities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
         const allocation = existingBooking?.passengers_attending || passengerCount;
         initialAllocations[activity.id] = allocation;
-        console.log(`Setting allocation for ${activity.name}:`, allocation);
       });
       
-      console.log('Final allocations:', initialAllocations);
       setAllocations(initialAllocations);
     }
-  }, [sortedActivities, activityBookings, passengerCount]);
+  }, [sortedActivities.length, activityBookings?.length, passengerCount]);
 
   const handleAllocationChange = (activityId: string, value: string) => {
-    console.log('handleAllocationChange called:', { activityId, value });
     const numValue = Math.max(0, parseInt(value) || 0);
-    console.log('Setting allocation to:', numValue);
-    setAllocations(prev => {
-      const newAllocations = { ...prev, [activityId]: numValue };
-      console.log('New allocations state:', newAllocations);
-      return newAllocations;
-    });
+    setAllocations(prev => ({ ...prev, [activityId]: numValue }));
   };
 
   const startEditing = (activityId: string) => {
-    console.log('startEditing called for:', activityId);
     setEditingActivity(activityId);
     
     // Focus the input after it's rendered
     setTimeout(() => {
       const input = document.getElementById(`activity-input-${activityId}`) as HTMLInputElement;
-      console.log('Input element found:', !!input);
       if (input) {
         input.focus();
         input.select();
@@ -105,24 +85,18 @@ export const ActivityAllocationSection = ({
   };
 
   const handleSaveActivity = async (activityId: string) => {
-    console.log('handleSaveActivity called for:', activityId, 'with value:', allocations[activityId]);
     setSavingActivity(activityId);
 
     try {
       const passengers = allocations[activityId] || 0;
       const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
 
-      console.log('Existing booking:', existingBooking);
-      console.log('Passengers to save:', passengers);
-
       if (existingBooking) {
-        console.log('Updating existing booking');
         await updateActivityBooking.mutateAsync({
           id: existingBooking.id,
           passengers_attending: passengers
         });
       } else if (passengers > 0) {
-        console.log('Creating new booking');
         await createActivityBooking.mutateAsync({
           booking_id: bookingId,
           activity_id: activityId,
@@ -148,10 +122,8 @@ export const ActivityAllocationSection = ({
   };
 
   const handleCancelEdit = (activityId: string) => {
-    console.log('handleCancelEdit called for:', activityId);
     const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
     const originalValue = existingBooking?.passengers_attending || passengerCount;
-    console.log('Resetting to original value:', originalValue);
     setAllocations(prev => ({ ...prev, [activityId]: originalValue }));
     setEditingActivity(null);
   };
@@ -162,7 +134,6 @@ export const ActivityAllocationSection = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, activityId: string) => {
-    console.log('Key pressed:', e.key);
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSaveActivity(activityId);
@@ -197,14 +168,6 @@ export const ActivityAllocationSection = ({
             const isSaving = savingActivity === activity.id;
             const currentValue = allocations[activity.id] || 0;
             const originalValue = getOriginalValue(activity.id);
-            const hasChanged = currentValue !== originalValue;
-
-            console.log(`Rendering activity ${activity.name}:`, {
-              isEditing,
-              currentValue,
-              originalValue,
-              hasChanged
-            });
 
             return (
               <TableRow key={activity.id}>
@@ -222,25 +185,15 @@ export const ActivityAllocationSection = ({
                       type="number"
                       min="0"
                       value={currentValue.toString()}
-                      onChange={(e) => {
-                        console.log('Input onChange:', e.target.value);
-                        handleAllocationChange(activity.id, e.target.value);
-                      }}
+                      onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
                       onKeyDown={(e) => handleKeyPress(e, activity.id)}
                       className="w-20"
                       disabled={isSaving}
-                      onBlur={() => console.log('Input blur event')}
-                      onFocus={() => console.log('Input focus event')}
                     />
                   ) : (
                     <div 
                       className="cursor-pointer hover:bg-muted p-2 rounded w-20 text-center border border-transparent hover:border-muted-foreground/30 select-none"
-                      onClick={(e) => {
-                        console.log('Div clicked for activity:', activity.id);
-                        e.preventDefault();
-                        e.stopPropagation();
-                        startEditing(activity.id);
-                      }}
+                      onClick={() => startEditing(activity.id)}
                       title="Click to edit"
                     >
                       {currentValue}
@@ -253,12 +206,7 @@ export const ActivityAllocationSection = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={(e) => {
-                          console.log('Save button clicked');
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleSaveActivity(activity.id);
-                        }}
+                        onClick={() => handleSaveActivity(activity.id)}
                         disabled={isSaving}
                         className="h-8 w-8 p-0"
                         title="Save changes"
@@ -268,12 +216,7 @@ export const ActivityAllocationSection = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={(e) => {
-                          console.log('Cancel button clicked');
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleCancelEdit(activity.id);
-                        }}
+                        onClick={() => handleCancelEdit(activity.id)}
                         disabled={isSaving}
                         className="h-8 w-8 p-0"
                         title="Cancel changes"
@@ -285,12 +228,7 @@ export const ActivityAllocationSection = ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={(e) => {
-                        console.log('Edit button clicked for:', activity.id);
-                        e.preventDefault();
-                        e.stopPropagation();
-                        startEditing(activity.id);
-                      }}
+                      onClick={() => startEditing(activity.id)}
                       className="h-8 w-8 p-0"
                       title="Edit attendance"
                     >
