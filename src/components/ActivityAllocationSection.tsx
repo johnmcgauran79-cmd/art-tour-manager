@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Check, X } from "lucide-react";
+import { Check, X, Edit } from "lucide-react";
 
 interface ActivityAllocationSectionProps {
   tourId: string;
@@ -73,7 +73,21 @@ export const ActivityAllocationSection = ({
     setAllocations(prev => ({ ...prev, [activityId]: numValue }));
   };
 
+  const startEditing = (activityId: string) => {
+    console.log('Starting to edit activity:', activityId);
+    setEditingActivity(activityId);
+    // Small delay to ensure the input is rendered before focusing
+    setTimeout(() => {
+      const input = document.getElementById(`activity-input-${activityId}`) as HTMLInputElement;
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }, 50);
+  };
+
   const handleSaveActivity = async (activityId: string) => {
+    console.log('Saving activity allocation for:', activityId, 'with value:', allocations[activityId]);
     setSavingActivity(activityId);
 
     try {
@@ -111,6 +125,7 @@ export const ActivityAllocationSection = ({
   };
 
   const handleCancelEdit = (activityId: string) => {
+    console.log('Canceling edit for activity:', activityId);
     // Reset to original value
     const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
     const originalValue = existingBooking?.passengers_attending || passengerCount;
@@ -121,6 +136,14 @@ export const ActivityAllocationSection = ({
   const getOriginalValue = (activityId: string) => {
     const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
     return existingBooking?.passengers_attending || passengerCount;
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, activityId: string) => {
+    if (e.key === 'Enter') {
+      handleSaveActivity(activityId);
+    } else if (e.key === 'Escape') {
+      handleCancelEdit(activityId);
+    }
   };
 
   if (!sortedActivities || sortedActivities.length === 0) {
@@ -146,7 +169,7 @@ export const ActivityAllocationSection = ({
           {sortedActivities.map((activity) => {
             const isEditing = editingActivity === activity.id;
             const isSaving = savingActivity === activity.id;
-            const currentValue = allocations[activity.id] || passengerCount;
+            const currentValue = allocations[activity.id] || 0;
             const originalValue = getOriginalValue(activity.id);
             const hasChanged = currentValue !== originalValue;
 
@@ -162,17 +185,21 @@ export const ActivityAllocationSection = ({
                 <TableCell>
                   {isEditing ? (
                     <Input
+                      id={`activity-input-${activity.id}`}
                       type="number"
                       min="0"
                       value={currentValue}
                       onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, activity.id)}
                       className="w-20"
                       disabled={isSaving}
+                      autoFocus
                     />
                   ) : (
                     <div 
-                      className="cursor-pointer hover:bg-muted p-2 rounded w-20 text-center"
-                      onClick={() => setEditingActivity(activity.id)}
+                      className="cursor-pointer hover:bg-muted p-2 rounded w-20 text-center border border-transparent hover:border-muted-foreground/30"
+                      onClick={() => startEditing(activity.id)}
+                      title="Click to edit"
                     >
                       {currentValue}
                     </div>
@@ -185,8 +212,9 @@ export const ActivityAllocationSection = ({
                         size="sm"
                         variant="ghost"
                         onClick={() => handleSaveActivity(activity.id)}
-                        disabled={isSaving || !hasChanged}
+                        disabled={isSaving}
                         className="h-8 w-8 p-0"
+                        title="Save changes"
                       >
                         <Check className="h-4 w-4 text-green-600" />
                       </Button>
@@ -196,6 +224,7 @@ export const ActivityAllocationSection = ({
                         onClick={() => handleCancelEdit(activity.id)}
                         disabled={isSaving}
                         className="h-8 w-8 p-0"
+                        title="Cancel changes"
                       >
                         <X className="h-4 w-4 text-red-600" />
                       </Button>
@@ -204,10 +233,11 @@ export const ActivityAllocationSection = ({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setEditingActivity(activity.id)}
-                      className="h-8 px-2 text-xs"
+                      onClick={() => startEditing(activity.id)}
+                      className="h-8 w-8 p-0"
+                      title="Edit attendance"
                     >
-                      Edit
+                      <Edit className="h-4 w-4" />
                     </Button>
                   )}
                 </TableCell>
