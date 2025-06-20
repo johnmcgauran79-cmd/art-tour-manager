@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Edit, ChevronDown, Check } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { EditContactModal } from "@/components/EditContactModal";
@@ -30,6 +30,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     leadPassenger: "",
     leadEmail: "",
     leadPhone: "",
+    leadDietary: "",
     passengers: "2",
     passenger2Name: "",
     passenger3Name: "",
@@ -52,6 +53,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
   const { data: tours } = useTours();
   const { data: customers } = useCustomers();
   const createBooking = useCreateBooking();
+  const updateCustomer = useUpdateCustomer();
 
   // Filter customers based on lead passenger input
   const filteredContacts = customers?.filter(customer => {
@@ -96,6 +98,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
           leadPassenger: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`,
           leadEmail: selectedCustomer.email || "",
           leadPhone: selectedCustomer.phone || "",
+          leadDietary: selectedCustomer.dietary_requirements || "",
         }));
       }
     }
@@ -108,6 +111,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       leadPassenger: `${customer.first_name} ${customer.last_name}`,
       leadEmail: customer.email || "",
       leadPhone: customer.phone || "",
+      leadDietary: customer.dietary_requirements || "",
     }));
     setContactPopoverOpen(false);
   };
@@ -132,6 +136,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       check_out_date: formData.checkOutDate || undefined,
     }, {
       onSuccess: (data) => {
+        // Update customer dietary requirements if changed and customer exists
+        if (selectedContactId && formData.leadDietary) {
+          const selectedCustomer = customers?.find(c => c.id === selectedContactId);
+          if (selectedCustomer && selectedCustomer.dietary_requirements !== formData.leadDietary) {
+            updateCustomer.mutate({
+              id: selectedContactId,
+              dietary_requirements: formData.leadDietary
+            });
+          }
+        }
+        
         setCreatedBookingId(data.id);
         if (formData.accommodationRequired) {
           setActiveTab("accommodation");
@@ -148,6 +163,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       leadPassenger: "",
       leadEmail: "",
       leadPhone: "",
+      leadDietary: "",
       passengers: "2",
       passenger2Name: "",
       passenger3Name: "",
@@ -186,6 +202,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       last_name: formData.leadPassenger.split(' ').slice(1).join(' ') || '',
       email: formData.leadEmail,
       phone: formData.leadPhone,
+      dietary_requirements: formData.leadDietary,
     };
     setContactToEdit(contact);
     setShowEditContact(true);
@@ -198,6 +215,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       leadPassenger: `${updatedContact.first_name} ${updatedContact.last_name}`,
       leadEmail: updatedContact.email || '',
       leadPhone: updatedContact.phone || '',
+      leadDietary: updatedContact.dietary_requirements || '',
     }));
     
     // Update selected contact ID if it was an existing contact
@@ -333,6 +351,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                         placeholder="e.g., +1234567890"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="leadDietary">Dietary Requirements</Label>
+                    <Textarea
+                      id="leadDietary"
+                      value={formData.leadDietary}
+                      onChange={(e) => handleInputChange("leadDietary", e.target.value)}
+                      placeholder="Enter dietary requirements..."
+                      rows={3}
+                    />
                   </div>
                 </div>
 

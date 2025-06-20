@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2, Edit } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
+import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
@@ -76,6 +77,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
   const cancelBooking = useCancelBooking();
+  const updateCustomer = useUpdateCustomer();
 
   useEffect(() => {
     if (booking) {
@@ -104,6 +106,16 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     e.preventDefault();
     if (!booking) return;
 
+    // First update the customer dietary requirements if they have changed
+    const currentDietary = booking.customers?.dietary_requirements || '';
+    if (formData.lead_passenger_dietary_requirements !== currentDietary && booking.customers?.id) {
+      updateCustomer.mutate({
+        id: booking.customers.id,
+        dietary_requirements: formData.lead_passenger_dietary_requirements
+      });
+    }
+
+    // Then update the booking
     updateBooking.mutate({
       id: booking.id,
       // Only include the booking fields, not the customer fields
@@ -277,10 +289,8 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                       id="lead_passenger_dietary_requirements"
                       value={formData.lead_passenger_dietary_requirements}
                       onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_dietary_requirements: e.target.value }))}
-                      disabled
-                      className="bg-gray-100"
                       placeholder="Enter dietary requirements..."
-                      title="Customer details are managed separately in the Contacts section"
+                      rows={3}
                     />
                   </div>
                 </div>
