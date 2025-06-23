@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,30 +96,13 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
         throw new Error('User not authenticated');
       }
 
-      // First, let's check if the notification exists and what user it belongs to
-      console.log('Checking if notification exists...');
-      const { data: existingNotification, error: checkError } = await supabase
-        .from('user_notifications')
-        .select('*')
-        .eq('id', notificationId)
-        .single();
-
-      if (checkError) {
-        console.error('Error checking notification:', checkError);
-        throw checkError;
-      }
-
-      console.log('Found notification:', existingNotification);
-      console.log('Current user ID:', user.id);
-      console.log('Notification user ID:', existingNotification?.user_id);
-
-      // Now delete it without the user_id constraint first to see if that's the issue
       console.log('Executing delete query for notification:', notificationId);
       
       const { data, error } = await supabase
         .from('user_notifications')
         .delete()
         .eq('id', notificationId)
+        .eq('user_id', user.id)
         .select();
 
       if (error) {
