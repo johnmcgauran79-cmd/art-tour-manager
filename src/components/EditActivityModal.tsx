@@ -29,7 +29,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     collection_location: "",
     dropoff_location: "",
     spots_booked: "",
-    activity_status: "pending",
+    activity_status: "planned",
     transport_status: "pending",
     guide_name: "",
     guide_phone: "",
@@ -63,7 +63,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         collection_location: activity.collection_location || "",
         dropoff_location: activity.dropoff_location || "",
         spots_booked: activity.spots_available?.toString() || "",
-        activity_status: activity.activity_status || "pending",
+        activity_status: activity.activity_status || "planned",
         transport_status: activity.transport_status || "pending",
         guide_name: activity.guide_name || "",
         guide_phone: activity.guide_phone || "",
@@ -290,8 +290,12 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="contacted_enquiry_sent">Contacted / Enquiry Sent</SelectItem>
+                  <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="finalised">Finalised</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>

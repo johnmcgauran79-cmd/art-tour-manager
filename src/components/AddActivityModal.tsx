@@ -28,7 +28,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
     collection_location: "",
     dropoff_location: "",
     spots_booked: "",
-    activity_status: "pending",
+    activity_status: "planned",
     transport_status: "pending",
     guide_name: "",
     guide_phone: "",
@@ -131,7 +131,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         collection_location: "",
         dropoff_location: "",
         spots_booked: "",
-        activity_status: "pending",
+        activity_status: "planned",
         transport_status: "pending",
         guide_name: "",
         guide_phone: "",
@@ -240,8 +240,12 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="contacted_enquiry_sent">Contacted / Enquiry Sent</SelectItem>
+                  <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="finalised">Finalised</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
@@ -383,6 +387,26 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
               id="notes"
               value={formData.notes}
               onChange={(e) => handleInputChange("notes", e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="operations_notes">Operations Notes</Label>
+            <Textarea
+              id="operations_notes"
+              value={formData.operations_notes}
+              onChange={(e) => handleInputChange("operations_notes", e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="transport_notes">Transport Notes</Label>
+            <Textarea
+              id="transport_notes"
+              value={formData.transport_notes}
+              onChange={(e) => handleInputChange("transport_notes", e.target.value)}
               rows={3}
             />
           </div>
