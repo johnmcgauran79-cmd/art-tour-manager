@@ -32,6 +32,39 @@ export interface Task {
   };
 }
 
+export const useDeleteTask = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId);
+
+      if (error) throw error;
+      return { taskId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      toast({
+        title: "Task Deleted",
+        description: "The task has been successfully deleted.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useTasks = (tourId?: string, filters?: {
   search?: string;
   assigneeId?: string;
