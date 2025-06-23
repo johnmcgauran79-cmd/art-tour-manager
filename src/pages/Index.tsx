@@ -43,7 +43,7 @@ const Index = () => {
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
 
-  // Handle navigation from notifications
+  // Handle navigation from notifications - enhanced to handle all types
   const handleNavigateToItem = (type: string, itemId: string, hotelId?: string) => {
     console.log('Navigate to item:', type, itemId, hotelId);
     
@@ -62,16 +62,11 @@ const Index = () => {
         setBookingModalOpen(true);
       }
       setActiveTab("bookings");
-    } else if (type === 'hotel_booking') {
-      const booking = bookings.find(b => b.id === itemId);
-      if (booking) {
-        setSelectedBooking(booking);
-        setBookingModalOpen(true);
-      }
-      setActiveTab("bookings");
     } else if (type === 'task') {
+      // Navigate to operations tab where tasks are managed
       setActiveTab("operations");
     } else if (type === 'system') {
+      // For system notifications, navigate to contacts or appropriate tab
       setActiveTab("contacts");
     }
   };

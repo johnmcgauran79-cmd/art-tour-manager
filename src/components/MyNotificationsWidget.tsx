@@ -3,17 +3,19 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { NotificationItem } from "@/components/NotificationItem";
+import { NotificationActions } from "@/components/NotificationActions";
+import { Bell, Trash2, CheckCircle } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
-import { NotificationItem } from "./NotificationItem";
-import { NotificationActions } from "./NotificationActions";
 
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
 interface MyNotificationsWidgetProps {
-  onNavigateToItem?: (type: string, itemId: string) => void;
+  onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
 }
 
 export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidgetProps) => {
@@ -31,9 +33,8 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
         .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
-        .eq('acknowledged', false)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10);
 
       if (error) throw error;
       return data || [];
@@ -41,12 +42,42 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     enabled: !!user?.id,
   });
 
-  // Acknowledge notifications mutation
-  const acknowledgeMutation = useMutation({
+  // Mark as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const { error } = await supabase
+        .from('user_notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  // Delete notification mutation
+  const deleteNotificationMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      const { error } = await supabase
+        .from('user_notifications')
+        .delete()
+        .eq('id', notificationId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
     mutationFn: async (notificationIds: string[]) => {
       const { error } = await supabase
         .from('user_notifications')
-        .update({ acknowledged: true, read: true })
+        .delete()
         .in('id', notificationIds);
 
       if (error) throw error;
@@ -57,9 +88,10 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     },
   });
 
-  const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read when clicked
-    acknowledgeMutation.mutate([notification.id]);
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markAsReadMutation.mutate(notification.id);
+    }
   };
 
   const handleCheckboxChange = (notificationId: string, checked: boolean) => {
@@ -70,76 +102,59 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     }
   };
 
-  const handleBulkAcknowledge = () => {
+  const handleBulkDelete = () => {
     if (selectedNotifications.length > 0) {
-      acknowledgeMutation.mutate(selectedNotifications);
+      bulkDeleteMutation.mutate(selectedNotifications);
     }
   };
 
-  const handleAcknowledgeAll = () => {
-    const allIds = notifications.map(n => n.id);
-    acknowledgeMutation.mutate(allIds);
-  };
-
-  if (isLoading) {
-    return (
-      <Card className="border-brand-navy/20 shadow-lg">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-brand-navy text-lg">
-            <Bell className="h-5 w-5" />
-            My Notifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-4 text-muted-foreground">
-            Loading notifications...
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <Card className="border-brand-navy/20 shadow-lg">
-      <CardHeader className="pb-3">
+      <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bell className="h-5 w-5 text-brand-navy" />
-            <CardTitle className="text-brand-navy text-lg">My Notifications</CardTitle>
-            {notifications.length > 0 && (
-              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy text-xs">
-                {notifications.length}
+            <CardTitle className="text-brand-navy">Recent Notifications</CardTitle>
+            {unreadCount > 0 && (
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                {unreadCount} unread
               </Badge>
             )}
           </div>
-          <NotificationActions
+          <NotificationActions 
             selectedCount={selectedNotifications.length}
-            totalCount={notifications.length}
-            isLoading={acknowledgeMutation.isPending}
-            onBulkAcknowledge={handleBulkAcknowledge}
-            onAcknowledgeAll={handleAcknowledgeAll}
+            onBulkDelete={handleBulkDelete}
+            isDeleting={bulkDeleteMutation.isPending}
           />
         </div>
       </CardHeader>
-      
-      <CardContent className="pt-0">
-        {notifications.length === 0 ? (
-          <div className="text-center py-6 text-muted-foreground">
-            <Bell className="h-6 w-6 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No new notifications</p>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-4 text-muted-foreground">
+            Loading notifications...
+          </div>
+        ) : notifications.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>No notifications yet</p>
           </div>
         ) : (
-          <div className="space-y-1">
-            {notifications.map((notification) => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                isSelected={selectedNotifications.includes(notification.id)}
-                onCheckboxChange={handleCheckboxChange}
-                onNotificationClick={handleNotificationClick}
-              />
-            ))}
-          </div>
+          <ScrollArea className="h-[300px]">
+            <div className="space-y-1">
+              {notifications.map((notification) => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  isSelected={selectedNotifications.includes(notification.id)}
+                  onCheckboxChange={handleCheckboxChange}
+                  onNotificationClick={handleNotificationClick}
+                  onNavigateToItem={onNavigateToItem}
+                />
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>

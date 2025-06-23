@@ -13,6 +13,7 @@ interface NotificationItemProps {
   isSelected: boolean;
   onCheckboxChange: (notificationId: string, checked: boolean) => void;
   onNotificationClick: (notification: Notification) => void;
+  onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
 }
 
 const getPriorityColor = (priority: string) => {
@@ -29,21 +30,23 @@ export const NotificationItem = ({
   notification, 
   isSelected, 
   onCheckboxChange, 
-  onNotificationClick 
+  onNotificationClick,
+  onNavigateToItem
 }: NotificationItemProps) => {
   const handleNotificationClick = async () => {
     console.log('Notification clicked:', notification);
     
-    if (notification.related_id) {
-      // Handle different notification types with proper navigation
+    // Handle navigation based on notification type and related_id
+    if (notification.related_id && onNavigateToItem) {
       if (notification.type === 'booking') {
-        console.log('Dispatching booking detail event for:', notification.related_id);
-        window.dispatchEvent(new CustomEvent('open-booking-detail', { 
-          detail: { 
-            bookingId: notification.related_id,
-            hotelId: notification.message.includes('hotel') ? 'auto-navigate' : undefined
-          } 
-        }));
+        console.log('Navigating to booking:', notification.related_id);
+        onNavigateToItem('booking', notification.related_id, notification.message.includes('hotel') ? 'auto-navigate' : undefined);
+      } else if (notification.type === 'tour') {
+        console.log('Navigating to tour:', notification.related_id);
+        onNavigateToItem('tour', notification.related_id);
+      } else if (notification.type === 'task') {
+        console.log('Navigating to task:', notification.related_id);
+        onNavigateToItem('task', notification.related_id);
       } else if (notification.type === 'system') {
         // For system notifications, check if it's a dietary update
         if (notification.message.includes('Dietary requirements')) {
@@ -58,15 +61,14 @@ export const NotificationItem = ({
 
             if (bookings && bookings.length > 0) {
               console.log('Opening booking for dietary update:', bookings[0].id);
-              window.dispatchEvent(new CustomEvent('open-booking-detail', { 
-                detail: { 
-                  bookingId: bookings[0].id
-                } 
-              }));
+              onNavigateToItem('booking', bookings[0].id);
             }
           } catch (error) {
             console.error('Error finding booking for dietary update:', error);
           }
+        } else {
+          // For other system notifications, try to navigate to the related item
+          onNavigateToItem('system', notification.related_id);
         }
       }
     }
