@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -155,9 +156,9 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                    className="flex items-center gap-2"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete
@@ -174,7 +175,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
-                      className="bg-red-600 hover:bg-red-700"
                     >
                       Delete
                     </AlertDialogAction>
@@ -343,7 +343,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 <Button
                   onClick={handleUpdateTask}
                   disabled={updateTask.isPending}
-                  className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                  className="flex items-center gap-2"
                 >
                   <Save className="h-4 w-4" />
                   {updateTask.isPending ? "Updating..." : "Update Task"}
