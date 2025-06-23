@@ -1,0 +1,278 @@
+
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { TaskTemplate, useTaskTemplates, useDeleteTaskTemplate } from "@/hooks/useTaskTemplates";
+import { TaskTemplateModal } from "@/components/TaskTemplateModal";
+import { Plus, Edit, Trash2, Settings, Calendar, AlertTriangle } from "lucide-react";
+
+export const TaskTemplatesManagement = () => {
+  const { data: templates, isLoading } = useTaskTemplates();
+  const deleteTemplate = useDeleteTaskTemplate();
+  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+
+  const handleEditTemplate = (template: TaskTemplate) => {
+    setSelectedTemplate(template);
+    setModalOpen(true);
+  };
+
+  const handleCreateTemplate = () => {
+    setSelectedTemplate(null);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setModalOpen(open);
+    if (!open) {
+      setSelectedTemplate(null);
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      await deleteTemplate.mutateAsync(templateId);
+    } catch (error) {
+      console.error('Error deleting template:', error);
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'booking': return 'bg-blue-100 text-blue-800';
+      case 'operations': return 'bg-green-100 text-green-800';
+      case 'finance': return 'bg-yellow-100 text-yellow-800';
+      case 'marketing': return 'bg-purple-100 text-purple-800';
+      case 'maintenance': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical': return 'bg-red-100 text-red-800';
+      case 'high': return 'bg-orange-100 text-orange-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-blue-100 text-blue-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Task Templates Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            Loading task templates...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const activeTemplates = templates?.filter(t => t.is_active) || [];
+  const inactiveTemplates = templates?.filter(t => !t.is_active) || [];
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-brand-navy" />
+              <CardTitle className="text-brand-navy">Task Templates Management</CardTitle>
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                {templates?.length || 0} templates
+              </Badge>
+            </div>
+            <Button
+              onClick={handleCreateTemplate}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Template
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Active Templates */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-green-600" />
+                Active Templates ({activeTemplates.length})
+              </h3>
+              <div className="grid gap-4">
+                {activeTemplates.map((template) => (
+                  <div key={template.id} className="border rounded-lg p-4 bg-white shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold">{template.name}</h4>
+                          <Badge className={getCategoryColor(template.category)}>
+                            {template.category}
+                          </Badge>
+                          <Badge className={getPriorityColor(template.priority)}>
+                            {template.priority}
+                          </Badge>
+                          {template.days_before_tour && (
+                            <Badge variant="outline" className="text-xs">
+                              {template.days_before_tour} days before tour
+                            </Badge>
+                          )}
+                        </div>
+                        {template.description && (
+                          <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Created: {new Date(template.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditTemplate(template)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-3 w-3" />
+                          Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              disabled={deleteTemplate.isPending}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{template.name}"? This action cannot be undone.
+                                This will not affect existing tasks created from this template.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteTemplate(template.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete Template
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {activeTemplates.length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No active templates found</p>
+                    <p className="text-sm">Create your first template to get started</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Inactive Templates */}
+            {inactiveTemplates.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-gray-500" />
+                  Inactive Templates ({inactiveTemplates.length})
+                </h3>
+                <div className="grid gap-4">
+                  {inactiveTemplates.map((template) => (
+                    <div key={template.id} className="border rounded-lg p-4 bg-gray-50 shadow-sm opacity-70">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-gray-700">{template.name}</h4>
+                            <Badge className={getCategoryColor(template.category)}>
+                              {template.category}
+                            </Badge>
+                            <Badge className={getPriorityColor(template.priority)}>
+                              {template.priority}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-gray-200 text-gray-600">
+                              Inactive
+                            </Badge>
+                          </div>
+                          {template.description && (
+                            <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditTemplate(template)}
+                            className="flex items-center gap-1"
+                          >
+                            <Edit className="h-3 w-3" />
+                            Edit
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                disabled={deleteTemplate.isPending}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Template</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete "{template.name}"? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteTemplate(template.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete Template
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <TaskTemplateModal
+        template={selectedTemplate}
+        open={modalOpen}
+        onOpenChange={handleModalClose}
+      />
+    </>
+  );
+};
