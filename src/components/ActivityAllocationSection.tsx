@@ -61,7 +61,8 @@ export const ActivityAllocationSection = ({
       
       sortedActivities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
-        const allocation = existingBooking?.passengers_attending || passengerCount;
+        // Use existing booking value if it exists, otherwise default to passengerCount
+        const allocation = existingBooking?.passengers_attending ?? passengerCount;
         newAllocations[activity.id] = allocation;
       });
       
@@ -131,18 +132,20 @@ export const ActivityAllocationSection = ({
     try {
       const passengers = allocations[activityId] || 0;
       const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
-      const oldCount = existingBooking?.passengers_attending || passengerCount;
+      const oldCount = existingBooking?.passengers_attending ?? passengerCount;
       
       // Get activity name for notification
       const activity = sortedActivities.find(a => a.id === activityId);
       const activityName = activity?.name || 'Unknown Activity';
 
       if (existingBooking) {
+        // Update existing booking
         await updateActivityBooking.mutateAsync({
           id: existingBooking.id,
           passengers_attending: passengers
         });
-      } else if (passengers > 0) {
+      } else {
+        // Create new booking (even if passengers is 0, to track the explicit allocation)
         await createActivityBooking.mutateAsync({
           booking_id: bookingId,
           activity_id: activityId,
@@ -173,15 +176,16 @@ export const ActivityAllocationSection = ({
   };
 
   const handleCancelEdit = (activityId: string) => {
+    // Reset to the original value from the database
     const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
-    const originalValue = existingBooking?.passengers_attending || passengerCount;
+    const originalValue = existingBooking?.passengers_attending ?? passengerCount;
     setAllocations(prev => ({ ...prev, [activityId]: originalValue }));
     setEditingActivity(null);
   };
 
   const getOriginalValue = (activityId: string) => {
     const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
-    return existingBooking?.passengers_attending || passengerCount;
+    return existingBooking?.passengers_attending ?? passengerCount;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, activityId: string) => {
@@ -218,7 +222,6 @@ export const ActivityAllocationSection = ({
             const isEditing = editingActivity === activity.id;
             const isSaving = savingActivity === activity.id;
             const currentValue = allocations[activity.id] || 0;
-            const originalValue = getOriginalValue(activity.id);
 
             return (
               <TableRow key={activity.id}>
