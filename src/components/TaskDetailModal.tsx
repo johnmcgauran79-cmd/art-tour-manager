@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Edit, Trash2, X } from "lucide-react";
+import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Edit, Trash2, X, Save } from "lucide-react";
 import { Task, useUpdateTask, useDeleteTask, useTasks } from "@/hooks/useTasks";
 import { useAutoUnblockTasks } from "@/hooks/useTaskDependencies";
 import { formatDistanceToNow, format } from "date-fns";
@@ -85,7 +84,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
   const isBlocked = task.dependent_task && task.dependent_task.status !== 'completed';
 
-  const handleSaveChanges = async () => {
+  const handleUpdateTask = async () => {
     try {
       const updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at'>> = {};
       
@@ -338,6 +337,26 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
               )}
             </div>
 
+            {/* Update Actions */}
+            {isEditing && (
+              <div className="flex gap-3 pt-4 border-t">
+                <Button
+                  onClick={handleUpdateTask}
+                  disabled={updateTask.isPending}
+                  className="bg-green-600 hover:bg-green-700 flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  {updateTask.isPending ? "Updating..." : "Update Task"}
+                </Button>
+                <Button
+                  onClick={() => setIsEditing(false)}
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
+
             {/* Task Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {task.tours && (
@@ -383,25 +402,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 </div>
               )}
             </div>
-
-            {/* Edit Actions */}
-            {isEditing && (
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  onClick={handleSaveChanges}
-                  disabled={updateTask.isPending}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {updateTask.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-                <Button
-                  onClick={() => setIsEditing(false)}
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
 
             {/* Blocked Warning */}
             {isBlocked && (
