@@ -1,10 +1,12 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle, Clock, XCircle, Settings } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus } from "lucide-react";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
+import { AllTasksView } from "@/components/AllTasksView";
 
 const operationsData = [
   {
@@ -49,16 +51,16 @@ const getStatusColor = (status: string) => {
 };
 
 export const OperationsDashboard = () => {
-  const [showTemplateManagement, setShowTemplateManagement] = useState(false);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks'>('dashboard');
 
-  if (showTemplateManagement) {
+  if (currentView === 'templates') {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-brand-navy">Task Template Management</h2>
           <Button
             variant="outline"
-            onClick={() => setShowTemplateManagement(false)}
+            onClick={() => setCurrentView('dashboard')}
           >
             Back to Operations
           </Button>
@@ -68,33 +70,68 @@ export const OperationsDashboard = () => {
     );
   }
 
+  if (currentView === 'allTasks') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-brand-navy">All My Tasks</h2>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentView('dashboard')}
+          >
+            Back to Operations
+          </Button>
+        </div>
+        <AllTasksView />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* My Tasks Widget */}
-      <MyTasksWidget hideAddButton={false} />
-
-      {/* Template Management Button */}
+      {/* My Tasks Widget - Top 5 Most Urgent */}
       <Card className="border-brand-navy/20 shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-brand-navy">
-                <Settings className="h-5 w-5" />
-                Task Management
-              </CardTitle>
-              <CardDescription>
-                Manage automated task templates and operational workflows
-              </CardDescription>
+            <div className="flex items-center gap-2">
+              <Settings className="h-5 w-5 text-brand-navy" />
+              <CardTitle className="text-brand-navy">My Tasks</CardTitle>
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                Top 5 Most Urgent
+              </Badge>
             </div>
-            <Button
-              onClick={() => setShowTemplateManagement(true)}
-              className="flex items-center gap-2"
-            >
-              <Settings className="h-4 w-4" />
-              Manage Task Templates
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setCurrentView('templates')}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Manage Task Templates
+              </Button>
+              <Button
+                onClick={() => setCurrentView('allTasks')}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <List className="h-4 w-4" />
+                View All Tasks
+              </Button>
+              <Button
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            </div>
           </div>
         </CardHeader>
+        <CardContent>
+          <MyTasksWidget hideAddButton={true} limitToTop5={true} />
+        </CardContent>
       </Card>
 
       {/* Existing Operations Overview */}
