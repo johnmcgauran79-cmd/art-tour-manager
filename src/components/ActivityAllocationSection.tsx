@@ -31,6 +31,7 @@ export const ActivityAllocationSection = ({
   const [allocations, setAllocations] = useState<Record<string, number>>({});
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
+  const [tempEditValue, setTempEditValue] = useState<string>('');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -108,12 +109,13 @@ export const ActivityAllocationSection = ({
     }
   };
 
-  const handleAllocationChange = (activityId: string, value: string) => {
-    const numValue = Math.max(0, parseInt(value) || 0);
-    setAllocations(prev => ({ ...prev, [activityId]: numValue }));
+  const handleAllocationChange = (value: string) => {
+    setTempEditValue(value);
   };
 
   const startEditing = (activityId: string) => {
+    const currentValue = allocations[activityId] ?? 0;
+    setTempEditValue(currentValue.toString());
     setEditingActivity(activityId);
     
     // Focus the input after it's rendered
@@ -130,7 +132,7 @@ export const ActivityAllocationSection = ({
     setSavingActivity(activityId);
 
     try {
-      const passengers = allocations[activityId] || 0;
+      const passengers = Math.max(0, parseInt(tempEditValue) || 0);
       const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
       const oldCount = existingBooking?.passengers_attending ?? passengerCount;
       
@@ -153,12 +155,16 @@ export const ActivityAllocationSection = ({
         });
       }
       
+      // Update local state
+      setAllocations(prev => ({ ...prev, [activityId]: passengers }));
+      
       // Create notification if the count changed
       if (oldCount !== passengers) {
         await createNotification(activityName, passengers, oldCount);
       }
       
       setEditingActivity(null);
+      setTempEditValue('');
       toast({
         title: "Success",
         description: `${activityName} attendance updated successfully.`,
@@ -176,16 +182,8 @@ export const ActivityAllocationSection = ({
   };
 
   const handleCancelEdit = (activityId: string) => {
-    // Reset to the original value from the database
-    const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
-    const originalValue = existingBooking?.passengers_attending ?? passengerCount;
-    setAllocations(prev => ({ ...prev, [activityId]: originalValue }));
     setEditingActivity(null);
-  };
-
-  const getOriginalValue = (activityId: string) => {
-    const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
-    return existingBooking?.passengers_attending ?? passengerCount;
+    setTempEditValue('');
   };
 
   const handleKeyPress = (e: React.KeyboardEvent, activityId: string) => {
@@ -221,7 +219,7 @@ export const ActivityAllocationSection = ({
           {sortedActivities.map((activity) => {
             const isEditing = editingActivity === activity.id;
             const isSaving = savingActivity === activity.id;
-            const currentValue = allocations[activity.id] || 0;
+            const currentValue = allocations[activity.id] ?? 0;
 
             return (
               <TableRow key={activity.id}>
@@ -238,8 +236,8 @@ export const ActivityAllocationSection = ({
                       id={`activity-input-${activity.id}`}
                       type="number"
                       min="0"
-                      value={currentValue.toString()}
-                      onChange={(e) => handleAllocationChange(activity.id, e.target.value)}
+                      value={tempEditValue}
+                      onChange={(e) => handleAllocationChange(e.target.value)}
                       onKeyDown={(e) => handleKeyPress(e, activity.id)}
                       className="w-20"
                       disabled={isSaving}
