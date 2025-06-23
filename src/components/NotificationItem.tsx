@@ -36,9 +36,43 @@ export const NotificationItem = ({
   const handleNotificationClick = async () => {
     console.log('Notification clicked:', notification);
     
-    // Handle navigation based on notification type and related_id
+    // Mark notification as read
+    try {
+      await supabase
+        .from('user_notifications')
+        .update({ read: true })
+        .eq('id', notification.id);
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+    
+    // Handle navigation based on notification type and content
     if (notification.related_id && onNavigateToItem) {
-      if (notification.type === 'booking') {
+      // Check if this is an activity-related notification
+      if (notification.type === 'booking' && 
+          (notification.message.includes('activity') || 
+           notification.message.includes('Activity') ||
+           notification.message.includes('attendance'))) {
+        console.log('Activity notification - finding tour for booking:', notification.related_id);
+        
+        // Get the booking to find the associated tour
+        try {
+          const { data: booking } = await supabase
+            .from('bookings')
+            .select('tour_id')
+            .eq('id', notification.related_id)
+            .single();
+
+          if (booking?.tour_id) {
+            console.log('Opening activities tab for tour:', booking.tour_id);
+            onNavigateToItem('tour', booking.tour_id);
+          }
+        } catch (error) {
+          console.error('Error finding tour for booking:', error);
+          // Fallback to opening the booking
+          onNavigateToItem('booking', notification.related_id);
+        }
+      } else if (notification.type === 'booking') {
         console.log('Navigating to booking:', notification.related_id);
         onNavigateToItem('booking', notification.related_id, notification.message.includes('hotel') ? 'auto-navigate' : undefined);
       } else if (notification.type === 'tour') {

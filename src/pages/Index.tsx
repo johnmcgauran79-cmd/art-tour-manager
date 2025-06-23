@@ -23,6 +23,7 @@ import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Users, FileText, Settings, Calendar, MapPin, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -48,32 +49,37 @@ const Index = () => {
   const { data: tours = [] } = useTours();
   const { data: tasks = [] } = useTasks();
 
-  // Handle navigation from notifications - enhanced to handle all types
-  const handleNavigateToItem = (type: string, itemId: string, hotelId?: string) => {
+  // Handle navigation from notifications - enhanced to handle activity notifications
+  const handleNavigateToItem = async (type: string, itemId: string, hotelId?: string) => {
     console.log('Navigate to item:', type, itemId, hotelId);
     
     if (type === 'tour') {
       const tour = tours.find(t => t.id === itemId);
       if (tour) {
         setSelectedTour(tour);
-        setTourModalDefaultTab("overview");
+        setTourModalDefaultTab("activities");
         setTourModalOpen(true);
       }
       setActiveTab("tours");
     } else if (type === 'booking') {
+      // Check if this is an activity-related booking notification
       const booking = bookings.find(b => b.id === itemId);
       if (booking) {
-        setSelectedBooking(booking);
-        setBookingModalOpen(true);
+        // For activity notifications, open the tour's activities tab instead
+        const tour = tours.find(t => t.id === booking.tour_id);
+        if (tour) {
+          setSelectedTour(tour);
+          setTourModalDefaultTab("activities");
+          setTourModalOpen(true);
+        }
+        setActiveTab("tours");
       }
-      setActiveTab("bookings");
     } else if (type === 'task') {
       const task = tasks.find(t => t.id === itemId);
       if (task) {
         setSelectedTask(task);
         setTaskModalOpen(true);
       }
-      // Don't change tab for tasks - keep user on current view
     } else if (type === 'system') {
       // For system notifications, navigate to contacts or appropriate tab
       setActiveTab("contacts");
