@@ -90,39 +90,53 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   // Delete notification mutation
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      console.log('Deleting notification:', notificationId);
+      console.log('Starting delete for notification:', notificationId);
       
       if (!user?.id) {
+        console.error('No user ID available for delete');
         throw new Error('User not authenticated');
       }
 
-      const { error } = await supabase
+      console.log('Executing delete query for notification:', notificationId, 'user:', user.id);
+      
+      const { data, error } = await supabase
         .from('user_notifications')
         .delete()
         .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select(); // Add select to see what was deleted
 
       if (error) {
-        console.error('Error deleting notification:', error);
+        console.error('Delete query failed:', error);
         throw error;
       }
       
-      console.log('Successfully deleted notification:', notificationId);
-      return notificationId;
+      console.log('Delete query successful, deleted data:', data);
+      return { notificationId, deletedData: data };
     },
-    onSuccess: (notificationId) => {
-      console.log('Delete success, updating UI for notification:', notificationId);
+    onSuccess: ({ notificationId, deletedData }) => {
+      console.log('Delete mutation success callback - notification:', notificationId, 'deleted:', deletedData);
+      
       // Remove from selected notifications
-      setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
-      // Invalidate and refetch
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      setSelectedNotifications(prev => {
+        const updated = prev.filter(id => id !== notificationId);
+        console.log('Updated selected notifications:', updated);
+        return updated;
+      });
+      
+      // Force immediate refetch
+      console.log('Forcing refetch after delete');
+      refetch().then((result) => {
+        console.log('Refetch completed after delete:', result.data?.length, 'notifications');
+      });
+      
       toast({
         title: "Success",
         description: "Notification deleted",
       });
     },
     onError: (error) => {
-      console.error('Error deleting notification:', error);
+      console.error('Delete mutation error:', error);
       toast({
         title: "Error",
         description: "Failed to delete notification",
@@ -199,7 +213,7 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   };
 
   const handleSingleDelete = (notificationId: string) => {
-    console.log('Single delete requested for:', notificationId);
+    console.log('Single delete button clicked for notification:', notificationId);
     deleteNotificationMutation.mutate(notificationId);
   };
 
