@@ -115,7 +115,9 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
 
   const handleDelete = async () => {
     try {
+      console.log('Starting task deletion for task ID:', task.id);
       await deleteTask.mutateAsync(task.id);
+      console.log('Task deletion successful, closing modal');
       onOpenChange(false);
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -145,9 +147,10 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                     variant="destructive"
                     size="sm"
                     className="flex items-center gap-2"
+                    disabled={deleteTask.isPending}
                   >
                     <Trash2 className="h-4 w-4" />
-                    Delete
+                    {deleteTask.isPending ? "Deleting..." : "Delete"}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -161,8 +164,10 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      disabled={deleteTask.isPending}
                     >
-                      Delete
+                      {deleteTask.isPending ? "Deleting..." : "Delete"}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
