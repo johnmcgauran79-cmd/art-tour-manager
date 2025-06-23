@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -9,6 +10,7 @@ export interface TaskTemplate {
   category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
   priority: 'low' | 'medium' | 'high' | 'critical';
   days_before_tour: number | null;
+  date_field_type: 'tour_start_date' | 'tour_end_date' | 'initial_rooms_cutoff_date' | 'final_rooms_cutoff_date' | 'instalment_date' | 'final_payment_date';
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -47,6 +49,7 @@ export const useCreateTaskTemplate = () => {
       category: TaskTemplate['category'];
       priority: TaskTemplate['priority'];
       days_before_tour?: number;
+      date_field_type?: TaskTemplate['date_field_type'];
       is_active?: boolean;
     }) => {
       const { data, error } = await supabase
@@ -57,6 +60,7 @@ export const useCreateTaskTemplate = () => {
           category: templateData.category,
           priority: templateData.priority,
           days_before_tour: templateData.days_before_tour || null,
+          date_field_type: templateData.date_field_type || 'tour_start_date',
           is_active: templateData.is_active ?? true,
         })
         .select()
@@ -90,7 +94,7 @@ export const useUpdateTaskTemplate = () => {
   return useMutation({
     mutationFn: async (data: {
       templateId: string;
-      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'is_active'>>;
+      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active'>>;
     }) => {
       const { data: template, error } = await supabase
         .from('task_templates')

@@ -23,6 +23,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
     category: 'general' as TaskTemplate['category'],
     priority: 'medium' as TaskTemplate['priority'],
     days_before_tour: '',
+    date_field_type: 'tour_start_date' as TaskTemplate['date_field_type'],
     is_active: true,
   });
 
@@ -37,6 +38,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
         category: template.category,
         priority: template.priority,
         days_before_tour: template.days_before_tour?.toString() || '',
+        date_field_type: template.date_field_type,
         is_active: template.is_active,
       });
     } else {
@@ -46,6 +48,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
         category: 'general',
         priority: 'medium',
         days_before_tour: '',
+        date_field_type: 'tour_start_date',
         is_active: true,
       });
     }
@@ -60,6 +63,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
       category: formData.category,
       priority: formData.priority,
       days_before_tour: formData.days_before_tour ? parseInt(formData.days_before_tour) : undefined,
+      date_field_type: formData.date_field_type,
       is_active: formData.is_active,
     };
 
@@ -79,6 +83,18 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
   };
 
   const isLoading = createTemplate.isPending || updateTemplate.isPending;
+
+  const getDateFieldLabel = (dateField: string) => {
+    switch (dateField) {
+      case 'tour_start_date': return 'Tour Start Date';
+      case 'tour_end_date': return 'Tour End Date';
+      case 'initial_rooms_cutoff_date': return 'Initial Rooms Cutoff Date';
+      case 'final_rooms_cutoff_date': return 'Final Rooms Cutoff Date';
+      case 'instalment_date': return 'Instalment Date';
+      case 'final_payment_date': return 'Final Payment Date';
+      default: return dateField;
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -122,7 +138,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="category">Category</Label>
                 <Select
@@ -164,9 +180,34 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date_field_type">Reference Date Field</Label>
+                <Select
+                  value={formData.date_field_type}
+                  onValueChange={(value: TaskTemplate['date_field_type']) => 
+                    setFormData({ ...formData, date_field_type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tour_start_date">Tour Start Date</SelectItem>
+                    <SelectItem value="tour_end_date">Tour End Date</SelectItem>
+                    <SelectItem value="initial_rooms_cutoff_date">Initial Rooms Cutoff Date</SelectItem>
+                    <SelectItem value="final_rooms_cutoff_date">Final Rooms Cutoff Date</SelectItem>
+                    <SelectItem value="instalment_date">Instalment Date</SelectItem>
+                    <SelectItem value="final_payment_date">Final Payment Date</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">The date field this task is calculated from</p>
+              </div>
 
               <div>
-                <Label htmlFor="days_before_tour">Days Before Tour</Label>
+                <Label htmlFor="days_before_tour">Days Before Date</Label>
                 <Input
                   id="days_before_tour"
                   type="number"
@@ -175,7 +216,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
                   placeholder="e.g., 30"
                   min="0"
                 />
-                <p className="text-xs text-gray-500 mt-1">Leave empty for manual tasks</p>
+                <p className="text-xs text-gray-500 mt-1">How many days before the reference date</p>
               </div>
             </div>
 

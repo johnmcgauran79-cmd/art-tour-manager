@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +61,18 @@ export const TaskTemplatesManagement = () => {
       case 'medium': return 'bg-yellow-100 text-yellow-800';
       case 'low': return 'bg-blue-100 text-blue-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getDateFieldLabel = (dateField: string) => {
+    switch (dateField) {
+      case 'tour_start_date': return 'Tour Start';
+      case 'tour_end_date': return 'Tour End';
+      case 'initial_rooms_cutoff_date': return 'Initial Cutoff';
+      case 'final_rooms_cutoff_date': return 'Final Cutoff';
+      case 'instalment_date': return 'Instalment';
+      case 'final_payment_date': return 'Final Payment';
+      default: return dateField;
     }
   };
 
@@ -160,7 +171,7 @@ export const TaskTemplatesManagement = () => {
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <h4 className="font-semibold">{template.name}</h4>
                                 <Badge className={getCategoryColor(template.category)}>
                                   {template.category}
@@ -170,9 +181,12 @@ export const TaskTemplatesManagement = () => {
                                 </Badge>
                                 {template.days_before_tour && (
                                   <Badge variant="outline" className="text-xs">
-                                    {template.days_before_tour} days before tour
+                                    {template.days_before_tour} days before {getDateFieldLabel(template.date_field_type)}
                                   </Badge>
                                 )}
+                                <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                                  {getDateFieldLabel(template.date_field_type)}
+                                </Badge>
                               </div>
                               {template.description && (
                                 <p className="text-sm text-gray-600 mb-2">{template.description}</p>
@@ -245,7 +259,7 @@ export const TaskTemplatesManagement = () => {
                         >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <h4 className="font-semibold text-gray-700">{template.name}</h4>
                                 <Badge className={getCategoryColor(template.category)}>
                                   {template.category}
@@ -255,6 +269,9 @@ export const TaskTemplatesManagement = () => {
                                 </Badge>
                                 <Badge variant="secondary" className="bg-gray-200 text-gray-600">
                                   Inactive
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                                  {getDateFieldLabel(template.date_field_type)}
                                 </Badge>
                               </div>
                               {template.description && (

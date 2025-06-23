@@ -748,6 +748,7 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["task_category"]
           created_at: string
+          date_field_type: string | null
           days_before_tour: number | null
           description: string | null
           id: string
@@ -759,6 +760,7 @@ export type Database = {
         Insert: {
           category?: Database["public"]["Enums"]["task_category"]
           created_at?: string
+          date_field_type?: string | null
           days_before_tour?: number | null
           description?: string | null
           id?: string
@@ -770,6 +772,7 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["task_category"]
           created_at?: string
+          date_field_type?: string | null
           days_before_tour?: number | null
           description?: string | null
           id?: string
