@@ -1,10 +1,12 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { NotificationIcon } from "./NotificationIcon";
 import { Database } from "@/integrations/supabase/types";
+import { Trash2 } from "lucide-react";
 
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
@@ -14,6 +16,7 @@ interface NotificationItemProps {
   onCheckboxChange: (notificationId: string, checked: boolean) => void;
   onNotificationClick: (notification: Notification) => void;
   onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
+  onDelete?: (notificationId: string) => void;
 }
 
 const getPriorityColor = (priority: string) => {
@@ -31,9 +34,15 @@ export const NotificationItem = ({
   isSelected, 
   onCheckboxChange, 
   onNotificationClick,
-  onNavigateToItem
+  onNavigateToItem,
+  onDelete
 }: NotificationItemProps) => {
-  const handleNotificationClick = async () => {
+  const handleNotificationClick = async (e: React.MouseEvent) => {
+    // Don't trigger if clicking on checkbox or delete button
+    if ((e.target as HTMLElement).closest('button, [data-checkbox]')) {
+      return;
+    }
+
     console.log('Notification clicked:', notification);
     
     // Call the parent's click handler first (this will mark as read)
@@ -101,11 +110,20 @@ export const NotificationItem = ({
     }
   };
 
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log('Delete button clicked for notification:', notification.id);
+    if (onDelete) {
+      onDelete(notification.id);
+    }
+  };
+
   return (
     <div
       className={`flex items-center gap-2 p-2 border-l-2 ${getPriorityColor(notification.priority)} ${
         notification.read ? 'bg-gray-50/30' : 'bg-blue-50/50'
-      } hover:bg-gray-100/50 rounded-r transition-colors cursor-pointer`}
+      } hover:bg-gray-100/50 rounded-r transition-colors cursor-pointer group`}
+      onClick={handleNotificationClick}
     >
       <Checkbox
         checked={isSelected}
@@ -113,15 +131,13 @@ export const NotificationItem = ({
           onCheckboxChange(notification.id, checked as boolean)
         }
         className="h-3 w-3"
+        data-checkbox="true"
         onClick={(e) => e.stopPropagation()}
       />
       <div className="flex-shrink-0">
         <NotificationIcon type={notification.type} priority={notification.priority} />
       </div>
-      <div 
-        className="flex-1 min-w-0 flex items-center justify-between"
-        onClick={handleNotificationClick}
-      >
+      <div className="flex-1 min-w-0 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <span className={`font-medium text-xs truncate ${
             notification.read ? 'text-gray-600' : 'text-gray-900'
@@ -149,6 +165,16 @@ export const NotificationItem = ({
           <span className="text-xs text-muted-foreground">
             {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
           </span>
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-3 w-3 text-red-500" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

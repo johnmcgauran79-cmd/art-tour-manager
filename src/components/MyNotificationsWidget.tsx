@@ -31,6 +31,7 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     queryFn: async (): Promise<Notification[]> => {
       if (!user?.id) return [];
       
+      console.log('Fetching notifications for user:', user.id);
       const { data, error } = await supabase
         .from('user_notifications')
         .select('*')
@@ -38,7 +39,11 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching notifications:', error);
+        throw error;
+      }
+      console.log('Fetched notifications:', data);
       return data || [];
     },
     enabled: !!user?.id,
@@ -47,15 +52,26 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      console.log('Marking notification as read:', notificationId);
       const { error } = await supabase
         .from('user_notifications')
         .update({ read: true })
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_id', user?.id); // Extra security check
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error marking notification as read:', error);
+        throw error;
+      }
+      console.log('Successfully marked notification as read');
     },
-    onSuccess: () => {
+    onSuccess: (_, notificationId) => {
+      console.log('Mark as read success, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast({
+        title: "Success",
+        description: "Notification marked as read",
+      });
     },
     onError: (error) => {
       console.error('Error marking notification as read:', error);
@@ -70,15 +86,24 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   // Delete notification mutation
   const deleteNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
+      console.log('Deleting notification:', notificationId);
       const { error } = await supabase
         .from('user_notifications')
         .delete()
-        .eq('id', notificationId);
+        .eq('id', notificationId)
+        .eq('user_id', user?.id); // Extra security check
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting notification:', error);
+        throw error;
+      }
+      console.log('Successfully deleted notification');
     },
-    onSuccess: () => {
+    onSuccess: (_, notificationId) => {
+      console.log('Delete success, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      // Remove from selected notifications if it was selected
+      setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
       toast({
         title: "Success",
         description: "Notification deleted",
@@ -97,23 +122,31 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (notificationIds: string[]) => {
+      console.log('Bulk deleting notifications:', notificationIds);
       const { error } = await supabase
         .from('user_notifications')
         .delete()
-        .in('id', notificationIds);
+        .in('id', notificationIds)
+        .eq('user_id', user?.id); // Extra security check
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error bulk deleting notifications:', error);
+        throw error;
+      }
+      console.log('Successfully bulk deleted notifications');
     },
     onSuccess: () => {
+      console.log('Bulk delete success, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      const deletedCount = selectedNotifications.length;
       setSelectedNotifications([]);
       toast({
         title: "Success",
-        description: `${selectedNotifications.length} notifications deleted`,
+        description: `${deletedCount} notifications deleted`,
       });
     },
     onError: (error) => {
-      console.error('Error deleting notifications:', error);
+      console.error('Error bulk deleting notifications:', error);
       toast({
         title: "Error",
         description: "Failed to delete notifications",
@@ -130,6 +163,7 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   };
 
   const handleCheckboxChange = (notificationId: string, checked: boolean) => {
+    console.log('Checkbox changed:', notificationId, checked);
     if (checked) {
       setSelectedNotifications(prev => [...prev, notificationId]);
     } else {
@@ -138,9 +172,15 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
   };
 
   const handleBulkDelete = () => {
+    console.log('Bulk delete requested for:', selectedNotifications);
     if (selectedNotifications.length > 0) {
       bulkDeleteMutation.mutate(selectedNotifications);
     }
+  };
+
+  const handleSingleDelete = (notificationId: string) => {
+    console.log('Single delete requested for:', notificationId);
+    deleteNotificationMutation.mutate(notificationId);
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -162,7 +202,7 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
             selectedCount={selectedNotifications.length}
             totalCount={notifications.length}
             onBulkDelete={handleBulkDelete}
-            isLoading={bulkDeleteMutation.isPending}
+            isLoading={bulkDeleteMutation.isPending || deleteNotificationMutation.isPending}
             mode="delete"
           />
         </div>
@@ -188,6 +228,7 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
                   onCheckboxChange={handleCheckboxChange}
                   onNotificationClick={handleNotificationClick}
                   onNavigateToItem={onNavigateToItem}
+                  onDelete={handleSingleDelete}
                 />
               ))}
             </div>
