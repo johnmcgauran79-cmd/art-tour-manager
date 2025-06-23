@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -110,28 +109,10 @@ export const useMyTasks = () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
-      // Get tasks assigned to the user
-      const { data: assignedTasks, error: assignedError } = await supabase
-        .from('tasks')
-        .select(`
-          *,
-          tours (name),
-          task_assignments!inner (user_id),
-          dependent_task:tasks!tasks_depends_on_task_id_fkey (
-            id, title, status
-          )
-        `)
-        .eq('task_assignments.user_id', user.user.id)
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: false });
+      console.log('Fetching my tasks for user:', user.user.id);
 
-      if (assignedError) {
-        console.error('Error fetching assigned tasks:', assignedError);
-        throw assignedError;
-      }
-
-      // Get unallocated tasks (tasks with no assignments)
-      const { data: unallocatedTasks, error: unallocatedError } = await supabase
+      // Get all tasks with their assignments
+      const { data: allTasks, error } = await supabase
         .from('tasks')
         .select(`
           *,
@@ -144,24 +125,37 @@ export const useMyTasks = () => {
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (unallocatedError) {
-        console.error('Error fetching unallocated tasks:', unallocatedError);
-        throw unallocatedError;
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
       }
 
-      // Filter out tasks that have assignments
-      const filteredUnallocatedTasks = unallocatedTasks?.filter(task => 
-        !task.task_assignments || task.task_assignments.length === 0
-      ) || [];
+      console.log('All tasks fetched:', allTasks?.length);
 
-      // Combine assigned and unallocated tasks, removing duplicates
-      const allTasks = [...(assignedTasks || []), ...filteredUnallocatedTasks];
-      const uniqueTasks = allTasks.filter((task, index, self) => 
-        index === self.findIndex(t => t.id === task.id)
-      );
+      // Filter tasks that should be shown to the user
+      const myTasks = allTasks?.filter(task => {
+        // Show tasks created by the user
+        if (task.created_by === user.user.id) {
+          return true;
+        }
+        
+        // Show tasks assigned to the user
+        if (task.task_assignments && task.task_assignments.some(assignment => assignment.user_id === user.user.id)) {
+          return true;
+        }
+        
+        // Show unassigned tasks (tasks with no assignments)
+        if (!task.task_assignments || task.task_assignments.length === 0) {
+          return true;
+        }
+        
+        return false;
+      }) || [];
+
+      console.log('Filtered my tasks:', myTasks.length);
 
       // Transform the data to match our Task interface
-      const transformedData = uniqueTasks.map(task => ({
+      const transformedData = myTasks.map(task => ({
         ...task,
         dependent_task: task.dependent_task?.[0] || null
       }));
