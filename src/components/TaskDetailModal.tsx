@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Edit, Trash2, X, Save } from "lucide-react";
+import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Trash2, X, Save } from "lucide-react";
 import { Task, useUpdateTask, useDeleteTask, useTasks } from "@/hooks/useTasks";
 import { useAutoUnblockTasks } from "@/hooks/useTaskDependencies";
 import { formatDistanceToNow, format } from "date-fns";
@@ -23,7 +23,6 @@ interface TaskDetailModalProps {
 }
 
 export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalProps) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
   
   const updateTask = useUpdateTask();
@@ -109,8 +108,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
           await autoUnblock.mutateAsync(task.id);
         }
       }
-      
-      setIsEditing(false);
     } catch (error) {
       console.error('Error updating task:', error);
     }
@@ -142,17 +139,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
               Task Details
             </div>
             <div className="flex items-center gap-2">
-              {!isEditing && (
-                <Button
-                  onClick={() => setIsEditing(true)}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit
-                </Button>
-              )}
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button
@@ -196,166 +182,125 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            {/* Task Header */}
+            {/* Task Header - Always in Edit Mode */}
             <div className="space-y-3">
-              {isEditing ? (
-                <div className="space-y-3">
-                  <Input
-                    value={editedTask.title || ''}
-                    onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
-                    placeholder="Task title"
-                    className="text-xl font-semibold"
-                  />
-                  <div className="grid grid-cols-3 gap-3">
-                    <Select
-                      value={editedTask.priority}
-                      onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => 
-                        setEditedTask({ ...editedTask, priority: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low Priority</SelectItem>
-                        <SelectItem value="medium">Medium Priority</SelectItem>
-                        <SelectItem value="high">High Priority</SelectItem>
-                        <SelectItem value="critical">Critical Priority</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select
-                      value={editedTask.status}
-                      onValueChange={(value: Task['status']) => 
-                        setEditedTask({ ...editedTask, status: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="not_started">Not Started</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="waiting">Waiting</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                        <SelectItem value="archived">Archived</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select
-                      value={editedTask.category}
-                      onValueChange={(value: Task['category']) => 
-                        setEditedTask({ ...editedTask, category: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="booking">Booking</SelectItem>
-                        <SelectItem value="operations">Operations</SelectItem>
-                        <SelectItem value="finance">Finance</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="maintenance">Maintenance</SelectItem>
-                        <SelectItem value="general">General</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <h2 className="text-xl font-semibold">{task.title}</h2>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="outline" className={`${getPriorityColor(task.priority)}`}>
-                      {task.priority} priority
-                    </Badge>
-                    <Badge variant="outline" className={`${getStatusColor(task.status)}`}>
-                      {formatStatus(task.status)}
-                    </Badge>
-                    <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-                      {task.category}
-                    </Badge>
-                    {task.is_automated && (
-                      <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
-                        Automated
-                      </Badge>
-                    )}
-                    {isOverdue && (
-                      <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Overdue
-                      </Badge>
-                    )}
-                    {isBlocked && (
-                      <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
-                        <Link className="h-3 w-3 mr-1" />
-                        Blocked
-                      </Badge>
-                    )}
-                  </div>
-                </>
-              )}
+              <Input
+                value={editedTask.title || ''}
+                onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
+                placeholder="Task title"
+                className="text-xl font-semibold"
+              />
+              <div className="grid grid-cols-3 gap-3">
+                <Select
+                  value={editedTask.priority}
+                  onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => 
+                    setEditedTask({ ...editedTask, priority: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low Priority</SelectItem>
+                    <SelectItem value="medium">Medium Priority</SelectItem>
+                    <SelectItem value="high">High Priority</SelectItem>
+                    <SelectItem value="critical">Critical Priority</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select
+                  value={editedTask.status}
+                  onValueChange={(value: Task['status']) => 
+                    setEditedTask({ ...editedTask, status: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_started">Not Started</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="archived">Archived</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select
+                  value={editedTask.category}
+                  onValueChange={(value: Task['category']) => 
+                    setEditedTask({ ...editedTask, category: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="booking">Booking</SelectItem>
+                    <SelectItem value="operations">Operations</SelectItem>
+                    <SelectItem value="finance">Finance</SelectItem>
+                    <SelectItem value="marketing">Marketing</SelectItem>
+                    <SelectItem value="maintenance">Maintenance</SelectItem>
+                    <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Badges */}
+              <div className="flex flex-wrap gap-2">
+                {task.is_automated && (
+                  <Badge variant="outline" className="bg-purple-100 text-purple-800 border-purple-200">
+                    Automated
+                  </Badge>
+                )}
+                {isOverdue && (
+                  <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Overdue
+                  </Badge>
+                )}
+                {isBlocked && (
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-200">
+                    <Link className="h-3 w-3 mr-1" />
+                    Blocked
+                  </Badge>
+                )}
+              </div>
             </div>
 
-            {/* Task Description */}
+            {/* Task Description - Always in Edit Mode */}
             <div>
               <h3 className="font-medium mb-2">Description</h3>
-              {isEditing ? (
-                <Textarea
-                  value={editedTask.description || ''}
-                  onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
-                  placeholder="Task description"
-                  rows={4}
-                />
-              ) : (
-                <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                  {task.description || 'No description provided'}
-                </p>
-              )}
+              <Textarea
+                value={editedTask.description || ''}
+                onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
+                placeholder="Task description"
+                rows={4}
+              />
             </div>
 
-            {/* Due Date */}
+            {/* Due Date - Always in Edit Mode */}
             <div>
               <h3 className="font-medium mb-2">Due Date</h3>
-              {isEditing ? (
-                <Input
-                  type="datetime-local"
-                  value={editedTask.due_date || ''}
-                  onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
-                />
-              ) : (
-                task.due_date && (
-                  <div className={`flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600' : ''}`}>
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {format(new Date(task.due_date), 'PPP')} 
-                      ({formatDistanceToNow(new Date(task.due_date), { addSuffix: true })})
-                    </span>
-                  </div>
-                )
-              )}
+              <Input
+                type="datetime-local"
+                value={editedTask.due_date || ''}
+                onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
+              />
             </div>
 
-            {/* Update Actions */}
-            {isEditing && (
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  onClick={handleUpdateTask}
-                  disabled={updateTask.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="h-4 w-4" />
-                  {updateTask.isPending ? "Updating..." : "Update Task"}
-                </Button>
-                <Button
-                  onClick={() => setIsEditing(false)}
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-              </div>
-            )}
+            {/* Update Actions - Always Visible */}
+            <div className="flex gap-3 pt-4 border-t">
+              <Button
+                onClick={handleUpdateTask}
+                disabled={updateTask.isPending}
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                {updateTask.isPending ? "Updating..." : "Update Task"}
+              </Button>
+            </div>
 
             {/* Task Details Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
