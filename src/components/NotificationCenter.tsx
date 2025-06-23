@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
 import { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
@@ -34,6 +35,7 @@ const getNotificationIcon = (type: string, priority: string) => {
 export const NotificationCenter = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
   // Fetch notifications
@@ -68,6 +70,14 @@ export const NotificationCenter = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
+    onError: (error) => {
+      console.error('Error marking notification as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark notification as read",
+        variant: "destructive",
+      });
+    },
   });
 
   // Acknowledge notification mutation
@@ -82,6 +92,18 @@ export const NotificationCenter = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast({
+        title: "Success",
+        description: "Notification acknowledged",
+      });
+    },
+    onError: (error) => {
+      console.error('Error acknowledging notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to acknowledge notification",
+        variant: "destructive",
+      });
     },
   });
 
@@ -100,6 +122,18 @@ export const NotificationCenter = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast({
+        title: "Success",
+        description: "All notifications marked as read",
+      });
+    },
+    onError: (error) => {
+      console.error('Error marking all as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark all notifications as read",
+        variant: "destructive",
+      });
     },
   });
 

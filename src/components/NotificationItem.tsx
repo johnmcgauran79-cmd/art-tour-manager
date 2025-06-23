@@ -36,15 +36,8 @@ export const NotificationItem = ({
   const handleNotificationClick = async () => {
     console.log('Notification clicked:', notification);
     
-    // Mark notification as read
-    try {
-      await supabase
-        .from('user_notifications')
-        .update({ read: true })
-        .eq('id', notification.id);
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-    }
+    // Call the parent's click handler first (this will mark as read)
+    onNotificationClick(notification);
     
     // Handle navigation based on notification type and content
     if (notification.related_id && onNavigateToItem) {
@@ -106,14 +99,13 @@ export const NotificationItem = ({
         }
       }
     }
-    
-    // Trigger the click handler from parent
-    onNotificationClick(notification);
   };
 
   return (
     <div
-      className={`flex items-center gap-2 p-2 border-l-2 ${getPriorityColor(notification.priority)} bg-gray-50/50 hover:bg-gray-100/50 rounded-r transition-colors cursor-pointer`}
+      className={`flex items-center gap-2 p-2 border-l-2 ${getPriorityColor(notification.priority)} ${
+        notification.read ? 'bg-gray-50/30' : 'bg-blue-50/50'
+      } hover:bg-gray-100/50 rounded-r transition-colors cursor-pointer`}
     >
       <Checkbox
         checked={isSelected}
@@ -121,6 +113,7 @@ export const NotificationItem = ({
           onCheckboxChange(notification.id, checked as boolean)
         }
         className="h-3 w-3"
+        onClick={(e) => e.stopPropagation()}
       />
       <div className="flex-shrink-0">
         <NotificationIcon type={notification.type} priority={notification.priority} />
@@ -130,10 +123,14 @@ export const NotificationItem = ({
         onClick={handleNotificationClick}
       >
         <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className="font-medium text-xs truncate">
+          <span className={`font-medium text-xs truncate ${
+            notification.read ? 'text-gray-600' : 'text-gray-900'
+          }`}>
             {notification.title}
           </span>
-          <span className="text-xs text-muted-foreground truncate">
+          <span className={`text-xs truncate ${
+            notification.read ? 'text-gray-500' : 'text-muted-foreground'
+          }`}>
             - {notification.message}
           </span>
         </div>

@@ -11,6 +11,7 @@ import { NotificationItem } from "@/components/NotificationItem";
 import { NotificationActions } from "@/components/NotificationActions";
 import { Bell, Trash2, CheckCircle } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { useToast } from "@/hooks/use-toast";
 
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
@@ -21,6 +22,7 @@ interface MyNotificationsWidgetProps {
 export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidgetProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
 
   // Fetch notifications
@@ -55,6 +57,14 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
+    onError: (error) => {
+      console.error('Error marking notification as read:', error);
+      toast({
+        title: "Error",
+        description: "Failed to mark notification as read",
+        variant: "destructive",
+      });
+    },
   });
 
   // Delete notification mutation
@@ -69,6 +79,18 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast({
+        title: "Success",
+        description: "Notification deleted",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting notification:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notification",
+        variant: "destructive",
+      });
     },
   });
 
@@ -85,10 +107,23 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       setSelectedNotifications([]);
+      toast({
+        title: "Success",
+        description: `${selectedNotifications.length} notifications deleted`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete notifications",
+        variant: "destructive",
+      });
     },
   });
 
   const handleNotificationClick = (notification: Notification) => {
+    console.log('Notification clicked, marking as read:', notification.id);
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
