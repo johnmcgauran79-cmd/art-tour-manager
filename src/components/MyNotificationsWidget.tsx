@@ -73,10 +73,9 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
       console.log('Successfully marked notification as read:', data);
       return data;
     },
-    onSuccess: (data, notificationId) => {
-      console.log('Mark as read success, refetching data');
-      // Force refetch instead of just invalidating
-      refetch();
+    onSuccess: () => {
+      console.log('Mark as read success, invalidating queries');
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
     },
     onError: (error) => {
       console.error('Error marking notification as read:', error);
@@ -97,27 +96,26 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_notifications')
         .delete()
         .eq('id', notificationId)
-        .eq('user_id', user.id)
-        .select();
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error deleting notification:', error);
         throw error;
       }
       
-      console.log('Successfully deleted notification:', data);
-      return data;
+      console.log('Successfully deleted notification:', notificationId);
+      return notificationId;
     },
-    onSuccess: (data, notificationId) => {
-      console.log('Delete success, removing from selected and refetching');
+    onSuccess: (notificationId) => {
+      console.log('Delete success, updating UI for notification:', notificationId);
       // Remove from selected notifications
       setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
-      // Force refetch
-      refetch();
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
       toast({
         title: "Success",
         description: "Notification deleted",
@@ -142,27 +140,26 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_notifications')
         .delete()
         .in('id', notificationIds)
-        .eq('user_id', user.id)
-        .select();
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Error bulk deleting notifications:', error);
         throw error;
       }
       
-      console.log('Successfully bulk deleted notifications:', data);
-      return data;
+      console.log('Successfully bulk deleted notifications:', notificationIds);
+      return notificationIds;
     },
-    onSuccess: (data) => {
-      console.log('Bulk delete success, clearing selection and refetching');
-      const deletedCount = selectedNotifications.length;
+    onSuccess: (deletedIds) => {
+      console.log('Bulk delete success, clearing selection and updating UI');
+      const deletedCount = deletedIds.length;
       setSelectedNotifications([]);
-      // Force refetch
-      refetch();
+      // Invalidate and refetch
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
       toast({
         title: "Success",
         description: `${deletedCount} notifications deleted`,

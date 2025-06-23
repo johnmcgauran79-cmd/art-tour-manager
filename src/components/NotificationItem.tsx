@@ -118,6 +118,10 @@ export const NotificationItem = ({
     }
   };
 
+  const handleCheckboxChange = (checked: boolean) => {
+    onCheckboxChange(notification.id, checked);
+  };
+
   return (
     <div
       className={`flex items-center gap-2 p-2 border-l-2 ${getPriorityColor(notification.priority)} ${
@@ -127,9 +131,7 @@ export const NotificationItem = ({
     >
       <Checkbox
         checked={isSelected}
-        onCheckedChange={(checked) => 
-          onCheckboxChange(notification.id, checked as boolean)
-        }
+        onCheckedChange={handleCheckboxChange}
         className="h-3 w-3"
         data-checkbox="true"
         onClick={(e) => e.stopPropagation()}
