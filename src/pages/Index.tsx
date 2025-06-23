@@ -17,8 +17,10 @@ import { AddBookingModal } from "@/components/AddBookingModal";
 import { SystemLogModal } from "@/components/SystemLogModal";
 import { UserManagement } from "@/components/UserManagement";
 import { AddTaskModal } from "@/components/AddTaskModal";
+import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
+import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus, Users, FileText, Settings, Calendar, MapPin, X } from "lucide-react";
 
@@ -26,8 +28,10 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [tourModalOpen, setTourModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
@@ -42,6 +46,7 @@ const Index = () => {
   // Fetch data for navigation purposes
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
+  const { data: tasks = [] } = useTasks();
 
   // Handle navigation from notifications - enhanced to handle all types
   const handleNavigateToItem = (type: string, itemId: string, hotelId?: string) => {
@@ -63,8 +68,12 @@ const Index = () => {
       }
       setActiveTab("bookings");
     } else if (type === 'task') {
-      // Navigate to operations tab where tasks are managed
-      setActiveTab("operations");
+      const task = tasks.find(t => t.id === itemId);
+      if (task) {
+        setSelectedTask(task);
+        setTaskModalOpen(true);
+      }
+      // Don't change tab for tasks - keep user on current view
     } else if (type === 'system') {
       // For system notifications, navigate to contacts or appropriate tab
       setActiveTab("contacts");
@@ -314,6 +323,12 @@ const Index = () => {
         booking={selectedBooking}
         open={bookingModalOpen}
         onOpenChange={setBookingModalOpen}
+      />
+
+      <TaskDetailModal
+        task={selectedTask}
+        open={taskModalOpen}
+        onOpenChange={setTaskModalOpen}
       />
 
       <AddBookingModal
