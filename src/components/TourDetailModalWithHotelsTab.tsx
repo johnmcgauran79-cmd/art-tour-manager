@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,6 +18,7 @@ import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { Tour } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TourDetailModalWithHotelsTabProps {
   tour: Tour | null;
@@ -42,6 +42,9 @@ export const TourDetailModalWithHotelsTab = ({
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
+
+  const { userRole } = useAuth();
+  const canViewOperations = userRole === 'admin' || userRole === 'manager';
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -116,8 +119,8 @@ export const TourDetailModalWithHotelsTab = ({
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue={defaultTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5 bg-gray-50">
+          <Tabs defaultValue={defaultTab} className={`w-full`}>
+            <TabsList className={`grid w-full ${canViewOperations ? 'grid-cols-5' : 'grid-cols-4'} bg-gray-50`}>
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
                 Overview
@@ -134,10 +137,12 @@ export const TourDetailModalWithHotelsTab = ({
                 <Users className="h-4 w-4" />
                 Bookings
               </TabsTrigger>
-              <TabsTrigger value="operations" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
-                <Settings className="h-4 w-4" />
-                Operations
-              </TabsTrigger>
+              {canViewOperations && (
+                <TabsTrigger value="operations" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                  <Settings className="h-4 w-4" />
+                  Operations
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -169,12 +174,14 @@ export const TourDetailModalWithHotelsTab = ({
               />
             </TabsContent>
 
-            <TabsContent value="operations" className="space-y-4">
-              <TourOperationsTab
-                tourId={tour?.id || ""}
-                tourName={tour?.name || ""}
-              />
-            </TabsContent>
+            {canViewOperations && (
+              <TabsContent value="operations" className="space-y-4">
+                <TourOperationsTab
+                  tourId={tour?.id || ""}
+                  tourName={tour?.name || ""}
+                />
+              </TabsContent>
+            )}
           </Tabs>
         </DialogContent>
       </Dialog>
