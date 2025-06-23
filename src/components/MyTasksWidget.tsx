@@ -3,12 +3,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, List } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
+import { AllTasksModal } from "@/components/AllTasksModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 
 interface MyTasksWidgetProps {
@@ -20,6 +21,7 @@ export const MyTasksWidget = ({ hideAddButton = false }: MyTasksWidgetProps) => 
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
+  const [allTasksModalOpen, setAllTasksModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
@@ -64,7 +66,7 @@ export const MyTasksWidget = ({ hideAddButton = false }: MyTasksWidgetProps) => 
 
   const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
 
-  // Sort tasks by due date and take top 10
+  // Sort tasks by due date (most urgent first) and take top 10
   const sortedTasks = [...pendingTasks].sort((a, b) => {
     if (!a.due_date && !b.due_date) return 0;
     if (!a.due_date) return 1;
@@ -120,16 +122,27 @@ export const MyTasksWidget = ({ hideAddButton = false }: MyTasksWidgetProps) => 
                 {pendingTasks.length} active
               </Badge>
             </div>
-            {!hideAddButton && (
+            <div className="flex items-center gap-2">
               <Button
-                onClick={() => setAddTaskModalOpen(true)}
+                onClick={() => setAllTasksModalOpen(true)}
                 size="sm"
+                variant="outline"
                 className="flex items-center gap-2"
               >
-                <Plus className="h-4 w-4" />
-                Add Task
+                <List className="h-4 w-4" />
+                View All Tasks
               </Button>
-            )}
+              {!hideAddButton && (
+                <Button
+                  onClick={() => setAddTaskModalOpen(true)}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Task
+                </Button>
+              )}
+            </div>
           </div>
           
           <div className="mt-4">
@@ -148,13 +161,18 @@ export const MyTasksWidget = ({ hideAddButton = false }: MyTasksWidgetProps) => 
               <p className="text-sm">Great job staying on top of everything!</p>
             </div>
           ) : (
-            <TasksTable
-              tasks={sortedTasks}
-              loading={false}
-              showTourName={true}
-              onTaskClick={handleTaskClick}
-              title=""
-            />
+            <div className="space-y-2">
+              <div className="text-sm text-gray-600 mb-3">
+                Showing top 10 most urgent tasks
+              </div>
+              <TasksTable
+                tasks={sortedTasks}
+                loading={false}
+                showTourName={true}
+                onTaskClick={handleTaskClick}
+                title=""
+              />
+            </div>
           )}
         </CardContent>
       </Card>
@@ -177,6 +195,12 @@ export const MyTasksWidget = ({ hideAddButton = false }: MyTasksWidgetProps) => 
         onOpenChange={handleFilteredTasksModalClose}
         tasks={filteredTasks}
         title={filteredTasksTitle}
+        onTaskClick={handleTaskClick}
+      />
+
+      <AllTasksModal
+        open={allTasksModalOpen}
+        onOpenChange={setAllTasksModalOpen}
         onTaskClick={handleTaskClick}
       />
     </>
