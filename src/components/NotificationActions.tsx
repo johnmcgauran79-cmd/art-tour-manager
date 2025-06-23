@@ -1,13 +1,15 @@
 
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Trash2 } from "lucide-react";
 
 interface NotificationActionsProps {
   selectedCount: number;
   totalCount: number;
   isLoading: boolean;
-  onBulkAcknowledge: () => void;
-  onAcknowledgeAll: () => void;
+  onBulkAcknowledge?: () => void;
+  onAcknowledgeAll?: () => void;
+  onBulkDelete?: () => void;
+  mode?: 'acknowledge' | 'delete';
 }
 
 export const NotificationActions = ({
@@ -15,13 +17,34 @@ export const NotificationActions = ({
   totalCount,
   isLoading,
   onBulkAcknowledge,
-  onAcknowledgeAll
+  onAcknowledgeAll,
+  onBulkDelete,
+  mode = 'acknowledge'
 }: NotificationActionsProps) => {
   if (totalCount === 0) return null;
 
+  if (mode === 'delete') {
+    return (
+      <div className="flex gap-2">
+        {selectedCount > 0 && onBulkDelete && (
+          <Button
+            size="sm"
+            onClick={onBulkDelete}
+            disabled={isLoading}
+            className="h-7 text-xs"
+            variant="destructive"
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Delete ({selectedCount})
+          </Button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-2">
-      {selectedCount > 0 && (
+      {selectedCount > 0 && onBulkAcknowledge && (
         <Button
           size="sm"
           onClick={onBulkAcknowledge}
@@ -32,15 +55,17 @@ export const NotificationActions = ({
           Acknowledge ({selectedCount})
         </Button>
       )}
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={onAcknowledgeAll}
-        disabled={isLoading}
-        className="h-7 text-xs"
-      >
-        Clear All
-      </Button>
+      {onAcknowledgeAll && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onAcknowledgeAll}
+          disabled={isLoading}
+          className="h-7 text-xs"
+        >
+          Clear All
+        </Button>
+      )}
     </div>
   );
 };

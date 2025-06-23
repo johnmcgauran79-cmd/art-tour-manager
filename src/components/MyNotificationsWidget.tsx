@@ -125,8 +125,10 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
           </div>
           <NotificationActions 
             selectedCount={selectedNotifications.length}
+            totalCount={notifications.length}
             onBulkDelete={handleBulkDelete}
-            isDeleting={bulkDeleteMutation.isPending}
+            isLoading={bulkDeleteMutation.isPending}
+            mode="delete"
           />
         </div>
       </CardHeader>
