@@ -49,7 +49,7 @@ export const useTasks = (tourId?: string, filters?: {
           *,
           tours (name),
           task_assignments (user_id),
-          dependent_task:tasks!tasks_depends_on_task_id_fkey (
+          dependent_task:tasks!depends_on_task_id (
             id, title, status
           )
         `)
@@ -118,7 +118,7 @@ export const useMyTasks = () => {
           *,
           tours (name),
           task_assignments (user_id),
-          dependent_task:tasks!tasks_depends_on_task_id_fkey (
+          dependent_task:tasks!depends_on_task_id (
             id, title, status
           )
         `)
