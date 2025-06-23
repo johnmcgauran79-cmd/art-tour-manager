@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus } from
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
+import { useAuth } from "@/hooks/useAuth";
 
 const operationsData = [
   {
@@ -52,6 +52,10 @@ const getStatusColor = (status: string) => {
 
 export const OperationsDashboard = () => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks'>('dashboard');
+  const { userRole } = useAuth();
+
+  // Check if user has admin or manager role
+  const canManageTemplates = userRole === 'admin' || userRole === 'manager';
 
   if (currentView === 'templates') {
     return (
@@ -101,15 +105,17 @@ export const OperationsDashboard = () => {
               </Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setCurrentView('templates')}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                Manage Task Templates
-              </Button>
+              {canManageTemplates && (
+                <Button
+                  onClick={() => setCurrentView('templates')}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Manage Task Templates
+                </Button>
+              )}
               <Button
                 onClick={() => setCurrentView('allTasks')}
                 size="sm"
@@ -134,7 +140,6 @@ export const OperationsDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Existing Operations Overview */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

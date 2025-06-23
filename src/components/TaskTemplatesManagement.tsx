@@ -5,13 +5,40 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TaskTemplate, useTaskTemplates, useDeleteTaskTemplate } from "@/hooks/useTaskTemplates";
 import { TaskTemplateModal } from "@/components/TaskTemplateModal";
-import { Plus, Edit, Trash2, Settings, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Plus, Edit, Trash2, Settings, Calendar, AlertTriangle, RefreshCw, Shield } from "lucide-react";
 
 export const TaskTemplatesManagement = () => {
+  const { userRole } = useAuth();
   const { data: templates, isLoading, error, refetch } = useTaskTemplates();
   const deleteTemplate = useDeleteTaskTemplate();
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Check if user has admin or manager role
+  const hasAccess = userRole === 'admin' || userRole === 'manager';
+
+  if (!hasAccess) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-red-500" />
+            Access Restricted
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <Shield className="h-12 w-12 mx-auto mb-4 text-red-500 opacity-50" />
+            <h3 className="text-lg font-semibold mb-2 text-red-700">Access Denied</h3>
+            <p className="text-muted-foreground">
+              Task Template Management is only available to administrators and managers.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const handleEditTemplate = (template: TaskTemplate) => {
     setSelectedTemplate(template);
