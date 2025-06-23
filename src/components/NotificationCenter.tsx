@@ -39,7 +39,7 @@ export const NotificationCenter = () => {
   const [open, setOpen] = useState(false);
 
   // Fetch notifications
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, refetch } = useQuery({
     queryKey: ['notifications', user?.id],
     queryFn: async (): Promise<Notification[]> => {
       if (!user?.id) return [];
@@ -66,20 +66,29 @@ export const NotificationCenter = () => {
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       console.log('NotificationCenter: Marking notification as read:', notificationId);
-      const { error } = await supabase
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
         .from('user_notifications')
         .update({ read: true })
         .eq('id', notificationId)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id)
+        .select();
 
       if (error) {
         console.error('NotificationCenter: Error marking notification as read:', error);
         throw error;
       }
+      
+      console.log('NotificationCenter: Successfully marked as read:', data);
+      return data;
     },
     onSuccess: () => {
-      console.log('NotificationCenter: Mark as read success, invalidating queries');
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      console.log('NotificationCenter: Mark as read success, refetching');
+      refetch();
     },
     onError: (error) => {
       console.error('NotificationCenter: Error marking notification as read:', error);
@@ -95,20 +104,29 @@ export const NotificationCenter = () => {
   const acknowledgeMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       console.log('NotificationCenter: Acknowledging notification:', notificationId);
-      const { error } = await supabase
+      
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase
         .from('user_notifications')
         .update({ acknowledged: true, read: true })
         .eq('id', notificationId)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id)
+        .select();
 
       if (error) {
         console.error('NotificationCenter: Error acknowledging notification:', error);
         throw error;
       }
+      
+      console.log('NotificationCenter: Successfully acknowledged:', data);
+      return data;
     },
     onSuccess: () => {
-      console.log('NotificationCenter: Acknowledge success, invalidating queries');
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      console.log('NotificationCenter: Acknowledge success, refetching');
+      refetch();
       toast({
         title: "Success",
         description: "Notification acknowledged",
@@ -127,23 +145,29 @@ export const NotificationCenter = () => {
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id) return;
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
       
       console.log('NotificationCenter: Marking all notifications as read for user:', user.id);
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('user_notifications')
         .update({ read: true })
         .eq('user_id', user.id)
-        .eq('read', false);
+        .eq('read', false)
+        .select();
 
       if (error) {
         console.error('NotificationCenter: Error marking all as read:', error);
         throw error;
       }
+      
+      console.log('NotificationCenter: Successfully marked all as read:', data);
+      return data;
     },
     onSuccess: () => {
-      console.log('NotificationCenter: Mark all as read success, invalidating queries');
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      console.log('NotificationCenter: Mark all as read success, refetching');
+      refetch();
       toast({
         title: "Success",
         description: "All notifications marked as read",
