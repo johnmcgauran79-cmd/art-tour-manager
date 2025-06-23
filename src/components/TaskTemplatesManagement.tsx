@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,11 +13,6 @@ export const TaskTemplatesManagement = () => {
   const deleteTemplate = useDeleteTaskTemplate();
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-
-  console.log('TaskTemplatesManagement render - Templates data:', templates);
-  console.log('TaskTemplatesManagement render - Templates loading:', isLoading);
-  console.log('TaskTemplatesManagement render - Templates error:', error);
-  console.log('TaskTemplatesManagement render - Templates count:', templates?.length);
 
   const handleEditTemplate = (template: TaskTemplate) => {
     setSelectedTemplate(template);
@@ -112,9 +108,6 @@ export const TaskTemplatesManagement = () => {
   const activeTemplates = templates?.filter(t => t.is_active) || [];
   const inactiveTemplates = templates?.filter(t => !t.is_active) || [];
 
-  console.log('Active templates:', activeTemplates);
-  console.log('Inactive templates:', inactiveTemplates);
-
   return (
     <>
       <Card>
@@ -147,14 +140,6 @@ export const TaskTemplatesManagement = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {/* Debug information */}
-          <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
-            <p><strong>Debug Info:</strong></p>
-            <p>Templates array: {JSON.stringify(templates)}</p>
-            <p>Is loading: {isLoading.toString()}</p>
-            <p>Error: {error?.message || 'None'}</p>
-          </div>
-
           <div className="space-y-6">
             {/* Show all templates if we have any */}
             {templates && templates.length > 0 ? (
