@@ -21,12 +21,21 @@ export const useTaskTemplates = () => {
     queryFn: async () => {
       console.log('Fetching task templates...');
       
+      // First, let's check if we can access the table at all
+      const { data: tableCheck, error: tableError } = await supabase
+        .from('task_templates')
+        .select('count', { count: 'exact', head: true });
+      
+      console.log('Table access check:', { tableCheck, tableError });
+
+      // Now let's try the actual query
       const { data, error, count } = await supabase
         .from('task_templates')
         .select('*', { count: 'exact' })
         .order('days_before_tour', { ascending: false });
 
       console.log('Task templates query result:', { data, error, count });
+      console.log('Raw data from Supabase:', data);
 
       if (error) {
         console.error('Error fetching task templates:', error);
