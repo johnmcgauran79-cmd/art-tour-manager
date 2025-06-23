@@ -19,16 +19,21 @@ export const useTaskTemplates = () => {
   return useQuery({
     queryKey: ['task-templates'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      console.log('Fetching task templates...');
+      
+      const { data, error, count } = await supabase
         .from('task_templates')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('days_before_tour', { ascending: false });
+
+      console.log('Task templates query result:', { data, error, count });
 
       if (error) {
         console.error('Error fetching task templates:', error);
         throw error;
       }
 
+      console.log('Task templates fetched successfully:', data?.length || 0, 'templates');
       return data as TaskTemplate[];
     },
   });

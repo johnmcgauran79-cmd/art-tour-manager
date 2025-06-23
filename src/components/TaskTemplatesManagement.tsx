@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,17 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { TaskTemplate, useTaskTemplates, useDeleteTaskTemplate } from "@/hooks/useTaskTemplates";
 import { TaskTemplateModal } from "@/components/TaskTemplateModal";
-import { Plus, Edit, Trash2, Settings, Calendar, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, Settings, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
 
 export const TaskTemplatesManagement = () => {
-  const { data: templates, isLoading, error } = useTaskTemplates();
+  const { data: templates, isLoading, error, refetch } = useTaskTemplates();
   const deleteTemplate = useDeleteTaskTemplate();
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  console.log('Templates data:', templates);
-  console.log('Templates loading:', isLoading);
-  console.log('Templates error:', error);
+  console.log('TaskTemplatesManagement render - Templates data:', templates);
+  console.log('TaskTemplatesManagement render - Templates loading:', isLoading);
+  console.log('TaskTemplatesManagement render - Templates error:', error);
+  console.log('TaskTemplatesManagement render - Templates count:', templates?.length);
 
   const handleEditTemplate = (template: TaskTemplate) => {
     setSelectedTemplate(template);
@@ -41,6 +41,11 @@ export const TaskTemplatesManagement = () => {
     } catch (error) {
       console.error('Error deleting template:', error);
     }
+  };
+
+  const handleRefresh = () => {
+    console.log('Manually refreshing task templates...');
+    refetch();
   };
 
   const getCategoryColor = (category: string) => {
@@ -93,7 +98,11 @@ export const TaskTemplatesManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-red-600">
-            Error loading templates: {error.message}
+            <p>Error loading templates: {error.message}</p>
+            <Button onClick={handleRefresh} className="mt-4">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -118,16 +127,34 @@ export const TaskTemplatesManagement = () => {
                 {templates?.length || 0} templates
               </Badge>
             </div>
-            <Button
-              onClick={handleCreateTemplate}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Create Template
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </Button>
+              <Button
+                onClick={handleCreateTemplate}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Create Template
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Debug information */}
+          <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+            <p><strong>Debug Info:</strong></p>
+            <p>Templates array: {JSON.stringify(templates)}</p>
+            <p>Is loading: {isLoading.toString()}</p>
+            <p>Error: {error?.message || 'None'}</p>
+          </div>
+
           <div className="space-y-6">
             {/* Show all templates if we have any */}
             {templates && templates.length > 0 ? (
