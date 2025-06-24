@@ -390,6 +390,18 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             )}
           </div>
         </div>
+
+        {/* Bottom Close Button */}
+        <div className="flex justify-end pt-6 border-t">
+          <Button
+            onClick={() => onOpenChange(false)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <X className="h-4 w-4" />
+            Close
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
