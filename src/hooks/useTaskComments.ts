@@ -56,7 +56,7 @@ export const useCreateTaskComment = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: { task_id: string; comment: string }) => {
+    mutationFn: async (data: { task_id: string; comment: string; mentioned_users?: string[] }) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
@@ -71,6 +71,43 @@ export const useCreateTaskComment = () => {
         .single();
 
       if (error) throw error;
+
+      // Create notifications for mentioned users
+      if (data.mentioned_users && data.mentioned_users.length > 0) {
+        const { data: task } = await supabase
+          .from('tasks')
+          .select('title')
+          .eq('id', data.task_id)
+          .single();
+
+        const { data: commenter } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('id', user.user.id)
+          .single();
+
+        const commenterName = commenter 
+          ? `${commenter.first_name || ''} ${commenter.last_name || ''}`.trim() || commenter.email
+          : 'Someone';
+
+        const notifications = data.mentioned_users.map(userId => ({
+          user_id: userId,
+          type: 'task',
+          title: 'You were mentioned in a comment',
+          message: `${commenterName} mentioned you in a comment on task: ${task?.title || 'Unknown task'}`,
+          priority: 'medium',
+          related_id: data.task_id,
+        }));
+
+        const { error: notificationError } = await supabase
+          .from('user_notifications')
+          .insert(notifications);
+
+        if (notificationError) {
+          console.error('Error creating notifications:', notificationError);
+        }
+      }
+
       return comment;
     },
     onSuccess: (_, variables) => {

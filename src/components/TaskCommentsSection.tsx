@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTaskComments, useCreateTaskComment } from "@/hooks/useTaskComments";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Send } from "lucide-react";
+import { UserMentionInput } from "@/components/UserMentionInput";
 
 interface TaskCommentsSectionProps {
   taskId: string;
@@ -12,6 +13,7 @@ interface TaskCommentsSectionProps {
 
 export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
   const [newComment, setNewComment] = useState("");
+  const [mentionedUsers, setMentionedUsers] = useState<string[]>([]);
   const { data: comments, isLoading } = useTaskComments(taskId);
   const createComment = useCreateTaskComment();
 
@@ -22,8 +24,10 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
       await createComment.mutateAsync({
         task_id: taskId,
         comment: newComment.trim(),
+        mentioned_users: mentionedUsers,
       });
       setNewComment("");
+      setMentionedUsers([]);
     } catch (error) {
       console.error('Error adding comment:', error);
     }
@@ -71,10 +75,11 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
 
       {/* Add Comment */}
       <div className="space-y-2">
-        <Textarea
+        <UserMentionInput
           value={newComment}
-          onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
+          onChange={setNewComment}
+          onMentionedUsersChange={setMentionedUsers}
+          placeholder="Add a comment... Use @username to mention users"
           rows={3}
         />
         <Button
