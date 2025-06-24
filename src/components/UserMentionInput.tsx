@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
@@ -29,6 +28,7 @@ export const UserMentionInput = ({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
+  const [displayValue, setDisplayValue] = useState(value);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch users for mentions
@@ -45,12 +45,19 @@ export const UserMentionInput = ({
     },
   });
 
-  // Extract mentioned user IDs whenever the value changes
+  // Convert structured mentions to display format and extract user IDs
   useEffect(() => {
+    console.log('Processing value for mentions:', value);
+    
+    // Convert @[Name](id) format to display format @Name for textarea
+    const displayText = value.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
+    setDisplayValue(displayText);
+    
+    // Extract mentioned user IDs
     const mentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
     const mentionedIds = mentions.map(mention => {
       const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
-      return match ? match[2] : null; // match[2] is the user ID
+      return match ? match[2] : null;
     }).filter(Boolean) as string[];
     
     console.log('Extracted mentioned user IDs from value:', value);
@@ -60,14 +67,14 @@ export const UserMentionInput = ({
   }, [value, onMentionedUsersChange]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
+    const newDisplayValue = e.target.value;
     const cursor = e.target.selectionStart;
     
-    onChange(newValue);
+    setDisplayValue(newDisplayValue);
     setCursorPosition(cursor);
     
-    // Check for @ mentions
-    const textBeforeCursor = newValue.substring(0, cursor);
+    // Check for @ mentions at cursor position
+    const textBeforeCursor = newDisplayValue.substring(0, cursor);
     const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
     
     if (mentionMatch) {
@@ -77,20 +84,26 @@ export const UserMentionInput = ({
       setShowSuggestions(false);
       setMentionQuery("");
     }
+    
+    // Update the actual value - convert display mentions back to structured format
+    // For now, if it's just display text, keep it as is until user selects from dropdown
+    onChange(newDisplayValue);
   };
 
   const handleUserMention = (user: User) => {
-    const textBeforeCursor = value.substring(0, cursorPosition);
-    const textAfterCursor = value.substring(cursorPosition);
+    const textBeforeCursor = displayValue.substring(0, cursorPosition);
+    const textAfterCursor = displayValue.substring(cursorPosition);
     
-    // Remove the @ and partial name
+    // Remove the @ and partial name from display
     const beforeMention = textBeforeCursor.replace(/@\w*$/, '');
     const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email || 'Unknown';
-    const mentionText = `@[${displayName}](${user.id})`;
     
+    // Create the structured mention format for the actual value
+    const mentionText = `@[${displayName}](${user.id})`;
     const newValue = beforeMention + mentionText + " " + textAfterCursor;
+    
     console.log('Adding mention for user:', user.id, 'Display:', displayName);
-    console.log('New value with mention:', newValue);
+    console.log('New structured value:', newValue);
     
     onChange(newValue);
     setShowSuggestions(false);
@@ -99,7 +112,7 @@ export const UserMentionInput = ({
     // Focus back to textarea
     setTimeout(() => {
       if (textareaRef.current) {
-        const newCursor = beforeMention.length + mentionText.length + 1;
+        const newCursor = beforeMention.length + displayName.length + 2; // +2 for "@" and space
         textareaRef.current.focus();
         textareaRef.current.setSelectionRange(newCursor, newCursor);
       }
@@ -112,9 +125,6 @@ export const UserMentionInput = ({
     const searchText = (displayName || user.email || '').toLowerCase();
     return searchText.includes(mentionQuery.toLowerCase());
   });
-
-  // Convert mentions back to display format for the textarea
-  const displayValue = value.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
 
   return (
     <div className="relative">
