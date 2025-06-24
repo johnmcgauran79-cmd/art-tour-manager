@@ -45,6 +45,20 @@ export const UserMentionInput = ({
     },
   });
 
+  // Extract mentioned user IDs whenever the value changes
+  useEffect(() => {
+    const mentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
+    const mentionedIds = mentions.map(mention => {
+      const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+      return match ? match[2] : null; // match[2] is the user ID
+    }).filter(Boolean) as string[];
+    
+    console.log('Extracted mentioned user IDs from value:', value);
+    console.log('Found mentioned IDs:', mentionedIds);
+    
+    onMentionedUsersChange(mentionedIds);
+  }, [value, onMentionedUsersChange]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     const cursor = e.target.selectionStart;
@@ -63,18 +77,6 @@ export const UserMentionInput = ({
       setShowSuggestions(false);
       setMentionQuery("");
     }
-
-    // Extract mentioned user IDs from the text with improved regex
-    const mentions = newValue.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
-    const mentionedIds = mentions.map(mention => {
-      const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
-      return match ? match[2] : null; // match[2] is the user ID
-    }).filter(Boolean) as string[];
-    
-    console.log('Extracted mentioned user IDs:', mentionedIds);
-    console.log('Full text with mentions:', newValue);
-    
-    onMentionedUsersChange(mentionedIds);
   };
 
   const handleUserMention = (user: User) => {
