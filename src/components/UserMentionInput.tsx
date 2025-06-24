@@ -30,6 +30,7 @@ export const UserMentionInput = ({
   const [mentionQuery, setMentionQuery] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const [displayValue, setDisplayValue] = useState(value);
+  const [mentionPositions, setMentionPositions] = useState<Array<{start: number, end: number, userId: string, displayName: string}>>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch users for mentions
@@ -54,12 +55,33 @@ export const UserMentionInput = ({
     const displayText = value.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
     setDisplayValue(displayText);
     
+    // Track mention positions for reconstruction
+    const mentions: Array<{start: number, end: number, userId: string, displayName: string}> = [];
+    const mentionMatches = [...value.matchAll(/@\[([^\]]+)\]\(([^)]+)\)/g)];
+    
+    let offset = 0;
+    mentionMatches.forEach(match => {
+      if (match.index !== undefined) {
+        const displayName = match[1];
+        const userId = match[2];
+        const structuredLength = match[0].length;
+        const displayLength = displayName.length + 1; // +1 for @
+        
+        mentions.push({
+          start: match.index - offset,
+          end: match.index - offset + displayLength,
+          userId: userId,
+          displayName: displayName
+        });
+        
+        offset += structuredLength - displayLength;
+      }
+    });
+    
+    setMentionPositions(mentions);
+    
     // Extract mentioned user IDs from the structured format
-    const mentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
-    const mentionedIds = mentions.map(mention => {
-      const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
-      return match ? match[2] : null;
-    }).filter(Boolean) as string[];
+    const mentionedIds = mentionMatches.map(match => match[2]);
     
     console.log('Extracted mentioned user IDs from value:', value);
     console.log('Found mentioned IDs:', mentionedIds);
@@ -86,27 +108,22 @@ export const UserMentionInput = ({
       setMentionQuery("");
     }
     
-    // Convert the display value back to structured format
-    // We need to find existing mentions and preserve them
+    // Reconstruct structured value by finding existing mentions in the new display text
     let newStructuredValue = newDisplayValue;
     
-    // Get all existing structured mentions from the original value
-    const existingMentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
+    // Sort mentions by position (reverse order to avoid position shifts)
+    const sortedMentions = [...mentionPositions].sort((a, b) => b.start - a.start);
     
-    // For each existing mention, try to find its display equivalent in the new text
-    // and replace it back with the structured format
-    existingMentions.forEach(structuredMention => {
-      const match = structuredMention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
-      if (match) {
-        const [fullMention, displayName] = match;
-        const displayMention = `@${displayName}`;
+    sortedMentions.forEach(mention => {
+      const mentionText = `@${mention.displayName}`;
+      const mentionStart = newDisplayValue.indexOf(mentionText, Math.max(0, mention.start - 10));
+      
+      if (mentionStart !== -1) {
+        const beforeMention = newStructuredValue.substring(0, mentionStart);
+        const afterMention = newStructuredValue.substring(mentionStart + mentionText.length);
+        const structuredMention = `@[${mention.displayName}](${mention.userId})`;
         
-        // Find all instances of this display mention in the new text
-        // Use a more specific replacement to avoid partial matches
-        const escapedDisplayMention = displayMention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`\\b${escapedDisplayMention}\\b`, 'g');
-        
-        newStructuredValue = newStructuredValue.replace(regex, fullMention);
+        newStructuredValue = beforeMention + structuredMention + afterMention;
       }
     });
     
