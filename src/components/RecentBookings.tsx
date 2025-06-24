@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -86,15 +87,15 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tour</TableHead>
-                    <TableHead>Lead Passenger</TableHead>
-                    <TableHead>Other Passengers</TableHead>
-                    <TableHead>Pax</TableHead>
-                    <TableHead>Check In</TableHead>
-                    <TableHead>Check Out</TableHead>
-                    <TableHead>Nights</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
+                    <TableHead className="w-[140px]">Tour</TableHead>
+                    <TableHead className="w-[120px]">Lead Passenger</TableHead>
+                    <TableHead className="w-[120px]">Other Passengers</TableHead>
+                    <TableHead className="w-[60px]">Pax</TableHead>
+                    <TableHead className="w-[100px]">Check In</TableHead>
+                    <TableHead className="w-[100px]">Check Out</TableHead>
+                    <TableHead className="w-[70px]">Nights</TableHead>
+                    <TableHead className="w-[80px]">Status</TableHead>
+                    <TableHead className="w-[100px]">Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -104,32 +105,32 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
                       className="cursor-pointer hover:bg-accent/50"
                       onClick={() => handleBookingClick(booking)}
                     >
-                      <TableCell>{booking.tours?.name || 'No Tour'}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-[140px]">{booking.tours?.name || 'No Tour'}</TableCell>
+                      <TableCell className="w-[120px]">
                         {booking.customers?.first_name} {booking.customers?.last_name}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[120px]">
                         <div className="space-y-1">
                           {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
                           {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
                           {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}
                         </div>
                       </TableCell>
-                      <TableCell>{booking.passenger_count}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-[60px]">{booking.passenger_count}</TableCell>
+                      <TableCell className="w-[100px]">
                         {formatDateToDDMMYYYY(booking.check_in_date)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="w-[100px]">
                         {formatDateToDDMMYYYY(booking.check_out_date)}
                       </TableCell>
-                      <TableCell>{booking.total_nights || '-'}</TableCell>
-                      <TableCell>
+                      <TableCell className="w-[70px]">{booking.total_nights || '-'}</TableCell>
+                      <TableCell className="w-[80px]">
                         <Badge className={getStatusColor(booking.status || 'pending')}>
                           {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs truncate" title={booking.extra_requests || ''}>
+                      <TableCell className="w-[100px]">
+                        <div className="truncate" title={booking.extra_requests || ''}>
                           {booking.extra_requests || '-'}
                         </div>
                       </TableCell>

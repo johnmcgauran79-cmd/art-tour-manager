@@ -21,27 +21,27 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Lead Passenger</TableHead>
-          <TableHead>Additional Passengers</TableHead>
-          <TableHead>Pax</TableHead>
-          <TableHead>Check In</TableHead>
-          <TableHead>Check Out</TableHead>
-          <TableHead>Nights</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Group</TableHead>
-          <TableHead>Notes</TableHead>
+          <TableHead className="w-[140px]">Lead Passenger</TableHead>
+          <TableHead className="w-[120px]">Additional Passengers</TableHead>
+          <TableHead className="w-[60px]">Pax</TableHead>
+          <TableHead className="w-[100px]">Check In</TableHead>
+          <TableHead className="w-[100px]">Check Out</TableHead>
+          <TableHead className="w-[70px]">Nights</TableHead>
+          <TableHead className="w-[80px]">Status</TableHead>
+          <TableHead className="w-[100px]">Group</TableHead>
+          <TableHead className="w-[100px]">Notes</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {data.map((item, index) => (
           <TableRow key={index}>
-            <TableCell className="font-medium">{item.leadPassenger}</TableCell>
-            <TableCell>{item.additionalPassengers.join(', ') || '-'}</TableCell>
-            <TableCell>{item.passengerCount}</TableCell>
-            <TableCell>{item.checkIn}</TableCell>
-            <TableCell>{item.checkOut}</TableCell>
-            <TableCell>{item.nights}</TableCell>
-            <TableCell>
+            <TableCell className="font-medium w-[140px]">{item.leadPassenger}</TableCell>
+            <TableCell className="w-[120px]">{item.additionalPassengers.join(', ') || '-'}</TableCell>
+            <TableCell className="w-[60px]">{item.passengerCount}</TableCell>
+            <TableCell className="w-[100px]">{item.checkIn}</TableCell>
+            <TableCell className="w-[100px]">{item.checkOut}</TableCell>
+            <TableCell className="w-[70px]">{item.nights}</TableCell>
+            <TableCell className="w-[80px]">
               <Badge className={`
                 ${item.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
                 ${item.status === 'deposited' ? 'bg-blue-100 text-blue-800' : ''}
@@ -51,8 +51,8 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
                 {item.status.toUpperCase()}
               </Badge>
             </TableCell>
-            <TableCell>{item.groupName || '-'}</TableCell>
-            <TableCell className="max-w-xs">
+            <TableCell className="w-[100px]">{item.groupName || '-'}</TableCell>
+            <TableCell className="w-[100px]">
               <div className="truncate" title={item.notes}>
                 {item.notes || '-'}
               </div>
