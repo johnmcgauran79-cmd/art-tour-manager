@@ -1,6 +1,5 @@
-
 import { useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Task, useMyTasks } from "@/hooks/useTasks";
@@ -97,6 +96,9 @@ export const AllTasksModal = ({ open, onOpenChange, onTaskClick }: AllTasksModal
               Close
             </Button>
           </div>
+          <DialogDescription>
+            Browse and search through all your assigned tasks.
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex-shrink-0 space-y-4">
