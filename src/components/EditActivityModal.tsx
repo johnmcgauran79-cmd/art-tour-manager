@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -29,7 +30,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     collection_location: "",
     dropoff_location: "",
     spots_booked: "",
-    activity_status: "planned",
+    activity_status: "pending",
     transport_status: "pending",
     guide_name: "",
     guide_phone: "",
@@ -63,7 +64,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         collection_location: activity.collection_location || "",
         dropoff_location: activity.dropoff_location || "",
         spots_booked: activity.spots_available?.toString() || "",
-        activity_status: activity.activity_status || "planned",
+        activity_status: activity.activity_status || "pending",
         transport_status: activity.transport_status || "pending",
         guide_name: activity.guide_name || "",
         guide_phone: activity.guide_phone || "",
@@ -290,7 +291,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="contacted_enquiry_sent">Contacted / Enquiry Sent</SelectItem>
                   <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
