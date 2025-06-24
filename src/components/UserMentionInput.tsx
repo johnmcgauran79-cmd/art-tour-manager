@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
@@ -53,7 +54,7 @@ export const UserMentionInput = ({
     const displayText = value.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
     setDisplayValue(displayText);
     
-    // Extract mentioned user IDs
+    // Extract mentioned user IDs from the structured format
     const mentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
     const mentionedIds = mentions.map(mention => {
       const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
@@ -85,9 +86,31 @@ export const UserMentionInput = ({
       setMentionQuery("");
     }
     
-    // Update the actual value - convert display mentions back to structured format
-    // For now, if it's just display text, keep it as is until user selects from dropdown
-    onChange(newDisplayValue);
+    // For display changes, we need to preserve existing structured mentions
+    // and only convert the display format back to structured format
+    let newStructuredValue = newDisplayValue;
+    
+    // Find existing structured mentions in the original value
+    const existingMentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
+    const existingMentionMap = new Map();
+    
+    existingMentions.forEach(mention => {
+      const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+      if (match) {
+        const [fullMention, displayName, userId] = match;
+        existingMentionMap.set(`@${displayName}`, fullMention);
+      }
+    });
+    
+    // Replace any existing mention patterns in the new display value with their structured format
+    existingMentionMap.forEach((structuredMention, displayMention) => {
+      // Use a more flexible regex that handles the display mention followed by any text
+      const displayPattern = displayMention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`${displayPattern}(?=\\s|$)`, 'g');
+      newStructuredValue = newStructuredValue.replace(regex, structuredMention);
+    });
+    
+    onChange(newStructuredValue);
   };
 
   const handleUserMention = (user: User) => {
