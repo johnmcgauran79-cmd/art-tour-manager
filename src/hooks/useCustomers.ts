@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -249,15 +250,36 @@ export const useUpdateCustomer = () => {
         throw error;
       }
       
-      // Check if dietary requirements changed and create notification (not via realtime to avoid duplicates)
+      // Check if dietary requirements changed and create notification with tour context
       if (user?.id && currentCustomer && 
           currentCustomer.dietary_requirements !== customerData.dietary_requirements) {
+        
+        // Find the most recent booking for this customer to get tour information
+        const { data: recentBooking } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            tours!inner(name)
+          `)
+          .eq('lead_passenger_id', id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        let message = `${currentCustomer.first_name} ${currentCustomer.last_name} dietary requirements updated`;
+        let relatedId = id;
+
+        if (recentBooking) {
+          message = `${currentCustomer.first_name} ${currentCustomer.last_name} dietary requirements updated for ${recentBooking.tours.name}`;
+          relatedId = recentBooking.id; // Use booking ID instead of customer ID
+        }
+
         await createNotification(user.id, {
           title: "Dietary Update",
-          message: `${currentCustomer.first_name} ${currentCustomer.last_name} dietary requirements updated`,
+          message,
           type: 'system',
           priority: 'medium',
-          related_id: id,
+          related_id: relatedId,
         });
       }
       

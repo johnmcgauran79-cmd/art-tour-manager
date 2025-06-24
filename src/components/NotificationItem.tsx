@@ -85,19 +85,32 @@ export const NotificationItem = ({
         onNavigateToItem('task', notification.related_id);
       } else if (notification.type === 'system') {
         // For system notifications, check if it's a dietary update
-        if (notification.message.includes('Dietary requirements')) {
-          // Find the booking for this customer and open it
+        if (notification.message.includes('Dietary requirements') || notification.message.includes('dietary requirements')) {
+          // Check if the related_id is a booking ID (new format) or customer ID (old format)
           try {
-            const { data: bookings } = await supabase
+            // First try to find a booking with this ID
+            const { data: booking } = await supabase
               .from('bookings')
               .select('id')
-              .eq('lead_passenger_id', notification.related_id)
-              .order('created_at', { ascending: false })
-              .limit(1);
+              .eq('id', notification.related_id)
+              .single();
 
-            if (bookings && bookings.length > 0) {
-              console.log('Opening booking for dietary update:', bookings[0].id);
-              onNavigateToItem('booking', bookings[0].id);
+            if (booking) {
+              console.log('Opening booking for dietary update:', notification.related_id);
+              onNavigateToItem('booking', notification.related_id);
+            } else {
+              // Fallback: find the most recent booking for this customer
+              const { data: bookings } = await supabase
+                .from('bookings')
+                .select('id')
+                .eq('lead_passenger_id', notification.related_id)
+                .order('created_at', { ascending: false })
+                .limit(1);
+
+              if (bookings && bookings.length > 0) {
+                console.log('Opening booking for dietary update (fallback):', bookings[0].id);
+                onNavigateToItem('booking', bookings[0].id);
+              }
             }
           } catch (error) {
             console.error('Error finding booking for dietary update:', error);
