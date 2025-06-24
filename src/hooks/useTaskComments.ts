@@ -57,8 +57,12 @@ export const useCreateTaskComment = () => {
 
   return useMutation({
     mutationFn: async (data: { task_id: string; comment: string; mentioned_users?: string[] }) => {
+      console.log('Creating comment with data:', data);
+      
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
+
+      console.log('Current user:', user.user.id);
 
       const { data: comment, error } = await supabase
         .from('task_comments')
@@ -70,10 +74,17 @@ export const useCreateTaskComment = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating comment:', error);
+        throw error;
+      }
+
+      console.log('Comment created successfully:', comment);
 
       // Create notifications for mentioned users
       if (data.mentioned_users && data.mentioned_users.length > 0) {
+        console.log('Creating notifications for mentioned users:', data.mentioned_users);
+        
         const { data: task } = await supabase
           .from('tasks')
           .select('title')
@@ -90,6 +101,9 @@ export const useCreateTaskComment = () => {
           ? `${commenter.first_name || ''} ${commenter.last_name || ''}`.trim() || commenter.email
           : 'Someone';
 
+        console.log('Task details:', task);
+        console.log('Commenter details:', commenter);
+
         const notifications = data.mentioned_users.map(userId => ({
           user_id: userId,
           type: 'task',
@@ -99,25 +113,34 @@ export const useCreateTaskComment = () => {
           related_id: data.task_id,
         }));
 
-        const { error: notificationError } = await supabase
+        console.log('Notifications to create:', notifications);
+
+        const { data: createdNotifications, error: notificationError } = await supabase
           .from('user_notifications')
-          .insert(notifications);
+          .insert(notifications)
+          .select();
 
         if (notificationError) {
           console.error('Error creating notifications:', notificationError);
+        } else {
+          console.log('Notifications created successfully:', createdNotifications);
         }
+      } else {
+        console.log('No mentioned users to notify');
       }
 
       return comment;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['task-comments', variables.task_id] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Comment Added",
         description: "Your comment has been added to the task.",
       });
     },
     onError: (error) => {
+      console.error('Full error in comment creation:', error);
       toast({
         title: "Error",
         description: "Failed to add comment. Please try again.",

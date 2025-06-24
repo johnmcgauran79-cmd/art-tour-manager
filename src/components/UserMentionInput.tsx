@@ -64,12 +64,15 @@ export const UserMentionInput = ({
       setMentionQuery("");
     }
 
-    // Extract mentioned user IDs from the text
+    // Extract mentioned user IDs from the text with improved regex
     const mentions = newValue.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
     const mentionedIds = mentions.map(mention => {
-      const match = mention.match(/@\[[^\]]+\]\(([^)]+)\)/);
-      return match ? match[1] : null;
-    }).filter(Boolean);
+      const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+      return match ? match[2] : null; // match[2] is the user ID
+    }).filter(Boolean) as string[];
+    
+    console.log('Extracted mentioned user IDs:', mentionedIds);
+    console.log('Full text with mentions:', newValue);
     
     onMentionedUsersChange(mentionedIds);
   };
@@ -84,6 +87,9 @@ export const UserMentionInput = ({
     const mentionText = `@[${displayName}](${user.id})`;
     
     const newValue = beforeMention + mentionText + " " + textAfterCursor;
+    console.log('Adding mention for user:', user.id, 'Display:', displayName);
+    console.log('New value with mention:', newValue);
+    
     onChange(newValue);
     setShowSuggestions(false);
     setMentionQuery("");
@@ -105,6 +111,7 @@ export const UserMentionInput = ({
     return searchText.includes(mentionQuery.toLowerCase());
   });
 
+  // Convert mentions back to display format for the textarea
   const displayValue = value.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
 
   return (
