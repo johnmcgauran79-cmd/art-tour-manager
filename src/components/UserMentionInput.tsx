@@ -86,28 +86,28 @@ export const UserMentionInput = ({
       setMentionQuery("");
     }
     
-    // For display changes, we need to preserve existing structured mentions
-    // and only convert the display format back to structured format
+    // Convert the display value back to structured format
+    // We need to find existing mentions and preserve them
     let newStructuredValue = newDisplayValue;
     
-    // Find existing structured mentions in the original value
+    // Get all existing structured mentions from the original value
     const existingMentions = value.match(/@\[([^\]]+)\]\(([^)]+)\)/g) || [];
-    const existingMentionMap = new Map();
     
-    existingMentions.forEach(mention => {
-      const match = mention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
+    // For each existing mention, try to find its display equivalent in the new text
+    // and replace it back with the structured format
+    existingMentions.forEach(structuredMention => {
+      const match = structuredMention.match(/@\[([^\]]+)\]\(([^)]+)\)/);
       if (match) {
-        const [fullMention, displayName, userId] = match;
-        existingMentionMap.set(`@${displayName}`, fullMention);
+        const [fullMention, displayName] = match;
+        const displayMention = `@${displayName}`;
+        
+        // Find all instances of this display mention in the new text
+        // Use a more specific replacement to avoid partial matches
+        const escapedDisplayMention = displayMention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedDisplayMention}\\b`, 'g');
+        
+        newStructuredValue = newStructuredValue.replace(regex, fullMention);
       }
-    });
-    
-    // Replace any existing mention patterns in the new display value with their structured format
-    existingMentionMap.forEach((structuredMention, displayMention) => {
-      // Use a more flexible regex that handles the display mention followed by any text
-      const displayPattern = displayMention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`${displayPattern}(?=\\s|$)`, 'g');
-      newStructuredValue = newStructuredValue.replace(regex, structuredMention);
     });
     
     onChange(newStructuredValue);
