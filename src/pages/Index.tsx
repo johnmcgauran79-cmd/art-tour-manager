@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -26,7 +27,7 @@ import { Plus, Users, FileText, Settings, Calendar, MapPin, X } from "lucide-rea
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("operations"); // Changed default tab to operations
+  const [activeTab, setActiveTab] = useState("dashboard"); // Changed back to dashboard as main tab
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -254,16 +255,12 @@ const Index = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-8">
-            <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
           </TabsList>
-          
-          <TabsContent value="operations" className="space-y-4">
-            <OperationsDashboard />
-          </TabsContent>
           
           <TabsContent value="dashboard" className="space-y-8">
             {/* Dashboard Metrics */}
@@ -302,6 +299,10 @@ const Index = () => {
             <div className="w-full">
               <MyTasksWidget />
             </div>
+          </TabsContent>
+          
+          <TabsContent value="operations" className="space-y-4">
+            <OperationsDashboard />
           </TabsContent>
           
           <TabsContent value="tours" className="space-y-4">
