@@ -8,7 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "paid": return "bg-green-100 text-green-800";
+    case "fully_paid": return "bg-green-100 text-green-800";
+    case "instalment_paid": return "bg-purple-100 text-purple-800";
     case "deposited": return "bg-blue-100 text-blue-800";
     case "invoiced": return "bg-yellow-100 text-yellow-800";
     case "pending": return "bg-gray-100 text-gray-800";
@@ -76,7 +77,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
             bookingId: booking.id,
             updatePromise: updateBooking.mutateAsync({
               id: booking.id,
-              status: newStatus as 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled'
+              status: newStatus as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled'
             })
           });
         }
@@ -177,7 +178,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         Current:
                       </div>
                       <Badge className={getStatusColor(booking.status || 'pending')}>
-                        {(booking.status || 'pending').replace("_", " ").toUpperCase()}
+                        {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
                       </Badge>
                       
                       <div className="text-sm text-muted-foreground">
@@ -195,7 +196,8 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         <option value="pending">Pending</option>
                         <option value="invoiced">Invoiced</option>
                         <option value="deposited">Deposited</option>
-                        <option value="paid">Paid</option>
+                        <option value="instalment_paid">Instalment Paid</option>
+                        <option value="fully_paid">Fully Paid</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </div>

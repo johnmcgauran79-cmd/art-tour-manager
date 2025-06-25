@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, CreditCard, Shield, FileText, Heart, MessageSquare } from "lucide-react";
+import { Trash2, Edit, Shield, FileText, Heart, MessageSquare } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -26,7 +27,7 @@ interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
@@ -35,17 +36,6 @@ interface Booking {
   total_nights: number | null;
   created_at: string;
   updated_at: string;
-  
-  // Payment fields
-  deposit_paid: boolean;
-  deposit_paid_date: string | null;
-  deposit_amount: number | null;
-  instalment_paid: boolean;
-  instalment_paid_date: string | null;
-  instalment_amount: number | null;
-  final_payment_paid: boolean;
-  final_payment_paid_date: string | null;
-  final_payment_amount: number | null;
   
   // Emergency contact
   emergency_contact_name: string | null;
@@ -93,23 +83,12 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled',
+    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled',
     extra_requests: '',
     invoice_notes: '',
     accommodation_required: true,
     check_in_date: '',
     check_out_date: '',
-    
-    // Payment tracking
-    deposit_paid: false,
-    deposit_paid_date: '',
-    deposit_amount: 0,
-    instalment_paid: false,
-    instalment_paid_date: '',
-    instalment_amount: 0,
-    final_payment_paid: false,
-    final_payment_paid_date: '',
-    final_payment_amount: 0,
     
     // Emergency contact
     emergency_contact_name: '',
@@ -159,17 +138,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
         check_in_date: booking.check_in_date || '',
         check_out_date: booking.check_out_date || '',
         
-        // Payment tracking
-        deposit_paid: booking.deposit_paid || false,
-        deposit_paid_date: booking.deposit_paid_date || '',
-        deposit_amount: booking.deposit_amount || 0,
-        instalment_paid: booking.instalment_paid || false,
-        instalment_paid_date: booking.instalment_paid_date || '',
-        instalment_amount: booking.instalment_amount || 0,
-        final_payment_paid: booking.final_payment_paid || false,
-        final_payment_paid_date: booking.final_payment_paid_date || '',
-        final_payment_amount: booking.final_payment_amount || 0,
-        
         // Emergency contact
         emergency_contact_name: booking.emergency_contact_name || '',
         emergency_contact_phone: booking.emergency_contact_phone || '',
@@ -203,7 +171,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       });
     }
 
-    // Then update the booking with all new fields
+    // Then update the booking with all fields except removed payment fields
     updateBooking.mutate({
       id: booking.id,
       // Basic booking fields
@@ -218,17 +186,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       accommodation_required: formData.accommodation_required,
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
-      
-      // Payment tracking
-      deposit_paid: formData.deposit_paid,
-      deposit_paid_date: formData.deposit_paid_date || null,
-      deposit_amount: formData.deposit_amount || null,
-      instalment_paid: formData.instalment_paid,
-      instalment_paid_date: formData.instalment_paid_date || null,
-      instalment_amount: formData.instalment_amount || null,
-      final_payment_paid: formData.final_payment_paid,
-      final_payment_paid_date: formData.final_payment_paid_date || null,
-      final_payment_amount: formData.final_payment_amount || null,
       
       // Emergency contact
       emergency_contact_name: formData.emergency_contact_name || null,
@@ -253,7 +210,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     });
   };
 
-  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled') => {
+  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled') => {
     if (newStatus === 'cancelled' && booking?.status !== 'cancelled') {
       setShowCancelDialog(true);
     } else {
@@ -326,12 +283,8 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           </DialogHeader>
 
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="payments" className="flex items-center gap-1">
-                <CreditCard className="h-4 w-4" />
-                Payments
-              </TabsTrigger>
               <TabsTrigger value="emergency" className="flex items-center gap-1">
                 <Shield className="h-4 w-4" />
                 Emergency
@@ -446,7 +399,8 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                         <SelectItem value="pending">Pending</SelectItem>
                         <SelectItem value="invoiced">Invoiced</SelectItem>
                         <SelectItem value="deposited">Deposited</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="instalment_paid">Instalment Paid</SelectItem>
+                        <SelectItem value="fully_paid">Fully Paid</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
@@ -543,103 +497,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                   </Button>
                 </div>
               </form>
-            </TabsContent>
-
-            <TabsContent value="payments" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium text-brand-navy">Deposit Payment</h3>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.deposit_paid}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, deposit_paid: checked }))}
-                    />
-                    <Label>Deposit Paid</Label>
-                  </div>
-                  <div>
-                    <Label>Amount</Label>
-                    <Input
-                      type="number"
-                      value={formData.deposit_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, deposit_amount: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Date Paid</Label>
-                    <Input
-                      type="date"
-                      value={formData.deposit_paid_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, deposit_paid_date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium text-brand-navy">Instalment Payment</h3>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.instalment_paid}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, instalment_paid: checked }))}
-                    />
-                    <Label>Instalment Paid</Label>
-                  </div>
-                  <div>
-                    <Label>Amount</Label>
-                    <Input
-                      type="number"
-                      value={formData.instalment_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, instalment_amount: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Date Paid</Label>
-                    <Input
-                      type="date"
-                      value={formData.instalment_paid_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, instalment_paid_date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium text-brand-navy">Final Payment</h3>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={formData.final_payment_paid}
-                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, final_payment_paid: checked }))}
-                    />
-                    <Label>Final Payment Paid</Label>
-                  </div>
-                  <div>
-                    <Label>Amount</Label>
-                    <Input
-                      type="number"
-                      value={formData.final_payment_amount}
-                      onChange={(e) => setFormData(prev => ({ ...prev, final_payment_amount: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div>
-                    <Label>Date Paid</Label>
-                    <Input
-                      type="date"
-                      value={formData.final_payment_paid_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, final_payment_paid_date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Close
-                </Button>
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={updateBooking.isPending}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  {updateBooking.isPending ? 'Updating...' : 'Update Payment Info'}
-                </Button>
-              </div>
             </TabsContent>
 
             <TabsContent value="emergency" className="space-y-4">

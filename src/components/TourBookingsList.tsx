@@ -12,7 +12,8 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "paid": return "bg-green-100 text-green-800";
+    case "fully_paid": return "bg-green-100 text-green-800";
+    case "instalment_paid": return "bg-purple-100 text-purple-800";
     case "deposited": return "bg-blue-100 text-blue-800";
     case "invoiced": return "bg-yellow-100 text-yellow-800";
     case "pending": return "bg-gray-100 text-gray-800";
@@ -26,9 +27,10 @@ const getStatusOrder = (status: string) => {
     case "pending": return 1;
     case "invoiced": return 2;
     case "deposited": return 3;
-    case "paid": return 4;
-    case "cancelled": return 5;
-    default: return 6;
+    case "instalment_paid": return 4;
+    case "fully_paid": return 5;
+    case "cancelled": return 6;
+    default: return 7;
   }
 };
 
@@ -155,7 +157,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                       <td className="p-3">{booking.total_nights || '-'}</td>
                       <td className="p-3">
                         <Badge className={getStatusColor(booking.status || 'pending')}>
-                          {(booking.status || 'pending').replace("_", " ").toUpperCase()}
+                          {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
                         </Badge>
                       </td>
                       <td className="p-3 max-w-xs">

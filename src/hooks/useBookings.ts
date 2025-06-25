@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,7 +11,7 @@ export interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'paid' | 'cancelled';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
@@ -22,17 +21,6 @@ export interface Booking {
   revenue: number | null;
   created_at: string;
   updated_at: string;
-  
-  // Payment tracking fields
-  deposit_paid: boolean;
-  deposit_paid_date: string | null;
-  deposit_amount: number | null;
-  instalment_paid: boolean;
-  instalment_paid_date: string | null;
-  instalment_amount: number | null;
-  final_payment_paid: boolean;
-  final_payment_paid_date: string | null;
-  final_payment_amount: number | null;
   
   // Emergency contact information
   emergency_contact_name: string | null;
@@ -126,17 +114,6 @@ export const useCreateBooking = () => {
       check_out_date?: string;
       invoice_notes?: string;
       
-      // Payment tracking
-      deposit_paid?: boolean;
-      deposit_paid_date?: string;
-      deposit_amount?: number;
-      instalment_paid?: boolean;
-      instalment_paid_date?: string;
-      instalment_amount?: number;
-      final_payment_paid?: boolean;
-      final_payment_paid_date?: string;
-      final_payment_amount?: number;
-      
       // Emergency contact
       emergency_contact_name?: string;
       emergency_contact_phone?: string;
@@ -200,7 +177,7 @@ export const useCreateBooking = () => {
         customerId = newCustomer.id;
       }
 
-      // Create the booking with all new fields
+      // Create the booking with all fields except removed payment fields
       const { data, error } = await supabase
         .from('bookings')
         .insert([{
@@ -218,17 +195,6 @@ export const useCreateBooking = () => {
           check_out_date: bookingData.check_out_date,
           total_nights: totalNights,
           invoice_notes: bookingData.invoice_notes,
-          
-          // Payment tracking
-          deposit_paid: bookingData.deposit_paid || false,
-          deposit_paid_date: bookingData.deposit_paid_date || null,
-          deposit_amount: bookingData.deposit_amount || null,
-          instalment_paid: bookingData.instalment_paid || false,
-          instalment_paid_date: bookingData.instalment_paid_date || null,
-          instalment_amount: bookingData.instalment_amount || null,
-          final_payment_paid: bookingData.final_payment_paid || false,
-          final_payment_paid_date: bookingData.final_payment_paid_date || null,
-          final_payment_amount: bookingData.final_payment_amount || null,
           
           // Emergency contact
           emergency_contact_name: bookingData.emergency_contact_name || null,

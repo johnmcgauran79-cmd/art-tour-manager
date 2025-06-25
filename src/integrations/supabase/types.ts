@@ -250,23 +250,14 @@ export type Database = {
           check_in_date: string | null
           check_out_date: string | null
           created_at: string | null
-          deposit_amount: number | null
-          deposit_paid: boolean | null
-          deposit_paid_date: string | null
           dietary_restrictions: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           emergency_contact_relationship: string | null
           extra_requests: string | null
-          final_payment_amount: number | null
-          final_payment_paid: boolean | null
-          final_payment_paid_date: string | null
           group_name: string | null
           id: string
           id_number: string | null
-          instalment_amount: number | null
-          instalment_paid: boolean | null
-          instalment_paid_date: string | null
           invoice_notes: string | null
           lead_passenger_id: string | null
           medical_conditions: string | null
@@ -290,23 +281,14 @@ export type Database = {
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
-          deposit_amount?: number | null
-          deposit_paid?: boolean | null
-          deposit_paid_date?: string | null
           dietary_restrictions?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
           extra_requests?: string | null
-          final_payment_amount?: number | null
-          final_payment_paid?: boolean | null
-          final_payment_paid_date?: string | null
           group_name?: string | null
           id?: string
           id_number?: string | null
-          instalment_amount?: number | null
-          instalment_paid?: boolean | null
-          instalment_paid_date?: string | null
           invoice_notes?: string | null
           lead_passenger_id?: string | null
           medical_conditions?: string | null
@@ -330,23 +312,14 @@ export type Database = {
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
-          deposit_amount?: number | null
-          deposit_paid?: boolean | null
-          deposit_paid_date?: string | null
           dietary_restrictions?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
           extra_requests?: string | null
-          final_payment_amount?: number | null
-          final_payment_paid?: boolean | null
-          final_payment_paid_date?: string | null
           group_name?: string | null
           id?: string
           id_number?: string | null
-          instalment_amount?: number | null
-          instalment_paid?: boolean | null
-          instalment_paid_date?: string | null
           invoice_notes?: string | null
           lead_passenger_id?: string | null
           medical_conditions?: string | null
@@ -1205,7 +1178,8 @@ export type Database = {
         | "pending"
         | "invoiced"
         | "deposited"
-        | "paid"
+        | "instalment_paid"
+        | "fully_paid"
         | "cancelled"
       hotel_booking_status: "enquiry_sent" | "booked" | "pending"
       task_category:
@@ -1354,7 +1328,14 @@ export const Constants = {
       ],
       app_role: ["admin", "manager", "booking_agent"],
       bedding_type: ["single", "double", "twin"],
-      booking_status: ["pending", "invoiced", "deposited", "paid", "cancelled"],
+      booking_status: [
+        "pending",
+        "invoiced",
+        "deposited",
+        "instalment_paid",
+        "fully_paid",
+        "cancelled",
+      ],
       hotel_booking_status: ["enquiry_sent", "booked", "pending"],
       task_category: [
         "booking",
