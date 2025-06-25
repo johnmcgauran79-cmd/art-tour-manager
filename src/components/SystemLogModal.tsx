@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { RefreshCw, Download } from "lucide-react";
+import { RefreshCw, Download, AlertCircle } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
 
 interface AuditLogEntry {
@@ -29,10 +29,14 @@ interface SystemLogModalProps {
 export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchLogs = async () => {
     setLoading(true);
+    setError(null);
     try {
+      console.log('SystemLogModal: Fetching audit logs...');
+      
       const { data, error } = await supabase
         .from('audit_log')
         .select(`
@@ -45,35 +49,53 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
           timestamp
         `)
         .order('timestamp', { ascending: false })
-        .limit(500);
+        .limit(100);
 
       if (error) {
-        console.error('Error fetching audit logs:', error);
+        console.error('SystemLogModal: Error fetching audit logs:', error);
+        setError(`Failed to fetch system logs: ${error.message}`);
         toast({
           title: "Error",
-          description: "Failed to fetch system logs.",
+          description: "Failed to fetch system logs. You may not have permission to view audit logs.",
           variant: "destructive"
         });
         return;
       }
 
+      console.log('SystemLogModal: Raw audit logs data:', data);
+
+      if (!data || data.length === 0) {
+        console.log('SystemLogModal: No audit logs found');
+        setLogs([]);
+        return;
+      }
+
       // Get user emails for the user IDs
       const userIds = [...new Set(data.map(log => log.user_id))];
-      const { data: profiles } = await supabase
+      console.log('SystemLogModal: Fetching user emails for user IDs:', userIds);
+      
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email')
         .in('id', userIds);
 
+      if (profilesError) {
+        console.error('SystemLogModal: Error fetching profiles:', profilesError);
+      }
+
       const profileMap = new Map(profiles?.map(p => [p.id, p.email]) || []);
+      console.log('SystemLogModal: Profile map:', profileMap);
 
       const logsWithEmails = data.map(log => ({
         ...log,
         user_email: profileMap.get(log.user_id) || 'Unknown User'
       }));
 
+      console.log('SystemLogModal: Final logs with emails:', logsWithEmails);
       setLogs(logsWithEmails);
     } catch (error) {
-      console.error('Unexpected error fetching logs:', error);
+      console.error('SystemLogModal: Unexpected error fetching logs:', error);
+      setError('An unexpected error occurred while fetching logs');
       toast({
         title: "Error",
         description: "An unexpected error occurred.",
@@ -81,6 +103,59 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateSampleData = async () => {
+    try {
+      console.log('SystemLogModal: Generating sample audit log data...');
+      
+      // Create a few sample audit log entries to demonstrate the feature
+      const sampleEntries = [
+        {
+          operation_type: 'CREATE',
+          table_name: 'tours',
+          details: { tour_name: 'Sample Tour Creation' }
+        },
+        {
+          operation_type: 'UPDATE',
+          table_name: 'bookings',
+          details: { status_change: 'pending to confirmed' }
+        },
+        {
+          operation_type: 'DELETE',
+          table_name: 'tasks',
+          details: { task_title: 'Sample Task Deletion' }
+        }
+      ];
+
+      for (const entry of sampleEntries) {
+        const { error } = await supabase.rpc('log_sensitive_operation', {
+          operation_type: entry.operation_type,
+          table_name: entry.table_name,
+          record_id: crypto.randomUUID(),
+          details: entry.details
+        });
+
+        if (error) {
+          console.error('Error creating sample audit log entry:', error);
+        }
+      }
+
+      toast({
+        title: "Sample Data Generated",
+        description: "Created sample audit log entries for demonstration.",
+      });
+
+      // Refresh the logs to show the new sample data
+      fetchLogs();
+    } catch (error) {
+      console.error('Error generating sample data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate sample data.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -159,6 +234,15 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={generateSampleData}
+                disabled={loading}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Generate Sample Data
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={fetchLogs}
                 disabled={loading}
               >
@@ -173,6 +257,15 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
             </div>
           </DialogTitle>
         </DialogHeader>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <div className="flex items-center">
+              <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+              <span className="text-red-800">{error}</span>
+            </div>
+          </div>
+        )}
 
         <ScrollArea className="h-[60vh]">
           {loading ? (
@@ -197,8 +290,15 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
               <TableBody>
                 {logs.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      No system logs found
+                    <TableCell colSpan={6} className="text-center py-8">
+                      <div className="text-muted-foreground space-y-2">
+                        <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                        <p>No system logs found</p>
+                        <p className="text-sm">
+                          The audit log tracks sensitive operations like creating, updating, or deleting records.
+                          Use the "Generate Sample Data" button to see how the log works.
+                        </p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -235,7 +335,17 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
         </ScrollArea>
 
         <div className="text-sm text-muted-foreground border-t pt-4">
-          <p>Showing last 500 entries. Only admins can view system logs.</p>
+          <p>
+            The System Activity Log tracks sensitive operations performed by users. 
+            It shows database changes like creating tours, updating bookings, or deleting tasks.
+            {logs.length > 0 && ` Showing ${logs.length} entries.`}
+          </p>
+          {logs.length === 0 && (
+            <p className="mt-2">
+              <strong>Note:</strong> This log only captures operations that explicitly use the audit logging function. 
+              Many operations may not be logged yet. You can generate sample data to see how it works.
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>
