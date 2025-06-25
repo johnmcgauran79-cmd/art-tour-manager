@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Calendar } from "lucide-react";
+import { Trash2, Calendar, X } from "lucide-react";
 import { useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
 import { Customer } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
@@ -159,49 +159,59 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                 Update contact information and view their bookings.
               </DialogDescription>
             </div>
-            {canDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {hasBookings ? (
-                        <>
-                          This contact has tour bookings and cannot be deleted. Please cancel or transfer their bookings first.
-                        </>
-                      ) : (
-                        <>
-                          Are you sure you want to delete {contact?.first_name} {contact?.last_name}? 
-                          This action cannot be undone.
-                        </>
+            <div className="flex items-center gap-2">
+              {canDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-red-600 border-red-600 hover:bg-red-600 hover:text-white"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {hasBookings ? (
+                          <>
+                            This contact has tour bookings and cannot be deleted. Please cancel or transfer their bookings first.
+                          </>
+                        ) : (
+                          <>
+                            Are you sure you want to delete {contact?.first_name} {contact?.last_name}? 
+                            This action cannot be undone.
+                          </>
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      {!hasBookings && (
+                        <AlertDialogAction
+                          onClick={handleDelete}
+                          disabled={deleteCustomer.isPending}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          {deleteCustomer.isPending ? "Deleting..." : "Delete Contact"}
+                        </AlertDialogAction>
                       )}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    {!hasBookings && (
-                      <AlertDialogAction
-                        onClick={handleDelete}
-                        disabled={deleteCustomer.isPending}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        {deleteCustomer.isPending ? "Deleting..." : "Delete Contact"}
-                      </AlertDialogAction>
-                    )}
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onOpenChange(false)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
