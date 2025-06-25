@@ -219,8 +219,9 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
                   <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="contracted">Contracted</SelectItem>
+                  <SelectItem value="updated">Updated</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="finalised">Finalised</SelectItem>
                 </SelectContent>
               </Select>
             </div>

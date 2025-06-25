@@ -1181,7 +1181,13 @@ export type Database = {
         | "instalment_paid"
         | "fully_paid"
         | "cancelled"
-      hotel_booking_status: "enquiry_sent" | "booked" | "pending"
+      hotel_booking_status:
+        | "enquiry_sent"
+        | "pending"
+        | "contracted"
+        | "updated"
+        | "paid"
+        | "finalised"
       task_category:
         | "booking"
         | "operations"
@@ -1336,7 +1342,14 @@ export const Constants = {
         "fully_paid",
         "cancelled",
       ],
-      hotel_booking_status: ["enquiry_sent", "booked", "pending"],
+      hotel_booking_status: [
+        "enquiry_sent",
+        "pending",
+        "contracted",
+        "updated",
+        "paid",
+        "finalised",
+      ],
       task_category: [
         "booking",
         "operations",

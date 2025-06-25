@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -204,7 +203,10 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                 <SelectContent>
                   <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
+                  <SelectItem value="contracted">Contracted</SelectItem>
+                  <SelectItem value="updated">Updated</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="finalised">Finalised</SelectItem>
                 </SelectContent>
               </Select>
             </div>
