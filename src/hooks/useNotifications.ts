@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,27 +8,27 @@ import { useUserDepartments } from "@/hooks/useUserDepartments";
 
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
-export const useNotifications = () => {
+export const useNotifications = (limit: number = 10) => {
   const { user } = useAuth();
   const { data: userDepartments = [] } = useUserDepartments();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
 
-  // Fetch notifications
+  // Fetch notifications with proper limit
   const { data: notifications = [], isLoading, refetch } = useQuery({
-    queryKey: ['notifications', user?.id, userDepartments],
+    queryKey: ['notifications', user?.id, userDepartments, limit],
     queryFn: async (): Promise<Notification[]> => {
       if (!user?.id) return [];
       
-      console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments);
+      console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments, 'limit:', limit);
       
       let query = supabase
         .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(limit);
 
       // If user has departments, also include notifications for those departments
       if (userDepartments.length > 0) {
@@ -38,7 +37,7 @@ export const useNotifications = () => {
           .select('*')
           .or(`user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`)
           .order('created_at', { ascending: false })
-          .limit(10);
+          .limit(limit);
       }
 
       const { data, error } = await query;

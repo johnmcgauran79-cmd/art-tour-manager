@@ -1,16 +1,26 @@
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { useNotifications } from "@/hooks/useNotifications";
-import { NotificationHeader } from "@/components/NotificationHeader";
-import { NotificationEmptyState } from "@/components/NotificationEmptyState";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Trash2, Check } from "lucide-react";
 import { NotificationList } from "@/components/NotificationList";
+import { NotificationHeader } from "@/components/NotificationHeader";
+import { NotificationActions } from "@/components/NotificationActions";
+import { NotificationEmptyState } from "@/components/NotificationEmptyState";
+import { useNotifications } from "@/hooks/useNotifications";
 
 interface MyNotificationsWidgetProps {
   onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
   showCard?: boolean;
 }
 
-export const MyNotificationsWidget = ({ onNavigateToItem, showCard = true }: MyNotificationsWidgetProps) => {
+export const MyNotificationsWidget = ({ 
+  onNavigateToItem, 
+  showCard = true 
+}: MyNotificationsWidgetProps) => {
+  // Use limit of 25 when showing in card format (all notifications view)
+  // Use limit of 10 for dashboard preview
+  const limit = showCard ? 25 : 10;
+  
   const {
     notifications,
     isLoading,
@@ -21,49 +31,57 @@ export const MyNotificationsWidget = ({ onNavigateToItem, showCard = true }: MyN
     handleBulkDelete,
     handleSingleDelete,
     isDeleting,
-  } = useNotifications();
+  } = useNotifications(limit);
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-4">
+        <p className="text-muted-foreground">Loading notifications...</p>
+      </div>
+    );
+  }
 
   const content = (
     <>
-      {showCard && (
-        <CardHeader>
-          <NotificationHeader
-            unreadCount={unreadCount}
-            selectedCount={selectedNotifications.length}
-            totalCount={notifications.length}
-            onBulkDelete={handleBulkDelete}
-            isLoading={isDeleting}
-          />
-        </CardHeader>
+      <NotificationHeader 
+        unreadCount={unreadCount}
+        selectedCount={selectedNotifications.length}
+        showCard={showCard}
+      />
+      
+      {selectedNotifications.length > 0 && (
+        <NotificationActions
+          selectedCount={selectedNotifications.length}
+          onBulkDelete={handleBulkDelete}
+          isDeleting={isDeleting}
+        />
       )}
-      <CardContent className={showCard ? "" : "p-0"}>
-        {isLoading ? (
-          <div className="text-center py-4 text-muted-foreground">
-            Loading notifications...
-          </div>
-        ) : notifications.length === 0 ? (
-          <NotificationEmptyState />
-        ) : (
-          <NotificationList
-            notifications={notifications}
-            selectedNotifications={selectedNotifications}
-            onCheckboxChange={handleCheckboxChange}
-            onNotificationClick={handleNotificationClick}
-            onNavigateToItem={onNavigateToItem}
-            onDelete={handleSingleDelete}
-          />
-        )}
-      </CardContent>
+
+      {notifications.length === 0 ? (
+        <NotificationEmptyState />
+      ) : (
+        <NotificationList
+          notifications={notifications}
+          selectedNotifications={selectedNotifications}
+          onCheckboxChange={handleCheckboxChange}
+          onNotificationClick={handleNotificationClick}
+          onNavigateToItem={onNavigateToItem}
+          onDelete={handleSingleDelete}
+          maxHeight={showCard ? "500px" : "300px"}
+        />
+      )}
     </>
   );
 
   if (!showCard) {
-    return <div>{content}</div>;
+    return <div className="space-y-4">{content}</div>;
   }
 
   return (
     <Card className="border-brand-navy/20 shadow-lg">
-      {content}
+      <CardContent className="p-6">
+        {content}
+      </CardContent>
     </Card>
   );
 };

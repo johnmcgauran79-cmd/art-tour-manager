@@ -12,6 +12,7 @@ interface NotificationListProps {
   onNotificationClick: (notification: Notification) => void;
   onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
   onDelete: (notificationId: string) => void;
+  maxHeight?: string;
 }
 
 export const NotificationList = ({
@@ -20,11 +21,12 @@ export const NotificationList = ({
   onCheckboxChange,
   onNotificationClick,
   onNavigateToItem,
-  onDelete
+  onDelete,
+  maxHeight = "400px"
 }: NotificationListProps) => {
   return (
-    <ScrollArea className="h-[300px]">
-      <div className="space-y-1">
+    <ScrollArea className="w-full" style={{ height: maxHeight }}>
+      <div className="space-y-1 pr-4">
         {notifications.map((notification) => (
           <NotificationItem
             key={notification.id}
