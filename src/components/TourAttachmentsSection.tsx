@@ -104,11 +104,8 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
       console.log('Current attachments before update:', currentData);
       console.log('Updated attachments after filtering:', updatedData);
       
-      // Set the query data directly to the filtered list
+      // Set the query data directly to the filtered list and keep it that way
       queryClient.setQueryData(['tour-attachments', tourId], updatedData);
-      
-      // Also invalidate to ensure fresh data from server
-      queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
 
       toast({
         title: "File Deleted",

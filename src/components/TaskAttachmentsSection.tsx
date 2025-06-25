@@ -104,11 +104,8 @@ export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) 
       console.log('Current attachments before update:', currentData);
       console.log('Updated attachments after filtering:', updatedData);
       
-      // Set the query data directly to the filtered list
+      // Set the query data directly to the filtered list and keep it that way
       queryClient.setQueryData(['task-attachments', taskId], updatedData);
-      
-      // Also invalidate to ensure fresh data from server
-      queryClient.invalidateQueries({ queryKey: ['task-attachments', taskId] });
 
       toast({
         title: "File Deleted",
