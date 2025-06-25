@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit, ChevronDown, Check, Shield, FileText, Heart, Hotel } from "lucide-react";
+import { Edit, ChevronDown, Check, Shield, FileText, Heart, Hotel, MapPin } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
@@ -183,7 +183,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
         
         setCreatedBookingId(data.id);
         if (formData.accommodationRequired) {
-          setActiveTab("accommodation");
+          setActiveTab("hotels");
         } else {
           setActiveTab("activities");
         }
@@ -284,11 +284,15 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="accommodation" disabled={!createdBookingId} className="flex items-center gap-1">
+              <TabsTrigger value="hotels" disabled={!createdBookingId} className="flex items-center gap-1">
                 <Hotel className="h-4 w-4" />
                 Hotels
+              </TabsTrigger>
+              <TabsTrigger value="activities" disabled={!createdBookingId} className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                Activities
               </TabsTrigger>
               <TabsTrigger value="medical" className="flex items-center gap-1">
                 <Heart className="h-4 w-4" />
@@ -298,7 +302,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                 <FileText className="h-4 w-4" />
                 Travel Docs
               </TabsTrigger>
-              <TabsTrigger value="activities" disabled={!createdBookingId}>Activities</TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">
@@ -573,7 +576,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
               </form>
             </TabsContent>
 
-            <TabsContent value="accommodation" className="space-y-4">
+            <TabsContent value="hotels" className="space-y-4">
               {createdBookingId && formData.tourId && (
                 <>
                   <HotelAllocationSection
@@ -596,6 +599,33 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                       className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                     >
                       Next: Activities
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="activities" className="space-y-4">
+              {createdBookingId && formData.tourId && (
+                <>
+                  <ActivityAllocationSection
+                    tourId={formData.tourId}
+                    bookingId={createdBookingId}
+                    passengerCount={parseInt(formData.passengers)}
+                  />
+                  <div className="flex justify-between gap-2 pt-4 border-t">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleClose}
+                    >
+                      Close
+                    </Button>
+                    <Button 
+                      onClick={handleClose}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      Complete Booking
                     </Button>
                   </div>
                 </>
@@ -746,33 +776,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   {createBooking.isPending ? 'Creating...' : 'Create Booking'}
                 </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="activities" className="space-y-4">
-              {createdBookingId && formData.tourId && (
-                <>
-                  <ActivityAllocationSection
-                    tourId={formData.tourId}
-                    bookingId={createdBookingId}
-                    passengerCount={parseInt(formData.passengers)}
-                  />
-                  <div className="flex justify-between gap-2 pt-4 border-t">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={handleClose}
-                    >
-                      Close
-                    </Button>
-                    <Button 
-                      onClick={handleClose}
-                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                    >
-                      Complete Booking
-                    </Button>
-                  </div>
-                </>
-              )}
             </TabsContent>
           </Tabs>
         </DialogContent>

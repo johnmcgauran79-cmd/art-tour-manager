@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel } from "lucide-react";
+import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -281,11 +281,15 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           </DialogHeader>
 
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="accommodation" className="flex items-center gap-1">
+              <TabsTrigger value="hotels" className="flex items-center gap-1">
                 <Hotel className="h-4 w-4" />
                 Hotels
+              </TabsTrigger>
+              <TabsTrigger value="activities" className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                Activities
               </TabsTrigger>
               <TabsTrigger value="medical" className="flex items-center gap-1">
                 <Heart className="h-4 w-4" />
@@ -496,7 +500,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               </form>
             </TabsContent>
 
-            <TabsContent value="accommodation" className="space-y-4">
+            <TabsContent value="hotels" className="space-y-4">
               {booking && (
                 <>
                   <HotelAllocationSection
@@ -506,6 +510,18 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                     defaultCheckIn={formData.check_in_date}
                     defaultCheckOut={formData.check_out_date}
                   />
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="activities" className="space-y-4">
+              {booking && (
+                <>
                   <ActivityAllocationSection
                     tourId={booking.tour_id}
                     bookingId={booking.id}
