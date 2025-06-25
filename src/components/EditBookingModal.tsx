@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, CreditCard, Shield, Passport, Heart } from "lucide-react";
+import { Trash2, Edit, CreditCard, Shield, FileText, Heart } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -337,7 +338,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                 Emergency
               </TabsTrigger>
               <TabsTrigger value="travel" className="flex items-center gap-1">
-                <Passport className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Travel Docs
               </TabsTrigger>
               <TabsTrigger value="medical" className="flex items-center gap-1">

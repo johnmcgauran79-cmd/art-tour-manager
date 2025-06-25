@@ -25,7 +25,7 @@ export const useBookingComments = (bookingId: string) => {
         .from('booking_comments')
         .select(`
           *,
-          profiles (first_name, last_name)
+          profiles!user_id (first_name, last_name)
         `)
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: true });
