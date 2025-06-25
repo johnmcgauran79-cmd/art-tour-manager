@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus, TrendingUp, Bell } from "lucide-react";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
@@ -53,7 +53,7 @@ const getStatusColor = (status: string) => {
 };
 
 export const OperationsDashboard = () => {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks' | 'allNotifications'>('dashboard');
   const { userRole } = useAuth();
 
   // Check if user has admin or manager role
@@ -93,6 +93,36 @@ export const OperationsDashboard = () => {
     );
   }
 
+  if (currentView === 'allNotifications') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-brand-navy">All My Notifications</h2>
+          <Button
+            variant="outline"
+            onClick={() => setCurrentView('dashboard')}
+          >
+            Back to Operations
+          </Button>
+        </div>
+        <Card className="border-brand-navy/20 shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-brand-navy flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              All Notifications
+            </CardTitle>
+            <CardDescription>
+              View and manage all your notifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <MyNotificationsWidget />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Simplified Header */}
@@ -112,7 +142,31 @@ export const OperationsDashboard = () => {
       </div>
 
       {/* Notifications Widget */}
-      <MyNotificationsWidget />
+      <Card className="border-brand-navy/20 shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-brand-navy" />
+              <CardTitle className="text-brand-navy">Recent Notifications</CardTitle>
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                Latest Updates
+              </Badge>
+            </div>
+            <Button
+              onClick={() => setCurrentView('allNotifications')}
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <List className="h-4 w-4" />
+              View All Notifications
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <MyNotificationsWidget />
+        </CardContent>
+      </Card>
 
       {/* My Tasks Widget - Top 5 Most Urgent */}
       <Card className="border-brand-navy/20 shadow-lg">
