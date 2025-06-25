@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -105,20 +104,7 @@ export const OperationsDashboard = () => {
             Back to Operations
           </Button>
         </div>
-        <Card className="border-brand-navy/20 shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-brand-navy flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              All Notifications
-            </CardTitle>
-            <CardDescription>
-              View and manage all your notifications
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <MyNotificationsWidget showCard={false} />
-          </CardContent>
-        </Card>
+        <MyNotificationsWidget showCard={true} />
       </div>
     );
   }
