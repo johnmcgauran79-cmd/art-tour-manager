@@ -1,8 +1,10 @@
+
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { Department } from "@/hooks/useUserDepartments";
 
 const createNotification = async (userId: string, notification: {
   title: string;
@@ -10,13 +12,18 @@ const createNotification = async (userId: string, notification: {
   type: 'task' | 'tour' | 'booking' | 'system';
   priority: 'low' | 'medium' | 'high' | 'critical';
   related_id?: string;
-  department?: string;
+  department?: Department;
 }) => {
   const { error } = await supabase
     .from('user_notifications')
     .insert({
       user_id: userId,
-      ...notification,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      priority: notification.priority,
+      related_id: notification.related_id,
+      department: notification.department,
     });
 
   if (error) {
@@ -94,7 +101,7 @@ export const useRealtimeTasks = () => {
               type: 'task',
               priority: newTask.priority,
               related_id: newTask.id,
-              department: newTask.category,
+              department: newTask.category as Department,
             });
           }
         }
@@ -148,7 +155,7 @@ export const useRealtimeTasks = () => {
             type: 'task',
             priority: 'medium',
             related_id: deletedTask.id,
-            department: deletedTask.category,
+            department: deletedTask.category as Department,
           });
         }
       )
