@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,7 +41,7 @@ export const PDFViewer = ({ isOpen, onClose, fileName, filePath }: PDFViewerProp
   };
 
   // Load PDF when dialog opens
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
       loadPDF();
     } else {
@@ -54,7 +54,7 @@ export const PDFViewer = ({ isOpen, onClose, fileName, filePath }: PDFViewerProp
   }, [isOpen]);
 
   // Clean up URL on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (pdfUrl) {
         URL.revokeObjectURL(pdfUrl);
