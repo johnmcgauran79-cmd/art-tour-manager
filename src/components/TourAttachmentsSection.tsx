@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,7 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
     fileName: "",
     filePath: ""
   });
-  const { data: attachments, isLoading } = useTourAttachments(tourId);
+  const { data: attachments, isLoading, refetch } = useTourAttachments(tourId);
   const uploadAttachment = useUploadTourAttachment();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -97,8 +98,9 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
       }
       console.log('Successfully deleted from database');
 
-      // Refresh the attachments list
-      queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
+      // Force refresh the attachments list
+      await queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
+      await refetch();
 
       toast({
         title: "File Deleted",

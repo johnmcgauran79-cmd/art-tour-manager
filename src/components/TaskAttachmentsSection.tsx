@@ -21,7 +21,7 @@ export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) 
     fileName: "",
     filePath: ""
   });
-  const { data: attachments, isLoading } = useTaskAttachments(taskId);
+  const { data: attachments, isLoading, refetch } = useTaskAttachments(taskId);
   const uploadAttachment = useUploadTaskAttachment();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -98,8 +98,9 @@ export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) 
       }
       console.log('Successfully deleted from database');
 
-      // Refresh the attachments list
-      queryClient.invalidateQueries({ queryKey: ['task-attachments', taskId] });
+      // Force refresh the attachments list
+      await queryClient.invalidateQueries({ queryKey: ['task-attachments', taskId] });
+      await refetch();
 
       toast({
         title: "File Deleted",
