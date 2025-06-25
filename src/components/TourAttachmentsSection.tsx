@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,20 +97,18 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
       }
       console.log('Successfully deleted from database');
 
-      // Complete cache reset and fresh fetch
-      console.log('Current attachments before refresh:', attachments);
+      // Optimistically update the cache with the filtered list
+      const currentData = attachments || [];
+      const updatedData = currentData.filter(att => att.id !== attachment.id);
       
-      // Remove all attachment-related queries from cache
-      queryClient.removeQueries({ queryKey: ['tour-attachments'] });
+      console.log('Current attachments before update:', currentData);
+      console.log('Updated attachments after filtering:', updatedData);
       
-      // Reset the specific query to force a fresh fetch
-      queryClient.resetQueries({ queryKey: ['tour-attachments', tourId] });
+      // Set the query data directly to the filtered list
+      queryClient.setQueryData(['tour-attachments', tourId], updatedData);
       
-      // Wait a moment for the reset to take effect
-      setTimeout(async () => {
-        const newData = await refetch();
-        console.log('Fresh fetch result:', newData);
-      }, 100);
+      // Also invalidate to ensure fresh data from server
+      queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
 
       toast({
         title: "File Deleted",
