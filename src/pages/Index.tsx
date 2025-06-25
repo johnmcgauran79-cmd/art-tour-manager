@@ -26,7 +26,7 @@ import { Plus, Users, FileText, Settings, Calendar, MapPin, X } from "lucide-rea
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("operations"); // Changed default tab to operations
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -254,12 +254,16 @@ const Index = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-5 mb-8">
+            <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
-            <TabsTrigger value="operations">Operations</TabsTrigger>
           </TabsList>
+          
+          <TabsContent value="operations" className="space-y-4">
+            <OperationsDashboard />
+          </TabsContent>
           
           <TabsContent value="dashboard" className="space-y-8">
             {/* Dashboard Metrics */}
@@ -310,10 +314,6 @@ const Index = () => {
           
           <TabsContent value="contacts" className="space-y-4">
             <ContactsTable />
-          </TabsContent>
-          
-          <TabsContent value="operations" className="space-y-4">
-            <OperationsDashboard />
           </TabsContent>
         </Tabs>
       </div>

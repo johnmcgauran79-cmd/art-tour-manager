@@ -1,11 +1,13 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus, Bell, TrendingUp } from "lucide-react";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
+import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
 import { useAuth } from "@/hooks/useAuth";
 
 const operationsData = [
@@ -93,13 +95,49 @@ export const OperationsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Header */}
+      <Card className="border-brand-navy/20 shadow-lg bg-gradient-to-r from-brand-navy/5 to-brand-yellow/5">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-brand-navy text-2xl flex items-center gap-2">
+                <TrendingUp className="h-6 w-6" />
+                Operations Center
+              </CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Your central hub for task management, notifications, and operational oversight
+              </CardDescription>
+            </div>
+            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy px-4 py-2 text-sm">
+              All Users Access
+            </Badge>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Notifications Widget - High Priority */}
+      <Card className="border-brand-navy/20 shadow-lg">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bell className="h-5 w-5 text-brand-navy" />
+            <CardTitle className="text-brand-navy">Recent Notifications</CardTitle>
+            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+              Stay Updated
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <MyNotificationsWidget />
+        </CardContent>
+      </Card>
+
       {/* My Tasks Widget - Top 5 Most Urgent */}
       <Card className="border-brand-navy/20 shadow-lg">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-brand-navy" />
-              <CardTitle className="text-brand-navy">My Tasks</CardTitle>
+              <CardTitle className="text-brand-navy">My Priority Tasks</CardTitle>
               <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
                 Top 5 Most Urgent
               </Badge>
@@ -113,7 +151,7 @@ export const OperationsDashboard = () => {
                   className="flex items-center gap-2"
                 >
                   <Settings className="h-4 w-4" />
-                  Manage Task Templates
+                  Manage Templates
                 </Button>
               )}
               <Button
@@ -140,11 +178,12 @@ export const OperationsDashboard = () => {
         </CardContent>
       </Card>
 
+      {/* Operations Overview - Tours Status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5" />
-            Operations Overview
+            Current Tours Operations Status
           </CardTitle>
           <CardDescription>
             Monitor tour status, capacity issues, and operational requirements
