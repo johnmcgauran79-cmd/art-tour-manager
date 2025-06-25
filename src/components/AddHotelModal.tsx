@@ -204,9 +204,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
                 <SelectContent>
                   <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="contracted">Contracted</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="booked">Booked</SelectItem>
                 </SelectContent>
               </Select>
             </div>
