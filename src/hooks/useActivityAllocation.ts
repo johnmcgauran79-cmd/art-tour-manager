@@ -26,7 +26,7 @@ export const useActivityAllocation = ({
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const [tempEditValue, setTempEditValue] = useState<string>('');
-  const [initializedActivities, setInitializedActivities] = useState<Set<string>>(new Set());
+  const [isInitializing, setIsInitializing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -34,7 +34,7 @@ export const useActivityAllocation = ({
   useEffect(() => {
     console.log('ActivityAllocation effect - Activities:', activities.length, 'Activity Bookings:', activityBookings);
     
-    if (activities.length > 0 && activityBookings !== undefined) {
+    if (activities.length > 0 && activityBookings !== undefined && !isInitializing) {
       const newAllocations: Record<string, number> = {};
       const toInitialize: string[] = [];
       
@@ -48,9 +48,7 @@ export const useActivityAllocation = ({
           // Default to passenger count for activities without bookings
           newAllocations[activity.id] = passengerCount;
           // Track which activities need initialization
-          if (!initializedActivities.has(activity.id)) {
-            toInitialize.push(activity.id);
-          }
+          toInitialize.push(activity.id);
         }
       });
       
@@ -64,13 +62,26 @@ export const useActivityAllocation = ({
         initializeActivityBookings(toInitialize);
       }
     }
-  }, [activities, activityBookings, passengerCount, initializedActivities]);
+  }, [activities, activityBookings, passengerCount, isInitializing]);
 
   const initializeActivityBookings = async (activityIds: string[]) => {
+    if (isInitializing) {
+      console.log('Already initializing, skipping...');
+      return;
+    }
+    
+    setIsInitializing(true);
     console.log('Initializing activity bookings for:', activityIds);
     
-    for (const activityId of activityIds) {
-      try {
+    try {
+      for (const activityId of activityIds) {
+        // Double-check that this activity booking doesn't already exist
+        const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
+        if (existingBooking) {
+          console.log(`Activity booking already exists for ${activityId}, skipping`);
+          continue;
+        }
+
         console.log(`Initializing activity booking for activity ${activityId} with ${passengerCount} passengers`);
         
         await createActivityBooking.mutateAsync({
@@ -79,11 +90,12 @@ export const useActivityAllocation = ({
           passengers_attending: passengerCount
         });
         
-        setInitializedActivities(prev => new Set([...prev, activityId]));
         console.log(`Successfully initialized activity booking for ${activityId}`);
-      } catch (error) {
-        console.error('Error initializing activity booking:', error);
       }
+    } catch (error) {
+      console.error('Error initializing activity bookings:', error);
+    } finally {
+      setIsInitializing(false);
     }
   };
 
