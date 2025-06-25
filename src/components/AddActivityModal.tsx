@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,8 +28,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
     pickup_location: "",
     collection_location: "",
     dropoff_location: "",
-    spots_booked: "",
-    activity_status: "planned",
+    spots_available: "",
+    activity_status: "pending",
     transport_status: "pending",
     guide_name: "",
     guide_phone: "",
@@ -48,6 +49,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
 
   const createActivity = useMutation({
     mutationFn: async (activityData: any) => {
+      console.log('Creating activity with data:', activityData);
+      
       // First create the activity
       const { data: activity, error: activityError } = await supabase
         .from('activities')
@@ -63,6 +66,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
           pickup_location: activityData.pickup_location || null,
           collection_location: activityData.collection_location || null,
           dropoff_location: activityData.dropoff_location || null,
+          spots_available: activityData.spots_available ? parseInt(activityData.spots_available) : 0,
           spots_booked: 0, // Will be updated by the activity_bookings creation
           activity_status: activityData.activity_status,
           transport_status: activityData.transport_status,
@@ -81,7 +85,12 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         .select()
         .single();
 
-      if (activityError) throw activityError;
+      if (activityError) {
+        console.error('Error creating activity:', activityError);
+        throw activityError;
+      }
+
+      console.log('Activity created successfully:', activity);
 
       // Now get all existing bookings for this tour that are not cancelled
       const { data: bookings, error: bookingsError } = await supabase
@@ -90,7 +99,10 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         .eq('tour_id', tourId)
         .neq('status', 'cancelled');
 
-      if (bookingsError) throw bookingsError;
+      if (bookingsError) {
+        console.error('Error fetching bookings:', bookingsError);
+        throw bookingsError;
+      }
 
       // Create activity bookings for all existing bookings
       if (bookings && bookings.length > 0) {
@@ -104,7 +116,10 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
           .from('activity_bookings')
           .insert(activityBookings);
 
-        if (activityBookingsError) throw activityBookingsError;
+        if (activityBookingsError) {
+          console.error('Error creating activity bookings:', activityBookingsError);
+          throw activityBookingsError;
+        }
 
         console.log(`Created ${activityBookings.length} activity bookings for new activity`);
       }
@@ -130,8 +145,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         pickup_location: "",
         collection_location: "",
         dropoff_location: "",
-        spots_booked: "",
-        activity_status: "planned",
+        spots_available: "",
+        activity_status: "pending",
         transport_status: "pending",
         guide_name: "",
         guide_phone: "",
@@ -204,12 +219,12 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="spots_booked">Spots Booked</Label>
+              <Label htmlFor="spots_available">Spots Available</Label>
               <Input
-                id="spots_booked"
+                id="spots_available"
                 type="number"
-                value={formData.spots_booked}
-                onChange={(e) => handleInputChange("spots_booked", e.target.value)}
+                value={formData.spots_available}
+                onChange={(e) => handleInputChange("spots_available", e.target.value)}
               />
             </div>
 
@@ -240,7 +255,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="planned">Planned</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="contacted_enquiry_sent">Contacted / Enquiry Sent</SelectItem>
                   <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
@@ -421,7 +436,6 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
               type="submit" 
               disabled={createActivity.isPending}
               className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-              onClick={handleSubmit}
             >
               {createActivity.isPending ? "Adding..." : "Add Activity"}
             </Button>
