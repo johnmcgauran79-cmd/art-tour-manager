@@ -26,6 +26,7 @@ export const useActivityAllocation = ({
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const [tempEditValue, setTempEditValue] = useState<string>('');
+  const [initializedActivities, setInitializedActivities] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -33,16 +34,57 @@ export const useActivityAllocation = ({
   useEffect(() => {
     if (activities.length > 0 && activityBookings !== undefined) {
       const newAllocations: Record<string, number> = {};
+      const toInitialize: string[] = [];
       
       activities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
-        const allocation = existingBooking?.passengers_attending ?? passengerCount;
-        newAllocations[activity.id] = allocation;
+        if (existingBooking) {
+          newAllocations[activity.id] = existingBooking.passengers_attending;
+        } else {
+          // Default to passenger count for activities without bookings
+          newAllocations[activity.id] = passengerCount;
+          // Track which activities need initialization
+          if (!initializedActivities.has(activity.id)) {
+            toInitialize.push(activity.id);
+          }
+        }
       });
       
       setAllocations(newAllocations);
+      
+      // Initialize missing activity bookings
+      if (toInitialize.length > 0) {
+        initializeActivityBookings(toInitialize);
+      }
     }
-  }, [activities, activityBookings, passengerCount]);
+  }, [activities, activityBookings, passengerCount, initializedActivities]);
+
+  const initializeActivityBookings = async (activityIds: string[]) => {
+    // Check booking status first - only initialize for non-pending bookings
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('status')
+      .eq('id', bookingId)
+      .single();
+    
+    if (!booking || booking.status === 'pending' || booking.status === 'cancelled') {
+      return;
+    }
+
+    for (const activityId of activityIds) {
+      try {
+        await createActivityBooking.mutateAsync({
+          booking_id: bookingId,
+          activity_id: activityId,
+          passengers_attending: passengerCount
+        });
+        
+        setInitializedActivities(prev => new Set([...prev, activityId]));
+      } catch (error) {
+        console.error('Error initializing activity booking:', error);
+      }
+    }
+  };
 
   const createNotification = async (activityName: string, newCount: number, oldCount: number) => {
     if (!user?.id) return;
