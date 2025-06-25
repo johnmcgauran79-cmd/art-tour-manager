@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus, Bell, TrendingUp } from "lucide-react";
+import { AlertTriangle, CheckCircle, Clock, XCircle, Settings, List, Plus, TrendingUp } from "lucide-react";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
@@ -95,41 +95,24 @@ export const OperationsDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
-      <Card className="border-brand-navy/20 shadow-lg bg-gradient-to-r from-brand-navy/5 to-brand-yellow/5">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-brand-navy text-2xl flex items-center gap-2">
-                <TrendingUp className="h-6 w-6" />
-                Operations Center
-              </CardTitle>
-              <CardDescription className="text-lg mt-2">
-                Your central hub for task management, notifications, and operational oversight
-              </CardDescription>
-            </div>
-            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy px-4 py-2 text-sm">
-              All Users Access
-            </Badge>
-          </div>
-        </CardHeader>
-      </Card>
+      {/* Simplified Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-brand-navy flex items-center gap-2">
+            <TrendingUp className="h-6 w-6" />
+            Operations Center
+          </h2>
+          <p className="text-muted-foreground mt-1">
+            Your central hub for task management and operational oversight
+          </p>
+        </div>
+        <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+          All Users Access
+        </Badge>
+      </div>
 
-      {/* Notifications Widget - High Priority */}
-      <Card className="border-brand-navy/20 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-brand-navy" />
-            <CardTitle className="text-brand-navy">Recent Notifications</CardTitle>
-            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-              Stay Updated
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <MyNotificationsWidget />
-        </CardContent>
-      </Card>
+      {/* Notifications Widget */}
+      <MyNotificationsWidget />
 
       {/* My Tasks Widget - Top 5 Most Urgent */}
       <Card className="border-brand-navy/20 shadow-lg">
