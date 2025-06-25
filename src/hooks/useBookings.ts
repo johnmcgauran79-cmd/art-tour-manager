@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -302,29 +303,66 @@ export const useDeleteBooking = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
+    mutationFn: async (bookingId: string) => {
+      console.log('Starting booking deletion process for:', bookingId);
+
+      // First, delete associated hotel bookings
+      const { error: hotelError } = await supabase
+        .from('hotel_bookings')
+        .delete()
+        .eq('booking_id', bookingId);
+
+      if (hotelError) {
+        console.error('Error deleting hotel bookings:', hotelError);
+        throw new Error(`Failed to delete hotel bookings: ${hotelError.message}`);
+      }
+
+      // Then, delete associated activity bookings
+      const { error: activityError } = await supabase
+        .from('activity_bookings')
+        .delete()
+        .eq('booking_id', bookingId);
+
+      if (activityError) {
+        console.error('Error deleting activity bookings:', activityError);
+        throw new Error(`Failed to delete activity bookings: ${activityError.message}`);
+      }
+
+      // Finally, delete the booking itself
+      const { error: bookingError } = await supabase
         .from('bookings')
         .delete()
-        .eq('id', id);
+        .eq('id', bookingId);
 
-      if (error) throw error;
+      if (bookingError) {
+        console.error('Error deleting booking:', bookingError);
+        throw new Error(`Failed to delete booking: ${bookingError.message}`);
+      }
+
+      console.log('Booking and all associated records deleted successfully');
+      return bookingId;
     },
     onSuccess: () => {
+      // Invalidate all related queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      
       toast({
         title: "Booking Deleted",
-        description: "Booking has been successfully deleted.",
+        description: "The booking and all associated allocations have been successfully deleted.",
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
+      console.error('Error deleting booking:', error);
       toast({
         title: "Error",
-        description: "Failed to delete booking. Please try again.",
+        description: error.message || "Failed to delete booking. Please try again.",
         variant: "destructive",
       });
-      console.error('Error deleting booking:', error);
     },
   });
 };
