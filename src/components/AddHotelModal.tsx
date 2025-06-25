@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
 
   const createHotel = useMutation({
     mutationFn: async (hotelData: any) => {
+      console.log('Creating hotel with data:', hotelData);
+      
       const { data, error } = await supabase
         .from('hotels')
         .insert([{
@@ -52,8 +55,8 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           rooms_reserved: hotelData.rooms_reserved ? parseInt(hotelData.rooms_reserved) : null,
           booking_status: hotelData.booking_status,
           default_room_type: hotelData.default_room_type || null,
-          default_check_in: hotelData.default_check_in,
-          default_check_out: hotelData.default_check_out,
+          default_check_in: hotelData.default_check_in || null,
+          default_check_out: hotelData.default_check_out || null,
           extra_night_price: hotelData.extra_night_price ? parseFloat(hotelData.extra_night_price) : null,
           operations_notes: hotelData.operations_notes || null,
           upgrade_options: hotelData.upgrade_options || null,
@@ -64,7 +67,11 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating hotel:', error);
+        throw error;
+      }
+      console.log('Hotel created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -94,17 +101,37 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
       });
     },
     onError: (error) => {
+      console.error('Hotel creation error:', error);
       toast({
         title: "Error",
-        description: "Failed to add hotel. Please try again.",
+        description: `Failed to add hotel: ${error.message}`,
         variant: "destructive",
       });
-      console.error('Error creating hotel:', error);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting hotel form with data:', formData);
+    
+    if (!formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Hotel name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.default_check_in || !formData.default_check_out) {
+      toast({
+        title: "Validation Error", 
+        description: "Both check-in and check-out dates are required.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     createHotel.mutate(formData);
   };
 
@@ -189,6 +216,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
               <Input
                 id="rooms_reserved"
                 type="number"
+                min="0"
                 value={formData.rooms_reserved}
                 onChange={(e) => handleInputChange("rooms_reserved", e.target.value)}
               />
@@ -208,34 +236,35 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
               <Input
                 id="extra_night_price"
                 type="number"
+                min="0"
                 step="0.01"
                 value={formData.extra_night_price}
                 onChange={(e) => handleInputChange("extra_night_price", e.target.value)}
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="default_check_in">Default Check-in Date *</Label>
-                <Input
-                  id="default_check_in"
-                  type="date"
-                  value={formData.default_check_in}
-                  onChange={(e) => handleInputChange("default_check_in", e.target.value)}
-                  required
-                />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="default_check_in">Default Check-in Date *</Label>
+              <Input
+                id="default_check_in"
+                type="date"
+                value={formData.default_check_in}
+                onChange={(e) => handleInputChange("default_check_in", e.target.value)}
+                required
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="default_check_out">Default Check-out Date *</Label>
-                <Input
-                  id="default_check_out"
-                  type="date"
-                  value={formData.default_check_out}
-                  onChange={(e) => handleInputChange("default_check_out", e.target.value)}
-                  required
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="default_check_out">Default Check-out Date *</Label>
+              <Input
+                id="default_check_out"
+                type="date"
+                value={formData.default_check_out}
+                onChange={(e) => handleInputChange("default_check_out", e.target.value)}
+                required
+              />
             </div>
           </div>
 
