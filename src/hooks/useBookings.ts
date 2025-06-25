@@ -307,38 +307,64 @@ export const useDeleteBooking = () => {
       console.log('Starting deletion process for booking:', bookingId);
 
       try {
-        // First, let's try to delete related records manually to avoid the database function timeout
-        console.log('Deleting hotel bookings...');
-        const { error: hotelError } = await supabase
-          .from('hotel_bookings')
-          .delete()
-          .eq('booking_id', bookingId);
+        // First check what related records exist
+        console.log('Checking related records...');
+        
+        const [hotelBookingsResult, activityBookingsResult, commentsResult] = await Promise.all([
+          supabase.from('hotel_bookings').select('id').eq('booking_id', bookingId).limit(10),
+          supabase.from('activity_bookings').select('id').eq('booking_id', bookingId).limit(10),
+          supabase.from('booking_comments').select('id').eq('booking_id', bookingId).limit(10)
+        ]);
 
-        if (hotelError) {
-          console.error('Error deleting hotel bookings:', hotelError);
-          throw new Error(`Failed to delete hotel bookings: ${hotelError.message}`);
+        console.log('Found related records:', {
+          hotelBookings: hotelBookingsResult.data?.length || 0,
+          activityBookings: activityBookingsResult.data?.length || 0,
+          comments: commentsResult.data?.length || 0
+        });
+
+        // Delete hotel bookings if they exist
+        if (hotelBookingsResult.data && hotelBookingsResult.data.length > 0) {
+          console.log('Deleting hotel bookings...');
+          const { error: hotelError } = await supabase
+            .from('hotel_bookings')
+            .delete()
+            .eq('booking_id', bookingId);
+
+          if (hotelError) {
+            console.error('Error deleting hotel bookings:', hotelError);
+            throw new Error(`Failed to delete hotel bookings: ${hotelError.message}`);
+          }
         }
 
-        console.log('Deleting activity bookings...');
-        const { error: activityError } = await supabase
-          .from('activity_bookings')
-          .delete()
-          .eq('booking_id', bookingId);
+        // Delete activity bookings if they exist - use a different approach
+        if (activityBookingsResult.data && activityBookingsResult.data.length > 0) {
+          console.log('Deleting activity bookings one by one to avoid timeout...');
+          
+          for (const activityBooking of activityBookingsResult.data) {
+            const { error: activityError } = await supabase
+              .from('activity_bookings')
+              .delete()
+              .eq('id', activityBooking.id);
 
-        if (activityError) {
-          console.error('Error deleting activity bookings:', activityError);
-          throw new Error(`Failed to delete activity bookings: ${activityError.message}`);
+            if (activityError) {
+              console.error('Error deleting activity booking:', activityError);
+              throw new Error(`Failed to delete activity booking: ${activityError.message}`);
+            }
+          }
         }
 
-        console.log('Deleting booking comments...');
-        const { error: commentsError } = await supabase
-          .from('booking_comments')
-          .delete()
-          .eq('booking_id', bookingId);
+        // Delete comments if they exist
+        if (commentsResult.data && commentsResult.data.length > 0) {
+          console.log('Deleting booking comments...');
+          const { error: commentsError } = await supabase
+            .from('booking_comments')
+            .delete()
+            .eq('booking_id', bookingId);
 
-        if (commentsError) {
-          console.error('Error deleting booking comments:', commentsError);
-          // Don't throw here, comments are not critical
+          if (commentsError) {
+            console.error('Error deleting booking comments:', commentsError);
+            // Don't throw here, comments are not critical
+          }
         }
 
         console.log('Deleting main booking...');
