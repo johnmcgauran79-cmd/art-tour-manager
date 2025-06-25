@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
@@ -16,6 +15,19 @@ export const OperationsDashboard = () => {
 
   // Check if user has admin or manager role
   const canManageTemplates = userRole === 'admin' || userRole === 'manager';
+
+  // Listen for navigation event from dashboard
+  useEffect(() => {
+    const handleNavigateToAllNotifications = () => {
+      setCurrentView('allNotifications');
+    };
+
+    window.addEventListener('navigate-to-all-notifications', handleNavigateToAllNotifications);
+    
+    return () => {
+      window.removeEventListener('navigate-to-all-notifications', handleNavigateToAllNotifications);
+    };
+  }, []);
 
   if (currentView === 'templates') {
     return (

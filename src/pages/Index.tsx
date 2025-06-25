@@ -23,11 +23,11 @@ import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Users, FileText, Settings, Calendar, MapPin, X } from "lucide-react";
+import { Plus, Users, FileText, Settings, Calendar, MapPin, X, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard"); // Changed back to dashboard as main tab
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -115,6 +115,15 @@ const Index = () => {
 
   const handleAddBooking = () => {
     setAddBookingModalOpen(true);
+  };
+
+  const handleViewAllNotifications = () => {
+    setActiveTab("operations");
+    // Add a small delay to ensure the operations tab loads before navigating to all notifications
+    setTimeout(() => {
+      const event = new CustomEvent('navigate-to-all-notifications');
+      window.dispatchEvent(event);
+    }, 100);
   };
 
   const quickActions = [
@@ -290,10 +299,32 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Notifications - Full Width */}
-            <div className="w-full">
-              <MyNotificationsWidget onNavigateToItem={handleNavigateToItem} />
-            </div>
+            {/* Notifications Card with View All Button */}
+            <Card className="border-brand-navy/20 shadow-lg">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-brand-navy" />
+                    <CardTitle className="text-brand-navy">Recent Notifications</CardTitle>
+                  </div>
+                  <Button
+                    onClick={handleViewAllNotifications}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Bell className="h-4 w-4" />
+                    View All Notifications
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <MyNotificationsWidget 
+                  onNavigateToItem={handleNavigateToItem} 
+                  showCard={false} 
+                />
+              </CardContent>
+            </Card>
 
             {/* Tasks - Full Width */}
             <div className="w-full">
