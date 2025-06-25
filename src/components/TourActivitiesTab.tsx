@@ -42,7 +42,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
         bookings!inner(id, status)
       `)
       .in('activity_id', activityIds)
-      .in('bookings.status', ['confirmed', 'paid', 'deposit_paid']); // Only confirmed bookings
+      .in('bookings.status', ['fully_paid', 'invoiced', 'deposited', 'instalment_paid']); // Only confirmed bookings (excluding pending and cancelled)
 
     if (error) {
       console.error('Error fetching activity bookings:', error);
