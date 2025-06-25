@@ -13,10 +13,12 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LogOut, User, KeyRound } from 'lucide-react';
 import { PasswordChangeModal } from './PasswordChangeModal';
+import { UserProfileModal } from './UserProfileModal';
 
 export const UserDropdown = () => {
   const { user, profile, userRole, signOut } = useAuth();
   const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   if (!user) return null;
 
@@ -61,7 +63,7 @@ export const UserDropdown = () => {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowProfileModal(true)}>
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>
@@ -84,6 +86,11 @@ export const UserDropdown = () => {
           // Refresh user data after password change
           window.location.reload();
         }}
+      />
+
+      <UserProfileModal
+        open={showProfileModal}
+        onOpenChange={setShowProfileModal}
       />
     </>
   );
