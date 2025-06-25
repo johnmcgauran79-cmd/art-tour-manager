@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     name: "",
     location: "",
     activity_date: "",
+    cutoff_date: "",
     start_time: "",
     end_time: "",
     pickup_time: "",
@@ -56,6 +56,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         name: activity.name || "",
         location: activity.location || "",
         activity_date: activity.activity_date || "",
+        cutoff_date: activity.cutoff_date || "",
         start_time: activity.start_time || "",
         end_time: activity.end_time || "",
         pickup_time: activity.pickup_time || "",
@@ -111,6 +112,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           name: activityData.name,
           location: activityData.location || null,
           activity_date: activityData.activity_date || null,
+          cutoff_date: activityData.cutoff_date || null,
           start_time: activityData.start_time || null,
           end_time: activityData.end_time || null,
           pickup_time: activityData.pickup_time || null,
@@ -240,6 +242,16 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 type="date"
                 value={formData.activity_date}
                 onChange={(e) => handleInputChange("activity_date", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cutoff_date">Cutoff Date</Label>
+              <Input
+                id="cutoff_date"
+                type="date"
+                value={formData.cutoff_date}
+                onChange={(e) => handleInputChange("cutoff_date", e.target.value)}
               />
             </div>
 

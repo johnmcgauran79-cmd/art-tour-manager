@@ -8,6 +8,7 @@ export interface Activity {
   name: string;
   location: string | null;
   activity_date: string | null;
+  cutoff_date: string | null;
   start_time: string | null;
   end_time: string | null;
   pickup_time: string | null;

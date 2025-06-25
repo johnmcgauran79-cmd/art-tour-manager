@@ -10,7 +10,7 @@ export interface TaskTemplate {
   category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
   priority: 'low' | 'medium' | 'high' | 'critical';
   days_before_tour: number | null;
-  date_field_type: 'tour_start_date' | 'tour_end_date' | 'initial_rooms_cutoff_date' | 'final_rooms_cutoff_date' | 'instalment_date' | 'final_payment_date';
+  date_field_type: 'tour_start_date' | 'tour_end_date' | 'initial_rooms_cutoff_date' | 'final_rooms_cutoff_date' | 'instalment_date' | 'final_payment_date' | 'activity_cutoff_date';
   is_active: boolean;
   created_at: string;
   updated_at: string;
