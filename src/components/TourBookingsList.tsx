@@ -60,7 +60,16 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       
     if (confirm(`Are you sure you want to delete the booking for ${customerName}? This action cannot be undone.`)) {
       console.log('Deleting booking:', booking.id);
-      deleteBookingMutation.mutate(booking.id);
+      deleteBookingMutation.mutate(booking.id, {
+        onSuccess: () => {
+          console.log('Booking deleted successfully');
+          // The mutation already handles invalidating queries and showing toast
+        },
+        onError: (error) => {
+          console.error('Error deleting booking:', error);
+          // Error handling is already done in the mutation
+        }
+      });
     }
   };
 
