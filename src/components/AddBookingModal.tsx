@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit, ChevronDown, Check, Shield, FileText, Heart } from "lucide-react";
+import { Edit, ChevronDown, Check, Shield, FileText, Heart, Hotel } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
@@ -57,10 +56,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     idNumber: "",
     nationality: "",
     
-    // Medical info
+    // Medical info (removed dietaryRestrictions as it's duplicate)
     medicalConditions: "",
     accessibilityNeeds: "",
-    dietaryRestrictions: "",
   });
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -167,10 +165,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       id_number: formData.idNumber || undefined,
       nationality: formData.nationality || undefined,
       
-      // Medical info
+      // Medical info (removed dietary_restrictions as it's duplicate)
       medical_conditions: formData.medicalConditions || undefined,
       accessibility_needs: formData.accessibilityNeeds || undefined,
-      dietary_restrictions: formData.dietaryRestrictions || undefined,
     }, {
       onSuccess: (data) => {
         // Update customer dietary requirements if changed and customer exists
@@ -226,10 +223,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       idNumber: "",
       nationality: "",
       
-      // Medical info
+      // Medical info (removed dietaryRestrictions)
       medicalConditions: "",
       accessibilityNeeds: "",
-      dietaryRestrictions: "",
     });
     setCreatedBookingId(null);
     setActiveTab("details");
@@ -290,19 +286,18 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="emergency" className="flex items-center gap-1">
-                <Shield className="h-4 w-4" />
-                Emergency
-              </TabsTrigger>
-              <TabsTrigger value="travel" className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-                Travel
+              <TabsTrigger value="accommodation" disabled={!createdBookingId} className="flex items-center gap-1">
+                <Hotel className="h-4 w-4" />
+                Hotels
               </TabsTrigger>
               <TabsTrigger value="medical" className="flex items-center gap-1">
                 <Heart className="h-4 w-4" />
-                Medical
+                Medical & Emergency
               </TabsTrigger>
-              <TabsTrigger value="accommodation" disabled={!createdBookingId}>Hotel</TabsTrigger>
+              <TabsTrigger value="travel" className="flex items-center gap-1">
+                <FileText className="h-4 w-4" />
+                Travel Docs
+              </TabsTrigger>
               <TabsTrigger value="activities" disabled={!createdBookingId}>Activities</TabsTrigger>
             </TabsList>
 
@@ -578,35 +573,98 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
               </form>
             </TabsContent>
 
-            <TabsContent value="emergency" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Emergency Contact Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TabsContent value="accommodation" className="space-y-4">
+              {createdBookingId && formData.tourId && (
+                <>
+                  <HotelAllocationSection
+                    tourId={formData.tourId}
+                    bookingId={createdBookingId}
+                    accommodationRequired={formData.accommodationRequired}
+                    defaultCheckIn={formData.checkInDate}
+                    defaultCheckOut={formData.checkOutDate}
+                  />
+                  <div className="flex justify-between gap-2 pt-4 border-t">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleClose}
+                    >
+                      Close
+                    </Button>
+                    <Button 
+                      onClick={() => setActiveTab("activities")}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      Next: Activities
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="medical" className="space-y-4">
+              <div className="grid grid-cols-1 gap-6">
+                {/* Emergency Contact Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Emergency Contact Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
+                      <Input
+                        id="emergencyContactName"
+                        value={formData.emergencyContactName}
+                        onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                      <Input
+                        id="emergencyContactPhone"
+                        value={formData.emergencyContactPhone}
+                        onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                      <Input
+                        id="emergencyContactRelationship"
+                        value={formData.emergencyContactRelationship}
+                        onChange={(e) => handleInputChange("emergencyContactRelationship", e.target.value)}
+                        placeholder="e.g., Spouse, Parent, Sibling"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Medical & Accessibility Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
+                    <Heart className="h-5 w-5" />
+                    Medical & Accessibility Information
+                  </h3>
                   <div>
-                    <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
-                    <Input
-                      id="emergencyContactName"
-                      value={formData.emergencyContactName}
-                      onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
-                      placeholder="Full name"
+                    <Label htmlFor="medicalConditions">Medical Conditions</Label>
+                    <Textarea
+                      id="medicalConditions"
+                      value={formData.medicalConditions}
+                      onChange={(e) => handleInputChange("medicalConditions", e.target.value)}
+                      placeholder="Any medical conditions, allergies, or medications..."
+                      rows={3}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
-                    <Input
-                      id="emergencyContactPhone"
-                      value={formData.emergencyContactPhone}
-                      onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
-                      placeholder="Phone number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
-                    <Input
-                      id="emergencyContactRelationship"
-                      value={formData.emergencyContactRelationship}
-                      onChange={(e) => handleInputChange("emergencyContactRelationship", e.target.value)}
-                      placeholder="e.g., Spouse, Parent, Sibling"
+                    <Label htmlFor="accessibilityNeeds">Accessibility Needs</Label>
+                    <Textarea
+                      id="accessibilityNeeds"
+                      value={formData.accessibilityNeeds}
+                      onChange={(e) => handleInputChange("accessibilityNeeds", e.target.value)}
+                      placeholder="Mobility assistance, wheelchair access, etc..."
+                      rows={3}
                     />
                   </div>
                 </div>
@@ -688,83 +746,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   {createBooking.isPending ? 'Creating...' : 'Create Booking'}
                 </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="medical" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Medical & Accessibility Information</h3>
-                <div>
-                  <Label htmlFor="medicalConditions">Medical Conditions</Label>
-                  <Textarea
-                    id="medicalConditions"
-                    value={formData.medicalConditions}
-                    onChange={(e) => handleInputChange("medicalConditions", e.target.value)}
-                    placeholder="Any medical conditions, allergies, or medications..."
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="accessibilityNeeds">Accessibility Needs</Label>
-                  <Textarea
-                    id="accessibilityNeeds"
-                    value={formData.accessibilityNeeds}
-                    onChange={(e) => handleInputChange("accessibilityNeeds", e.target.value)}
-                    placeholder="Mobility assistance, wheelchair access, etc..."
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dietaryRestrictions">Dietary Restrictions</Label>
-                  <Textarea
-                    id="dietaryRestrictions"
-                    value={formData.dietaryRestrictions}
-                    onChange={(e) => handleInputChange("dietaryRestrictions", e.target.value)}
-                    placeholder="Food allergies, vegetarian, halal, kosher, etc..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={createBooking.isPending}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="accommodation" className="space-y-4">
-              {createdBookingId && formData.tourId && (
-                <>
-                  <HotelAllocationSection
-                    tourId={formData.tourId}
-                    bookingId={createdBookingId}
-                    accommodationRequired={formData.accommodationRequired}
-                    defaultCheckIn={formData.checkInDate}
-                    defaultCheckOut={formData.checkOutDate}
-                  />
-                  <div className="flex justify-between gap-2 pt-4 border-t">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={handleClose}
-                    >
-                      Close
-                    </Button>
-                    <Button 
-                      onClick={() => setActiveTab("activities")}
-                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                    >
-                      Next: Activities
-                    </Button>
-                  </div>
-                </>
-              )}
             </TabsContent>
 
             <TabsContent value="activities" className="space-y-4">

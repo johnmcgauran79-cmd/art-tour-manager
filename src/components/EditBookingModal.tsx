@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, Shield, FileText, Heart, MessageSquare } from "lucide-react";
+import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -199,10 +198,9 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       id_number: formData.id_number || null,
       nationality: formData.nationality || null,
       
-      // Medical info
+      // Medical info (removed dietary_restrictions as it's duplicate)
       medical_conditions: formData.medical_conditions || null,
       accessibility_needs: formData.accessibility_needs || null,
-      dietary_restrictions: formData.dietary_restrictions || null,
     }, {
       onSuccess: () => {
         onOpenChange(false);
@@ -283,21 +281,20 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           </DialogHeader>
 
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="emergency" className="flex items-center gap-1">
-                <Shield className="h-4 w-4" />
-                Emergency
+              <TabsTrigger value="accommodation" className="flex items-center gap-1">
+                <Hotel className="h-4 w-4" />
+                Hotels
+              </TabsTrigger>
+              <TabsTrigger value="medical" className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                Medical & Emergency
               </TabsTrigger>
               <TabsTrigger value="travel" className="flex items-center gap-1">
                 <FileText className="h-4 w-4" />
                 Travel Docs
               </TabsTrigger>
-              <TabsTrigger value="medical" className="flex items-center gap-1">
-                <Heart className="h-4 w-4" />
-                Medical
-              </TabsTrigger>
-              <TabsTrigger value="accommodation">Hotel</TabsTrigger>
               <TabsTrigger value="communication" className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
                 Comments
@@ -499,35 +496,93 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               </form>
             </TabsContent>
 
-            <TabsContent value="emergency" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Emergency Contact Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <TabsContent value="accommodation" className="space-y-4">
+              {booking && (
+                <>
+                  <HotelAllocationSection
+                    tourId={booking.tour_id}
+                    bookingId={booking.id}
+                    accommodationRequired={formData.accommodation_required}
+                    defaultCheckIn={formData.check_in_date}
+                    defaultCheckOut={formData.check_out_date}
+                  />
+                  <ActivityAllocationSection
+                    tourId={booking.tour_id}
+                    bookingId={booking.id}
+                    passengerCount={formData.passenger_count}
+                  />
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
+            <TabsContent value="medical" className="space-y-4">
+              <div className="grid grid-cols-1 gap-6">
+                {/* Emergency Contact Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Emergency Contact Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
+                      <Input
+                        id="emergency_contact_name"
+                        value={formData.emergency_contact_name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                        placeholder="Full name"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
+                      <Input
+                        id="emergency_contact_phone"
+                        value={formData.emergency_contact_phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                      <Input
+                        id="emergency_contact_relationship"
+                        value={formData.emergency_contact_relationship}
+                        onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
+                        placeholder="e.g., Spouse, Parent, Sibling"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Medical & Accessibility Section */}
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
+                    <Heart className="h-5 w-5" />
+                    Medical & Accessibility Information
+                  </h3>
                   <div>
-                    <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
-                    <Input
-                      id="emergency_contact_name"
-                      value={formData.emergency_contact_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                      placeholder="Full name"
+                    <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                    <Textarea
+                      id="medical_conditions"
+                      value={formData.medical_conditions}
+                      onChange={(e) => setFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
+                      placeholder="Any medical conditions, allergies, or medications..."
+                      rows={3}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
-                    <Input
-                      id="emergency_contact_phone"
-                      value={formData.emergency_contact_phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                      placeholder="Phone number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="emergency_contact_relationship">Relationship</Label>
-                    <Input
-                      id="emergency_contact_relationship"
-                      value={formData.emergency_contact_relationship}
-                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
-                      placeholder="e.g., Spouse, Parent, Sibling"
+                    <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                    <Textarea
+                      id="accessibility_needs"
+                      value={formData.accessibility_needs}
+                      onChange={(e) => setFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
+                      placeholder="Mobility assistance, wheelchair access, etc..."
+                      rows={3}
                     />
                   </div>
                 </div>
@@ -541,7 +596,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                   disabled={updateBooking.isPending}
                   className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                 >
-                  {updateBooking.isPending ? 'Updating...' : 'Update Emergency Contact'}
+                  {updateBooking.isPending ? 'Updating...' : 'Update Medical & Emergency Info'}
                 </Button>
               </div>
             </TabsContent>
@@ -609,78 +664,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                   {updateBooking.isPending ? 'Updating...' : 'Update Travel Documents'}
                 </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="medical" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Medical & Accessibility Information</h3>
-                <div>
-                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                  <Textarea
-                    id="medical_conditions"
-                    value={formData.medical_conditions}
-                    onChange={(e) => setFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
-                    placeholder="Any medical conditions, allergies, or medications..."
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
-                  <Textarea
-                    id="accessibility_needs"
-                    value={formData.accessibility_needs}
-                    onChange={(e) => setFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
-                    placeholder="Mobility assistance, wheelchair access, etc..."
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="dietary_restrictions">Dietary Restrictions</Label>
-                  <Textarea
-                    id="dietary_restrictions"
-                    value={formData.dietary_restrictions}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dietary_restrictions: e.target.value }))}
-                    placeholder="Food allergies, vegetarian, halal, kosher, etc..."
-                    rows={3}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                  Close
-                </Button>
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={updateBooking.isPending}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  {updateBooking.isPending ? 'Updating...' : 'Update Medical Info'}
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="accommodation" className="space-y-4">
-              {booking && (
-                <>
-                  <HotelAllocationSection
-                    tourId={booking.tour_id}
-                    bookingId={booking.id}
-                    accommodationRequired={formData.accommodation_required}
-                    defaultCheckIn={formData.check_in_date}
-                    defaultCheckOut={formData.check_out_date}
-                  />
-                  <ActivityAllocationSection
-                    tourId={booking.tour_id}
-                    bookingId={booking.id}
-                    passengerCount={formData.passenger_count}
-                  />
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                      Close
-                    </Button>
-                  </div>
-                </>
-              )}
             </TabsContent>
 
             <TabsContent value="communication" className="space-y-4">
