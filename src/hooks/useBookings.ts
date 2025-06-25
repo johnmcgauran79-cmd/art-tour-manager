@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -304,106 +303,20 @@ export const useDeleteBooking = () => {
 
   return useMutation({
     mutationFn: async (bookingId: string) => {
-      console.log('Starting batch booking deletion process for:', bookingId);
+      console.log('Deleting booking:', bookingId);
 
-      try {
-        // First, let's check how many related records exist
-        const [hotelCount, activityCount] = await Promise.all([
-          supabase.from('hotel_bookings').select('id', { count: 'exact', head: true }).eq('booking_id', bookingId),
-          supabase.from('activity_bookings').select('id', { count: 'exact', head: true }).eq('booking_id', bookingId)
-        ]);
+      // Use the database function which should handle everything efficiently
+      const { error } = await supabase.rpc('delete_booking_with_cascade', {
+        p_booking_id: bookingId
+      });
 
-        console.log(`Found ${hotelCount.count || 0} hotel bookings and ${activityCount.count || 0} activity bookings`);
-
-        // If there are too many records, use batch deletion
-        if ((hotelCount.count || 0) > 100 || (activityCount.count || 0) > 100) {
-          console.log('Large dataset detected, using batch deletion');
-          
-          // Batch delete hotel bookings
-          let deleted = 0;
-          while (deleted < (hotelCount.count || 0)) {
-            const { error } = await supabase
-              .from('hotel_bookings')
-              .delete()
-              .eq('booking_id', bookingId)
-              .limit(50);
-            
-            if (error) {
-              console.error('Error in batch hotel deletion:', error);
-              break;
-            }
-            deleted += 50;
-            console.log(`Deleted ${Math.min(deleted, hotelCount.count || 0)} of ${hotelCount.count || 0} hotel bookings`);
-          }
-
-          // Batch delete activity bookings
-          deleted = 0;
-          while (deleted < (activityCount.count || 0)) {
-            const { error } = await supabase
-              .from('activity_bookings')
-              .delete()
-              .eq('booking_id', bookingId)
-              .limit(50);
-            
-            if (error) {
-              console.error('Error in batch activity deletion:', error);
-              break;
-            }
-            deleted += 50;
-            console.log(`Deleted ${Math.min(deleted, activityCount.count || 0)} of ${activityCount.count || 0} activity bookings`);
-          }
-        } else {
-          console.log('Normal dataset size, using standard deletion');
-          
-          // Try the database function first for normal-sized datasets
-          const { error } = await supabase.rpc('delete_booking_with_cascade', {
-            p_booking_id: bookingId
-          });
-
-          if (error) {
-            console.error('Database function failed:', error);
-            
-            // Fallback to sequential deletion
-            const { error: hotelError } = await supabase
-              .from('hotel_bookings')
-              .delete()
-              .eq('booking_id', bookingId);
-            
-            if (hotelError) {
-              console.error('Error deleting hotel bookings:', hotelError);
-            }
-
-            const { error: activityError } = await supabase
-              .from('activity_bookings')
-              .delete()
-              .eq('booking_id', bookingId);
-            
-            if (activityError) {
-              console.error('Error deleting activity bookings:', activityError);
-            }
-          } else {
-            console.log('Database function succeeded, skipping manual deletion');
-            return bookingId; // Early return if DB function worked
-          }
-        }
-
-        // Finally, delete the booking itself
-        const { error: bookingError } = await supabase
-          .from('bookings')
-          .delete()
-          .eq('id', bookingId);
-
-        if (bookingError) {
-          console.error('Error deleting main booking:', bookingError);
-          throw new Error(`Failed to delete booking: ${bookingError.message}`);
-        }
-
-        console.log('Booking and all associated records deleted successfully');
-        return bookingId;
-      } catch (error: any) {
-        console.error('Error in deletion process:', error);
-        throw error;
+      if (error) {
+        console.error('Database function failed:', error);
+        throw new Error(`Failed to delete booking: ${error.message}`);
       }
+
+      console.log('Booking deleted successfully');
+      return bookingId;
     },
     onSuccess: () => {
       // Invalidate all related queries to refresh the UI
@@ -423,7 +336,7 @@ export const useDeleteBooking = () => {
       console.error('Error deleting booking:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to delete booking. There may be too much related data. Please contact support.",
+        description: error.message || "Failed to delete booking. Please try again.",
         variant: "destructive",
       });
     },
