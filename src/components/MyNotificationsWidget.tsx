@@ -7,9 +7,10 @@ import { NotificationList } from "@/components/NotificationList";
 
 interface MyNotificationsWidgetProps {
   onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
+  showCard?: boolean;
 }
 
-export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidgetProps) => {
+export const MyNotificationsWidget = ({ onNavigateToItem, showCard = true }: MyNotificationsWidgetProps) => {
   const {
     notifications,
     isLoading,
@@ -22,18 +23,20 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
     isDeleting,
   } = useNotifications();
 
-  return (
-    <Card className="border-brand-navy/20 shadow-lg">
-      <CardHeader>
-        <NotificationHeader
-          unreadCount={unreadCount}
-          selectedCount={selectedNotifications.length}
-          totalCount={notifications.length}
-          onBulkDelete={handleBulkDelete}
-          isLoading={isDeleting}
-        />
-      </CardHeader>
-      <CardContent>
+  const content = (
+    <>
+      {showCard && (
+        <CardHeader>
+          <NotificationHeader
+            unreadCount={unreadCount}
+            selectedCount={selectedNotifications.length}
+            totalCount={notifications.length}
+            onBulkDelete={handleBulkDelete}
+            isLoading={isDeleting}
+          />
+        </CardHeader>
+      )}
+      <CardContent className={showCard ? "" : "p-0"}>
         {isLoading ? (
           <div className="text-center py-4 text-muted-foreground">
             Loading notifications...
@@ -51,6 +54,16 @@ export const MyNotificationsWidget = ({ onNavigateToItem }: MyNotificationsWidge
           />
         )}
       </CardContent>
+    </>
+  );
+
+  if (!showCard) {
+    return <div>{content}</div>;
+  }
+
+  return (
+    <Card className="border-brand-navy/20 shadow-lg">
+      {content}
     </Card>
   );
 };

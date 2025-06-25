@@ -116,7 +116,7 @@ export const OperationsDashboard = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MyNotificationsWidget />
+            <MyNotificationsWidget showCard={false} />
           </CardContent>
         </Card>
       </div>
@@ -164,7 +164,7 @@ export const OperationsDashboard = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <MyNotificationsWidget />
+          <MyNotificationsWidget showCard={false} />
         </CardContent>
       </Card>
 
