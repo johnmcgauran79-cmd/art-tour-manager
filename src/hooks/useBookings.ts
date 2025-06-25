@@ -22,6 +22,34 @@ export interface Booking {
   revenue: number | null;
   created_at: string;
   updated_at: string;
+  
+  // Payment tracking fields
+  deposit_paid: boolean;
+  deposit_paid_date: string | null;
+  deposit_amount: number | null;
+  instalment_paid: boolean;
+  instalment_paid_date: string | null;
+  instalment_amount: number | null;
+  final_payment_paid: boolean;
+  final_payment_paid_date: string | null;
+  final_payment_amount: number | null;
+  
+  // Emergency contact information
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+  
+  // Passport/ID details
+  passport_number: string | null;
+  passport_expiry_date: string | null;
+  passport_country: string | null;
+  id_number: string | null;
+  nationality: string | null;
+  
+  // Medical and dietary
+  medical_conditions: string | null;
+  accessibility_needs: string | null;
+  dietary_restrictions: string | null;
 }
 
 // Helper function to calculate nights

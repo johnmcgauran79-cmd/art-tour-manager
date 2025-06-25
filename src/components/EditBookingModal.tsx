@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Edit, CreditCard, Shield, Passport, Heart } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -15,6 +15,7 @@ import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
 import { EditContactModal } from "@/components/EditContactModal";
+import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 
 interface Booking {
   id: string;
@@ -34,6 +35,35 @@ interface Booking {
   total_nights: number | null;
   created_at: string;
   updated_at: string;
+  
+  // Payment fields
+  deposit_paid: boolean;
+  deposit_paid_date: string | null;
+  deposit_amount: number | null;
+  instalment_paid: boolean;
+  instalment_paid_date: string | null;
+  instalment_amount: number | null;
+  final_payment_paid: boolean;
+  final_payment_paid_date: string | null;
+  final_payment_amount: number | null;
+  
+  // Emergency contact
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+  
+  // Travel documents
+  passport_number: string | null;
+  passport_expiry_date: string | null;
+  passport_country: string | null;
+  id_number: string | null;
+  nationality: string | null;
+  
+  // Medical info
+  medical_conditions: string | null;
+  accessibility_needs: string | null;
+  dietary_restrictions: string | null;
+  
   customers?: {
     id: string;
     first_name: string;
@@ -52,6 +82,7 @@ interface EditBookingModalProps {
 
 export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingModalProps) => {
   const [formData, setFormData] = useState({
+    // Basic booking info
     lead_passenger_first_name: '',
     lead_passenger_last_name: '',
     lead_passenger_email: '',
@@ -68,6 +99,34 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     accommodation_required: true,
     check_in_date: '',
     check_out_date: '',
+    
+    // Payment tracking
+    deposit_paid: false,
+    deposit_paid_date: '',
+    deposit_amount: 0,
+    instalment_paid: false,
+    instalment_paid_date: '',
+    instalment_amount: 0,
+    final_payment_paid: false,
+    final_payment_paid_date: '',
+    final_payment_amount: 0,
+    
+    // Emergency contact
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_relationship: '',
+    
+    // Travel documents
+    passport_number: '',
+    passport_expiry_date: '',
+    passport_country: '',
+    id_number: '',
+    nationality: '',
+    
+    // Medical info
+    medical_conditions: '',
+    accessibility_needs: '',
+    dietary_restrictions: '',
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -82,6 +141,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   useEffect(() => {
     if (booking) {
       setFormData({
+        // Basic info
         lead_passenger_first_name: booking.customers?.first_name || '',
         lead_passenger_last_name: booking.customers?.last_name || '',
         lead_passenger_email: booking.customers?.email || '',
@@ -98,6 +158,34 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
         accommodation_required: booking.accommodation_required || false,
         check_in_date: booking.check_in_date || '',
         check_out_date: booking.check_out_date || '',
+        
+        // Payment tracking
+        deposit_paid: booking.deposit_paid || false,
+        deposit_paid_date: booking.deposit_paid_date || '',
+        deposit_amount: booking.deposit_amount || 0,
+        instalment_paid: booking.instalment_paid || false,
+        instalment_paid_date: booking.instalment_paid_date || '',
+        instalment_amount: booking.instalment_amount || 0,
+        final_payment_paid: booking.final_payment_paid || false,
+        final_payment_paid_date: booking.final_payment_paid_date || '',
+        final_payment_amount: booking.final_payment_amount || 0,
+        
+        // Emergency contact
+        emergency_contact_name: booking.emergency_contact_name || '',
+        emergency_contact_phone: booking.emergency_contact_phone || '',
+        emergency_contact_relationship: booking.emergency_contact_relationship || '',
+        
+        // Travel documents
+        passport_number: booking.passport_number || '',
+        passport_expiry_date: booking.passport_expiry_date || '',
+        passport_country: booking.passport_country || '',
+        id_number: booking.id_number || '',
+        nationality: booking.nationality || '',
+        
+        // Medical info
+        medical_conditions: booking.medical_conditions || '',
+        accessibility_needs: booking.accessibility_needs || '',
+        dietary_restrictions: booking.dietary_restrictions || '',
       });
     }
   }, [booking]);
@@ -115,10 +203,10 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       });
     }
 
-    // Then update the booking
+    // Then update the booking with all new fields
     updateBooking.mutate({
       id: booking.id,
-      // Only include the booking fields, not the customer fields
+      // Basic booking fields
       passenger_count: formData.passenger_count,
       passenger_2_name: formData.passenger_2_name,
       passenger_3_name: formData.passenger_3_name,
@@ -130,6 +218,34 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
       accommodation_required: formData.accommodation_required,
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
+      
+      // Payment tracking
+      deposit_paid: formData.deposit_paid,
+      deposit_paid_date: formData.deposit_paid_date || null,
+      deposit_amount: formData.deposit_amount || null,
+      instalment_paid: formData.instalment_paid,
+      instalment_paid_date: formData.instalment_paid_date || null,
+      instalment_amount: formData.instalment_amount || null,
+      final_payment_paid: formData.final_payment_paid,
+      final_payment_paid_date: formData.final_payment_paid_date || null,
+      final_payment_amount: formData.final_payment_amount || null,
+      
+      // Emergency contact
+      emergency_contact_name: formData.emergency_contact_name || null,
+      emergency_contact_phone: formData.emergency_contact_phone || null,
+      emergency_contact_relationship: formData.emergency_contact_relationship || null,
+      
+      // Travel documents
+      passport_number: formData.passport_number || null,
+      passport_expiry_date: formData.passport_expiry_date || null,
+      passport_country: formData.passport_country || null,
+      id_number: formData.id_number || null,
+      nationality: formData.nationality || null,
+      
+      // Medical info
+      medical_conditions: formData.medical_conditions || null,
+      accessibility_needs: formData.accessibility_needs || null,
+      dietary_restrictions: formData.dietary_restrictions || null,
     }, {
       onSuccess: () => {
         onOpenChange(false);
@@ -183,7 +299,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   };
 
   const handleContactUpdated = (updatedContact: any) => {
-    // Update form data with the updated contact info
     setFormData(prev => ({
       ...prev,
       lead_passenger_first_name: updatedContact.first_name,
@@ -199,7 +314,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               Edit Booking - {formData.lead_passenger_first_name} {formData.lead_passenger_last_name}
@@ -211,10 +326,25 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           </DialogHeader>
 
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Booking Details</TabsTrigger>
-              <TabsTrigger value="accommodation">Hotel Allocation</TabsTrigger>
-              <TabsTrigger value="activities">Activities</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="payments" className="flex items-center gap-1">
+                <CreditCard className="h-4 w-4" />
+                Payments
+              </TabsTrigger>
+              <TabsTrigger value="emergency" className="flex items-center gap-1">
+                <Shield className="h-4 w-4" />
+                Emergency
+              </TabsTrigger>
+              <TabsTrigger value="travel" className="flex items-center gap-1">
+                <Passport className="h-4 w-4" />
+                Travel Docs
+              </TabsTrigger>
+              <TabsTrigger value="medical" className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                Medical
+              </TabsTrigger>
+              <TabsTrigger value="communication">Comments</TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-4">
@@ -240,7 +370,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                       <Input
                         id="lead_passenger_first_name"
                         value={formData.lead_passenger_first_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_first_name: e.target.value }))}
                         disabled
                         className="bg-gray-100"
                         title="Customer details are managed separately in the Contacts section"
@@ -251,7 +380,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                       <Input
                         id="lead_passenger_last_name"
                         value={formData.lead_passenger_last_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_last_name: e.target.value }))}
                         disabled
                         className="bg-gray-100"
                         title="Customer details are managed separately in the Contacts section"
@@ -263,7 +391,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                         id="lead_passenger_email"
                         type="email"
                         value={formData.lead_passenger_email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_email: e.target.value }))}
                         disabled
                         className="bg-gray-100"
                         title="Customer details are managed separately in the Contacts section"
@@ -275,7 +402,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                         id="lead_passenger_phone"
                         type="tel"
                         value={formData.lead_passenger_phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_phone: e.target.value }))}
                         disabled
                         className="bg-gray-100"
                         title="Customer details are managed separately in the Contacts section"
@@ -415,27 +541,265 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               </form>
             </TabsContent>
 
-            <TabsContent value="accommodation" className="space-y-4">
-              <HotelAllocationSection
-                tourId={booking.tour_id}
-                bookingId={booking.id}
-                accommodationRequired={formData.accommodation_required}
-                defaultCheckIn={formData.check_in_date}
-                defaultCheckOut={formData.check_out_date}
-              />
+            <TabsContent value="payments" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-medium text-brand-navy">Deposit Payment</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.deposit_paid}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, deposit_paid: checked }))}
+                    />
+                    <Label>Deposit Paid</Label>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.deposit_amount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deposit_amount: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Date Paid</Label>
+                    <Input
+                      type="date"
+                      value={formData.deposit_paid_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, deposit_paid_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-medium text-brand-navy">Instalment Payment</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.instalment_paid}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, instalment_paid: checked }))}
+                    />
+                    <Label>Instalment Paid</Label>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.instalment_amount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, instalment_amount: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Date Paid</Label>
+                    <Input
+                      type="date"
+                      value={formData.instalment_paid_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, instalment_paid_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-medium text-brand-navy">Final Payment</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.final_payment_paid}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, final_payment_paid: checked }))}
+                    />
+                    <Label>Final Payment Paid</Label>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.final_payment_amount}
+                      onChange={(e) => setFormData(prev => ({ ...prev, final_payment_amount: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Date Paid</Label>
+                    <Input
+                      type="date"
+                      value={formData.final_payment_paid_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, final_payment_paid_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Close
                 </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={updateBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {updateBooking.isPending ? 'Updating...' : 'Update Payment Info'}
+                </Button>
               </div>
             </TabsContent>
 
-            <TabsContent value="activities" className="space-y-4">
-              <ActivityAllocationSection
-                tourId={booking.tour_id}
-                bookingId={booking.id}
-                passengerCount={formData.passenger_count}
-              />
+            <TabsContent value="emergency" className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Emergency Contact Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
+                    <Input
+                      id="emergency_contact_name"
+                      value={formData.emergency_contact_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
+                    <Input
+                      id="emergency_contact_phone"
+                      value={formData.emergency_contact_phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                    <Input
+                      id="emergency_contact_relationship"
+                      value={formData.emergency_contact_relationship}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
+                      placeholder="e.g., Spouse, Parent, Sibling"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={updateBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {updateBooking.isPending ? 'Updating...' : 'Update Emergency Contact'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="travel" className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Travel Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="passport_number">Passport Number</Label>
+                    <Input
+                      id="passport_number"
+                      value={formData.passport_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passport_number: e.target.value }))}
+                      placeholder="Passport number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
+                    <Input
+                      id="passport_expiry_date"
+                      type="date"
+                      value={formData.passport_expiry_date}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passport_expiry_date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="passport_country">Passport Issuing Country</Label>
+                    <Input
+                      id="passport_country"
+                      value={formData.passport_country}
+                      onChange={(e) => setFormData(prev => ({ ...prev, passport_country: e.target.value }))}
+                      placeholder="Country"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nationality">Nationality</Label>
+                    <Input
+                      id="nationality"
+                      value={formData.nationality}
+                      onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
+                      placeholder="Nationality"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="id_number">National ID Number</Label>
+                    <Input
+                      id="id_number"
+                      value={formData.id_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
+                      placeholder="National ID or driver's license"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={updateBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {updateBooking.isPending ? 'Updating...' : 'Update Travel Documents'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="medical" className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Medical & Accessibility Information</h3>
+                <div>
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medical_conditions"
+                    value={formData.medical_conditions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
+                    placeholder="Any medical conditions, allergies, or medications..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                  <Textarea
+                    id="accessibility_needs"
+                    value={formData.accessibility_needs}
+                    onChange={(e) => setFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
+                    placeholder="Mobility assistance, wheelchair access, etc..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dietary_restrictions">Dietary Restrictions</Label>
+                  <Textarea
+                    id="dietary_restrictions"
+                    value={formData.dietary_restrictions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dietary_restrictions: e.target.value }))}
+                    placeholder="Food allergies, vegetarian, halal, kosher, etc..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={updateBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {updateBooking.isPending ? 'Updating...' : 'Update Medical Info'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="communication" className="space-y-4">
+              <BookingCommentsSection bookingId={booking.id} />
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Close

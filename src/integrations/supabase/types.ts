@@ -204,21 +204,71 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_comments: {
+        Row: {
+          booking_id: string
+          comment: string
+          comment_type: string | null
+          created_at: string
+          id: string
+          is_internal: boolean | null
+          user_id: string
+        }
+        Insert: {
+          booking_id: string
+          comment: string
+          comment_type?: string | null
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          user_id: string
+        }
+        Update: {
+          booking_id?: string
+          comment?: string
+          comment_type?: string | null
+          created_at?: string
+          id?: string
+          is_internal?: boolean | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
+          accessibility_needs: string | null
           accommodation_required: boolean | null
           booking_agent: string | null
           check_in_date: string | null
           check_out_date: string | null
           created_at: string | null
+          deposit_amount: number | null
+          deposit_paid: boolean | null
+          deposit_paid_date: string | null
+          dietary_restrictions: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           extra_requests: string | null
+          final_payment_amount: number | null
+          final_payment_paid: boolean | null
+          final_payment_paid_date: string | null
           group_name: string | null
           id: string
+          id_number: string | null
+          instalment_amount: number | null
+          instalment_paid: boolean | null
+          instalment_paid_date: string | null
           invoice_notes: string | null
           lead_passenger_id: string | null
+          medical_conditions: string | null
+          nationality: string | null
           passenger_2_name: string | null
           passenger_3_name: string | null
           passenger_count: number
+          passport_country: string | null
+          passport_expiry_date: string | null
+          passport_number: string | null
           revenue: number | null
           status: Database["public"]["Enums"]["booking_status"] | null
           total_nights: number | null
@@ -226,19 +276,39 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          accessibility_needs?: string | null
           accommodation_required?: boolean | null
           booking_agent?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          deposit_paid_date?: string | null
+          dietary_restrictions?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           extra_requests?: string | null
+          final_payment_amount?: number | null
+          final_payment_paid?: boolean | null
+          final_payment_paid_date?: string | null
           group_name?: string | null
           id?: string
+          id_number?: string | null
+          instalment_amount?: number | null
+          instalment_paid?: boolean | null
+          instalment_paid_date?: string | null
           invoice_notes?: string | null
           lead_passenger_id?: string | null
+          medical_conditions?: string | null
+          nationality?: string | null
           passenger_2_name?: string | null
           passenger_3_name?: string | null
           passenger_count?: number
+          passport_country?: string | null
+          passport_expiry_date?: string | null
+          passport_number?: string | null
           revenue?: number | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
@@ -246,19 +316,39 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          accessibility_needs?: string | null
           accommodation_required?: boolean | null
           booking_agent?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          deposit_paid_date?: string | null
+          dietary_restrictions?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           extra_requests?: string | null
+          final_payment_amount?: number | null
+          final_payment_paid?: boolean | null
+          final_payment_paid_date?: string | null
           group_name?: string | null
           id?: string
+          id_number?: string | null
+          instalment_amount?: number | null
+          instalment_paid?: boolean | null
+          instalment_paid_date?: string | null
           invoice_notes?: string | null
           lead_passenger_id?: string | null
+          medical_conditions?: string | null
+          nationality?: string | null
           passenger_2_name?: string | null
           passenger_3_name?: string | null
           passenger_count?: number
+          passport_country?: string | null
+          passport_expiry_date?: string | null
+          passport_number?: string | null
           revenue?: number | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
