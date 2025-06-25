@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -204,12 +203,11 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                 </AlertDialog>
               )}
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => onOpenChange(false)}
-                className="h-8 w-8 p-0"
               >
-                <X className="h-4 w-4" />
+                Close
               </Button>
             </div>
           </div>
