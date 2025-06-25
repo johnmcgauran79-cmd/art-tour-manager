@@ -1140,6 +1140,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_booking_simple: {
+        Args: { p_booking_id: string }
+        Returns: undefined
+      }
       delete_booking_with_cascade: {
         Args: { p_booking_id: string }
         Returns: undefined

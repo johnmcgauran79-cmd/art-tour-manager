@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -307,78 +306,17 @@ export const useDeleteBooking = () => {
       console.log('Starting deletion process for booking:', bookingId);
 
       try {
-        // First check what related records exist
-        console.log('Checking related records...');
-        
-        const [hotelBookingsResult, activityBookingsResult, commentsResult] = await Promise.all([
-          supabase.from('hotel_bookings').select('id').eq('booking_id', bookingId).limit(10),
-          supabase.from('activity_bookings').select('id').eq('booking_id', bookingId).limit(10),
-          supabase.from('booking_comments').select('id').eq('booking_id', bookingId).limit(10)
-        ]);
-
-        console.log('Found related records:', {
-          hotelBookings: hotelBookingsResult.data?.length || 0,
-          activityBookings: activityBookingsResult.data?.length || 0,
-          comments: commentsResult.data?.length || 0
+        // Use the new database function that handles triggers efficiently
+        const { error } = await supabase.rpc('delete_booking_simple', {
+          p_booking_id: bookingId
         });
 
-        // Delete hotel bookings if they exist
-        if (hotelBookingsResult.data && hotelBookingsResult.data.length > 0) {
-          console.log('Deleting hotel bookings...');
-          const { error: hotelError } = await supabase
-            .from('hotel_bookings')
-            .delete()
-            .eq('booking_id', bookingId);
-
-          if (hotelError) {
-            console.error('Error deleting hotel bookings:', hotelError);
-            throw new Error(`Failed to delete hotel bookings: ${hotelError.message}`);
-          }
+        if (error) {
+          console.error('Database function error:', error);
+          throw new Error(`Failed to delete booking: ${error.message}`);
         }
 
-        // Delete activity bookings if they exist - use a different approach
-        if (activityBookingsResult.data && activityBookingsResult.data.length > 0) {
-          console.log('Deleting activity bookings one by one to avoid timeout...');
-          
-          for (const activityBooking of activityBookingsResult.data) {
-            const { error: activityError } = await supabase
-              .from('activity_bookings')
-              .delete()
-              .eq('id', activityBooking.id);
-
-            if (activityError) {
-              console.error('Error deleting activity booking:', activityError);
-              throw new Error(`Failed to delete activity booking: ${activityError.message}`);
-            }
-          }
-        }
-
-        // Delete comments if they exist
-        if (commentsResult.data && commentsResult.data.length > 0) {
-          console.log('Deleting booking comments...');
-          const { error: commentsError } = await supabase
-            .from('booking_comments')
-            .delete()
-            .eq('booking_id', bookingId);
-
-          if (commentsError) {
-            console.error('Error deleting booking comments:', commentsError);
-            // Don't throw here, comments are not critical
-          }
-        }
-
-        console.log('Deleting main booking...');
-        const { error: bookingError } = await supabase
-          .from('bookings')
-          .delete()
-          .eq('id', bookingId);
-
-        if (bookingError) {
-          console.error('Error deleting main booking:', bookingError);
-          throw new Error(`Failed to delete booking: ${bookingError.message}`);
-        }
-
-        console.log('Booking deleted successfully');
+        console.log('Booking deleted successfully using database function');
         return bookingId;
 
       } catch (error) {
