@@ -43,18 +43,22 @@ export const MyNotificationsWidget = ({
 
   const content = (
     <>
-      <NotificationHeader 
-        unreadCount={unreadCount}
-        selectedCount={selectedNotifications.length}
-        showCard={showCard}
-      />
-      
-      {selectedNotifications.length > 0 && (
-        <NotificationActions
-          selectedCount={selectedNotifications.length}
-          onBulkDelete={handleBulkDelete}
-          isDeleting={isDeleting}
-        />
+      {showCard && (
+        <>
+          <NotificationHeader 
+            unreadCount={unreadCount}
+            selectedCount={selectedNotifications.length}
+            showCard={showCard}
+          />
+          
+          {selectedNotifications.length > 0 && (
+            <NotificationActions
+              selectedCount={selectedNotifications.length}
+              onBulkDelete={handleBulkDelete}
+              isDeleting={isDeleting}
+            />
+          )}
+        </>
       )}
 
       {notifications.length === 0 ? (

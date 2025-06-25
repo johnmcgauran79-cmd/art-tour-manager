@@ -2,22 +2,17 @@
 import { Bell } from "lucide-react";
 import { CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { NotificationActions } from "@/components/NotificationActions";
 
 interface NotificationHeaderProps {
   unreadCount: number;
   selectedCount: number;
-  totalCount: number;
-  onBulkDelete: () => void;
-  isLoading: boolean;
+  showCard?: boolean;
 }
 
 export const NotificationHeader = ({
   unreadCount,
   selectedCount,
-  totalCount,
-  onBulkDelete,
-  isLoading
+  showCard = true
 }: NotificationHeaderProps) => {
   return (
     <div className="flex items-center justify-between">
@@ -30,13 +25,6 @@ export const NotificationHeader = ({
           </Badge>
         )}
       </div>
-      <NotificationActions 
-        selectedCount={selectedCount}
-        totalCount={totalCount}
-        onBulkDelete={onBulkDelete}
-        isLoading={isLoading}
-        mode="delete"
-      />
     </div>
   );
 };

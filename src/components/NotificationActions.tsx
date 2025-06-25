@@ -4,8 +4,9 @@ import { Check, Trash2 } from "lucide-react";
 
 interface NotificationActionsProps {
   selectedCount: number;
-  totalCount: number;
-  isLoading: boolean;
+  totalCount?: number;
+  isLoading?: boolean;
+  isDeleting?: boolean;
   onBulkAcknowledge?: () => void;
   onAcknowledgeAll?: () => void;
   onBulkDelete?: () => void;
@@ -14,14 +15,17 @@ interface NotificationActionsProps {
 
 export const NotificationActions = ({
   selectedCount,
-  totalCount,
-  isLoading,
+  totalCount = 0,
+  isLoading = false,
+  isDeleting = false,
   onBulkAcknowledge,
   onAcknowledgeAll,
   onBulkDelete,
   mode = 'acknowledge'
 }: NotificationActionsProps) => {
   if (totalCount === 0) return null;
+
+  const isActionLoading = isLoading || isDeleting;
 
   if (mode === 'delete') {
     return (
@@ -30,7 +34,7 @@ export const NotificationActions = ({
           <Button
             size="sm"
             onClick={onBulkDelete}
-            disabled={isLoading}
+            disabled={isActionLoading}
             className="h-7 text-xs"
             variant="destructive"
           >
@@ -48,7 +52,7 @@ export const NotificationActions = ({
         <Button
           size="sm"
           onClick={onBulkAcknowledge}
-          disabled={isLoading}
+          disabled={isActionLoading}
           className="h-7 text-xs"
         >
           <Check className="h-3 w-3 mr-1" />
@@ -60,7 +64,7 @@ export const NotificationActions = ({
           size="sm"
           variant="outline"
           onClick={onAcknowledgeAll}
-          disabled={isLoading}
+          disabled={isActionLoading}
           className="h-7 text-xs"
         >
           Clear All
