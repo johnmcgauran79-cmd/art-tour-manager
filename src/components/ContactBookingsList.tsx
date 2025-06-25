@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +83,34 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
       if (error) throw error;
       return data as ContactBooking[];
     },
+  });
+
+  // Fetch the full booking details when a booking is selected
+  const { data: selectedBooking } = useQuery({
+    queryKey: ['booking-details', selectedBookingId],
+    queryFn: async () => {
+      if (!selectedBookingId) return null;
+      
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          customers (
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            dietary_requirements
+          )
+        `)
+        .eq('id', selectedBookingId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!selectedBookingId,
   });
 
   const handleRowClick = (bookingId: string) => {
@@ -193,9 +220,9 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
         </div>
       </div>
 
-      {selectedBookingId && (
+      {selectedBooking && (
         <EditBookingModal
-          bookingId={selectedBookingId}
+          booking={selectedBooking}
           open={isEditModalOpen}
           onOpenChange={handleCloseModal}
         />
