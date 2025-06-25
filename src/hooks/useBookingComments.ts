@@ -14,7 +14,7 @@ export interface BookingComment {
   profiles?: {
     first_name: string;
     last_name: string;
-  };
+  } | null;
 }
 
 export const useBookingComments = (bookingId: string) => {
@@ -25,7 +25,7 @@ export const useBookingComments = (bookingId: string) => {
         .from('booking_comments')
         .select(`
           *,
-          profiles!user_id (first_name, last_name)
+          profiles:user_id (first_name, last_name)
         `)
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: true });
