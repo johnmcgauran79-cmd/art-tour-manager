@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuditLog } from "@/hooks/useAuditLog";
 
 export interface Task {
   id: string;
@@ -59,6 +60,177 @@ export const useDeleteTask = () => {
       toast({
         title: "Error",
         description: "Failed to delete task. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useCreateTask = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { logOperation } = useAuditLog();
+
+  return useMutation({
+    mutationFn: async (taskData: {
+      title: string;
+      description?: string;
+      priority: 'low' | 'medium' | 'high' | 'critical';
+      category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
+      due_date?: string;
+      tour_id?: string;
+      depends_on_task_id?: string;
+      assignee_ids?: string[];
+    }) => {
+      console.log('useCreateTask mutation called with:', taskData);
+      
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) {
+        console.error('User not authenticated');
+        throw new Error('User not authenticated');
+      }
+
+      console.log('Authenticated user:', user.user.id);
+
+      // Create the task first
+      const taskInsertData = {
+        title: taskData.title,
+        description: taskData.description || null,
+        priority: taskData.priority,
+        category: taskData.category,
+        due_date: taskData.due_date || null,
+        tour_id: taskData.tour_id || null,
+        depends_on_task_id: taskData.depends_on_task_id || null,
+        created_by: user.user.id,
+        status: 'not_started' as const,
+        is_automated: false,
+      };
+
+      console.log('Inserting task with data:', taskInsertData);
+
+      const { data: task, error: taskError } = await supabase
+        .from('tasks')
+        .insert(taskInsertData)
+        .select()
+        .single();
+
+      if (taskError) {
+        console.error('Error creating task:', taskError);
+        throw new Error(`Failed to create task: ${taskError.message}`);
+      }
+
+      console.log('Task created successfully:', task);
+
+      // Log the task creation
+      logOperation({
+        operation_type: 'CREATE',
+        table_name: 'tasks',
+        record_id: task.id,
+        details: {
+          task_title: task.title,
+          priority: task.priority,
+          category: task.category,
+          tour_id: task.tour_id
+        }
+      });
+
+      // Add assignments if provided
+      if (taskData.assignee_ids && taskData.assignee_ids.length > 0) {
+        console.log('Adding assignments for users:', taskData.assignee_ids);
+        
+        const assignments = taskData.assignee_ids.map(userId => ({
+          task_id: task.id,
+          user_id: userId,
+          assigned_by: user.user.id,
+        }));
+
+        console.log('Assignment data:', assignments);
+
+        const { error: assignmentError } = await supabase
+          .from('task_assignments')
+          .insert(assignments);
+
+        if (assignmentError) {
+          console.error('Error creating task assignments:', assignmentError);
+          throw new Error(`Failed to create task assignments: ${assignmentError.message}`);
+        }
+
+        console.log('Task assignments created successfully');
+      }
+
+      return task;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      toast({
+        title: "Task Created",
+        description: "The task has been successfully created.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating task:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateTask = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { logOperation } = useAuditLog();
+
+  return useMutation({
+    mutationFn: async (data: {
+      taskId: string;
+      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id'>>;
+    }) => {
+      const updateData = { ...data.updates };
+      
+      // If marking as completed, set completed_at
+      if (data.updates.status === 'completed' && !data.updates.completed_at) {
+        updateData.completed_at = new Date().toISOString();
+      }
+      
+      const { data: task, error } = await supabase
+        .from('tasks')
+        .update(updateData)
+        .eq('id', data.taskId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Log the task update
+      logOperation({
+        operation_type: 'UPDATE',
+        table_name: 'tasks',
+        record_id: data.taskId,
+        details: {
+          updated_fields: Object.keys(updateData),
+          status_change: data.updates.status ? `to ${data.updates.status}` : undefined
+        }
+      });
+
+      return task;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      toast({
+        title: "Task Updated",
+        description: "The task has been successfully updated.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update task. Please try again.",
         variant: "destructive",
       });
     },
@@ -209,150 +381,6 @@ export const useMyTasks = () => {
       }));
 
       return transformedData as Task[];
-    },
-  });
-};
-
-export const useCreateTask = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async (taskData: {
-      title: string;
-      description?: string;
-      priority: 'low' | 'medium' | 'high' | 'critical';
-      category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
-      due_date?: string;
-      tour_id?: string;
-      depends_on_task_id?: string;
-      assignee_ids?: string[];
-    }) => {
-      console.log('useCreateTask mutation called with:', taskData);
-      
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
-        console.error('User not authenticated');
-        throw new Error('User not authenticated');
-      }
-
-      console.log('Authenticated user:', user.user.id);
-
-      // Create the task first
-      const taskInsertData = {
-        title: taskData.title,
-        description: taskData.description || null,
-        priority: taskData.priority,
-        category: taskData.category,
-        due_date: taskData.due_date || null,
-        tour_id: taskData.tour_id || null,
-        depends_on_task_id: taskData.depends_on_task_id || null,
-        created_by: user.user.id,
-        status: 'not_started' as const,
-        is_automated: false,
-      };
-
-      console.log('Inserting task with data:', taskInsertData);
-
-      const { data: task, error: taskError } = await supabase
-        .from('tasks')
-        .insert(taskInsertData)
-        .select()
-        .single();
-
-      if (taskError) {
-        console.error('Error creating task:', taskError);
-        throw new Error(`Failed to create task: ${taskError.message}`);
-      }
-
-      console.log('Task created successfully:', task);
-
-      // Add assignments if provided
-      if (taskData.assignee_ids && taskData.assignee_ids.length > 0) {
-        console.log('Adding assignments for users:', taskData.assignee_ids);
-        
-        const assignments = taskData.assignee_ids.map(userId => ({
-          task_id: task.id,
-          user_id: userId,
-          assigned_by: user.user.id,
-        }));
-
-        console.log('Assignment data:', assignments);
-
-        const { error: assignmentError } = await supabase
-          .from('task_assignments')
-          .insert(assignments);
-
-        if (assignmentError) {
-          console.error('Error creating task assignments:', assignmentError);
-          throw new Error(`Failed to create task assignments: ${assignmentError.message}`);
-        }
-
-        console.log('Task assignments created successfully');
-      }
-
-      return task;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      toast({
-        title: "Task Created",
-        description: "The task has been successfully created.",
-      });
-    },
-    onError: (error) => {
-      console.error('Error creating task:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create task. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-};
-
-export const useUpdateTask = () => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: async (data: {
-      taskId: string;
-      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id'>>;
-    }) => {
-      const updateData = { ...data.updates };
-      
-      // If marking as completed, set completed_at
-      if (data.updates.status === 'completed' && !data.updates.completed_at) {
-        updateData.completed_at = new Date().toISOString();
-      }
-      
-      const { data: task, error } = await supabase
-        .from('tasks')
-        .update(updateData)
-        .eq('id', data.taskId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return task;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      toast({
-        title: "Task Updated",
-        description: "The task has been successfully updated.",
-      });
-    },
-    onError: (error) => {
-      console.error('Error updating task:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update task. Please try again.",
-        variant: "destructive",
-      });
     },
   });
 };

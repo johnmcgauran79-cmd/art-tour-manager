@@ -1,10 +1,10 @@
-
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Department } from "@/hooks/useUserDepartments";
+import { useAuditLog } from "@/hooks/useAuditLog";
 
 const createNotification = async (userId: string, notification: {
   title: string;
@@ -63,6 +63,7 @@ export const useRealtimeTasks = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { logOperation } = useAuditLog();
 
   useEffect(() => {
     if (!user?.id) return;
@@ -85,8 +86,22 @@ export const useRealtimeTasks = () => {
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
           
-          // Show notification for high priority tasks only (avoid duplicates from manual creation)
+          // Log task creation if it's not from the current user (to avoid duplicate logging)
           const newTask = payload.new as any;
+          if (newTask.created_by !== user.id) {
+            logOperation({
+              operation_type: 'CREATE',
+              table_name: 'tasks',
+              record_id: newTask.id,
+              details: {
+                task_title: newTask.title,
+                created_by_other_user: true,
+                is_automated: newTask.is_automated
+              }
+            });
+          }
+          
+          // Show notification for high priority tasks only (avoid duplicates from manual creation)
           if ((newTask.priority === 'critical' || newTask.priority === 'high') && newTask.is_automated) {
             toast({
               title: "New Priority Task",
@@ -124,6 +139,20 @@ export const useRealtimeTasks = () => {
           const oldTask = payload.old as any;
           const newTask = payload.new as any;
           
+          // Log task update if it's not from the current user (to avoid duplicate logging)
+          if (oldTask.status !== newTask.status && newTask.updated_at !== oldTask.updated_at) {
+            logOperation({
+              operation_type: 'UPDATE',
+              table_name: 'tasks',
+              record_id: newTask.id,
+              details: {
+                task_title: newTask.title,
+                status_change: `from ${oldTask.status} to ${newTask.status}`,
+                updated_by_realtime: true
+              }
+            });
+          }
+          
           if (oldTask.status !== newTask.status && newTask.status === 'completed') {
             toast({
               title: "Task Completed",
@@ -147,8 +176,19 @@ export const useRealtimeTasks = () => {
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
 
-          // Create notification for task deletion
+          // Log task deletion
           const deletedTask = payload.old as any;
+          logOperation({
+            operation_type: 'DELETE',
+            table_name: 'tasks',
+            record_id: deletedTask.id,
+            details: {
+              task_title: deletedTask.title,
+              deleted_by_realtime: true
+            }
+          });
+
+          // Create notification for task deletion
           await createNotification(user.id, {
             title: "Task Deleted",
             message: `Task "${deletedTask.title}" has been deleted.`,
@@ -207,6 +247,41 @@ export const useRealtimeTasks = () => {
       .on(
         'postgres_changes',
         {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tours'
+        },
+        async (payload) => {
+          console.log('New tour created:', payload.new);
+          
+          // Invalidate tours queries
+          queryClient.invalidateQueries({ queryKey: ['tours'] });
+          
+          // Log tour creation
+          const newTour = payload.new as any;
+          logOperation({
+            operation_type: 'CREATE',
+            table_name: 'tours',
+            record_id: newTour.id,
+            details: {
+              tour_name: newTour.name,
+              start_date: newTour.start_date,
+              created_by_realtime: true
+            }
+          });
+
+          await createNotification(user.id, {
+            title: "New Tour Created",
+            message: `Tour "${newTour.name}" has been created`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: newTour.id,
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'UPDATE',
           schema: 'public',
           table: 'tours'
@@ -220,6 +295,18 @@ export const useRealtimeTasks = () => {
           // Check if dates changed and show notification
           const oldTour = payload.old as any;
           const newTour = payload.new as any;
+          
+          // Log tour update
+          logOperation({
+            operation_type: 'UPDATE',
+            table_name: 'tours',
+            record_id: newTour.id,
+            details: {
+              tour_name: newTour.name,
+              date_changed: oldTour.start_date !== newTour.start_date,
+              updated_by_realtime: true
+            }
+          });
           
           if (oldTour.start_date !== newTour.start_date) {
             await createNotification(user.id, {
@@ -245,8 +332,19 @@ export const useRealtimeTasks = () => {
           // Invalidate tours queries
           queryClient.invalidateQueries({ queryKey: ['tours'] });
 
-          // Create notification for tour deletion
+          // Log tour deletion
           const deletedTour = payload.old as any;
+          logOperation({
+            operation_type: 'DELETE',
+            table_name: 'tours',
+            record_id: deletedTour.id,
+            details: {
+              tour_name: deletedTour.name,
+              deleted_by_realtime: true
+            }
+          });
+
+          // Create notification for tour deletion
           await createNotification(user.id, {
             title: "Tour Deleted",
             message: `Tour "${deletedTour.name}" has been deleted.`,
@@ -275,6 +373,19 @@ export const useRealtimeTasks = () => {
 
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
+
+          // Log booking creation
+          logOperation({
+            operation_type: 'CREATE',
+            table_name: 'bookings',
+            record_id: newBooking.id,
+            details: {
+              contact_name: contactName,
+              tour_name: tourName,
+              passenger_count: newBooking.passenger_count,
+              created_by_realtime: true
+            }
+          });
 
           // Create notification for new booking
           await createNotification(user.id, {
@@ -720,5 +831,5 @@ export const useRealtimeTasks = () => {
       supabase.removeChannel(activityBookingsChannel);
       supabase.removeChannel(customersChannel);
     };
-  }, [queryClient, toast, user?.id]);
+  }, [queryClient, toast, user?.id, logOperation]);
 };

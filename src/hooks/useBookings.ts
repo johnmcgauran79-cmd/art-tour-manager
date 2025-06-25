@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuditLog } from "@/hooks/useAuditLog";
 
 export interface Booking {
   id: string;
@@ -95,6 +96,7 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) =>
 export const useCreateBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { logOperation } = useAuditLog();
 
   return useMutation({
     mutationFn: async (bookingData: {
@@ -175,6 +177,17 @@ export const useCreateBooking = () => {
 
         if (customerError) throw customerError;
         customerId = newCustomer.id;
+
+        // Log customer creation
+        logOperation({
+          operation_type: 'CREATE',
+          table_name: 'customers',
+          record_id: newCustomer.id,
+          details: {
+            customer_name: `${firstName} ${lastName}`,
+            email: bookingData.lead_passenger_email
+          }
+        });
       }
 
       // Create the booking with all fields except removed payment fields
@@ -217,6 +230,20 @@ export const useCreateBooking = () => {
         .single();
 
       if (error) throw error;
+
+      // Log the booking creation
+      logOperation({
+        operation_type: 'CREATE',
+        table_name: 'bookings',
+        record_id: data.id,
+        details: {
+          lead_passenger_name: bookingData.lead_passenger_name,
+          passenger_count: bookingData.passenger_count,
+          status: bookingData.status,
+          tour_id: bookingData.tour_id
+        }
+      });
+
       return data;
     },
     onSuccess: () => {
@@ -242,6 +269,7 @@ export const useCreateBooking = () => {
 export const useUpdateBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { logOperation } = useAuditLog();
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
@@ -274,6 +302,18 @@ export const useUpdateBooking = () => {
         console.error('Supabase error updating booking:', error);
         throw error;
       }
+
+      // Log the booking update
+      logOperation({
+        operation_type: 'UPDATE',
+        table_name: 'bookings',
+        record_id: id,
+        details: {
+          updated_fields: Object.keys(finalUpdates),
+          status_change: updates.status ? `to ${updates.status}` : undefined
+        }
+      });
+
       console.log('Booking updated successfully:', data);
       return data;
     },

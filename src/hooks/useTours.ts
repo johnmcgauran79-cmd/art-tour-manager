@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuditLog } from "@/hooks/useAuditLog";
 
 export interface Tour {
   id: string;
@@ -74,6 +74,7 @@ export const useCreateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { logOperation } = useAuditLog();
 
   return useMutation({
     mutationFn: async (tourData: Omit<Tour, 'id' | 'created_at' | 'updated_at'>) => {
@@ -89,6 +90,19 @@ export const useCreateTour = () => {
         console.error('Supabase error creating tour:', error);
         throw error;
       }
+
+      // Log the tour creation
+      logOperation({
+        operation_type: 'CREATE',
+        table_name: 'tours',
+        record_id: data.id,
+        details: {
+          tour_name: tourData.name,
+          start_date: tourData.start_date,
+          location: tourData.location,
+          capacity: tourData.capacity
+        }
+      });
       
       // Create notification for new tour (not via realtime to avoid duplicates)
       if (user?.id) {
