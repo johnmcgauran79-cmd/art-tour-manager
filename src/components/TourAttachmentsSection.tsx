@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,9 +97,18 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
       }
       console.log('Successfully deleted from database');
 
-      // Force refresh the attachments list
+      // Aggressive cache invalidation and refresh
+      console.log('Current attachments before refresh:', attachments);
+      
+      // Remove all related queries from cache
+      await queryClient.removeQueries({ queryKey: ['tour-attachments'] });
+      
+      // Invalidate and refetch
       await queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
-      await refetch();
+      
+      // Force refetch
+      const newData = await refetch();
+      console.log('Refetch result:', newData);
 
       toast({
         title: "File Deleted",
@@ -156,6 +164,8 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading attachments...</div>;
   }
+
+  console.log('Current attachments in render:', attachments);
 
   return (
     <div className="space-y-4">
