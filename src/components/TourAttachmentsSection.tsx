@@ -69,21 +69,33 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
   };
 
   const handleDelete = async (attachment: any) => {
+    console.log('Starting delete process for tour attachment:', attachment);
+    
     try {
-      // Delete from storage
+      // Delete from storage first
+      console.log('Attempting to delete from storage:', attachment.file_path);
       const { error: storageError } = await supabase.storage
         .from('attachments')
         .remove([attachment.file_path]);
 
-      if (storageError) throw storageError;
+      if (storageError) {
+        console.error('Storage deletion error:', storageError);
+        throw storageError;
+      }
+      console.log('Successfully deleted from storage');
 
       // Delete from database
+      console.log('Attempting to delete from database, attachment ID:', attachment.id);
       const { error: dbError } = await supabase
         .from('tour_attachments')
         .delete()
         .eq('id', attachment.id);
 
-      if (dbError) throw dbError;
+      if (dbError) {
+        console.error('Database deletion error:', dbError);
+        throw dbError;
+      }
+      console.log('Successfully deleted from database');
 
       // Refresh the attachments list
       queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
@@ -96,7 +108,7 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
       console.error('Error deleting file:', error);
       toast({
         title: "Delete Failed",
-        description: "Failed to delete the file. Please try again.",
+        description: `Failed to delete the file: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     }
