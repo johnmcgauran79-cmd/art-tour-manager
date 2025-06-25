@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +33,11 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
     
     const activityIds = sortedActivities.map(activity => activity.id);
     
-    // Get unique activity bookings for these activities with confirmed bookings only
+    // Get activity bookings for these activities with confirmed bookings only
     const { data, error } = await supabase
       .from('activity_bookings')
       .select(`
         activity_id,
-        booking_id,
         passengers_attending,
         bookings!inner(id, status)
       `)
@@ -51,11 +49,10 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
       return;
     }
 
-    console.log('Raw activity bookings data:', data);
+    console.log('Activity bookings data:', data);
 
-    // Group by activity_id and sum passengers_attending, ensuring we don't double-count
+    // Group by activity_id and sum passengers_attending
     const paxData: Record<string, number> = {};
-    const processedBookings = new Set<string>(); // Track processed booking-activity pairs
     
     // Initialize all activities with 0
     activityIds.forEach(id => {
@@ -64,22 +61,13 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
 
     data?.forEach(booking => {
       const activityId = booking.activity_id;
-      const bookingId = booking.booking_id;
       const passengers = booking.passengers_attending || 0;
-      const key = `${activityId}-${bookingId}`;
       
-      // Only count each booking-activity pair once
-      if (!processedBookings.has(key)) {
-        console.log(`Activity ${activityId}, Booking ${bookingId}: Adding ${passengers} passengers`);
-        paxData[activityId] += passengers;
-        processedBookings.add(key);
-      } else {
-        console.warn(`Duplicate activity booking found: Activity ${activityId}, Booking ${bookingId}`);
-      }
+      console.log(`Activity ${activityId}: Adding ${passengers} passengers`);
+      paxData[activityId] += passengers;
     });
 
     console.log('Final calculated pax data:', paxData);
-    console.log('Processed booking keys:', Array.from(processedBookings));
     setPaxAttendingData(paxData);
   };
 
