@@ -1058,10 +1058,40 @@ export type Database = {
         }
         Relationships: []
       }
+      user_departments: {
+        Row: {
+          created_at: string
+          department: Database["public"]["Enums"]["department"]
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department: Database["public"]["Enums"]["department"]
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: Database["public"]["Enums"]["department"]
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_departments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           acknowledged: boolean
           created_at: string
+          department: Database["public"]["Enums"]["department"] | null
           id: string
           message: string
           priority: string
@@ -1075,6 +1105,7 @@ export type Database = {
         Insert: {
           acknowledged?: boolean
           created_at?: string
+          department?: Database["public"]["Enums"]["department"] | null
           id?: string
           message: string
           priority: string
@@ -1088,6 +1119,7 @@ export type Database = {
         Update: {
           acknowledged?: boolean
           created_at?: string
+          department?: Database["public"]["Enums"]["department"] | null
           id?: string
           message?: string
           priority?: string
@@ -1172,6 +1204,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      user_has_department: {
+        Args: {
+          _user_id: string
+          _department: Database["public"]["Enums"]["department"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_status:
@@ -1189,6 +1228,13 @@ export type Database = {
         | "instalment_paid"
         | "fully_paid"
         | "cancelled"
+      department:
+        | "operations"
+        | "finance"
+        | "marketing"
+        | "booking"
+        | "maintenance"
+        | "general"
       hotel_booking_status:
         | "enquiry_sent"
         | "pending"
@@ -1197,10 +1243,10 @@ export type Database = {
         | "paid"
         | "finalised"
       task_category:
-        | "booking"
         | "operations"
         | "finance"
         | "marketing"
+        | "booking"
         | "maintenance"
         | "general"
       task_priority: "low" | "medium" | "high" | "critical"
@@ -1350,6 +1396,14 @@ export const Constants = {
         "fully_paid",
         "cancelled",
       ],
+      department: [
+        "operations",
+        "finance",
+        "marketing",
+        "booking",
+        "maintenance",
+        "general",
+      ],
       hotel_booking_status: [
         "enquiry_sent",
         "pending",
@@ -1359,10 +1413,10 @@ export const Constants = {
         "finalised",
       ],
       task_category: [
-        "booking",
         "operations",
         "finance",
         "marketing",
+        "booking",
         "maintenance",
         "general",
       ],

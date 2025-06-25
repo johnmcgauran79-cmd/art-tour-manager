@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,9 +5,10 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, UserX, UserPlus, KeyRound } from "lucide-react";
+import { Trash2, UserX, UserPlus, KeyRound, Edit } from "lucide-react";
 import { AddUserModal } from "./AddUserModal";
 import { AdminPasswordResetModal } from "./AdminPasswordResetModal";
+import { UserProfileModal } from "./UserProfileModal";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
@@ -35,6 +35,7 @@ export function UserManagement() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
 
   const fetchUsersAndRoles = async () => {
@@ -267,6 +268,14 @@ export function UserManagement() {
           </div>
           <div className="flex items-center gap-4">
             <Button
+              onClick={() => setShowProfileEdit(true)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit My Profile
+            </Button>
+            <Button
               onClick={() => setShowAddUser(true)}
               className="flex items-center gap-2"
             >
@@ -436,25 +445,30 @@ export function UserManagement() {
             <p><strong>Password Reset:</strong> Resetting a user's password generates a new temporary password they must change on login.</p>
           </div>
         </div>
-      </div>
 
-      <AddUserModal
-        open={showAddUser}
-        onOpenChange={setShowAddUser}
-        onUserAdded={fetchUsersAndRoles}
-      />
-
-      {selectedUser && (
-        <AdminPasswordResetModal
-          open={showPasswordReset}
-          onOpenChange={(open) => {
-            setShowPasswordReset(open);
-            if (!open) setSelectedUser(null);
-          }}
-          userId={selectedUser.id}
-          userEmail={selectedUser.email}
+        <AddUserModal
+          open={showAddUser}
+          onOpenChange={setShowAddUser}
+          onUserAdded={fetchUsersAndRoles}
         />
-      )}
-    </div>
-  );
+
+        {selectedUser && (
+          <AdminPasswordResetModal
+            open={showPasswordReset}
+            onOpenChange={(open) => {
+              setShowPasswordReset(open);
+              if (!open) setSelectedUser(null);
+            }}
+            userId={selectedUser.id}
+            userEmail={selectedUser.email}
+          />
+        )}
+
+        <UserProfileModal
+          open={showProfileEdit}
+          onOpenChange={setShowProfileEdit}
+        />
+      </div>
+    );
+  }
 }

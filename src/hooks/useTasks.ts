@@ -144,6 +144,15 @@ export const useMyTasks = () => {
 
       console.log('Fetching my tasks for user:', user.user.id);
 
+      // First, get user's departments
+      const { data: userDepartments } = await supabase
+        .from('user_departments')
+        .select('department')
+        .eq('user_id', user.user.id);
+
+      const departments = userDepartments?.map(d => d.department) || [];
+      console.log('User departments:', departments);
+
       // Get all tasks with their assignments
       const { data: allTasks, error } = await supabase
         .from('tasks')
@@ -177,8 +186,14 @@ export const useMyTasks = () => {
           return true;
         }
         
-        // Show unassigned tasks (tasks with no assignments)
-        if (!task.task_assignments || task.task_assignments.length === 0) {
+        // Show tasks that match user's departments (if user has departments)
+        if (departments.length > 0 && departments.includes(task.category)) {
+          return true;
+        }
+        
+        // Show unassigned tasks (tasks with no assignments) only if user belongs to the task's department
+        if ((!task.task_assignments || task.task_assignments.length === 0) && 
+            departments.length > 0 && departments.includes(task.category)) {
           return true;
         }
         

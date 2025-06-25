@@ -10,6 +10,7 @@ const createNotification = async (userId: string, notification: {
   type: 'task' | 'tour' | 'booking' | 'system';
   priority: 'low' | 'medium' | 'high' | 'critical';
   related_id?: string;
+  department?: string;
 }) => {
   const { error } = await supabase
     .from('user_notifications')
@@ -85,6 +86,16 @@ export const useRealtimeTasks = () => {
               description: `${newTask.title} requires attention.`,
               duration: 5000,
             });
+
+            // Create department-based notification
+            await createNotification(user.id, {
+              title: "New Priority Task",
+              message: `${newTask.title} requires attention.`,
+              type: 'task',
+              priority: newTask.priority,
+              related_id: newTask.id,
+              department: newTask.category,
+            });
           }
         }
       )
@@ -137,6 +148,7 @@ export const useRealtimeTasks = () => {
             type: 'task',
             priority: 'medium',
             related_id: deletedTask.id,
+            department: deletedTask.category,
           });
         }
       )

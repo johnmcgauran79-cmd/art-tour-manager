@@ -5,28 +5,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
+import { useUserDepartments } from "@/hooks/useUserDepartments";
 
 type Notification = Database['public']['Tables']['user_notifications']['Row'];
 
 export const useNotifications = () => {
   const { user } = useAuth();
+  const { data: userDepartments = [] } = useUserDepartments();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
 
   // Fetch notifications
   const { data: notifications = [], isLoading, refetch } = useQuery({
-    queryKey: ['notifications', user?.id],
+    queryKey: ['notifications', user?.id, userDepartments],
     queryFn: async (): Promise<Notification[]> => {
       if (!user?.id) return [];
       
-      console.log('Fetching notifications for user:', user.id);
-      const { data, error } = await supabase
+      console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments);
+      
+      let query = supabase
         .from('user_notifications')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
+
+      // If user has departments, also include notifications for those departments
+      if (userDepartments.length > 0) {
+        query = supabase
+          .from('user_notifications')
+          .select('*')
+          .or(`user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`)
+          .order('created_at', { ascending: false })
+          .limit(10);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching notifications:', error);
