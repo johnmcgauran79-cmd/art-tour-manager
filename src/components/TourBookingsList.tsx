@@ -1,12 +1,10 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Edit, Trash2, Plus, Search } from "lucide-react";
-import { useBookings } from "@/hooks/useBookings";
-import { useSecureDeleteBooking } from "@/hooks/useSecureBookings";
+import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -46,7 +44,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: allBookings, isLoading } = useBookings();
-  const deleteBookingMutation = useSecureDeleteBooking();
+  const deleteBookingMutation = useDeleteBooking();
 
   const handleEditBooking = (booking: any) => {
     setSelectedBooking(booking);
@@ -60,16 +58,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       
     if (confirm(`Are you sure you want to delete the booking for ${customerName}? This action cannot be undone.`)) {
       console.log('Deleting booking:', booking.id);
-      deleteBookingMutation.mutate(booking.id, {
-        onSuccess: () => {
-          console.log('Booking deleted successfully');
-          // The mutation already handles invalidating queries and showing toast
-        },
-        onError: (error) => {
-          console.error('Error deleting booking:', error);
-          // Error handling is already done in the mutation
-        }
-      });
+      deleteBookingMutation.mutate(booking.id);
     }
   };
 
