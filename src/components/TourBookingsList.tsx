@@ -46,7 +46,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: allBookings, isLoading } = useBookings();
-  const deleteBooking = useSecureDeleteBooking();
+  const deleteBookingMutation = useSecureDeleteBooking();
 
   const handleEditBooking = (booking: any) => {
     setSelectedBooking(booking);
@@ -60,7 +60,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       
     if (confirm(`Are you sure you want to delete the booking for ${customerName}? This action cannot be undone.`)) {
       console.log('Deleting booking:', booking.id);
-      deleteBooking.mutate(booking.id);
+      deleteBookingMutation.mutate(booking.id);
     }
   };
 
@@ -184,7 +184,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                             variant="outline" 
                             className="text-red-600 hover:text-red-700"
                             onClick={() => handleDeleteBooking(booking)}
-                            disabled={deleteBooking.isPending}
+                            disabled={deleteBookingMutation.isPending}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

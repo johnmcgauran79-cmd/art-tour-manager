@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +26,7 @@ export const useActivityAllocation = ({
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const [tempEditValue, setTempEditValue] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -34,7 +34,7 @@ export const useActivityAllocation = ({
   useEffect(() => {
     console.log('ActivityAllocation effect - Activities:', activities.length, 'Activity Bookings:', activityBookings);
     
-    if (activities.length > 0 && activityBookings !== undefined && !isInitializing) {
+    if (activities.length > 0 && activityBookings !== undefined && !isInitializing && !hasInitialized) {
       const newAllocations: Record<string, number> = {};
       const toInitialize: string[] = [];
       
@@ -56,13 +56,14 @@ export const useActivityAllocation = ({
       console.log('Activities to initialize:', toInitialize);
       
       setAllocations(newAllocations);
+      setHasInitialized(true);
       
       // Initialize missing activity bookings
       if (toInitialize.length > 0) {
         initializeActivityBookings(toInitialize);
       }
     }
-  }, [activities, activityBookings, passengerCount, isInitializing]);
+  }, [activities, activityBookings, passengerCount, isInitializing, hasInitialized]);
 
   const initializeActivityBookings = async (activityIds: string[]) => {
     if (isInitializing) {
