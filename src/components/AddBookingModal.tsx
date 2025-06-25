@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,16 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit, ChevronDown, Check } from "lucide-react";
+import { Edit, ChevronDown, Check, CreditCard, Shield, FileText, Heart, MessageSquare } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { EditContactModal } from "@/components/EditContactModal";
+import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 import { cn } from "@/lib/utils";
 
 interface AddBookingModalProps {
@@ -41,7 +44,36 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     accommodationRequired: true,
     checkInDate: "",
     checkOutDate: "",
-    notes: ""
+    notes: "",
+    invoiceNotes: "",
+    
+    // Payment tracking
+    depositPaid: false,
+    depositPaidDate: "",
+    depositAmount: 0,
+    instalmentPaid: false,
+    instalmentPaidDate: "",
+    instalmentAmount: 0,
+    finalPaymentPaid: false,
+    finalPaymentPaidDate: "",
+    finalPaymentAmount: 0,
+    
+    // Emergency contact
+    emergencyContactName: "",
+    emergencyContactPhone: "",
+    emergencyContactRelationship: "",
+    
+    // Travel documents
+    passportNumber: "",
+    passportExpiryDate: "",
+    passportCountry: "",
+    idNumber: "",
+    nationality: "",
+    
+    // Medical info
+    medicalConditions: "",
+    accessibilityNeeds: "",
+    dietaryRestrictions: "",
   });
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -134,6 +166,35 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       accommodation_required: formData.accommodationRequired,
       check_in_date: formData.checkInDate || undefined,
       check_out_date: formData.checkOutDate || undefined,
+      invoice_notes: formData.invoiceNotes || undefined,
+      
+      // Payment tracking
+      deposit_paid: formData.depositPaid,
+      deposit_paid_date: formData.depositPaidDate || undefined,
+      deposit_amount: formData.depositAmount || undefined,
+      instalment_paid: formData.instalmentPaid,
+      instalment_paid_date: formData.instalmentPaidDate || undefined,
+      instalment_amount: formData.instalmentAmount || undefined,
+      final_payment_paid: formData.finalPaymentPaid,
+      final_payment_paid_date: formData.finalPaymentPaidDate || undefined,
+      final_payment_amount: formData.finalPaymentAmount || undefined,
+      
+      // Emergency contact
+      emergency_contact_name: formData.emergencyContactName || undefined,
+      emergency_contact_phone: formData.emergencyContactPhone || undefined,
+      emergency_contact_relationship: formData.emergencyContactRelationship || undefined,
+      
+      // Travel documents
+      passport_number: formData.passportNumber || undefined,
+      passport_expiry_date: formData.passportExpiryDate || undefined,
+      passport_country: formData.passportCountry || undefined,
+      id_number: formData.idNumber || undefined,
+      nationality: formData.nationality || undefined,
+      
+      // Medical info
+      medical_conditions: formData.medicalConditions || undefined,
+      accessibility_needs: formData.accessibilityNeeds || undefined,
+      dietary_restrictions: formData.dietaryRestrictions || undefined,
     }, {
       onSuccess: (data) => {
         // Update customer dietary requirements if changed and customer exists
@@ -174,7 +235,36 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       accommodationRequired: true,
       checkInDate: "",
       checkOutDate: "",
-      notes: ""
+      notes: "",
+      invoiceNotes: "",
+      
+      // Payment tracking
+      depositPaid: false,
+      depositPaidDate: "",
+      depositAmount: 0,
+      instalmentPaid: false,
+      instalmentPaidDate: "",
+      instalmentAmount: 0,
+      finalPaymentPaid: false,
+      finalPaymentPaidDate: "",
+      finalPaymentAmount: 0,
+      
+      // Emergency contact
+      emergencyContactName: "",
+      emergencyContactPhone: "",
+      emergencyContactRelationship: "",
+      
+      // Travel documents
+      passportNumber: "",
+      passportExpiryDate: "",
+      passportCountry: "",
+      idNumber: "",
+      nationality: "",
+      
+      // Medical info
+      medicalConditions: "",
+      accessibilityNeeds: "",
+      dietaryRestrictions: "",
     });
     setCreatedBookingId(null);
     setActiveTab("details");
@@ -182,7 +272,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     onOpenChange(false);
   };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
     // Clear selected contact if manually editing the name
@@ -227,15 +317,31 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Booking</DialogTitle>
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Booking Details</TabsTrigger>
-              <TabsTrigger value="accommodation" disabled={!createdBookingId}>Hotel Allocation</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-7">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="payments" className="flex items-center gap-1">
+                <CreditCard className="h-4 w-4" />
+                Payments
+              </TabsTrigger>
+              <TabsTrigger value="emergency" className="flex items-center gap-1">
+                <Shield className="h-4 w-4" />
+                Emergency
+              </TabsTrigger>
+              <TabsTrigger value="travel" className="flex items-center gap-1">
+                <FileText className="h-4 w-4" />
+                Travel
+              </TabsTrigger>
+              <TabsTrigger value="medical" className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                Medical
+              </TabsTrigger>
+              <TabsTrigger value="accommodation" disabled={!createdBookingId}>Hotel</TabsTrigger>
               <TabsTrigger value="activities" disabled={!createdBookingId}>Activities</TabsTrigger>
             </TabsList>
 
@@ -485,12 +591,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="invoiceNotes">Invoice Notes</Label>
                   <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
-                    placeholder="Additional notes about the booking..."
+                    id="invoiceNotes"
+                    value={formData.invoiceNotes}
+                    onChange={(e) => handleInputChange("invoiceNotes", e.target.value)}
+                    placeholder="Notes to be included on the invoice..."
                     rows={3}
                   />
                 </div>
@@ -508,6 +614,263 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   </Button>
                 </div>
               </form>
+            </TabsContent>
+
+            <TabsContent value="payments" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-medium text-brand-navy">Deposit Payment</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.depositPaid}
+                      onCheckedChange={(checked) => handleInputChange("depositPaid", checked)}
+                    />
+                    <Label>Deposit Paid</Label>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.depositAmount}
+                      onChange={(e) => handleInputChange("depositAmount", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Date Paid</Label>
+                    <Input
+                      type="date"
+                      value={formData.depositPaidDate}
+                      onChange={(e) => handleInputChange("depositPaidDate", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-medium text-brand-navy">Instalment Payment</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.instalmentPaid}
+                      onCheckedChange={(checked) => handleInputChange("instalmentPaid", checked)}
+                    />
+                    <Label>Instalment Paid</Label>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.instalmentAmount}
+                      onChange={(e) => handleInputChange("instalmentAmount", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Date Paid</Label>
+                    <Input
+                      type="date"
+                      value={formData.instalmentPaidDate}
+                      onChange={(e) => handleInputChange("instalmentPaidDate", e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="font-medium text-brand-navy">Final Payment</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.finalPaymentPaid}
+                      onCheckedChange={(checked) => handleInputChange("finalPaymentPaid", checked)}
+                    />
+                    <Label>Final Payment Paid</Label>
+                  </div>
+                  <div>
+                    <Label>Amount</Label>
+                    <Input
+                      type="number"
+                      value={formData.finalPaymentAmount}
+                      onChange={(e) => handleInputChange("finalPaymentAmount", parseFloat(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Date Paid</Label>
+                    <Input
+                      type="date"
+                      value={formData.finalPaymentPaidDate}
+                      onChange={(e) => handleInputChange("finalPaymentPaidDate", e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={createBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="emergency" className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Emergency Contact Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
+                    <Input
+                      id="emergencyContactName"
+                      value={formData.emergencyContactName}
+                      onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
+                    <Input
+                      id="emergencyContactPhone"
+                      value={formData.emergencyContactPhone}
+                      onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="emergencyContactRelationship">Relationship</Label>
+                    <Input
+                      id="emergencyContactRelationship"
+                      value={formData.emergencyContactRelationship}
+                      onChange={(e) => handleInputChange("emergencyContactRelationship", e.target.value)}
+                      placeholder="e.g., Spouse, Parent, Sibling"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={createBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="travel" className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Travel Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="passportNumber">Passport Number</Label>
+                    <Input
+                      id="passportNumber"
+                      value={formData.passportNumber}
+                      onChange={(e) => handleInputChange("passportNumber", e.target.value)}
+                      placeholder="Passport number"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="passportExpiryDate">Passport Expiry Date</Label>
+                    <Input
+                      id="passportExpiryDate"
+                      type="date"
+                      value={formData.passportExpiryDate}
+                      onChange={(e) => handleInputChange("passportExpiryDate", e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="passportCountry">Passport Issuing Country</Label>
+                    <Input
+                      id="passportCountry"
+                      value={formData.passportCountry}
+                      onChange={(e) => handleInputChange("passportCountry", e.target.value)}
+                      placeholder="Country"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="nationality">Nationality</Label>
+                    <Input
+                      id="nationality"
+                      value={formData.nationality}
+                      onChange={(e) => handleInputChange("nationality", e.target.value)}
+                      placeholder="Nationality"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="idNumber">National ID Number</Label>
+                    <Input
+                      id="idNumber"
+                      value={formData.idNumber}
+                      onChange={(e) => handleInputChange("idNumber", e.target.value)}
+                      placeholder="National ID or driver's license"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={createBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="medical" className="space-y-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Medical & Accessibility Information</h3>
+                <div>
+                  <Label htmlFor="medicalConditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medicalConditions"
+                    value={formData.medicalConditions}
+                    onChange={(e) => handleInputChange("medicalConditions", e.target.value)}
+                    placeholder="Any medical conditions, allergies, or medications..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="accessibilityNeeds">Accessibility Needs</Label>
+                  <Textarea
+                    id="accessibilityNeeds"
+                    value={formData.accessibilityNeeds}
+                    onChange={(e) => handleInputChange("accessibilityNeeds", e.target.value)}
+                    placeholder="Mobility assistance, wheelchair access, etc..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dietaryRestrictions">Dietary Restrictions</Label>
+                  <Textarea
+                    id="dietaryRestrictions"
+                    value={formData.dietaryRestrictions}
+                    onChange={(e) => handleInputChange("dietaryRestrictions", e.target.value)}
+                    placeholder="Food allergies, vegetarian, halal, kosher, etc..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleSubmit}
+                  disabled={createBooking.isPending}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="accommodation" className="space-y-4">

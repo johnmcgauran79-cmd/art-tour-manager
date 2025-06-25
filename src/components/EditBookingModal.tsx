@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, CreditCard, Shield, FileText, Heart } from "lucide-react";
+import { Trash2, Edit, CreditCard, Shield, FileText, Heart, MessageSquare } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -327,7 +326,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           </DialogHeader>
 
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="payments" className="flex items-center gap-1">
                 <CreditCard className="h-4 w-4" />
@@ -345,7 +344,11 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                 <Heart className="h-4 w-4" />
                 Medical
               </TabsTrigger>
-              <TabsTrigger value="communication">Comments</TabsTrigger>
+              <TabsTrigger value="accommodation">Hotel</TabsTrigger>
+              <TabsTrigger value="communication" className="flex items-center gap-1">
+                <MessageSquare className="h-4 w-4" />
+                Comments
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-4">
@@ -799,8 +802,32 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
               </div>
             </TabsContent>
 
+            <TabsContent value="accommodation" className="space-y-4">
+              {booking && (
+                <>
+                  <HotelAllocationSection
+                    tourId={booking.tour_id}
+                    bookingId={booking.id}
+                    accommodationRequired={formData.accommodation_required}
+                    defaultCheckIn={formData.check_in_date}
+                    defaultCheckOut={formData.check_out_date}
+                  />
+                  <ActivityAllocationSection
+                    tourId={booking.tour_id}
+                    bookingId={booking.id}
+                    passengerCount={formData.passenger_count}
+                  />
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+
             <TabsContent value="communication" className="space-y-4">
-              <BookingCommentsSection bookingId={booking.id} />
+              {booking && <BookingCommentsSection bookingId={booking.id} />}
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Close
@@ -814,7 +841,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           open={showCancelDialog}
           onOpenChange={setShowCancelDialog}
           onConfirm={handleCancelConfirm}
-          bookingId={booking.id}
+          bookingId={booking?.id || ""}
           isLoading={cancelBooking.isPending}
         />
       </Dialog>

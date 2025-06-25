@@ -124,6 +124,35 @@ export const useCreateBooking = () => {
       accommodation_required: boolean;
       check_in_date?: string;
       check_out_date?: string;
+      invoice_notes?: string;
+      
+      // Payment tracking
+      deposit_paid?: boolean;
+      deposit_paid_date?: string;
+      deposit_amount?: number;
+      instalment_paid?: boolean;
+      instalment_paid_date?: string;
+      instalment_amount?: number;
+      final_payment_paid?: boolean;
+      final_payment_paid_date?: string;
+      final_payment_amount?: number;
+      
+      // Emergency contact
+      emergency_contact_name?: string;
+      emergency_contact_phone?: string;
+      emergency_contact_relationship?: string;
+      
+      // Travel documents
+      passport_number?: string;
+      passport_expiry_date?: string;
+      passport_country?: string;
+      id_number?: string;
+      nationality?: string;
+      
+      // Medical info
+      medical_conditions?: string;
+      accessibility_needs?: string;
+      dietary_restrictions?: string;
     }) => {
       // Calculate nights
       const totalNights = calculateNights(bookingData.check_in_date || null, bookingData.check_out_date || null);
@@ -171,7 +200,7 @@ export const useCreateBooking = () => {
         customerId = newCustomer.id;
       }
 
-      // Create the booking
+      // Create the booking with all new fields
       const { data, error } = await supabase
         .from('bookings')
         .insert([{
@@ -188,6 +217,35 @@ export const useCreateBooking = () => {
           check_in_date: bookingData.check_in_date,
           check_out_date: bookingData.check_out_date,
           total_nights: totalNights,
+          invoice_notes: bookingData.invoice_notes,
+          
+          // Payment tracking
+          deposit_paid: bookingData.deposit_paid || false,
+          deposit_paid_date: bookingData.deposit_paid_date || null,
+          deposit_amount: bookingData.deposit_amount || null,
+          instalment_paid: bookingData.instalment_paid || false,
+          instalment_paid_date: bookingData.instalment_paid_date || null,
+          instalment_amount: bookingData.instalment_amount || null,
+          final_payment_paid: bookingData.final_payment_paid || false,
+          final_payment_paid_date: bookingData.final_payment_paid_date || null,
+          final_payment_amount: bookingData.final_payment_amount || null,
+          
+          // Emergency contact
+          emergency_contact_name: bookingData.emergency_contact_name || null,
+          emergency_contact_phone: bookingData.emergency_contact_phone || null,
+          emergency_contact_relationship: bookingData.emergency_contact_relationship || null,
+          
+          // Travel documents
+          passport_number: bookingData.passport_number || null,
+          passport_expiry_date: bookingData.passport_expiry_date || null,
+          passport_country: bookingData.passport_country || null,
+          id_number: bookingData.id_number || null,
+          nationality: bookingData.nationality || null,
+          
+          // Medical info
+          medical_conditions: bookingData.medical_conditions || null,
+          accessibility_needs: bookingData.accessibility_needs || null,
+          dietary_restrictions: bookingData.dietary_restrictions || null,
         }])
         .select()
         .single();
