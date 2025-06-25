@@ -4,8 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTourAttachments, useUploadTourAttachment } from "@/hooks/useTourAttachments";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, Download, Upload } from "lucide-react";
+import { Paperclip, Download, Upload, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface TourAttachmentsSectionProps {
   tourId: string;
@@ -15,6 +17,8 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { data: attachments, isLoading } = useTourAttachments(tourId);
   const uploadAttachment = useUploadTourAttachment();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -56,6 +60,40 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading file:', error);
+    }
+  };
+
+  const handleDelete = async (attachment: any) => {
+    try {
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('attachments')
+        .remove([attachment.file_path]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('tour_attachments')
+        .delete()
+        .eq('id', attachment.id);
+
+      if (dbError) throw dbError;
+
+      // Refresh the attachments list
+      queryClient.invalidateQueries({ queryKey: ['tour-attachments', tourId] });
+
+      toast({
+        title: "File Deleted",
+        description: "The attachment has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast({
+        title: "Delete Failed",
+        description: "Failed to delete the file. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -111,15 +149,26 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
                   {formatDistanceToNow(new Date(attachment.uploaded_at), { addSuffix: true })}
                 </p>
               </div>
-              <Button
-                onClick={() => handleDownload(attachment)}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-1"
-              >
-                <Download className="h-3 w-3" />
-                Download
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => handleDownload(attachment)}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                >
+                  <Download className="h-3 w-3" />
+                  Download
+                </Button>
+                <Button
+                  onClick={() => handleDelete(attachment)}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Delete
+                </Button>
+              </div>
             </div>
           ))
         ) : (
