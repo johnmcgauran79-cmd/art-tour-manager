@@ -1,7 +1,5 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Trash2, Check } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { NotificationList } from "@/components/NotificationList";
 import { NotificationHeader } from "@/components/NotificationHeader";
 import { NotificationActions } from "@/components/NotificationActions";
@@ -54,8 +52,10 @@ export const MyNotificationsWidget = ({
           {selectedNotifications.length > 0 && (
             <NotificationActions
               selectedCount={selectedNotifications.length}
+              totalCount={notifications.length}
               onBulkDelete={handleBulkDelete}
               isDeleting={isDeleting}
+              mode="delete"
             />
           )}
         </>

@@ -23,7 +23,8 @@ export const NotificationActions = ({
   onBulkDelete,
   mode = 'acknowledge'
 }: NotificationActionsProps) => {
-  if (totalCount === 0) return null;
+  // Early return if no notifications
+  if (totalCount === 0 && selectedCount === 0) return null;
 
   const isActionLoading = isLoading || isDeleting;
 
@@ -59,7 +60,7 @@ export const NotificationActions = ({
           Acknowledge ({selectedCount})
         </Button>
       )}
-      {onAcknowledgeAll && (
+      {onAcknowledgeAll && totalCount > 0 && (
         <Button
           size="sm"
           variant="outline"
