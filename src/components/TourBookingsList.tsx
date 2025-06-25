@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Edit, Trash2, Plus, Search } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
+import { useSecureDeleteBooking } from "@/hooks/useSecureBookings";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -45,6 +46,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const { data: allBookings, isLoading } = useBookings();
+  const deleteBooking = useSecureDeleteBooking();
 
   const handleEditBooking = (booking: any) => {
     setSelectedBooking(booking);
@@ -52,10 +54,13 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   };
 
   const handleDeleteBooking = (booking: any) => {
-    if (confirm(`Are you sure you want to delete booking for ${booking.customers?.first_name} ${booking.customers?.last_name}?`)) {
-      // Delete functionality would be handled by the EditBookingModal
-      setSelectedBooking(booking);
-      setEditBookingModalOpen(true);
+    const customerName = booking.customers?.first_name && booking.customers?.last_name 
+      ? `${booking.customers.first_name} ${booking.customers.last_name}`
+      : booking.group_name || 'this booking';
+      
+    if (confirm(`Are you sure you want to delete the booking for ${customerName}? This action cannot be undone.`)) {
+      console.log('Deleting booking:', booking.id);
+      deleteBooking.mutate(booking.id);
     }
   };
 
@@ -179,6 +184,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                             variant="outline" 
                             className="text-red-600 hover:text-red-700"
                             onClick={() => handleDeleteBooking(booking)}
+                            disabled={deleteBooking.isPending}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
