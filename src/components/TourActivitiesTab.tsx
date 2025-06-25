@@ -30,34 +30,49 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const fetchPaxAttendingForActivities = async () => {
     if (!sortedActivities) return;
 
+    console.log('Fetching pax attending for activities:', sortedActivities.map(a => a.id));
+    
     const activityIds = sortedActivities.map(activity => activity.id);
     
+    // Get all activity bookings for these activities, but only from non-pending and non-cancelled bookings
     const { data, error } = await supabase
       .from('activity_bookings')
       .select(`
         activity_id,
         passengers_attending,
-        bookings!inner(status)
+        bookings!inner(id, status)
       `)
-      .in('activity_id', activityIds)
-      .neq('bookings.status', 'cancelled')
-      .neq('bookings.status', 'pending');
+      .in('activity_id', activityIds);
 
     if (error) {
-      console.error('Error fetching pax attending data:', error);
+      console.error('Error fetching activity bookings:', error);
       return;
     }
 
-    // Group by activity_id and sum passengers_attending
+    console.log('Raw activity bookings data:', data);
+
+    // Filter out pending and cancelled bookings, then group by activity_id and sum passengers_attending
     const paxData: Record<string, number> = {};
-    data.forEach(booking => {
-      const activityId = booking.activity_id;
-      if (!paxData[activityId]) {
-        paxData[activityId] = 0;
-      }
-      paxData[activityId] += booking.passengers_attending || 0;
+    
+    // Initialize all activities with 0
+    activityIds.forEach(id => {
+      paxData[id] = 0;
     });
 
+    data?.forEach(booking => {
+      const activityId = booking.activity_id;
+      const bookingStatus = booking.bookings?.status;
+      
+      // Only count bookings that are not pending or cancelled
+      if (bookingStatus && bookingStatus !== 'pending' && bookingStatus !== 'cancelled') {
+        if (!paxData[activityId]) {
+          paxData[activityId] = 0;
+        }
+        paxData[activityId] += booking.passengers_attending || 0;
+      }
+    });
+
+    console.log('Calculated pax data:', paxData);
     setPaxAttendingData(paxData);
   };
 
@@ -91,7 +106,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                 <TableHead>Location</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Time</TableHead>
-                <TableHead>Spots Booked</TableHead>
+                <TableHead>Spots Available</TableHead>
                 <TableHead>Pax Attending</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>

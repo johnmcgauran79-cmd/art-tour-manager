@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { useToast } from "@/hooks/use-toast";
@@ -32,12 +31,16 @@ export const useActivityAllocation = ({
 
   // Initialize allocations when data is loaded
   useEffect(() => {
+    console.log('ActivityAllocation effect - Activities:', activities.length, 'Activity Bookings:', activityBookings);
+    
     if (activities.length > 0 && activityBookings !== undefined) {
       const newAllocations: Record<string, number> = {};
       const toInitialize: string[] = [];
       
       activities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
+        console.log(`Activity ${activity.name} (${activity.id}):`, existingBooking ? `Has booking with ${existingBooking.passengers_attending} pax` : 'No booking found');
+        
         if (existingBooking) {
           newAllocations[activity.id] = existingBooking.passengers_attending;
         } else {
@@ -50,6 +53,9 @@ export const useActivityAllocation = ({
         }
       });
       
+      console.log('New allocations:', newAllocations);
+      console.log('Activities to initialize:', toInitialize);
+      
       setAllocations(newAllocations);
       
       // Initialize missing activity bookings
@@ -60,6 +66,8 @@ export const useActivityAllocation = ({
   }, [activities, activityBookings, passengerCount, initializedActivities]);
 
   const initializeActivityBookings = async (activityIds: string[]) => {
+    console.log('Initializing activity bookings for:', activityIds);
+    
     // Check booking status first - only initialize for non-pending bookings
     const { data: booking } = await supabase
       .from('bookings')
@@ -67,12 +75,17 @@ export const useActivityAllocation = ({
       .eq('id', bookingId)
       .single();
     
+    console.log('Booking status:', booking?.status);
+    
     if (!booking || booking.status === 'pending' || booking.status === 'cancelled') {
+      console.log('Skipping initialization - booking is pending/cancelled');
       return;
     }
 
     for (const activityId of activityIds) {
       try {
+        console.log(`Initializing activity booking for activity ${activityId} with ${passengerCount} passengers`);
+        
         await createActivityBooking.mutateAsync({
           booking_id: bookingId,
           activity_id: activityId,
@@ -80,6 +93,7 @@ export const useActivityAllocation = ({
         });
         
         setInitializedActivities(prev => new Set([...prev, activityId]));
+        console.log(`Successfully initialized activity booking for ${activityId}`);
       } catch (error) {
         console.error('Error initializing activity booking:', error);
       }
@@ -143,6 +157,8 @@ export const useActivityAllocation = ({
       
       const activity = activities.find(a => a.id === activityId);
       const activityName = activity?.name || 'Unknown Activity';
+
+      console.log(`Saving activity ${activityName}: ${passengers} passengers (was ${oldCount})`);
 
       if (existingBooking) {
         await updateActivityBooking.mutateAsync({
