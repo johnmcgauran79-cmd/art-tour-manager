@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -303,38 +304,49 @@ export const useDeleteBooking = () => {
 
   return useMutation({
     mutationFn: async (bookingId: string) => {
-      console.log('Starting optimized booking deletion process for:', bookingId);
+      console.log('Starting simple booking deletion process for:', bookingId);
 
       try {
-        // Use a database function to handle the cascading delete efficiently
+        // Try the database function first
         const { error } = await supabase.rpc('delete_booking_with_cascade', {
           p_booking_id: bookingId
         });
 
         if (error) {
-          console.error('Error in cascading delete:', error);
+          console.error('Error in database function:', error);
           
-          // Fallback to manual deletion if the RPC function doesn't exist
-          if (error.code === '42883') { // function does not exist
-            console.log('Falling back to manual deletion process');
-            
-            // Use Promise.all for parallel deletion to reduce timeout risk
-            await Promise.all([
-              supabase.from('hotel_bookings').delete().eq('booking_id', bookingId),
-              supabase.from('activity_bookings').delete().eq('booking_id', bookingId)
-            ]);
+          // If the function doesn't exist or fails, use simple sequential deletion
+          console.log('Falling back to sequential manual deletion');
+          
+          // Delete hotel bookings first (sequential, not parallel)
+          const { error: hotelError } = await supabase
+            .from('hotel_bookings')
+            .delete()
+            .eq('booking_id', bookingId);
+          
+          if (hotelError) {
+            console.error('Error deleting hotel bookings:', hotelError);
+          }
 
-            // Finally, delete the booking itself
-            const { error: bookingError } = await supabase
-              .from('bookings')
-              .delete()
-              .eq('id', bookingId);
+          // Delete activity bookings next
+          const { error: activityError } = await supabase
+            .from('activity_bookings')
+            .delete()
+            .eq('booking_id', bookingId);
+          
+          if (activityError) {
+            console.error('Error deleting activity bookings:', activityError);
+          }
 
-            if (bookingError) {
-              throw new Error(`Failed to delete booking: ${bookingError.message}`);
-            }
-          } else {
-            throw error;
+          // Finally, delete the booking itself
+          const { error: bookingError } = await supabase
+            .from('bookings')
+            .delete()
+            .eq('id', bookingId);
+
+          if (bookingError) {
+            console.error('Error deleting booking:', bookingError);
+            throw new Error(`Failed to delete booking: ${bookingError.message}`);
           }
         }
 
