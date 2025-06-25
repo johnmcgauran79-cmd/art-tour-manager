@@ -1141,7 +1141,7 @@ export type Database = {
         Returns: string
       }
       delete_booking_with_cascade: {
-        Args: { booking_id: string }
+        Args: { p_booking_id: string }
         Returns: undefined
       }
       generate_temp_password: {

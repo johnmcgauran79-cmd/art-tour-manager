@@ -1,5 +1,3 @@
-
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -310,7 +308,7 @@ export const useDeleteBooking = () => {
       try {
         // Use a database function to handle the cascading delete efficiently
         const { error } = await supabase.rpc('delete_booking_with_cascade', {
-          booking_id: bookingId
+          p_booking_id: bookingId
         });
 
         if (error) {
@@ -371,4 +369,3 @@ export const useDeleteBooking = () => {
     },
   });
 };
-
