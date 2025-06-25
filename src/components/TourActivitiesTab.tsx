@@ -30,17 +30,17 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const fetchPaxAttendingForActivities = async () => {
     if (!sortedActivities) return;
 
-    console.log('Fetching pax attending for activities:', sortedActivities.map(a => a.id));
+    console.log('Fetching pax attending for activities on tour:', tourId);
     
     const activityIds = sortedActivities.map(activity => activity.id);
     
-    // Get all activity bookings for these activities, but only from non-pending and non-cancelled bookings
+    // Get all activity bookings for these activities, but only from the same tour and non-pending/cancelled bookings
     const { data, error } = await supabase
       .from('activity_bookings')
       .select(`
         activity_id,
         passengers_attending,
-        bookings!inner(id, status)
+        bookings!inner(id, status, tour_id)
       `)
       .in('activity_id', activityIds);
 
@@ -51,7 +51,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
 
     console.log('Raw activity bookings data:', data);
 
-    // Filter out pending and cancelled bookings, then group by activity_id and sum passengers_attending
+    // Filter and group by activity_id, ensuring we only count bookings from this tour
     const paxData: Record<string, number> = {};
     
     // Initialize all activities with 0
@@ -62,17 +62,25 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
     data?.forEach(booking => {
       const activityId = booking.activity_id;
       const bookingStatus = booking.bookings?.status;
+      const bookingTourId = booking.bookings?.tour_id;
       
-      // Only count bookings that are not pending or cancelled
-      if (bookingStatus && bookingStatus !== 'pending' && bookingStatus !== 'cancelled') {
+      console.log(`Activity ${activityId}: Status=${bookingStatus}, TourId=${bookingTourId}, Expected TourId=${tourId}, Passengers=${booking.passengers_attending}`);
+      
+      // Only count bookings that are:
+      // 1. From the same tour
+      // 2. Not pending or cancelled
+      if (bookingTourId === tourId && bookingStatus && bookingStatus !== 'pending' && bookingStatus !== 'cancelled') {
         if (!paxData[activityId]) {
           paxData[activityId] = 0;
         }
         paxData[activityId] += booking.passengers_attending || 0;
+        console.log(`Added ${booking.passengers_attending} passengers to activity ${activityId}, new total: ${paxData[activityId]}`);
+      } else {
+        console.log(`Skipped booking: wrong tour (${bookingTourId} vs ${tourId}) or wrong status (${bookingStatus})`);
       }
     });
 
-    console.log('Calculated pax data:', paxData);
+    console.log('Final calculated pax data for tour:', tourId, paxData);
     setPaxAttendingData(paxData);
   };
 
