@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTaskAttachments, useUploadTaskAttachment } from "@/hooks/useTaskAttachments";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, Download, Upload, Trash2 } from "lucide-react";
+import { Paperclip, Download, Upload, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { PDFViewer } from "./PDFViewer";
 
 interface TaskAttachmentsSectionProps {
   taskId: string;
@@ -15,6 +15,11 @@ interface TaskAttachmentsSectionProps {
 
 export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [pdfViewer, setPdfViewer] = useState<{ isOpen: boolean; fileName: string; filePath: string }>({
+    isOpen: false,
+    fileName: "",
+    filePath: ""
+  });
   const { data: attachments, isLoading } = useTaskAttachments(taskId);
   const uploadAttachment = useUploadTaskAttachment();
   const { toast } = useToast();
@@ -105,6 +110,35 @@ export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) 
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const handleViewPDF = (attachment: any) => {
+    if (attachment.file_type !== 'application/pdf') {
+      toast({
+        title: "File Type Not Supported",
+        description: "Only PDF files can be viewed in the browser.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPdfViewer({
+      isOpen: true,
+      fileName: attachment.file_name,
+      filePath: attachment.file_path
+    });
+  };
+
+  const closePDFViewer = () => {
+    setPdfViewer({
+      isOpen: false,
+      fileName: "",
+      filePath: ""
+    });
+  };
+
+  const isPDF = (fileType: string) => {
+    return fileType === 'application/pdf';
+  };
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading attachments...</div>;
   }
@@ -143,13 +177,32 @@ export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) 
           attachments.map((attachment) => (
             <div key={attachment.id} className="flex items-center justify-between p-2 border rounded">
               <div className="flex-1">
-                <p className="text-sm font-medium">{attachment.file_name}</p>
+                <p 
+                  className={`text-sm font-medium ${isPDF(attachment.file_type) ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                  onClick={() => isPDF(attachment.file_type) && handleViewPDF(attachment)}
+                >
+                  {attachment.file_name}
+                  {isPDF(attachment.file_type) && (
+                    <span className="ml-2 text-xs text-blue-600">(Click to view)</span>
+                  )}
+                </p>
                 <p className="text-xs text-gray-500">
                   {formatFileSize(attachment.file_size)} • 
                   {formatDistanceToNow(new Date(attachment.uploaded_at), { addSuffix: true })}
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {isPDF(attachment.file_type) && (
+                  <Button
+                    onClick={() => handleViewPDF(attachment)}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="h-3 w-3" />
+                    View
+                  </Button>
+                )}
                 <Button
                   onClick={() => handleDownload(attachment)}
                   size="sm"
@@ -175,6 +228,13 @@ export const TaskAttachmentsSection = ({ taskId }: TaskAttachmentsSectionProps) 
           <p className="text-sm text-gray-500 italic">No attachments yet.</p>
         )}
       </div>
+
+      <PDFViewer
+        isOpen={pdfViewer.isOpen}
+        onClose={closePDFViewer}
+        fileName={pdfViewer.fileName}
+        filePath={pdfViewer.filePath}
+      />
     </div>
   );
 };
