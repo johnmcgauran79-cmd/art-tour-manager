@@ -40,7 +40,8 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
         bookings!inner(status)
       `)
       .in('activity_id', activityIds)
-      .neq('bookings.status', 'cancelled');
+      .neq('bookings.status', 'cancelled')
+      .neq('bookings.status', 'pending');
 
     if (error) {
       console.error('Error fetching pax attending data:', error);
