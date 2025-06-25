@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { useToast } from "@/hooks/use-toast";
@@ -68,20 +69,6 @@ export const useActivityAllocation = ({
   const initializeActivityBookings = async (activityIds: string[]) => {
     console.log('Initializing activity bookings for:', activityIds);
     
-    // Check booking status first - only initialize for non-pending bookings
-    const { data: booking } = await supabase
-      .from('bookings')
-      .select('status')
-      .eq('id', bookingId)
-      .single();
-    
-    console.log('Booking status:', booking?.status);
-    
-    if (!booking || booking.status === 'pending' || booking.status === 'cancelled') {
-      console.log('Skipping initialization - booking is pending/cancelled');
-      return;
-    }
-
     for (const activityId of activityIds) {
       try {
         console.log(`Initializing activity booking for activity ${activityId} with ${passengerCount} passengers`);

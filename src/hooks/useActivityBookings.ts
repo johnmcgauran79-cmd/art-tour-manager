@@ -43,18 +43,6 @@ export const useActivityBookings = (bookingId: string) => {
     }) => {
       console.log('Creating activity booking:', data);
       
-      // Check booking status before creating activity booking
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select('status')
-        .eq('id', data.booking_id)
-        .single();
-      
-      if (booking?.status === 'pending' || booking?.status === 'cancelled') {
-        console.log('Skipping activity booking creation for pending/cancelled booking');
-        return null;
-      }
-      
       const { data: result, error } = await supabase
         .from('activity_bookings')
         .insert([data])
