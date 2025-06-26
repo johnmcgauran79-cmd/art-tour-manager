@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,9 +43,44 @@ export const TourDetailModalWithHotelsTab = ({
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [transformedTour, setTransformedTour] = useState<any>(null);
 
   const { userRole } = useAuth();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
+
+  // Transform tour data whenever the tour prop changes
+  useEffect(() => {
+    if (tour) {
+      const transformed = {
+        id: tour.id,
+        name: tour.name,
+        dates: formatDateRange(tour.start_date, tour.end_date),
+        duration: `${tour.days} days / ${tour.nights} nights`,
+        location: tour.location || "",
+        pickupPoint: tour.pickup_point || "",
+        status: tour.status,
+        notes: tour.notes || "",
+        inclusions: tour.inclusions || "",
+        exclusions: tour.exclusions || "",
+        pricing: {
+          single: tour.price_single || 0,
+          double: tour.price_double || 0,
+          twin: tour.price_twin || 0,
+        },
+        deposit: tour.deposit_required || 0,
+        instalmentAmount: tour.instalment_amount || 0,
+        instalmentDate: tour.instalment_date || "",
+        finalPaymentDate: tour.final_payment_date || "",
+        totalCapacity: tour.capacity || 0,
+        startDate: tour.start_date,
+        endDate: tour.end_date,
+        tourHost: tour.tour_host,
+      };
+      setTransformedTour(transformed);
+    } else {
+      setTransformedTour(null);
+    }
+  }, [tour]);
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -61,37 +97,10 @@ export const TourDetailModalWithHotelsTab = ({
     setRoomingListModalOpen(true);
   };
 
-  // Transform the database tour data to match the expected interface
-  const transformedTour = tour ? {
-    id: tour.id,
-    name: tour.name,
-    dates: formatDateRange(tour.start_date, tour.end_date),
-    duration: `${tour.days} days / ${tour.nights} nights`,
-    location: tour.location || "",
-    pickupPoint: tour.pickup_point || "",
-    status: tour.status,
-    notes: tour.notes || "",
-    inclusions: tour.inclusions || "",
-    exclusions: tour.exclusions || "",
-    pricing: {
-      single: tour.price_single || 0,
-      double: tour.price_double || 0,
-      twin: tour.price_twin || 0,
-    },
-    deposit: tour.deposit_required || 0,
-    instalmentAmount: tour.instalment_amount || 0,
-    instalmentDate: tour.instalment_date || "",
-    finalPaymentDate: tour.final_payment_date || "",
-    totalCapacity: tour.capacity || 0,
-    startDate: tour.start_date,
-    endDate: tour.end_date,
-    tourHost: tour.tour_host,
-  } : null;
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <dialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">

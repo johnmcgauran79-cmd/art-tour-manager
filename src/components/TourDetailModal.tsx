@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -48,11 +48,46 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [tourForEdit, setTourForEdit] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState("overview");
+  const [transformedTour, setTransformedTour] = useState<any>(null);
 
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
+
+  // Transform tour data whenever the tour prop changes
+  useEffect(() => {
+    if (tour) {
+      const transformed = {
+        id: tour.id,
+        name: tour.name,
+        dates: formatDateRange(tour.start_date, tour.end_date),
+        duration: `${tour.days} days / ${tour.nights} nights`,
+        location: tour.location || "",
+        pickupPoint: tour.pickup_point || "",
+        status: tour.status,
+        notes: tour.notes || "",
+        inclusions: tour.inclusions || "",
+        exclusions: tour.exclusions || "",
+        pricing: {
+          single: tour.price_single || 0,
+          double: tour.price_double || 0,
+          twin: tour.price_twin || 0,
+        },
+        deposit: tour.deposit_required || 0,
+        instalmentAmount: tour.instalment_amount || 0,
+        instalmentDate: tour.instalment_date || "",
+        finalPaymentDate: tour.final_payment_date || "",
+        totalCapacity: tour.capacity || 0,
+        startDate: tour.start_date,
+        endDate: tour.end_date,
+        tourHost: tour.tour_host,
+      };
+      setTransformedTour(transformed);
+    } else {
+      setTransformedTour(null);
+    }
+  }, [tour]);
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -139,33 +174,6 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
     // If navigating to a specific hotel, we could store the hotelId for future use
     // For now, just switching to the hotels tab is sufficient
   };
-
-  // Use tourForEdit for the edit modal if it exists, otherwise use the transformed current tour
-  const transformedTour = tour ? {
-    id: tour.id,
-    name: tour.name,
-    dates: formatDateRange(tour.start_date, tour.end_date),
-    duration: `${tour.days} days / ${tour.nights} nights`,
-    location: tour.location || "",
-    pickupPoint: tour.pickup_point || "",
-    status: tour.status,
-    notes: tour.notes || "",
-    inclusions: tour.inclusions || "",
-    exclusions: tour.exclusions || "",
-    pricing: {
-      single: tour.price_single || 0,
-      double: tour.price_double || 0,
-      twin: tour.price_twin || 0,
-    },
-    deposit: tour.deposit_required || 0,
-    instalmentAmount: tour.instalment_amount || 0,
-    instalmentDate: tour.instalment_date || "",
-    finalPaymentDate: tour.final_payment_date || "",
-    totalCapacity: tour.capacity || 0,
-    startDate: tour.start_date,
-    endDate: tour.end_date,
-    tourHost: tour.tour_host,
-  } : null;
 
   return (
     <>
