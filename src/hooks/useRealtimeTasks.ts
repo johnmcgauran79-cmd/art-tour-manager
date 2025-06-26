@@ -59,6 +59,30 @@ const getBookingDetails = async (bookingId: string) => {
   return { contactName: 'Unknown Contact', tourName: 'Unknown Tour' };
 };
 
+const getTaskDetails = async (taskId: string) => {
+  try {
+    const { data: task } = await supabase
+      .from('tasks')
+      .select(`
+        title,
+        tours(name)
+      `)
+      .eq('id', taskId)
+      .single();
+
+    if (task) {
+      const taskName = task.title || 'Unknown Task';
+      const tourName = task.tours?.name || null;
+      
+      return { taskName, tourName };
+    }
+  } catch (error) {
+    console.error('Error fetching task details:', error);
+  }
+  
+  return { taskName: 'Unknown Task', tourName: null };
+};
+
 export const useRealtimeTasks = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -103,16 +127,21 @@ export const useRealtimeTasks = () => {
           
           // Show notification for high priority tasks only (avoid duplicates from manual creation)
           if ((newTask.priority === 'critical' || newTask.priority === 'high') && newTask.is_automated) {
+            const { taskName, tourName } = await getTaskDetails(newTask.id);
+            const taskMessage = tourName 
+              ? `${taskName} for ${tourName} requires attention.`
+              : `${taskName} requires attention.`;
+
             toast({
               title: "New Priority Task",
-              description: `${newTask.title} requires attention.`,
+              description: taskMessage,
               duration: 5000,
             });
 
             // Create department-based notification
             await createNotification(user.id, {
               title: "New Priority Task",
-              message: `${newTask.title} requires attention.`,
+              message: taskMessage,
               type: 'task',
               priority: newTask.priority,
               related_id: newTask.id,
@@ -154,9 +183,14 @@ export const useRealtimeTasks = () => {
           }
           
           if (oldTask.status !== newTask.status && newTask.status === 'completed') {
+            const { taskName, tourName } = await getTaskDetails(newTask.id);
+            const taskMessage = tourName 
+              ? `${taskName} for ${tourName} completed.`
+              : `${taskName} completed.`;
+
             toast({
               title: "Task Completed",
-              description: `${newTask.title} completed.`,
+              description: taskMessage,
               duration: 3000,
             });
           }
@@ -188,10 +222,29 @@ export const useRealtimeTasks = () => {
             }
           });
 
+          // For deleted tasks, we need to get the tour name if it exists
+          let tourName = null;
+          if (deletedTask.tour_id) {
+            try {
+              const { data: tour } = await supabase
+                .from('tours')
+                .select('name')
+                .eq('id', deletedTask.tour_id)
+                .single();
+              tourName = tour?.name || null;
+            } catch (error) {
+              console.error('Error fetching tour name for deleted task:', error);
+            }
+          }
+
+          const taskMessage = tourName 
+            ? `Task "${deletedTask.title}" for ${tourName} has been deleted.`
+            : `Task "${deletedTask.title}" has been deleted.`;
+
           // Create notification for task deletion
           await createNotification(user.id, {
             title: "Task Deleted",
-            message: `Task "${deletedTask.title}" has been deleted.`,
+            message: taskMessage,
             type: 'task',
             priority: 'medium',
             related_id: deletedTask.id,
@@ -216,9 +269,14 @@ export const useRealtimeTasks = () => {
           // Create notification for assigned user
           const assignment = payload.new as any;
           if (assignment.user_id === user.id) {
+            const { taskName, tourName } = await getTaskDetails(assignment.task_id);
+            const assignmentMessage = tourName 
+              ? `You have been assigned a new task "${taskName}" for ${tourName}.`
+              : `You have been assigned a new task "${taskName}".`;
+
             await createNotification(user.id, {
               title: "Task Assigned",
-              message: "You have been assigned a new task.",
+              message: assignmentMessage,
               type: 'task',
               priority: 'medium',
               related_id: assignment.task_id,
