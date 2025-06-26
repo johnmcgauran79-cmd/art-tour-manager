@@ -66,17 +66,12 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
     setSearchFilters({});
   };
 
-  if (isLoading) {
-    return (
-      <div className="text-center py-4 text-muted-foreground">
-        Loading your tasks...
-      </div>
-    );
-  };
+  // Always calculate pending tasks
+  const pendingTasks = useMemo(() => {
+    return tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
+  }, [tasks]);
 
-  const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
-
-  // Filter tasks based on search criteria
+  // Filter tasks based on search criteria - always calculate this
   const filteredTasksData = useMemo(() => {
     if (!tasks) return [];
     
@@ -126,15 +121,25 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
     });
   }, [tasks, searchFilters, pendingTasks]);
 
-  // Sort tasks by due date (most urgent first) and optionally limit to top 5
-  const sortedTasks = [...filteredTasksData].sort((a, b) => {
-    if (!a.due_date && !b.due_date) return 0;
-    if (!a.due_date) return 1;
-    if (!b.due_date) return -1;
-    return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-  });
+  // Sort tasks by due date and limit - always calculate this
+  const displayTasks = useMemo(() => {
+    const sortedTasks = [...filteredTasksData].sort((a, b) => {
+      if (!a.due_date && !b.due_date) return 0;
+      if (!a.due_date) return 1;
+      if (!b.due_date) return -1;
+      return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+    });
 
-  const displayTasks = limitToTop5 ? sortedTasks.slice(0, 5) : sortedTasks.slice(0, 10);
+    return limitToTop5 ? sortedTasks.slice(0, 5) : sortedTasks.slice(0, 10);
+  }, [filteredTasksData, limitToTop5]);
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-4 text-muted-foreground">
+        Loading your tasks...
+      </div>
+    );
+  }
 
   const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon') => {
     let filtered: Task[] = [];
