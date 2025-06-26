@@ -101,6 +101,10 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const duplicateCount = automatedTaskTitles.length - new Set(automatedTaskTitles).size;
   const hasDuplicates = duplicateCount > 0;
 
+  // Check if tour has any automated tasks at all
+  const hasAutomatedTasks = automatedTasks.length > 0;
+  const shouldShowCleanupButton = hasAutomatedTasks; // Always show if there are any automated tasks
+
   const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated') => {
     let filtered: Task[] = [];
     let title = "";
@@ -226,17 +230,22 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
                   {duplicateCount} Duplicates
                 </Badge>
               )}
+              {!hasAutomatedTasks && (
+                <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700">
+                  No Auto Tasks
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              {hasDuplicates && (
+              {shouldShowCleanupButton && (
                 <Button
                   onClick={() => setCleanupModalOpen(true)}
                   size="sm"
                   variant="outline"
-                  className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                  className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
                 >
                   <Wrench className="h-4 w-4" />
-                  Cleanup Tasks
+                  Sync Tasks
                 </Button>
               )}
               <Button
@@ -307,11 +316,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
           
           <div className="p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
             <p className="text-xs text-brand-navy">
-              <strong className="text-brand-navy">Automated Operations:</strong> Tasks are automatically created based on tour timeline 
-              and capacity monitoring. Real-time notifications keep you informed of priority tasks and deadlines.
-              {hasDuplicates && (
+              <strong className="text-brand-navy">Task Synchronization:</strong> Use "Sync Tasks" to ensure all automated tasks 
+              are up-to-date with current tour dates and remove duplicates. This ensures proper task scheduling and eliminates conflicts.
+              {!hasAutomatedTasks && (
                 <span className="text-orange-700 ml-2">
-                  <strong>Notice:</strong> Duplicate tasks detected. Use the "Cleanup Tasks" button to resolve.
+                  <strong>Notice:</strong> This tour has no automated tasks. Use "Sync Tasks" to generate the standard operation tasks.
                 </span>
               )}
             </p>
