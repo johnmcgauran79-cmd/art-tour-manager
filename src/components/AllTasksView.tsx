@@ -1,25 +1,34 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Search, Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
+import { TaskSearch } from "@/components/TaskSearch";
 
 export const AllTasksView = () => {
   const { data: tasks, isLoading } = useMyTasks();
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [showFiltered, setShowFiltered] = useState(false);
+  const [searchFilters, setSearchFilters] = useState<{
+    search?: string;
+    status?: string;
+    priority?: string;
+    category?: string;
+    assigneeId?: string;
+    startDate?: string;
+    endDate?: string;
+    tourName?: string;
+  }>({});
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -70,13 +79,62 @@ export const AllTasksView = () => {
     setShowFiltered(true);
   };
 
-  // Filter tasks based on search term
-  const displayTasks = tasks?.filter(task => {
-    if (!searchTerm.trim()) return true;
-    const searchLower = searchTerm.toLowerCase();
-    return task.title.toLowerCase().includes(searchLower) ||
-           (task.tours?.name?.toLowerCase().includes(searchLower));
-  }) || [];
+  const handleSearch = (filters: typeof searchFilters) => {
+    setSearchFilters(filters);
+    setShowFiltered(false);
+  };
+
+  const handleClearSearch = () => {
+    setSearchFilters({});
+    setShowFiltered(false);
+  };
+
+  // Filter tasks based on search criteria
+  const displayTasks = useMemo(() => {
+    if (!tasks) return [];
+    
+    return tasks.filter(task => {
+      // Text search in task title
+      if (searchFilters.search && !task.title.toLowerCase().includes(searchFilters.search.toLowerCase())) {
+        return false;
+      }
+      
+      // Tour name search
+      if (searchFilters.tourName && (!task.tours?.name || !task.tours.name.toLowerCase().includes(searchFilters.tourName.toLowerCase()))) {
+        return false;
+      }
+      
+      // Status filter
+      if (searchFilters.status && task.status !== searchFilters.status) {
+        return false;
+      }
+      
+      // Priority filter
+      if (searchFilters.priority && task.priority !== searchFilters.priority) {
+        return false;
+      }
+      
+      // Category filter
+      if (searchFilters.category && task.category !== searchFilters.category) {
+        return false;
+      }
+      
+      // Date range filter
+      if (searchFilters.startDate && task.due_date) {
+        const taskDate = new Date(task.due_date);
+        const startDate = new Date(searchFilters.startDate);
+        if (taskDate < startDate) return false;
+      }
+      
+      if (searchFilters.endDate && task.due_date) {
+        const taskDate = new Date(task.due_date);
+        const endDate = new Date(searchFilters.endDate);
+        if (taskDate > endDate) return false;
+      }
+      
+      return true;
+    });
+  }, [tasks, searchFilters]);
 
   const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
 
@@ -121,6 +179,8 @@ export const AllTasksView = () => {
     );
   }
 
+  const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+
   return (
     <>
       <Card className="border-brand-navy/20 shadow-lg">
@@ -130,7 +190,7 @@ export const AllTasksView = () => {
               <ClipboardList className="h-5 w-5 text-brand-navy" />
               <CardTitle className="text-brand-navy">All My Tasks</CardTitle>
               <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                {tasks?.length || 0} total
+                {hasSearchFilters ? displayTasks.length : tasks?.length || 0} {hasSearchFilters ? 'filtered' : 'total'}
               </Badge>
             </div>
             <Button
@@ -143,32 +203,26 @@ export const AllTasksView = () => {
             </Button>
           </div>
           
-          <div className="mt-4">
-            <TaskCategoriesGrid 
-              tasks={pendingTasks}
-              onCategoryClick={handleCategoryClick}
-            />
-          </div>
+          {!hasSearchFilters && (
+            <div className="mt-4">
+              <TaskCategoriesGrid 
+                tasks={pendingTasks}
+                onCategoryClick={handleCategoryClick}
+              />
+            </div>
+          )}
         </CardHeader>
         
         <CardContent>
           <div className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search by task title or tour name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+            {/* Enhanced Search */}
+            <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
 
             {/* Tasks Table */}
             {displayTasks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>{searchTerm ? `No tasks found matching "${searchTerm}"` : "No tasks found"}</p>
+                <p>{hasSearchFilters ? "No tasks found matching your search criteria" : "No tasks found"}</p>
               </div>
             ) : (
               <TasksTable

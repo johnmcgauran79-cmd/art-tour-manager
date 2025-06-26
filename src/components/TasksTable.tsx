@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, ClipboardList } from "lucide-react";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { formatDistanceToNow, format } from "date-fns";
+import { QuickTaskActions } from "@/components/QuickTaskActions";
 
 interface TasksTableProps {
   tasks: Task[];
@@ -142,7 +142,7 @@ export const TasksTable = ({
             {showTourName && <TableHead>Tour</TableHead>}
             <TableHead>Due Date</TableHead>
             <TableHead>Assigned</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead className="w-48">Quick Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -251,16 +251,7 @@ export const TasksTable = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  {task.status !== 'completed' && !isBlocked && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => handleMarkComplete(e, task.id)}
-                      className="text-green-600 border-green-300 hover:bg-green-50"
-                    >
-                      <CheckCircle className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <QuickTaskActions task={task} onTaskClick={onTaskClick} />
                 </TableCell>
               </TableRow>
             );

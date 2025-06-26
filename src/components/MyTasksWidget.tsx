@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { AllTasksModal } from "@/components/AllTasksModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
+import { TaskSearch } from "@/components/TaskSearch";
 
 interface MyTasksWidgetProps {
   hideAddButton?: boolean;
@@ -26,6 +27,16 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
+  const [searchFilters, setSearchFilters] = useState<{
+    search?: string;
+    status?: string;
+    priority?: string;
+    category?: string;
+    assigneeId?: string;
+    startDate?: string;
+    endDate?: string;
+    tourName?: string;
+  }>({});
 
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
@@ -47,6 +58,14 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
     }
   };
 
+  const handleSearch = (filters: typeof searchFilters) => {
+    setSearchFilters(filters);
+  };
+
+  const handleClearSearch = () => {
+    setSearchFilters({});
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-4 text-muted-foreground">
@@ -57,8 +76,58 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
 
   const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
 
+  // Filter tasks based on search criteria
+  const filteredTasksData = useMemo(() => {
+    if (!tasks) return [];
+    
+    const hasFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+    if (!hasFilters) return pendingTasks;
+    
+    return tasks.filter(task => {
+      // Text search in task title
+      if (searchFilters.search && !task.title.toLowerCase().includes(searchFilters.search.toLowerCase())) {
+        return false;
+      }
+      
+      // Tour name search
+      if (searchFilters.tourName && (!task.tours?.name || !task.tours.name.toLowerCase().includes(searchFilters.tourName.toLowerCase()))) {
+        return false;
+      }
+      
+      // Status filter
+      if (searchFilters.status && task.status !== searchFilters.status) {
+        return false;
+      }
+      
+      // Priority filter
+      if (searchFilters.priority && task.priority !== searchFilters.priority) {
+        return false;
+      }
+      
+      // Category filter
+      if (searchFilters.category && task.category !== searchFilters.category) {
+        return false;
+      }
+      
+      // Date range filter
+      if (searchFilters.startDate && task.due_date) {
+        const taskDate = new Date(task.due_date);
+        const startDate = new Date(searchFilters.startDate);
+        if (taskDate < startDate) return false;
+      }
+      
+      if (searchFilters.endDate && task.due_date) {
+        const taskDate = new Date(task.due_date);
+        const endDate = new Date(searchFilters.endDate);
+        if (taskDate > endDate) return false;
+      }
+      
+      return true;
+    });
+  }, [tasks, searchFilters, pendingTasks]);
+
   // Sort tasks by due date (most urgent first) and optionally limit to top 5
-  const sortedTasks = [...pendingTasks].sort((a, b) => {
+  const sortedTasks = [...filteredTasksData].sort((a, b) => {
     if (!a.due_date && !b.due_date) return 0;
     if (!a.due_date) return 1;
     if (!b.due_date) return -1;
@@ -103,6 +172,8 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
     setFilteredTasksModalOpen(true);
   };
 
+  const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+
   // If this is in the full widget mode (not limited), show categories and header
   if (!limitToTop5) {
     return (
@@ -114,7 +185,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
                 <ClipboardList className="h-5 w-5 text-brand-navy" />
                 <CardTitle className="text-brand-navy">My Tasks</CardTitle>
                 <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                  {pendingTasks.length} active
+                  {hasSearchFilters ? filteredTasksData.length : pendingTasks.length} {hasSearchFilters ? 'filtered' : 'active'}
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
@@ -140,35 +211,42 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
               </div>
             </div>
             
-            <div className="mt-4">
-              <TaskCategoriesGrid 
-                tasks={pendingTasks}
-                onCategoryClick={handleCategoryClick}
-              />
-            </div>
-          </CardHeader>
-          
-          <CardContent>
-            {displayTasks.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>No active tasks assigned to you</p>
-                <p className="text-sm">Great job staying on top of everything!</p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="text-sm text-gray-600 mb-3">
-                  Showing top 10 most urgent tasks
-                </div>
-                <TasksTable
-                  tasks={displayTasks}
-                  loading={false}
-                  showTourName={true}
-                  onTaskClick={handleTaskClick}
-                  title=""
+            {!hasSearchFilters && (
+              <div className="mt-4">
+                <TaskCategoriesGrid 
+                  tasks={pendingTasks}
+                  onCategoryClick={handleCategoryClick}
                 />
               </div>
             )}
+          </CardHeader>
+          
+          <CardContent>
+            <div className="space-y-4">
+              {/* Enhanced Search */}
+              <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
+
+              {displayTasks.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>{hasSearchFilters ? "No tasks found matching your search criteria" : "No active tasks assigned to you"}</p>
+                  <p className="text-sm">{!hasSearchFilters && "Great job staying on top of everything!"}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-sm text-gray-600 mb-3">
+                    Showing {hasSearchFilters ? 'filtered' : 'top 10 most urgent'} tasks
+                  </div>
+                  <TasksTable
+                    tasks={displayTasks}
+                    loading={false}
+                    showTourName={true}
+                    onTaskClick={handleTaskClick}
+                    title=""
+                  />
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
