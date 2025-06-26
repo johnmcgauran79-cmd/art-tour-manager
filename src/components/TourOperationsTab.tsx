@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -13,6 +13,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { AutomatedTasksWidget } from "@/components/AutomatedTasksWidget";
+import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -28,6 +29,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
+  const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -93,6 +95,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     task.due_date && new Date(task.due_date) < new Date()
   );
   const automatedTasks = tasks?.filter(task => task.is_automated) || [];
+
+  // Check for duplicates in automated tasks
+  const automatedTaskTitles = automatedTasks.map(task => task.title);
+  const duplicateCount = automatedTaskTitles.length - new Set(automatedTaskTitles).size;
+  const hasDuplicates = duplicateCount > 0;
 
   const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated') => {
     let filtered: Task[] = [];
@@ -214,15 +221,33 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
                 Operations Control
               </Badge>
+              {hasDuplicates && (
+                <Badge variant="destructive" className="ml-2">
+                  {duplicateCount} Duplicates
+                </Badge>
+              )}
             </div>
-            <Button
-              onClick={() => setAddTaskModalOpen(true)}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Task
-            </Button>
+            <div className="flex items-center gap-2">
+              {hasDuplicates && (
+                <Button
+                  onClick={() => setCleanupModalOpen(true)}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                >
+                  <Wrench className="h-4 w-4" />
+                  Cleanup Tasks
+                </Button>
+              )}
+              <Button
+                onClick={() => setAddTaskModalOpen(true)}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -284,6 +309,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
             <p className="text-xs text-brand-navy">
               <strong className="text-brand-navy">Automated Operations:</strong> Tasks are automatically created based on tour timeline 
               and capacity monitoring. Real-time notifications keep you informed of priority tasks and deadlines.
+              {hasDuplicates && (
+                <span className="text-orange-700 ml-2">
+                  <strong>Notice:</strong> Duplicate tasks detected. Use the "Cleanup Tasks" button to resolve.
+                </span>
+              )}
             </p>
           </div>
         </CardContent>
@@ -325,6 +355,13 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         tasks={filteredTasks}
         title={filteredTasksTitle}
         onTaskClick={handleTaskClick}
+      />
+
+      <CleanupAutomatedTasksModal
+        tourId={tourId}
+        tourName={tourName}
+        open={cleanupModalOpen}
+        onOpenChange={setCleanupModalOpen}
       />
     </div>
   );
