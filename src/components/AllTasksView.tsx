@@ -19,7 +19,7 @@ export const AllTasksView = () => {
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [showFiltered, setShowFiltered] = useState(false);
-  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
+  const [showCompletedOnly, setShowCompletedOnly] = useState(false);
   const [searchFilters, setSearchFilters] = useState<{
     search?: string;
     status?: string;
@@ -96,8 +96,10 @@ export const AllTasksView = () => {
     
     let filteredTasks = tasks;
 
-    // Filter by completed status
-    if (!showCompletedTasks) {
+    // Filter by completed status - show ONLY completed OR ONLY active
+    if (showCompletedOnly) {
+      filteredTasks = filteredTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
+    } else {
       filteredTasks = filteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
     }
     
@@ -142,7 +144,7 @@ export const AllTasksView = () => {
       
       return true;
     });
-  }, [tasks, searchFilters, showCompletedTasks]);
+  }, [tasks, searchFilters, showCompletedOnly]);
 
   const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
 
@@ -196,21 +198,23 @@ export const AllTasksView = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-brand-navy" />
-              <CardTitle className="text-brand-navy">All My Tasks</CardTitle>
+              <CardTitle className="text-brand-navy">
+                {showCompletedOnly ? "Completed Tasks" : "Active Tasks"}
+              </CardTitle>
               <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                {hasSearchFilters || showCompletedTasks ? displayTasks.length : tasks?.length || 0} {hasSearchFilters || showCompletedTasks ? 'filtered' : 'total'}
+                {displayTasks.length} {showCompletedOnly ? 'completed' : 'active'}
               </Badge>
             </div>
             <div className="flex items-center gap-2">
               <Button
-                onClick={() => setShowCompletedTasks(!showCompletedTasks)}
+                onClick={() => setShowCompletedOnly(!showCompletedOnly)}
                 size="sm"
-                variant={showCompletedTasks ? "default" : "outline"}
+                variant={showCompletedOnly ? "default" : "outline"}
                 className="flex items-center gap-2"
-                title={showCompletedTasks ? "Hide completed tasks" : "Show completed tasks"}
+                title={showCompletedOnly ? "Show active tasks" : "Show completed tasks only"}
               >
-                {showCompletedTasks ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-                {showCompletedTasks ? "Hide Completed" : "Show Completed"}
+                {showCompletedOnly ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+                {showCompletedOnly ? "Show Active" : "Show Completed"}
               </Button>
               <Button
                 onClick={() => setAddTaskModalOpen(true)}
@@ -223,7 +227,7 @@ export const AllTasksView = () => {
             </div>
           </div>
           
-          {!hasSearchFilters && !showCompletedTasks && (
+          {!hasSearchFilters && !showCompletedOnly && (
             <div className="mt-4">
               <TaskCategoriesGrid 
                 tasks={pendingTasks}
@@ -242,7 +246,14 @@ export const AllTasksView = () => {
             {displayTasks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>{hasSearchFilters || showCompletedTasks ? "No tasks found matching your criteria" : "No tasks found"}</p>
+                <p>
+                  {showCompletedOnly 
+                    ? "No completed tasks found" 
+                    : hasSearchFilters 
+                      ? "No active tasks found matching your criteria" 
+                      : "No active tasks found"
+                  }
+                </p>
               </div>
             ) : (
               <TasksTable
