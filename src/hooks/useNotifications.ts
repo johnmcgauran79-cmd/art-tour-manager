@@ -9,7 +9,10 @@ type Notification = Database['public']['Tables']['user_notifications']['Row'];
 export const useNotifications = (limit: number = 10) => {
   const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
   
-  const { data: notifications = [], isLoading, refetch } = useNotificationQuery(limit);
+  const { data, isLoading, refetch } = useNotificationQuery(limit);
+  const notifications = data?.notifications || [];
+  const totalUnreadCount = data?.totalUnreadCount || 0;
+  
   const { markAsReadMutation, deleteNotificationMutation, bulkDeleteMutation } = useNotificationMutations();
 
   const handleNotificationClick = (notification: Notification) => {
@@ -48,7 +51,8 @@ export const useNotifications = (limit: number = 10) => {
     });
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Use the total unread count instead of just counting displayed notifications
+  const unreadCount = totalUnreadCount;
 
   return {
     notifications,

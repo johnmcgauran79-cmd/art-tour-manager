@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserDepartments } from "@/hooks/useUserDepartments";
 import { Bell, X, Check, AlertTriangle, Info, Calendar, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,33 +34,66 @@ const getNotificationIcon = (type: string, priority: string) => {
 
 export const NotificationCenter = () => {
   const { user } = useAuth();
+  const { data: userDepartments = [] } = useUserDepartments();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
-  // Fetch notifications
-  const { data: notifications = [], isLoading, refetch } = useQuery({
-    queryKey: ['notifications', user?.id],
-    queryFn: async (): Promise<Notification[]> => {
-      if (!user?.id) return [];
+  // Fetch notifications with total unread count
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['notifications', user?.id, userDepartments],
+    queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
+      if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
       
       console.log('NotificationCenter: Fetching notifications for user:', user.id);
-      const { data, error } = await supabase
+      
+      // Build base query conditions
+      let baseCondition = `user_id.eq.${user.id}`;
+      if (userDepartments.length > 0) {
+        baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
+      }
+
+      // Fetch limited notifications for display
+      let notificationsQuery = supabase
         .from('user_notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .or(baseCondition)
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) {
-        console.error('NotificationCenter: Error fetching notifications:', error);
-        throw error;
+      // Fetch total unread count
+      let unreadCountQuery = supabase
+        .from('user_notifications')
+        .select('id', { count: 'exact' })
+        .or(baseCondition)
+        .eq('read', false);
+
+      const [notificationsResult, unreadCountResult] = await Promise.all([
+        notificationsQuery,
+        unreadCountQuery
+      ]);
+
+      if (notificationsResult.error) {
+        console.error('NotificationCenter: Error fetching notifications:', notificationsResult.error);
+        throw notificationsResult.error;
       }
-      console.log('NotificationCenter: Fetched notifications:', data);
-      return data || [];
+
+      if (unreadCountResult.error) {
+        console.error('NotificationCenter: Error fetching unread count:', unreadCountResult.error);
+        throw unreadCountResult.error;
+      }
+
+      const notifications = notificationsResult.data || [];
+      const totalUnreadCount = unreadCountResult.count || 0;
+
+      console.log('NotificationCenter: Fetched notifications:', notifications.length, 'Total unread:', totalUnreadCount);
+      return { notifications, totalUnreadCount };
     },
     enabled: !!user?.id,
   });
+
+  const notifications = data?.notifications || [];
+  const totalUnreadCount = data?.totalUnreadCount || 0;
 
   // Mark as read mutation
   const markAsReadMutation = useMutation({
@@ -150,10 +183,17 @@ export const NotificationCenter = () => {
       }
       
       console.log('NotificationCenter: Marking all notifications as read for user:', user.id);
+      
+      // Build base condition for user and departments
+      let baseCondition = `user_id.eq.${user.id}`;
+      if (userDepartments.length > 0) {
+        baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
+      }
+
       const { data, error } = await supabase
         .from('user_notifications')
         .update({ read: true })
-        .eq('user_id', user.id)
+        .or(baseCondition)
         .eq('read', false)
         .select();
 
@@ -194,7 +234,6 @@ export const NotificationCenter = () => {
     }
   }, [open, notifications.length]); // Remove markAsReadMutation from dependencies to avoid infinite loop
 
-  const unreadCount = notifications.filter(n => !n.read).length;
   const unacknowledgedCount = notifications.filter(n => !n.acknowledged).length;
 
   return (
@@ -202,12 +241,12 @@ export const NotificationCenter = () => {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-primary-foreground">
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {totalUnreadCount > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
             >
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
             </Badge>
           )}
         </Button>

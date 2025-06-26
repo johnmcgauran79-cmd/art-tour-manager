@@ -13,36 +13,53 @@ export const useNotificationQuery = (limit: number = 10) => {
 
   return useQuery({
     queryKey: ['notifications', user?.id, userDepartments, limit],
-    queryFn: async (): Promise<Notification[]> => {
-      if (!user?.id) return [];
+    queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
+      if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
       
       console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments, 'limit:', limit);
       
-      let query = supabase
+      // Build base query conditions
+      let baseCondition = `user_id.eq.${user.id}`;
+      if (userDepartments.length > 0) {
+        baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
+      }
+
+      // Fetch limited notifications for display
+      let notificationsQuery = supabase
         .from('user_notifications')
         .select('*')
-        .eq('user_id', user.id)
+        .or(baseCondition)
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      // If user has departments, also include notifications for those departments
-      if (userDepartments.length > 0) {
-        query = supabase
-          .from('user_notifications')
-          .select('*')
-          .or(`user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`)
-          .order('created_at', { ascending: false })
-          .limit(limit);
+      // Fetch total unread count
+      let unreadCountQuery = supabase
+        .from('user_notifications')
+        .select('id', { count: 'exact' })
+        .or(baseCondition)
+        .eq('read', false);
+
+      const [notificationsResult, unreadCountResult] = await Promise.all([
+        notificationsQuery,
+        unreadCountQuery
+      ]);
+
+      if (notificationsResult.error) {
+        console.error('Error fetching notifications:', notificationsResult.error);
+        throw notificationsResult.error;
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching notifications:', error);
-        throw error;
+      if (unreadCountResult.error) {
+        console.error('Error fetching unread count:', unreadCountResult.error);
+        throw unreadCountResult.error;
       }
-      console.log('Fetched notifications:', data);
-      return data || [];
+
+      const notifications = notificationsResult.data || [];
+      const totalUnreadCount = unreadCountResult.count || 0;
+
+      console.log('Fetched notifications:', notifications.length, 'Total unread:', totalUnreadCount);
+      
+      return { notifications, totalUnreadCount };
     },
     enabled: !!user?.id,
   });
