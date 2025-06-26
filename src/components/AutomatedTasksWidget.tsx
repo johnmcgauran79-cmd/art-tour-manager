@@ -2,10 +2,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, AlertTriangle, CheckCircle, RefreshCw, Zap } from "lucide-react";
+import { Clock, AlertTriangle, CheckCircle, RefreshCw, Zap, Trash2, Info } from "lucide-react";
 import { useTasks } from "@/hooks/useTasks";
-import { useAutomatedTourTasks, useRegenerateTourTasks } from "@/hooks/useAutomatedTourTasks";
+import { useAutomatedTourTasks, useRegenerateTourTasks, useCleanupArchivedTasks } from "@/hooks/useAutomatedTourTasks";
 import { formatDistanceToNow } from "date-fns";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 interface AutomatedTasksWidgetProps {
   tourId?: string;
@@ -16,9 +17,11 @@ export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTas
   const { data: tasks } = useTasks(tourId);
   const generateTasks = useAutomatedTourTasks();
   const regenerateTasks = useRegenerateTourTasks();
+  const cleanupTasks = useCleanupArchivedTasks();
 
   // Filter for automated tasks
-  const automatedTasks = tasks?.filter(task => task.is_automated) || [];
+  const automatedTasks = tasks?.filter(task => task.is_automated && task.status !== 'archived') || [];
+  const archivedTasks = tasks?.filter(task => task.is_automated && task.status === 'archived') || [];
   const upcomingTasks = automatedTasks.filter(task => 
     task.due_date && 
     new Date(task.due_date) > new Date() && 
@@ -39,6 +42,12 @@ export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTas
   const handleRegenerateTasks = () => {
     if (tourId) {
       regenerateTasks.mutate(tourId);
+    }
+  };
+
+  const handleCleanupTasks = () => {
+    if (tourId) {
+      cleanupTasks.mutate(tourId);
     }
   };
 
@@ -67,16 +76,67 @@ export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTas
                   <Zap className="h-4 w-4 mr-1" />
                   {generateTasks.isPending ? "Generating..." : "Generate Tasks"}
                 </Button>
-                <Button
-                  onClick={handleRegenerateTasks}
-                  size="sm"
-                  variant="outline"
-                  disabled={regenerateTasks.isPending}
-                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  {regenerateTasks.isPending ? "Regenerating..." : "Regenerate"}
-                </Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={regenerateTasks.isPending}
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                    >
+                      <RefreshCw className="h-4 w-4 mr-1" />
+                      Regenerate
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Regenerate Automated Tasks?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will archive all existing uncompleted automated tasks and create new ones based on the current tour dates. 
+                        Completed tasks will remain unchanged. This is useful when tour dates have been updated.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleRegenerateTasks}>
+                        {regenerateTasks.isPending ? "Regenerating..." : "Regenerate Tasks"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                {archivedTasks.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={cleanupTasks.isPending}
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Clean ({archivedTasks.length})
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Clean Up Archived Tasks?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently delete {archivedTasks.length} archived automated tasks. 
+                          This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction 
+                          onClick={handleCleanupTasks}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          {cleanupTasks.isPending ? "Cleaning..." : "Delete Archived Tasks"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
             )}
           </div>
@@ -104,7 +164,7 @@ export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTas
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center p-3 bg-purple-50 rounded-lg">
                 <div className="text-lg font-bold text-purple-800">{automatedTasks.length}</div>
-                <div className="text-xs text-purple-600">Total Tasks</div>
+                <div className="text-xs text-purple-600">Active Tasks</div>
               </div>
               <div className="text-center p-3 bg-orange-50 rounded-lg">
                 <div className="text-lg font-bold text-orange-800">{upcomingTasks.length}</div>
@@ -115,6 +175,20 @@ export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTas
                 <div className="text-xs text-red-600">Overdue</div>
               </div>
             </div>
+
+            {archivedTasks.length > 0 && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-center gap-2 text-yellow-800">
+                  <Info className="h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    {archivedTasks.length} archived task{archivedTasks.length !== 1 ? 's' : ''} from previous date changes
+                  </span>
+                </div>
+                <p className="text-xs text-yellow-700 mt-1">
+                  These were automatically archived when tour dates were updated. Use the "Clean" button to remove them permanently.
+                </p>
+              </div>
+            )}
 
             {/* Overdue Tasks */}
             {overdueTasks.length > 0 && (
@@ -167,7 +241,7 @@ export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTas
             )}
 
             <div className="text-xs text-gray-500 bg-purple-50 p-2 rounded">
-              💡 Tasks are automatically generated based on tour timeline and updated when tour dates change.
+              💡 Tasks automatically regenerate when tour dates change. Use "Regenerate" to manually refresh tasks based on current tour timeline.
             </div>
           </div>
         )}

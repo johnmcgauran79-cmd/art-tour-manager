@@ -28,7 +28,7 @@ export const useAutomatedTourTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast({
         title: "Tour Tasks Generated",
-        description: "Automated tour operation tasks have been created based on the tour timeline.",
+        description: "Automated tour operation tasks have been created based on the current tour timeline.",
         duration: 4000,
       });
     },
@@ -51,7 +51,7 @@ export const useRegenerateTourTasks = () => {
     mutationFn: async (tourId: string) => {
       console.log('Regenerating tour tasks for:', tourId);
       
-      // First archive existing automated tasks
+      // First archive existing automated tasks that haven't been completed
       const { error: archiveError } = await supabase
         .from('tasks')
         .update({ status: 'archived' })
@@ -65,7 +65,7 @@ export const useRegenerateTourTasks = () => {
         throw archiveError;
       }
 
-      // Generate new tasks
+      // Generate new tasks based on current tour dates
       const { data, error } = await supabase
         .rpc('generate_tour_operation_tasks', {
           p_tour_id: tourId
@@ -83,8 +83,8 @@ export const useRegenerateTourTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast({
         title: "Tour Tasks Regenerated",
-        description: "Tour operation tasks have been updated based on the new timeline.",
-        duration: 4000,
+        description: "Tour operation tasks have been updated to match the current tour timeline. Previous uncompleted automated tasks were archived.",
+        duration: 5000,
       });
     },
     onError: (error) => {
@@ -92,6 +92,46 @@ export const useRegenerateTourTasks = () => {
       toast({
         title: "Error",
         description: "Failed to regenerate tour tasks. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useCleanupArchivedTasks = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (tourId: string) => {
+      console.log('Cleaning up archived automated tasks for:', tourId);
+      
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('tour_id', tourId)
+        .eq('is_automated', true)
+        .eq('status', 'archived')
+        .like('automated_rule', 'tour_operations_%');
+
+      if (error) {
+        console.error('Error cleaning up archived tasks:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast({
+        title: "Archived Tasks Cleaned",
+        description: "Archived automated tasks have been permanently removed.",
+        duration: 3000,
+      });
+    },
+    onError: (error) => {
+      console.error('Error cleaning up archived tasks:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clean up archived tasks.",
         variant: "destructive",
       });
     },
