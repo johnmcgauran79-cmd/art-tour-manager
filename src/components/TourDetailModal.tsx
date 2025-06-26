@@ -147,7 +147,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
   const handleRoomingList = (hotel: any) => {
     setSelectedHotel(hotel);
-    setRoomingListModalOpen(true);
+    setEditRoomingListModalOpen(true);
   };
 
   const handleDuplicateTour = () => {
