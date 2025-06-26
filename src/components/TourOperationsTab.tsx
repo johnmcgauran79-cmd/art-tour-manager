@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus,
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useTasks, Task } from "@/hooks/useTasks";
+import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { TasksTable } from "@/components/TasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
@@ -25,6 +25,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
+  const { userRole } = useAuth();
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
@@ -100,10 +101,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const automatedTaskTitles = automatedTasks.map(task => task.title);
   const duplicateCount = automatedTaskTitles.length - new Set(automatedTaskTitles).size;
   const hasDuplicates = duplicateCount > 0;
-
-  // Check if tour has any automated tasks at all
   const hasAutomatedTasks = automatedTasks.length > 0;
-  const shouldShowCleanupButton = hasAutomatedTasks; // Always show if there are any automated tasks
+  
+  // Only show sync button for admin users
+  const isAdmin = userRole === 'admin';
+  const shouldShowCleanupButton = hasAutomatedTasks && isAdmin;
 
   const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated') => {
     let filtered: Task[] = [];
