@@ -68,7 +68,7 @@ export const useRegenerateTourTasks = () => {
         })
         .eq('tour_id', tourId)
         .eq('is_automated', true)
-        .in('status', ['not_started', 'in_progress', 'pending_review']);
+        .in('status', ['not_started', 'in_progress', 'waiting']);
 
       if (archiveError) {
         console.error('Error archiving tasks:', archiveError);
