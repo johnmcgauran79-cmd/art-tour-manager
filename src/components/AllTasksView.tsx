@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Plus, ArrowLeft } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
@@ -18,10 +18,7 @@ export const AllTasksView = () => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-  const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
-  const [showFiltered, setShowFiltered] = useState(false);
-  const [showCompletedOnly, setShowCompletedOnly] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<'overdue' | 'critical' | 'high' | 'due_soon' | 'completed' | null>(null);
   const [searchFilters, setSearchFilters] = useState<{
     search?: string;
     status?: string;
@@ -36,8 +33,7 @@ export const AllTasksView = () => {
   console.log('AllTasksView state:', { 
     tasksCount: tasks?.length, 
     isLoading, 
-    showFiltered, 
-    showCompletedOnly 
+    activeFilter 
   });
 
   const handleTaskClick = (task: Task) => {
@@ -54,103 +50,57 @@ export const AllTasksView = () => {
 
   const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => {
     console.log('Category clicked:', type);
-    
-    if (type === 'completed') {
-      // Toggle completed view instead of filtering
-      setShowCompletedOnly(true);
-      setShowFiltered(false);
-      return;
-    }
+    setActiveFilter(type);
+  };
 
-    const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
-    let filtered: Task[] = [];
-    let title = "";
-
-    switch (type) {
-      case 'overdue':
-        filtered = pendingTasks.filter(task => 
-          task.due_date && new Date(task.due_date) < new Date()
-        );
-        title = "Overdue Tasks";
-        break;
-      case 'critical':
-        filtered = pendingTasks.filter(task => task.priority === 'critical');
-        title = "Critical Priority Tasks";
-        break;
-      case 'high':
-        filtered = pendingTasks.filter(task => task.priority === 'high');
-        title = "High Priority Tasks";
-        break;
-      case 'due_soon':
-        filtered = pendingTasks.filter(task => {
-          if (!task.due_date) return false;
-          const dueDate = new Date(task.due_date);
-          const today = new Date();
-          const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
-          return dueDate >= today && dueDate <= sevenDaysFromNow;
-        });
-        title = "Due Soon (Next 7 Days)";
-        break;
-    }
-
-    setFilteredTasks(filtered);
-    setFilteredTasksTitle(title);
-    setShowFiltered(true);
-    setShowCompletedOnly(false);
+  const handleBackToAllTasks = () => {
+    console.log('Back to all tasks clicked, clearing activeFilter');
+    setActiveFilter(null);
   };
 
   const handleSearch = (filters: typeof searchFilters) => {
     setSearchFilters(filters);
-    setShowFiltered(false);
-    setShowCompletedOnly(false);
+    setActiveFilter(null); // Clear active filter when searching
   };
 
   const handleClearSearch = () => {
     setSearchFilters({});
-    setShowFiltered(false);
-    setShowCompletedOnly(false);
+    setActiveFilter(null);
   };
 
-  // Filter tasks based on search criteria and completed status
-  const displayTasks = useMemo(() => {
+  // Calculate pending tasks
+  const pendingTasks = useMemo(() => {
+    return tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
+  }, [tasks]);
+
+  // Apply search filters to all tasks first
+  const searchFilteredTasks = useMemo(() => {
     if (!tasks) return [];
     
-    let filteredTasks = tasks;
-
-    // Filter by completed status - show ONLY completed OR ONLY active
-    if (showCompletedOnly) {
-      filteredTasks = filteredTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
-    } else {
-      filteredTasks = filteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
-    }
+    const hasFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+    if (!hasFilters) return tasks;
     
-    return filteredTasks.filter(task => {
-      // Text search in task title
+    return tasks.filter(task => {
       if (searchFilters.search && !task.title.toLowerCase().includes(searchFilters.search.toLowerCase())) {
         return false;
       }
       
-      // Tour name search
       if (searchFilters.tourName && (!task.tours?.name || !task.tours.name.toLowerCase().includes(searchFilters.tourName.toLowerCase()))) {
         return false;
       }
       
-      // Status filter
       if (searchFilters.status && task.status !== searchFilters.status) {
         return false;
       }
       
-      // Priority filter
       if (searchFilters.priority && task.priority !== searchFilters.priority) {
         return false;
       }
       
-      // Category filter
       if (searchFilters.category && task.category !== searchFilters.category) {
         return false;
       }
       
-      // Date range filter
       if (searchFilters.startDate && task.due_date) {
         const taskDate = new Date(task.due_date);
         const startDate = new Date(searchFilters.startDate);
@@ -165,7 +115,65 @@ export const AllTasksView = () => {
       
       return true;
     });
-  }, [tasks, searchFilters, showCompletedOnly]);
+  }, [tasks, searchFilters]);
+
+  // Get filtered tasks based on active filter
+  const currentFilteredTasks = useMemo(() => {
+    if (!activeFilter) {
+      const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+      if (hasSearchFilters) {
+        return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+      }
+      return pendingTasks;
+    }
+
+    switch (activeFilter) {
+      case 'overdue':
+        return searchFilteredTasks.filter(task => 
+          task.status !== 'completed' && task.status !== 'cancelled' &&
+          task.due_date && new Date(task.due_date) < new Date()
+        );
+      case 'critical':
+        return searchFilteredTasks.filter(task => 
+          task.status !== 'completed' && task.status !== 'cancelled' &&
+          task.priority === 'critical'
+        );
+      case 'high':
+        return searchFilteredTasks.filter(task => 
+          task.status !== 'completed' && task.status !== 'cancelled' &&
+          task.priority === 'high'
+        );
+      case 'due_soon':
+        return searchFilteredTasks.filter(task => {
+          if (task.status === 'completed' || task.status === 'cancelled' || !task.due_date) return false;
+          const dueDate = new Date(task.due_date);
+          const today = new Date();
+          const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+          return dueDate >= today && dueDate <= sevenDaysFromNow;
+        });
+      case 'completed':
+        return searchFilteredTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
+      default:
+        return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+    }
+  }, [activeFilter, pendingTasks, searchFilteredTasks, searchFilters]);
+
+  const getFilterTitle = () => {
+    switch (activeFilter) {
+      case 'overdue':
+        return "Overdue Tasks";
+      case 'critical':
+        return "Critical Priority Tasks";
+      case 'high':
+        return "High Priority Tasks";
+      case 'due_soon':
+        return "Due Soon (Next 7 Days)";
+      case 'completed':
+        return "Completed Tasks";
+      default:
+        return "All Tasks";
+    }
+  };
 
   if (isLoading) {
     console.log('AllTasksView showing loading state');
@@ -177,36 +185,6 @@ export const AllTasksView = () => {
           </div>
         </CardContent>
       </Card>
-    );
-  }
-
-  if (showFiltered) {
-    console.log('AllTasksView showing filtered view');
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h3 className="text-xl font-semibold text-brand-navy">{filteredTasksTitle}</h3>
-            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-              {filteredTasks.length} tasks
-            </Badge>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setShowFiltered(false)}
-          >
-            Back to All Tasks
-          </Button>
-        </div>
-        
-        <TasksTable
-          tasks={filteredTasks}
-          loading={false}
-          showTourName={true}
-          onTaskClick={handleTaskClick}
-          title=""
-        />
-      </div>
     );
   }
 
@@ -222,21 +200,27 @@ export const AllTasksView = () => {
             <div className="flex items-center gap-2">
               <ClipboardList className="h-5 w-5 text-brand-navy" />
               <CardTitle className="text-brand-navy">
-                {showCompletedOnly ? "Completed Tasks" : "Active Tasks"}
+                {getFilterTitle()}
               </CardTitle>
               <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                {displayTasks.length} {showCompletedOnly ? 'completed' : 'active'}
+                {currentFilteredTasks.length} {hasSearchFilters || activeFilter ? 'filtered' : 'active'}
               </Badge>
+              {activeFilter && (
+                <Badge variant="outline" className="text-xs">
+                  {getFilterTitle()}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              {showCompletedOnly && (
+              {activeFilter && (
                 <Button
-                  onClick={() => setShowCompletedOnly(false)}
+                  onClick={handleBackToAllTasks}
                   size="sm"
                   variant="outline"
                   className="flex items-center gap-2"
                 >
-                  Back to Active Tasks
+                  <ArrowLeft className="h-4 w-4" />
+                  Clear Filter
                 </Button>
               )}
               <Button
@@ -250,37 +234,33 @@ export const AllTasksView = () => {
             </div>
           </div>
           
-          {!hasSearchFilters && (
-            <div className="mt-4">
-              <TaskCategoriesGrid 
-                tasks={tasks || []}
-                onCategoryClick={handleCategoryClick}
-              />
-            </div>
-          )}
+          <div className="mt-4">
+            <TaskCategoriesGrid 
+              tasks={pendingTasks}
+              onCategoryClick={handleCategoryClick}
+            />
+          </div>
         </CardHeader>
         
         <CardContent>
           <div className="space-y-4">
-            {/* Enhanced Search */}
             <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
 
-            {/* Tasks Table */}
-            {displayTasks.length === 0 ? (
+            {currentFilteredTasks.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 <p>
-                  {showCompletedOnly 
-                    ? "No completed tasks found" 
+                  {activeFilter 
+                    ? `No ${getFilterTitle().toLowerCase()} found`
                     : hasSearchFilters 
-                      ? "No active tasks found matching your criteria" 
+                      ? "No tasks found matching your search criteria" 
                       : "No active tasks found"
                   }
                 </p>
               </div>
             ) : (
               <TasksTable
-                tasks={displayTasks}
+                tasks={currentFilteredTasks}
                 loading={false}
                 showTourName={true}
                 onTaskClick={handleTaskClick}
