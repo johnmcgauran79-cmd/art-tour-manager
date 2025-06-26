@@ -24,8 +24,16 @@ export const useAutomatedTourTasks = () => {
       return data;
     },
     onSuccess: () => {
+      // Invalidate and refetch all task-related queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      
+      // Force immediate refetch
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['tasks'] });
+        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      }, 500);
+      
       toast({
         title: "Tour Tasks Generated",
         description: "Automated tour operation tasks have been created based on the current tour timeline.",
@@ -51,15 +59,16 @@ export const useRegenerateTourTasks = () => {
     mutationFn: async (tourId: string) => {
       console.log('Regenerating tour tasks for:', tourId);
       
-      // First, manually archive existing automated tasks that haven't been completed
+      // First, archive existing automated tasks that haven't been completed
       const { error: archiveError } = await supabase
         .from('tasks')
-        .update({ status: 'archived' })
+        .update({ 
+          status: 'archived',
+          updated_at: new Date().toISOString()
+        })
         .eq('tour_id', tourId)
         .eq('is_automated', true)
-        .neq('status', 'completed')
-        .neq('status', 'cancelled')
-        .neq('status', 'archived');
+        .in('status', ['not_started', 'in_progress', 'pending_review']);
 
       if (archiveError) {
         console.error('Error archiving tasks:', archiveError);
@@ -83,8 +92,12 @@ export const useRegenerateTourTasks = () => {
       // Invalidate all task-related queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      queryClient.refetchQueries({ queryKey: ['tasks'] });
-      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
+      // Force refetch with delay to ensure database operations complete
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['tasks'] });
+        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      }, 1000);
       
       toast({
         title: "Tour Tasks Regenerated",
@@ -130,8 +143,11 @@ export const useCleanupArchivedTasks = () => {
       // Force refresh of all task queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      queryClient.refetchQueries({ queryKey: ['tasks'] });
-      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['tasks'] });
+        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      }, 500);
       
       toast({
         title: "Archived Tasks Cleaned",

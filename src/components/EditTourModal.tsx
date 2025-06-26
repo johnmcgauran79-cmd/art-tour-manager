@@ -74,6 +74,8 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
 
   const updateTour = useMutation({
     mutationFn: async (tourData: any) => {
+      console.log('Updating tour with data:', tourData);
+      
       // Calculate days and nights from start and end dates
       const startDate = new Date(tourData.start_date);
       const endDate = new Date(tourData.end_date);
@@ -82,52 +84,72 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
       const days = daysDiff + 1; // Include both start and end days
       const nights = daysDiff;
 
+      const updateData = {
+        name: tourData.name,
+        tour_host: tourData.tour_host,
+        start_date: tourData.start_date,
+        end_date: tourData.end_date,
+        days: days,
+        nights: nights,
+        location: tourData.location || null,
+        pickup_point: tourData.pickup_point || null,
+        status: tourData.status,
+        notes: tourData.notes || null,
+        inclusions: tourData.inclusions || null,
+        exclusions: tourData.exclusions || null,
+        price_single: tourData.price_single ? parseFloat(tourData.price_single) : null,
+        price_double: tourData.price_double ? parseFloat(tourData.price_double) : null,
+        price_twin: tourData.price_twin ? parseFloat(tourData.price_twin) : null,
+        deposit_required: tourData.deposit_required ? parseFloat(tourData.deposit_required) : null,
+        instalment_amount: tourData.instalment_amount ? parseFloat(tourData.instalment_amount) : null,
+        instalment_date: tourData.instalment_date || null,
+        final_payment_date: tourData.final_payment_date || null,
+        capacity: tourData.capacity ? parseInt(tourData.capacity) : null,
+      };
+
+      console.log('Final update data:', updateData);
+
       const { data, error } = await supabase
         .from('tours')
-        .update({
-          name: tourData.name,
-          tour_host: tourData.tour_host,
-          start_date: tourData.start_date,
-          end_date: tourData.end_date,
-          days: days,
-          nights: nights,
-          location: tourData.location || null,
-          pickup_point: tourData.pickup_point || null,
-          status: tourData.status,
-          notes: tourData.notes || null,
-          inclusions: tourData.inclusions || null,
-          exclusions: tourData.exclusions || null,
-          price_single: tourData.price_single ? parseFloat(tourData.price_single) : null,
-          price_double: tourData.price_double ? parseFloat(tourData.price_double) : null,
-          price_twin: tourData.price_twin ? parseFloat(tourData.price_twin) : null,
-          deposit_required: tourData.deposit_required ? parseFloat(tourData.deposit_required) : null,
-          instalment_amount: tourData.instalment_amount ? parseFloat(tourData.instalment_amount) : null,
-          instalment_date: tourData.instalment_date || null,
-          final_payment_date: tourData.final_payment_date || null,
-          capacity: tourData.capacity ? parseInt(tourData.capacity) : null,
-        })
+        .update(updateData)
         .eq('id', tour?.id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Tour updated successfully:', data);
       return data;
     },
     onSuccess: () => {
+      // Invalidate all tour-related queries to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      
+      // Force refetch after a short delay to ensure the trigger has processed
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: ['tours'] });
+        queryClient.refetchQueries({ queryKey: ['tasks'] });
+        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      }, 1000);
+      
       toast({
         title: "Tour Updated",
-        description: "Tour details have been successfully updated.",
+        description: "Tour details have been successfully updated. Automated tasks will be regenerated to match the new dates.",
       });
       onOpenChange(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Update error:', error);
       toast({
         title: "Error",
-        description: "Failed to update tour. Please try again.",
+        description: `Failed to update tour: ${error.message || 'Please try again.'}`,
         variant: "destructive",
       });
-      console.error('Error updating tour:', error);
     },
   });
 
@@ -164,6 +186,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
 
   useEffect(() => {
     if (tour && open) {
+      console.log('Setting form data from tour:', tour);
       setFormData({
         name: tour.name,
         tour_host: tour.tourHost || "",
@@ -191,10 +214,12 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting form with data:', formData);
     updateTour.mutate(formData);
   };
 
   const handleInputChange = (field: string, value: string) => {
+    console.log(`Updating field ${field} with value:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
