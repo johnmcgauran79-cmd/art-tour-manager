@@ -14,40 +14,66 @@ interface AutomatedTasksWidgetProps {
 }
 
 export const AutomatedTasksWidget = ({ tourId, showHeader = true }: AutomatedTasksWidgetProps) => {
-  const { data: tasks } = useTasks(tourId);
+  const { data: tasks, refetch: refetchTasks } = useTasks(tourId);
   const generateTasks = useAutomatedTourTasks();
   const regenerateTasks = useRegenerateTourTasks();
   const cleanupTasks = useCleanupArchivedTasks();
 
-  // Filter for automated tasks
-  const automatedTasks = tasks?.filter(task => task.is_automated && task.status !== 'archived') || [];
-  const archivedTasks = tasks?.filter(task => task.is_automated && task.status === 'archived') || [];
+  // Filter for automated tasks - exclude archived for active display
+  const automatedTasks = tasks?.filter(task => 
+    task.is_automated && 
+    task.status !== 'archived' &&
+    task.automated_rule?.startsWith('tour_operations_')
+  ) || [];
+  
+  const archivedTasks = tasks?.filter(task => 
+    task.is_automated && 
+    task.status === 'archived' &&
+    task.automated_rule?.startsWith('tour_operations_')
+  ) || [];
+  
   const upcomingTasks = automatedTasks.filter(task => 
     task.due_date && 
     new Date(task.due_date) > new Date() && 
     task.status !== 'completed'
   );
+  
   const overdueTasks = automatedTasks.filter(task => 
     task.due_date && 
     new Date(task.due_date) < new Date() && 
     task.status !== 'completed'
   );
 
-  const handleGenerateTasks = () => {
+  const handleGenerateTasks = async () => {
     if (tourId) {
-      generateTasks.mutate(tourId);
+      try {
+        await generateTasks.mutateAsync(tourId);
+        setTimeout(() => refetchTasks(), 1000);
+      } catch (error) {
+        console.error('Generate tasks failed:', error);
+      }
     }
   };
 
-  const handleRegenerateTasks = () => {
+  const handleRegenerateTasks = async () => {
     if (tourId) {
-      regenerateTasks.mutate(tourId);
+      try {
+        await regenerateTasks.mutateAsync(tourId);
+        setTimeout(() => refetchTasks(), 1000);
+      } catch (error) {
+        console.error('Regenerate tasks failed:', error);
+      }
     }
   };
 
-  const handleCleanupTasks = () => {
+  const handleCleanupTasks = async () => {
     if (tourId) {
-      cleanupTasks.mutate(tourId);
+      try {
+        await cleanupTasks.mutateAsync(tourId);
+        setTimeout(() => refetchTasks(), 1000);
+      } catch (error) {
+        console.error('Cleanup tasks failed:', error);
+      }
     }
   };
 

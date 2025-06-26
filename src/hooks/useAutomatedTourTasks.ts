@@ -51,14 +51,15 @@ export const useRegenerateTourTasks = () => {
     mutationFn: async (tourId: string) => {
       console.log('Regenerating tour tasks for:', tourId);
       
-      // First archive existing automated tasks that haven't been completed
+      // First, manually archive existing automated tasks that haven't been completed
       const { error: archiveError } = await supabase
         .from('tasks')
         .update({ status: 'archived' })
         .eq('tour_id', tourId)
         .eq('is_automated', true)
-        .like('automated_rule', 'tour_operations_%')
-        .not('status', 'in', '(completed,cancelled)');
+        .neq('status', 'completed')
+        .neq('status', 'cancelled')
+        .neq('status', 'archived');
 
       if (archiveError) {
         console.error('Error archiving tasks:', archiveError);
@@ -79,8 +80,12 @@ export const useRegenerateTourTasks = () => {
       return data;
     },
     onSuccess: () => {
+      // Invalidate all task-related queries to refresh the UI
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
       toast({
         title: "Tour Tasks Regenerated",
         description: "Tour operation tasks have been updated to match the current tour timeline. Previous uncompleted automated tasks were archived.",
@@ -106,21 +111,28 @@ export const useCleanupArchivedTasks = () => {
     mutationFn: async (tourId: string) => {
       console.log('Cleaning up archived automated tasks for:', tourId);
       
+      // Delete archived automated tasks for this specific tour
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('tour_id', tourId)
         .eq('is_automated', true)
-        .eq('status', 'archived')
-        .like('automated_rule', 'tour_operations_%');
+        .eq('status', 'archived');
 
       if (error) {
         console.error('Error cleaning up archived tasks:', error);
         throw error;
       }
+
+      console.log('Successfully cleaned up archived tasks for tour:', tourId);
     },
     onSuccess: () => {
+      // Force refresh of all task queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
       toast({
         title: "Archived Tasks Cleaned",
         description: "Archived automated tasks have been permanently removed.",
@@ -131,7 +143,7 @@ export const useCleanupArchivedTasks = () => {
       console.error('Error cleaning up archived tasks:', error);
       toast({
         title: "Error",
-        description: "Failed to clean up archived tasks.",
+        description: "Failed to clean up archived tasks. Please try again.",
         variant: "destructive",
       });
     },
