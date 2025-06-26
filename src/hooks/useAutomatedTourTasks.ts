@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,12 +27,6 @@ export const useAutomatedTourTasks = () => {
       // Invalidate and refetch all task-related queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      
-      // Force immediate refetch with a delay to ensure database operations complete
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['tasks'] });
-        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      }, 1000);
       
       toast({
         title: "Tour Tasks Generated",
@@ -92,12 +87,6 @@ export const useRegenerateTourTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       
-      // Force refetch with delay to ensure database operations complete
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['tasks'] });
-        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      }, 1500);
-      
       toast({
         title: "Tour Tasks Regenerated",
         description: "Tour operation tasks have been updated to match the current tour timeline. Previous uncompleted automated tasks were archived.",
@@ -142,11 +131,6 @@ export const useCleanupArchivedTasks = () => {
       // Force refresh of all task queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['tasks'] });
-        queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      }, 500);
       
       toast({
         title: "Archived Tasks Cleaned",
