@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -53,20 +52,45 @@ export const useRegenerateTourTasks = () => {
     mutationFn: async (tourId: string) => {
       console.log('Regenerating tour tasks for:', tourId);
       
-      // First, delete existing automated tasks that haven't been completed
-      const { error: deleteError } = await supabase
+      // First, get all automated tasks for this tour that haven't been completed
+      const { data: existingTasks, error: fetchError } = await supabase
         .from('tasks')
-        .delete()
+        .select('id, title, status')
         .eq('tour_id', tourId)
-        .eq('is_automated', true)
-        .in('status', ['not_started', 'in_progress', 'waiting', 'archived']);
+        .eq('is_automated', true);
 
-      if (deleteError) {
-        console.error('Error deleting old tasks:', deleteError);
-        throw deleteError;
+      if (fetchError) {
+        console.error('Error fetching existing tasks:', fetchError);
+        throw fetchError;
       }
 
-      console.log('Successfully deleted old automated tasks for tour:', tourId);
+      console.log('Found existing automated tasks:', existingTasks);
+
+      // Filter out completed and cancelled tasks (keep them)
+      const tasksToDelete = existingTasks?.filter(task => 
+        task.status !== 'completed' && task.status !== 'cancelled'
+      ) || [];
+
+      console.log('Tasks to delete:', tasksToDelete.map(t => ({ id: t.id, title: t.title, status: t.status })));
+
+      // Delete each task individually to ensure proper deletion
+      if (tasksToDelete.length > 0) {
+        for (const task of tasksToDelete) {
+          const { error: deleteError } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', task.id);
+
+          if (deleteError) {
+            console.error(`Error deleting task ${task.id}:`, deleteError);
+            throw deleteError;
+          }
+          
+          console.log(`Successfully deleted task: ${task.title} (${task.id})`);
+        }
+      }
+
+      console.log(`Deleted ${tasksToDelete.length} old automated tasks for tour:`, tourId);
 
       // Generate new tasks based on current tour dates
       const { data, error } = await supabase
