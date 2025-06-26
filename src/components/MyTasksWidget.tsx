@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -129,21 +130,26 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
 
   // Get the current filtered tasks based on active filter
   const currentFilteredTasks = useMemo(() => {
+    // Start with search-filtered tasks or pending tasks
+    const baseTasksToFilter = Object.values(searchFilters).some(value => value !== undefined && value !== '') 
+      ? filteredTasksData 
+      : pendingTasks;
+
     if (!activeFilter) {
-      return filteredTasksData;
+      return baseTasksToFilter;
     }
 
     switch (activeFilter) {
       case 'overdue':
-        return pendingTasks.filter(task => 
+        return baseTasksToFilter.filter(task => 
           task.due_date && new Date(task.due_date) < new Date()
         );
       case 'critical':
-        return pendingTasks.filter(task => task.priority === 'critical');
+        return baseTasksToFilter.filter(task => task.priority === 'critical');
       case 'high':
-        return pendingTasks.filter(task => task.priority === 'high');
+        return baseTasksToFilter.filter(task => task.priority === 'high');
       case 'due_soon':
-        return pendingTasks.filter(task => {
+        return baseTasksToFilter.filter(task => {
           if (!task.due_date) return false;
           const dueDate = new Date(task.due_date);
           const today = new Date();
@@ -153,9 +159,9 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
       case 'completed':
         return completedTasks;
       default:
-        return filteredTasksData;
+        return baseTasksToFilter;
     }
-  }, [activeFilter, pendingTasks, completedTasks, filteredTasksData]);
+  }, [activeFilter, pendingTasks, completedTasks, filteredTasksData, searchFilters]);
 
   // Sort tasks by due date and limit - always calculate this
   const displayTasks = useMemo(() => {
