@@ -40,7 +40,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [editActivityModalOpen, setEditActivityModalOpen] = useState(false);
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [editTourModalOpen, setEditTourModalOpen] = useState(false);
-  const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
+  const [roomingListModalOpen, setEditRoomingListModalOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
@@ -54,9 +54,17 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
 
-  // Transform tour data with complete reactivity - force update whenever tour object changes
+  // Transform tour data with complete reactivity - listen to ALL tour properties
   useEffect(() => {
-    console.log('Tour data changed, transforming:', tour);
+    console.log('Tour data transformation triggered:', {
+      tourId: tour?.id,
+      tourName: tour?.name,
+      startDate: tour?.start_date,
+      endDate: tour?.end_date,
+      updatedAt: tour?.updated_at,
+      fullTour: tour
+    });
+    
     if (tour) {
       const transformed = {
         id: tour.id,
@@ -83,19 +91,47 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         endDate: tour.end_date,
         tourHost: tour.tour_host,
       };
-      console.log('Transformed tour data:', transformed);
+      console.log('Tour transformed successfully:', transformed);
       setTransformedTour(transformed);
     } else {
+      console.log('No tour provided, clearing transformed tour');
       setTransformedTour(null);
     }
-  }, [tour, tour?.updated_at]); // Listen to tour object and updated_at specifically
+  }, [
+    tour,
+    tour?.id,
+    tour?.name,
+    tour?.start_date,
+    tour?.end_date,
+    tour?.days,
+    tour?.nights,
+    tour?.location,
+    tour?.pickup_point,
+    tour?.status,
+    tour?.notes,
+    tour?.inclusions,
+    tour?.exclusions,
+    tour?.price_single,
+    tour?.price_double,
+    tour?.price_twin,
+    tour?.deposit_required,
+    tour?.instalment_amount,
+    tour?.instalment_date,
+    tour?.final_payment_date,
+    tour?.capacity,
+    tour?.tour_host,
+    tour?.updated_at
+  ]);
 
-  // Force refresh tour data when modal opens
+  // Force refresh when modal opens
   useEffect(() => {
     if (open && tour?.id) {
-      console.log('Modal opened, refreshing tour data for:', tour.id);
+      console.log('Modal opened, forcing refresh for tour:', tour.id);
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
+      queryClient.invalidateQueries({ queryKey: ['activities', tour.id] });
+      queryClient.invalidateQueries({ queryKey: ['hotels', tour.id] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     }
   }, [open, tour?.id, queryClient]);
 
@@ -368,7 +404,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       {selectedHotel && (
         <RoomingListModal
           open={roomingListModalOpen}
-          onOpenChange={setRoomingListModalOpen}
+          onOpenChange={setEditRoomingListModalOpen}
           hotel={selectedHotel}
           tourId={tour?.id || ""}
         />
@@ -380,10 +416,14 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           setEditTourModalOpen(open);
           if (!open) {
             setTourForEdit(null);
-            // Force refresh when edit modal closes
+            // Force comprehensive refresh when edit modal closes
             if (tour?.id) {
+              console.log('Edit modal closed, forcing comprehensive refresh');
               queryClient.invalidateQueries({ queryKey: ['tours'] });
               queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
+              queryClient.invalidateQueries({ queryKey: ['activities', tour.id] });
+              queryClient.invalidateQueries({ queryKey: ['hotels', tour.id] });
+              queryClient.invalidateQueries({ queryKey: ['bookings'] });
             }
           }
         }}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,9 +49,17 @@ export const TourDetailModalWithHotelsTab = ({
   const queryClient = useQueryClient();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
 
-  // Transform tour data with complete reactivity - force update whenever tour object changes
+  // Transform tour data with complete reactivity - listen to ALL tour properties
   useEffect(() => {
-    console.log('Tour data changed in hotels tab, transforming:', tour);
+    console.log('Hotels tab tour data transformation triggered:', {
+      tourId: tour?.id,
+      tourName: tour?.name,
+      startDate: tour?.start_date,
+      endDate: tour?.end_date,
+      updatedAt: tour?.updated_at,
+      fullTour: tour
+    });
+    
     if (tour) {
       const transformed = {
         id: tour.id,
@@ -79,19 +86,47 @@ export const TourDetailModalWithHotelsTab = ({
         endDate: tour.end_date,
         tourHost: tour.tour_host,
       };
-      console.log('Transformed tour data for hotels tab:', transformed);
+      console.log('Hotels tab tour transformed successfully:', transformed);
       setTransformedTour(transformed);
     } else {
+      console.log('No tour provided to hotels tab, clearing transformed tour');
       setTransformedTour(null);
     }
-  }, [tour, tour?.updated_at]); // Listen to tour object and updated_at specifically
+  }, [
+    tour,
+    tour?.id,
+    tour?.name,
+    tour?.start_date,
+    tour?.end_date,
+    tour?.days,
+    tour?.nights,
+    tour?.location,
+    tour?.pickup_point,
+    tour?.status,
+    tour?.notes,
+    tour?.inclusions,
+    tour?.exclusions,
+    tour?.price_single,
+    tour?.price_double,
+    tour?.price_twin,
+    tour?.deposit_required,
+    tour?.instalment_amount,
+    tour?.instalment_date,
+    tour?.final_payment_date,
+    tour?.capacity,
+    tour?.tour_host,
+    tour?.updated_at
+  ]);
 
-  // Force refresh tour data when modal opens
+  // Force refresh when modal opens
   useEffect(() => {
     if (open && tour?.id) {
-      console.log('Hotels tab modal opened, refreshing tour data for:', tour.id);
+      console.log('Hotels tab modal opened, forcing refresh for tour:', tour.id);
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
+      queryClient.invalidateQueries({ queryKey: ['activities', tour.id] });
+      queryClient.invalidateQueries({ queryKey: ['hotels', tour.id] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     }
   }, [open, tour?.id, queryClient]);
 
@@ -257,9 +292,13 @@ export const TourDetailModalWithHotelsTab = ({
           onOpenChange={(open) => {
             setEditTourModalOpen(open);
             if (!open && tour?.id) {
-              // Force refresh when edit modal closes
+              // Force comprehensive refresh when edit modal closes
+              console.log('Hotels tab edit modal closed, forcing comprehensive refresh');
               queryClient.invalidateQueries({ queryKey: ['tours'] });
               queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
+              queryClient.invalidateQueries({ queryKey: ['activities', tour.id] });
+              queryClient.invalidateQueries({ queryKey: ['hotels', tour.id] });
+              queryClient.invalidateQueries({ queryKey: ['bookings'] });
             }
           }}
           tour={transformedTour}
