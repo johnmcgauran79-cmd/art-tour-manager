@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -215,7 +216,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
                 <ClipboardList className="h-5 w-5 text-brand-navy" />
                 <CardTitle className="text-brand-navy">My Tasks</CardTitle>
                 <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                  {currentFilteredTasks.length} {hasSearchFilters ? 'filtered' : 'active'}
+                  {currentFilteredTasks.length} {hasSearchFilters || activeFilter ? 'filtered' : 'active'}
                 </Badge>
                 {activeFilter && (
                   <Badge variant="outline" className="text-xs">
