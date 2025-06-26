@@ -69,22 +69,22 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     setSearchFilters({});
   };
 
-  // Always calculate pending tasks
+  // Calculate pending tasks
   const pendingTasks = useMemo(() => {
     return tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
   }, [tasks]);
 
-  // Always calculate completed tasks
+  // Calculate completed tasks
   const completedTasks = useMemo(() => {
     return tasks?.filter(task => task.status === 'completed' || task.status === 'cancelled') || [];
   }, [tasks]);
 
-  // Filter tasks based on search criteria - always calculate this
-  const filteredTasksData = useMemo(() => {
+  // Apply search filters to all tasks first
+  const searchFilteredTasks = useMemo(() => {
     if (!tasks) return [];
     
     const hasFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
-    if (!hasFilters) return pendingTasks;
+    if (!hasFilters) return tasks;
     
     return tasks.filter(task => {
       if (searchFilters.search && !task.title.toLowerCase().includes(searchFilters.search.toLowerCase())) {
@@ -121,44 +121,52 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
       
       return true;
     });
-  }, [tasks, searchFilters, pendingTasks]);
+  }, [tasks, searchFilters]);
 
-  // Get the current filtered tasks based on active filter
+  // Get filtered tasks based on active filter - apply category filter AFTER search filter
   const currentFilteredTasks = useMemo(() => {
-    // Start with search-filtered tasks or pending tasks
-    const baseTasksToFilter = Object.values(searchFilters).some(value => value !== undefined && value !== '') 
-      ? filteredTasksData 
-      : pendingTasks;
-
     if (!activeFilter) {
-      return baseTasksToFilter;
+      // No category filter - show search filtered pending tasks
+      const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+      if (hasSearchFilters) {
+        return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+      }
+      return pendingTasks;
     }
 
+    // Apply category filter to search filtered tasks
     switch (activeFilter) {
       case 'overdue':
-        return baseTasksToFilter.filter(task => 
+        return searchFilteredTasks.filter(task => 
+          task.status !== 'completed' && task.status !== 'cancelled' &&
           task.due_date && new Date(task.due_date) < new Date()
         );
       case 'critical':
-        return baseTasksToFilter.filter(task => task.priority === 'critical');
+        return searchFilteredTasks.filter(task => 
+          task.status !== 'completed' && task.status !== 'cancelled' &&
+          task.priority === 'critical'
+        );
       case 'high':
-        return baseTasksToFilter.filter(task => task.priority === 'high');
+        return searchFilteredTasks.filter(task => 
+          task.status !== 'completed' && task.status !== 'cancelled' &&
+          task.priority === 'high'
+        );
       case 'due_soon':
-        return baseTasksToFilter.filter(task => {
-          if (!task.due_date) return false;
+        return searchFilteredTasks.filter(task => {
+          if (task.status === 'completed' || task.status === 'cancelled' || !task.due_date) return false;
           const dueDate = new Date(task.due_date);
           const today = new Date();
           const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
           return dueDate >= today && dueDate <= sevenDaysFromNow;
         });
       case 'completed':
-        return completedTasks;
+        return searchFilteredTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
       default:
-        return baseTasksToFilter;
+        return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
     }
-  }, [activeFilter, pendingTasks, completedTasks, filteredTasksData, searchFilters]);
+  }, [activeFilter, pendingTasks, searchFilteredTasks, searchFilters]);
 
-  // Sort tasks by due date and limit - always calculate this
+  // Sort and limit display tasks
   const displayTasks = useMemo(() => {
     const sortedTasks = [...currentFilteredTasks].sort((a, b) => {
       if (!a.due_date && !b.due_date) return 0;
