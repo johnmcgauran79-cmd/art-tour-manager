@@ -37,16 +37,13 @@ export const CleanupAutomatedTasksModal = ({
 
   const duplicateTaskGroups = Object.entries(duplicateGroups).filter(([_, tasks]) => tasks.length > 1);
   const totalDuplicates = duplicateTaskGroups.reduce((sum, [_, tasks]) => sum + tasks.length - 1, 0);
+  const archivedTasks = automatedTasks.filter(task => task.status === 'archived');
 
   const handleCleanupAndRegenerate = async () => {
     setIsProcessing(true);
     try {
-      // First regenerate tasks (this will archive old ones and create new ones)
+      // Use the improved regenerate function that deletes old tasks first
       await regenerateTourTasks.mutateAsync(tourId);
-      
-      // Then cleanup the archived tasks
-      await cleanupArchivedTasks.mutateAsync(tourId);
-      
       onOpenChange(false);
     } catch (error) {
       console.error('Error during cleanup and regeneration:', error);
@@ -81,11 +78,11 @@ export const CleanupAutomatedTasksModal = ({
           <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
-              <span className="font-medium text-orange-800">Task Cleanup Required</span>
+              <span className="font-medium text-orange-800">Task Cleanup Available</span>
             </div>
             <p className="text-sm text-orange-700">
-              This tour has {totalDuplicates} duplicate automated tasks. This can happen when tour dates 
-              are changed multiple times or tasks are regenerated repeatedly.
+              This tour has {totalDuplicates} duplicate automated tasks and {archivedTasks.length} archived tasks. 
+              Clean up duplicates and outdated tasks to maintain a tidy task list.
             </p>
           </div>
 
@@ -97,6 +94,20 @@ export const CleanupAutomatedTasksModal = ({
                   <div key={title} className="flex items-center justify-between p-2 bg-gray-50 rounded">
                     <span className="text-sm font-medium">{title}</span>
                     <Badge variant="destructive">{tasks.length} copies</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {archivedTasks.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-medium">Archived Tasks:</h4>
+              <div className="max-h-40 overflow-y-auto space-y-2">
+                {archivedTasks.map((task) => (
+                  <div key={task.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span className="text-sm font-medium">{task.title}</span>
+                    <Badge variant="secondary">Archived</Badge>
                   </div>
                 ))}
               </div>
@@ -117,14 +128,14 @@ export const CleanupAutomatedTasksModal = ({
                 {isProcessing ? "Processing..." : "Clean & Regenerate All Tasks"}
               </Button>
               <p className="text-xs text-gray-600">
-                Archives all existing automated tasks and creates fresh ones based on current tour timeline.
+                Removes all existing automated tasks (except completed ones) and creates fresh ones based on current tour timeline.
               </p>
             </div>
 
             <div className="space-y-2">
               <Button
                 onClick={handleCleanupArchivedOnly}
-                disabled={isProcessing}
+                disabled={isProcessing || archivedTasks.length === 0}
                 className="w-full flex items-center gap-2"
                 variant="outline"
               >
@@ -132,7 +143,7 @@ export const CleanupAutomatedTasksModal = ({
                 {isProcessing ? "Processing..." : "Clean Archived Tasks Only"}
               </Button>
               <p className="text-xs text-gray-600">
-                Permanently removes already archived automated tasks without affecting active ones.
+                Permanently removes only the archived automated tasks without affecting active ones.
               </p>
             </div>
           </div>

@@ -53,21 +53,20 @@ export const useRegenerateTourTasks = () => {
     mutationFn: async (tourId: string) => {
       console.log('Regenerating tour tasks for:', tourId);
       
-      // First, archive existing automated tasks that haven't been completed
-      const { error: archiveError } = await supabase
+      // First, delete existing automated tasks that haven't been completed
+      const { error: deleteError } = await supabase
         .from('tasks')
-        .update({ 
-          status: 'archived',
-          updated_at: new Date().toISOString()
-        })
+        .delete()
         .eq('tour_id', tourId)
         .eq('is_automated', true)
-        .in('status', ['not_started', 'in_progress', 'waiting']);
+        .in('status', ['not_started', 'in_progress', 'waiting', 'archived']);
 
-      if (archiveError) {
-        console.error('Error archiving tasks:', archiveError);
-        throw archiveError;
+      if (deleteError) {
+        console.error('Error deleting old tasks:', deleteError);
+        throw deleteError;
       }
+
+      console.log('Successfully deleted old automated tasks for tour:', tourId);
 
       // Generate new tasks based on current tour dates
       const { data, error } = await supabase
@@ -89,7 +88,7 @@ export const useRegenerateTourTasks = () => {
       
       toast({
         title: "Tour Tasks Regenerated",
-        description: "Tour operation tasks have been updated to match the current tour timeline. Previous uncompleted automated tasks were archived.",
+        description: "Tour operation tasks have been updated to match the current tour timeline. Previous uncompleted automated tasks were removed.",
         duration: 5000,
       });
     },
