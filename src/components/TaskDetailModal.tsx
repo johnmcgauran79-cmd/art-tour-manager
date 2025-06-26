@@ -83,6 +83,20 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
   const isBlocked = task.dependent_task && task.dependent_task.status !== 'completed';
 
+  // Check if any changes have been made
+  const hasChanges = () => {
+    if (!task) return false;
+    
+    return (
+      editedTask.title !== task.title ||
+      editedTask.description !== task.description ||
+      editedTask.status !== task.status ||
+      editedTask.priority !== task.priority ||
+      editedTask.category !== task.category ||
+      editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '')
+    );
+  };
+
   const handleUpdateTask = async () => {
     try {
       const updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at'>> = {};
@@ -301,12 +315,17 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             <div className="flex gap-3 pt-4 border-t">
               <Button
                 onClick={handleUpdateTask}
-                disabled={updateTask.isPending}
+                disabled={updateTask.isPending || !hasChanges()}
                 className="flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
                 {updateTask.isPending ? "Updating..." : "Update Task"}
               </Button>
+              {hasChanges() && (
+                <div className="text-sm text-muted-foreground flex items-center">
+                  Unsaved changes detected
+                </div>
+              )}
             </div>
 
             {/* Task Details Grid */}
