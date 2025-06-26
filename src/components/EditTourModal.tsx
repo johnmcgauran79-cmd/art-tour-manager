@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -190,8 +191,8 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
       setFormData({
         name: tour.name,
         tour_host: tour.tourHost || "",
-        start_date: formatDateForInput(tour.startDate),
-        end_date: formatDateForInput(tour.endDate),
+        start_date: tour.startDate ? formatDateForInput(tour.startDate) : "",
+        end_date: tour.endDate ? formatDateForInput(tour.endDate) : "",
         days: "",
         nights: "",
         location: tour.location,
@@ -205,8 +206,8 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
         price_twin: tour.pricing.twin?.toString() || "",
         deposit_required: tour.deposit?.toString() || "",
         instalment_amount: tour.instalmentAmount?.toString() || "",
-        instalment_date: tour.instalmentDate,
-        final_payment_date: tour.finalPaymentDate,
+        instalment_date: tour.instalmentDate ? formatDateForInput(tour.instalmentDate) : "",
+        final_payment_date: tour.finalPaymentDate ? formatDateForInput(tour.finalPaymentDate) : "",
         capacity: tour.totalCapacity?.toString() || ""
       });
     }
@@ -215,6 +216,27 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Submitting form with data:', formData);
+    
+    // Validate required fields
+    if (!formData.name || !formData.tour_host || !formData.start_date || !formData.end_date) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields (Name, Tour Host, Start Date, End Date).",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate date order
+    if (new Date(formData.start_date) >= new Date(formData.end_date)) {
+      toast({
+        title: "Validation Error",
+        description: "End date must be after start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     updateTour.mutate(formData);
   };
 
@@ -239,7 +261,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Tour Name</Label>
+              <Label htmlFor="name">Tour Name *</Label>
               <Input
                 id="name"
                 value={formData.name}
@@ -249,7 +271,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tour_host">Tour Host</Label>
+              <Label htmlFor="tour_host">Tour Host *</Label>
               <Input
                 id="tour_host"
                 value={formData.tour_host}
@@ -268,7 +290,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="start_date">Start Date</Label>
+              <Label htmlFor="start_date">Start Date *</Label>
               <Input
                 id="start_date"
                 type="date"
@@ -279,7 +301,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date">End Date</Label>
+              <Label htmlFor="end_date">End Date *</Label>
               <Input
                 id="end_date"
                 type="date"
