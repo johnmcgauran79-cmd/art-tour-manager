@@ -1,4 +1,5 @@
 
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -179,10 +180,14 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
   }
 
   const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => {
+    console.log('Category clicked:', type);
+    console.log('Current activeFilter before:', activeFilter);
     setActiveFilter(type);
+    console.log('activeFilter should now be:', type);
   };
 
   const handleBackToAllTasks = () => {
+    console.log('Back to all tasks clicked, clearing activeFilter');
     setActiveFilter(null);
   };
 
@@ -204,6 +209,8 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
   };
 
   const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
+
+  console.log('MyTasksWidget render - activeFilter:', activeFilter, 'limitToTop5:', limitToTop5);
 
   // If this is in the full widget mode (not limited), show everything consistently
   if (!limitToTop5) {
