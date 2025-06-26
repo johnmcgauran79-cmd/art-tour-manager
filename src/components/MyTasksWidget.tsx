@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -86,32 +85,26 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     if (!hasFilters) return pendingTasks;
     
     return tasks.filter(task => {
-      // Text search in task title
       if (searchFilters.search && !task.title.toLowerCase().includes(searchFilters.search.toLowerCase())) {
         return false;
       }
       
-      // Tour name search
       if (searchFilters.tourName && (!task.tours?.name || !task.tours.name.toLowerCase().includes(searchFilters.tourName.toLowerCase()))) {
         return false;
       }
       
-      // Status filter
       if (searchFilters.status && task.status !== searchFilters.status) {
         return false;
       }
       
-      // Priority filter
       if (searchFilters.priority && task.priority !== searchFilters.priority) {
         return false;
       }
       
-      // Category filter
       if (searchFilters.category && task.category !== searchFilters.category) {
         return false;
       }
       
-      // Date range filter
       if (searchFilters.startDate && task.due_date) {
         const taskDate = new Date(task.due_date);
         const startDate = new Date(searchFilters.startDate);
