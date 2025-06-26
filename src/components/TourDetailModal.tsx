@@ -54,8 +54,9 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
 
-  // Transform tour data whenever ANY tour property changes
+  // Transform tour data with complete reactivity - force update whenever tour object changes
   useEffect(() => {
+    console.log('Tour data changed, transforming:', tour);
     if (tour) {
       const transformed = {
         id: tour.id,
@@ -82,34 +83,21 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         endDate: tour.end_date,
         tourHost: tour.tour_host,
       };
+      console.log('Transformed tour data:', transformed);
       setTransformedTour(transformed);
     } else {
       setTransformedTour(null);
     }
-  }, [
-    tour?.id,
-    tour?.name,
-    tour?.start_date,
-    tour?.end_date,
-    tour?.days,
-    tour?.nights,
-    tour?.location,
-    tour?.pickup_point,
-    tour?.status,
-    tour?.notes,
-    tour?.inclusions,
-    tour?.exclusions,
-    tour?.price_single,
-    tour?.price_double,
-    tour?.price_twin,
-    tour?.deposit_required,
-    tour?.instalment_amount,
-    tour?.instalment_date,
-    tour?.final_payment_date,
-    tour?.capacity,
-    tour?.tour_host,
-    tour?.updated_at
-  ]);
+  }, [tour, tour?.updated_at]); // Listen to tour object and updated_at specifically
+
+  // Force refresh tour data when modal opens
+  useEffect(() => {
+    if (open && tour?.id) {
+      console.log('Modal opened, refreshing tour data for:', tour.id);
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
+    }
+  }, [open, tour?.id, queryClient]);
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
@@ -392,6 +380,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           setEditTourModalOpen(open);
           if (!open) {
             setTourForEdit(null);
+            // Force refresh when edit modal closes
+            if (tour?.id) {
+              queryClient.invalidateQueries({ queryKey: ['tours'] });
+              queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
+            }
           }
         }}
         tour={tourForEdit || transformedTour}
