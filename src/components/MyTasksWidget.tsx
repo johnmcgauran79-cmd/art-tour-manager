@@ -1,4 +1,3 @@
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -253,22 +252,19 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
               </div>
             </div>
             
-            {!hasSearchFilters && !activeFilter && (
-              <div className="mt-4">
-                <TaskCategoriesGrid 
-                  tasks={pendingTasks}
-                  onCategoryClick={handleCategoryClick}
-                />
-              </div>
-            )}
+            {/* Always show categories grid when not in limited mode */}
+            <div className="mt-4">
+              <TaskCategoriesGrid 
+                tasks={pendingTasks}
+                onCategoryClick={handleCategoryClick}
+              />
+            </div>
           </CardHeader>
           
           <CardContent>
             <div className="space-y-4">
-              {/* Enhanced Search - only show when not in a filter view */}
-              {!activeFilter && (
-                <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
-              )}
+              {/* Always show search */}
+              <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
 
               {displayTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
