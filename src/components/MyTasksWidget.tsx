@@ -1,5 +1,3 @@
-
-
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -74,11 +72,6 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     return tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
   }, [tasks]);
 
-  // Calculate completed tasks
-  const completedTasks = useMemo(() => {
-    return tasks?.filter(task => task.status === 'completed' || task.status === 'cancelled') || [];
-  }, [tasks]);
-
   // Apply search filters to all tasks first
   const searchFilteredTasks = useMemo(() => {
     if (!tasks) return [];
@@ -123,10 +116,9 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     });
   }, [tasks, searchFilters]);
 
-  // Get filtered tasks based on active filter - apply category filter AFTER search filter
+  // Get filtered tasks based on active filter
   const currentFilteredTasks = useMemo(() => {
     if (!activeFilter) {
-      // No category filter - show search filtered pending tasks
       const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
       if (hasSearchFilters) {
         return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
@@ -134,7 +126,6 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
       return pendingTasks;
     }
 
-    // Apply category filter to search filtered tasks
     switch (activeFilter) {
       case 'overdue':
         return searchFilteredTasks.filter(task => 
@@ -266,7 +257,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
               </div>
             </div>
             
-            {/* Always show categories grid when not in limited mode */}
+            {/* Always show categories grid */}
             <div className="mt-4">
               <TaskCategoriesGrid 
                 tasks={pendingTasks}
@@ -380,4 +371,3 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     </div>
   );
 };
-
