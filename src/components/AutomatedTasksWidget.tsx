@@ -33,7 +33,7 @@ export const AutomatedTasksWidget = ({ tourId }: AutomatedTasksWidgetProps) => {
             Automated Tour Tasks
           </CardTitle>
           <Badge variant="secondary" className="bg-purple-100 text-purple-700">
-            Auto-updating
+            Fully Automated
           </Badge>
         </div>
       </CardHeader>
@@ -66,8 +66,8 @@ export const AutomatedTasksWidget = ({ tourId }: AutomatedTasksWidgetProps) => {
         
         <div className="mt-4 p-3 bg-purple-100 border border-purple-200 rounded-lg">
           <p className="text-xs text-purple-700">
-            <strong>Smart Automation:</strong> Task due dates automatically update when you change tour dates. 
-            No manual intervention needed - the system keeps everything synchronized.
+            <strong>Intelligent Automation:</strong> Task due dates automatically update when you change any related dates - 
+            tour dates, hotel cutoff dates, or activity cutoff dates. The system maintains perfect synchronization without any manual intervention.
           </p>
         </div>
       </CardContent>
