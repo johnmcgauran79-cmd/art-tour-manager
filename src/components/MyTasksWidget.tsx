@@ -1,3 +1,4 @@
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -212,10 +213,15 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-brand-navy" />
-                <CardTitle className="text-brand-navy">{getFilterTitle()}</CardTitle>
+                <CardTitle className="text-brand-navy">My Tasks</CardTitle>
                 <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                  {currentFilteredTasks.length} {activeFilter ? 'tasks' : (hasSearchFilters ? 'filtered' : 'active')}
+                  {currentFilteredTasks.length} {hasSearchFilters ? 'filtered' : 'active'}
                 </Badge>
+                {activeFilter && (
+                  <Badge variant="outline" className="text-xs">
+                    {getFilterTitle()}
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 {activeFilter && (
@@ -226,7 +232,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
                     className="flex items-center gap-2"
                   >
                     <ArrowLeft className="h-4 w-4" />
-                    Back to All Active Tasks
+                    Clear Filter
                   </Button>
                 )}
                 <Button
