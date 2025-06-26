@@ -1,4 +1,5 @@
 
+
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -204,7 +205,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
 
   const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
 
-  // If this is in the full widget mode (not limited), show categories and header
+  // If this is in the full widget mode (not limited), show everything consistently
   if (!limitToTop5) {
     return (
       <>
@@ -371,3 +372,4 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     </div>
   );
 };
+
