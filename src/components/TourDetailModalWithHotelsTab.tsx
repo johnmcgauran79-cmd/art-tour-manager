@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,7 +47,7 @@ export const TourDetailModalWithHotelsTab = ({
   const { userRole } = useAuth();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
 
-  // Transform tour data whenever the tour prop changes
+  // Transform tour data whenever ANY tour property changes
   useEffect(() => {
     if (tour) {
       const transformed = {
@@ -80,7 +79,30 @@ export const TourDetailModalWithHotelsTab = ({
     } else {
       setTransformedTour(null);
     }
-  }, [tour]);
+  }, [
+    tour?.id,
+    tour?.name,
+    tour?.start_date,
+    tour?.end_date,
+    tour?.days,
+    tour?.nights,
+    tour?.location,
+    tour?.pickup_point,
+    tour?.status,
+    tour?.notes,
+    tour?.inclusions,
+    tour?.exclusions,
+    tour?.price_single,
+    tour?.price_double,
+    tour?.price_twin,
+    tour?.deposit_required,
+    tour?.instalment_amount,
+    tour?.instalment_date,
+    tour?.final_payment_date,
+    tour?.capacity,
+    tour?.tour_host,
+    tour?.updated_at
+  ]);
 
   const handleActivityClick = (activity: any) => {
     setSelectedActivity(activity);
