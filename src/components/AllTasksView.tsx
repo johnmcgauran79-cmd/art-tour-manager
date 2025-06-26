@@ -12,6 +12,8 @@ import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 import { TaskSearch } from "@/components/TaskSearch";
 
 export const AllTasksView = () => {
+  console.log('AllTasksView rendering');
+  
   const { data: tasks, isLoading } = useMyTasks();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
@@ -31,6 +33,13 @@ export const AllTasksView = () => {
     tourName?: string;
   }>({});
 
+  console.log('AllTasksView state:', { 
+    tasksCount: tasks?.length, 
+    isLoading, 
+    showFiltered, 
+    showCompletedOnly 
+  });
+
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setTaskDetailModalOpen(true);
@@ -44,6 +53,8 @@ export const AllTasksView = () => {
   };
 
   const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => {
+    console.log('Category clicked:', type);
+    
     if (type === 'completed') {
       // Toggle completed view instead of filtering
       setShowCompletedOnly(true);
@@ -156,9 +167,8 @@ export const AllTasksView = () => {
     });
   }, [tasks, searchFilters, showCompletedOnly]);
 
-  const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
-
   if (isLoading) {
+    console.log('AllTasksView showing loading state');
     return (
       <Card className="border-brand-navy/20 shadow-lg">
         <CardContent>
@@ -171,6 +181,7 @@ export const AllTasksView = () => {
   }
 
   if (showFiltered) {
+    console.log('AllTasksView showing filtered view');
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -201,6 +212,8 @@ export const AllTasksView = () => {
 
   const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
 
+  console.log('AllTasksView rendering main view');
+  
   return (
     <>
       <Card className="border-brand-navy/20 shadow-lg">

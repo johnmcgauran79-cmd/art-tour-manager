@@ -9,13 +9,17 @@ interface TaskCategoriesGridProps {
 }
 
 export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGridProps) => {
-  // Calculate task counts
-  const overdueTasks = tasks.filter(task => 
+  console.log('TaskCategoriesGrid rendering with tasks:', tasks?.length);
+  
+  // Calculate task counts for non-completed tasks
+  const pendingTasks = tasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+  
+  const overdueTasks = pendingTasks.filter(task => 
     task.due_date && new Date(task.due_date) < new Date()
   );
-  const criticalTasks = tasks.filter(task => task.priority === 'critical');
-  const highPriorityTasks = tasks.filter(task => task.priority === 'high');
-  const dueSoonTasks = tasks.filter(task => {
+  const criticalTasks = pendingTasks.filter(task => task.priority === 'critical');
+  const highPriorityTasks = pendingTasks.filter(task => task.priority === 'high');
+  const dueSoonTasks = pendingTasks.filter(task => {
     if (!task.due_date) return false;
     const dueDate = new Date(task.due_date);
     const today = new Date();
@@ -23,9 +27,8 @@ export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGri
     return dueDate >= today && dueDate <= sevenDaysFromNow;
   });
 
-  // Get all tasks including completed ones for the completed count
-  const allTasks = tasks; // This will be passed from parent with all tasks
-  const completedTasks = allTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
+  // Get completed tasks count from all tasks
+  const completedTasks = tasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
