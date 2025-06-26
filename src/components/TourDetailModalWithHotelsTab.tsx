@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +16,7 @@ import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
 import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { TourOperationsTab } from "@/components/TourOperationsTab";
-import { Tour } from "@/hooks/useTours";
+import { Tour, useTours } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,43 +49,47 @@ export const TourDetailModalWithHotelsTab = ({
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
+  
+  // Get fresh tour data from the query cache
+  const { data: tours } = useTours();
+  const currentTour = tours?.find(t => t.id === tour?.id) || tour;
 
-  // Transform tour data with complete reactivity - listen to ALL tour properties
+  // Transform tour data with complete reactivity - listen to the current tour from query cache
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {
-      tourId: tour?.id,
-      tourName: tour?.name,
-      startDate: tour?.start_date,
-      endDate: tour?.end_date,
-      updatedAt: tour?.updated_at,
-      fullTour: tour
+      tourId: currentTour?.id,
+      tourName: currentTour?.name,
+      startDate: currentTour?.start_date,
+      endDate: currentTour?.end_date,
+      updatedAt: currentTour?.updated_at,
+      fullTour: currentTour
     });
     
-    if (tour) {
+    if (currentTour) {
       const transformed = {
-        id: tour.id,
-        name: tour.name,
-        dates: formatDateRange(tour.start_date, tour.end_date),
-        duration: `${tour.days} days / ${tour.nights} nights`,
-        location: tour.location || "",
-        pickupPoint: tour.pickup_point || "",
-        status: tour.status,
-        notes: tour.notes || "",
-        inclusions: tour.inclusions || "",
-        exclusions: tour.exclusions || "",
+        id: currentTour.id,
+        name: currentTour.name,
+        dates: formatDateRange(currentTour.start_date, currentTour.end_date),
+        duration: `${currentTour.days} days / ${currentTour.nights} nights`,
+        location: currentTour.location || "",
+        pickupPoint: currentTour.pickup_point || "",
+        status: currentTour.status,
+        notes: currentTour.notes || "",
+        inclusions: currentTour.inclusions || "",
+        exclusions: currentTour.exclusions || "",
         pricing: {
-          single: tour.price_single || 0,
-          double: tour.price_double || 0,
-          twin: tour.price_twin || 0,
+          single: currentTour.price_single || 0,
+          double: currentTour.price_double || 0,
+          twin: currentTour.price_twin || 0,
         },
-        deposit: tour.deposit_required || 0,
-        instalmentAmount: tour.instalment_amount || 0,
-        instalmentDate: tour.instalment_date || "",
-        finalPaymentDate: tour.final_payment_date || "",
-        totalCapacity: tour.capacity || 0,
-        startDate: tour.start_date,
-        endDate: tour.end_date,
-        tourHost: tour.tour_host,
+        deposit: currentTour.deposit_required || 0,
+        instalmentAmount: currentTour.instalment_amount || 0,
+        instalmentDate: currentTour.instalment_date || "",
+        finalPaymentDate: currentTour.final_payment_date || "",
+        totalCapacity: currentTour.capacity || 0,
+        startDate: currentTour.start_date,
+        endDate: currentTour.end_date,
+        tourHost: currentTour.tour_host,
       };
       console.log('Hotels tab tour transformed successfully:', transformed);
       setTransformedTour(transformed);
@@ -92,31 +97,7 @@ export const TourDetailModalWithHotelsTab = ({
       console.log('No tour provided to hotels tab, clearing transformed tour');
       setTransformedTour(null);
     }
-  }, [
-    tour,
-    tour?.id,
-    tour?.name,
-    tour?.start_date,
-    tour?.end_date,
-    tour?.days,
-    tour?.nights,
-    tour?.location,
-    tour?.pickup_point,
-    tour?.status,
-    tour?.notes,
-    tour?.inclusions,
-    tour?.exclusions,
-    tour?.price_single,
-    tour?.price_double,
-    tour?.price_twin,
-    tour?.deposit_required,
-    tour?.instalment_amount,
-    tour?.instalment_date,
-    tour?.final_payment_date,
-    tour?.capacity,
-    tour?.tour_host,
-    tour?.updated_at
-  ]);
+  }, [currentTour]);
 
   // Force refresh when modal opens
   useEffect(() => {
@@ -155,7 +136,7 @@ export const TourDetailModalWithHotelsTab = ({
                 <div className="h-10 w-10 bg-brand-navy/10 rounded-lg flex items-center justify-center">
                   <MapPin className="h-5 w-5 text-brand-navy" />
                 </div>
-                <DialogTitle className="text-brand-navy">{tour?.name}</DialogTitle>
+                <DialogTitle className="text-brand-navy">{currentTour?.name}</DialogTitle>
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -208,7 +189,7 @@ export const TourDetailModalWithHotelsTab = ({
 
             <TabsContent value="hotels" className="space-y-4">
               <TourHotelsTab
-                tourId={tour?.id || ""}
+                tourId={currentTour?.id || ""}
                 onAddHotel={() => setAddHotelModalOpen(true)}
                 onEditHotel={handleEditHotel}
                 onRoomingList={handleRoomingList}
@@ -217,7 +198,7 @@ export const TourDetailModalWithHotelsTab = ({
 
             <TabsContent value="activities" className="space-y-4">
               <TourActivitiesTab
-                tourId={tour?.id || ""}
+                tourId={currentTour?.id || ""}
                 onAddActivity={() => setAddActivityModalOpen(true)}
                 onEditActivity={handleActivityClick}
               />
@@ -225,8 +206,8 @@ export const TourDetailModalWithHotelsTab = ({
 
             <TabsContent value="bookings" className="space-y-4">
               <TourBookingsTab
-                tourId={tour?.id || ""}
-                tourName={tour?.name || ""}
+                tourId={currentTour?.id || ""}
+                tourName={currentTour?.name || ""}
                 onAddBooking={() => setAddBookingModalOpen(true)}
               />
             </TabsContent>
@@ -234,8 +215,8 @@ export const TourDetailModalWithHotelsTab = ({
             {canViewOperations && (
               <TabsContent value="operations" className="space-y-4">
                 <TourOperationsTab
-                  tourId={tour?.id || ""}
-                  tourName={tour?.name || ""}
+                  tourId={currentTour?.id || ""}
+                  tourName={currentTour?.name || ""}
                 />
               </TabsContent>
             )}
@@ -246,19 +227,19 @@ export const TourDetailModalWithHotelsTab = ({
       <AddBookingModal
         open={addBookingModalOpen}
         onOpenChange={setAddBookingModalOpen}
-        preSelectedTourId={tour?.id}
+        preSelectedTourId={currentTour?.id}
       />
 
       <AddActivityModal
         open={addActivityModalOpen}
         onOpenChange={setAddActivityModalOpen}
-        tourId={tour?.id}
+        tourId={currentTour?.id}
       />
 
       <AddHotelModal
         open={addHotelModalOpen}
         onOpenChange={setAddHotelModalOpen}
-        tourId={tour?.id}
+        tourId={currentTour?.id}
       />
 
       {selectedActivity && (
@@ -282,7 +263,7 @@ export const TourDetailModalWithHotelsTab = ({
           open={roomingListModalOpen}
           onOpenChange={setRoomingListModalOpen}
           hotel={selectedHotel}
-          tourId={tour?.id || ""}
+          tourId={currentTour?.id || ""}
         />
       )}
 

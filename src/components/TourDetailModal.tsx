@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,7 +19,7 @@ import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { TourAttachmentsSection } from "@/components/TourAttachmentsSection";
 import { DuplicateTourDialog } from "@/components/DuplicateTourDialog";
-import { Tour } from "@/hooks/useTours";
+import { Tour, useTours } from "@/hooks/useTours";
 import { useDuplicateTour } from "@/hooks/useDuplicateTour";
 import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
@@ -53,43 +54,47 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
+  
+  // Get fresh tour data from the query cache
+  const { data: tours } = useTours();
+  const currentTour = tours?.find(t => t.id === tour?.id) || tour;
 
-  // Transform tour data with complete reactivity - listen to ALL tour properties
+  // Transform tour data with complete reactivity - listen to the current tour from query cache
   useEffect(() => {
     console.log('Tour data transformation triggered:', {
-      tourId: tour?.id,
-      tourName: tour?.name,
-      startDate: tour?.start_date,
-      endDate: tour?.end_date,
-      updatedAt: tour?.updated_at,
-      fullTour: tour
+      tourId: currentTour?.id,
+      tourName: currentTour?.name,
+      startDate: currentTour?.start_date,
+      endDate: currentTour?.end_date,
+      updatedAt: currentTour?.updated_at,
+      fullTour: currentTour
     });
     
-    if (tour) {
+    if (currentTour) {
       const transformed = {
-        id: tour.id,
-        name: tour.name,
-        dates: formatDateRange(tour.start_date, tour.end_date),
-        duration: `${tour.days} days / ${tour.nights} nights`,
-        location: tour.location || "",
-        pickupPoint: tour.pickup_point || "",
-        status: tour.status,
-        notes: tour.notes || "",
-        inclusions: tour.inclusions || "",
-        exclusions: tour.exclusions || "",
+        id: currentTour.id,
+        name: currentTour.name,
+        dates: formatDateRange(currentTour.start_date, currentTour.end_date),
+        duration: `${currentTour.days} days / ${currentTour.nights} nights`,
+        location: currentTour.location || "",
+        pickupPoint: currentTour.pickup_point || "",
+        status: currentTour.status,
+        notes: currentTour.notes || "",
+        inclusions: currentTour.inclusions || "",
+        exclusions: currentTour.exclusions || "",
         pricing: {
-          single: tour.price_single || 0,
-          double: tour.price_double || 0,
-          twin: tour.price_twin || 0,
+          single: currentTour.price_single || 0,
+          double: currentTour.price_double || 0,
+          twin: currentTour.price_twin || 0,
         },
-        deposit: tour.deposit_required || 0,
-        instalmentAmount: tour.instalment_amount || 0,
-        instalmentDate: tour.instalment_date || "",
-        finalPaymentDate: tour.final_payment_date || "",
-        totalCapacity: tour.capacity || 0,
-        startDate: tour.start_date,
-        endDate: tour.end_date,
-        tourHost: tour.tour_host,
+        deposit: currentTour.deposit_required || 0,
+        instalmentAmount: currentTour.instalment_amount || 0,
+        instalmentDate: currentTour.instalment_date || "",
+        finalPaymentDate: currentTour.final_payment_date || "",
+        totalCapacity: currentTour.capacity || 0,
+        startDate: currentTour.start_date,
+        endDate: currentTour.end_date,
+        tourHost: currentTour.tour_host,
       };
       console.log('Tour transformed successfully:', transformed);
       setTransformedTour(transformed);
@@ -97,31 +102,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       console.log('No tour provided, clearing transformed tour');
       setTransformedTour(null);
     }
-  }, [
-    tour,
-    tour?.id,
-    tour?.name,
-    tour?.start_date,
-    tour?.end_date,
-    tour?.days,
-    tour?.nights,
-    tour?.location,
-    tour?.pickup_point,
-    tour?.status,
-    tour?.notes,
-    tour?.inclusions,
-    tour?.exclusions,
-    tour?.price_single,
-    tour?.price_double,
-    tour?.price_twin,
-    tour?.deposit_required,
-    tour?.instalment_amount,
-    tour?.instalment_date,
-    tour?.final_payment_date,
-    tour?.capacity,
-    tour?.tour_host,
-    tour?.updated_at
-  ]);
+  }, [currentTour]);
 
   // Force refresh when modal opens
   useEffect(() => {
@@ -231,7 +212,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 <div className="h-10 w-10 bg-brand-navy/10 rounded-lg flex items-center justify-center">
                   <MapPin className="h-5 w-5 text-brand-navy" />
                 </div>
-                <DialogTitle className="text-brand-navy">{tour?.name}</DialogTitle>
+                <DialogTitle className="text-brand-navy">{currentTour?.name}</DialogTitle>
               </div>
               <div className="flex items-center gap-2">
                 {(userRole === 'admin' || userRole === 'manager') && (
@@ -261,7 +242,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                       <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure you want to delete this tour?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete the tour "{tour?.name}" and all associated data including bookings, activities, and hotels. This action will be logged for security audit.
+                          This action cannot be undone. This will permanently delete the tour "{currentTour?.name}" and all associated data including bookings, activities, and hotels. This action will be logged for security audit.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -329,7 +310,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
             <TabsContent value="hotels" className="space-y-4">
               <TourHotelsTab
-                tourId={tour?.id || ""}
+                tourId={currentTour?.id || ""}
                 onAddHotel={() => setAddHotelModalOpen(true)}
                 onEditHotel={handleEditHotel}
                 onRoomingList={handleRoomingList}
@@ -338,7 +319,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
             <TabsContent value="activities" className="space-y-4">
               <TourActivitiesTab
-                tourId={tour?.id || ""}
+                tourId={currentTour?.id || ""}
                 onAddActivity={() => setAddActivityModalOpen(true)}
                 onEditActivity={handleActivityClick}
               />
@@ -346,22 +327,22 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
 
             <TabsContent value="bookings" className="space-y-4">
               <TourBookingsTab
-                tourId={tour?.id || ""}
-                tourName={tour?.name || ""}
+                tourId={currentTour?.id || ""}
+                tourName={currentTour?.name || ""}
                 onAddBooking={() => setAddBookingModalOpen(true)}
               />
             </TabsContent>
 
             <TabsContent value="operations" className="space-y-4">
               <TourOperationsTab
-                tourId={tour?.id || ""}
-                tourName={tour?.name || ""}
+                tourId={currentTour?.id || ""}
+                tourName={currentTour?.name || ""}
                 onNavigate={handleNavigateFromDeadlines}
               />
             </TabsContent>
 
             <TabsContent value="attachments" className="space-y-4">
-              <TourAttachmentsSection tourId={tour?.id || ""} />
+              <TourAttachmentsSection tourId={currentTour?.id || ""} />
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -370,19 +351,19 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       <AddBookingModal
         open={addBookingModalOpen}
         onOpenChange={setAddBookingModalOpen}
-        preSelectedTourId={tour?.id}
+        preSelectedTourId={currentTour?.id}
       />
 
       <AddActivityModal
         open={addActivityModalOpen}
         onOpenChange={setAddActivityModalOpen}
-        tourId={tour?.id}
+        tourId={currentTour?.id}
       />
 
       <AddHotelModal
         open={addHotelModalOpen}
         onOpenChange={setAddHotelModalOpen}
-        tourId={tour?.id}
+        tourId={currentTour?.id}
       />
 
       {selectedActivity && (
@@ -406,7 +387,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           open={roomingListModalOpen}
           onOpenChange={setEditRoomingListModalOpen}
           hotel={selectedHotel}
-          tourId={tour?.id || ""}
+          tourId={currentTour?.id || ""}
         />
       )}
 
@@ -434,13 +415,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       <DuplicateTourDialog
         open={duplicateDialogOpen}
         onOpenChange={setDuplicateDialogOpen}
-        originalTour={tour ? { id: tour.id, name: tour.name } : null}
+        originalTour={currentTour ? { id: currentTour.id, name: currentTour.name } : null}
         onTourCreated={handleTourCreated}
       />
 
       <TourOperationsReportsModal
-        tourId={tour?.id || ""}
-        tourName={tour?.name || ""}
+        tourId={currentTour?.id || ""}
+        tourName={currentTour?.name || ""}
         open={reportsModalOpen}
         onOpenChange={setReportsModalOpen}
       />
