@@ -1,11 +1,11 @@
 
-import { AlertTriangle, Clock, Flag } from "lucide-react";
+import { AlertTriangle, Clock, Flag, CheckCircle } from "lucide-react";
 import { TaskCategoryCard } from "./TaskCategoryCard";
 import { Task } from "@/hooks/useTasks";
 
 interface TaskCategoriesGridProps {
   tasks: Task[];
-  onCategoryClick: (type: 'overdue' | 'critical' | 'high' | 'due_soon') => void;
+  onCategoryClick: (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => void;
 }
 
 export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGridProps) => {
@@ -23,8 +23,12 @@ export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGri
     return dueDate >= today && dueDate <= sevenDaysFromNow;
   });
 
+  // Get all tasks including completed ones for the completed count
+  const allTasks = tasks; // This will be passed from parent with all tasks
+  const completedTasks = allTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
       <TaskCategoryCard
         icon={AlertTriangle}
         title="Overdue"
@@ -55,6 +59,14 @@ export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGri
         count={dueSoonTasks.length}
         colorScheme="yellow"
         onClick={() => onCategoryClick('due_soon')}
+      />
+
+      <TaskCategoryCard
+        icon={CheckCircle}
+        title="Completed"
+        count={completedTasks.length}
+        colorScheme="green"
+        onClick={() => onCategoryClick('completed')}
       />
     </div>
   );

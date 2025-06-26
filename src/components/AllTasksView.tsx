@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Plus, Filter, FilterX } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
@@ -43,7 +43,14 @@ export const AllTasksView = () => {
     }
   };
 
-  const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon') => {
+  const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => {
+    if (type === 'completed') {
+      // Toggle completed view instead of filtering
+      setShowCompletedOnly(true);
+      setShowFiltered(false);
+      return;
+    }
+
     const pendingTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
     let filtered: Task[] = [];
     let title = "";
@@ -78,16 +85,19 @@ export const AllTasksView = () => {
     setFilteredTasks(filtered);
     setFilteredTasksTitle(title);
     setShowFiltered(true);
+    setShowCompletedOnly(false);
   };
 
   const handleSearch = (filters: typeof searchFilters) => {
     setSearchFilters(filters);
     setShowFiltered(false);
+    setShowCompletedOnly(false);
   };
 
   const handleClearSearch = () => {
     setSearchFilters({});
     setShowFiltered(false);
+    setShowCompletedOnly(false);
   };
 
   // Filter tasks based on search criteria and completed status
@@ -206,16 +216,16 @@ export const AllTasksView = () => {
               </Badge>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setShowCompletedOnly(!showCompletedOnly)}
-                size="sm"
-                variant={showCompletedOnly ? "default" : "outline"}
-                className="flex items-center gap-2"
-                title={showCompletedOnly ? "Show active tasks" : "Show completed tasks only"}
-              >
-                {showCompletedOnly ? <FilterX className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-                {showCompletedOnly ? "Show Active" : "Show Completed"}
-              </Button>
+              {showCompletedOnly && (
+                <Button
+                  onClick={() => setShowCompletedOnly(false)}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  Back to Active Tasks
+                </Button>
+              )}
               <Button
                 onClick={() => setAddTaskModalOpen(true)}
                 size="sm"
@@ -227,10 +237,10 @@ export const AllTasksView = () => {
             </div>
           </div>
           
-          {!hasSearchFilters && !showCompletedOnly && (
+          {!hasSearchFilters && (
             <div className="mt-4">
               <TaskCategoriesGrid 
-                tasks={pendingTasks}
+                tasks={tasks || []}
                 onCategoryClick={handleCategoryClick}
               />
             </div>
