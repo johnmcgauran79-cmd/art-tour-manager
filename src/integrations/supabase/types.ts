@@ -1172,6 +1172,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_automated_tour_tasks: {
+        Args: { p_tour_id: string }
+        Returns: number
+      }
       delete_booking_simple: {
         Args: { p_booking_id: string }
         Returns: undefined
