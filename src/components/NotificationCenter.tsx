@@ -1,99 +1,32 @@
+
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserDepartments } from "@/hooks/useUserDepartments";
-import { Bell, X, Check, AlertTriangle, Info, Calendar, Users } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDistanceToNow } from "date-fns";
-import { Database } from "@/integrations/supabase/types";
 import { useToast } from "@/hooks/use-toast";
-
-type Notification = Database['public']['Tables']['user_notifications']['Row'];
-
-const getNotificationIcon = (type: string, priority: string) => {
-  const className = `h-4 w-4 ${
-    priority === 'critical' ? 'text-red-600' : 
-    priority === 'high' ? 'text-orange-600' : 
-    priority === 'medium' ? 'text-yellow-600' : 
-    'text-blue-600'
-  }`;
-
-  switch (type) {
-    case 'task': return <Check className={className} />;
-    case 'tour': return <Calendar className={className} />;
-    case 'booking': return <Users className={className} />;
-    case 'system': return <Info className={className} />;
-    default: return <Bell className={className} />;
-  }
-};
+import { useNotifications } from "@/hooks/useNotifications";
+import { NotificationIcon } from "@/components/NotificationIcon";
 
 export const NotificationCenter = () => {
   const { user } = useAuth();
   const { data: userDepartments = [] } = useUserDepartments();
-  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
-  // Fetch notifications with total unread count
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ['notifications', user?.id, userDepartments],
-    queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
-      if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
-      
-      console.log('NotificationCenter: Fetching notifications for user:', user.id);
-      
-      // Build base query conditions
-      let baseCondition = `user_id.eq.${user.id}`;
-      if (userDepartments.length > 0) {
-        baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
-      }
-
-      // Fetch limited notifications for display
-      let notificationsQuery = supabase
-        .from('user_notifications')
-        .select('*')
-        .or(baseCondition)
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      // Fetch total unread count
-      let unreadCountQuery = supabase
-        .from('user_notifications')
-        .select('id', { count: 'exact' })
-        .or(baseCondition)
-        .eq('read', false);
-
-      const [notificationsResult, unreadCountResult] = await Promise.all([
-        notificationsQuery,
-        unreadCountQuery
-      ]);
-
-      if (notificationsResult.error) {
-        console.error('NotificationCenter: Error fetching notifications:', notificationsResult.error);
-        throw notificationsResult.error;
-      }
-
-      if (unreadCountResult.error) {
-        console.error('NotificationCenter: Error fetching unread count:', unreadCountResult.error);
-        throw unreadCountResult.error;
-      }
-
-      const notifications = notificationsResult.data || [];
-      const totalUnreadCount = unreadCountResult.count || 0;
-
-      console.log('NotificationCenter: Fetched notifications:', notifications.length, 'Total unread:', totalUnreadCount);
-      return { notifications, totalUnreadCount };
-    },
-    enabled: !!user?.id,
-  });
-
-  const notifications = data?.notifications || [];
-  const totalUnreadCount = data?.totalUnreadCount || 0;
+  const {
+    notifications,
+    isLoading,
+    unreadCount,
+    refetch
+  } = useNotifications(50);
 
   // Mark as read mutation
   const markAsReadMutation = useMutation({
@@ -184,7 +117,6 @@ export const NotificationCenter = () => {
       
       console.log('NotificationCenter: Marking all notifications as read for user:', user.id);
       
-      // Build base condition for user and departments
       let baseCondition = `user_id.eq.${user.id}`;
       if (userDepartments.length > 0) {
         baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
@@ -232,7 +164,7 @@ export const NotificationCenter = () => {
         markAsReadMutation.mutate(notification.id);
       });
     }
-  }, [open, notifications.length]); // Remove markAsReadMutation from dependencies to avoid infinite loop
+  }, [open, notifications.length]);
 
   const unacknowledgedCount = notifications.filter(n => !n.acknowledged).length;
 
@@ -241,12 +173,12 @@ export const NotificationCenter = () => {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative text-primary-foreground">
           <Bell className="h-5 w-5" />
-          {totalUnreadCount > 0 && (
+          {unreadCount > 0 && (
             <Badge 
               variant="destructive" 
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center text-xs p-0"
             >
-              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
@@ -297,7 +229,7 @@ export const NotificationCenter = () => {
                     >
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5">
-                          {getNotificationIcon(notification.type, notification.priority)}
+                          <NotificationIcon type={notification.type} priority={notification.priority} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm leading-tight">
@@ -318,7 +250,6 @@ export const NotificationCenter = () => {
                                 onClick={() => acknowledgeMutation.mutate(notification.id)}
                                 disabled={acknowledgeMutation.isPending}
                               >
-                                <Check className="h-3 w-3 mr-1" />
                                 Acknowledge
                               </Button>
                             )}

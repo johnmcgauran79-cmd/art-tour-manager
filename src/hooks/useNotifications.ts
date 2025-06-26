@@ -24,11 +24,11 @@ export const useNotifications = (limit: number = 10) => {
 
   const handleCheckboxChange = (notificationId: string, checked: boolean) => {
     console.log('Checkbox changed:', notificationId, checked);
-    if (checked) {
-      setSelectedNotifications(prev => [...prev, notificationId]);
-    } else {
-      setSelectedNotifications(prev => prev.filter(id => id !== notificationId));
-    }
+    setSelectedNotifications(prev => 
+      checked 
+        ? [...prev, notificationId]
+        : prev.filter(id => id !== notificationId)
+    );
   };
 
   const handleBulkDelete = () => {
@@ -51,14 +51,11 @@ export const useNotifications = (limit: number = 10) => {
     });
   };
 
-  // Use the total unread count instead of just counting displayed notifications
-  const unreadCount = totalUnreadCount;
-
   return {
     notifications,
     isLoading,
     selectedNotifications,
-    unreadCount,
+    unreadCount: totalUnreadCount,
     handleNotificationClick,
     handleCheckboxChange,
     handleBulkDelete,
