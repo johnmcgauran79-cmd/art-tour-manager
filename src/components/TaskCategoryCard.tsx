@@ -6,7 +6,7 @@ interface TaskCategoryCardProps {
   icon: LucideIcon;
   title: string;
   count: number;
-  colorScheme: 'red' | 'purple' | 'orange' | 'yellow';
+  colorScheme: 'red' | 'purple' | 'orange' | 'yellow' | 'green';
   onClick: () => void;
 }
 
@@ -38,6 +38,13 @@ const colorSchemes = {
     iconBg: 'bg-yellow-100 group-hover:bg-yellow-200',
     iconColor: 'text-yellow-600',
     textHover: 'group-hover:text-yellow-700',
+  },
+  green: {
+    border: 'border-green-200',
+    hover: 'hover:bg-green-50 hover:border-green-300',
+    iconBg: 'bg-green-100 group-hover:bg-green-200',
+    iconColor: 'text-green-600',
+    textHover: 'group-hover:text-green-700',
   },
 };
 
