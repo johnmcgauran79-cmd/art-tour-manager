@@ -3,7 +3,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Plus, List } from "lucide-react";
+import { ClipboardList, Plus, List, ArrowLeft } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { TasksTable } from "@/components/TasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
@@ -28,6 +28,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
+  const [activeFilter, setActiveFilter] = useState<'overdue' | 'critical' | 'high' | 'due_soon' | 'completed' | null>(null);
   const [searchFilters, setSearchFilters] = useState<{
     search?: string;
     status?: string;
@@ -70,6 +71,11 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
   // Always calculate pending tasks
   const pendingTasks = useMemo(() => {
     return tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
+  }, [tasks]);
+
+  // Always calculate completed tasks
+  const completedTasks = useMemo(() => {
+    return tasks?.filter(task => task.status === 'completed' || task.status === 'cancelled') || [];
   }, [tasks]);
 
   // Filter tasks based on search criteria - always calculate this
@@ -122,9 +128,39 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     });
   }, [tasks, searchFilters, pendingTasks]);
 
+  // Get the current filtered tasks based on active filter
+  const currentFilteredTasks = useMemo(() => {
+    if (!activeFilter) {
+      return filteredTasksData;
+    }
+
+    switch (activeFilter) {
+      case 'overdue':
+        return pendingTasks.filter(task => 
+          task.due_date && new Date(task.due_date) < new Date()
+        );
+      case 'critical':
+        return pendingTasks.filter(task => task.priority === 'critical');
+      case 'high':
+        return pendingTasks.filter(task => task.priority === 'high');
+      case 'due_soon':
+        return pendingTasks.filter(task => {
+          if (!task.due_date) return false;
+          const dueDate = new Date(task.due_date);
+          const today = new Date();
+          const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
+          return dueDate >= today && dueDate <= sevenDaysFromNow;
+        });
+      case 'completed':
+        return completedTasks;
+      default:
+        return filteredTasksData;
+    }
+  }, [activeFilter, pendingTasks, completedTasks, filteredTasksData]);
+
   // Sort tasks by due date and limit - always calculate this
   const displayTasks = useMemo(() => {
-    const sortedTasks = [...filteredTasksData].sort((a, b) => {
+    const sortedTasks = [...currentFilteredTasks].sort((a, b) => {
       if (!a.due_date && !b.due_date) return 0;
       if (!a.due_date) return 1;
       if (!b.due_date) return -1;
@@ -132,7 +168,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     });
 
     return limitToTop5 ? sortedTasks.slice(0, 5) : sortedTasks.slice(0, 10);
-  }, [filteredTasksData, limitToTop5]);
+  }, [currentFilteredTasks, limitToTop5]);
 
   if (isLoading) {
     return (
@@ -142,40 +178,29 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
     );
   }
 
-  const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon') => {
-    let filtered: Task[] = [];
-    let title = "";
+  const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => {
+    setActiveFilter(type);
+  };
 
-    switch (type) {
+  const handleBackToAllTasks = () => {
+    setActiveFilter(null);
+  };
+
+  const getFilterTitle = () => {
+    switch (activeFilter) {
       case 'overdue':
-        filtered = pendingTasks.filter(task => 
-          task.due_date && new Date(task.due_date) < new Date()
-        );
-        title = "Overdue Tasks";
-        break;
+        return "Overdue Tasks";
       case 'critical':
-        filtered = pendingTasks.filter(task => task.priority === 'critical');
-        title = "Critical Priority Tasks";
-        break;
+        return "Critical Priority Tasks";
       case 'high':
-        filtered = pendingTasks.filter(task => task.priority === 'high');
-        title = "High Priority Tasks";
-        break;
+        return "High Priority Tasks";
       case 'due_soon':
-        filtered = pendingTasks.filter(task => {
-          if (!task.due_date) return false;
-          const dueDate = new Date(task.due_date);
-          const today = new Date();
-          const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
-          return dueDate >= today && dueDate <= sevenDaysFromNow;
-        });
-        title = "Due Soon (Next 7 Days)";
-        break;
+        return "Due Soon (Next 7 Days)";
+      case 'completed':
+        return "Completed Tasks";
+      default:
+        return "My Tasks";
     }
-
-    setFilteredTasks(filtered);
-    setFilteredTasksTitle(title);
-    setFilteredTasksModalOpen(true);
   };
 
   const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
@@ -189,12 +214,23 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <ClipboardList className="h-5 w-5 text-brand-navy" />
-                <CardTitle className="text-brand-navy">My Tasks</CardTitle>
+                <CardTitle className="text-brand-navy">{getFilterTitle()}</CardTitle>
                 <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                  {hasSearchFilters ? filteredTasksData.length : pendingTasks.length} {hasSearchFilters ? 'filtered' : 'active'}
+                  {currentFilteredTasks.length} {activeFilter ? 'tasks' : (hasSearchFilters ? 'filtered' : 'active')}
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
+                {activeFilter && (
+                  <Button
+                    onClick={handleBackToAllTasks}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Back to All Active Tasks
+                  </Button>
+                )}
                 <Button
                   onClick={onViewAllTasks || (() => setAllTasksModalOpen(true))}
                   size="sm"
@@ -217,7 +253,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
               </div>
             </div>
             
-            {!hasSearchFilters && (
+            {!hasSearchFilters && !activeFilter && (
               <div className="mt-4">
                 <TaskCategoriesGrid 
                   tasks={pendingTasks}
@@ -229,19 +265,33 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
           
           <CardContent>
             <div className="space-y-4">
-              {/* Enhanced Search */}
-              <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
+              {/* Enhanced Search - only show when not in a filter view */}
+              {!activeFilter && (
+                <TaskSearch onSearch={handleSearch} onClear={handleClearSearch} />
+              )}
 
               {displayTasks.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>{hasSearchFilters ? "No tasks found matching your search criteria" : "No active tasks assigned to you"}</p>
-                  <p className="text-sm">{!hasSearchFilters && "Great job staying on top of everything!"}</p>
+                  <p>
+                    {activeFilter 
+                      ? `No ${getFilterTitle().toLowerCase()} found`
+                      : hasSearchFilters 
+                        ? "No tasks found matching your search criteria" 
+                        : "No active tasks assigned to you"
+                    }
+                  </p>
+                  <p className="text-sm">
+                    {!hasSearchFilters && !activeFilter && "Great job staying on top of everything!"}
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   <div className="text-sm text-gray-600 mb-3">
-                    Showing {hasSearchFilters ? 'filtered' : 'top 10 most urgent'} tasks
+                    {activeFilter 
+                      ? `Showing ${displayTasks.length} ${getFilterTitle().toLowerCase()}`
+                      : `Showing ${hasSearchFilters ? 'filtered' : 'top 10 most urgent'} tasks`
+                    }
                   </div>
                   <TasksTable
                     tasks={displayTasks}
