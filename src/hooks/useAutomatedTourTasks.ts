@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -28,11 +27,11 @@ export const useAutomatedTourTasks = () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       
-      // Force immediate refetch
+      // Force immediate refetch with a delay to ensure database operations complete
       setTimeout(() => {
         queryClient.refetchQueries({ queryKey: ['tasks'] });
         queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      }, 500);
+      }, 1000);
       
       toast({
         title: "Tour Tasks Generated",
@@ -97,7 +96,7 @@ export const useRegenerateTourTasks = () => {
       setTimeout(() => {
         queryClient.refetchQueries({ queryKey: ['tasks'] });
         queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      }, 1000);
+      }, 1500);
       
       toast({
         title: "Tour Tasks Regenerated",

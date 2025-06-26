@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -131,16 +130,17 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       
-      // Force refetch after a short delay to ensure the trigger has processed
+      // Force refetch after a longer delay to ensure the trigger has processed
       setTimeout(() => {
         queryClient.refetchQueries({ queryKey: ['tours'] });
         queryClient.refetchQueries({ queryKey: ['tasks'] });
         queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      }, 1000);
+      }, 2000);
       
       toast({
         title: "Tour Updated",
         description: "Tour details have been successfully updated. Automated tasks will be regenerated to match the new dates.",
+        duration: 6000,
       });
       onOpenChange(false);
     },
