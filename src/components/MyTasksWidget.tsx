@@ -16,9 +16,10 @@ import { TaskSearch } from "@/components/TaskSearch";
 interface MyTasksWidgetProps {
   hideAddButton?: boolean;
   limitToTop5?: boolean;
+  onViewAllTasks?: () => void;
 }
 
-export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: MyTasksWidgetProps) => {
+export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onViewAllTasks }: MyTasksWidgetProps) => {
   const { data: tasks, isLoading } = useMyTasks();
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
@@ -195,7 +196,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setAllTasksModalOpen(true)}
+                  onClick={onViewAllTasks || (() => setAllTasksModalOpen(true))}
                   size="sm"
                   variant="outline"
                   className="flex items-center gap-2"
@@ -276,11 +277,13 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false }: My
           onTaskClick={handleTaskClick}
         />
 
-        <AllTasksModal
-          open={allTasksModalOpen}
-          onOpenChange={setAllTasksModalOpen}
-          onTaskClick={handleTaskClick}
-        />
+        {!onViewAllTasks && (
+          <AllTasksModal
+            open={allTasksModalOpen}
+            onOpenChange={setAllTasksModalOpen}
+            onTaskClick={handleTaskClick}
+          />
+        )}
       </>
     );
   }

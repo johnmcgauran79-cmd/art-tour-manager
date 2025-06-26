@@ -126,6 +126,15 @@ const Index = () => {
     }, 100);
   };
 
+  const handleViewAllTasks = () => {
+    setActiveTab("operations");
+    // Add a small delay to ensure the operations tab loads before navigating to all tasks
+    setTimeout(() => {
+      const event = new CustomEvent('navigate-to-all-tasks');
+      window.dispatchEvent(event);
+    }, 100);
+  };
+
   const quickActions = [
     {
       icon: Plus,
@@ -328,7 +337,7 @@ const Index = () => {
 
             {/* Tasks - Full Width */}
             <div className="w-full">
-              <MyTasksWidget />
+              <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
             </div>
           </TabsContent>
           
