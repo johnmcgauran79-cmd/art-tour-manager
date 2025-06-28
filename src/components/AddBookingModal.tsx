@@ -66,15 +66,16 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
   const [contactToEdit, setContactToEdit] = useState<any>(null);
   const [contactPopoverOpen, setContactPopoverOpen] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string>("");
+  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
 
   const { data: tours } = useTours();
   const { data: customers } = useCustomers();
   const createBooking = useCreateBooking();
   const updateCustomer = useUpdateCustomer();
 
-  // Filter customers based on lead passenger input
+  // Filter customers based on lead passenger input with minimum 2 characters
   const filteredContacts = customers?.filter(customer => {
-    if (!formData.leadPassenger) return false;
+    if (!formData.leadPassenger || formData.leadPassenger.length < 2) return false;
     const searchTerm = formData.leadPassenger.toLowerCase();
     const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
     return fullName.includes(searchTerm);
@@ -131,6 +132,36 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       leadDietary: customer.dietary_requirements || "",
     }));
     setContactPopoverOpen(false);
+  };
+
+  const handleLeadPassengerChange = (value: string) => {
+    setFormData(prev => ({ ...prev, leadPassenger: value }));
+    
+    // Clear selected contact if manually editing the name
+    const selectedContact = customers?.find(c => c.id === selectedContactId);
+    if (selectedContact && value !== `${selectedContact.first_name} ${selectedContact.last_name}`) {
+      setSelectedContactId("");
+    }
+
+    // Clear existing timer
+    if (searchDebounceTimer) {
+      clearTimeout(searchDebounceTimer);
+    }
+
+    // Close popover immediately if search is too short
+    if (value.length < 2) {
+      setContactPopoverOpen(false);
+      return;
+    }
+
+    // Set a timer to open popover after user stops typing
+    const timer = setTimeout(() => {
+      if (value.length >= 2) {
+        setContactPopoverOpen(true);
+      }
+    }, 300); // 300ms delay
+
+    setSearchDebounceTimer(timer);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -347,15 +378,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                             <Input
                               id="leadPassenger"
                               value={formData.leadPassenger}
-                              onChange={(e) => {
-                                handleInputChange("leadPassenger", e.target.value);
-                                setContactPopoverOpen(e.target.value.length > 0);
-                              }}
-                              placeholder="e.g., John Smith"
+                              onChange={(e) => handleLeadPassengerChange(e.target.value)}
+                              placeholder="Type at least 2 letters to search contacts..."
                               required
                               className="pr-8"
                             />
-                            {filteredContacts.length > 0 && formData.leadPassenger && (
+                            {filteredContacts.length > 0 && formData.leadPassenger.length >= 2 && (
                               <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             )}
                           </div>
@@ -364,7 +392,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                           <Command>
                             <CommandList>
                               {filteredContacts.length === 0 ? (
-                                <CommandEmpty>No contacts found.</CommandEmpty>
+                                <CommandEmpty>
+                                  {formData.leadPassenger.length < 2 
+                                    ? "Type at least 2 letters to search" 
+                                    : "No contacts found."
+                                  }
+                                </CommandEmpty>
                               ) : (
                                 <CommandGroup>
                                   {filteredContacts.map((customer) => (
