@@ -1,8 +1,12 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, MapPin, Heart, FileText } from "lucide-react";
+import { Hotel, MapPin, Heart, FileText, Shield } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
