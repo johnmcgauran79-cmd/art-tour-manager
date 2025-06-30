@@ -7,9 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit, ChevronDown, Check, Shield, FileText, Heart, Hotel, MapPin } from "lucide-react";
+import { Edit, Shield, FileText, Heart, Hotel, MapPin, Check } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
@@ -64,9 +62,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
   const [activeTab, setActiveTab] = useState("details");
   const [showEditContact, setShowEditContact] = useState(false);
   const [contactToEdit, setContactToEdit] = useState<any>(null);
-  const [contactPopoverOpen, setContactPopoverOpen] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string>("");
-  const [searchDebounceTimer, setSearchDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showContactSuggestions, setShowContactSuggestions] = useState(false);
 
   const { data: tours } = useTours();
   const { data: customers } = useCustomers();
@@ -80,6 +77,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     const fullName = `${customer.first_name} ${customer.last_name}`.toLowerCase();
     return fullName.includes(searchTerm);
   }) || [];
+
+  // Show suggestions when typing and there are matches
+  const shouldShowSuggestions = formData.leadPassenger.length >= 2 && filteredContacts.length > 0 && showContactSuggestions;
 
   useEffect(() => {
     if (preSelectedTourId && open) {
@@ -131,7 +131,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       leadPhone: customer.phone || "",
       leadDietary: customer.dietary_requirements || "",
     }));
-    setContactPopoverOpen(false);
+    setShowContactSuggestions(false);
   };
 
   const handleLeadPassengerChange = (value: string) => {
@@ -143,25 +143,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
       setSelectedContactId("");
     }
 
-    // Clear existing timer
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
-
-    // Close popover immediately if search is too short
-    if (value.length < 2) {
-      setContactPopoverOpen(false);
-      return;
-    }
-
-    // Set a timer to open popover after user stops typing
-    const timer = setTimeout(() => {
-      if (value.length >= 2) {
-        setContactPopoverOpen(true);
-      }
-    }, 300); // 300ms delay
-
-    setSearchDebounceTimer(timer);
+    // Show suggestions if there's text and matches
+    setShowContactSuggestions(value.length >= 2);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -261,6 +244,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     setCreatedBookingId(null);
     setActiveTab("details");
     setSelectedContactId("");
+    setShowContactSuggestions(false);
     onOpenChange(false);
   };
 
@@ -372,60 +356,47 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="leadPassenger">Lead Passenger Name</Label>
-                      <Popover open={contactPopoverOpen} onOpenChange={setContactPopoverOpen}>
-                        <PopoverTrigger asChild>
-                          <div className="relative">
-                            <Input
-                              id="leadPassenger"
-                              value={formData.leadPassenger}
-                              onChange={(e) => handleLeadPassengerChange(e.target.value)}
-                              placeholder="Type at least 2 letters to search contacts..."
-                              required
-                              className="pr-8"
-                            />
-                            {filteredContacts.length > 0 && formData.leadPassenger.length >= 2 && (
-                              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            )}
+                      <div className="relative">
+                        <Input
+                          id="leadPassenger"
+                          value={formData.leadPassenger}
+                          onChange={(e) => handleLeadPassengerChange(e.target.value)}
+                          onFocus={() => setShowContactSuggestions(true)}
+                          onBlur={() => {
+                            // Delay hiding to allow clicks on suggestions
+                            setTimeout(() => setShowContactSuggestions(false), 200);
+                          }}
+                          placeholder="Start typing name to search existing contacts..."
+                          required
+                        />
+                        
+                        {/* Live filtered suggestions */}
+                        {shouldShowSuggestions && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                            {filteredContacts.map((customer) => (
+                              <div
+                                key={customer.id}
+                                className="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                                onClick={() => handleContactSelect(customer)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">
+                                      {customer.first_name} {customer.last_name}
+                                      {selectedContactId === customer.id && (
+                                        <Check className="inline ml-2 h-4 w-4 text-green-600" />
+                                      )}
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                      {customer.email} {customer.phone && `• ${customer.phone}`}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
-                            <CommandList>
-                              {filteredContacts.length === 0 ? (
-                                <CommandEmpty>
-                                  {formData.leadPassenger.length < 2 
-                                    ? "Type at least 2 letters to search" 
-                                    : "No contacts found."
-                                  }
-                                </CommandEmpty>
-                              ) : (
-                                <CommandGroup>
-                                  {filteredContacts.map((customer) => (
-                                    <CommandItem
-                                      key={customer.id}
-                                      onSelect={() => handleContactSelect(customer)}
-                                      className="cursor-pointer"
-                                    >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          selectedContactId === customer.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      <div className="flex flex-col">
-                                        <span>{customer.first_name} {customer.last_name}</span>
-                                        <span className="text-sm text-muted-foreground">
-                                          {customer.email} {customer.phone && `• ${customer.phone}`}
-                                        </span>
-                                      </div>
-                                    </CommandItem>
-                                  ))}
-                                </CommandGroup>
-                              )}
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                        )}
+                      </div>
                     </div>
 
                     <div className="space-y-2">
