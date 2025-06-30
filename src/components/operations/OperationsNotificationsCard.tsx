@@ -7,9 +7,13 @@ import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
 
 interface OperationsNotificationsCardProps {
   onViewAllNotifications: () => void;
+  onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
 }
 
-export const OperationsNotificationsCard = ({ onViewAllNotifications }: OperationsNotificationsCardProps) => {
+export const OperationsNotificationsCard = ({ 
+  onViewAllNotifications, 
+  onNavigateToItem 
+}: OperationsNotificationsCardProps) => {
   return (
     <Card className="border-brand-navy/20 shadow-lg">
       <CardHeader>
@@ -33,7 +37,7 @@ export const OperationsNotificationsCard = ({ onViewAllNotifications }: Operatio
         </div>
       </CardHeader>
       <CardContent>
-        <MyNotificationsWidget showCard={false} />
+        <MyNotificationsWidget showCard={false} onNavigateToItem={onNavigateToItem} />
       </CardContent>
     </Card>
   );

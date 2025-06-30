@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -50,7 +49,7 @@ const Index = () => {
   const { data: tours = [] } = useTours();
   const { data: tasks = [] } = useTasks();
 
-  // Handle navigation from notifications - enhanced to handle activity notifications
+  // Handle navigation from notifications - fixed to handle booking notifications correctly
   const handleNavigateToItem = async (type: string, itemId: string, hotelId?: string) => {
     console.log('Navigate to item:', type, itemId, hotelId);
     
@@ -58,23 +57,22 @@ const Index = () => {
       const tour = tours.find(t => t.id === itemId);
       if (tour) {
         setSelectedTour(tour);
-        setTourModalDefaultTab("activities");
+        setTourModalDefaultTab("overview");
         setTourModalOpen(true);
       }
       setActiveTab("tours");
     } else if (type === 'booking') {
-      // Check if this is an activity-related booking notification
+      // For booking notifications, find the tour and open bookings tab
       const booking = bookings.find(b => b.id === itemId);
       if (booking) {
-        // For activity notifications, open the tour's activities tab instead
         const tour = tours.find(t => t.id === booking.tour_id);
         if (tour) {
           setSelectedTour(tour);
-          setTourModalDefaultTab("activities");
+          setTourModalDefaultTab("bookings");
           setTourModalOpen(true);
         }
-        setActiveTab("tours");
       }
+      setActiveTab("tours");
     } else if (type === 'task') {
       const task = tasks.find(t => t.id === itemId);
       if (task) {
@@ -342,7 +340,7 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="operations" className="space-y-4">
-            <OperationsDashboard />
+            <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
           </TabsContent>
           
           <TabsContent value="tours" className="space-y-4">

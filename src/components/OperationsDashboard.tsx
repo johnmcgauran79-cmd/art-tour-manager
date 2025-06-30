@@ -10,7 +10,11 @@ import { OperationsNotificationsCard } from "@/components/operations/OperationsN
 import { OperationsTasksCard } from "@/components/operations/OperationsTasksCard";
 import { OperationsToursOverview } from "@/components/operations/OperationsToursOverview";
 
-export const OperationsDashboard = () => {
+interface OperationsDashboardProps {
+  onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
+}
+
+export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardProps) => {
   const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks' | 'allNotifications'>('dashboard');
   const { userRole } = useAuth();
 
@@ -82,7 +86,7 @@ export const OperationsDashboard = () => {
             Back to Operations
           </Button>
         </div>
-        <MyNotificationsWidget showCard={true} />
+        <MyNotificationsWidget showCard={true} onNavigateToItem={onNavigateToItem} />
       </div>
     );
   }
@@ -93,6 +97,7 @@ export const OperationsDashboard = () => {
 
       <OperationsNotificationsCard 
         onViewAllNotifications={() => setCurrentView('allNotifications')}
+        onNavigateToItem={onNavigateToItem}
       />
 
       <OperationsTasksCard
