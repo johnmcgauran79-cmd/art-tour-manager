@@ -1,4 +1,3 @@
-
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,12 +49,8 @@ export const NotificationItem = ({
     
     // Handle navigation based on notification type and content
     if (notification.related_id && onNavigateToItem) {
-      // Check if this is an activity-related notification
-      if (notification.type === 'booking' && 
-          (notification.message.includes('activity') || 
-           notification.message.includes('Activity') ||
-           notification.message.includes('attendance'))) {
-        console.log('Activity notification - finding tour for booking:', notification.related_id);
+      if (notification.type === 'booking') {
+        console.log('Booking notification - finding tour for booking:', notification.related_id);
         
         // Get the booking to find the associated tour
         try {
@@ -66,17 +61,15 @@ export const NotificationItem = ({
             .single();
 
           if (booking?.tour_id) {
-            console.log('Opening activities tab for tour:', booking.tour_id);
+            console.log('Opening bookings tab for tour:', booking.tour_id);
+            // Navigate to the tour's bookings tab, not activities
             onNavigateToItem('tour', booking.tour_id);
           }
         } catch (error) {
           console.error('Error finding tour for booking:', error);
-          // Fallback to opening the booking
+          // Fallback to opening the booking directly
           onNavigateToItem('booking', notification.related_id);
         }
-      } else if (notification.type === 'booking') {
-        console.log('Navigating to booking:', notification.related_id);
-        onNavigateToItem('booking', notification.related_id, notification.message.includes('hotel') ? 'auto-navigate' : undefined);
       } else if (notification.type === 'tour') {
         console.log('Navigating to tour:', notification.related_id);
         onNavigateToItem('tour', notification.related_id);

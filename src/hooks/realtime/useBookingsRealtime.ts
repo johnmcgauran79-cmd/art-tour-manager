@@ -27,6 +27,20 @@ export const useBookingsRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
           const newBooking = payload.new as any;
+          
+          // Only create notification if this wasn't created by the current user
+          // Check if this booking was just created by the current user (within last 5 seconds)
+          const bookingCreatedAt = new Date(newBooking.created_at);
+          const now = new Date();
+          const timeDiff = now.getTime() - bookingCreatedAt.getTime();
+          const wasRecentlyCreated = timeDiff < 5000; // 5 seconds
+          
+          // Skip notification if this was recently created (likely by current user)
+          if (wasRecentlyCreated) {
+            console.log('Skipping notification for recently created booking (likely by current user)');
+            return;
+          }
+
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
           logOperation({

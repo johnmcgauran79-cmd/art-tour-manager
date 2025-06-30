@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -54,7 +53,11 @@ export const TourDetailModalWithHotelsTab = ({
   const { data: tours } = useTours();
   const currentTour = tours?.find(t => t.id === tour?.id) || tour;
 
-  // Transform tour data with complete reactivity - listen to the current tour from query cache
+  // For booking notifications, default to bookings tab instead of overview
+  const actualDefaultTab = defaultTab === "overview" && 
+    (window.location.hash.includes('booking') || 
+     document.referrer.includes('notification')) ? "bookings" : defaultTab;
+
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {
       tourId: currentTour?.id,
@@ -157,7 +160,7 @@ export const TourDetailModalWithHotelsTab = ({
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue={defaultTab} className={`w-full`}>
+          <Tabs defaultValue={actualDefaultTab} className={`w-full`}>
             <TabsList className={`grid w-full ${canViewOperations ? 'grid-cols-5' : 'grid-cols-4'} bg-gray-50`}>
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
