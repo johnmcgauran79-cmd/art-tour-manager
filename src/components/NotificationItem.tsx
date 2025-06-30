@@ -43,6 +43,8 @@ export const NotificationItem = ({
     }
 
     console.log('Notification clicked:', notification);
+    console.log('Notification type:', notification.type);
+    console.log('Notification message:', notification.message);
     
     // Call the parent's click handler first (this will mark as read)
     onNotificationClick(notification);
@@ -60,10 +62,12 @@ export const NotificationItem = ({
             .eq('id', notification.related_id)
             .single();
 
+          console.log('Found booking data:', booking);
+
           if (booking?.tour_id) {
-            console.log('Opening bookings tab for tour:', booking.tour_id);
-            // Navigate to the tour's bookings tab, not activities
-            onNavigateToItem('tour', booking.tour_id);
+            console.log('Calling onNavigateToItem with booking type and tour ID:', booking.tour_id);
+            // Pass 'booking' as the type so the parent knows to open bookings tab
+            onNavigateToItem('booking', booking.tour_id);
           }
         } catch (error) {
           console.error('Error finding tour for booking:', error);

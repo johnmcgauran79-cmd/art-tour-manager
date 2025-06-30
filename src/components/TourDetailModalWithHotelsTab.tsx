@@ -53,8 +53,10 @@ export const TourDetailModalWithHotelsTab = ({
   const { data: tours } = useTours();
   const currentTour = tours?.find(t => t.id === tour?.id) || tour;
 
-  // Use the defaultTab directly - it's already set correctly from the parent
+  // Use the defaultTab directly and add debugging
+  console.log('TourDetailModal defaultTab received:', defaultTab);
   const actualDefaultTab = defaultTab;
+  console.log('TourDetailModal actualDefaultTab set to:', actualDefaultTab);
 
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {

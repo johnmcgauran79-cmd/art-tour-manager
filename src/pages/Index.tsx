@@ -51,9 +51,10 @@ const Index = () => {
 
   // Handle navigation from notifications - fixed to handle booking notifications correctly
   const handleNavigateToItem = async (type: string, itemId: string, hotelId?: string) => {
-    console.log('Navigate to item:', type, itemId, hotelId);
+    console.log('handleNavigateToItem called with:', { type, itemId, hotelId });
     
     if (type === 'tour') {
+      console.log('Navigating to tour overview:', itemId);
       const tour = tours.find(t => t.id === itemId);
       if (tour) {
         setSelectedTour(tour);
@@ -62,15 +63,15 @@ const Index = () => {
       }
       setActiveTab("tours");
     } else if (type === 'booking') {
-      // For booking notifications, find the tour and open bookings tab
-      const booking = bookings.find(b => b.id === itemId);
-      if (booking) {
-        const tour = tours.find(t => t.id === booking.tour_id);
-        if (tour) {
-          setSelectedTour(tour);
-          setTourModalDefaultTab("bookings");
-          setTourModalOpen(true);
-        }
+      console.log('Navigating to booking - looking for tour:', itemId);
+      // For booking notifications, itemId is the tour_id, so find the tour and open bookings tab
+      const tour = tours.find(t => t.id === itemId);
+      console.log('Found tour for booking navigation:', tour);
+      if (tour) {
+        setSelectedTour(tour);
+        setTourModalDefaultTab("bookings");
+        console.log('Setting tour modal default tab to bookings');
+        setTourModalOpen(true);
       }
       setActiveTab("tours");
     } else if (type === 'task') {
@@ -85,7 +86,6 @@ const Index = () => {
     }
   };
 
-  // Handle opening specific booking detail
   useEffect(() => {
     const handleOpenBookingDetail = (event: CustomEvent) => {
       console.log('Received open-booking-detail event:', event.detail);
@@ -279,10 +279,8 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
-            {/* Dashboard Metrics */}
             <DashboardMetrics />
 
-            {/* Quick Actions */}
             <Card className="border-brand-navy/20 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-brand-navy flex items-center gap-2">
@@ -306,7 +304,6 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Notifications Card with View All Button */}
             <Card className="border-brand-navy/20 shadow-lg">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -333,7 +330,6 @@ const Index = () => {
               </CardContent>
             </Card>
 
-            {/* Tasks - Full Width */}
             <div className="w-full">
               <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
             </div>
