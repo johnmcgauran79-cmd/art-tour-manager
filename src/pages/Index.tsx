@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,8 @@ import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
+import { AddTourModal } from "@/components/AddTourModal";
+import { AddContactModal } from "@/components/AddContactModal";
 import { SystemLogModal } from "@/components/SystemLogModal";
 import { UserManagement } from "@/components/UserManagement";
 import { AddTaskModal } from "@/components/AddTaskModal";
@@ -35,6 +36,8 @@ const Index = () => {
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
+  const [addTourModalOpen, setAddTourModalOpen] = useState(false);
+  const [addContactModalOpen, setAddContactModalOpen] = useState(false);
   const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [showUserManagement, setShowUserManagement] = useState(false);
@@ -139,7 +142,7 @@ const Index = () => {
     {
       icon: Plus,
       label: "New Tour",
-      onClick: () => setActiveTab("tours"),
+      onClick: () => setAddTourModalOpen(true),
       color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
     },
     {
@@ -151,7 +154,7 @@ const Index = () => {
     {
       icon: Users,
       label: "Add Contact",
-      onClick: () => setActiveTab("contacts"),
+      onClick: () => setAddContactModalOpen(true),
       color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
     },
     {
@@ -382,6 +385,21 @@ const Index = () => {
       <SystemLogModal
         open={systemLogModalOpen}
         onOpenChange={setSystemLogModalOpen}
+      />
+
+      <AddTaskModal
+        open={addTaskModalOpen}
+        onOpenChange={setAddTaskModalOpen}
+      />
+
+      <AddTourModal
+        open={addTourModalOpen}
+        onOpenChange={setAddTourModalOpen}
+      />
+
+      <AddContactModal
+        open={addContactModalOpen}
+        onOpenChange={setAddContactModalOpen}
       />
 
       <AddTaskModal
