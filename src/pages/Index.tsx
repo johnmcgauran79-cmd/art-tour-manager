@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -49,7 +50,7 @@ const Index = () => {
   const { data: tours = [] } = useTours();
   const { data: tasks = [] } = useTasks();
 
-  // Handle navigation from notifications - fixed to handle booking notifications correctly
+  // Handle navigation from notifications - stay on current tab
   const handleNavigateToItem = async (type: string, itemId: string, hotelId?: string) => {
     console.log('handleNavigateToItem called with:', { type, itemId, hotelId });
     
@@ -61,7 +62,7 @@ const Index = () => {
         setTourModalDefaultTab("overview");
         setTourModalOpen(true);
       }
-      setActiveTab("tours");
+      // Removed setActiveTab("tours") - stay on current tab
     } else if (type === 'booking') {
       console.log('Navigating to booking - looking for tour:', itemId);
       // For booking notifications, itemId is the tour_id, so find the tour and open bookings tab
@@ -73,13 +74,14 @@ const Index = () => {
         console.log('Setting tour modal default tab to bookings');
         setTourModalOpen(true);
       }
-      setActiveTab("tours");
+      // Removed setActiveTab("tours") - stay on current tab
     } else if (type === 'task') {
       const task = tasks.find(t => t.id === itemId);
       if (task) {
         setSelectedTask(task);
         setTaskModalOpen(true);
       }
+      // No tab switching needed - task modal opens over current view
     } else if (type === 'system') {
       // For system notifications, navigate to contacts or appropriate tab
       setActiveTab("contacts");
