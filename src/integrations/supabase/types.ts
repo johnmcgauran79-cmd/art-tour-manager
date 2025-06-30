@@ -992,6 +992,7 @@ export type Database = {
           instalment_date: string | null
           instalment_details: string | null
           location: string | null
+          minimum_passengers_required: number | null
           name: string
           nights: number
           notes: string | null
@@ -1018,6 +1019,7 @@ export type Database = {
           instalment_date?: string | null
           instalment_details?: string | null
           location?: string | null
+          minimum_passengers_required?: number | null
           name: string
           nights: number
           notes?: string | null
@@ -1044,6 +1046,7 @@ export type Database = {
           instalment_date?: string | null
           instalment_details?: string | null
           location?: string | null
+          minimum_passengers_required?: number | null
           name?: string
           nights?: number
           notes?: string | null

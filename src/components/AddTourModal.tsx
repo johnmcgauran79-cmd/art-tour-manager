@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     instalment_date: "",
     final_payment_date: "",
     capacity: "",
+    minimum_passengers_required: "",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -85,6 +87,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         instalment_date: formData.instalment_date || null,
         final_payment_date: formData.final_payment_date || null,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
+        minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
         status: "pending",
       });
 
@@ -114,6 +117,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         instalment_date: "",
         final_payment_date: "",
         capacity: "",
+        minimum_passengers_required: "",
       });
 
       queryClient.invalidateQueries({ queryKey: ["tours"] });
@@ -244,7 +248,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="deposit_required">Deposit Required</Label>
               <Input
@@ -264,6 +268,17 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 type="number"
                 value={formData.capacity}
                 onChange={(e) => handleInputChange("capacity", e.target.value)}
+                placeholder="0"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minimum_passengers_required">Minimum Passengers Required</Label>
+              <Input
+                id="minimum_passengers_required"
+                type="number"
+                value={formData.minimum_passengers_required}
+                onChange={(e) => handleInputChange("minimum_passengers_required", e.target.value)}
                 placeholder="0"
               />
             </div>

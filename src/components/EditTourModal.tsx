@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
@@ -66,7 +67,8 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
     instalment_amount: "",
     instalment_date: "",
     final_payment_date: "",
-    capacity: ""
+    capacity: "",
+    minimum_passengers_required: ""
   });
 
   const queryClient = useQueryClient();
@@ -105,6 +107,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
         instalment_date: tourData.instalment_date || null,
         final_payment_date: tourData.final_payment_date || null,
         capacity: tourData.capacity ? parseInt(tourData.capacity) : null,
+        minimum_passengers_required: tourData.minimum_passengers_required ? parseInt(tourData.minimum_passengers_required) : null,
       };
 
       console.log('Final update data:', updateData);
@@ -188,28 +191,43 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
   useEffect(() => {
     if (tour && open) {
       console.log('Setting form data from tour:', tour);
-      setFormData({
-        name: tour.name,
-        tour_host: tour.tourHost || "",
-        start_date: tour.startDate ? formatDateForInput(tour.startDate) : "",
-        end_date: tour.endDate ? formatDateForInput(tour.endDate) : "",
-        days: "",
-        nights: "",
-        location: tour.location,
-        pickup_point: tour.pickupPoint,
-        status: tour.status,
-        notes: tour.notes,
-        inclusions: tour.inclusions,
-        exclusions: tour.exclusions,
-        price_single: tour.pricing.single?.toString() || "",
-        price_double: tour.pricing.double?.toString() || "",
-        price_twin: tour.pricing.twin?.toString() || "",
-        deposit_required: tour.deposit?.toString() || "",
-        instalment_amount: tour.instalmentAmount?.toString() || "",
-        instalment_date: tour.instalmentDate ? formatDateForInput(tour.instalmentDate) : "",
-        final_payment_date: tour.finalPaymentDate ? formatDateForInput(tour.finalPaymentDate) : "",
-        capacity: tour.totalCapacity?.toString() || ""
-      });
+      
+      // Fetch the current tour data to get the minimum_passengers_required
+      const fetchTourData = async () => {
+        const { data, error } = await supabase
+          .from('tours')
+          .select('minimum_passengers_required')
+          .eq('id', tour.id)
+          .single();
+        
+        if (!error && data) {
+          setFormData({
+            name: tour.name,
+            tour_host: tour.tourHost || "",
+            start_date: tour.startDate ? formatDateForInput(tour.startDate) : "",
+            end_date: tour.endDate ? formatDateForInput(tour.endDate) : "",
+            days: "",
+            nights: "",
+            location: tour.location,
+            pickup_point: tour.pickupPoint,
+            status: tour.status,
+            notes: tour.notes,
+            inclusions: tour.inclusions,
+            exclusions: tour.exclusions,
+            price_single: tour.pricing.single?.toString() || "",
+            price_double: tour.pricing.double?.toString() || "",
+            price_twin: tour.pricing.twin?.toString() || "",
+            deposit_required: tour.deposit?.toString() || "",
+            instalment_amount: tour.instalmentAmount?.toString() || "",
+            instalment_date: tour.instalmentDate ? formatDateForInput(tour.instalmentDate) : "",
+            final_payment_date: tour.finalPaymentDate ? formatDateForInput(tour.finalPaymentDate) : "",
+            capacity: tour.totalCapacity?.toString() || "",
+            minimum_passengers_required: data.minimum_passengers_required?.toString() || ""
+          });
+        }
+      };
+      
+      fetchTourData();
     }
   }, [tour, open]);
 
@@ -328,6 +346,17 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
                 value={formData.capacity}
                 onChange={(e) => handleInputChange("capacity", e.target.value)}
                 placeholder="e.g., 50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minimum_passengers_required">Minimum Passengers Required</Label>
+              <Input
+                id="minimum_passengers_required"
+                type="number"
+                value={formData.minimum_passengers_required}
+                onChange={(e) => handleInputChange("minimum_passengers_required", e.target.value)}
+                placeholder="e.g., 20"
               />
             </div>
 

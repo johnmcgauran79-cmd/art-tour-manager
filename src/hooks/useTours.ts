@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -26,6 +27,7 @@ export interface Tour {
   instalment_date: string | null;
   final_payment_date: string | null;
   capacity: number | null;
+  minimum_passengers_required: number | null;
   tour_host: string;
   created_at: string;
   updated_at: string;
@@ -100,7 +102,8 @@ export const useCreateTour = () => {
           tour_name: tourData.name,
           start_date: tourData.start_date,
           location: tourData.location,
-          capacity: tourData.capacity
+          capacity: tourData.capacity,
+          minimum_passengers_required: tourData.minimum_passengers_required
         }
       });
       

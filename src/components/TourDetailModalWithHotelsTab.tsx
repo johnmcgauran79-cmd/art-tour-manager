@@ -90,6 +90,7 @@ export const TourDetailModalWithHotelsTab = ({
         instalmentDate: currentTour.instalment_date || "",
         finalPaymentDate: currentTour.final_payment_date || "",
         totalCapacity: currentTour.capacity || 0,
+        minimumPassengers: currentTour.minimum_passengers_required || null,
         startDate: currentTour.start_date,
         endDate: currentTour.end_date,
         tourHost: currentTour.tour_host,
