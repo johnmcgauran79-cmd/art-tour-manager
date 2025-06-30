@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -218,6 +219,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
                 <SelectContent>
                   <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
                   <SelectItem value="contracted">Contracted</SelectItem>
                   <SelectItem value="updated">Updated</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>

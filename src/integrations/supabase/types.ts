@@ -1242,6 +1242,7 @@ export type Database = {
       hotel_booking_status:
         | "enquiry_sent"
         | "pending"
+        | "confirmed"
         | "contracted"
         | "updated"
         | "paid"
@@ -1411,6 +1412,7 @@ export const Constants = {
       hotel_booking_status: [
         "enquiry_sent",
         "pending",
+        "confirmed",
         "contracted",
         "updated",
         "paid",
