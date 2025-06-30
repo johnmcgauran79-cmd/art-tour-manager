@@ -53,10 +53,8 @@ export const TourDetailModalWithHotelsTab = ({
   const { data: tours } = useTours();
   const currentTour = tours?.find(t => t.id === tour?.id) || tour;
 
-  // For booking notifications, default to bookings tab instead of overview
-  const actualDefaultTab = defaultTab === "overview" && 
-    (window.location.hash.includes('booking') || 
-     document.referrer.includes('notification')) ? "bookings" : defaultTab;
+  // Use the defaultTab directly - it's already set correctly from the parent
+  const actualDefaultTab = defaultTab;
 
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {
