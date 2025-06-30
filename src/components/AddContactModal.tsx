@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,9 +10,10 @@ import { useCreateCustomer } from "@/hooks/useCustomers";
 interface AddContactModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onContactCreated?: (contact: any) => void;
 }
 
-export const AddContactModal = ({ open, onOpenChange }: AddContactModalProps) => {
+export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddContactModalProps) => {
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -47,8 +49,11 @@ export const AddContactModal = ({ open, onOpenChange }: AddContactModalProps) =>
     };
 
     createCustomer.mutate(customerData, {
-      onSuccess: () => {
+      onSuccess: (data) => {
         onOpenChange(false);
+        if (onContactCreated) {
+          onContactCreated(data);
+        }
         setFormData({
           first_name: "",
           last_name: "",

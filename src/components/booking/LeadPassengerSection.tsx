@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit } from "lucide-react";
+import { Edit, Plus } from "lucide-react";
 import { ContactSearch } from "./ContactSearch";
 
 interface LeadPassengerSectionProps {
@@ -16,6 +16,7 @@ interface LeadPassengerSectionProps {
   onInputChange: (field: string, value: string) => void;
   onContactSelect: (contact: any) => void;
   onEditContact: () => void;
+  onAddNewContact: () => void;
   selectedContactId: string;
 }
 
@@ -24,22 +25,34 @@ export const LeadPassengerSection = ({
   onInputChange,
   onContactSelect,
   onEditContact,
+  onAddNewContact,
   selectedContactId
 }: LeadPassengerSectionProps) => {
   return (
     <div className="border rounded-lg p-4 space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-medium">Lead Passenger Details</h3>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onEditContact}
-          disabled={!formData.leadPassenger}
-        >
-          <Edit className="h-4 w-4 mr-2" />
-          Edit Contact
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onAddNewContact}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Contact
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onEditContact}
+            disabled={!formData.leadPassenger}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Contact
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

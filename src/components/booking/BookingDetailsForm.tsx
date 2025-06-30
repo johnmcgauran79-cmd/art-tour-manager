@@ -15,6 +15,7 @@ interface BookingDetailsFormProps {
   onClose: () => void;
   onContactSelect: (contact: any) => void;
   onEditContact: () => void;
+  onAddNewContact: () => void;
   selectedContactId: string;
   isLoading: boolean;
 }
@@ -26,6 +27,7 @@ export const BookingDetailsForm = ({
   onClose,
   onContactSelect,
   onEditContact,
+  onAddNewContact,
   selectedContactId,
   isLoading
 }: BookingDetailsFormProps) => {
@@ -54,6 +56,7 @@ export const BookingDetailsForm = ({
         onInputChange={onInputChange}
         onContactSelect={onContactSelect}
         onEditContact={onEditContact}
+        onAddNewContact={onAddNewContact}
         selectedContactId={selectedContactId}
       />
 

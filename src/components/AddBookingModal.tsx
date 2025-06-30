@@ -13,6 +13,7 @@ import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { EditContactModal } from "@/components/EditContactModal";
+import { AddContactModal } from "@/components/AddContactModal";
 import { BookingDetailsForm } from "./booking/BookingDetailsForm";
 
 interface AddBookingModalProps {
@@ -56,6 +57,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showEditContact, setShowEditContact] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
   const [contactToEdit, setContactToEdit] = useState<any>(null);
   const [selectedContactId, setSelectedContactId] = useState<string>("");
 
@@ -198,6 +200,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     setShowEditContact(true);
   };
 
+  const handleAddNewContact = () => {
+    setShowAddContact(true);
+  };
+
   const handleContactUpdated = (updatedContact: any) => {
     setFormData(prev => ({
       ...prev,
@@ -210,6 +216,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
     if (updatedContact.id) {
       setSelectedContactId(updatedContact.id);
     }
+  };
+
+  const handleContactCreated = (newContact: any) => {
+    setFormData(prev => ({
+      ...prev,
+      leadPassenger: `${newContact.first_name} ${newContact.last_name}`,
+      leadEmail: newContact.email || '',
+      leadPhone: newContact.phone || '',
+      leadDietary: newContact.dietary_requirements || '',
+    }));
+    setSelectedContactId(newContact.id);
   };
 
   return (
@@ -249,6 +266,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
                 onClose={handleClose}
                 onContactSelect={handleContactSelect}
                 onEditContact={handleEditContact}
+                onAddNewContact={handleAddNewContact}
                 selectedContactId={selectedContactId}
                 isLoading={createBooking.isPending}
               />
@@ -456,6 +474,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBo
         open={showEditContact}
         onOpenChange={setShowEditContact}
         onContactUpdated={handleContactUpdated}
+      />
+
+      <AddContactModal
+        open={showAddContact}
+        onOpenChange={setShowAddContact}
+        onContactCreated={handleContactCreated}
       />
     </>
   );
