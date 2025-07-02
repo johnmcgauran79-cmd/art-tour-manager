@@ -1,9 +1,8 @@
 
-import { useEffect } from "react";
-import { useRealtimeTasks } from "@/hooks/useRealtimeTasks";
+import { useRealtimeNotifications } from "@/hooks/useRealtimeNotifications";
 
 export const RealtimeTaskNotifications = () => {
-  useRealtimeTasks();
+  useRealtimeNotifications();
   
   return null; // This component only handles side effects
 };

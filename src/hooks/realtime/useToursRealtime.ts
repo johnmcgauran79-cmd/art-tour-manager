@@ -27,6 +27,26 @@ export const useToursRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['tours'] });
           
           const newTour = payload.new as any;
+          
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
+          if (usersToNotify) {
+            // Create notifications for all relevant users
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "New Tour Created",
+                message: `Tour "${newTour.name}" has been created`,
+                type: 'tour',
+                priority: 'medium',
+                related_id: newTour.id,
+              });
+            }
+          }
+
           logOperation({
             operation_type: 'CREATE',
             table_name: 'tours',
@@ -36,14 +56,6 @@ export const useToursRealtime = (userId: string) => {
               start_date: newTour.start_date,
               created_by_realtime: true
             }
-          });
-
-          await createNotification(userId, {
-            title: "New Tour Created",
-            message: `Tour "${newTour.name}" has been created`,
-            type: 'tour',
-            priority: 'medium',
-            related_id: newTour.id,
           });
         }
       )
@@ -62,6 +74,12 @@ export const useToursRealtime = (userId: string) => {
           const oldTour = payload.old as any;
           const newTour = payload.new as any;
           
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
           logOperation({
             operation_type: 'UPDATE',
             table_name: 'tours',
@@ -73,14 +91,16 @@ export const useToursRealtime = (userId: string) => {
             }
           });
           
-          if (oldTour.start_date !== newTour.start_date) {
-            await createNotification(userId, {
-              title: "Tour Dates Updated",
-              message: `${newTour.name} dates changed - tasks regenerated`,
-              type: 'tour',
-              priority: 'high',
-              related_id: newTour.id,
-            });
+          if (oldTour.start_date !== newTour.start_date && usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Tour Dates Updated",
+                message: `${newTour.name} dates changed - tasks regenerated`,
+                type: 'tour',
+                priority: 'high',
+                related_id: newTour.id,
+              });
+            }
           }
         }
       )
@@ -97,6 +117,13 @@ export const useToursRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['tours'] });
 
           const deletedTour = payload.old as any;
+          
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
           logOperation({
             operation_type: 'DELETE',
             table_name: 'tours',
@@ -107,13 +134,17 @@ export const useToursRealtime = (userId: string) => {
             }
           });
 
-          await createNotification(userId, {
-            title: "Tour Deleted",
-            message: `Tour "${deletedTour.name}" has been deleted.`,
-            type: 'tour',
-            priority: 'high',
-            related_id: deletedTour.id,
-          });
+          if (usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Tour Deleted",
+                message: `Tour "${deletedTour.name}" has been deleted.`,
+                type: 'tour',
+                priority: 'high',
+                related_id: deletedTour.id,
+              });
+            }
+          }
         }
       )
       .subscribe();

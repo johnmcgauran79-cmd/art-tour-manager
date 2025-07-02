@@ -28,20 +28,19 @@ export const useBookingsRealtime = (userId: string) => {
 
           const newBooking = payload.new as any;
           
-          // Only create notification if this wasn't created by the current user
           // Check if this booking was just created by the current user (within last 5 seconds)
           const bookingCreatedAt = new Date(newBooking.created_at);
           const now = new Date();
           const timeDiff = now.getTime() - bookingCreatedAt.getTime();
           const wasRecentlyCreated = timeDiff < 5000; // 5 seconds
           
-          // Skip notification if this was recently created (likely by current user)
-          if (wasRecentlyCreated) {
-            console.log('Skipping notification for recently created booking (likely by current user)');
-            return;
-          }
-
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
+
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
 
           logOperation({
             operation_type: 'CREATE',
@@ -55,13 +54,18 @@ export const useBookingsRealtime = (userId: string) => {
             }
           });
 
-          await createNotification(userId, {
-            title: "New Booking",
-            message: `New booking for ${contactName} on "${tourName}"`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: newBooking.id,
-          });
+          if (usersToNotify) {
+            // Create notifications for all relevant users
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "New Booking",
+                message: `New booking for ${contactName} on "${tourName}"`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: newBooking.id,
+              });
+            }
+          }
         }
       )
       .on(
@@ -81,24 +85,34 @@ export const useBookingsRealtime = (userId: string) => {
           
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          if (oldBooking.status !== newBooking.status) {
-            await createNotification(userId, {
-              title: "Booking Status Changed",
-              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
-              type: 'booking',
-              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
-              related_id: newBooking.id,
-            });
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
+          if (oldBooking.status !== newBooking.status && usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Booking Status Changed",
+                message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
+                type: 'booking',
+                priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+                related_id: newBooking.id,
+              });
+            }
           }
 
-          if (oldBooking.passenger_count !== newBooking.passenger_count) {
-            await createNotification(userId, {
-              title: "Passenger Count Updated",
-              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newBooking.id,
-            });
+          if (oldBooking.passenger_count !== newBooking.passenger_count && usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Passenger Count Updated",
+                message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: newBooking.id,
+              });
+            }
           }
         }
       )
@@ -117,13 +131,23 @@ export const useBookingsRealtime = (userId: string) => {
           const deletedBooking = payload.old as any;
           const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
-          await createNotification(userId, {
-            title: "Booking Deleted",
-            message: `${contactName}'s booking for "${tourName}" has been deleted`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: deletedBooking.id,
-          });
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
+          if (usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Booking Deleted",
+                message: `${contactName}'s booking for "${tourName}" has been deleted`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: deletedBooking.id,
+              });
+            }
+          }
         }
       )
       .subscribe();

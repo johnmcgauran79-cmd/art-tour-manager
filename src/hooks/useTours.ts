@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -107,16 +106,8 @@ export const useCreateTour = () => {
         }
       });
       
-      // Create notification for new tour (not via realtime to avoid duplicates)
-      if (user?.id) {
-        await createNotification(user.id, {
-          title: "Tour Created",
-          message: `Tour "${tourData.name}" created successfully`,
-          type: 'tour',
-          priority: 'medium',
-          related_id: data.id,
-        });
-      }
+      // Note: Realtime notifications will handle notifying all users
+      // No need to create notification here to avoid duplicates
       
       console.log('Tour created successfully:', data);
       return data;
