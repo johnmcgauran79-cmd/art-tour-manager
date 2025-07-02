@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Department } from "@/hooks/useUserDepartments";
 

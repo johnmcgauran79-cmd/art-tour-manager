@@ -33,6 +33,15 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
           
           const newTask = payload.new as any;
+          
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
+          const { taskName, tourName } = await getTaskDetails(newTask.id);
+
           if (newTask.created_by !== userId) {
             logOperation({
               operation_type: 'CREATE',
@@ -46,26 +55,46 @@ export const useTasksRealtime = (userId: string) => {
             });
           }
           
-          if ((newTask.priority === 'critical' || newTask.priority === 'high') && newTask.is_automated) {
-            const { taskName, tourName } = await getTaskDetails(newTask.id);
+          if ((newTask.priority === 'critical' || newTask.priority === 'high') && newTask.is_automated && usersToNotify) {
             const taskMessage = tourName 
               ? `${taskName} for ${tourName} requires attention.`
               : `${taskName} requires attention.`;
+
+            // Notify all relevant users about high priority automated tasks
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "New Priority Task",
+                message: taskMessage,
+                type: 'task',
+                priority: newTask.priority,
+                related_id: newTask.id,
+                department: newTask.category as Department,
+              });
+            }
 
             toast({
               title: "New Priority Task",
               description: taskMessage,
               duration: 5000,
             });
+          }
 
-            await createNotification(userId, {
-              title: "New Priority Task",
-              message: taskMessage,
-              type: 'task',
-              priority: newTask.priority,
-              related_id: newTask.id,
-              department: newTask.category as Department,
-            });
+          // Notify all relevant users about new tasks (not just high priority)
+          if (usersToNotify && !newTask.is_automated) {
+            const taskMessage = tourName 
+              ? `New task "${taskName}" created for ${tourName}.`
+              : `New task "${taskName}" created.`;
+
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "New Task Created",
+                message: taskMessage,
+                type: 'task',
+                priority: newTask.priority,
+                related_id: newTask.id,
+                department: newTask.category as Department,
+              });
+            }
           }
         }
       )
@@ -85,6 +114,12 @@ export const useTasksRealtime = (userId: string) => {
           const oldTask = payload.old as any;
           const newTask = payload.new as any;
           
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+          
           if (oldTask.status !== newTask.status && newTask.updated_at !== oldTask.updated_at) {
             logOperation({
               operation_type: 'UPDATE',
@@ -96,6 +131,25 @@ export const useTasksRealtime = (userId: string) => {
                 updated_by_realtime: true
               }
             });
+
+            // Notify relevant users about status changes
+            if (usersToNotify && newTask.status === 'completed') {
+              const { taskName, tourName } = await getTaskDetails(newTask.id);
+              const taskMessage = tourName 
+                ? `Task "${taskName}" for ${tourName} has been completed.`
+                : `Task "${taskName}" has been completed.`;
+
+              for (const user of usersToNotify) {
+                await createNotification(user.user_id, {
+                  title: "Task Completed",
+                  message: taskMessage,
+                  type: 'task',
+                  priority: 'medium',
+                  related_id: newTask.id,
+                  department: newTask.category as Department,
+                });
+              }
+            }
           }
           
           if (oldTask.status !== newTask.status && newTask.status === 'completed') {
@@ -126,6 +180,13 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
 
           const deletedTask = payload.old as any;
+          
+          // Get all users with relevant roles to notify
+          const { data: usersToNotify } = await supabase
+            .from('user_roles')
+            .select('user_id')
+            .in('role', ['admin', 'manager', 'booking_agent']);
+
           logOperation({
             operation_type: 'DELETE',
             table_name: 'tasks',
@@ -154,14 +215,19 @@ export const useTasksRealtime = (userId: string) => {
             ? `Task "${deletedTask.title}" for ${tourName} has been deleted.`
             : `Task "${deletedTask.title}" has been deleted.`;
 
-          await createNotification(userId, {
-            title: "Task Deleted",
-            message: taskMessage,
-            type: 'task',
-            priority: 'medium',
-            related_id: deletedTask.id,
-            department: deletedTask.category as Department,
-          });
+          // Notify all relevant users about task deletion
+          if (usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Task Deleted",
+                message: taskMessage,
+                type: 'task',
+                priority: 'medium',
+                related_id: deletedTask.id,
+                department: deletedTask.category as Department,
+              });
+            }
+          }
         }
       )
       .on(
