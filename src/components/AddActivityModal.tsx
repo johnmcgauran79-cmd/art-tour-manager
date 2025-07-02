@@ -332,6 +332,25 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
                 onChange={(e) => handleInputChange("transport_contact_name", e.target.value)}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transport_phone">Transport Phone</Label>
+              <Input
+                id="transport_phone"
+                value={formData.transport_phone}
+                onChange={(e) => handleInputChange("transport_phone", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transport_email">Transport Email</Label>
+              <Input
+                id="transport_email"
+                type="email"
+                value={formData.transport_email}
+                onChange={(e) => handleInputChange("transport_email", e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-4">

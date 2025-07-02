@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -380,6 +381,25 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 onChange={(e) => handleInputChange("transport_contact_name", e.target.value)}
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transport_phone">Transport Phone</Label>
+              <Input
+                id="transport_phone"
+                value={formData.transport_phone}
+                onChange={(e) => handleInputChange("transport_phone", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transport_email">Transport Email</Label>
+              <Input
+                id="transport_email"
+                type="email"
+                value={formData.transport_email}
+                onChange={(e) => handleInputChange("transport_email", e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -450,6 +470,26 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
               id="notes"
               value={formData.notes}
               onChange={(e) => handleInputChange("notes", e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="operations_notes">Operations Notes</Label>
+            <Textarea
+              id="operations_notes"
+              value={formData.operations_notes}
+              onChange={(e) => handleInputChange("operations_notes", e.target.value)}
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="transport_notes">Transport Notes</Label>
+            <Textarea
+              id="transport_notes"
+              value={formData.transport_notes}
+              onChange={(e) => handleInputChange("transport_notes", e.target.value)}
               rows={3}
             />
           </div>
