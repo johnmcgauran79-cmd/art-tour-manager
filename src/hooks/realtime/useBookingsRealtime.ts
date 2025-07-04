@@ -17,8 +17,10 @@ export const useBookingsRealtime = (userId: string) => {
 
     console.log('Setting up bookings realtime subscription for user:', userId);
 
+    // Create a unique channel name for bookings
+    const channelName = `bookings-realtime-${userId}-${Date.now()}`;
     const bookingsChannel = supabase
-      .channel('bookings-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {

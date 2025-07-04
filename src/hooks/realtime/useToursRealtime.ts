@@ -17,8 +17,10 @@ export const useToursRealtime = (userId: string) => {
 
     console.log('Setting up tours realtime subscription for user:', userId);
 
+    // Create a unique channel name for tours
+    const channelName = `tours-realtime-${userId}-${Date.now()}`;
     const toursChannel = supabase
-      .channel('tours-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {

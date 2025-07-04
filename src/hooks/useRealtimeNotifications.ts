@@ -12,9 +12,15 @@ export const useRealtimeNotifications = () => {
   
   console.log('Initializing realtime notifications for user:', user?.id);
   
-  // Initialize all realtime subscriptions with user ID
-  const userId = user?.id || '';
+  // Only initialize if we have a user ID and only once per user session
+  const userId = user?.id;
   
+  if (!userId) {
+    console.log('No user ID available for realtime notifications');
+    return;
+  }
+  
+  // Initialize all realtime subscriptions with unique user-based identifiers
   useToursRealtime(userId);
   useBookingsRealtime(userId);
   useTasksRealtime(userId);

@@ -17,8 +17,10 @@ export const useActivitiesRealtime = (userId: string) => {
 
     console.log('Setting up activities realtime subscription for user:', userId);
 
+    // Create a unique channel name for activities
+    const channelName = `activities-realtime-${userId}-${Date.now()}`;
     const activitiesChannel = supabase
-      .channel('activities-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
