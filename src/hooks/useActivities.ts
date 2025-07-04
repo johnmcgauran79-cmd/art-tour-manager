@@ -40,6 +40,12 @@ export const useActivities = (tourId: string) => {
     queryKey: ['activities', tourId],
     queryFn: async () => {
       console.log('Fetching activities for tour:', tourId);
+      
+      if (!tourId) {
+        console.log('No tour ID provided, returning empty array');
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('activities')
         .select('*')
@@ -52,8 +58,11 @@ export const useActivities = (tourId: string) => {
         console.error('Error fetching activities:', error);
         throw error;
       }
-      console.log('Activities fetched successfully:', data);
+      
+      console.log('Activities fetched successfully for tour', tourId, ':', data?.length, 'activities');
+      console.log('Activity details:', data);
       return data as Activity[];
     },
+    enabled: !!tourId, // Only run query if tourId is provided
   });
 };

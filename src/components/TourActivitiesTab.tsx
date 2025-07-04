@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,18 @@ interface TourActivitiesTabProps {
 }
 
 export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: TourActivitiesTabProps) => {
-  const { data: activities } = useActivities(tourId);
+  console.log('TourActivitiesTab rendered with tourId:', tourId);
+  
+  const { data: activities, isLoading, error, refetch } = useActivities(tourId);
   const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
+
+  // Log activities data
+  console.log('Activities data in tab:', {
+    activities: activities?.length || 0,
+    isLoading,
+    error: error?.message,
+    tourId
+  });
 
   // Activities are already sorted by date in the useActivities hook
   const sortedActivities = activities || [];
@@ -79,6 +90,29 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
     const ampm = hour24 >= 12 ? 'pm' : 'am';
     return `${hour12}:${minutes}${ampm}`;
   };
+
+  if (isLoading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-muted-foreground">Loading activities...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-500">Error loading activities: {error.message}</p>
+        <Button 
+          onClick={() => refetch()} 
+          className="mt-4"
+          variant="outline"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

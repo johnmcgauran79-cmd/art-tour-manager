@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -50,6 +49,11 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
   const createActivity = useMutation({
     mutationFn: async (activityData: any) => {
       console.log('Creating activity with data:', activityData);
+      console.log('Tour ID:', tourId);
+      
+      if (!tourId) {
+        throw new Error('Tour ID is required');
+      }
       
       // First create the activity
       const { data: activity, error: activityError } = await supabase
@@ -67,7 +71,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
           collection_location: activityData.collection_location || null,
           dropoff_location: activityData.dropoff_location || null,
           spots_available: activityData.spots_available ? parseInt(activityData.spots_available) : 0,
-          spots_booked: 0, // Will be updated by the activity_bookings creation
+          spots_booked: 0,
           activity_status: activityData.activity_status,
           transport_status: activityData.transport_status,
           guide_name: activityData.guide_name || null,
@@ -104,6 +108,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         throw bookingsError;
       }
 
+      console.log('Found bookings for activity allocation:', bookings);
+
       // Create activity bookings for all existing bookings
       if (bookings && bookings.length > 0) {
         const activityBookings = bookings.map(booking => ({
@@ -126,9 +132,17 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
 
       return activity;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Activity creation successful, invalidating queries...');
+      
+      // Invalidate multiple query patterns to ensure refresh
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
       queryClient.invalidateQueries({ queryKey: ['activities', tourId] });
       queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
+      
+      // Force a refetch of activities for this tour
+      queryClient.refetchQueries({ queryKey: ['activities', tourId] });
+      
       toast({
         title: "Activity Added",
         description: "Activity has been successfully added to the tour and allocated to all existing bookings.",
@@ -162,17 +176,29 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
       });
     },
     onError: (error) => {
+      console.error('Full error creating activity:', error);
       toast({
         title: "Error",
-        description: "Failed to add activity. Please try again.",
+        description: `Failed to add activity: ${error.message}. Please try again.`,
         variant: "destructive",
       });
-      console.error('Error creating activity:', error);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting activity form with data:', formData);
+    console.log('Tour ID for submission:', tourId);
+    
+    if (!formData.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Activity name is required.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createActivity.mutate(formData);
   };
 
