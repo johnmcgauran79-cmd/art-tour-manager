@@ -10,7 +10,12 @@ export const useBookingsRealtime = (userId: string) => {
   const { logOperation } = useAuditLog();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('No userId provided to useBookingsRealtime');
+      return;
+    }
+
+    console.log('Setting up bookings realtime subscription for user:', userId);
 
     const bookingsChannel = supabase
       .channel('bookings-realtime')
@@ -25,22 +30,19 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('New booking created:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const newBooking = payload.new as any;
           
-          // Check if this booking was just created by the current user (within last 5 seconds)
-          const bookingCreatedAt = new Date(newBooking.created_at);
-          const now = new Date();
-          const timeDiff = now.getTime() - bookingCreatedAt.getTime();
-          const wasRecentlyCreated = timeDiff < 5000; // 5 seconds
-          
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify - ALL booking agents, managers and admins
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about new booking:', usersToNotify?.length || 0, 'users');
 
           logOperation({
             operation_type: 'CREATE',
@@ -79,17 +81,20 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('Booking updated:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const oldBooking = payload.old as any;
           const newBooking = payload.new as any;
           
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify - ALL booking agents, managers and admins
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about booking update:', usersToNotify?.length || 0, 'users');
 
           if (oldBooking.status !== newBooking.status && usersToNotify) {
             for (const user of usersToNotify) {
@@ -127,15 +132,18 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('Booking deleted:', payload.old);
           
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const deletedBooking = payload.old as any;
           const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify - ALL booking agents, managers and admins
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about booking deletion:', usersToNotify?.length || 0, 'users');
 
           if (usersToNotify) {
             for (const user of usersToNotify) {

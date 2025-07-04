@@ -10,7 +10,12 @@ export const useToursRealtime = (userId: string) => {
   const { logOperation } = useAuditLog();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('No userId provided to useToursRealtime');
+      return;
+    }
+
+    console.log('Setting up tours realtime subscription for user:', userId);
 
     const toursChannel = supabase
       .channel('tours-realtime')
@@ -25,14 +30,17 @@ export const useToursRealtime = (userId: string) => {
           console.log('New tour created:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['tours'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
           const newTour = payload.new as any;
           
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify (managers, admins, and booking agents)
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about new tour:', usersToNotify?.length || 0, 'users');
 
           if (usersToNotify) {
             // Create notifications for all relevant users
@@ -70,15 +78,18 @@ export const useToursRealtime = (userId: string) => {
           console.log('Tour updated:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['tours'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
           const oldTour = payload.old as any;
           const newTour = payload.new as any;
           
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify (managers and admins for tour updates)
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
+            .in('role', ['admin', 'manager']);
+
+          console.log('Notifying users about tour update:', usersToNotify?.length || 0, 'users');
 
           logOperation({
             operation_type: 'UPDATE',
@@ -102,6 +113,19 @@ export const useToursRealtime = (userId: string) => {
               });
             }
           }
+
+          // Notify about status changes
+          if (oldTour.status !== newTour.status && usersToNotify) {
+            for (const user of usersToNotify) {
+              await createNotification(user.user_id, {
+                title: "Tour Status Updated",
+                message: `${newTour.name} status changed from ${oldTour.status} to ${newTour.status}`,
+                type: 'tour',
+                priority: 'medium',
+                related_id: newTour.id,
+              });
+            }
+          }
         }
       )
       .on(
@@ -115,14 +139,17 @@ export const useToursRealtime = (userId: string) => {
           console.log('Tour deleted:', payload.old);
           
           queryClient.invalidateQueries({ queryKey: ['tours'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const deletedTour = payload.old as any;
           
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify (managers and admins)
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
+            .in('role', ['admin', 'manager']);
+
+          console.log('Notifying users about tour deletion:', usersToNotify?.length || 0, 'users');
 
           logOperation({
             operation_type: 'DELETE',

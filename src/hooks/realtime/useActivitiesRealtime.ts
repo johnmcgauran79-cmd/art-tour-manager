@@ -10,7 +10,12 @@ export const useActivitiesRealtime = (userId: string) => {
   const { logOperation } = useAuditLog();
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      console.log('No userId provided to useActivitiesRealtime');
+      return;
+    }
+
+    console.log('Setting up activities realtime subscription for user:', userId);
 
     const activitiesChannel = supabase
       .channel('activities-realtime')
@@ -25,14 +30,17 @@ export const useActivitiesRealtime = (userId: string) => {
           console.log('New activity created:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
           const newActivity = payload.new as any;
           
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify - booking agents, managers and admins
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about new activity:', usersToNotify?.length || 0, 'users');
 
           const activityName = newActivity.name;
           const tourName = newActivity.tour_id ? await getTourNameById(newActivity.tour_id) : null;
@@ -76,15 +84,18 @@ export const useActivitiesRealtime = (userId: string) => {
           console.log('Activity updated:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
           const oldActivity = payload.old as any;
           const newActivity = payload.new as any;
           
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify - booking agents, managers and admins  
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about activity update:', usersToNotify?.length || 0, 'users');
 
           const activityName = newActivity.name;
           const tourName = newActivity.tour_id ? await getTourNameById(newActivity.tour_id) : null;
@@ -146,14 +157,17 @@ export const useActivitiesRealtime = (userId: string) => {
           console.log('Activity deleted:', payload.old);
           
           queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const deletedActivity = payload.old as any;
           
-          // Get all users with relevant roles to notify
+          // Get all users with relevant roles to notify - booking agents, managers and admins
           const { data: usersToNotify } = await supabase
             .from('user_roles')
             .select('user_id')
             .in('role', ['admin', 'manager', 'booking_agent']);
+
+          console.log('Notifying users about activity deletion:', usersToNotify?.length || 0, 'users');
 
           const activityName = deletedActivity.name;
           const tourName = deletedActivity.tour_id ? await getTourNameById(deletedActivity.tour_id) : null;
