@@ -83,7 +83,7 @@ export const useToursRealtime = (userId: string) => {
             department: 'operations',
           });
 
-          // Also notify users who have bookings on this tour
+          // Also notify users who have bookings on this tour (using valid booking status)
           const { data: bookingsData } = await supabase
             .from('bookings')
             .select(`
@@ -92,7 +92,7 @@ export const useToursRealtime = (userId: string) => {
               customers!inner(id, email)
             `)
             .eq('tour_id', newTour.id)
-            .eq('status', 'confirmed');
+            .in('status', ['fully_paid', 'deposited', 'instalment_paid']); // Use valid booking statuses
 
           if (bookingsData && bookingsData.length > 0) {
             for (const booking of bookingsData) {
