@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { createMultipleNotifications } from "@/utils/notificationHelpers";
+import { createNotification } from "@/utils/notificationHelpers";
 
 export const useBookingsRealtime = (userId: string) => {
   const queryClient = useQueryClient();
@@ -59,29 +59,17 @@ export const useBookingsRealtime = (userId: string) => {
             : bookingDetails?.group_name || 'Unknown Contact';
           const tourName = bookingDetails?.tours?.name || 'Unknown Tour';
 
-          console.log('Creating booking creation notifications');
+          console.log('Creating booking creation notification');
           
-          // Create only ONE set of notifications for booking creation
-          await createMultipleNotifications([
-            // Personal notification for the user who created the booking
-            {
-              userId: userId,
-              title: "New Booking Created",
-              message: `You created a new booking for ${contactName} on "${tourName}"`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newBooking.id,
-            },
-            // Single department notification for operations
-            {
-              title: "New Booking Created",
-              message: `New booking for ${contactName} on "${tourName}"`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newBooking.id,
-              department: 'operations',
-            }
-          ]);
+          // Create only ONE notification for booking creation
+          await createNotification(userId, {
+            title: "New Booking Created",
+            message: `New booking created for ${contactName} on "${tourName}"`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: newBooking.id,
+            department: 'operations',
+          });
 
           logOperation({
             operation_type: 'CREATE',
@@ -129,64 +117,32 @@ export const useBookingsRealtime = (userId: string) => {
             : bookingDetails?.group_name || 'Unknown Contact';
           const tourName = bookingDetails?.tours?.name || 'Unknown Tour';
 
-          const notifications = [];
-
           // Only create notifications for significant changes
           if (oldBooking.status !== newBooking.status) {
-            // Status change notifications
-            notifications.push({
-              userId: userId,
-              title: "Booking Status Changed",
-              message: `You changed ${contactName}'s booking for "${tourName}" from ${oldBooking.status} to ${newBooking.status}`,
-              type: 'booking' as const,
-              priority: newBooking.status === 'cancelled' ? 'high' as const : 'medium' as const,
-              related_id: newBooking.id,
-            });
-
-            notifications.push({
+            // Status change notifications - only one notification per change
+            console.log('Creating booking status change notification');
+            
+            await createNotification(userId, {
               title: "Booking Status Changed",
               message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
-              type: 'booking' as const,
-              priority: newBooking.status === 'cancelled' ? 'high' as const : 'medium' as const,
+              type: 'booking',
+              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
               related_id: newBooking.id,
-              department: 'operations' as const,
+              department: 'operations',
             });
 
-            // If booking is cancelled, also notify finance
-            if (newBooking.status === 'cancelled') {
-              notifications.push({
-                title: "Booking Cancelled",
-                message: `${contactName}'s booking for "${tourName}" has been cancelled - may require refund processing`,
-                type: 'booking' as const,
-                priority: 'high' as const,
-                related_id: newBooking.id,
-                department: 'finance' as const,
-              });
-            }
           } else if (oldBooking.passenger_count !== newBooking.passenger_count) {
-            // Passenger count change notifications (only if status didn't change)
-            notifications.push({
-              userId: userId,
-              title: "Passenger Count Updated",
-              message: `You updated ${contactName}'s booking for "${tourName}" passenger count from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-              type: 'booking' as const,
-              priority: 'medium' as const,
-              related_id: newBooking.id,
-            });
-
-            notifications.push({
+            // Passenger count change notifications - only one notification per change
+            console.log('Creating booking passenger count change notification');
+            
+            await createNotification(userId, {
               title: "Passenger Count Updated",
               message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-              type: 'booking' as const,
-              priority: 'medium' as const,
+              type: 'booking',
+              priority: 'medium',
               related_id: newBooking.id,
-              department: 'operations' as const,
+              department: 'operations',
             });
-          }
-
-          if (notifications.length > 0) {
-            console.log('Creating booking update notifications:', notifications.length);
-            await createMultipleNotifications(notifications);
           }
         }
       )
@@ -206,7 +162,6 @@ export const useBookingsRealtime = (userId: string) => {
           const deletedBooking = payload.old as any;
           
           // For deletion, we need to reconstruct the names from the old data
-          // Since the booking is already deleted, we can't query for related data
           let contactName = 'Unknown Contact';
           let tourName = 'Unknown Tour';
 
@@ -239,28 +194,17 @@ export const useBookingsRealtime = (userId: string) => {
             }
           }
 
-          console.log('Creating booking deletion notifications');
+          console.log('Creating booking deletion notification');
 
-          await createMultipleNotifications([
-            // Personal notification for the user who deleted the booking
-            {
-              userId: userId,
-              title: "Booking Deleted",
-              message: `Booking for ${contactName} has been deleted from "${tourName}"`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: deletedBooking.id,
-            },
-            // Single department notification for operations
-            {
-              title: "Booking Deleted",
-              message: `Booking for ${contactName} has been deleted from "${tourName}"`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: deletedBooking.id,
-              department: 'operations',
-            }
-          ]);
+          // Create only ONE notification for booking deletion
+          await createNotification(userId, {
+            title: "Booking Deleted",
+            message: `Booking for ${contactName} has been deleted from "${tourName}"`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: deletedBooking.id,
+            department: 'operations',
+          });
         }
       )
       .subscribe();

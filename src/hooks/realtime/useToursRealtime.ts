@@ -44,9 +44,10 @@ export const useToursRealtime = (userId: string) => {
 
           console.log('Creating tour creation notification');
           
+          // Create only ONE notification for tour creation
           await createNotification(userId, {
             title: "New Tour Created",
-            message: `You created a new tour: "${newTour.name}"`,
+            message: `Tour "${newTour.name}" has been created`,
             type: 'tour',
             priority: 'medium',
             related_id: newTour.id,
@@ -98,10 +99,10 @@ export const useToursRealtime = (userId: string) => {
 
           console.log('Creating tour update notification for manual changes');
 
-          // Only create notifications for manual tour updates (not automatic capacity changes)
+          // Create only ONE notification for tour updates (not automatic capacity changes)
           await createNotification(userId, {
             title: "Tour Updated",
-            message: `You updated tour "${newTour.name}"`,
+            message: `Tour "${newTour.name}" has been updated`,
             type: 'tour',
             priority: 'medium',
             related_id: newTour.id,
@@ -136,9 +137,10 @@ export const useToursRealtime = (userId: string) => {
 
           console.log('Creating tour deletion notification');
 
+          // Create only ONE notification for tour deletion
           await createNotification(userId, {
             title: "Tour Deleted",
-            message: `You deleted tour "${deletedTour.name}"`,
+            message: `Tour "${deletedTour.name}" has been deleted`,
             type: 'tour',
             priority: 'high',
             related_id: deletedTour.id,
