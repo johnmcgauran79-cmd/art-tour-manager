@@ -42,6 +42,12 @@ export const MyNotificationsWidget = ({
     }
   };
 
+  const handleBulkDeleteWithClear = async () => {
+    console.log('Starting bulk delete with clear for:', selectedNotifications.length, 'notifications');
+    await handleBulkDelete();
+    console.log('Bulk delete completed, selection should be cleared');
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-4">
@@ -66,7 +72,7 @@ export const MyNotificationsWidget = ({
             <NotificationActions
               selectedCount={selectedNotifications.length}
               totalCount={notifications.length}
-              onBulkDelete={handleBulkDelete}
+              onBulkDelete={handleBulkDeleteWithClear}
               isDeleting={isDeleting}
               mode="delete"
             />

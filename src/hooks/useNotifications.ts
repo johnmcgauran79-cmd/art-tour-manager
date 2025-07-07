@@ -22,18 +22,26 @@ export const useNotifications = (limit: number = 10) => {
   };
 
   const handleCheckboxChange = (notificationId: string, checked: boolean) => {
-    setSelectedNotifications(prev => 
-      checked 
+    console.log('Checkbox change:', notificationId, checked);
+    setSelectedNotifications(prev => {
+      const newSelection = checked 
         ? [...prev, notificationId]
-        : prev.filter(id => id !== notificationId)
-    );
+        : prev.filter(id => id !== notificationId);
+      console.log('New selection state:', newSelection);
+      return newSelection;
+    });
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedNotifications.length > 0) {
-      bulkDeleteMutation.mutate(selectedNotifications, {
-        onSuccess: () => setSelectedNotifications([])
-      });
+      console.log('Bulk deleting:', selectedNotifications.length, 'notifications');
+      try {
+        await bulkDeleteMutation.mutateAsync(selectedNotifications);
+        console.log('Bulk delete successful, clearing selection');
+        setSelectedNotifications([]);
+      } catch (error) {
+        console.error('Bulk delete failed:', error);
+      }
     }
   };
 
