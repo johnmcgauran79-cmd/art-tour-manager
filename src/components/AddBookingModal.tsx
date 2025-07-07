@@ -92,7 +92,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     setSelectedContact(contact);
   };
 
-  const handleContactAdded = () => {
+  const handleContactCreated = () => {
     setShowAddContact(false);
     // Optionally refresh the contact search or clear the form
   };
@@ -414,7 +414,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       <AddContactModal 
         open={showAddContact} 
         onOpenChange={setShowAddContact}
-        onContactAdded={handleContactAdded}
+        onContactCreated={handleContactCreated}
       />
     </>
   );
