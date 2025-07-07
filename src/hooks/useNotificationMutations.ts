@@ -79,9 +79,9 @@ export const useNotificationMutations = () => {
     onSuccess: ({ notificationId }) => {
       console.log('Dismiss mutation success callback - notification:', notificationId);
       
-      // Immediately invalidate and refetch queries to update UI
+      // Immediately invalidate and refetch all notification queries
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.refetchQueries({ queryKey: ['notifications', user?.id] });
+      queryClient.refetchQueries({ queryKey: ['notifications'] });
       
       toast({
         title: "Success",
@@ -137,7 +137,7 @@ export const useNotificationMutations = () => {
       
       // Force immediate refetch of notifications to update UI
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      queryClient.refetchQueries({ queryKey: ['notifications', user?.id] });
+      queryClient.refetchQueries({ queryKey: ['notifications'] });
       
       toast({
         title: "Success",
