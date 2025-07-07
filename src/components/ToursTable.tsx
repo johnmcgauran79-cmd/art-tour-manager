@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,8 +25,8 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter tours based on showOnlyActive prop
-  const filteredTours = tours?.filter(tour => {
+  // Filter tours based on showOnlyActive prop first
+  const filteredByStatus = tours?.filter(tour => {
     if (!showOnlyActive) return true;
     
     // Active tours are not past and have end date in the future or today
@@ -36,10 +37,17 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
     return tour.status !== 'past' && endDate >= today;
   }) || [];
 
-  // Further filter tours based on search query
-  const searchFilteredTours = filteredTours.filter(tour => {
-    if (!searchQuery) return true;
-    return tour.name.toLowerCase().includes(searchQuery.toLowerCase());
+  // Then filter by search query across all matching tours
+  const searchFilteredTours = filteredByStatus.filter(tour => {
+    if (!searchQuery.trim()) return true;
+    const searchTerm = searchQuery.toLowerCase();
+    
+    return (
+      tour.name.toLowerCase().includes(searchTerm) ||
+      tour.tour_host?.toLowerCase().includes(searchTerm) ||
+      tour.location?.toLowerCase().includes(searchTerm) ||
+      tour.notes?.toLowerCase().includes(searchTerm)
+    );
   });
 
   // Calculate total passengers attending for each tour
@@ -75,7 +83,10 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>{showOnlyActive ? 'Active Tours' : 'All Tours'}</CardTitle>
+              <CardTitle>
+                {showOnlyActive ? 'Active Tours' : 'All Tours'} 
+                ({searchFilteredTours.length} {searchQuery ? 'found' : showOnlyActive ? 'active' : 'total'})
+              </CardTitle>
               <CardDescription>
                 {showOnlyActive 
                   ? 'Current active tours'
@@ -103,19 +114,31 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search by tour name..."
+                placeholder="Search by tour name, host, location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
+            {searchQuery && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSearchQuery("")}
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           {searchFilteredTours.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">
-                {searchQuery ? 'No tours found matching your search.' : (showOnlyActive ? 'No active tours found.' : 'No tours found.')}
+                {searchQuery 
+                  ? 'No tours found matching your search.' 
+                  : (showOnlyActive ? 'No active tours found.' : 'No tours found.')
+                }
               </p>
               {!searchQuery && (
                 <Button 
