@@ -45,7 +45,10 @@ export const useNotificationQuery = (limit: number = 10) => {
         
         supabase
           .from('user_notifications')
-          .select('id', { count: 'exact' })
+          .select(`
+            id,
+            user_notification_dismissals!left(id)
+          `, { count: 'exact' })
           .or(orCondition)
           .eq('read', false)
           .is('user_notification_dismissals.id', null) // Exclude dismissed notifications from count
