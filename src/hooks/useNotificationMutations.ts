@@ -60,9 +60,11 @@ export const useNotificationMutations = () => {
       
       const { data, error } = await supabase
         .from('user_notification_dismissals')
-        .insert({
+        .upsert({
           user_id: user.id,
           notification_id: notificationId
+        }, {
+          onConflict: 'user_id,notification_id'
         })
         .select();
 
@@ -105,7 +107,7 @@ export const useNotificationMutations = () => {
         throw new Error('User not authenticated');
       }
 
-      // Create dismissal records for all selected notifications
+      // Create dismissal records for all selected notifications using upsert
       const dismissalRecords = notificationIds.map(notificationId => ({
         user_id: user.id,
         notification_id: notificationId
@@ -115,7 +117,9 @@ export const useNotificationMutations = () => {
 
       const { data, error } = await supabase
         .from('user_notification_dismissals')
-        .insert(dismissalRecords)
+        .upsert(dismissalRecords, {
+          onConflict: 'user_id,notification_id'
+        })
         .select();
 
       if (error) {
