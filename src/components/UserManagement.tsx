@@ -3,12 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, UserX, UserPlus, KeyRound, Edit, X } from "lucide-react";
+import { Trash2, UserX, UserPlus, KeyRound, Edit, X, Settings } from "lucide-react";
 import { AddUserModal } from "./AddUserModal";
 import { AdminPasswordResetModal } from "./AdminPasswordResetModal";
 import { UserProfileModal } from "./UserProfileModal";
+import { UserDepartmentSelector } from "./UserDepartmentSelector";
+import { Department } from "@/hooks/useUserDepartments";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
@@ -19,6 +23,7 @@ type UserRow = {
   created_at: string;
   last_sign_in_at: string | null;
   must_change_password?: boolean;
+  departments?: Department[];
 };
 
 const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
@@ -26,6 +31,15 @@ const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
   { value: "manager", label: "Manager" },
   { value: "booking_agent", label: "Booking Agent" },
 ];
+
+const DEPARTMENT_LABELS: Record<Department, string> = {
+  operations: "Operations",
+  finance: "Finance", 
+  marketing: "Marketing",
+  booking: "Booking",
+  maintenance: "Maintenance",
+  general: "General",
+};
 
 interface UserManagementProps {
   onClose?: () => void;
@@ -40,6 +54,7 @@ export function UserManagement({ onClose }: UserManagementProps) {
   const [showAddUser, setShowAddUser] = useState(false);
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showDepartmentSelector, setShowDepartmentSelector] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
 
   const fetchUsersAndRoles = async () => {
@@ -50,7 +65,7 @@ export function UserManagement({ onClose }: UserManagementProps) {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       setCurrentUserId(currentUser?.id || null);
 
-      // Fetch users from profiles table (which gets auto-created when users sign up)
+      // Fetch users from profiles table
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, email, created_at, must_change_password');
@@ -82,16 +97,35 @@ export function UserManagement({ onClose }: UserManagementProps) {
         return;
       }
 
-      // Merge users with their roles (without auth admin data since we can't access it from frontend)
+      // Fetch departments from user_departments
+      const { data: departmentsData, error: departmentsError } = await supabase
+        .from("user_departments")
+        .select("user_id, department");
+      
+      if (departmentsError) {
+        console.error('Error fetching departments:', departmentsError);
+        toast({ 
+          title: "Error", 
+          description: "Failed to fetch user departments.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Merge users with their roles and departments
       const usersWithRoles: UserRow[] = (profilesData || []).map((profile) => {
         const userRole = rolesData?.find(r => r.user_id === profile.id);
+        const userDepartments = departmentsData?.filter(d => d.user_id === profile.id).map(d => d.department as Department) || [];
+        
         return {
           id: profile.id,
           email: profile.email || "(No email)",
           role: userRole?.role || null,
           created_at: profile.created_at || "",
-          last_sign_in_at: null, // We'll remove this since we can't access auth admin data
+          last_sign_in_at: null,
           must_change_password: profile.must_change_password || false,
+          departments: userDepartments,
         };
       });
       
@@ -239,6 +273,11 @@ export function UserManagement({ onClose }: UserManagementProps) {
     setShowPasswordReset(true);
   };
 
+  const handleManageDepartments = (userId: string, userEmail: string) => {
+    setSelectedUser({ id: userId, email: userEmail });
+    setShowDepartmentSelector(true);
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
     return new Date(dateString).toLocaleDateString();
@@ -312,10 +351,11 @@ export function UserManagement({ onClose }: UserManagementProps) {
                 <TableRow className="bg-gray-50">
                   <TableHead className="w-[220px] font-semibold text-gray-700">Email Address</TableHead>
                   <TableHead className="w-[180px] font-semibold text-gray-700">Current Role</TableHead>
+                  <TableHead className="w-[200px] font-semibold text-gray-700">Departments</TableHead>
                   <TableHead className="w-[160px] font-semibold text-gray-700">Account Status</TableHead>
                   <TableHead className="w-[130px] font-semibold text-gray-700">Member Since</TableHead>
                   <TableHead className="w-[200px] font-semibold text-gray-700">Assign New Role</TableHead>
-                  <TableHead className="w-[400px] font-semibold text-gray-700">Actions</TableHead>
+                  <TableHead className="w-[500px] font-semibold text-gray-700">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -343,6 +383,19 @@ export function UserManagement({ onClose }: UserManagementProps) {
                       ) : (
                         <span className="text-gray-400 text-sm italic">No role assigned</span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.departments && user.departments.length > 0 ? (
+                          user.departments.map((dept) => (
+                            <Badge key={dept} variant="outline" className="text-xs">
+                              {DEPARTMENT_LABELS[dept]}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-gray-400 text-sm italic">No departments</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.must_change_password ? (
@@ -379,6 +432,16 @@ export function UserManagement({ onClose }: UserManagementProps) {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2 flex-wrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleManageDepartments(user.id, user.email)}
+                          className="h-8 text-xs"
+                        >
+                          <Settings className="h-3 w-3 mr-1" />
+                          Departments
+                        </Button>
+                        
                         <Button
                           size="sm"
                           variant="outline"
@@ -460,6 +523,7 @@ export function UserManagement({ onClose }: UserManagementProps) {
             <p><strong>Security Note:</strong> You cannot delete your own account for security reasons.</p>
             <p><strong>Temporary Passwords:</strong> Users with temporary passwords must change them on first login.</p>
             <p><strong>Password Reset:</strong> Resetting a user's password generates a new temporary password they must change on login.</p>
+            <p><strong>Departments:</strong> Users can be assigned to multiple departments to receive relevant tasks and notifications.</p>
           </div>
         </div>
 
@@ -485,6 +549,22 @@ export function UserManagement({ onClose }: UserManagementProps) {
           open={showProfileEdit}
           onOpenChange={setShowProfileEdit}
         />
+
+        <Dialog open={showDepartmentSelector} onOpenChange={setShowDepartmentSelector}>
+          <DialogContent className="p-0 max-w-lg">
+            {selectedUser && (
+              <UserDepartmentSelector
+                userId={selectedUser.id}
+                userEmail={selectedUser.email}
+                onClose={() => {
+                  setShowDepartmentSelector(false);
+                  setSelectedUser(null);
+                  fetchUsersAndRoles(); // Refresh to show updated departments
+                }}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
