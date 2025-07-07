@@ -77,8 +77,28 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
     );
   }
 
-  const tourBookings = (allBookings || [])
-    .filter(booking => booking.tour_id === tourId)
+  // Get all bookings for this tour first
+  const allTourBookings = (allBookings || [])
+    .filter(booking => booking.tour_id === tourId);
+
+  // Then filter by search query across all tour bookings
+  const searchFilteredBookings = allTourBookings.filter(booking => {
+    if (!searchQuery.trim()) return true;
+    const searchTerm = searchQuery.toLowerCase();
+    const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+    const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
+    const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+    const groupName = (booking.group_name || '').toLowerCase();
+    
+    return leadPassengerName.includes(searchTerm) ||
+           passenger2Name.includes(searchTerm) ||
+           passenger3Name.includes(searchTerm) ||
+           groupName.includes(searchTerm);
+  });
+
+  // Finally apply waitlist filter and sort
+  const filteredBookings = searchFilteredBookings
+    .filter(booking => showWaitlistOnly ? booking.status === 'waitlisted' : true)
     .sort((a, b) => {
       // First sort by status order
       const statusOrderA = getStatusOrder(a.status || 'pending');
@@ -94,23 +114,15 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       return dateB.getTime() - dateA.getTime();
     });
 
-  // Filter bookings based on search query and waitlist filter
-  const filteredBookings = tourBookings.filter(booking => {
-    if (showWaitlistOnly && booking.status !== 'waitlisted') return false;
-    if (!searchQuery) return true;
-    const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
-    return leadPassengerName.includes(searchQuery.toLowerCase());
-  });
-
-  // Calculate statistics
-  const confirmedBookings = tourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
-  const waitlistedBookings = tourBookings.filter(b => b.status === 'waitlisted');
+  // Calculate statistics from all tour bookings (before search filter)
+  const confirmedBookings = allTourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
+  const waitlistedBookings = allTourBookings.filter(b => b.status === 'waitlisted');
   const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
   const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
 
   return (
     <>
-      {tourBookings.length === 0 ? (
+      {allTourBookings.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground">
           No bookings found for this tour. Add the first booking to get started!
         </div>
@@ -134,7 +146,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
             </Card>
             <Card>
               <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">{tourBookings.filter(b => b.status !== 'cancelled').length}</div>
+                <div className="text-2xl font-bold text-blue-600">{allTourBookings.filter(b => b.status !== 'cancelled').length}</div>
                 <div className="text-sm text-muted-foreground">Total Interest</div>
                 <div className="text-xs text-muted-foreground">{totalConfirmedPassengers + totalWaitlistedPassengers} passengers</div>
               </CardContent>
@@ -146,7 +158,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search by lead passenger name..."
+                  placeholder="Search across all bookings for this tour..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
@@ -161,17 +173,25 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                 <Users className="h-4 w-4" />
                 {showWaitlistOnly ? "Show All" : "Waitlist Only"}
               </Button>
+              {searchQuery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
-            {searchQuery && (
-              <div className="text-sm text-muted-foreground">
-                Showing {filteredBookings.length} of {tourBookings.length} bookings
-              </div>
-            )}
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredBookings.length} of {allTourBookings.length} bookings
+              {searchQuery && ` (filtered by: "${searchQuery}")`}
+            </div>
           </div>
           
           {filteredBookings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No bookings found matching your search.
+              {searchQuery ? `No bookings found matching "${searchQuery}".` : "No bookings match the current filter."}
             </div>
           ) : (
             <div className="overflow-x-auto">
