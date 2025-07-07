@@ -8,15 +8,18 @@ import { useActivitiesRealtime } from "@/hooks/realtime/useActivitiesRealtime";
 
 export const useRealtimeNotifications = () => {
   const { user } = useAuth();
+  const userId = user?.id || '';
   
-  console.log('useRealtimeNotifications initialized for user:', user?.id);
+  console.log('useRealtimeNotifications initialized for user:', userId);
   
-  // Initialize all realtime subscriptions
-  useTasksRealtime(user?.id || '');
-  useToursRealtime(user?.id || '');
-  useBookingsRealtime(user?.id || '');
-  useHotelsRealtime(user?.id || '');
-  useActivitiesRealtime(user?.id || '');
+  // Initialize all realtime subscriptions only if user exists
+  if (userId) {
+    useTasksRealtime(userId);
+    useToursRealtime(userId);
+    useBookingsRealtime(userId);
+    useHotelsRealtime(userId);
+    useActivitiesRealtime(userId);
+  }
   
   return null;
 };

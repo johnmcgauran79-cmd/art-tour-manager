@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Department } from "@/hooks/useUserDepartments";
 
@@ -9,12 +10,11 @@ export const createNotification = async (userId: string, notification: {
   related_id?: string;
   department?: Department;
 }) => {
-  // If userId is provided, send to specific user
-  if (userId) {
+  try {
     const { error } = await supabase
       .from('user_notifications')
       .insert({
-        user_id: userId,
+        user_id: userId || null,
         title: notification.title,
         message: notification.message,
         type: notification.type,
@@ -24,28 +24,16 @@ export const createNotification = async (userId: string, notification: {
       });
 
     if (error) {
-      console.error('Error creating user notification:', error);
+      console.error('Error creating notification:', error);
+    } else {
+      console.log('Notification created successfully:', notification.title);
     }
-  } else if (notification.department) {
-    // Send department-based notification (no specific user_id)
-    const { error } = await supabase
-      .from('user_notifications')
-      .insert({
-        user_id: null, // No specific user - department notification
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        priority: notification.priority,
-        related_id: notification.related_id,
-        department: notification.department,
-      });
-
-    if (error) {
-      console.error('Error creating department notification:', error);
-    }
+  } catch (error) {
+    console.error('Error creating notification:', error);
   }
 };
 
+// Helper function to get booking details
 export const getBookingDetails = async (bookingId: string) => {
   try {
     const { data: booking } = await supabase
@@ -74,6 +62,7 @@ export const getBookingDetails = async (bookingId: string) => {
   return { contactName: 'Unknown Contact', tourName: 'Unknown Tour' };
 };
 
+// Helper function to get task details
 export const getTaskDetails = async (taskId: string) => {
   try {
     const { data: task } = await supabase
@@ -98,6 +87,7 @@ export const getTaskDetails = async (taskId: string) => {
   return { taskName: 'Unknown Task', tourName: null };
 };
 
+// Helper function to get tour name
 export const getTourNameById = async (tourId: string) => {
   try {
     const { data: tour } = await supabase
@@ -112,6 +102,7 @@ export const getTourNameById = async (tourId: string) => {
   }
 };
 
+// Helper function to get hotel name
 export const getHotelNameById = async (hotelId: string) => {
   try {
     const { data: hotel } = await supabase
@@ -126,6 +117,7 @@ export const getHotelNameById = async (hotelId: string) => {
   }
 };
 
+// Helper function to get activity name
 export const getActivityNameById = async (activityId: string) => {
   try {
     const { data: activity } = await supabase

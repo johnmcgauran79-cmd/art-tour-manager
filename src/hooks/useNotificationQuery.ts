@@ -16,29 +16,34 @@ export const useNotificationQuery = (limit: number = 10) => {
     queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
       if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
       
-      console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments, 'limit:', limit);
+      console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments);
       
-      // Build query to get notifications for:
-      // 1. Direct user notifications (user_id matches)
-      // 2. Department notifications where user belongs to that department
-      // 3. General notifications (no department specified)
+      // Build query conditions for notifications
+      const conditions = [`user_id.eq.${user.id}`];
       
-      let notificationsQuery = supabase
-        .from('user_notifications')
-        .select('*')
-        .or(`user_id.eq.${user.id},and(department.in.(${userDepartments.join(',')}),user_id.is.null),and(department.is.null,user_id.is.null)`)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-
-      let unreadCountQuery = supabase
-        .from('user_notifications')
-        .select('id', { count: 'exact' })
-        .or(`user_id.eq.${user.id},and(department.in.(${userDepartments.join(',')}),user_id.is.null),and(department.is.null,user_id.is.null)`)
-        .eq('read', false);
+      // Add department-based notifications if user has departments
+      if (userDepartments.length > 0) {
+        conditions.push(`and(department.in.(${userDepartments.join(',')}),user_id.is.null)`);
+      }
+      
+      // Add general notifications (no department and no specific user)
+      conditions.push('and(department.is.null,user_id.is.null)');
+      
+      const orCondition = conditions.join(',');
 
       const [notificationsResult, unreadCountResult] = await Promise.all([
-        notificationsQuery,
-        unreadCountQuery
+        supabase
+          .from('user_notifications')
+          .select('*')
+          .or(orCondition)
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        
+        supabase
+          .from('user_notifications')
+          .select('id', { count: 'exact' })
+          .or(orCondition)
+          .eq('read', false)
       ]);
 
       if (notificationsResult.error) {
@@ -59,5 +64,7 @@ export const useNotificationQuery = (limit: number = 10) => {
       return { notifications, totalUnreadCount };
     },
     enabled: !!user?.id,
+    staleTime: 30000, // 30 seconds
+    refetchInterval: 60000, // 1 minute
   });
 };

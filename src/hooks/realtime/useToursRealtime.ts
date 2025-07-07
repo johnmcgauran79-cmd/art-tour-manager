@@ -35,14 +35,14 @@ export const useToursRealtime = (userId: string) => {
           
           const newTour = payload.new as any;
           
-          // New tours - notify ALL users
+          // New tours - notify ALL users (general notification)
           await createNotification('', {
             title: "New Tour Created",
             message: `Tour "${newTour.name}" has been created`,
             type: 'tour',
             priority: 'medium',
             related_id: newTour.id,
-            department: 'general', // Send to all departments
+            department: 'general',
           });
 
           logOperation({
@@ -83,7 +83,7 @@ export const useToursRealtime = (userId: string) => {
             department: 'operations',
           });
 
-          // Also notify users who have bookings on this tour (using valid booking status)
+          // Also notify users who have bookings on this tour
           const { data: bookingsData } = await supabase
             .from('bookings')
             .select(`
@@ -92,7 +92,7 @@ export const useToursRealtime = (userId: string) => {
               customers!inner(id, email)
             `)
             .eq('tour_id', newTour.id)
-            .in('status', ['fully_paid', 'deposited', 'instalment_paid']); // Use valid booking statuses
+            .in('status', ['fully_paid', 'deposited', 'instalment_paid']);
 
           if (bookingsData && bookingsData.length > 0) {
             for (const booking of bookingsData) {

@@ -36,14 +36,14 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // New bookings - notify ALL users (department-based notification)
+          // New bookings - notify ALL users (general notification)
           await createNotification('', {
             title: "New Booking",
             message: `New booking for ${contactName} on "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newBooking.id,
-            department: 'general', // Send to all departments
+            department: 'general',
           });
 
           logOperation({
