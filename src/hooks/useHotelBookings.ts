@@ -48,13 +48,18 @@ export const useCreateHotelBooking = () => {
 
   return useMutation({
     mutationFn: async (hotelBookingData: HotelBookingInsert) => {
+      console.log('Creating hotel booking with data:', hotelBookingData);
       const { data, error } = await supabase
         .from('hotel_bookings')
         .insert(hotelBookingData)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating hotel booking:', error);
+        throw error;
+      }
+      console.log('Hotel booking created successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -65,13 +70,13 @@ export const useCreateHotelBooking = () => {
         description: "Hotel booking allocation has been successfully created.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Hotel booking creation failed:', error);
       toast({
         title: "Error",
-        description: "Failed to create hotel booking allocation. Please try again.",
+        description: error?.message || "Failed to create hotel booking allocation. Please try again.",
         variant: "destructive",
       });
-      console.error('Error creating hotel booking:', error);
     },
   });
 };
@@ -82,14 +87,31 @@ export const useUpdateHotelBooking = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: HotelBookingUpdate & { id: string }) => {
+      console.log('Updating hotel booking:', id, 'with updates:', updates);
+      
+      // Clean the updates object - remove undefined values and ensure proper types
+      const cleanUpdates: any = {};
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value !== undefined) {
+          cleanUpdates[key] = value;
+        }
+      });
+
+      console.log('Clean updates for hotel booking:', cleanUpdates);
+
       const { data, error } = await supabase
         .from('hotel_bookings')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating hotel booking:', error);
+        throw new Error(`Failed to update hotel booking: ${error.message}`);
+      }
+      
+      console.log('Hotel booking updated successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -100,13 +122,13 @@ export const useUpdateHotelBooking = () => {
         description: "Hotel booking allocation has been successfully updated.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Hotel booking update failed:', error);
       toast({
         title: "Error",
-        description: "Failed to update hotel booking allocation. Please try again.",
+        description: error?.message || "Failed to update hotel booking allocation. Please try again.",
         variant: "destructive",
       });
-      console.error('Error updating hotel booking:', error);
     },
   });
 };
@@ -117,12 +139,17 @@ export const useDeleteHotelBooking = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      console.log('Deleting hotel booking:', id);
       const { error } = await supabase
         .from('hotel_bookings')
         .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error deleting hotel booking:', error);
+        throw error;
+      }
+      console.log('Hotel booking deleted successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
@@ -132,13 +159,13 @@ export const useDeleteHotelBooking = () => {
         description: "Hotel booking allocation has been successfully removed.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Hotel booking deletion failed:', error);
       toast({
         title: "Error",
-        description: "Failed to delete hotel booking allocation. Please try again.",
+        description: error?.message || "Failed to delete hotel booking allocation. Please try again.",
         variant: "destructive",
       });
-      console.error('Error deleting hotel booking:', error);
     },
   });
 };

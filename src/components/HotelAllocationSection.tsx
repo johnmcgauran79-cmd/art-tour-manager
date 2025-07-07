@@ -117,11 +117,14 @@ export const HotelAllocationSection = ({
 
   const handleFieldChange = (hotelBookingId: string, field: string, value: any) => {
     const fieldKey = `${hotelBookingId}-${field}`;
+    console.log(`Field change: ${field} = ${value} for booking ${hotelBookingId}`);
     setEditingFields(prev => ({ ...prev, [fieldKey]: value }));
     setHasUnsavedChanges(prev => ({ ...prev, [hotelBookingId]: true }));
   };
 
-  const saveAllChanges = (hotelBookingId: string) => {
+  const saveAllChanges = async (hotelBookingId: string) => {
+    console.log('Saving changes for hotel booking:', hotelBookingId);
+    
     // Collect all changes for this hotel booking
     const updates: any = {};
     
@@ -132,37 +135,44 @@ export const HotelAllocationSection = ({
       }
     });
 
-    if (Object.keys(updates).length === 0) return;
+    console.log('Updates to apply:', updates);
 
-    updateHotelBooking.mutate({
-      id: hotelBookingId,
-      ...updates,
-    }, {
-      onSuccess: async () => {
-        onUpdate?.();
-        setHasUnsavedChanges(prev => ({ ...prev, [hotelBookingId]: false }));
-        
-        // Clear editing fields for this hotel booking
-        setEditingFields(prev => {
-          const newState = { ...prev };
-          Object.keys(newState).forEach(key => {
-            if (key.startsWith(`${hotelBookingId}-`)) {
-              delete newState[key];
-            }
-          });
-          return newState;
-        });
-        
-        // If check-in or check-out date was updated, sync booking dates
-        if (updates.check_in_date || updates.check_out_date) {
-          // Refetch hotel bookings and then update booking dates
-          const { data: updatedHotelBookings } = await refetchHotelBookings();
-          if (updatedHotelBookings) {
-            updateBookingDates(updatedHotelBookings);
+    if (Object.keys(updates).length === 0) {
+      console.log('No updates to apply');
+      return;
+    }
+
+    try {
+      await updateHotelBooking.mutateAsync({
+        id: hotelBookingId,
+        ...updates,
+      });
+
+      onUpdate?.();
+      setHasUnsavedChanges(prev => ({ ...prev, [hotelBookingId]: false }));
+      
+      // Clear editing fields for this hotel booking
+      setEditingFields(prev => {
+        const newState = { ...prev };
+        Object.keys(newState).forEach(key => {
+          if (key.startsWith(`${hotelBookingId}-`)) {
+            delete newState[key];
           }
+        });
+        return newState;
+      });
+      
+      // If check-in or check-out date was updated, sync booking dates
+      if (updates.check_in_date || updates.check_out_date) {
+        // Refetch hotel bookings and then update booking dates
+        const { data: updatedHotelBookings } = await refetchHotelBookings();
+        if (updatedHotelBookings) {
+          updateBookingDates(updatedHotelBookings);
         }
       }
-    });
+    } catch (error) {
+      console.error('Failed to save hotel booking changes:', error);
+    }
   };
 
   const getFieldValue = (hotelBooking: any, field: string) => {
@@ -204,7 +214,7 @@ export const HotelAllocationSection = ({
                     <Input
                       type="date"
                       value={getFieldValue(hotelBooking, 'check_in_date')}
-                      onChange={(e) => handleFieldChange(hotelBooking.id, 'check_in_date', e.target.value)}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'check_in_date', e.target.value || null)}
                     />
                   </div>
                   <div>
@@ -212,7 +222,7 @@ export const HotelAllocationSection = ({
                     <Input
                       type="date"
                       value={getFieldValue(hotelBooking, 'check_out_date')}
-                      onChange={(e) => handleFieldChange(hotelBooking.id, 'check_out_date', e.target.value)}
+                      onChange={(e) => handleFieldChange(hotelBooking.id, 'check_out_date', e.target.value || null)}
                     />
                   </div>
                   <div>
