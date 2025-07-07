@@ -38,6 +38,7 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('New booking created:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['tours'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const newBooking = payload.new as any;
@@ -48,7 +49,7 @@ export const useBookingsRealtime = (userId: string) => {
             .select(`
               group_name,
               lead_passenger_id,
-              tours(name),
+              tours!inner(name),
               customers(first_name, last_name)
             `)
             .eq('id', newBooking.id)
@@ -59,9 +60,8 @@ export const useBookingsRealtime = (userId: string) => {
             : bookingDetails?.group_name || 'Unknown Contact';
           const tourName = bookingDetails?.tours?.name || 'Unknown Tour';
 
-          console.log('Creating booking creation notification');
+          console.log('Creating booking creation notification for:', contactName, 'on tour:', tourName);
           
-          // Create only ONE notification for booking creation
           await createNotification(userId, {
             title: "New Booking Created",
             message: `New booking created for ${contactName} on "${tourName}"`,
@@ -95,6 +95,7 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('Booking updated:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['tours'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const oldBooking = payload.old as any;
@@ -106,7 +107,7 @@ export const useBookingsRealtime = (userId: string) => {
             .select(`
               group_name,
               lead_passenger_id,
-              tours(name),
+              tours!inner(name),
               customers(first_name, last_name)
             `)
             .eq('id', newBooking.id)
@@ -119,8 +120,7 @@ export const useBookingsRealtime = (userId: string) => {
 
           // Only create notifications for significant changes
           if (oldBooking.status !== newBooking.status) {
-            // Status change notifications - only one notification per change
-            console.log('Creating booking status change notification');
+            console.log('Creating booking status change notification for:', contactName);
             
             await createNotification(userId, {
               title: "Booking Status Changed",
@@ -132,8 +132,7 @@ export const useBookingsRealtime = (userId: string) => {
             });
 
           } else if (oldBooking.passenger_count !== newBooking.passenger_count) {
-            // Passenger count change notifications - only one notification per change
-            console.log('Creating booking passenger count change notification');
+            console.log('Creating booking passenger count change notification for:', contactName);
             
             await createNotification(userId, {
               title: "Passenger Count Updated",
@@ -157,11 +156,12 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('Booking deleted:', payload.old);
           
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['tours'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const deletedBooking = payload.old as any;
           
-          // For deletion, we need to reconstruct the names from the old data
+          // Get booking details before deletion from the payload
           let contactName = 'Unknown Contact';
           let tourName = 'Unknown Tour';
 
@@ -181,7 +181,7 @@ export const useBookingsRealtime = (userId: string) => {
             }
           }
 
-          // Try to get tour name
+          // Try to get tour name using tour_id from the deleted booking
           if (deletedBooking.tour_id) {
             const { data: tour } = await supabase
               .from('tours')
@@ -194,9 +194,8 @@ export const useBookingsRealtime = (userId: string) => {
             }
           }
 
-          console.log('Creating booking deletion notification');
+          console.log('Creating booking deletion notification for:', contactName, 'from tour:', tourName);
 
-          // Create only ONE notification for booking deletion
           await createNotification(userId, {
             title: "Booking Deleted",
             message: `Booking for ${contactName} has been deleted from "${tourName}"`,

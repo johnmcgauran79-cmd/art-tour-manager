@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { createNotification, getTourNameById } from "@/utils/notificationHelpers";
+import { createNotification } from "@/utils/notificationHelpers";
 
 export const useToursRealtime = (userId: string) => {
   const queryClient = useQueryClient();
@@ -44,7 +44,6 @@ export const useToursRealtime = (userId: string) => {
 
           console.log('Creating tour creation notification');
           
-          // Create only ONE notification for tour creation
           await createNotification(userId, {
             title: "New Tour Created",
             message: `Tour "${newTour.name}" has been created`,
@@ -83,41 +82,53 @@ export const useToursRealtime = (userId: string) => {
           const oldTour = payload.old as any;
           const newTour = payload.new as any;
 
-          // Skip notifications for automatic capacity updates (these are triggered by booking changes)
+          // Skip notifications for automatic capacity updates caused by booking changes
           const isCapacityOnlyUpdate = (
             oldTour.capacity !== newTour.capacity &&
             oldTour.name === newTour.name &&
             oldTour.start_date === newTour.start_date &&
             oldTour.end_date === newTour.end_date &&
-            oldTour.status === newTour.status
+            oldTour.status === newTour.status &&
+            oldTour.updated_at !== newTour.updated_at
           );
 
           if (isCapacityOnlyUpdate) {
-            console.log('Skipping notification for automatic capacity update');
+            console.log('Skipping notification for automatic capacity update - this was triggered by booking changes');
             return;
           }
 
-          console.log('Creating tour update notification for manual changes');
+          // Only notify for manual tour updates (not automatic booking-related changes)
+          const hasSignificantChange = (
+            oldTour.name !== newTour.name ||
+            oldTour.start_date !== newTour.start_date ||
+            oldTour.end_date !== newTour.end_date ||
+            oldTour.status !== newTour.status ||
+            oldTour.location !== newTour.location ||
+            oldTour.tour_host !== newTour.tour_host
+          );
 
-          // Create only ONE notification for tour updates (not automatic capacity changes)
-          await createNotification(userId, {
-            title: "Tour Updated",
-            message: `Tour "${newTour.name}" has been updated`,
-            type: 'tour',
-            priority: 'medium',
-            related_id: newTour.id,
-            department: 'operations',
-          });
+          if (hasSignificantChange) {
+            console.log('Creating tour update notification for significant manual changes');
 
-          logOperation({
-            operation_type: 'UPDATE',
-            table_name: 'tours',
-            record_id: newTour.id,
-            details: {
-              tour_name: newTour.name,
-              updated_by_realtime: true
-            }
-          });
+            await createNotification(userId, {
+              title: "Tour Updated",
+              message: `Tour "${newTour.name}" has been updated`,
+              type: 'tour',
+              priority: 'medium',
+              related_id: newTour.id,
+              department: 'operations',
+            });
+
+            logOperation({
+              operation_type: 'UPDATE',
+              table_name: 'tours',
+              record_id: newTour.id,
+              details: {
+                tour_name: newTour.name,
+                updated_by_realtime: true
+              }
+            });
+          }
         }
       )
       .on(
@@ -137,7 +148,6 @@ export const useToursRealtime = (userId: string) => {
 
           console.log('Creating tour deletion notification');
 
-          // Create only ONE notification for tour deletion
           await createNotification(userId, {
             title: "Tour Deleted",
             message: `Tour "${deletedTour.name}" has been deleted`,
