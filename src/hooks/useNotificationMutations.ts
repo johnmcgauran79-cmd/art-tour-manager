@@ -22,7 +22,6 @@ export const useNotificationMutations = () => {
         .from('user_notifications')
         .update({ read: true })
         .eq('id', notificationId)
-        .eq('user_id', user.id)
         .select();
 
       if (error) {
@@ -63,7 +62,6 @@ export const useNotificationMutations = () => {
         .from('user_notifications')
         .delete()
         .eq('id', notificationId)
-        .eq('user_id', user.id)
         .select();
 
       if (error) {
@@ -92,7 +90,7 @@ export const useNotificationMutations = () => {
     },
   });
 
-  // Bulk delete mutation
+  // Bulk delete mutation - Updated to handle all notification types
   const bulkDeleteMutation = useMutation({
     mutationFn: async (notificationIds: string[]) => {
       console.log('Bulk deleting notifications:', notificationIds);
@@ -104,17 +102,17 @@ export const useNotificationMutations = () => {
       // First, let's check what notifications exist before deletion
       const { data: beforeDelete } = await supabase
         .from('user_notifications')
-        .select('id')
-        .in('id', notificationIds)
-        .eq('user_id', user.id);
+        .select('id, user_id, department')
+        .in('id', notificationIds);
       
       console.log('Notifications found before delete:', beforeDelete?.length || 0);
+      console.log('Notification details:', beforeDelete);
 
+      // Delete notifications without user_id restriction since RLS will handle permissions
       const { data, error } = await supabase
         .from('user_notifications')
         .delete()
         .in('id', notificationIds)
-        .eq('user_id', user.id)
         .select();
 
       if (error) {
