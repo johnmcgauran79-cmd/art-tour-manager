@@ -31,27 +31,36 @@ export const useNotificationQuery = (limit: number = 10) => {
       
       const orCondition = conditions.join(',');
 
+      // First get dismissed notification IDs for this user
+      const { data: dismissedNotifications } = await supabase
+        .from('user_notification_dismissals')
+        .select('notification_id')
+        .eq('user_id', user.id);
+
+      const dismissedIds = dismissedNotifications?.map(d => d.notification_id) || [];
+
+      let notificationsQuery = supabase
+        .from('user_notifications')
+        .select('*')
+        .or(orCondition)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      let unreadCountQuery = supabase
+        .from('user_notifications')
+        .select('id', { count: 'exact' })
+        .or(orCondition)
+        .eq('read', false);
+
+      // If there are dismissed notifications, exclude them
+      if (dismissedIds.length > 0) {
+        notificationsQuery = notificationsQuery.not('id', 'in', `(${dismissedIds.join(',')})`);
+        unreadCountQuery = unreadCountQuery.not('id', 'in', `(${dismissedIds.join(',')})`);
+      }
+
       const [notificationsResult, unreadCountResult] = await Promise.all([
-        supabase
-          .from('user_notifications')
-          .select(`
-            *,
-            user_notification_dismissals!left(id)
-          `)
-          .or(orCondition)
-          .is('user_notification_dismissals.id', null) // Exclude dismissed notifications
-          .order('created_at', { ascending: false })
-          .limit(limit),
-        
-        supabase
-          .from('user_notifications')
-          .select(`
-            id,
-            user_notification_dismissals!left(id)
-          `, { count: 'exact' })
-          .or(orCondition)
-          .eq('read', false)
-          .is('user_notification_dismissals.id', null) // Exclude dismissed notifications from count
+        notificationsQuery,
+        unreadCountQuery
       ]);
 
       if (notificationsResult.error) throw notificationsResult.error;
