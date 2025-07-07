@@ -40,6 +40,10 @@ export const ContactsTable = () => {
     }
   };
 
+  const handleContactClick = (customer: any) => {
+    setEditingContact(customer);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -109,8 +113,7 @@ export const ContactsTable = () => {
                     <ContactTableRow
                       key={customer.id}
                       customer={customer}
-                      onEdit={setEditingContact}
-                      onDelete={handleDeleteCustomer}
+                      onClick={handleContactClick}
                     />
                   ))}
                 </TableBody>
@@ -127,7 +130,7 @@ export const ContactsTable = () => {
 
       {editingContact && (
         <EditContactModal
-          customer={editingContact}
+          contact={editingContact}
           open={!!editingContact}
           onOpenChange={(open) => !open && setEditingContact(null)}
         />
