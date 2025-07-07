@@ -12,7 +12,6 @@ import { FileText, Heart, Shield } from "lucide-react";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { ContactSearch } from "@/components/booking/ContactSearch";
-import { LeadPassengerSection } from "@/components/booking/LeadPassengerSection";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 
 interface AddBookingModalProps {
@@ -24,7 +23,7 @@ interface AddBookingModalProps {
 
 export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "pending" }: AddBookingModalProps) => {
   const [selectedContact, setSelectedContact] = useState<any>(null);
-  const [useExistingContact, setUseExistingContact] = useState(false);
+  const [leadPassengerName, setLeadPassengerName] = useState('');
   const [formData, setFormData] = useState({
     // Basic booking info
     tour_id: preSelectedTourId || '',
@@ -75,15 +74,21 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   useEffect(() => {
     if (selectedContact) {
+      const fullName = `${selectedContact.first_name || ''} ${selectedContact.last_name || ''}`.trim();
       setFormData(prev => ({
         ...prev,
-        lead_passenger_name: `${selectedContact.first_name || ''} ${selectedContact.last_name || ''}`.trim(),
+        lead_passenger_name: fullName,
         lead_passenger_email: selectedContact.email || '',
         lead_passenger_phone: selectedContact.phone || '',
         dietary_restrictions: selectedContact.dietary_requirements || '',
       }));
+      setLeadPassengerName(fullName);
     }
   }, [selectedContact]);
+
+  const handleContactSelect = (contact: any) => {
+    setSelectedContact(contact);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,7 +136,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           dietary_restrictions: '',
         });
         setSelectedContact(null);
-        setUseExistingContact(false);
+        setLeadPassengerName('');
       }
     });
   };
@@ -166,13 +171,39 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
           <TabsContent value="details" className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <LeadPassengerSection 
-                formData={formData}
-                setFormData={setFormData}
-                selectedContact={selectedContact}
-                useExistingContact={useExistingContact}
-                isWaitlistMode={isWaitlistMode}
-              />
+              {/* Lead Passenger Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Lead Passenger Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="lead_passenger_name">Lead Passenger Name *</Label>
+                    <Input
+                      id="lead_passenger_name"
+                      value={formData.lead_passenger_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lead_passenger_email">Email *</Label>
+                    <Input
+                      id="lead_passenger_email"
+                      type="email"
+                      value={formData.lead_passenger_email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_email: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lead_passenger_phone">Phone</Label>
+                    <Input
+                      id="lead_passenger_phone"
+                      value={formData.lead_passenger_phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_phone: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
 
               <BookingDetailsForm 
                 formData={formData}
@@ -331,10 +362,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
           <TabsContent value="contact" className="space-y-4">
             <ContactSearch 
-              selectedContact={selectedContact}
-              setSelectedContact={setSelectedContact}
-              useExistingContact={useExistingContact}
-              setUseExistingContact={setUseExistingContact}
+              value={leadPassengerName}
+              onValueChange={setLeadPassengerName}
+              onContactSelect={handleContactSelect}
+              selectedContactId={selectedContact?.id || ''}
             />
           </TabsContent>
         </Tabs>
