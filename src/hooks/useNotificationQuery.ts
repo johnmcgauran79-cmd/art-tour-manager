@@ -16,6 +16,8 @@ export const useNotificationQuery = (limit: number = 10) => {
     queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
       if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
       
+      console.log('Fetching notifications for user:', user.id, 'with departments:', userDepartments);
+      
       // Build OR conditions for user notifications, department notifications, and general notifications
       const conditions = [`user_id.eq.${user.id}`];
       
@@ -47,13 +49,16 @@ export const useNotificationQuery = (limit: number = 10) => {
       if (notificationsResult.error) throw notificationsResult.error;
       if (unreadCountResult.error) throw unreadCountResult.error;
 
+      console.log('Fetched notifications count:', notificationsResult.data?.length || 0);
+      console.log('Unread count:', unreadCountResult.count || 0);
+
       return { 
         notifications: notificationsResult.data || [], 
         totalUnreadCount: unreadCountResult.count || 0 
       };
     },
     enabled: !!user?.id,
-    staleTime: 30000,
-    refetchInterval: 60000,
+    staleTime: 5000, // Reduced from 30000 to make it refresh more frequently
+    refetchInterval: 30000, // Reduced from 60000 to make it refresh more frequently
   });
 };

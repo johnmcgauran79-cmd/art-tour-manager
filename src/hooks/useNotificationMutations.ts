@@ -101,24 +101,39 @@ export const useNotificationMutations = () => {
         throw new Error('User not authenticated');
       }
 
-      const { error } = await supabase
+      // First, let's check what notifications exist before deletion
+      const { data: beforeDelete } = await supabase
+        .from('user_notifications')
+        .select('id')
+        .in('id', notificationIds)
+        .eq('user_id', user.id);
+      
+      console.log('Notifications found before delete:', beforeDelete?.length || 0);
+
+      const { data, error } = await supabase
         .from('user_notifications')
         .delete()
         .in('id', notificationIds)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select();
 
       if (error) {
         console.error('Error bulk deleting notifications:', error);
         throw error;
       }
       
-      console.log('Successfully bulk deleted notifications:', notificationIds);
+      console.log('Successfully bulk deleted notifications count:', data?.length || 0);
+      console.log('Bulk deleted notification IDs:', data?.map(n => n.id) || []);
       return notificationIds;
     },
     onSuccess: (deletedIds) => {
-      console.log('Bulk delete success, clearing selection and updating UI');
+      console.log('Bulk delete success, invalidating queries for user:', user?.id);
       const deletedCount = deletedIds.length;
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      
+      // Force refetch of notifications
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.refetchQueries({ queryKey: ['notifications', user?.id] });
+      
       toast({
         title: "Success",
         description: `${deletedCount} notifications deleted`,
