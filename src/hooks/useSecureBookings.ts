@@ -5,25 +5,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { useAuth } from "@/hooks/useAuth";
 
-const createNotification = async (userId: string, notification: {
-  title: string;
-  message: string;
-  type: 'task' | 'tour' | 'booking' | 'system';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  related_id?: string;
-}) => {
-  const { error } = await supabase
-    .from('user_notifications')
-    .insert({
-      user_id: userId,
-      ...notification,
-    });
-
-  if (error) {
-    console.error('Error creating notification:', error);
-  }
-};
-
 export const useSecureDeleteBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -32,7 +13,7 @@ export const useSecureDeleteBooking = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Get booking details before deletion for notification
+      // Get booking details before deletion for audit logging only
       const { data: booking } = await supabase
         .from('bookings')
         .select('group_name, tour_id, tours(name)')
@@ -54,16 +35,8 @@ export const useSecureDeleteBooking = () => {
 
       if (error) throw error;
 
-      // Create notification for the user who deleted it (not via realtime to avoid duplicates)
-      if (user?.id && booking) {
-        await createNotification(user.id, {
-          title: "Booking Deleted",
-          message: `${booking.group_name || 'Booking'} for tour "${booking.tours?.name || 'Unknown'}" deleted`,
-          type: 'booking',
-          priority: 'medium',
-          related_id: id,
-        });
-      }
+      // Note: Notification will be created automatically by realtime subscription
+      // We don't create a duplicate notification here
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
