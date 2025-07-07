@@ -11,20 +11,23 @@ export const createNotification = async (userId: string, notification: {
   department?: Department;
 }) => {
   try {
+    console.log('Creating notification:', { userId, notification });
+    
     const { error } = await supabase
       .from('user_notifications')
       .insert({
-        user_id: userId || null,
+        user_id: userId || null, // Explicitly set to null if empty string
         title: notification.title,
         message: notification.message,
         type: notification.type,
         priority: notification.priority,
-        related_id: notification.related_id,
-        department: notification.department,
+        related_id: notification.related_id || null,
+        department: notification.department || null,
       });
 
     if (error) {
       console.error('Error creating notification:', error);
+      throw error;
     } else {
       console.log('Notification created successfully:', notification.title);
     }

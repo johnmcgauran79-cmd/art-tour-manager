@@ -133,6 +133,8 @@ export const useCreateBooking = () => {
       accessibility_needs?: string;
       dietary_restrictions?: string;
     }) => {
+      console.log('Creating booking with data:', bookingData);
+      
       // Calculate nights
       const totalNights = calculateNights(bookingData.check_in_date, bookingData.check_out_date);
 
@@ -231,7 +233,12 @@ export const useCreateBooking = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error creating booking:', error);
+        throw error;
+      }
+
+      console.log('Booking created successfully:', data);
 
       // Log the booking creation
       logOperation({
@@ -250,6 +257,7 @@ export const useCreateBooking = () => {
       return data;
     },
     onSuccess: (data, variables) => {
+      console.log('Booking creation successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -263,12 +271,12 @@ export const useCreateBooking = () => {
       });
     },
     onError: (error) => {
+      console.error('Booking creation failed:', error);
       toast({
         title: "Error",
         description: "Failed to create booking. Please try again.",
         variant: "destructive",
       });
-      console.error('Error creating booking:', error);
     },
   });
 };

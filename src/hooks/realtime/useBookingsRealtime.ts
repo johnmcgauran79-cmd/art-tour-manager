@@ -36,14 +36,13 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // New bookings - notify ALL users (general notification)
+          // Create a general notification (no specific user, no department)
           await createNotification('', {
             title: "New Booking",
             message: `New booking for ${contactName} on "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: newBooking.id,
-            department: 'general',
           });
 
           logOperation({
@@ -76,7 +75,7 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Edited bookings - notify Operations & Booking departments
+          // Status change notifications to specific departments
           if (oldBooking.status !== newBooking.status) {
             await createNotification('', {
               title: "Booking Status Changed",
@@ -97,6 +96,7 @@ export const useBookingsRealtime = (userId: string) => {
             });
           }
 
+          // Passenger count change notifications
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
             await createNotification('', {
               title: "Passenger Count Updated",
