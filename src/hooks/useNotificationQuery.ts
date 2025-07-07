@@ -16,22 +16,17 @@ export const useNotificationQuery = (limit: number = 10) => {
     queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
       if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
       
-      console.log('Fetching notifications for user:', user.id, 'with departments:', userDepartments);
-      
       // Build OR conditions for user notifications, department notifications, and general notifications
       const conditions = [`user_id.eq.${user.id}`];
       
-      // Add department-based notifications if user has departments
       if (userDepartments.length > 0) {
         conditions.push(`and(department.in.(${userDepartments.join(',')}),user_id.is.null)`);
       }
       
-      // Add general notifications (no department and no specific user)
       conditions.push('and(department.is.null,user_id.is.null)');
-      
       const orCondition = conditions.join(',');
 
-      // First get dismissed notification IDs for this user
+      // Get dismissed notification IDs for this user
       const { data: dismissedNotifications } = await supabase
         .from('user_notification_dismissals')
         .select('notification_id')
@@ -52,7 +47,7 @@ export const useNotificationQuery = (limit: number = 10) => {
         .or(orCondition)
         .eq('read', false);
 
-      // If there are dismissed notifications, exclude them
+      // Exclude dismissed notifications
       if (dismissedIds.length > 0) {
         notificationsQuery = notificationsQuery.not('id', 'in', `(${dismissedIds.join(',')})`);
         unreadCountQuery = unreadCountQuery.not('id', 'in', `(${dismissedIds.join(',')})`);
@@ -65,9 +60,6 @@ export const useNotificationQuery = (limit: number = 10) => {
 
       if (notificationsResult.error) throw notificationsResult.error;
       if (unreadCountResult.error) throw unreadCountResult.error;
-
-      console.log('Fetched notifications count:', notificationsResult.data?.length || 0);
-      console.log('Unread count:', unreadCountResult.count || 0);
 
       return { 
         notifications: notificationsResult.data || [], 

@@ -28,7 +28,6 @@ export const NotificationCenter = () => {
     refetch
   } = useNotifications(50);
 
-  // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       if (!user?.id) throw new Error('User not authenticated');
@@ -50,7 +49,6 @@ export const NotificationCenter = () => {
     },
   });
 
-  // Dismiss notification mutation
   const dismissMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       if (!user?.id) throw new Error('User not authenticated');
@@ -80,12 +78,10 @@ export const NotificationCenter = () => {
     },
   });
 
-  // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      // Build OR condition for user notifications and department notifications
       const conditions = [`user_id.eq.${user.id}`];
       if (userDepartments.length > 0) {
         conditions.push(`and(department.in.(${userDepartments.join(',')}),user_id.is.null)`);
@@ -116,7 +112,6 @@ export const NotificationCenter = () => {
     },
   });
 
-  // Auto-mark unread notifications as read when opened
   useEffect(() => {
     if (open && notifications.length > 0) {
       const unreadNotifications = notifications.filter(n => !n.read);
