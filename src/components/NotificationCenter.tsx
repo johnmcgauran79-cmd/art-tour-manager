@@ -31,33 +31,18 @@ export const NotificationCenter = () => {
   // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      console.log('NotificationCenter: Marking notification as read:', notificationId);
-      
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
+      if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_notifications')
         .update({ read: true })
         .eq('id', notificationId)
-        .eq('user_id', user.id)
-        .select();
+        .eq('user_id', user.id);
 
-      if (error) {
-        console.error('NotificationCenter: Error marking notification as read:', error);
-        throw error;
-      }
-      
-      console.log('NotificationCenter: Successfully marked as read:', data);
-      return data;
+      if (error) throw error;
     },
-    onSuccess: () => {
-      console.log('NotificationCenter: Mark as read success, refetching');
-      refetch();
-    },
-    onError: (error) => {
-      console.error('NotificationCenter: Error marking notification as read:', error);
+    onSuccess: () => refetch(),
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to mark notification as read",
@@ -69,37 +54,24 @@ export const NotificationCenter = () => {
   // Acknowledge notification mutation
   const acknowledgeMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      console.log('NotificationCenter: Acknowledging notification:', notificationId);
-      
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
+      if (!user?.id) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_notifications')
         .update({ acknowledged: true, read: true })
         .eq('id', notificationId)
-        .eq('user_id', user.id)
-        .select();
+        .eq('user_id', user.id);
 
-      if (error) {
-        console.error('NotificationCenter: Error acknowledging notification:', error);
-        throw error;
-      }
-      
-      console.log('NotificationCenter: Successfully acknowledged:', data);
-      return data;
+      if (error) throw error;
     },
     onSuccess: () => {
-      console.log('NotificationCenter: Acknowledge success, refetching');
       refetch();
       toast({
         title: "Success",
         description: "Notification acknowledged",
       });
     },
-    onError: (error) => {
-      console.error('NotificationCenter: Error acknowledging notification:', error);
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to acknowledge notification",
@@ -111,42 +83,31 @@ export const NotificationCenter = () => {
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id) {
-        throw new Error('User not authenticated');
-      }
+      if (!user?.id) throw new Error('User not authenticated');
       
-      console.log('NotificationCenter: Marking all notifications as read for user:', user.id);
-      
-      let baseCondition = `user_id.eq.${user.id}`;
+      // Build OR condition for user notifications and department notifications
+      const conditions = [`user_id.eq.${user.id}`];
       if (userDepartments.length > 0) {
-        baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
+        conditions.push(`and(department.in.(${userDepartments.join(',')}),user_id.is.null)`);
       }
-
-      const { data, error } = await supabase
+      conditions.push('and(department.is.null,user_id.is.null)');
+      
+      const { error } = await supabase
         .from('user_notifications')
         .update({ read: true })
-        .or(baseCondition)
-        .eq('read', false)
-        .select();
+        .or(conditions.join(','))
+        .eq('read', false);
 
-      if (error) {
-        console.error('NotificationCenter: Error marking all as read:', error);
-        throw error;
-      }
-      
-      console.log('NotificationCenter: Successfully marked all as read:', data);
-      return data;
+      if (error) throw error;
     },
     onSuccess: () => {
-      console.log('NotificationCenter: Mark all as read success, refetching');
       refetch();
       toast({
         title: "Success",
         description: "All notifications marked as read",
       });
     },
-    onError: (error) => {
-      console.error('NotificationCenter: Error marking all as read:', error);
+    onError: () => {
       toast({
         title: "Error",
         description: "Failed to mark all notifications as read",
@@ -155,11 +116,10 @@ export const NotificationCenter = () => {
     },
   });
 
-  // Auto-mark unread notifications as read when notification center is opened
+  // Auto-mark unread notifications as read when opened
   useEffect(() => {
     if (open && notifications.length > 0) {
       const unreadNotifications = notifications.filter(n => !n.read);
-      console.log('NotificationCenter: Auto-marking unread notifications as read:', unreadNotifications.length);
       unreadNotifications.forEach(notification => {
         markAsReadMutation.mutate(notification.id);
       });

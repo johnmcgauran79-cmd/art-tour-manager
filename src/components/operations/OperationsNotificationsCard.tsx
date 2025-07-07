@@ -32,7 +32,7 @@ export const OperationsNotificationsCard = ({
             className="flex items-center gap-2"
           >
             <List className="h-4 w-4" />
-            View All Notifications
+            View All
           </Button>
         </div>
       </CardHeader>

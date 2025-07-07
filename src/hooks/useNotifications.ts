@@ -16,14 +16,12 @@ export const useNotifications = (limit: number = 10) => {
   const { markAsReadMutation, deleteNotificationMutation, bulkDeleteMutation } = useNotificationMutations();
 
   const handleNotificationClick = (notification: Notification) => {
-    console.log('Notification clicked, marking as read:', notification.id);
     if (!notification.read) {
       markAsReadMutation.mutate(notification.id);
     }
   };
 
   const handleCheckboxChange = (notificationId: string, checked: boolean) => {
-    console.log('Checkbox changed:', notificationId, checked);
     setSelectedNotifications(prev => 
       checked 
         ? [...prev, notificationId]
@@ -32,18 +30,14 @@ export const useNotifications = (limit: number = 10) => {
   };
 
   const handleBulkDelete = () => {
-    console.log('Bulk delete requested for:', selectedNotifications);
     if (selectedNotifications.length > 0) {
       bulkDeleteMutation.mutate(selectedNotifications, {
-        onSuccess: () => {
-          setSelectedNotifications([]);
-        }
+        onSuccess: () => setSelectedNotifications([])
       });
     }
   };
 
   const handleSingleDelete = (notificationId: string) => {
-    console.log('Single delete button clicked for notification:', notificationId);
     deleteNotificationMutation.mutate(notificationId, {
       onSuccess: () => {
         setSelectedNotifications(prev => prev.filter(id => id !== notificationId));

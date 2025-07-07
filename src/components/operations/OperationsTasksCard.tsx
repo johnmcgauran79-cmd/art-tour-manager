@@ -22,7 +22,7 @@ export const OperationsTasksCard = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Settings className="h-5 w-5 text-brand-navy" />
-            <CardTitle className="text-brand-navy">My Priority Tasks</CardTitle>
+            <CardTitle className="text-brand-navy">Priority Tasks</CardTitle>
             <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
               Top 5 Most Urgent
             </Badge>
@@ -36,7 +36,7 @@ export const OperationsTasksCard = ({
                 className="flex items-center gap-2"
               >
                 <Settings className="h-4 w-4" />
-                Manage Templates
+                Templates
               </Button>
             )}
             <Button
@@ -46,7 +46,7 @@ export const OperationsTasksCard = ({
               className="flex items-center gap-2"
             >
               <List className="h-4 w-4" />
-              View All Tasks
+              View All
             </Button>
             <Button
               size="sm"

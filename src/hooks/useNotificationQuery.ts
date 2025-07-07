@@ -16,9 +16,7 @@ export const useNotificationQuery = (limit: number = 10) => {
     queryFn: async (): Promise<{ notifications: Notification[]; totalUnreadCount: number }> => {
       if (!user?.id) return { notifications: [], totalUnreadCount: 0 };
       
-      console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments);
-      
-      // Build query conditions for notifications
+      // Build OR conditions for user notifications, department notifications, and general notifications
       const conditions = [`user_id.eq.${user.id}`];
       
       // Add department-based notifications if user has departments
@@ -46,25 +44,16 @@ export const useNotificationQuery = (limit: number = 10) => {
           .eq('read', false)
       ]);
 
-      if (notificationsResult.error) {
-        console.error('Error fetching notifications:', notificationsResult.error);
-        throw notificationsResult.error;
-      }
+      if (notificationsResult.error) throw notificationsResult.error;
+      if (unreadCountResult.error) throw unreadCountResult.error;
 
-      if (unreadCountResult.error) {
-        console.error('Error fetching unread count:', unreadCountResult.error);
-        throw unreadCountResult.error;
-      }
-
-      const notifications = notificationsResult.data || [];
-      const totalUnreadCount = unreadCountResult.count || 0;
-
-      console.log('Fetched notifications:', notifications.length, 'Total unread:', totalUnreadCount);
-      
-      return { notifications, totalUnreadCount };
+      return { 
+        notifications: notificationsResult.data || [], 
+        totalUnreadCount: unreadCountResult.count || 0 
+      };
     },
     enabled: !!user?.id,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 60000, // 1 minute
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 };
