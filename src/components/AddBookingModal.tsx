@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
     lead_passenger_name: '',
@@ -65,6 +68,20 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
 
+  // Auto-fill check-in/out dates when tour is selected
+  useEffect(() => {
+    if (formData.tour_id && tours) {
+      const selectedTour = tours.find(tour => tour.id === formData.tour_id);
+      if (selectedTour) {
+        setFormData(prev => ({
+          ...prev,
+          check_in_date: selectedTour.start_date,
+          check_out_date: selectedTour.end_date,
+        }));
+      }
+    }
+  }, [formData.tour_id, tours]);
+
   useEffect(() => {
     if (preSelectedTourId) {
       setFormData(prev => ({ ...prev, tour_id: preSelectedTourId }));
@@ -97,7 +114,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     // Optionally refresh the contact search or clear the form
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFormChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleCreateBooking = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.tour_id) {
@@ -121,47 +143,73 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     createBooking.mutate(cleanedFormData, {
       onSuccess: (data) => {
         setCreatedBookingId(data.id);
-        // Reset form
-        setFormData({
-          tour_id: preSelectedTourId || '',
-          lead_passenger_name: '',
-          lead_passenger_email: '',
-          lead_passenger_phone: '',
-          passenger_count: 1,
-          passenger_2_name: '',
-          passenger_3_name: '',
-          group_name: '',
-          booking_agent: '',
-          status: defaultStatus,
-          extra_requests: '',
-          accommodation_required: true,
-          check_in_date: '',
-          check_out_date: '',
-          invoice_notes: '',
-          emergency_contact_name: '',
-          emergency_contact_phone: '',
-          emergency_contact_relationship: '',
-          passport_number: '',
-          passport_expiry_date: '',
-          passport_country: '',
-          id_number: '',
-          nationality: '',
-          medical_conditions: '',
-          accessibility_needs: '',
-          dietary_restrictions: '',
-        });
-        setSelectedContact(null);
-        setLeadPassengerName('');
-        onOpenChange(false);
+        setHasUnsavedChanges(false);
+        
+        // Navigate to next tab based on accommodation requirement
+        if (formData.accommodation_required) {
+          setActiveTab("hotels");
+        } else {
+          setActiveTab("medical");
+        }
       }
     });
+  };
+
+  const handleTabUpdate = (nextTab?: string) => {
+    setHasUnsavedChanges(false);
+    if (nextTab) {
+      setActiveTab(nextTab);
+    }
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to close?");
+      if (!confirmClose) return;
+    }
+    
+    // Reset form and state
+    setFormData({
+      tour_id: preSelectedTourId || '',
+      lead_passenger_name: '',
+      lead_passenger_email: '',
+      lead_passenger_phone: '',
+      passenger_count: 1,
+      passenger_2_name: '',
+      passenger_3_name: '',
+      group_name: '',
+      booking_agent: '',
+      status: defaultStatus,
+      extra_requests: '',
+      accommodation_required: true,
+      check_in_date: '',
+      check_out_date: '',
+      invoice_notes: '',
+      emergency_contact_name: '',
+      emergency_contact_phone: '',
+      emergency_contact_relationship: '',
+      passport_number: '',
+      passport_expiry_date: '',
+      passport_country: '',
+      id_number: '',
+      nationality: '',
+      medical_conditions: '',
+      accessibility_needs: '',
+      dietary_restrictions: '',
+    });
+    setSelectedContact(null);
+    setLeadPassengerName('');
+    setCreatedBookingId(null);
+    setActiveTab("details");
+    setHasUnsavedChanges(false);
+    onOpenChange(false);
   };
 
   const isWaitlistMode = defaultStatus === 'waitlisted';
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
@@ -169,25 +217,25 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="details" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="hotels" className="flex items-center gap-1">
+              <TabsTrigger value="hotels" className="flex items-center gap-1" disabled={!createdBookingId}>
                 <MapPin className="h-4 w-4" />
                 Hotels
               </TabsTrigger>
-              <TabsTrigger value="medical" className="flex items-center gap-1">
+              <TabsTrigger value="medical" className="flex items-center gap-1" disabled={!createdBookingId}>
                 <Heart className="h-4 w-4" />
                 Medical & Emergency
               </TabsTrigger>
-              <TabsTrigger value="travel" className="flex items-center gap-1">
+              <TabsTrigger value="travel" className="flex items-center gap-1" disabled={!createdBookingId}>
                 <FileText className="h-4 w-4" />
                 Travel Docs
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-4">
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleCreateBooking} className="space-y-4">
                 {/* Lead Passenger Section */}
                 <div className="border rounded-lg p-4 space-y-4">
                   <div className="flex items-center justify-between">
@@ -221,7 +269,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                         id="lead_passenger_email"
                         type="email"
                         value={formData.lead_passenger_email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_email: e.target.value }))}
+                        onChange={(e) => handleFormChange('lead_passenger_email', e.target.value)}
                         required
                       />
                     </div>
@@ -231,7 +279,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                       <Input
                         id="lead_passenger_phone"
                         value={formData.lead_passenger_phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_phone: e.target.value }))}
+                        onChange={(e) => handleFormChange('lead_passenger_phone', e.target.value)}
                       />
                     </div>
                   </div>
@@ -239,15 +287,15 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
                 <BookingDetailsForm 
                   formData={formData}
-                  setFormData={setFormData}
+                  setFormData={handleFormChange}
                   tours={tours}
                   preSelectedTourId={preSelectedTourId}
                   isWaitlistMode={isWaitlistMode}
                 />
 
                 <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
+                  <Button type="button" variant="outline" onClick={handleClose}>
+                    Close
                   </Button>
                   <Button 
                     type="submit" 
@@ -262,13 +310,27 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
             <TabsContent value="hotels" className="space-y-4">
               {createdBookingId && formData.tour_id ? (
-                <HotelAllocationSection
-                  tourId={formData.tour_id}
-                  bookingId={createdBookingId}
-                  accommodationRequired={formData.accommodation_required}
-                  defaultCheckIn={formData.check_in_date}
-                  defaultCheckOut={formData.check_out_date}
-                />
+                <>
+                  <HotelAllocationSection
+                    tourId={formData.tour_id}
+                    bookingId={createdBookingId}
+                    accommodationRequired={formData.accommodation_required}
+                    defaultCheckIn={formData.check_in_date}
+                    defaultCheckOut={formData.check_out_date}
+                    onUpdate={() => setHasUnsavedChanges(false)}
+                  />
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={handleClose}>
+                      Close
+                    </Button>
+                    <Button 
+                      onClick={() => handleTabUpdate("medical")}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      Next: Medical & Emergency
+                    </Button>
+                  </div>
+                </>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <p>Please create the booking first to manage hotel allocations.</p>
@@ -290,7 +352,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                       <Input
                         id="emergency_contact_name"
                         value={formData.emergency_contact_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                        onChange={(e) => handleFormChange('emergency_contact_name', e.target.value)}
                         placeholder="Full name"
                       />
                     </div>
@@ -299,7 +361,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                       <Input
                         id="emergency_contact_phone"
                         value={formData.emergency_contact_phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                        onChange={(e) => handleFormChange('emergency_contact_phone', e.target.value)}
                         placeholder="Phone number"
                       />
                     </div>
@@ -308,7 +370,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                       <Input
                         id="emergency_contact_relationship"
                         value={formData.emergency_contact_relationship}
-                        onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
+                        onChange={(e) => handleFormChange('emergency_contact_relationship', e.target.value)}
                         placeholder="e.g., Spouse, Parent, Sibling"
                       />
                     </div>
@@ -326,7 +388,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Textarea
                       id="medical_conditions"
                       value={formData.medical_conditions}
-                      onChange={(e) => setFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
+                      onChange={(e) => handleFormChange('medical_conditions', e.target.value)}
                       placeholder="Any medical conditions, allergies, or medications..."
                       rows={3}
                     />
@@ -336,7 +398,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Textarea
                       id="accessibility_needs"
                       value={formData.accessibility_needs}
-                      onChange={(e) => setFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
+                      onChange={(e) => handleFormChange('accessibility_needs', e.target.value)}
                       placeholder="Mobility assistance, wheelchair access, etc..."
                       rows={3}
                     />
@@ -346,12 +408,24 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Textarea
                       id="dietary_restrictions"
                       value={formData.dietary_restrictions}
-                      onChange={(e) => setFormData(prev => ({ ...prev, dietary_restrictions: e.target.value }))}
+                      onChange={(e) => handleFormChange('dietary_restrictions', e.target.value)}
                       placeholder="Food allergies, dietary preferences, etc..."
                       rows={3}
                     />
                   </div>
                 </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => handleTabUpdate("travel")}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Next: Travel Documents
+                </Button>
               </div>
             </TabsContent>
 
@@ -364,7 +438,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Input
                       id="passport_number"
                       value={formData.passport_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, passport_number: e.target.value }))}
+                      onChange={(e) => handleFormChange('passport_number', e.target.value)}
                       placeholder="Passport number"
                     />
                   </div>
@@ -374,7 +448,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                       id="passport_expiry_date"
                       type="date"
                       value={formData.passport_expiry_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, passport_expiry_date: e.target.value }))}
+                      onChange={(e) => handleFormChange('passport_expiry_date', e.target.value)}
                     />
                   </div>
                   <div>
@@ -382,7 +456,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Input
                       id="passport_country"
                       value={formData.passport_country}
-                      onChange={(e) => setFormData(prev => ({ ...prev, passport_country: e.target.value }))}
+                      onChange={(e) => handleFormChange('passport_country', e.target.value)}
                       placeholder="Country"
                     />
                   </div>
@@ -391,7 +465,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Input
                       id="nationality"
                       value={formData.nationality}
-                      onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
+                      onChange={(e) => handleFormChange('nationality', e.target.value)}
                       placeholder="Nationality"
                     />
                   </div>
@@ -400,11 +474,23 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     <Input
                       id="id_number"
                       value={formData.id_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
+                      onChange={(e) => handleFormChange('id_number', e.target.value)}
                       placeholder="National ID or driver's license"
                     />
                   </div>
                 </div>
+              </div>
+              
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => handleTabUpdate()}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Update & Complete
+                </Button>
               </div>
             </TabsContent>
           </Tabs>
