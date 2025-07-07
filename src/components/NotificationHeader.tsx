@@ -1,5 +1,6 @@
 
 import { Checkbox } from "@/components/ui/checkbox";
+import { useEffect, useRef } from "react";
 
 interface NotificationHeaderProps {
   unreadCount: number;
@@ -20,6 +21,17 @@ export const NotificationHeader = ({
 
   const allSelected = totalCount > 0 && selectedCount === totalCount;
   const someSelected = selectedCount > 0 && selectedCount < totalCount;
+  const checkboxRef = useRef<HTMLButtonElement>(null);
+
+  // Set indeterminate state using useEffect
+  useEffect(() => {
+    if (checkboxRef.current) {
+      const checkbox = checkboxRef.current.querySelector('[role="checkbox"]') as HTMLElement;
+      if (checkbox) {
+        (checkbox as any).indeterminate = someSelected;
+      }
+    }
+  }, [someSelected]);
 
   return (
     <div className="flex items-center justify-between mb-4">
@@ -35,10 +47,8 @@ export const NotificationHeader = ({
       {totalCount > 0 && onSelectAll && (
         <div className="flex items-center gap-2">
           <Checkbox
+            ref={checkboxRef}
             checked={allSelected}
-            ref={(el) => {
-              if (el) el.indeterminate = someSelected;
-            }}
             onCheckedChange={onSelectAll}
             className="h-4 w-4"
           />
