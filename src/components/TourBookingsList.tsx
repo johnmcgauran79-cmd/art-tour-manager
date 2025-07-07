@@ -77,28 +77,36 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
     );
   }
 
-  // Get all bookings for this tour first
+  // Get all bookings for this tour
   const allTourBookings = (allBookings || [])
     .filter(booking => booking.tour_id === tourId);
 
-  // Then filter by search query across all tour bookings
-  const searchFilteredBookings = allTourBookings.filter(booking => {
-    if (!searchQuery.trim()) return true;
-    const searchTerm = searchQuery.toLowerCase();
-    const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
-    const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
-    const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
-    const groupName = (booking.group_name || '').toLowerCase();
-    
-    return leadPassengerName.includes(searchTerm) ||
-           passenger2Name.includes(searchTerm) ||
-           passenger3Name.includes(searchTerm) ||
-           groupName.includes(searchTerm);
-  });
-
-  // Finally apply waitlist filter and sort
-  const filteredBookings = searchFilteredBookings
-    .filter(booking => showWaitlistOnly ? booking.status === 'waitlisted' : true)
+  // Apply all filters
+  const filteredBookings = allTourBookings
+    .filter(booking => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const searchTerm = searchQuery.toLowerCase();
+        const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+        const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
+        const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+        const groupName = (booking.group_name || '').toLowerCase();
+        
+        const matchesSearch = leadPassengerName.includes(searchTerm) ||
+               passenger2Name.includes(searchTerm) ||
+               passenger3Name.includes(searchTerm) ||
+               groupName.includes(searchTerm);
+        
+        if (!matchesSearch) return false;
+      }
+      
+      // Waitlist filter
+      if (showWaitlistOnly && booking.status !== 'waitlisted') {
+        return false;
+      }
+      
+      return true;
+    })
     .sort((a, b) => {
       // First sort by status order
       const statusOrderA = getStatusOrder(a.status || 'pending');
@@ -114,7 +122,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       return dateB.getTime() - dateA.getTime();
     });
 
-  // Calculate statistics from all tour bookings (before search filter)
+  // Calculate statistics from all tour bookings (before filters)
   const confirmedBookings = allTourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
   const waitlistedBookings = allTourBookings.filter(b => b.status === 'waitlisted');
   const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);

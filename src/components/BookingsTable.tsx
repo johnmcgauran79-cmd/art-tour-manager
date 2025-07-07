@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Plus, Search } from "lucide-react";
-import { useBookingSearch } from "@/hooks/useBookingSearch";
+import { useBookings } from "@/hooks/useBookings";
 import { EditBookingModal } from "./EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
@@ -31,16 +32,33 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   
-  const { data: searchResults, isLoading } = useBookingSearch(searchQuery, 100);
-  const bookings = searchResults?.data || [];
-  const totalCount = searchResults?.count || 0;
+  const { data: allBookings, isLoading } = useBookings();
+
+  // Filter all bookings based on search query
+  const filteredBookings = (allBookings || []).filter(booking => {
+    if (!searchQuery.trim()) return true;
+    const searchTerm = searchQuery.toLowerCase();
+    
+    // Search in customer names, tour names, group names, and passenger names
+    const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+    const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
+    const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+    const groupName = (booking.group_name || '').toLowerCase();
+    const tourName = (booking.tours?.name || '').toLowerCase();
+    
+    return leadPassengerName.includes(searchTerm) ||
+           passenger2Name.includes(searchTerm) ||
+           passenger3Name.includes(searchTerm) ||
+           groupName.includes(searchTerm) ||
+           tourName.includes(searchTerm);
+  });
 
   const handleBookingClick = (booking: any) => {
     setSelectedBooking(booking);
     setShowEditBooking(true);
   };
 
-  if (isLoading && bookings.length === 0) {
+  if (isLoading) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -55,7 +73,7 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            All Bookings ({totalCount} total)
+            All Bookings ({filteredBookings.length} {searchQuery ? 'found' : 'total'})
             <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
               <Plus className="h-4 w-4 mr-2" />
               Add Booking
@@ -86,9 +104,9 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
           </div>
         </CardHeader>
         <CardContent>
-          {bookings.length === 0 ? (
+          {filteredBookings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {searchQuery ? "No bookings found matching your search." : "Loading bookings..."}
+              {searchQuery ? "No bookings found matching your search." : "No bookings found."}
             </div>
           ) : (
             <div className="border rounded-lg">
@@ -108,7 +126,7 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {bookings.map((booking) => (
+                  {filteredBookings.map((booking) => (
                     <TableRow 
                       key={booking.id} 
                       className="cursor-pointer hover:bg-accent/50"
