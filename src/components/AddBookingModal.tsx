@@ -2,485 +2,343 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Hotel, MapPin, Heart, FileText, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useTours } from "@/hooks/useTours";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Heart, Shield } from "lucide-react";
 import { useCreateBooking } from "@/hooks/useBookings";
-import { useCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
-import { HotelAllocationSection } from "@/components/HotelAllocationSection";
-import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
-import { EditContactModal } from "@/components/EditContactModal";
-import { AddContactModal } from "@/components/AddContactModal";
-import { BookingDetailsForm } from "./booking/BookingDetailsForm";
+import { useTours } from "@/hooks/useTours";
+import { ContactSearch } from "@/components/booking/ContactSearch";
+import { LeadPassengerSection } from "@/components/booking/LeadPassengerSection";
+import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 
 interface AddBookingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   preSelectedTourId?: string;
+  defaultStatus?: string;
 }
 
-const initialFormData = {
-  tourId: "",
-  leadPassenger: "",
-  leadEmail: "",
-  leadPhone: "",
-  leadDietary: "",
-  passengers: "2",
-  passenger2Name: "",
-  passenger3Name: "",
-  groupName: "",
-  bookingAgent: "",
-  status: "invoiced",
-  extraRequests: "",
-  accommodationRequired: true,
-  checkInDate: "",
-  checkOutDate: "",
-  notes: "",
-  invoiceNotes: "",
-  emergencyContactName: "",
-  emergencyContactPhone: "",
-  emergencyContactRelationship: "",
-  passportNumber: "",
-  passportExpiryDate: "",
-  passportCountry: "",
-  idNumber: "",
-  nationality: "",
-  medicalConditions: "",
-  accessibilityNeeds: "",
-};
-
-export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId }: AddBookingModalProps) => {
-  const [formData, setFormData] = useState(initialFormData);
-  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("details");
-  const [showEditContact, setShowEditContact] = useState(false);
-  const [showAddContact, setShowAddContact] = useState(false);
-  const [contactToEdit, setContactToEdit] = useState<any>(null);
-  const [selectedContactId, setSelectedContactId] = useState<string>("");
+export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "pending" }: AddBookingModalProps) => {
+  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [useExistingContact, setUseExistingContact] = useState(false);
+  const [formData, setFormData] = useState({
+    // Basic booking info
+    tour_id: preSelectedTourId || '',
+    lead_passenger_name: '',
+    lead_passenger_email: '',
+    lead_passenger_phone: '',
+    passenger_count: 1,
+    passenger_2_name: '',
+    passenger_3_name: '',
+    group_name: '',
+    booking_agent: '',
+    status: defaultStatus,
+    extra_requests: '',
+    accommodation_required: true,
+    check_in_date: '',
+    check_out_date: '',
+    invoice_notes: '',
+    
+    // Emergency contact
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_relationship: '',
+    
+    // Travel documents
+    passport_number: '',
+    passport_expiry_date: '',
+    passport_country: '',
+    id_number: '',
+    nationality: '',
+    
+    // Medical info
+    medical_conditions: '',
+    accessibility_needs: '',
+    dietary_restrictions: '',
+  });
 
   const { data: tours } = useTours();
-  const { data: customers } = useCustomers();
   const createBooking = useCreateBooking();
-  const updateCustomer = useUpdateCustomer();
 
   useEffect(() => {
-    if (preSelectedTourId && open) {
-      const selectedTour = tours?.find(tour => tour.id === preSelectedTourId);
-      setFormData(prev => ({ 
-        ...prev, 
-        tourId: preSelectedTourId,
-        checkInDate: selectedTour?.start_date || "",
-        checkOutDate: selectedTour?.end_date || ""
+    if (preSelectedTourId) {
+      setFormData(prev => ({ ...prev, tour_id: preSelectedTourId }));
+    }
+    if (defaultStatus) {
+      setFormData(prev => ({ ...prev, status: defaultStatus }));
+    }
+  }, [preSelectedTourId, defaultStatus]);
+
+  useEffect(() => {
+    if (selectedContact) {
+      setFormData(prev => ({
+        ...prev,
+        lead_passenger_name: `${selectedContact.first_name || ''} ${selectedContact.last_name || ''}`.trim(),
+        lead_passenger_email: selectedContact.email || '',
+        lead_passenger_phone: selectedContact.phone || '',
+        dietary_restrictions: selectedContact.dietary_requirements || '',
       }));
     }
-  }, [preSelectedTourId, open, tours]);
-
-  useEffect(() => {
-    if (formData.tourId && tours) {
-      const selectedTour = tours.find(tour => tour.id === formData.tourId);
-      if (selectedTour) {
-        setFormData(prev => ({
-          ...prev,
-          checkInDate: selectedTour.start_date || "",
-          checkOutDate: selectedTour.end_date || ""
-        }));
-      }
-    }
-  }, [formData.tourId, tours]);
-
-  useEffect(() => {
-    if (selectedContactId && customers) {
-      const selectedCustomer = customers.find(c => c.id === selectedContactId);
-      if (selectedCustomer) {
-        setFormData(prev => ({
-          ...prev,
-          leadPassenger: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`,
-          leadEmail: selectedCustomer.email || "",
-          leadPhone: selectedCustomer.phone || "",
-          leadDietary: selectedCustomer.dietary_requirements || "",
-        }));
-      }
-    }
-  }, [selectedContactId, customers]);
-
-  const handleContactSelect = (customer: any) => {
-    setSelectedContactId(customer.id);
-    setFormData(prev => ({
-      ...prev,
-      leadPassenger: `${customer.first_name} ${customer.last_name}`,
-      leadEmail: customer.email || "",
-      leadPhone: customer.phone || "",
-      leadDietary: customer.dietary_requirements || "",
-    }));
-  };
+  }, [selectedContact]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    createBooking.mutate({
-      tour_id: formData.tourId,
-      lead_passenger_name: formData.leadPassenger,
-      lead_passenger_email: formData.leadEmail,
-      lead_passenger_phone: formData.leadPhone,
-      passenger_count: parseInt(formData.passengers),
-      passenger_2_name: formData.passenger2Name || undefined,
-      passenger_3_name: formData.passenger3Name || undefined,
-      group_name: formData.groupName || undefined,
-      booking_agent: formData.bookingAgent || undefined,
-      status: formData.status,
-      extra_requests: formData.extraRequests || undefined,
-      accommodation_required: formData.accommodationRequired,
-      check_in_date: formData.checkInDate || undefined,
-      check_out_date: formData.checkOutDate || undefined,
-      invoice_notes: formData.invoiceNotes || undefined,
-      emergency_contact_name: formData.emergencyContactName || undefined,
-      emergency_contact_phone: formData.emergencyContactPhone || undefined,
-      emergency_contact_relationship: formData.emergencyContactRelationship || undefined,
-      passport_number: formData.passportNumber || undefined,
-      passport_expiry_date: formData.passportExpiryDate || undefined,
-      passport_country: formData.passportCountry || undefined,
-      id_number: formData.idNumber || undefined,
-      nationality: formData.nationality || undefined,
-      medical_conditions: formData.medicalConditions || undefined,
-      accessibility_needs: formData.accessibilityNeeds || undefined,
-    }, {
-      onSuccess: (data) => {
-        if (selectedContactId && formData.leadDietary) {
-          const selectedCustomer = customers?.find(c => c.id === selectedContactId);
-          if (selectedCustomer && selectedCustomer.dietary_requirements !== formData.leadDietary) {
-            updateCustomer.mutate({
-              id: selectedContactId,
-              dietary_requirements: formData.leadDietary
-            });
-          }
-        }
-        
-        setCreatedBookingId(data.id);
-        if (formData.accommodationRequired) {
-          setActiveTab("hotels");
-        } else {
-          setActiveTab("activities");
-        }
+    if (!formData.tour_id) {
+      alert('Please select a tour');
+      return;
+    }
+    
+    if (!formData.lead_passenger_name || !formData.lead_passenger_email) {
+      alert('Please provide lead passenger name and email');
+      return;
+    }
+
+    createBooking.mutate(formData, {
+      onSuccess: () => {
+        onOpenChange(false);
+        // Reset form
+        setFormData({
+          tour_id: preSelectedTourId || '',
+          lead_passenger_name: '',
+          lead_passenger_email: '',
+          lead_passenger_phone: '',
+          passenger_count: 1,
+          passenger_2_name: '',
+          passenger_3_name: '',
+          group_name: '',
+          booking_agent: '',
+          status: defaultStatus,
+          extra_requests: '',
+          accommodation_required: true,
+          check_in_date: '',
+          check_out_date: '',
+          invoice_notes: '',
+          emergency_contact_name: '',
+          emergency_contact_phone: '',
+          emergency_contact_relationship: '',
+          passport_number: '',
+          passport_expiry_date: '',
+          passport_country: '',
+          id_number: '',
+          nationality: '',
+          medical_conditions: '',
+          accessibility_needs: '',
+          dietary_restrictions: '',
+        });
+        setSelectedContact(null);
+        setUseExistingContact(false);
       }
     });
   };
 
-  const handleClose = () => {
-    setFormData({ ...initialFormData, tourId: preSelectedTourId || "" });
-    setCreatedBookingId(null);
-    setActiveTab("details");
-    setSelectedContactId("");
-    onOpenChange(false);
-  };
-
-  const handleInputChange = (field: string, value: string | boolean | number) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    if (field === "leadPassenger" && typeof value === "string") {
-      const selectedContact = customers?.find(c => c.id === selectedContactId);
-      if (selectedContact && value !== `${selectedContact.first_name} ${selectedContact.last_name}`) {
-        setSelectedContactId("");
-      }
-    }
-  };
-
-  const handleEditContact = () => {
-    const selectedContact = customers?.find(c => c.id === selectedContactId);
-    const contact = selectedContact || {
-      first_name: formData.leadPassenger.split(' ')[0] || '',
-      last_name: formData.leadPassenger.split(' ').slice(1).join(' ') || '',
-      email: formData.leadEmail,
-      phone: formData.leadPhone,
-      dietary_requirements: formData.leadDietary,
-    };
-    setContactToEdit(contact);
-    setShowEditContact(true);
-  };
-
-  const handleAddNewContact = () => {
-    setShowAddContact(true);
-  };
-
-  const handleContactUpdated = (updatedContact: any) => {
-    setFormData(prev => ({
-      ...prev,
-      leadPassenger: `${updatedContact.first_name} ${updatedContact.last_name}`,
-      leadEmail: updatedContact.email || '',
-      leadPhone: updatedContact.phone || '',
-      leadDietary: updatedContact.dietary_requirements || '',
-    }));
-    
-    if (updatedContact.id) {
-      setSelectedContactId(updatedContact.id);
-    }
-  };
-
-  const handleContactCreated = (newContact: any) => {
-    setFormData(prev => ({
-      ...prev,
-      leadPassenger: `${newContact.first_name} ${newContact.last_name}`,
-      leadEmail: newContact.email || '',
-      leadPhone: newContact.phone || '',
-      leadDietary: newContact.dietary_requirements || '',
-    }));
-    setSelectedContactId(newContact.id);
-  };
+  const isWaitlistMode = defaultStatus === 'waitlisted';
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Booking</DialogTitle>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {isWaitlistMode ? 'Add to Waitlist' : 'Add New Booking'}
+          </DialogTitle>
+        </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="hotels" disabled={!createdBookingId} className="flex items-center gap-1">
-                <Hotel className="h-4 w-4" />
-                Hotels
-              </TabsTrigger>
-              <TabsTrigger value="activities" disabled={!createdBookingId} className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" />
-                Activities
-              </TabsTrigger>
-              <TabsTrigger value="medical" className="flex items-center gap-1">
-                <Heart className="h-4 w-4" />
-                Medical
-              </TabsTrigger>
-              <TabsTrigger value="travel" className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-                Travel
-              </TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="medical" className="flex items-center gap-1">
+              <Heart className="h-4 w-4" />
+              Medical & Emergency
+            </TabsTrigger>
+            <TabsTrigger value="travel" className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              Travel Docs
+            </TabsTrigger>
+            <TabsTrigger value="contact" className="flex items-center gap-1">
+              <Shield className="h-4 w-4" />
+              Contact Search
+            </TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="details" className="space-y-6">
-              <BookingDetailsForm
+          <TabsContent value="details" className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <LeadPassengerSection 
                 formData={formData}
-                onInputChange={handleInputChange}
-                onSubmit={handleSubmit}
-                onClose={handleClose}
-                onContactSelect={handleContactSelect}
-                onEditContact={handleEditContact}
-                onAddNewContact={handleAddNewContact}
-                selectedContactId={selectedContactId}
-                isLoading={createBooking.isPending}
+                setFormData={setFormData}
+                selectedContact={selectedContact}
+                useExistingContact={useExistingContact}
+                isWaitlistMode={isWaitlistMode}
               />
-            </TabsContent>
 
-            <TabsContent value="hotels" className="space-y-4">
-              {createdBookingId && formData.tourId && (
-                <>
-                  <HotelAllocationSection
-                    tourId={formData.tourId}
-                    bookingId={createdBookingId}
-                    accommodationRequired={formData.accommodationRequired}
-                    defaultCheckIn={formData.checkInDate}
-                    defaultCheckOut={formData.checkOutDate}
-                  />
-                  <div className="flex justify-between gap-2 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={handleClose}>
-                      Close
-                    </Button>
-                    <Button 
-                      onClick={() => setActiveTab("activities")}
-                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                    >
-                      Next: Activities
-                    </Button>
-                  </div>
-                </>
-              )}
-            </TabsContent>
+              <BookingDetailsForm 
+                formData={formData}
+                setFormData={setFormData}
+                tours={tours}
+                preSelectedTourId={preSelectedTourId}
+                isWaitlistMode={isWaitlistMode}
+              />
 
-            <TabsContent value="activities" className="space-y-4">
-              {createdBookingId && formData.tourId && (
-                <>
-                  <ActivityAllocationSection
-                    tourId={formData.tourId}
-                    bookingId={createdBookingId}
-                    passengerCount={parseInt(formData.passengers)}
-                  />
-                  <div className="flex justify-between gap-2 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={handleClose}>
-                      Close
-                    </Button>
-                    <Button 
-                      onClick={handleClose}
-                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                    >
-                      Complete Booking
-                    </Button>
-                  </div>
-                </>
-              )}
-            </TabsContent>
-
-            <TabsContent value="medical" className="space-y-4">
-              <div className="grid grid-cols-1 gap-6">
-                {/* Emergency Contact Section */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
-                    <Shield className="h-5 w-5" />
-                    Emergency Contact Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
-                      <Input
-                        id="emergencyContactName"
-                        value={formData.emergencyContactName}
-                        onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
-                        placeholder="Full name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
-                      <Input
-                        id="emergencyContactPhone"
-                        value={formData.emergencyContactPhone}
-                        onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
-                        placeholder="Phone number"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergencyContactRelationship">Relationship</Label>
-                      <Input
-                        id="emergencyContactRelationship"
-                        value={formData.emergencyContactRelationship}
-                        onChange={(e) => handleInputChange("emergencyContactRelationship", e.target.value)}
-                        placeholder="e.g., Spouse, Parent, Sibling"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Medical & Accessibility Section */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    Medical & Accessibility Information
-                  </h3>
-                  <div>
-                    <Label htmlFor="medicalConditions">Medical Conditions</Label>
-                    <Textarea
-                      id="medicalConditions"
-                      value={formData.medicalConditions}
-                      onChange={(e) => handleInputChange("medicalConditions", e.target.value)}
-                      placeholder="Any medical conditions, allergies, or medications..."
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="accessibilityNeeds">Accessibility Needs</Label>
-                    <Textarea
-                      id="accessibilityNeeds"
-                      value={formData.accessibilityNeeds}
-                      onChange={(e) => handleInputChange("accessibilityNeeds", e.target.value)}
-                      placeholder="Mobility assistance, wheelchair access, etc..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
                 <Button 
-                  onClick={handleSubmit}
+                  type="submit" 
                   disabled={createBooking.isPending}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                  className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
                 >
-                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
+                  {createBooking.isPending ? 'Creating...' : (isWaitlistMode ? 'Add to Waitlist' : 'Create Booking')}
                 </Button>
               </div>
-            </TabsContent>
+            </form>
+          </TabsContent>
 
-            <TabsContent value="travel" className="space-y-4">
+          <TabsContent value="medical" className="space-y-4">
+            <div className="grid grid-cols-1 gap-6">
+              {/* Emergency Contact Section */}
               <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Travel Documents</h3>
+                <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Emergency Contact Information
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="passportNumber">Passport Number</Label>
+                    <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
                     <Input
-                      id="passportNumber"
-                      value={formData.passportNumber}
-                      onChange={(e) => handleInputChange("passportNumber", e.target.value)}
-                      placeholder="Passport number"
+                      id="emergency_contact_name"
+                      value={formData.emergency_contact_name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                      placeholder="Full name"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="passportExpiryDate">Passport Expiry Date</Label>
+                    <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
                     <Input
-                      id="passportExpiryDate"
-                      type="date"
-                      value={formData.passportExpiryDate}
-                      onChange={(e) => handleInputChange("passportExpiryDate", e.target.value)}
+                      id="emergency_contact_phone"
+                      value={formData.emergency_contact_phone}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                      placeholder="Phone number"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="passportCountry">Passport Issuing Country</Label>
+                    <Label htmlFor="emergency_contact_relationship">Relationship</Label>
                     <Input
-                      id="passportCountry"
-                      value={formData.passportCountry}
-                      onChange={(e) => handleInputChange("passportCountry", e.target.value)}
-                      placeholder="Country"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="nationality">Nationality</Label>
-                    <Input
-                      id="nationality"
-                      value={formData.nationality}
-                      onChange={(e) => handleInputChange("nationality", e.target.value)}
-                      placeholder="Nationality"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="idNumber">National ID Number</Label>
-                    <Input
-                      id="idNumber"
-                      value={formData.idNumber}
-                      onChange={(e) => handleInputChange("idNumber", e.target.value)}
-                      placeholder="National ID or driver's license"
+                      id="emergency_contact_relationship"
+                      value={formData.emergency_contact_relationship}
+                      onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
+                      placeholder="e.g., Spouse, Parent, Sibling"
                     />
                   </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleSubmit}
-                  disabled={createBooking.isPending}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  {createBooking.isPending ? 'Creating...' : 'Create Booking'}
-                </Button>
+
+              {/* Medical & Accessibility Section */}
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
+                  <Heart className="h-5 w-5" />
+                  Medical & Accessibility Information
+                </h3>
+                <div>
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medical_conditions"
+                    value={formData.medical_conditions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
+                    placeholder="Any medical conditions, allergies, or medications..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                  <Textarea
+                    id="accessibility_needs"
+                    value={formData.accessibility_needs}
+                    onChange={(e) => setFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
+                    placeholder="Mobility assistance, wheelchair access, etc..."
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dietary_restrictions">Dietary Requirements</Label>
+                  <Textarea
+                    id="dietary_restrictions"
+                    value={formData.dietary_restrictions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, dietary_restrictions: e.target.value }))}
+                    placeholder="Food allergies, dietary preferences, etc..."
+                    rows={3}
+                  />
+                </div>
               </div>
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
+            </div>
+          </TabsContent>
 
-      <EditContactModal
-        contact={contactToEdit}
-        open={showEditContact}
-        onOpenChange={setShowEditContact}
-        onContactUpdated={handleContactUpdated}
-      />
+          <TabsContent value="travel" className="space-y-4">
+            <div className="border rounded-lg p-4 space-y-4">
+              <h3 className="text-lg font-medium text-brand-navy">Travel Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="passport_number">Passport Number</Label>
+                  <Input
+                    id="passport_number"
+                    value={formData.passport_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passport_number: e.target.value }))}
+                    placeholder="Passport number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
+                  <Input
+                    id="passport_expiry_date"
+                    type="date"
+                    value={formData.passport_expiry_date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passport_expiry_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="passport_country">Passport Issuing Country</Label>
+                  <Input
+                    id="passport_country"
+                    value={formData.passport_country}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passport_country: e.target.value }))}
+                    placeholder="Country"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nationality">Nationality</Label>
+                  <Input
+                    id="nationality"
+                    value={formData.nationality}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
+                    placeholder="Nationality"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="id_number">National ID Number</Label>
+                  <Input
+                    id="id_number"
+                    value={formData.id_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
+                    placeholder="National ID or driver's license"
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
 
-      <AddContactModal
-        open={showAddContact}
-        onOpenChange={setShowAddContact}
-        onContactCreated={handleContactCreated}
-      />
-    </>
+          <TabsContent value="contact" className="space-y-4">
+            <ContactSearch 
+              selectedContact={selectedContact}
+              setSelectedContact={setSelectedContact}
+              useExistingContact={useExistingContact}
+              setUseExistingContact={setUseExistingContact}
+            />
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
   );
 };

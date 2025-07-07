@@ -18,6 +18,7 @@ const getStatusColor = (status: string) => {
     case "invoiced": return "bg-yellow-100 text-yellow-800";
     case "pending": return "bg-gray-100 text-gray-800";
     case "cancelled": return "bg-red-100 text-red-800";
+    case "waitlisted": return "bg-orange-100 text-orange-800";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -72,7 +73,7 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
             </Button>
           </CardTitle>
           <CardDescription>
-            Complete list of all bookings from most recent to oldest
+            Complete list of all bookings from most recent to oldest (including waitlisted bookings)
           </CardDescription>
           <div className="flex items-center space-x-2 mt-4">
             <div className="relative flex-1 max-w-md">

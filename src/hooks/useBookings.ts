@@ -12,7 +12,7 @@ export interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
@@ -158,6 +158,7 @@ export const useCreateBooking = () => {
             first_name: firstName,
             last_name: lastName,
             phone: bookingData.lead_passenger_phone || null,
+            dietary_requirements: bookingData.dietary_restrictions || null,
           })
           .eq('id', existingCustomer.id);
       } else {
@@ -171,6 +172,7 @@ export const useCreateBooking = () => {
             last_name: lastName,
             email: bookingData.lead_passenger_email,
             phone: bookingData.lead_passenger_phone || null,
+            dietary_requirements: bookingData.dietary_restrictions || null,
           }])
           .select()
           .single();
@@ -190,7 +192,7 @@ export const useCreateBooking = () => {
         });
       }
 
-      // Create the booking with all fields except removed payment fields
+      // Create the booking with all fields
       const { data, error } = await supabase
         .from('bookings')
         .insert([{
@@ -240,19 +242,24 @@ export const useCreateBooking = () => {
           lead_passenger_name: bookingData.lead_passenger_name,
           passenger_count: bookingData.passenger_count,
           status: bookingData.status,
-          tour_id: bookingData.tour_id
+          tour_id: bookingData.tour_id,
+          is_waitlisted: bookingData.status === 'waitlisted'
         }
       });
 
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      
+      const isWaitlisted = variables.status === 'waitlisted';
       toast({
-        title: "Booking Created",
-        description: "Booking has been successfully created.",
+        title: isWaitlisted ? "Added to Waitlist" : "Booking Created",
+        description: isWaitlisted 
+          ? "Contact has been successfully added to the waitlist."
+          : "Booking has been successfully created.",
       });
     },
     onError: (error) => {

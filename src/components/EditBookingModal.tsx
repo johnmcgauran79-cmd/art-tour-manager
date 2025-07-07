@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin } from "lucide-react";
+import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -16,6 +16,8 @@ import { ActivityAllocationSection } from "@/components/ActivityAllocationSectio
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
 import { EditContactModal } from "@/components/EditContactModal";
 import { BookingCommentsSection } from "@/components/BookingCommentsSection";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Booking {
   id: string;
@@ -26,7 +28,7 @@ interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
@@ -82,7 +84,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled',
+    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted',
     extra_requests: '',
     invoice_notes: '',
     accommodation_required: true,
@@ -208,7 +210,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     });
   };
 
-  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled') => {
+  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted') => {
     if (newStatus === 'cancelled' && booking?.status !== 'cancelled') {
       setShowCancelDialog(true);
     } else {
@@ -273,6 +275,9 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               Edit Booking - {formData.lead_passenger_first_name} {formData.lead_passenger_last_name}
+              {formData.status === 'waitlisted' && (
+                <Badge className="bg-orange-100 text-orange-800 ml-2">WAITLISTED</Badge>
+              )}
               <Button onClick={handleDelete} variant="destructive" size="sm">
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Booking
@@ -307,6 +312,15 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
 
             <TabsContent value="details" className="space-y-4">
               <form onSubmit={handleSubmit} className="space-y-4">
+                {formData.status === 'waitlisted' && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      This booking is currently waitlisted. Change the status to confirm the booking when spots become available.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
                 <div className="border rounded-lg p-4 space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-medium">Lead Passenger Details</h3>
@@ -402,6 +416,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                         <SelectItem value="deposited">Deposited</SelectItem>
                         <SelectItem value="instalment_paid">Instalment Paid</SelectItem>
                         <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                        <SelectItem value="waitlisted">Waitlisted</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>

@@ -1,208 +1,177 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { useTours } from "@/hooks/useTours";
-import { LeadPassengerSection } from "./LeadPassengerSection";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 interface BookingDetailsFormProps {
   formData: any;
-  onInputChange: (field: string, value: string | boolean | number) => void;
-  onSubmit: (e: React.FormEvent) => void;
-  onClose: () => void;
-  onContactSelect: (contact: any) => void;
-  onEditContact: () => void;
-  onAddNewContact: () => void;
-  selectedContactId: string;
-  isLoading: boolean;
+  setFormData: (data: any) => void;
+  tours?: any[];
+  preSelectedTourId?: string;
+  isWaitlistMode?: boolean;
 }
 
-export const BookingDetailsForm = ({
-  formData,
-  onInputChange,
-  onSubmit,
-  onClose,
-  onContactSelect,
-  onEditContact,
-  onAddNewContact,
-  selectedContactId,
-  isLoading
+export const BookingDetailsForm = ({ 
+  formData, 
+  setFormData, 
+  tours, 
+  preSelectedTourId,
+  isWaitlistMode = false 
 }: BookingDetailsFormProps) => {
-  const { data: tours } = useTours();
-
   return (
-    <form onSubmit={onSubmit} className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="tourId">Select Tour</Label>
-        <Select value={formData.tourId} onValueChange={(value) => onInputChange("tourId", value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Choose a tour..." />
-          </SelectTrigger>
-          <SelectContent>
-            {tours?.map((tour) => (
-              <SelectItem key={tour.id} value={tour.id}>
-                {tour.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <LeadPassengerSection
-        formData={formData}
-        onInputChange={onInputChange}
-        onContactSelect={onContactSelect}
-        onEditContact={onEditContact}
-        onAddNewContact={onAddNewContact}
-        selectedContactId={selectedContactId}
-      />
+    <div className="space-y-4">
+      {isWaitlistMode && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            This booking will be added to the waitlist. You can convert it to a confirmed booking later when spots become available.
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="passengers">Number of Passengers</Label>
-          <Select value={formData.passengers} onValueChange={(value) => onInputChange("passengers", value)}>
+        <div>
+          <Label htmlFor="tour_id">Tour *</Label>
+          <Select 
+            value={formData.tour_id} 
+            onValueChange={(value) => setFormData(prev => ({ ...prev, tour_id: value }))}
+            disabled={!!preSelectedTourId}
+          >
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder="Select a tour" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="1">1</SelectItem>
-              <SelectItem value="2">2</SelectItem>
-              <SelectItem value="3">3</SelectItem>
-              <SelectItem value="4">4</SelectItem>
+              {tours?.map((tour) => (
+                <SelectItem key={tour.id} value={tour.id}>
+                  {tour.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="groupName">Group Name (Optional)</Label>
+        <div>
+          <Label htmlFor="passenger_count">Passenger Count *</Label>
           <Input
-            id="groupName"
-            value={formData.groupName}
-            onChange={(e) => onInputChange("groupName", e.target.value)}
-            placeholder="e.g., Smith Family"
-          />
-        </div>
-      </div>
-
-      {parseInt(formData.passengers) >= 2 && (
-        <div className="space-y-2">
-          <Label htmlFor="passenger2Name">Passenger 2 Name</Label>
-          <Input
-            id="passenger2Name"
-            value={formData.passenger2Name}
-            onChange={(e) => onInputChange("passenger2Name", e.target.value)}
-            placeholder="e.g., Mary Smith"
-          />
-        </div>
-      )}
-
-      {parseInt(formData.passengers) >= 3 && (
-        <div className="space-y-2">
-          <Label htmlFor="passenger3Name">Passenger 3 Name</Label>
-          <Input
-            id="passenger3Name"
-            value={formData.passenger3Name}
-            onChange={(e) => onInputChange("passenger3Name", e.target.value)}
-            placeholder="e.g., Sarah Smith"
-          />
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="bookingAgent">Booking Agent</Label>
-          <Input
-            id="bookingAgent"
-            value={formData.bookingAgent}
-            onChange={(e) => onInputChange("bookingAgent", e.target.value)}
-            placeholder="e.g., Travel Agent Name"
+            id="passenger_count"
+            type="number"
+            min="1"
+            value={formData.passenger_count}
+            onChange={(e) => setFormData(prev => ({ ...prev, passenger_count: parseInt(e.target.value) || 1 }))}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="status">Booking Status</Label>
-          <Select value={formData.status} onValueChange={(value) => onInputChange("status", value)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="invoiced">Invoiced</SelectItem>
-              <SelectItem value="deposited">Deposited</SelectItem>
-              <SelectItem value="instalment_paid">Instalment Paid</SelectItem>
-              <SelectItem value="fully_paid">Fully Paid</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+        <div>
+          <Label htmlFor="passenger_2_name">Passenger 2 Name</Label>
+          <Input
+            id="passenger_2_name"
+            value={formData.passenger_2_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, passenger_2_name: e.target.value }))}
+          />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="checkInDate">Check In Date</Label>
+        <div>
+          <Label htmlFor="passenger_3_name">Passenger 3 Name</Label>
           <Input
-            id="checkInDate"
+            id="passenger_3_name"
+            value={formData.passenger_3_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, passenger_3_name: e.target.value }))}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="group_name">Group Name</Label>
+          <Input
+            id="group_name"
+            value={formData.group_name}
+            onChange={(e) => setFormData(prev => ({ ...prev, group_name: e.target.value }))}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="booking_agent">Booking Agent</Label>
+          <Input
+            id="booking_agent"
+            value={formData.booking_agent}
+            onChange={(e) => setFormData(prev => ({ ...prev, booking_agent: e.target.value }))}
+          />
+        </div>
+
+        {!isWaitlistMode && (
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select 
+              value={formData.status} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="invoiced">Invoiced</SelectItem>
+                <SelectItem value="deposited">Deposited</SelectItem>
+                <SelectItem value="instalment_paid">Instalment Paid</SelectItem>
+                <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                <SelectItem value="waitlisted">Waitlisted</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        <div>
+          <Label htmlFor="check_in_date">Check In Date</Label>
+          <Input
+            id="check_in_date"
             type="date"
-            value={formData.checkInDate}
-            onChange={(e) => onInputChange("checkInDate", e.target.value)}
+            value={formData.check_in_date}
+            onChange={(e) => setFormData(prev => ({ ...prev, check_in_date: e.target.value }))}
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="checkOutDate">Check Out Date</Label>
+        <div>
+          <Label htmlFor="check_out_date">Check Out Date</Label>
           <Input
-            id="checkOutDate"
+            id="check_out_date"
             type="date"
-            value={formData.checkOutDate}
-            onChange={(e) => onInputChange("checkOutDate", e.target.value)}
+            value={formData.check_out_date}
+            onChange={(e) => setFormData(prev => ({ ...prev, check_out_date: e.target.value }))}
           />
         </div>
       </div>
 
       <div className="flex items-center space-x-2">
-        <Checkbox
-          id="accommodationRequired"
-          checked={formData.accommodationRequired}
-          onCheckedChange={(checked) => onInputChange("accommodationRequired", checked as boolean)}
+        <Switch
+          id="accommodation_required"
+          checked={formData.accommodation_required}
+          onCheckedChange={(checked) => setFormData(prev => ({ ...prev, accommodation_required: checked }))}
         />
-        <Label htmlFor="accommodationRequired">Accommodation Required</Label>
+        <Label htmlFor="accommodation_required">Accommodation Required</Label>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="extraRequests">Extra Requests</Label>
+      <div>
+        <Label htmlFor="extra_requests">Extra Requests</Label>
         <Textarea
-          id="extraRequests"
-          value={formData.extraRequests}
-          onChange={(e) => onInputChange("extraRequests", e.target.value)}
-          placeholder="Any special requests or requirements..."
-          rows={3}
+          id="extra_requests"
+          value={formData.extra_requests}
+          onChange={(e) => setFormData(prev => ({ ...prev, extra_requests: e.target.value }))}
+          placeholder="Any special requests or notes..."
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="invoiceNotes">Invoice Notes</Label>
+      <div>
+        <Label htmlFor="invoice_notes">Invoice Notes</Label>
         <Textarea
-          id="invoiceNotes"
-          value={formData.invoiceNotes}
-          onChange={(e) => onInputChange("invoiceNotes", e.target.value)}
-          placeholder="Notes to be included on the invoice..."
-          rows={3}
+          id="invoice_notes"
+          value={formData.invoice_notes}
+          onChange={(e) => setFormData(prev => ({ ...prev, invoice_notes: e.target.value }))}
+          placeholder="Notes for invoicing..."
         />
       </div>
-
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button 
-          type="submit" 
-          disabled={isLoading}
-          className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-        >
-          {isLoading ? "Creating..." : "Create Booking"}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 };

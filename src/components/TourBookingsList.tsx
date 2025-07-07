@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Edit, Trash2, Plus, Search } from "lucide-react";
+import { Edit, Trash2, Plus, Search, Users } from "lucide-react";
 import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
@@ -17,6 +18,7 @@ const getStatusColor = (status: string) => {
     case "invoiced": return "bg-yellow-100 text-yellow-800";
     case "pending": return "bg-gray-100 text-gray-800";
     case "cancelled": return "bg-red-100 text-red-800";
+    case "waitlisted": return "bg-orange-100 text-orange-800";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -28,8 +30,9 @@ const getStatusOrder = (status: string) => {
     case "deposited": return 3;
     case "instalment_paid": return 4;
     case "fully_paid": return 5;
-    case "cancelled": return 6;
-    default: return 7;
+    case "waitlisted": return 6;
+    case "cancelled": return 7;
+    default: return 8;
   }
 };
 
@@ -40,9 +43,11 @@ interface TourBookingsListProps {
 
 export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) => {
   const [showAddBooking, setShowAddBooking] = useState(false);
+  const [showAddWaitlist, setShowAddWaitlist] = useState(false);
   const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showWaitlistOnly, setShowWaitlistOnly] = useState(false);
   const { data: allBookings, isLoading } = useBookings();
   const deleteBookingMutation = useDeleteBooking();
 
@@ -89,12 +94,19 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       return dateB.getTime() - dateA.getTime();
     });
 
-  // Filter bookings based on search query
+  // Filter bookings based on search query and waitlist filter
   const filteredBookings = tourBookings.filter(booking => {
+    if (showWaitlistOnly && booking.status !== 'waitlisted') return false;
     if (!searchQuery) return true;
     const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
     return leadPassengerName.includes(searchQuery.toLowerCase());
   });
+
+  // Calculate statistics
+  const confirmedBookings = tourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
+  const waitlistedBookings = tourBookings.filter(b => b.status === 'waitlisted');
+  const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
+  const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
 
   return (
     <>
@@ -104,15 +116,51 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
         </div>
       ) : (
         <>
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search by lead passenger name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-green-600">{confirmedBookings.length}</div>
+                <div className="text-sm text-muted-foreground">Confirmed Bookings</div>
+                <div className="text-xs text-muted-foreground">{totalConfirmedPassengers} passengers</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-orange-600">{waitlistedBookings.length}</div>
+                <div className="text-sm text-muted-foreground">Waitlisted Bookings</div>
+                <div className="text-xs text-muted-foreground">{totalWaitlistedPassengers} passengers</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-2xl font-bold text-blue-600">{tourBookings.filter(b => b.status !== 'cancelled').length}</div>
+                <div className="text-sm text-muted-foreground">Total Interest</div>
+                <div className="text-xs text-muted-foreground">{totalConfirmedPassengers + totalWaitlistedPassengers} passengers</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search by lead passenger name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant={showWaitlistOnly ? "default" : "outline"}
+                size="sm"
+                onClick={() => setShowWaitlistOnly(!showWaitlistOnly)}
+                className="flex items-center gap-2"
+              >
+                <Users className="h-4 w-4" />
+                {showWaitlistOnly ? "Show All" : "Waitlist Only"}
+              </Button>
             </div>
             {searchQuery && (
               <div className="text-sm text-muted-foreground">
@@ -201,6 +249,13 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
         open={showAddBooking} 
         onOpenChange={setShowAddBooking} 
         preSelectedTourId={tourId}
+      />
+
+      <AddBookingModal 
+        open={showAddWaitlist} 
+        onOpenChange={setShowAddWaitlist} 
+        preSelectedTourId={tourId}
+        defaultStatus="waitlisted"
       />
 
       {selectedBooking && (
