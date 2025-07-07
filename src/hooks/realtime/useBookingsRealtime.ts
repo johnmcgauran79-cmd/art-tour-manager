@@ -36,9 +36,11 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Create a general notification (no specific user, no department)
-          await createNotification('', {
-            title: "New Booking",
+          console.log('About to create notification for new booking');
+          
+          // Create notification for the current user (the one who created the booking)
+          await createNotification(userId, {
+            title: "New Booking Created",
             message: `New booking for ${contactName} on "${tourName}"`,
             type: 'booking',
             priority: 'medium',
@@ -75,45 +77,27 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Status change notifications to specific departments
-          if (oldBooking.status !== newBooking.status) {
-            await createNotification('', {
-              title: "Booking Status Changed",
-              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
-              type: 'booking',
-              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
-              related_id: newBooking.id,
-              department: 'operations',
-            });
+          console.log('About to create notification for booking update');
 
-            await createNotification('', {
+          // Status change notifications
+          if (oldBooking.status !== newBooking.status) {
+            await createNotification(userId, {
               title: "Booking Status Changed",
               message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
               type: 'booking',
               priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
               related_id: newBooking.id,
-              department: 'booking',
             });
           }
 
           // Passenger count change notifications
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
-            await createNotification('', {
+            await createNotification(userId, {
               title: "Passenger Count Updated",
               message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
-              department: 'operations',
-            });
-
-            await createNotification('', {
-              title: "Passenger Count Updated",
-              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newBooking.id,
-              department: 'booking',
             });
           }
         }
@@ -134,22 +118,14 @@ export const useBookingsRealtime = (userId: string) => {
           const deletedBooking = payload.old as any;
           const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
-          await createNotification('', {
-            title: "Booking Deleted",
-            message: `${contactName}'s booking for "${tourName}" has been deleted`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: deletedBooking.id,
-            department: 'operations',
-          });
+          console.log('About to create notification for booking deletion');
 
-          await createNotification('', {
+          await createNotification(userId, {
             title: "Booking Deleted",
             message: `${contactName}'s booking for "${tourName}" has been deleted`,
             type: 'booking',
             priority: 'medium',
             related_id: deletedBooking.id,
-            department: 'booking',
           });
         }
       )

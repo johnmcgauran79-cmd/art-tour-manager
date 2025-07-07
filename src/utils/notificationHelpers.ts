@@ -13,23 +13,36 @@ export const createNotification = async (userId: string, notification: {
   try {
     console.log('Creating notification:', { userId, notification });
     
-    const { error } = await supabase
+    // Prepare the notification data
+    const notificationData = {
+      user_id: userId || null, // Explicitly set to null if empty string
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      priority: notification.priority,
+      related_id: notification.related_id || null,
+      department: notification.department || null,
+    };
+    
+    console.log('Notification data to insert:', notificationData);
+    
+    const { data, error } = await supabase
       .from('user_notifications')
-      .insert({
-        user_id: userId || null, // Explicitly set to null if empty string
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        priority: notification.priority,
-        related_id: notification.related_id || null,
-        department: notification.department || null,
-      });
-
+      .insert(notificationData)
+      .select(); // Add select to get the inserted data back
+    
     if (error) {
-      console.error('Error creating notification:', error);
+      console.error('Supabase error creating notification:', error);
+      console.error('Error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
       throw error;
     } else {
       console.log('Notification created successfully:', notification.title);
+      console.log('Inserted notification data:', data);
     }
   } catch (error) {
     console.error('Error creating notification:', error);
