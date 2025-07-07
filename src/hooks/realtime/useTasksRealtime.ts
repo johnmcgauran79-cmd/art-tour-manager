@@ -33,13 +33,6 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
           
           const newTask = payload.new as any;
-          
-          // Get all users with relevant roles to notify
-          const { data: usersToNotify } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
-
           const { taskName, tourName } = await getTaskDetails(newTask.id);
 
           if (newTask.created_by !== userId) {
@@ -55,46 +48,40 @@ export const useTasksRealtime = (userId: string) => {
             });
           }
           
-          if ((newTask.priority === 'critical' || newTask.priority === 'high') && newTask.is_automated && usersToNotify) {
-            const taskMessage = tourName 
+          // Send task notifications to the relevant department
+          const taskMessage = tourName 
+            ? `New task "${taskName}" created for ${tourName}.`
+            : `New task "${taskName}" created.`;
+
+          await createNotification('', {
+            title: "New Task Created",
+            message: taskMessage,
+            type: 'task',
+            priority: newTask.priority,
+            related_id: newTask.id,
+            department: newTask.category as Department,
+          });
+
+          // For high priority tasks, also send to operations
+          if (newTask.priority === 'critical' || newTask.priority === 'high') {
+            const priorityMessage = tourName 
               ? `${taskName} for ${tourName} requires attention.`
               : `${taskName} requires attention.`;
 
-            // Notify all relevant users about high priority automated tasks
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "New Priority Task",
-                message: taskMessage,
-                type: 'task',
-                priority: newTask.priority,
-                related_id: newTask.id,
-                department: newTask.category as Department,
-              });
-            }
+            await createNotification('', {
+              title: "New Priority Task",
+              message: priorityMessage,
+              type: 'task',
+              priority: newTask.priority,
+              related_id: newTask.id,
+              department: 'operations',
+            });
 
             toast({
               title: "New Priority Task",
-              description: taskMessage,
+              description: priorityMessage,
               duration: 5000,
             });
-          }
-
-          // Notify all relevant users about new tasks (not just high priority)
-          if (usersToNotify && !newTask.is_automated) {
-            const taskMessage = tourName 
-              ? `New task "${taskName}" created for ${tourName}.`
-              : `New task "${taskName}" created.`;
-
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "New Task Created",
-                message: taskMessage,
-                type: 'task',
-                priority: newTask.priority,
-                related_id: newTask.id,
-                department: newTask.category as Department,
-              });
-            }
           }
         }
       )
@@ -114,12 +101,6 @@ export const useTasksRealtime = (userId: string) => {
           const oldTask = payload.old as any;
           const newTask = payload.new as any;
           
-          // Get all users with relevant roles to notify
-          const { data: usersToNotify } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
-          
           if (oldTask.status !== newTask.status && newTask.updated_at !== oldTask.updated_at) {
             logOperation({
               operation_type: 'UPDATE',
@@ -132,37 +113,28 @@ export const useTasksRealtime = (userId: string) => {
               }
             });
 
-            // Notify relevant users about status changes
-            if (usersToNotify && newTask.status === 'completed') {
+            // Notify relevant department about task status changes
+            if (newTask.status === 'completed') {
               const { taskName, tourName } = await getTaskDetails(newTask.id);
               const taskMessage = tourName 
                 ? `Task "${taskName}" for ${tourName} has been completed.`
                 : `Task "${taskName}" has been completed.`;
 
-              for (const user of usersToNotify) {
-                await createNotification(user.user_id, {
-                  title: "Task Completed",
-                  message: taskMessage,
-                  type: 'task',
-                  priority: 'medium',
-                  related_id: newTask.id,
-                  department: newTask.category as Department,
-                });
-              }
-            }
-          }
-          
-          if (oldTask.status !== newTask.status && newTask.status === 'completed') {
-            const { taskName, tourName } = await getTaskDetails(newTask.id);
-            const taskMessage = tourName 
-              ? `${taskName} for ${tourName} completed.`
-              : `${taskName} completed.`;
+              await createNotification('', {
+                title: "Task Completed",
+                message: taskMessage,
+                type: 'task',
+                priority: 'medium',
+                related_id: newTask.id,
+                department: newTask.category as Department,
+              });
 
-            toast({
-              title: "Task Completed",
-              description: taskMessage,
-              duration: 3000,
-            });
+              toast({
+                title: "Task Completed",
+                description: taskMessage,
+                duration: 3000,
+              });
+            }
           }
         }
       )
@@ -180,12 +152,6 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
 
           const deletedTask = payload.old as any;
-          
-          // Get all users with relevant roles to notify
-          const { data: usersToNotify } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
 
           logOperation({
             operation_type: 'DELETE',
@@ -215,19 +181,14 @@ export const useTasksRealtime = (userId: string) => {
             ? `Task "${deletedTask.title}" for ${tourName} has been deleted.`
             : `Task "${deletedTask.title}" has been deleted.`;
 
-          // Notify all relevant users about task deletion
-          if (usersToNotify) {
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "Task Deleted",
-                message: taskMessage,
-                type: 'task',
-                priority: 'medium',
-                related_id: deletedTask.id,
-                department: deletedTask.category as Department,
-              });
-            }
-          }
+          await createNotification('', {
+            title: "Task Deleted",
+            message: taskMessage,
+            type: 'task',
+            priority: 'medium',
+            related_id: deletedTask.id,
+            department: deletedTask.category as Department,
+          });
         }
       )
       .on(

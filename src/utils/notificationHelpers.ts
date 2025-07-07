@@ -9,20 +9,40 @@ export const createNotification = async (userId: string, notification: {
   related_id?: string;
   department?: Department;
 }) => {
-  const { error } = await supabase
-    .from('user_notifications')
-    .insert({
-      user_id: userId,
-      title: notification.title,
-      message: notification.message,
-      type: notification.type,
-      priority: notification.priority,
-      related_id: notification.related_id,
-      department: notification.department,
-    });
+  // If userId is provided, send to specific user
+  if (userId) {
+    const { error } = await supabase
+      .from('user_notifications')
+      .insert({
+        user_id: userId,
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        priority: notification.priority,
+        related_id: notification.related_id,
+        department: notification.department,
+      });
 
-  if (error) {
-    console.error('Error creating notification:', error);
+    if (error) {
+      console.error('Error creating user notification:', error);
+    }
+  } else if (notification.department) {
+    // Send department-based notification (no specific user_id)
+    const { error } = await supabase
+      .from('user_notifications')
+      .insert({
+        user_id: null, // No specific user - department notification
+        title: notification.title,
+        message: notification.message,
+        type: notification.type,
+        priority: notification.priority,
+        related_id: notification.related_id,
+        department: notification.department,
+      });
+
+    if (error) {
+      console.error('Error creating department notification:', error);
+    }
   }
 };
 

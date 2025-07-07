@@ -17,7 +17,6 @@ export const useBookingsRealtime = (userId: string) => {
 
     console.log('Setting up bookings realtime subscription for user:', userId);
 
-    // Create a unique channel name for bookings
     const channelName = `bookings-realtime-${userId}-${Date.now()}`;
     const bookingsChannel = supabase
       .channel(channelName)
@@ -35,16 +34,17 @@ export const useBookingsRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const newBooking = payload.new as any;
-          
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Get all users with relevant roles to notify - ALL booking agents, managers and admins
-          const { data: usersToNotify } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
-
-          console.log('Notifying users about new booking:', usersToNotify?.length || 0, 'users');
+          // New bookings - notify ALL users (department-based notification)
+          await createNotification('', {
+            title: "New Booking",
+            message: `New booking for ${contactName} on "${tourName}"`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: newBooking.id,
+            department: 'general', // Send to all departments
+          });
 
           logOperation({
             operation_type: 'CREATE',
@@ -57,19 +57,6 @@ export const useBookingsRealtime = (userId: string) => {
               created_by_realtime: true
             }
           });
-
-          if (usersToNotify) {
-            // Create notifications for all relevant users
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "New Booking",
-                message: `New booking for ${contactName} on "${tourName}"`,
-                type: 'booking',
-                priority: 'medium',
-                related_id: newBooking.id,
-              });
-            }
-          }
         }
       )
       .on(
@@ -87,39 +74,47 @@ export const useBookingsRealtime = (userId: string) => {
 
           const oldBooking = payload.old as any;
           const newBooking = payload.new as any;
-          
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          // Get all users with relevant roles to notify - ALL booking agents, managers and admins
-          const { data: usersToNotify } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
+          // Edited bookings - notify Operations & Booking departments
+          if (oldBooking.status !== newBooking.status) {
+            await createNotification('', {
+              title: "Booking Status Changed",
+              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
+              type: 'booking',
+              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+              related_id: newBooking.id,
+              department: 'operations',
+            });
 
-          console.log('Notifying users about booking update:', usersToNotify?.length || 0, 'users');
-
-          if (oldBooking.status !== newBooking.status && usersToNotify) {
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "Booking Status Changed",
-                message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
-                type: 'booking',
-                priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
-                related_id: newBooking.id,
-              });
-            }
+            await createNotification('', {
+              title: "Booking Status Changed",
+              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
+              type: 'booking',
+              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+              related_id: newBooking.id,
+              department: 'booking',
+            });
           }
 
-          if (oldBooking.passenger_count !== newBooking.passenger_count && usersToNotify) {
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "Passenger Count Updated",
-                message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-                type: 'booking',
-                priority: 'medium',
-                related_id: newBooking.id,
-              });
-            }
+          if (oldBooking.passenger_count !== newBooking.passenger_count) {
+            await createNotification('', {
+              title: "Passenger Count Updated",
+              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+              department: 'operations',
+            });
+
+            await createNotification('', {
+              title: "Passenger Count Updated",
+              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+              department: 'booking',
+            });
           }
         }
       )
@@ -139,25 +134,23 @@ export const useBookingsRealtime = (userId: string) => {
           const deletedBooking = payload.old as any;
           const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
-          // Get all users with relevant roles to notify - ALL booking agents, managers and admins
-          const { data: usersToNotify } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .in('role', ['admin', 'manager', 'booking_agent']);
+          await createNotification('', {
+            title: "Booking Deleted",
+            message: `${contactName}'s booking for "${tourName}" has been deleted`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: deletedBooking.id,
+            department: 'operations',
+          });
 
-          console.log('Notifying users about booking deletion:', usersToNotify?.length || 0, 'users');
-
-          if (usersToNotify) {
-            for (const user of usersToNotify) {
-              await createNotification(user.user_id, {
-                title: "Booking Deleted",
-                message: `${contactName}'s booking for "${tourName}" has been deleted`,
-                type: 'booking',
-                priority: 'medium',
-                related_id: deletedBooking.id,
-              });
-            }
-          }
+          await createNotification('', {
+            title: "Booking Deleted",
+            message: `${contactName}'s booking for "${tourName}" has been deleted`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: deletedBooking.id,
+            department: 'booking',
+          });
         }
       )
       .subscribe();

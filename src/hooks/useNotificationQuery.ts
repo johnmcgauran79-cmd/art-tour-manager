@@ -18,25 +18,22 @@ export const useNotificationQuery = (limit: number = 10) => {
       
       console.log('Fetching notifications for user:', user.id, 'departments:', userDepartments, 'limit:', limit);
       
-      // Build base query conditions
-      let baseCondition = `user_id.eq.${user.id}`;
-      if (userDepartments.length > 0) {
-        baseCondition = `user_id.eq.${user.id},department.in.(${userDepartments.join(',')})`;
-      }
-
-      // Fetch limited notifications for display
+      // Build query to get notifications for:
+      // 1. Direct user notifications (user_id matches)
+      // 2. Department notifications where user belongs to that department
+      // 3. General notifications (no department specified)
+      
       let notificationsQuery = supabase
         .from('user_notifications')
         .select('*')
-        .or(baseCondition)
+        .or(`user_id.eq.${user.id},and(department.in.(${userDepartments.join(',')}),user_id.is.null),and(department.is.null,user_id.is.null)`)
         .order('created_at', { ascending: false })
         .limit(limit);
 
-      // Fetch total unread count
       let unreadCountQuery = supabase
         .from('user_notifications')
         .select('id', { count: 'exact' })
-        .or(baseCondition)
+        .or(`user_id.eq.${user.id},and(department.in.(${userDepartments.join(',')}),user_id.is.null),and(department.is.null,user_id.is.null)`)
         .eq('read', false);
 
       const [notificationsResult, unreadCountResult] = await Promise.all([

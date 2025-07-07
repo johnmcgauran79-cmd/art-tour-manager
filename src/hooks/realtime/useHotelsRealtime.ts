@@ -5,52 +5,52 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { createNotification } from "@/utils/notificationHelpers";
 
-export const useActivitiesRealtime = (userId: string) => {
+export const useHotelsRealtime = (userId: string) => {
   const queryClient = useQueryClient();
   const { logOperation } = useAuditLog();
 
   useEffect(() => {
     if (!userId) {
-      console.log('No userId provided to useActivitiesRealtime');
+      console.log('No userId provided to useHotelsRealtime');
       return;
     }
 
-    console.log('Setting up activities realtime subscription for user:', userId);
+    console.log('Setting up hotels realtime subscription for user:', userId);
 
-    const channelName = `activities-realtime-${userId}-${Date.now()}`;
-    const activitiesChannel = supabase
+    const channelName = `hotels-realtime-${userId}-${Date.now()}`;
+    const hotelsChannel = supabase
       .channel(channelName)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'activities'
+          table: 'hotels'
         },
         async (payload) => {
-          console.log('New activity created:', payload.new);
+          console.log('New hotel created:', payload.new);
           
-          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
-          const newActivity = payload.new as any;
+          const newHotel = payload.new as any;
           
-          // New activities - notify operations department
+          // New hotels - notify operations department
           await createNotification('', {
-            title: "New Activity Added",
-            message: `Activity "${newActivity.name}" has been added`,
+            title: "New Hotel Added",
+            message: `Hotel "${newHotel.name}" has been added`,
             type: 'system',
             priority: 'medium',
-            related_id: newActivity.id,
+            related_id: newHotel.id,
             department: 'operations',
           });
 
           logOperation({
             operation_type: 'CREATE',
-            table_name: 'activities',
-            record_id: newActivity.id,
+            table_name: 'hotels',
+            record_id: newHotel.id,
             details: {
-              activity_name: newActivity.name,
+              hotel_name: newHotel.name,
               created_by_realtime: true
             }
           });
@@ -61,45 +61,45 @@ export const useActivitiesRealtime = (userId: string) => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'activities'
+          table: 'hotels'
         },
         async (payload) => {
-          console.log('Activity updated:', payload.new);
+          console.log('Hotel updated:', payload.new);
           
-          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
           
-          const oldActivity = payload.old as any;
-          const newActivity = payload.new as any;
+          const oldHotel = payload.old as any;
+          const newHotel = payload.new as any;
           
-          // Activity changes - notify operations department
+          // Hotel changes - notify operations department
           await createNotification('', {
-            title: "Activity Updated",
-            message: `Activity "${newActivity.name}" has been updated`,
+            title: "Hotel Updated",
+            message: `Hotel "${newHotel.name}" has been updated`,
             type: 'system',
             priority: 'medium',
-            related_id: newActivity.id,
+            related_id: newHotel.id,
             department: 'operations',
           });
 
           logOperation({
             operation_type: 'UPDATE',
-            table_name: 'activities',
-            record_id: newActivity.id,
+            table_name: 'hotels',
+            record_id: newHotel.id,
             details: {
-              activity_name: newActivity.name,
+              hotel_name: newHotel.name,
               updated_by_realtime: true
             }
           });
 
           // Check for capacity issues
-          if (newActivity.spots_booked > newActivity.spots_available) {
+          if (newHotel.rooms_booked > newHotel.rooms_reserved) {
             await createNotification('', {
-              title: "Activity Oversold Alert",
-              message: `Activity "${newActivity.name}" is oversold: ${newActivity.spots_booked} booked vs ${newActivity.spots_available} available`,
+              title: "Hotel Overbooking Alert",
+              message: `Hotel "${newHotel.name}" is overbooked: ${newHotel.rooms_booked} booked vs ${newHotel.rooms_reserved} reserved`,
               type: 'system',
               priority: 'high',
-              related_id: newActivity.id,
+              related_id: newHotel.id,
               department: 'operations',
             });
           }
@@ -110,31 +110,31 @@ export const useActivitiesRealtime = (userId: string) => {
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'activities'
+          table: 'hotels'
         },
         async (payload) => {
-          console.log('Activity deleted:', payload.old);
+          console.log('Hotel deleted:', payload.old);
           
-          queryClient.invalidateQueries({ queryKey: ['activities'] });
+          queryClient.invalidateQueries({ queryKey: ['hotels'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
-          const deletedActivity = payload.old as any;
+          const deletedHotel = payload.old as any;
           
           await createNotification('', {
-            title: "Activity Deleted",
-            message: `Activity "${deletedActivity.name}" has been deleted`,
+            title: "Hotel Deleted",
+            message: `Hotel "${deletedHotel.name}" has been deleted`,
             type: 'system',
             priority: 'medium',
-            related_id: deletedActivity.id,
+            related_id: deletedHotel.id,
             department: 'operations',
           });
 
           logOperation({
             operation_type: 'DELETE',
-            table_name: 'activities',
-            record_id: deletedActivity.id,
+            table_name: 'hotels',
+            record_id: deletedHotel.id,
             details: {
-              activity_name: deletedActivity.name,
+              hotel_name: deletedHotel.name,
               deleted_by_realtime: true
             }
           });
@@ -143,8 +143,8 @@ export const useActivitiesRealtime = (userId: string) => {
       .subscribe();
 
     return () => {
-      console.log('Cleaning up activities real-time subscriptions...');
-      supabase.removeChannel(activitiesChannel);
+      console.log('Cleaning up hotels real-time subscriptions...');
+      supabase.removeChannel(hotelsChannel);
     };
   }, [queryClient, userId, logOperation]);
 };
