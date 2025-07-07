@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -8,10 +8,17 @@ import { createNotification } from "@/utils/notificationHelpers";
 export const useHotelsRealtime = (userId: string) => {
   const queryClient = useQueryClient();
   const { logOperation } = useAuditLog();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!userId) {
       console.log('No userId provided to useHotelsRealtime');
+      return;
+    }
+
+    // Prevent duplicate subscriptions
+    if (channelRef.current) {
+      console.log('Hotels realtime already subscribed, skipping...');
       return;
     }
 
@@ -35,7 +42,7 @@ export const useHotelsRealtime = (userId: string) => {
           
           const newHotel = payload.new as any;
           
-          // New hotels - notify operations department
+          // Single notification to operations department only
           await createNotification('', {
             title: "New Hotel Added",
             message: `Hotel "${newHotel.name}" has been added`,
@@ -72,7 +79,7 @@ export const useHotelsRealtime = (userId: string) => {
           const oldHotel = payload.old as any;
           const newHotel = payload.new as any;
           
-          // Hotel changes - notify operations department
+          // Single notification to operations department only
           await createNotification('', {
             title: "Hotel Updated",
             message: `Hotel "${newHotel.name}" has been updated`,
@@ -92,8 +99,9 @@ export const useHotelsRealtime = (userId: string) => {
             }
           });
 
-          // Check for capacity issues
-          if (newHotel.rooms_booked > newHotel.rooms_reserved) {
+          // Check for capacity issues - separate notification for overbooking
+          if (newHotel.rooms_booked > newHotel.rooms_reserved && 
+              oldHotel.rooms_booked <= oldHotel.rooms_reserved) {
             await createNotification('', {
               title: "Hotel Overbooking Alert",
               message: `Hotel "${newHotel.name}" is overbooked: ${newHotel.rooms_booked} booked vs ${newHotel.rooms_reserved} reserved`,
@@ -120,6 +128,7 @@ export const useHotelsRealtime = (userId: string) => {
 
           const deletedHotel = payload.old as any;
           
+          // Single notification to operations department only
           await createNotification('', {
             title: "Hotel Deleted",
             message: `Hotel "${deletedHotel.name}" has been deleted`,
@@ -142,9 +151,14 @@ export const useHotelsRealtime = (userId: string) => {
       )
       .subscribe();
 
+    channelRef.current = hotelsChannel;
+
     return () => {
       console.log('Cleaning up hotels real-time subscriptions...');
-      supabase.removeChannel(hotelsChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient, userId, logOperation]);
 };

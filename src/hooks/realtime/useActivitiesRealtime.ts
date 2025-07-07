@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -8,10 +8,17 @@ import { createNotification } from "@/utils/notificationHelpers";
 export const useActivitiesRealtime = (userId: string) => {
   const queryClient = useQueryClient();
   const { logOperation } = useAuditLog();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!userId) {
       console.log('No userId provided to useActivitiesRealtime');
+      return;
+    }
+
+    // Prevent duplicate subscriptions
+    if (channelRef.current) {
+      console.log('Activities realtime already subscribed, skipping...');
       return;
     }
 
@@ -35,7 +42,7 @@ export const useActivitiesRealtime = (userId: string) => {
           
           const newActivity = payload.new as any;
           
-          // New activities - notify operations department
+          // Single notification to operations department only
           await createNotification('', {
             title: "New Activity Added",
             message: `Activity "${newActivity.name}" has been added`,
@@ -72,7 +79,7 @@ export const useActivitiesRealtime = (userId: string) => {
           const oldActivity = payload.old as any;
           const newActivity = payload.new as any;
           
-          // Activity changes - notify operations department
+          // Single notification to operations department only
           await createNotification('', {
             title: "Activity Updated",
             message: `Activity "${newActivity.name}" has been updated`,
@@ -92,8 +99,9 @@ export const useActivitiesRealtime = (userId: string) => {
             }
           });
 
-          // Check for capacity issues
-          if (newActivity.spots_booked > newActivity.spots_available) {
+          // Check for capacity issues - separate notification for overselling
+          if (newActivity.spots_booked > newActivity.spots_available && 
+              oldActivity.spots_booked <= oldActivity.spots_available) {
             await createNotification('', {
               title: "Activity Oversold Alert",
               message: `Activity "${newActivity.name}" is oversold: ${newActivity.spots_booked} booked vs ${newActivity.spots_available} available`,
@@ -120,6 +128,7 @@ export const useActivitiesRealtime = (userId: string) => {
 
           const deletedActivity = payload.old as any;
           
+          // Single notification to operations department only
           await createNotification('', {
             title: "Activity Deleted",
             message: `Activity "${deletedActivity.name}" has been deleted`,
@@ -142,9 +151,14 @@ export const useActivitiesRealtime = (userId: string) => {
       )
       .subscribe();
 
+    channelRef.current = activitiesChannel;
+
     return () => {
       console.log('Cleaning up activities real-time subscriptions...');
-      supabase.removeChannel(activitiesChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient, userId, logOperation]);
 };

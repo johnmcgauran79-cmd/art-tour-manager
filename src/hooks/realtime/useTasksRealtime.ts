@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,14 +11,22 @@ export const useTasksRealtime = (userId: string) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { logOperation } = useAuditLog();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!userId) return;
 
+    // Prevent duplicate subscriptions
+    if (channelRef.current) {
+      console.log('Tasks realtime already subscribed, skipping...');
+      return;
+    }
+
     console.log('Setting up real-time task subscriptions...');
 
+    const channelName = `tasks-realtime-${userId}-${Date.now()}`;
     const tasksChannel = supabase
-      .channel('tasks-realtime')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -48,7 +56,7 @@ export const useTasksRealtime = (userId: string) => {
             });
           }
           
-          // Send task notifications to the relevant department
+          // Single task notification to the relevant department
           const taskMessage = tourName 
             ? `New task "${taskName}" created for ${tourName}.`
             : `New task "${taskName}" created.`;
@@ -62,8 +70,9 @@ export const useTasksRealtime = (userId: string) => {
             department: newTask.category as Department,
           });
 
-          // For high priority tasks, also send to operations
-          if (newTask.priority === 'critical' || newTask.priority === 'high') {
+          // Only for critical/high priority tasks, also notify operations (if not already operations category)
+          if ((newTask.priority === 'critical' || newTask.priority === 'high') && 
+              newTask.category !== 'operations') {
             const priorityMessage = tourName 
               ? `${taskName} for ${tourName} requires attention.`
               : `${taskName} requires attention.`;
@@ -101,6 +110,7 @@ export const useTasksRealtime = (userId: string) => {
           const oldTask = payload.old as any;
           const newTask = payload.new as any;
           
+          // Only notify on status changes, not other updates
           if (oldTask.status !== newTask.status && newTask.updated_at !== oldTask.updated_at) {
             logOperation({
               operation_type: 'UPDATE',
@@ -113,7 +123,7 @@ export const useTasksRealtime = (userId: string) => {
               }
             });
 
-            // Notify relevant department about task status changes
+            // Only notify on task completion
             if (newTask.status === 'completed') {
               const { taskName, tourName } = await getTaskDetails(newTask.id);
               const taskMessage = tourName 
@@ -205,6 +215,7 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
 
           const assignment = payload.new as any;
+          // Only notify the specific user being assigned
           if (assignment.user_id === userId) {
             const { taskName, tourName } = await getTaskDetails(assignment.task_id);
             const assignmentMessage = tourName 
@@ -235,9 +246,14 @@ export const useTasksRealtime = (userId: string) => {
       )
       .subscribe();
 
+    channelRef.current = tasksChannel;
+
     return () => {
       console.log('Cleaning up task real-time subscriptions...');
-      supabase.removeChannel(tasksChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient, toast, userId, logOperation]);
 };
