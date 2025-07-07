@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,12 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Heart, Plus, User } from "lucide-react";
+import { FileText, Heart, Plus, User, MapPin } from "lucide-react";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
+import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -26,8 +26,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    // Basic booking info
     tour_id: preSelectedTourId || '',
     lead_passenger_name: '',
     lead_passenger_email: '',
@@ -110,9 +110,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       return;
     }
 
-    createBooking.mutate(formData, {
-      onSuccess: () => {
-        onOpenChange(false);
+    // Clean up date fields - convert empty strings to null
+    const cleanedFormData = {
+      ...formData,
+      check_in_date: formData.check_in_date || null,
+      check_out_date: formData.check_out_date || null,
+      passport_expiry_date: formData.passport_expiry_date || null,
+    };
+
+    createBooking.mutate(cleanedFormData, {
+      onSuccess: (data) => {
+        setCreatedBookingId(data.id);
         // Reset form
         setFormData({
           tour_id: preSelectedTourId || '',
@@ -144,6 +152,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         });
         setSelectedContact(null);
         setLeadPassengerName('');
+        onOpenChange(false);
       }
     });
   };
@@ -161,8 +170,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           </DialogHeader>
 
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="hotels" className="flex items-center gap-1">
+                <MapPin className="h-4 w-4" />
+                Hotels
+              </TabsTrigger>
               <TabsTrigger value="medical" className="flex items-center gap-1">
                 <Heart className="h-4 w-4" />
                 Medical & Emergency
@@ -245,6 +258,22 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                   </Button>
                 </div>
               </form>
+            </TabsContent>
+
+            <TabsContent value="hotels" className="space-y-4">
+              {createdBookingId && formData.tour_id ? (
+                <HotelAllocationSection
+                  tourId={formData.tour_id}
+                  bookingId={createdBookingId}
+                  accommodationRequired={formData.accommodation_required}
+                  defaultCheckIn={formData.check_in_date}
+                  defaultCheckOut={formData.check_out_date}
+                />
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Please create the booking first to manage hotel allocations.</p>
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="medical" className="space-y-4">
@@ -385,6 +414,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       <AddContactModal 
         open={showAddContact} 
         onOpenChange={setShowAddContact}
+        onContactAdded={handleContactAdded}
       />
     </>
   );

@@ -112,8 +112,8 @@ export const useCreateBooking = () => {
       status: string;
       extra_requests?: string;
       accommodation_required: boolean;
-      check_in_date?: string;
-      check_out_date?: string;
+      check_in_date?: string | null;
+      check_out_date?: string | null;
       invoice_notes?: string;
       
       // Emergency contact
@@ -123,7 +123,7 @@ export const useCreateBooking = () => {
       
       // Travel documents
       passport_number?: string;
-      passport_expiry_date?: string;
+      passport_expiry_date?: string | null;
       passport_country?: string;
       id_number?: string;
       nationality?: string;
@@ -134,7 +134,7 @@ export const useCreateBooking = () => {
       dietary_restrictions?: string;
     }) => {
       // Calculate nights
-      const totalNights = calculateNights(bookingData.check_in_date || null, bookingData.check_out_date || null);
+      const totalNights = calculateNights(bookingData.check_in_date, bookingData.check_out_date);
 
       // First, create or find the customer
       let customerId: string;
@@ -192,24 +192,24 @@ export const useCreateBooking = () => {
         });
       }
 
-      // Create the booking with all fields
+      // Create the booking with all fields, ensuring proper null handling for dates
       const { data, error } = await supabase
         .from('bookings')
         .insert([{
           tour_id: bookingData.tour_id,
           lead_passenger_id: customerId,
           passenger_count: bookingData.passenger_count,
-          passenger_2_name: bookingData.passenger_2_name,
-          passenger_3_name: bookingData.passenger_3_name,
-          group_name: bookingData.group_name,
-          booking_agent: bookingData.booking_agent,
+          passenger_2_name: bookingData.passenger_2_name || null,
+          passenger_3_name: bookingData.passenger_3_name || null,
+          group_name: bookingData.group_name || null,
+          booking_agent: bookingData.booking_agent || null,
           status: bookingData.status as any,
-          extra_requests: bookingData.extra_requests,
+          extra_requests: bookingData.extra_requests || null,
           accommodation_required: bookingData.accommodation_required,
-          check_in_date: bookingData.check_in_date,
-          check_out_date: bookingData.check_out_date,
+          check_in_date: bookingData.check_in_date || null,
+          check_out_date: bookingData.check_out_date || null,
           total_nights: totalNights,
-          invoice_notes: bookingData.invoice_notes,
+          invoice_notes: bookingData.invoice_notes || null,
           
           // Emergency contact
           emergency_contact_name: bookingData.emergency_contact_name || null,
