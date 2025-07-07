@@ -26,16 +26,12 @@ export const useRealtimeNotifications = () => {
     };
   }, [userId]);
   
-  // Only initialize realtime subscriptions once per user session
-  useEffect(() => {
-    if (userId && isInitialized.current) {
-      useTasksRealtime(userId);
-      useToursRealtime(userId);
-      useBookingsRealtime(userId);
-      useHotelsRealtime(userId);
-      useActivitiesRealtime(userId);
-    }
-  }, [userId]);
+  // Initialize realtime subscriptions directly (not inside useEffect)
+  useTasksRealtime(userId);
+  useToursRealtime(userId);
+  useBookingsRealtime(userId);
+  useHotelsRealtime(userId);
+  useActivitiesRealtime(userId);
   
   return null;
 };
