@@ -31,6 +31,17 @@ export const MyNotificationsWidget = ({
     isDeleting,
   } = useNotifications(limit);
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      // Select all notifications
+      const allIds = notifications.map(n => n.id);
+      allIds.forEach(id => handleCheckboxChange(id, true));
+    } else {
+      // Deselect all notifications
+      selectedNotifications.forEach(id => handleCheckboxChange(id, false));
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-4">
@@ -46,7 +57,9 @@ export const MyNotificationsWidget = ({
           <NotificationHeader 
             unreadCount={unreadCount}
             selectedCount={selectedNotifications.length}
+            totalCount={notifications.length}
             showCard={showCard}
+            onSelectAll={handleSelectAll}
           />
           
           {selectedNotifications.length > 0 && (
