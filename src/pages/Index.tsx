@@ -48,7 +48,6 @@ const Index = () => {
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
 
-  // Fetch data for navigation purposes
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
   const { data: tasks = [] } = useTasks();
@@ -166,7 +165,7 @@ const Index = () => {
   ];
 
   if (showUserManagement && isAdmin) {
-    return <UserManagement />;
+    return <UserManagement onClose={() => setShowUserManagement(false)} />;
   }
 
   return (

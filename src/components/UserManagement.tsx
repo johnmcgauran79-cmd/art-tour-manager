@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, UserX, UserPlus, KeyRound, Edit } from "lucide-react";
+import { Trash2, UserX, UserPlus, KeyRound, Edit, X } from "lucide-react";
 import { AddUserModal } from "./AddUserModal";
 import { AdminPasswordResetModal } from "./AdminPasswordResetModal";
 import { UserProfileModal } from "./UserProfileModal";
@@ -28,7 +27,11 @@ const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
   { value: "booking_agent", label: "Booking Agent" },
 ];
 
-export function UserManagement() {
+interface UserManagementProps {
+  onClose?: () => void;
+}
+
+export function UserManagement({ onClose }: UserManagementProps) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<{ [userId: string]: boolean }>({});
@@ -261,11 +264,24 @@ export function UserManagement() {
     <div className="min-h-screen w-full p-6 bg-gray-50">
       <div className="max-w-[1600px] mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">User Management</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Manage user accounts, roles, and permissions
-            </p>
+          <div className="flex items-center gap-4">
+            {onClose && (
+              <Button
+                onClick={onClose}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Close
+              </Button>
+            )}
+            <div>
+              <h2 className="text-2xl font-semibold text-gray-900">User Management</h2>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage user accounts, roles, and permissions
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-4">
             <Button
