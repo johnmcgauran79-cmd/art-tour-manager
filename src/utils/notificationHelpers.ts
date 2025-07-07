@@ -15,7 +15,7 @@ export const createNotification = async (userId: string, notification: {
     
     // Prepare the notification data
     const notificationData = {
-      user_id: userId || null, // Explicitly set to null if empty string
+      user_id: userId || null,
       title: notification.title,
       message: notification.message,
       type: notification.type,
@@ -29,7 +29,7 @@ export const createNotification = async (userId: string, notification: {
     const { data, error } = await supabase
       .from('user_notifications')
       .insert(notificationData)
-      .select(); // Add select to get the inserted data back
+      .select();
     
     if (error) {
       console.error('Supabase error creating notification:', error);
@@ -46,6 +46,48 @@ export const createNotification = async (userId: string, notification: {
     }
   } catch (error) {
     console.error('Error creating notification:', error);
+  }
+};
+
+// New function to create notifications for multiple recipients
+export const createMultipleNotifications = async (notifications: Array<{
+  userId?: string;
+  title: string;
+  message: string;
+  type: 'task' | 'tour' | 'booking' | 'system';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  related_id?: string;
+  department?: Department;
+}>) => {
+  try {
+    console.log('Creating multiple notifications:', notifications);
+    
+    const notificationData = notifications.map(notification => ({
+      user_id: notification.userId || null,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      priority: notification.priority,
+      related_id: notification.related_id || null,
+      department: notification.department || null,
+    }));
+    
+    console.log('Multiple notification data to insert:', notificationData);
+    
+    const { data, error } = await supabase
+      .from('user_notifications')
+      .insert(notificationData)
+      .select();
+    
+    if (error) {
+      console.error('Supabase error creating multiple notifications:', error);
+      throw error;
+    } else {
+      console.log('Multiple notifications created successfully:', data?.length);
+      console.log('Inserted notifications:', data);
+    }
+  } catch (error) {
+    console.error('Error creating multiple notifications:', error);
   }
 };
 

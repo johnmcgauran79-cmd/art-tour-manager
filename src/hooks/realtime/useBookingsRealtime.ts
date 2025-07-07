@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { createNotification, getBookingDetails } from "@/utils/notificationHelpers";
+import { createMultipleNotifications, getBookingDetails } from "@/utils/notificationHelpers";
 
 export const useBookingsRealtime = (userId: string) => {
   const queryClient = useQueryClient();
@@ -36,16 +36,38 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          console.log('About to create notification for new booking');
+          console.log('About to create multiple notifications for new booking');
           
-          // Create notification for the current user (the one who created the booking)
-          await createNotification(userId, {
-            title: "New Booking Created",
-            message: `New booking for ${contactName} on "${tourName}"`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: newBooking.id,
-          });
+          // Create notifications for multiple recipients
+          await createMultipleNotifications([
+            // Notification for the user who created the booking
+            {
+              userId: userId,
+              title: "New Booking Created",
+              message: `You created a new booking for ${contactName} on "${tourName}"`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+            },
+            // General notification for operations department
+            {
+              title: "New Booking Created",
+              message: `New booking for ${contactName} on "${tourName}"`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+              department: 'operations',
+            },
+            // General notification for booking department
+            {
+              title: "New Booking Created",
+              message: `New booking for ${contactName} on "${tourName}"`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+              department: 'booking',
+            }
+          ]);
 
           logOperation({
             operation_type: 'CREATE',
@@ -77,28 +99,68 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          console.log('About to create notification for booking update');
+          console.log('About to create multiple notifications for booking update');
+
+          const notifications = [];
 
           // Status change notifications
           if (oldBooking.status !== newBooking.status) {
-            await createNotification(userId, {
+            // Notification for the user who updated the booking
+            notifications.push({
+              userId: userId,
               title: "Booking Status Changed",
-              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
-              type: 'booking',
-              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+              message: `You changed ${contactName}'s booking for "${tourName}" from ${oldBooking.status} to ${newBooking.status}`,
+              type: 'booking' as const,
+              priority: newBooking.status === 'cancelled' ? 'high' as const : 'medium' as const,
               related_id: newBooking.id,
             });
+
+            // General notification for operations department
+            notifications.push({
+              title: "Booking Status Changed",
+              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
+              type: 'booking' as const,
+              priority: newBooking.status === 'cancelled' ? 'high' as const : 'medium' as const,
+              related_id: newBooking.id,
+              department: 'operations' as const,
+            });
+
+            // If booking is cancelled, also notify finance
+            if (newBooking.status === 'cancelled') {
+              notifications.push({
+                title: "Booking Cancelled",
+                message: `${contactName}'s booking for "${tourName}" has been cancelled - may require refund processing`,
+                type: 'booking' as const,
+                priority: 'high' as const,
+                related_id: newBooking.id,
+                department: 'finance' as const,
+              });
+            }
           }
 
           // Passenger count change notifications
           if (oldBooking.passenger_count !== newBooking.passenger_count) {
-            await createNotification(userId, {
+            notifications.push({
+              userId: userId,
               title: "Passenger Count Updated",
-              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-              type: 'booking',
-              priority: 'medium',
+              message: `You updated ${contactName}'s booking for "${tourName}" passenger count from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
+              type: 'booking' as const,
+              priority: 'medium' as const,
               related_id: newBooking.id,
             });
+
+            notifications.push({
+              title: "Passenger Count Updated",
+              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
+              type: 'booking' as const,
+              priority: 'medium' as const,
+              related_id: newBooking.id,
+              department: 'operations' as const,
+            });
+          }
+
+          if (notifications.length > 0) {
+            await createMultipleNotifications(notifications);
           }
         }
       )
@@ -118,15 +180,37 @@ export const useBookingsRealtime = (userId: string) => {
           const deletedBooking = payload.old as any;
           const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
-          console.log('About to create notification for booking deletion');
+          console.log('About to create multiple notifications for booking deletion');
 
-          await createNotification(userId, {
-            title: "Booking Deleted",
-            message: `${contactName}'s booking for "${tourName}" has been deleted`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: deletedBooking.id,
-          });
+          await createMultipleNotifications([
+            // Notification for the user who deleted the booking
+            {
+              userId: userId,
+              title: "Booking Deleted",
+              message: `You deleted ${contactName}'s booking for "${tourName}"`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: deletedBooking.id,
+            },
+            // General notification for operations department
+            {
+              title: "Booking Deleted",
+              message: `${contactName}'s booking for "${tourName}" has been deleted`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: deletedBooking.id,
+              department: 'operations',
+            },
+            // General notification for booking department
+            {
+              title: "Booking Deleted",
+              message: `${contactName}'s booking for "${tourName}" has been deleted`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: deletedBooking.id,
+              department: 'booking',
+            }
+          ]);
         }
       )
       .subscribe();
