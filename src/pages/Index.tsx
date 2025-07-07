@@ -42,7 +42,6 @@ const Index = () => {
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [userManagementPopoverOpen, setUserManagementPopoverOpen] = useState(false);
   const [systemLogPopoverOpen, setSystemLogPopoverOpen] = useState(false);
 
   const { userRole } = useAuth();
@@ -191,42 +190,14 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               {isAdmin && (
                 <>
-                  <Popover open={userManagementPopoverOpen} onOpenChange={setUserManagementPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white hover:bg-brand-navy/80 p-2"
-                      >
-                        <Users className="h-5 w-5" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold">User Management</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setUserManagementPopoverOpen(false)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Manage user accounts, roles, and permissions for the system.
-                      </p>
-                      <Button
-                        onClick={() => {
-                          setShowUserManagement(true);
-                          setUserManagementPopoverOpen(false);
-                        }}
-                        className="w-full"
-                      >
-                        Open User Management
-                      </Button>
-                    </PopoverContent>
-                  </Popover>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-brand-navy/80 p-2"
+                    onClick={() => setShowUserManagement(true)}
+                  >
+                    <Users className="h-5 w-5" />
+                  </Button>
 
                   <Popover open={systemLogPopoverOpen} onOpenChange={setSystemLogPopoverOpen}>
                     <PopoverTrigger asChild>
