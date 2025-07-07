@@ -1,4 +1,5 @@
 
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTasksRealtime } from "@/hooks/realtime/useTasksRealtime";
 import { useToursRealtime } from "@/hooks/realtime/useToursRealtime";
@@ -9,17 +10,32 @@ import { useActivitiesRealtime } from "@/hooks/realtime/useActivitiesRealtime";
 export const useRealtimeNotifications = () => {
   const { user } = useAuth();
   const userId = user?.id || '';
+  const isInitialized = useRef(false);
   
-  console.log('useRealtimeNotifications initialized for user:', userId);
+  useEffect(() => {
+    // Prevent multiple initializations
+    if (!userId || isInitialized.current) {
+      return;
+    }
+    
+    console.log('useRealtimeNotifications initialized for user:', userId);
+    isInitialized.current = true;
+    
+    return () => {
+      isInitialized.current = false;
+    };
+  }, [userId]);
   
-  // Initialize all realtime subscriptions only if user exists
-  if (userId) {
-    useTasksRealtime(userId);
-    useToursRealtime(userId);
-    useBookingsRealtime(userId);
-    useHotelsRealtime(userId);
-    useActivitiesRealtime(userId);
-  }
+  // Only initialize realtime subscriptions once per user session
+  useEffect(() => {
+    if (userId && isInitialized.current) {
+      useTasksRealtime(userId);
+      useToursRealtime(userId);
+      useBookingsRealtime(userId);
+      useHotelsRealtime(userId);
+      useActivitiesRealtime(userId);
+    }
+  }, [userId]);
   
   return null;
 };

@@ -1,17 +1,24 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { createNotification } from "@/utils/notificationHelpers";
+import { createNotification, getTourNameById } from "@/utils/notificationHelpers";
 
 export const useToursRealtime = (userId: string) => {
   const queryClient = useQueryClient();
   const { logOperation } = useAuditLog();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!userId) {
       console.log('No userId provided to useToursRealtime');
+      return;
+    }
+
+    // Prevent duplicate subscriptions
+    if (channelRef.current) {
+      console.log('Tours realtime already subscribed, skipping...');
       return;
     }
 
@@ -32,17 +39,18 @@ export const useToursRealtime = (userId: string) => {
           
           queryClient.invalidateQueries({ queryKey: ['tours'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          
+
           const newTour = payload.new as any;
+
+          console.log('Creating tour creation notification');
           
-          // New tours - notify ALL users (general notification)
-          await createNotification('', {
+          await createNotification(userId, {
             title: "New Tour Created",
-            message: `Tour "${newTour.name}" has been created`,
+            message: `You created a new tour: "${newTour.name}"`,
             type: 'tour',
             priority: 'medium',
             related_id: newTour.id,
-            department: 'general',
+            department: 'operations',
           });
 
           logOperation({
@@ -52,6 +60,7 @@ export const useToursRealtime = (userId: string) => {
             details: {
               tour_name: newTour.name,
               start_date: newTour.start_date,
+              end_date: newTour.end_date,
               created_by_realtime: true
             }
           });
@@ -69,53 +78,35 @@ export const useToursRealtime = (userId: string) => {
           
           queryClient.invalidateQueries({ queryKey: ['tours'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          
+
           const oldTour = payload.old as any;
           const newTour = payload.new as any;
-          
-          // Edited tours - notify operations department
-          await createNotification('', {
+
+          // Skip notifications for automatic capacity updates (these are triggered by booking changes)
+          const isCapacityOnlyUpdate = (
+            oldTour.capacity !== newTour.capacity &&
+            oldTour.name === newTour.name &&
+            oldTour.start_date === newTour.start_date &&
+            oldTour.end_date === newTour.end_date &&
+            oldTour.status === newTour.status
+          );
+
+          if (isCapacityOnlyUpdate) {
+            console.log('Skipping notification for automatic capacity update');
+            return;
+          }
+
+          console.log('Creating tour update notification for manual changes');
+
+          // Only create notifications for manual tour updates (not automatic capacity changes)
+          await createNotification(userId, {
             title: "Tour Updated",
-            message: `Tour "${newTour.name}" has been updated`,
+            message: `You updated tour "${newTour.name}"`,
             type: 'tour',
             priority: 'medium',
             related_id: newTour.id,
             department: 'operations',
           });
-
-          // Also notify users who have bookings on this tour
-          const { data: bookingsData } = await supabase
-            .from('bookings')
-            .select(`
-              id,
-              lead_passenger_id,
-              customers!inner(id, email)
-            `)
-            .eq('tour_id', newTour.id)
-            .in('status', ['fully_paid', 'deposited', 'instalment_paid']);
-
-          if (bookingsData && bookingsData.length > 0) {
-            for (const booking of bookingsData) {
-              if (booking.customers) {
-                // Find user ID for this customer email
-                const { data: userData } = await supabase
-                  .from('profiles')
-                  .select('id')
-                  .eq('email', booking.customers.email)
-                  .single();
-
-                if (userData) {
-                  await createNotification(userData.id, {
-                    title: "Your Tour Updated",
-                    message: `Tour "${newTour.name}" that you have a booking for has been updated`,
-                    type: 'tour',
-                    priority: 'medium',
-                    related_id: newTour.id,
-                  });
-                }
-              }
-            }
-          }
 
           logOperation({
             operation_type: 'UPDATE',
@@ -123,32 +114,9 @@ export const useToursRealtime = (userId: string) => {
             record_id: newTour.id,
             details: {
               tour_name: newTour.name,
-              date_changed: oldTour.start_date !== newTour.start_date,
               updated_by_realtime: true
             }
           });
-
-          if (oldTour.start_date !== newTour.start_date) {
-            await createNotification('', {
-              title: "Tour Dates Updated",
-              message: `${newTour.name} dates changed - tasks regenerated`,
-              type: 'tour',
-              priority: 'high',
-              related_id: newTour.id,
-              department: 'operations',
-            });
-          }
-
-          if (oldTour.status !== newTour.status) {
-            await createNotification('', {
-              title: "Tour Status Updated",
-              message: `${newTour.name} status changed from ${oldTour.status} to ${newTour.status}`,
-              type: 'tour',
-              priority: 'medium',
-              related_id: newTour.id,
-              department: 'operations',
-            });
-          }
         }
       )
       .on(
@@ -165,32 +133,29 @@ export const useToursRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
           const deletedTour = payload.old as any;
-          
-          await createNotification('', {
+
+          console.log('Creating tour deletion notification');
+
+          await createNotification(userId, {
             title: "Tour Deleted",
-            message: `Tour "${deletedTour.name}" has been deleted.`,
+            message: `You deleted tour "${deletedTour.name}"`,
             type: 'tour',
             priority: 'high',
             related_id: deletedTour.id,
             department: 'operations',
           });
-
-          logOperation({
-            operation_type: 'DELETE',
-            table_name: 'tours',
-            record_id: deletedTour.id,
-            details: {
-              tour_name: deletedTour.name,
-              deleted_by_realtime: true
-            }
-          });
         }
       )
       .subscribe();
 
+    channelRef.current = toursChannel;
+
     return () => {
       console.log('Cleaning up tours real-time subscriptions...');
-      supabase.removeChannel(toursChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient, userId, logOperation]);
 };

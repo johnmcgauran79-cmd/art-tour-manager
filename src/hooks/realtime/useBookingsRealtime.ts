@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuditLog } from "@/hooks/useAuditLog";
@@ -8,10 +8,17 @@ import { createMultipleNotifications, getBookingDetails } from "@/utils/notifica
 export const useBookingsRealtime = (userId: string) => {
   const queryClient = useQueryClient();
   const { logOperation } = useAuditLog();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     if (!userId) {
       console.log('No userId provided to useBookingsRealtime');
+      return;
+    }
+
+    // Prevent duplicate subscriptions
+    if (channelRef.current) {
+      console.log('Bookings realtime already subscribed, skipping...');
       return;
     }
 
@@ -36,11 +43,11 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          console.log('About to create multiple notifications for new booking');
+          console.log('Creating booking creation notifications');
           
-          // Create notifications for multiple recipients
+          // Create only ONE set of notifications for booking creation
           await createMultipleNotifications([
-            // Notification for the user who created the booking
+            // Personal notification for the user who created the booking
             {
               userId: userId,
               title: "New Booking Created",
@@ -49,7 +56,7 @@ export const useBookingsRealtime = (userId: string) => {
               priority: 'medium',
               related_id: newBooking.id,
             },
-            // General notification for operations department
+            // Single department notification for operations
             {
               title: "New Booking Created",
               message: `New booking for ${contactName} on "${tourName}"`,
@@ -57,15 +64,6 @@ export const useBookingsRealtime = (userId: string) => {
               priority: 'medium',
               related_id: newBooking.id,
               department: 'operations',
-            },
-            // General notification for booking department
-            {
-              title: "New Booking Created",
-              message: `New booking for ${contactName} on "${tourName}"`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newBooking.id,
-              department: 'booking',
             }
           ]);
 
@@ -99,13 +97,11 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           const { contactName, tourName } = await getBookingDetails(newBooking.id);
 
-          console.log('About to create multiple notifications for booking update');
-
           const notifications = [];
 
-          // Status change notifications
+          // Only create notifications for significant changes
           if (oldBooking.status !== newBooking.status) {
-            // Notification for the user who updated the booking
+            // Status change notifications
             notifications.push({
               userId: userId,
               title: "Booking Status Changed",
@@ -115,7 +111,6 @@ export const useBookingsRealtime = (userId: string) => {
               related_id: newBooking.id,
             });
 
-            // General notification for operations department
             notifications.push({
               title: "Booking Status Changed",
               message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
@@ -136,10 +131,8 @@ export const useBookingsRealtime = (userId: string) => {
                 department: 'finance' as const,
               });
             }
-          }
-
-          // Passenger count change notifications
-          if (oldBooking.passenger_count !== newBooking.passenger_count) {
+          } else if (oldBooking.passenger_count !== newBooking.passenger_count) {
+            // Passenger count change notifications (only if status didn't change)
             notifications.push({
               userId: userId,
               title: "Passenger Count Updated",
@@ -160,6 +153,7 @@ export const useBookingsRealtime = (userId: string) => {
           }
 
           if (notifications.length > 0) {
+            console.log('Creating booking update notifications:', notifications.length);
             await createMultipleNotifications(notifications);
           }
         }
@@ -180,10 +174,10 @@ export const useBookingsRealtime = (userId: string) => {
           const deletedBooking = payload.old as any;
           const { contactName, tourName } = await getBookingDetails(deletedBooking.id);
 
-          console.log('About to create multiple notifications for booking deletion');
+          console.log('Creating booking deletion notifications');
 
           await createMultipleNotifications([
-            // Notification for the user who deleted the booking
+            // Personal notification for the user who deleted the booking
             {
               userId: userId,
               title: "Booking Deleted",
@@ -192,7 +186,7 @@ export const useBookingsRealtime = (userId: string) => {
               priority: 'medium',
               related_id: deletedBooking.id,
             },
-            // General notification for operations department
+            // Single department notification for operations
             {
               title: "Booking Deleted",
               message: `${contactName}'s booking for "${tourName}" has been deleted`,
@@ -200,24 +194,20 @@ export const useBookingsRealtime = (userId: string) => {
               priority: 'medium',
               related_id: deletedBooking.id,
               department: 'operations',
-            },
-            // General notification for booking department
-            {
-              title: "Booking Deleted",
-              message: `${contactName}'s booking for "${tourName}" has been deleted`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: deletedBooking.id,
-              department: 'booking',
             }
           ]);
         }
       )
       .subscribe();
 
+    channelRef.current = bookingsChannel;
+
     return () => {
       console.log('Cleaning up bookings real-time subscriptions...');
-      supabase.removeChannel(bookingsChannel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [queryClient, userId, logOperation]);
 };
