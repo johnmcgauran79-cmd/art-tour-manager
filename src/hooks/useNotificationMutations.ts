@@ -46,87 +46,86 @@ export const useNotificationMutations = () => {
     },
   });
 
-  // Delete notification mutation
-  const deleteNotificationMutation = useMutation({
+  // Dismiss notification mutation (replaces delete)
+  const dismissNotificationMutation = useMutation({
     mutationFn: async (notificationId: string) => {
-      console.log('Starting delete for notification:', notificationId);
+      console.log('Dismissing notification:', notificationId);
       
       if (!user?.id) {
-        console.error('No user ID available for delete');
+        console.error('No user ID available for dismiss');
         throw new Error('User not authenticated');
       }
 
-      console.log('Executing delete query for notification:', notificationId);
+      console.log('Creating dismissal record for notification:', notificationId);
       
       const { data, error } = await supabase
-        .from('user_notifications')
-        .delete()
-        .eq('id', notificationId)
+        .from('user_notification_dismissals')
+        .insert({
+          user_id: user.id,
+          notification_id: notificationId
+        })
         .select();
 
       if (error) {
-        console.error('Delete query failed:', error);
+        console.error('Dismiss query failed:', error);
         throw error;
       }
       
-      console.log('Delete query successful, deleted data:', data);
-      return { notificationId, deletedData: data };
+      console.log('Dismiss query successful, dismissal data:', data);
+      return { notificationId, dismissalData: data };
     },
     onSuccess: ({ notificationId }) => {
-      console.log('Delete mutation success callback - notification:', notificationId);
+      console.log('Dismiss mutation success callback - notification:', notificationId);
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
       toast({
         title: "Success",
-        description: "Notification deleted",
+        description: "Notification dismissed",
       });
     },
     onError: (error) => {
-      console.error('Delete mutation error:', error);
+      console.error('Dismiss mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to delete notification",
+        description: "Failed to dismiss notification",
         variant: "destructive",
       });
     },
   });
 
-  // Bulk delete mutation - Updated to handle all notification types
-  const bulkDeleteMutation = useMutation({
+  // Bulk dismiss mutation (replaces bulk delete)
+  const bulkDismissMutation = useMutation({
     mutationFn: async (notificationIds: string[]) => {
-      console.log('Bulk deleting notifications:', notificationIds);
+      console.log('Bulk dismissing notifications:', notificationIds);
       
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // First, let's check what notifications exist before deletion
-      const { data: beforeDelete } = await supabase
-        .from('user_notifications')
-        .select('id, user_id, department')
-        .in('id', notificationIds);
-      
-      console.log('Notifications found before delete:', beforeDelete?.length || 0);
-      console.log('Notification details:', beforeDelete);
+      // Create dismissal records for all selected notifications
+      const dismissalRecords = notificationIds.map(notificationId => ({
+        user_id: user.id,
+        notification_id: notificationId
+      }));
 
-      // Delete notifications without user_id restriction since RLS will handle permissions
+      console.log('Creating dismissal records for:', dismissalRecords.length, 'notifications');
+
       const { data, error } = await supabase
-        .from('user_notifications')
-        .delete()
-        .in('id', notificationIds)
+        .from('user_notification_dismissals')
+        .insert(dismissalRecords)
         .select();
 
       if (error) {
-        console.error('Error bulk deleting notifications:', error);
+        console.error('Error bulk dismissing notifications:', error);
         throw error;
       }
       
-      console.log('Successfully bulk deleted notifications count:', data?.length || 0);
-      console.log('Bulk deleted notification IDs:', data?.map(n => n.id) || []);
+      console.log('Successfully bulk dismissed notifications count:', data?.length || 0);
+      console.log('Bulk dismissed notification IDs:', notificationIds);
       return notificationIds;
     },
-    onSuccess: (deletedIds) => {
-      console.log('Bulk delete success, invalidating queries for user:', user?.id);
-      const deletedCount = deletedIds.length;
+    onSuccess: (dismissedIds) => {
+      console.log('Bulk dismiss success, invalidating queries for user:', user?.id);
+      const dismissedCount = dismissedIds.length;
       
       // Force refetch of notifications
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -134,14 +133,14 @@ export const useNotificationMutations = () => {
       
       toast({
         title: "Success",
-        description: `${deletedCount} notifications deleted`,
+        description: `${dismissedCount} notifications dismissed`,
       });
     },
     onError: (error) => {
-      console.error('Error bulk deleting notifications:', error);
+      console.error('Error bulk dismissing notifications:', error);
       toast({
         title: "Error",
-        description: "Failed to delete notifications",
+        description: "Failed to dismiss notifications",
         variant: "destructive",
       });
     },
@@ -149,7 +148,7 @@ export const useNotificationMutations = () => {
 
   return {
     markAsReadMutation,
-    deleteNotificationMutation,
-    bulkDeleteMutation,
+    deleteNotificationMutation: dismissNotificationMutation, // Keep same interface
+    bulkDeleteMutation: bulkDismissMutation, // Keep same interface
   };
 };

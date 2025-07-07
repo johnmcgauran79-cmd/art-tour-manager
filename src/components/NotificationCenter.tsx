@@ -36,8 +36,7 @@ export const NotificationCenter = () => {
       const { error } = await supabase
         .from('user_notifications')
         .update({ read: true })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .eq('id', notificationId);
 
       if (error) throw error;
     },
@@ -51,16 +50,17 @@ export const NotificationCenter = () => {
     },
   });
 
-  // Acknowledge notification mutation
-  const acknowledgeMutation = useMutation({
+  // Dismiss notification mutation
+  const dismissMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       if (!user?.id) throw new Error('User not authenticated');
 
       const { error } = await supabase
-        .from('user_notifications')
-        .update({ acknowledged: true, read: true })
-        .eq('id', notificationId)
-        .eq('user_id', user.id);
+        .from('user_notification_dismissals')
+        .insert({
+          user_id: user.id,
+          notification_id: notificationId
+        });
 
       if (error) throw error;
     },
@@ -68,13 +68,13 @@ export const NotificationCenter = () => {
       refetch();
       toast({
         title: "Success",
-        description: "Notification acknowledged",
+        description: "Notification dismissed",
       });
     },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to acknowledge notification",
+        description: "Failed to dismiss notification",
         variant: "destructive",
       });
     },
@@ -202,17 +202,19 @@ export const NotificationCenter = () => {
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                             </span>
-                            {!notification.acknowledged && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 px-2 text-xs"
-                                onClick={() => acknowledgeMutation.mutate(notification.id)}
-                                disabled={acknowledgeMutation.isPending}
-                              >
-                                Acknowledge
-                              </Button>
-                            )}
+                            <div className="flex gap-1">
+                              {!notification.acknowledged && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => dismissMutation.mutate(notification.id)}
+                                  disabled={dismissMutation.isPending}
+                                >
+                                  Dismiss
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -34,8 +34,12 @@ export const useNotificationQuery = (limit: number = 10) => {
       const [notificationsResult, unreadCountResult] = await Promise.all([
         supabase
           .from('user_notifications')
-          .select('*')
+          .select(`
+            *,
+            user_notification_dismissals!left(id)
+          `)
           .or(orCondition)
+          .is('user_notification_dismissals.id', null) // Exclude dismissed notifications
           .order('created_at', { ascending: false })
           .limit(limit),
         
@@ -44,6 +48,7 @@ export const useNotificationQuery = (limit: number = 10) => {
           .select('id', { count: 'exact' })
           .or(orCondition)
           .eq('read', false)
+          .is('user_notification_dismissals.id', null) // Exclude dismissed notifications from count
       ]);
 
       if (notificationsResult.error) throw notificationsResult.error;
@@ -58,7 +63,7 @@ export const useNotificationQuery = (limit: number = 10) => {
       };
     },
     enabled: !!user?.id,
-    staleTime: 5000, // Reduced from 30000 to make it refresh more frequently
-    refetchInterval: 30000, // Reduced from 60000 to make it refresh more frequently
+    staleTime: 5000,
+    refetchInterval: 30000,
   });
 };
