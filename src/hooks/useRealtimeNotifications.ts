@@ -33,16 +33,16 @@ export const useRealtimeNotifications = () => {
   }, [userId]);
   
   // Only initialize realtime subscriptions if we have a user ID and haven't initialized yet
-  if (userId && !isInitialized.current) {
-    console.log('Initializing realtime subscriptions...');
-  }
+  const shouldInitialize = userId && isInitialized.current;
   
-  // Initialize realtime subscriptions directly (not inside useEffect)
-  useTasksRealtime(userId);
-  useToursRealtime(userId);
-  useBookingsRealtime(userId);
-  useHotelsRealtime(userId);
-  useActivitiesRealtime(userId);
+  // Initialize realtime subscriptions conditionally
+  if (shouldInitialize) {
+    useTasksRealtime(userId);
+    useToursRealtime(userId);
+    useBookingsRealtime(userId);
+    useHotelsRealtime(userId);
+    useActivitiesRealtime(userId);
+  }
   
   return null;
 };

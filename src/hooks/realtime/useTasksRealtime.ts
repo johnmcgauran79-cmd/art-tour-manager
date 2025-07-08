@@ -13,17 +13,16 @@ export const useTasksRealtime = (userId: string) => {
   const { logOperation } = useAuditLog();
   const channelRef = useRef<any>(null);
   const processedEvents = useRef<Set<string>>(new Set());
+  const isSubscribed = useRef(false);
 
   useEffect(() => {
-    if (!userId) return;
-
-    // Prevent duplicate subscriptions
-    if (channelRef.current) {
-      console.log('Tasks realtime already subscribed, skipping...');
+    if (!userId || isSubscribed.current) {
+      console.log('Tasks realtime: skipping subscription', { userId, isSubscribed: isSubscribed.current });
       return;
     }
 
-    console.log('Setting up real-time task subscriptions...');
+    console.log('Setting up real-time task subscriptions for user:', userId);
+    isSubscribed.current = true;
 
     const channelName = `tasks-realtime-${userId}-${Date.now()}`;
     const tasksChannel = supabase
@@ -36,6 +35,16 @@ export const useTasksRealtime = (userId: string) => {
           table: 'tasks'
         },
         async (payload) => {
+          const eventKey = `insert-${payload.new.id}`;
+          
+          if (processedEvents.current.has(eventKey)) {
+            console.log('Duplicate INSERT event prevented for task:', payload.new.id);
+            return;
+          }
+          
+          processedEvents.current.add(eventKey);
+          setTimeout(() => processedEvents.current.delete(eventKey), 30000);
+          
           console.log('New task created:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -43,7 +52,7 @@ export const useTasksRealtime = (userId: string) => {
           
           const newTask = payload.new as any;
           
-          // Skip notifications for tasks created by the current user (they already know they created it)
+          // Skip notifications for tasks created by the current user
           if (newTask.created_by === userId) {
             console.log('Skipping notification for self-created task');
             return;
@@ -100,6 +109,16 @@ export const useTasksRealtime = (userId: string) => {
           table: 'tasks'
         },
         async (payload) => {
+          const eventKey = `update-${payload.new.id}-${payload.new.updated_at}`;
+          
+          if (processedEvents.current.has(eventKey)) {
+            console.log('Duplicate UPDATE event prevented for task:', payload.new.id);
+            return;
+          }
+          
+          processedEvents.current.add(eventKey);
+          setTimeout(() => processedEvents.current.delete(eventKey), 30000);
+          
           console.log('Task updated:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -108,7 +127,7 @@ export const useTasksRealtime = (userId: string) => {
           const oldTask = payload.old as any;
           const newTask = payload.new as any;
           
-          // Only notify on significant status changes (not minor field updates)
+          // Only notify on significant status changes
           const isStatusChange = oldTask.status !== newTask.status;
           const isSignificantStatusChange = isStatusChange && (
             newTask.status === 'completed' || 
@@ -180,22 +199,22 @@ export const useTasksRealtime = (userId: string) => {
         async (payload) => {
           const deletedTask = payload.old as any;
           const taskId = deletedTask.id;
-          const eventKey = `delete-${taskId}`;
+          const eventKey = `delete-${taskId}-${Date.now()}`;
 
           console.log('Task deleted via realtime:', { taskId, eventKey, deletedTask });
 
-          // Robust duplicate prevention - check if we've already processed this exact deletion
-          if (processedEvents.current.has(eventKey)) {
+          // Enhanced duplicate prevention using timestamp
+          if (processedEvents.current.has(`delete-${taskId}`)) {
             console.log('Deletion already processed for task:', taskId);
             return;
           }
           
           // Mark this deletion as processed immediately
-          processedEvents.current.add(eventKey);
+          processedEvents.current.add(`delete-${taskId}`);
           
-          // Clean up after 60 seconds (longer to account for any delays)
+          // Clean up after 60 seconds
           setTimeout(() => {
-            processedEvents.current.delete(eventKey);
+            processedEvents.current.delete(`delete-${taskId}`);
           }, 60000);
 
           // Force refresh of task queries to immediately update UI
@@ -220,11 +239,12 @@ export const useTasksRealtime = (userId: string) => {
             }
           });
 
-          // Extract task name and tour name directly from the deletion payload
+          // Extract task name directly from the deletion payload - use proper field name
           const taskName = deletedTask.title || 'Untitled Task';
           let tourName = null;
 
           console.log('Extracted task name from deletion payload:', taskName);
+          console.log('Full deleted task object:', deletedTask);
 
           // Get tour name if tour_id exists
           if (deletedTask.tour_id) {
@@ -247,7 +267,7 @@ export const useTasksRealtime = (userId: string) => {
 
           console.log('Creating deletion notification:', { taskName, tourName, taskMessage });
           
-          // Create notification for task deletion (only if not deleted by current user)
+          // Create notification for task deletion
           await createNotification('', {
             title: "Task Deleted",
             message: taskMessage,
@@ -277,6 +297,16 @@ export const useTasksRealtime = (userId: string) => {
           table: 'task_assignments'
         },
         async (payload) => {
+          const eventKey = `assignment-${payload.new.id}`;
+          
+          if (processedEvents.current.has(eventKey)) {
+            console.log('Duplicate assignment event prevented for:', payload.new.id);
+            return;
+          }
+          
+          processedEvents.current.add(eventKey);
+          setTimeout(() => processedEvents.current.delete(eventKey), 30000);
+          
           console.log('New task assignment:', payload.new);
           
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -324,6 +354,7 @@ export const useTasksRealtime = (userId: string) => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      isSubscribed.current = false;
       // Clear processed events on cleanup
       processedEvents.current.clear();
     };
