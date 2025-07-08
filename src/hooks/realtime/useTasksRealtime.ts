@@ -177,10 +177,13 @@ export const useTasksRealtime = (userId: string) => {
           table: 'tasks'
         },
         async (payload) => {
-          console.log('Task deleted:', payload.old);
+          console.log('Task deleted via realtime:', payload.old);
           
+          // Force refresh of task queries to immediately update UI
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+          queryClient.refetchQueries({ queryKey: ['tasks'] });
+          queryClient.refetchQueries({ queryKey: ['my-tasks'] });
 
           const deletedTask = payload.old as any;
 
@@ -194,6 +197,7 @@ export const useTasksRealtime = (userId: string) => {
             }
           });
 
+          // Get tour name for notification
           let tourName = null;
           if (deletedTask.tour_id) {
             try {
@@ -212,6 +216,7 @@ export const useTasksRealtime = (userId: string) => {
             ? `Task "${deletedTask.title}" for ${tourName} has been deleted.`
             : `Task "${deletedTask.title}" has been deleted.`;
 
+          // Create notification for task deletion
           await createNotification('', {
             title: "Task Deleted",
             message: taskMessage,
@@ -219,6 +224,13 @@ export const useTasksRealtime = (userId: string) => {
             priority: 'medium',
             related_id: deletedTask.id,
             department: deletedTask.category as Department,
+          });
+
+          // Show toast notification for task deletion
+          toast({
+            title: "Task Deleted",
+            description: taskMessage,
+            duration: 3000,
           });
         }
       )

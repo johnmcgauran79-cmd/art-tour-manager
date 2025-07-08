@@ -36,30 +36,100 @@ export interface Task {
 export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { logOperation } = useAuditLog();
 
   return useMutation({
     mutationFn: async (taskId: string) => {
+      console.log('Deleting task:', taskId);
+      
+      // First get task details for logging
+      const { data: taskData } = await supabase
+        .from('tasks')
+        .select('title, tour_id, created_by')
+        .eq('id', taskId)
+        .single();
+
+      // Delete task assignments first
+      const { error: assignmentError } = await supabase
+        .from('task_assignments')
+        .delete()
+        .eq('task_id', taskId);
+
+      if (assignmentError) {
+        console.error('Error deleting task assignments:', assignmentError);
+        throw new Error(`Failed to delete task assignments: ${assignmentError.message}`);
+      }
+
+      // Delete task comments
+      const { error: commentsError } = await supabase
+        .from('task_comments')    
+        .delete()
+        .eq('task_id', taskId);
+
+      if (commentsError) {
+        console.error('Error deleting task comments:', commentsError);
+        throw new Error(`Failed to delete task comments: ${commentsError.message}`);
+      }
+
+      // Delete task attachments
+      const { error: attachmentsError } = await supabase
+        .from('task_attachments')
+        .delete()
+        .eq('task_id', taskId);
+
+      if (attachmentsError) {
+        console.error('Error deleting task attachments:', attachmentsError);
+        throw new Error(`Failed to delete task attachments: ${attachmentsError.message}`);
+      }
+
+      // Finally delete the task itself
       const { error } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId);
 
-      if (error) throw error;
-      return { taskId };
+      if (error) {
+        console.error('Error deleting task:', error);
+        throw new Error(`Failed to delete task: ${error.message}`);
+      }
+
+      // Log the deletion
+      if (taskData) {
+        logOperation({
+          operation_type: 'DELETE',
+          table_name: 'tasks',
+          record_id: taskId,
+          details: {
+            task_title: taskData.title,
+            tour_id: taskData.tour_id,
+            deleted_manually: true
+          }
+        });
+      }
+
+      console.log('Task deleted successfully:', taskId);
+      return { taskId, taskData };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Task deletion successful, invalidating queries');
+      // Invalidate all task-related queries to ensure UI updates
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      
+      // Force refetch to ensure immediate UI update
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
       toast({
         title: "Task Deleted",
-        description: "The task has been successfully deleted.",
+        description: `Task "${data.taskData?.title || 'Unknown'}" has been successfully deleted.`,
       });
     },
     onError: (error) => {
       console.error('Error deleting task:', error);
       toast({
         title: "Error",
-        description: "Failed to delete task. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to delete task. Please try again.",
         variant: "destructive",
       });
     },
