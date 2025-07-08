@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +15,7 @@ export const useTasksRealtime = (userId: string) => {
   const isSubscribed = useRef(false);
 
   useEffect(() => {
+    // Early return if no userId or already subscribed
     if (!userId || isSubscribed.current) {
       console.log('Tasks realtime: skipping subscription', { userId, isSubscribed: isSubscribed.current });
       return;
@@ -35,7 +35,7 @@ export const useTasksRealtime = (userId: string) => {
           table: 'tasks'
         },
         async (payload) => {
-          const eventKey = `insert-${payload.new.id}`;
+          const eventKey = `insert-${payload.new.id}-${Date.now()}`;
           
           if (processedEvents.current.has(eventKey)) {
             console.log('Duplicate INSERT event prevented for task:', payload.new.id);
@@ -203,18 +203,18 @@ export const useTasksRealtime = (userId: string) => {
 
           console.log('Task deleted via realtime:', { taskId, eventKey, deletedTask });
 
-          // Enhanced duplicate prevention using timestamp
-          if (processedEvents.current.has(`delete-${taskId}`)) {
+          // Enhanced duplicate prevention using unique timestamp
+          if (processedEvents.current.has(eventKey)) {
             console.log('Deletion already processed for task:', taskId);
             return;
           }
           
           // Mark this deletion as processed immediately
-          processedEvents.current.add(`delete-${taskId}`);
+          processedEvents.current.add(eventKey);
           
           // Clean up after 60 seconds
           setTimeout(() => {
-            processedEvents.current.delete(`delete-${taskId}`);
+            processedEvents.current.delete(eventKey);
           }, 60000);
 
           // Force refresh of task queries to immediately update UI
@@ -239,7 +239,7 @@ export const useTasksRealtime = (userId: string) => {
             }
           });
 
-          // Extract task name directly from the deletion payload - use proper field name
+          // Extract task name directly from the deletion payload
           const taskName = deletedTask.title || 'Untitled Task';
           let tourName = null;
 
@@ -297,7 +297,7 @@ export const useTasksRealtime = (userId: string) => {
           table: 'task_assignments'
         },
         async (payload) => {
-          const eventKey = `assignment-${payload.new.id}`;
+          const eventKey = `assignment-${payload.new.id}-${Date.now()}`;
           
           if (processedEvents.current.has(eventKey)) {
             console.log('Duplicate assignment event prevented for:', payload.new.id);

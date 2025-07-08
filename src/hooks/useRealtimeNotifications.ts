@@ -32,17 +32,13 @@ export const useRealtimeNotifications = () => {
     };
   }, [userId]);
   
-  // Only initialize realtime subscriptions if we have a user ID and haven't initialized yet
-  const shouldInitialize = userId && isInitialized.current;
-  
-  // Initialize realtime subscriptions conditionally
-  if (shouldInitialize) {
-    useTasksRealtime(userId);
-    useToursRealtime(userId);
-    useBookingsRealtime(userId);
-    useHotelsRealtime(userId);
-    useActivitiesRealtime(userId);
-  }
+  // Always call hooks unconditionally - pass empty string if no userId
+  // The individual hooks will handle the empty userId case
+  useTasksRealtime(userId);
+  useToursRealtime(userId);
+  useBookingsRealtime(userId);
+  useHotelsRealtime(userId);
+  useActivitiesRealtime(userId);
   
   return null;
 };
