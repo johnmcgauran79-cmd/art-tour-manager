@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,13 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Heart, Plus, User, MapPin } from "lucide-react";
+import { FileText, Heart, Plus, User, MapPin, Calendar } from "lucide-react";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
+import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -148,7 +150,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         if (formData.accommodation_required) {
           setActiveTab("hotels");
         } else {
-          setActiveTab("medical");
+          setActiveTab("activities");
         }
       }
     });
@@ -220,11 +222,15 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="hotels" className="flex items-center gap-1" disabled={!createdBookingId}>
                 <MapPin className="h-4 w-4" />
                 Hotels
+              </TabsTrigger>
+              <TabsTrigger value="activities" className="flex items-center gap-1" disabled={!createdBookingId}>
+                <Calendar className="h-4 w-4" />
+                Activities
               </TabsTrigger>
               <TabsTrigger value="medical" className="flex items-center gap-1" disabled={!createdBookingId}>
                 <Heart className="h-4 w-4" />
@@ -326,6 +332,33 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                       Close
                     </Button>
                     <Button 
+                      onClick={() => handleTabUpdate("activities")}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      Next: Activities
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>Please create the booking first to manage hotel allocations.</p>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="activities" className="space-y-4">
+              {createdBookingId && formData.tour_id ? (
+                <>
+                  <ActivityAllocationSection
+                    tourId={formData.tour_id}
+                    bookingId={createdBookingId}
+                    passengerCount={formData.passenger_count}
+                  />
+                  <div className="flex justify-end gap-2 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={handleClose}>
+                      Close
+                    </Button>
+                    <Button 
                       onClick={() => handleTabUpdate("medical")}
                       className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                     >
@@ -335,7 +368,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                 </>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <p>Please create the booking first to manage hotel allocations.</p>
+                  <p>Please create the booking first to manage activity allocations.</p>
                 </div>
               )}
             </TabsContent>
@@ -497,13 +530,13 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </TabsContent>
           </Tabs>
         </DialogContent>
-      </Dialog>
 
-      <AddContactModal 
-        open={showAddContact} 
-        onOpenChange={setShowAddContact}
-        onContactCreated={handleContactCreated}
-      />
+        <AddContactModal 
+          open={showAddContact} 
+          onOpenChange={setShowAddContact}
+          onContactCreated={handleContactCreated}
+        />
+      </Dialog>
     </>
   );
 };
