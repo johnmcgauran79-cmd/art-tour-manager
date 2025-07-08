@@ -62,7 +62,7 @@ export const useBookingsRealtime = (userId: string) => {
 
           console.log('Creating booking creation notification for:', contactName, 'on tour:', tourName);
           
-          await createNotification(userId, {
+          await createNotification('', {
             title: "New Booking Created",
             message: `New booking created for ${contactName} on "${tourName}"`,
             type: 'booking',
@@ -122,7 +122,7 @@ export const useBookingsRealtime = (userId: string) => {
           if (oldBooking.status !== newBooking.status) {
             console.log('Creating booking status change notification for:', contactName);
             
-            await createNotification(userId, {
+            await createNotification('', {
               title: "Booking Status Changed",
               message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
               type: 'booking',
@@ -134,7 +134,7 @@ export const useBookingsRealtime = (userId: string) => {
           } else if (oldBooking.passenger_count !== newBooking.passenger_count) {
             console.log('Creating booking passenger count change notification for:', contactName);
             
-            await createNotification(userId, {
+            await createNotification('', {
               title: "Passenger Count Updated",
               message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
               type: 'booking',
@@ -161,7 +161,7 @@ export const useBookingsRealtime = (userId: string) => {
 
           const deletedBooking = payload.old as any;
           
-          // Get booking details before deletion from the payload
+          // Get contact and tour names from the deleted booking data
           let contactName = 'Unknown Contact';
           let tourName = 'Unknown Tour';
 
@@ -170,39 +170,60 @@ export const useBookingsRealtime = (userId: string) => {
             contactName = deletedBooking.group_name;
           } else if (deletedBooking.lead_passenger_id) {
             // Try to get customer details if lead_passenger_id exists
-            const { data: customer } = await supabase
-              .from('customers')
-              .select('first_name, last_name')
-              .eq('id', deletedBooking.lead_passenger_id)
-              .single();
-            
-            if (customer) {
-              contactName = `${customer.first_name} ${customer.last_name}`;
+            try {
+              const { data: customer } = await supabase
+                .from('customers')
+                .select('first_name, last_name')
+                .eq('id', deletedBooking.lead_passenger_id)
+                .single();
+              
+              if (customer) {
+                contactName = `${customer.first_name} ${customer.last_name}`;
+              }
+            } catch (error) {
+              console.error('Error fetching customer details for deleted booking:', error);
             }
           }
 
           // Try to get tour name using tour_id from the deleted booking
           if (deletedBooking.tour_id) {
-            const { data: tour } = await supabase
-              .from('tours')
-              .select('name')
-              .eq('id', deletedBooking.tour_id)
-              .single();
-            
-            if (tour) {
-              tourName = tour.name;
+            try {
+              const { data: tour } = await supabase
+                .from('tours')
+                .select('name')
+                .eq('id', deletedBooking.tour_id)
+                .single();
+              
+              if (tour) {
+                tourName = tour.name;
+              }
+            } catch (error) {
+              console.error('Error fetching tour details for deleted booking:', error);
             }
           }
 
           console.log('Creating booking deletion notification for:', contactName, 'from tour:', tourName);
 
-          await createNotification(userId, {
+          // Create only ONE notification for booking deletion
+          await createNotification('', {
             title: "Booking Deleted",
             message: `Booking for ${contactName} has been deleted from "${tourName}"`,
             type: 'booking',
             priority: 'medium',
             related_id: deletedBooking.id,
             department: 'operations',
+          });
+
+          logOperation({
+            operation_type: 'DELETE',
+            table_name: 'bookings',
+            record_id: deletedBooking.id,
+            details: {
+              contact_name: contactName,
+              tour_name: tourName,
+              passenger_count: deletedBooking.passenger_count,
+              deleted_by_realtime: true
+            }
           });
         }
       )
