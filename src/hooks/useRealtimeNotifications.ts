@@ -15,6 +15,11 @@ export const useRealtimeNotifications = () => {
   useEffect(() => {
     // Prevent multiple initializations
     if (!userId || isInitialized.current) {
+      if (!userId) {
+        console.log('useRealtimeNotifications: No userId, skipping initialization');
+      } else {
+        console.log('useRealtimeNotifications: Already initialized, skipping');
+      }
       return;
     }
     
@@ -22,9 +27,15 @@ export const useRealtimeNotifications = () => {
     isInitialized.current = true;
     
     return () => {
+      console.log('useRealtimeNotifications cleanup for user:', userId);
       isInitialized.current = false;
     };
   }, [userId]);
+  
+  // Only initialize realtime subscriptions if we have a user ID and haven't initialized yet
+  if (userId && !isInitialized.current) {
+    console.log('Initializing realtime subscriptions...');
+  }
   
   // Initialize realtime subscriptions directly (not inside useEffect)
   useTasksRealtime(userId);

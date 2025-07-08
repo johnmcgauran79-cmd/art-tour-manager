@@ -178,24 +178,25 @@ export const useTasksRealtime = (userId: string) => {
           table: 'tasks'
         },
         async (payload) => {
-          console.log('Task deleted via realtime:', payload.old);
-          
           const deletedTask = payload.old as any;
           const taskId = deletedTask.id;
-          const timestamp = Date.now();
-          const eventKey = `delete-${taskId}-${timestamp}`;
+          const eventKey = `delete-${taskId}`;
 
-          // Use a more robust key that includes timestamp to prevent duplicates
-          if (processedEvents.current.has(`delete-${taskId}`)) {
+          console.log('Task deleted via realtime:', { taskId, eventKey });
+
+          // Robust duplicate prevention - check if we've already processed this exact deletion
+          if (processedEvents.current.has(eventKey)) {
             console.log('Deletion already processed for task:', taskId);
             return;
           }
-          processedEvents.current.add(`delete-${taskId}`);
-
-          // Clean up processed events after 30 seconds to prevent memory leaks
+          
+          // Mark this deletion as processed immediately
+          processedEvents.current.add(eventKey);
+          
+          // Clean up after 60 seconds (longer to account for any delays)
           setTimeout(() => {
-            processedEvents.current.delete(`delete-${taskId}`);
-          }, 30000);
+            processedEvents.current.delete(eventKey);
+          }, 60000);
 
           // Force refresh of task queries to immediately update UI
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -242,6 +243,7 @@ export const useTasksRealtime = (userId: string) => {
             : `Task "${taskName}" has been deleted.`;
 
           // Create notification for task deletion (only if not deleted by current user)
+          console.log('Creating deletion notification:', { taskName, taskMessage });
           await createNotification('', {
             title: "Task Deleted",
             message: taskMessage,
