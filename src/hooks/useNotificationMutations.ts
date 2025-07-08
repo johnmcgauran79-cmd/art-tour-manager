@@ -50,10 +50,7 @@ export const useNotificationMutations = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast({
-        title: "Success",
-        description: "Notification dismissed",
-      });
+      // Removed the success toast notification
     },
     onError: () => {
       toast({
@@ -84,10 +81,7 @@ export const useNotificationMutations = () => {
     },
     onSuccess: (dismissedIds) => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast({
-        title: "Success",
-        description: `${dismissedIds.length} notifications dismissed`,
-      });
+      // Removed the success toast notification for bulk dismiss as well
     },
     onError: () => {
       toast({
