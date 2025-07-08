@@ -6,13 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Trash2, X, Save } from "lucide-react";
+import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Trash2, X, Save, UserPlus } from "lucide-react";
 import { Task, useUpdateTask, useDeleteTask, useTasks } from "@/hooks/useTasks";
 import { useAutoUnblockTasks } from "@/hooks/useTaskDependencies";
 import { formatDistanceToNow, format } from "date-fns";
 import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 import { TaskAttachmentsSection } from "@/components/TaskAttachmentsSection";
 import { TaskDependencyChain } from "@/components/TaskDependencyChain";
+import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TaskDetailModalProps {
@@ -197,7 +198,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
             </div>
           </DialogTitle>
           <DialogDescription>
-            View and edit task details, comments, and attachments.
+            View and edit task details, assignments, comments, and attachments.
           </DialogDescription>
         </DialogHeader>
 
@@ -309,6 +310,15 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 value={editedTask.due_date || ''}
                 onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
               />
+            </div>
+
+            {/* User Assignment Section */}
+            <div>
+              <h3 className="font-medium mb-2 flex items-center gap-2">
+                <UserPlus className="h-4 w-4" />
+                Task Assignments
+              </h3>
+              <TaskAssignmentSection taskId={task.id} />
             </div>
 
             {/* Update Actions - Always Visible */}
