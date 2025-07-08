@@ -187,6 +187,12 @@ export const useTasksRealtime = (userId: string) => {
 
           const deletedTask = payload.old as any;
 
+          // Skip notifications for tasks deleted by the current user
+          if (deletedTask.created_by === userId) {
+            console.log('Skipping deletion notification for self-deleted task');
+            return;
+          }
+
           logOperation({
             operation_type: 'DELETE',
             table_name: 'tasks',
@@ -197,8 +203,11 @@ export const useTasksRealtime = (userId: string) => {
             }
           });
 
-          // Get tour name for notification
+          // Use the task data from the payload directly since the task is already deleted
+          const taskName = deletedTask.title || 'Unknown Task';
           let tourName = null;
+
+          // Get tour name if tour_id exists
           if (deletedTask.tour_id) {
             try {
               const { data: tour } = await supabase
@@ -213,10 +222,10 @@ export const useTasksRealtime = (userId: string) => {
           }
 
           const taskMessage = tourName 
-            ? `Task "${deletedTask.title}" for ${tourName} has been deleted.`
-            : `Task "${deletedTask.title}" has been deleted.`;
+            ? `Task "${taskName}" for ${tourName} has been deleted.`
+            : `Task "${taskName}" has been deleted.`;
 
-          // Create notification for task deletion
+          // Create notification for task deletion (only if not deleted by current user)
           await createNotification('', {
             title: "Task Deleted",
             message: taskMessage,
