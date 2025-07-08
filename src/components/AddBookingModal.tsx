@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -69,28 +68,60 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
 
-  // Auto-fill check-in/out dates when tour is selected
+  // Auto-fill check-in/out dates when tour is selected - Enhanced version
   useEffect(() => {
-    if (formData.tour_id && tours) {
+    console.log('Tour selection effect triggered:', { 
+      tourId: formData.tour_id, 
+      toursLoaded: !!tours, 
+      toursCount: tours?.length 
+    });
+    
+    if (formData.tour_id && tours && tours.length > 0) {
       const selectedTour = tours.find(tour => tour.id === formData.tour_id);
-      if (selectedTour) {
+      console.log('Selected tour found:', selectedTour);
+      
+      if (selectedTour && selectedTour.start_date && selectedTour.end_date) {
+        console.log('Auto-filling dates:', {
+          checkIn: selectedTour.start_date,
+          checkOut: selectedTour.end_date
+        });
+        
         setFormData(prev => ({
           ...prev,
           check_in_date: selectedTour.start_date,
           check_out_date: selectedTour.end_date,
         }));
+      } else {
+        console.log('Tour found but missing dates:', {
+          hasStartDate: !!selectedTour?.start_date,
+          hasEndDate: !!selectedTour?.end_date
+        });
       }
     }
   }, [formData.tour_id, tours]);
 
+  // Initialize form with preSelectedTourId and auto-fill dates immediately
   useEffect(() => {
-    if (preSelectedTourId) {
-      setFormData(prev => ({ ...prev, tour_id: preSelectedTourId }));
+    if (preSelectedTourId && tours && tours.length > 0) {
+      const selectedTour = tours.find(tour => tour.id === preSelectedTourId);
+      if (selectedTour) {
+        console.log('Pre-selected tour auto-fill:', selectedTour);
+        setFormData(prev => ({
+          ...prev,
+          tour_id: preSelectedTourId,
+          check_in_date: selectedTour.start_date || '',
+          check_out_date: selectedTour.end_date || '',
+        }));
+      }
     }
+  }, [preSelectedTourId, tours]);
+
+  // Set default status
+  useEffect(() => {
     if (defaultStatus) {
       setFormData(prev => ({ ...prev, status: defaultStatus }));
     }
-  }, [preSelectedTourId, defaultStatus]);
+  }, [defaultStatus]);
 
   useEffect(() => {
     if (selectedContact) {
@@ -116,6 +147,28 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   };
 
   const handleFormChange = (field: string, value: any) => {
+    console.log('Form field changed:', { field, value });
+    
+    // If tour_id is being changed, immediately auto-fill dates
+    if (field === 'tour_id' && value && tours) {
+      const selectedTour = tours.find(tour => tour.id === value);
+      if (selectedTour && selectedTour.start_date && selectedTour.end_date) {
+        console.log('Immediate tour date auto-fill:', {
+          checkIn: selectedTour.start_date,
+          checkOut: selectedTour.end_date
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          [field]: value,
+          check_in_date: selectedTour.start_date,
+          check_out_date: selectedTour.end_date,
+        }));
+        setHasUnsavedChanges(true);
+        return;
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
   };
