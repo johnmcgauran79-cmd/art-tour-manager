@@ -1,3 +1,4 @@
+
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,17 +13,24 @@ export const useTasksRealtime = (userId: string) => {
   const { logOperation } = useAuditLog();
   const channelRef = useRef<any>(null);
   const processedEvents = useRef<Set<string>>(new Set());
-  const isSubscribed = useRef(false);
+  const subscriptionKey = useRef<string>('');
 
   useEffect(() => {
-    // Early return if no userId or already subscribed
-    if (!userId || isSubscribed.current) {
-      console.log('Tasks realtime: skipping subscription', { userId, isSubscribed: isSubscribed.current });
+    // Early return if no userId
+    if (!userId) {
+      console.log('Tasks realtime: skipping subscription - no userId');
+      return;
+    }
+
+    // Prevent duplicate subscriptions for the same user
+    const currentKey = `tasks-${userId}`;
+    if (subscriptionKey.current === currentKey) {
+      console.log('Tasks realtime: subscription already exists for this user');
       return;
     }
 
     console.log('Setting up real-time task subscriptions for user:', userId);
-    isSubscribed.current = true;
+    subscriptionKey.current = currentKey;
 
     const channelName = `tasks-realtime-${userId}-${Date.now()}`;
     const tasksChannel = supabase
@@ -35,7 +43,7 @@ export const useTasksRealtime = (userId: string) => {
           table: 'tasks'
         },
         async (payload) => {
-          const eventKey = `insert-${payload.new.id}-${Date.now()}`;
+          const eventKey = `insert-${payload.new.id}-${payload.new.created_at}`;
           
           if (processedEvents.current.has(eventKey)) {
             console.log('Duplicate INSERT event prevented for task:', payload.new.id);
@@ -199,11 +207,11 @@ export const useTasksRealtime = (userId: string) => {
         async (payload) => {
           const deletedTask = payload.old as any;
           const taskId = deletedTask.id;
-          const eventKey = `delete-${taskId}-${Date.now()}`;
+          const eventKey = `delete-${taskId}-${deletedTask.updated_at || Date.now()}`;
 
           console.log('Task deleted via realtime:', { taskId, eventKey, deletedTask });
 
-          // Enhanced duplicate prevention using unique timestamp
+          // Enhanced duplicate prevention
           if (processedEvents.current.has(eventKey)) {
             console.log('Deletion already processed for task:', taskId);
             return;
@@ -239,12 +247,12 @@ export const useTasksRealtime = (userId: string) => {
             }
           });
 
-          // Extract task name directly from the deletion payload
-          const taskName = deletedTask.title || 'Untitled Task';
+          // Extract task name directly from the deletion payload - check both title field and other possible fields
+          const taskName = deletedTask.title || deletedTask.name || 'Unknown Task';
           let tourName = null;
 
           console.log('Extracted task name from deletion payload:', taskName);
-          console.log('Full deleted task object:', deletedTask);
+          console.log('Available fields in deleted task:', Object.keys(deletedTask));
 
           // Get tour name if tour_id exists
           if (deletedTask.tour_id) {
@@ -297,7 +305,7 @@ export const useTasksRealtime = (userId: string) => {
           table: 'task_assignments'
         },
         async (payload) => {
-          const eventKey = `assignment-${payload.new.id}-${Date.now()}`;
+          const eventKey = `assignment-${payload.new.id}-${payload.new.assigned_at}`;
           
           if (processedEvents.current.has(eventKey)) {
             console.log('Duplicate assignment event prevented for:', payload.new.id);
@@ -354,7 +362,7 @@ export const useTasksRealtime = (userId: string) => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      isSubscribed.current = false;
+      subscriptionKey.current = '';
       // Clear processed events on cleanup
       processedEvents.current.clear();
     };

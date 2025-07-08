@@ -10,35 +10,37 @@ import { useActivitiesRealtime } from "@/hooks/realtime/useActivitiesRealtime";
 export const useRealtimeNotifications = () => {
   const { user } = useAuth();
   const userId = user?.id || '';
-  const isInitialized = useRef(false);
+  const initializationRef = useRef<string | null>(null);
   
   useEffect(() => {
-    // Prevent multiple initializations
-    if (!userId || isInitialized.current) {
-      if (!userId) {
-        console.log('useRealtimeNotifications: No userId, skipping initialization');
-      } else {
-        console.log('useRealtimeNotifications: Already initialized, skipping');
-      }
+    // Prevent multiple initializations for the same user
+    if (!userId) {
+      console.log('useRealtimeNotifications: No userId, skipping initialization');
+      return;
+    }
+    
+    if (initializationRef.current === userId) {
+      console.log('useRealtimeNotifications: Already initialized for this user, skipping');
       return;
     }
     
     console.log('useRealtimeNotifications initialized for user:', userId);
-    isInitialized.current = true;
+    initializationRef.current = userId;
     
     return () => {
       console.log('useRealtimeNotifications cleanup for user:', userId);
-      isInitialized.current = false;
+      initializationRef.current = null;
     };
   }, [userId]);
   
-  // Always call hooks unconditionally - pass empty string if no userId
-  // The individual hooks will handle the empty userId case
-  useTasksRealtime(userId);
-  useToursRealtime(userId);
-  useBookingsRealtime(userId);
-  useHotelsRealtime(userId);
-  useActivitiesRealtime(userId);
+  // Only call hooks when we have a userId and haven't initialized for this user yet
+  const shouldInitialize = userId && initializationRef.current === userId;
+  
+  useTasksRealtime(shouldInitialize ? userId : '');
+  useToursRealtime(shouldInitialize ? userId : '');
+  useBookingsRealtime(shouldInitialize ? userId : '');
+  useHotelsRealtime(shouldInitialize ? userId : '');
+  useActivitiesRealtime(shouldInitialize ? userId : '');
   
   return null;
 };
