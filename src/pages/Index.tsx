@@ -1,8 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ToursTable } from "@/components/ToursTable";
 import { BookingsTable } from "@/components/BookingsTable";
 import { ContactsTable } from "@/components/ContactsTable";
@@ -20,12 +20,13 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { UserManagement } from "@/components/UserManagement";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
-import { Plus, Users, FileText, Settings, Calendar, MapPin, X, Bell } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Bell } from "lucide-react";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -42,7 +43,6 @@ const Index = () => {
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [systemLogPopoverOpen, setSystemLogPopoverOpen] = useState(false);
 
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
@@ -63,10 +63,8 @@ const Index = () => {
         setTourModalDefaultTab("overview");
         setTourModalOpen(true);
       }
-      // Removed setActiveTab("tours") - stay on current tab
     } else if (type === 'booking') {
       console.log('Navigating to booking - looking for tour:', itemId);
-      // For booking notifications, itemId is the tour_id, so find the tour and open bookings tab
       const tour = tours.find(t => t.id === itemId);
       console.log('Found tour for booking navigation:', tour);
       if (tour) {
@@ -75,16 +73,13 @@ const Index = () => {
         console.log('Setting tour modal default tab to bookings');
         setTourModalOpen(true);
       }
-      // Removed setActiveTab("tours") - stay on current tab
     } else if (type === 'task') {
       const task = tasks.find(t => t.id === itemId);
       if (task) {
         setSelectedTask(task);
         setTaskModalOpen(true);
       }
-      // No tab switching needed - task modal opens over current view
     } else if (type === 'system') {
-      // For system notifications, navigate to contacts or appropriate tab
       setActiveTab("contacts");
     }
   };
@@ -120,7 +115,6 @@ const Index = () => {
 
   const handleViewAllNotifications = () => {
     setActiveTab("operations");
-    // Add a small delay to ensure the operations tab loads before navigating to all notifications
     setTimeout(() => {
       const event = new CustomEvent('navigate-to-all-notifications');
       window.dispatchEvent(event);
@@ -129,39 +123,11 @@ const Index = () => {
 
   const handleViewAllTasks = () => {
     setActiveTab("operations");
-    // Add a small delay to ensure the operations tab loads before navigating to all tasks
     setTimeout(() => {
       const event = new CustomEvent('navigate-to-all-tasks');
       window.dispatchEvent(event);
     }, 100);
   };
-
-  const quickActions = [
-    {
-      icon: Plus,
-      label: "New Tour",
-      onClick: () => setAddTourModalOpen(true),
-      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-    },
-    {
-      icon: Calendar,
-      label: "New Booking",
-      onClick: () => setAddBookingModalOpen(true),
-      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-    },
-    {
-      icon: Users,
-      label: "Add Contact",
-      onClick: () => setAddContactModalOpen(true),
-      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-    },
-    {
-      icon: Plus,
-      label: "Add Task",
-      onClick: () => setAddTaskModalOpen(true),
-      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-    }
-  ];
 
   if (showUserManagement && isAdmin) {
     return <UserManagement onClose={() => setShowUserManagement(false)} />;
@@ -169,79 +135,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-brand-navy border-b shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <img 
-                src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" 
-                alt="Australian Racing Tours Logo" 
-                className="h-12 w-auto"
-              />
-              <div>
-                <h1 className="text-2xl font-bold text-brand-yellow">
-                  Australian Racing Tours
-                </h1>
-                <p className="text-sm text-white">
-                  Tour Operations Management System
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {isAdmin && (
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:bg-brand-navy/80 p-2"
-                    onClick={() => setShowUserManagement(true)}
-                  >
-                    <Users className="h-5 w-5" />
-                  </Button>
-
-                  <Popover open={systemLogPopoverOpen} onOpenChange={setSystemLogPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white hover:bg-brand-navy/80 p-2"
-                      >
-                        <FileText className="h-5 w-5" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-semibold">System Logs</h3>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSystemLogPopoverOpen(false)}
-                          className="h-6 w-6 p-0"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        View system activity logs, audit trails, and operational history.
-                      </p>
-                      <Button
-                        onClick={() => {
-                          setSystemLogModalOpen(true);
-                          setSystemLogPopoverOpen(false);
-                        }}
-                        className="w-full"
-                      >
-                        View System Logs
-                      </Button>
-                    </PopoverContent>
-                  </Popover>
-                </>
-              )}
-              <UserDropdown />
-            </div>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader 
+        isAdmin={isAdmin}
+        onShowUserManagement={() => setShowUserManagement(true)}
+        onShowSystemLogs={() => setSystemLogModalOpen(true)}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -256,28 +154,12 @@ const Index = () => {
           <TabsContent value="dashboard" className="space-y-8">
             <DashboardMetrics />
 
-            <Card className="border-brand-navy/20 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-brand-navy flex items-center gap-2">
-                  <Settings className="h-6 w-6" />
-                  Quick Actions
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {quickActions.map((action, index) => (
-                    <Button
-                      key={index}
-                      onClick={action.onClick}
-                      className={`${action.color} h-10 flex items-center justify-center space-x-2 hover:scale-105 transition-transform`}
-                    >
-                      <action.icon className="h-4 w-4" />
-                      <span className="text-sm font-medium">{action.label}</span>
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <DashboardQuickActions 
+              onAddTour={() => setAddTourModalOpen(true)}
+              onAddBooking={() => setAddBookingModalOpen(true)}
+              onAddContact={() => setAddContactModalOpen(true)}
+              onAddTask={() => setAddTaskModalOpen(true)}
+            />
 
             <Card className="border-brand-navy/20 shadow-lg">
               <CardHeader>
@@ -370,11 +252,6 @@ const Index = () => {
       <AddContactModal
         open={addContactModalOpen}
         onOpenChange={setAddContactModalOpen}
-      />
-
-      <AddTaskModal
-        open={addTaskModalOpen}
-        onOpenChange={setAddTaskModalOpen}
       />
     </div>
   );
