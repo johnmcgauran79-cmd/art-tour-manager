@@ -41,54 +41,51 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
           
           const newTask = payload.new as any;
+          
+          // Skip notifications for tasks created by the current user (they already know they created it)
+          if (newTask.created_by === userId) {
+            console.log('Skipping notification for self-created task');
+            return;
+          }
+
           const { taskName, tourName } = await getTaskDetails(newTask.id);
 
-          if (newTask.created_by !== userId) {
-            logOperation({
-              operation_type: 'CREATE',
-              table_name: 'tasks',
-              record_id: newTask.id,
-              details: {
-                task_title: newTask.title,
-                created_by_other_user: true,
-                is_automated: newTask.is_automated
-              }
-            });
-          }
+          logOperation({
+            operation_type: 'CREATE',
+            table_name: 'tasks',
+            record_id: newTask.id,
+            details: {
+              task_title: newTask.title,
+              created_by_other_user: true,
+              is_automated: newTask.is_automated
+            }
+          });
           
-          // Single task notification to the relevant department
+          // Create ONE notification - prioritize operations for critical/high priority, otherwise department
+          const shouldNotifyOperations = (newTask.priority === 'critical' || newTask.priority === 'high') && 
+                                        newTask.category !== 'operations';
+          
+          const targetDepartment = shouldNotifyOperations ? 'operations' : (newTask.category as Department);
+          const notificationTitle = shouldNotifyOperations ? "New Priority Task" : "New Task Created";
+          
           const taskMessage = tourName 
-            ? `New task "${taskName}" created for ${tourName}.`
-            : `New task "${taskName}" created.`;
+            ? `${shouldNotifyOperations ? 'Priority task' : 'New task'} "${taskName}" ${shouldNotifyOperations ? 'requires attention' : 'created'} for ${tourName}.`
+            : `${shouldNotifyOperations ? 'Priority task' : 'New task'} "${taskName}" ${shouldNotifyOperations ? 'requires attention' : 'created'}.`;
 
           await createNotification('', {
-            title: "New Task Created",
+            title: notificationTitle,
             message: taskMessage,
             type: 'task',
             priority: newTask.priority,
             related_id: newTask.id,
-            department: newTask.category as Department,
+            department: targetDepartment,
           });
 
-          // Only for critical/high priority tasks, also notify operations (if not already operations category)
-          if ((newTask.priority === 'critical' || newTask.priority === 'high') && 
-              newTask.category !== 'operations') {
-            const priorityMessage = tourName 
-              ? `${taskName} for ${tourName} requires attention.`
-              : `${taskName} requires attention.`;
-
-            await createNotification('', {
-              title: "New Priority Task",
-              message: priorityMessage,
-              type: 'task',
-              priority: newTask.priority,
-              related_id: newTask.id,
-              department: 'operations',
-            });
-
+          // Show toast only for high priority tasks
+          if (shouldNotifyOperations) {
             toast({
-              title: "New Priority Task",
-              description: priorityMessage,
+              title: notificationTitle,
+              description: taskMessage,
               duration: 5000,
             });
           }
@@ -110,41 +107,65 @@ export const useTasksRealtime = (userId: string) => {
           const oldTask = payload.old as any;
           const newTask = payload.new as any;
           
-          // Only notify on status changes, not other updates
-          if (oldTask.status !== newTask.status && newTask.updated_at !== oldTask.updated_at) {
-            logOperation({
-              operation_type: 'UPDATE',
-              table_name: 'tasks',
-              record_id: newTask.id,
-              details: {
-                task_title: newTask.title,
-                status_change: `from ${oldTask.status} to ${newTask.status}`,
-                updated_by_realtime: true
-              }
+          // Only notify on significant status changes (not minor field updates)
+          const isStatusChange = oldTask.status !== newTask.status;
+          const isSignificantStatusChange = isStatusChange && (
+            newTask.status === 'completed' || 
+            newTask.status === 'cancelled' || 
+            (oldTask.status === 'not_started' && newTask.status === 'in_progress')
+          );
+          
+          if (!isSignificantStatusChange) {
+            console.log('Skipping notification for non-significant task update');
+            return;
+          }
+
+          logOperation({
+            operation_type: 'UPDATE',
+            table_name: 'tasks',
+            record_id: newTask.id,
+            details: {
+              task_title: newTask.title,
+              status_change: `from ${oldTask.status} to ${newTask.status}`,
+              updated_by_realtime: true
+            }
+          });
+
+          // Only notify on task completion or significant status changes
+          if (newTask.status === 'completed') {
+            const { taskName, tourName } = await getTaskDetails(newTask.id);
+            const taskMessage = tourName 
+              ? `Task "${taskName}" for ${tourName} has been completed.`
+              : `Task "${taskName}" has been completed.`;
+
+            await createNotification('', {
+              title: "Task Completed",
+              message: taskMessage,
+              type: 'task',
+              priority: 'medium',
+              related_id: newTask.id,
+              department: newTask.category as Department,
             });
 
-            // Only notify on task completion
-            if (newTask.status === 'completed') {
-              const { taskName, tourName } = await getTaskDetails(newTask.id);
-              const taskMessage = tourName 
-                ? `Task "${taskName}" for ${tourName} has been completed.`
-                : `Task "${taskName}" has been completed.`;
+            toast({
+              title: "Task Completed",
+              description: taskMessage,
+              duration: 3000,
+            });
+          } else if (oldTask.status === 'not_started' && newTask.status === 'in_progress') {
+            const { taskName, tourName } = await getTaskDetails(newTask.id);
+            const taskMessage = tourName 
+              ? `Task "${taskName}" for ${tourName} has been started.`
+              : `Task "${taskName}" has been started.`;
 
-              await createNotification('', {
-                title: "Task Completed",
-                message: taskMessage,
-                type: 'task',
-                priority: 'medium',
-                related_id: newTask.id,
-                department: newTask.category as Department,
-              });
-
-              toast({
-                title: "Task Completed",
-                description: taskMessage,
-                duration: 3000,
-              });
-            }
+            await createNotification('', {
+              title: "Task Started",
+              message: taskMessage,
+              type: 'task',
+              priority: 'low',
+              related_id: newTask.id,
+              department: newTask.category as Department,
+            });
           }
         }
       )
@@ -215,12 +236,13 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
 
           const assignment = payload.new as any;
-          // Only notify the specific user being assigned
+          
+          // Only notify the specific user being assigned (not everyone)
           if (assignment.user_id === userId) {
             const { taskName, tourName } = await getTaskDetails(assignment.task_id);
             const assignmentMessage = tourName 
-              ? `You have been assigned a new task "${taskName}" for ${tourName}.`
-              : `You have been assigned a new task "${taskName}".`;
+              ? `You have been assigned to task "${taskName}" for ${tourName}.`
+              : `You have been assigned to task "${taskName}".`;
 
             await createNotification(userId, {
               title: "Task Assigned",
@@ -241,6 +263,7 @@ export const useTasksRealtime = (userId: string) => {
         },
         (payload) => {
           console.log('New task comment:', payload.new);
+          // Only invalidate queries for comments, no notifications needed
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
         }
       )
