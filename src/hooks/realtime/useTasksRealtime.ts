@@ -12,6 +12,7 @@ export const useTasksRealtime = (userId: string) => {
   const { toast } = useToast();
   const { logOperation } = useAuditLog();
   const channelRef = useRef<any>(null);
+  const processedDeletions = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userId) return;
@@ -179,13 +180,26 @@ export const useTasksRealtime = (userId: string) => {
         async (payload) => {
           console.log('Task deleted via realtime:', payload.old);
           
+          const deletedTask = payload.old as any;
+          const taskId = deletedTask.id;
+
+          // Prevent duplicate processing of the same deletion
+          if (processedDeletions.current.has(taskId)) {
+            console.log('Deletion already processed for task:', taskId);
+            return;
+          }
+          processedDeletions.current.add(taskId);
+
+          // Clean up processed deletions after 30 seconds to prevent memory leaks
+          setTimeout(() => {
+            processedDeletions.current.delete(taskId);
+          }, 30000);
+
           // Force refresh of task queries to immediately update UI
           queryClient.invalidateQueries({ queryKey: ['tasks'] });
           queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
           queryClient.refetchQueries({ queryKey: ['tasks'] });
           queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-
-          const deletedTask = payload.old as any;
 
           // Skip notifications for tasks deleted by the current user
           if (deletedTask.created_by === userId) {
@@ -298,6 +312,8 @@ export const useTasksRealtime = (userId: string) => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
+      // Clear processed deletions on cleanup
+      processedDeletions.current.clear();
     };
   }, [queryClient, toast, userId, logOperation]);
 };
