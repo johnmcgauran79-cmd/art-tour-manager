@@ -182,7 +182,7 @@ export const useTasksRealtime = (userId: string) => {
           const taskId = deletedTask.id;
           const eventKey = `delete-${taskId}`;
 
-          console.log('Task deleted via realtime:', { taskId, eventKey });
+          console.log('Task deleted via realtime:', { taskId, eventKey, deletedTask });
 
           // Robust duplicate prevention - check if we've already processed this exact deletion
           if (processedEvents.current.has(eventKey)) {
@@ -220,9 +220,11 @@ export const useTasksRealtime = (userId: string) => {
             }
           });
 
-          // Use the task data from the payload directly since the task is already deleted
+          // Extract task name and tour name directly from the deletion payload
           const taskName = deletedTask.title || 'Untitled Task';
           let tourName = null;
+
+          console.log('Extracted task name from deletion payload:', taskName);
 
           // Get tour name if tour_id exists
           if (deletedTask.tour_id) {
@@ -233,6 +235,7 @@ export const useTasksRealtime = (userId: string) => {
                 .eq('id', deletedTask.tour_id)
                 .single();
               tourName = tour?.name || null;
+              console.log('Found tour name for deleted task:', tourName);
             } catch (error) {
               console.error('Error fetching tour name for deleted task:', error);
             }
@@ -242,8 +245,9 @@ export const useTasksRealtime = (userId: string) => {
             ? `Task "${taskName}" for ${tourName} has been deleted.`
             : `Task "${taskName}" has been deleted.`;
 
+          console.log('Creating deletion notification:', { taskName, tourName, taskMessage });
+          
           // Create notification for task deletion (only if not deleted by current user)
-          console.log('Creating deletion notification:', { taskName, taskMessage });
           await createNotification('', {
             title: "Task Deleted",
             message: taskMessage,
@@ -252,6 +256,10 @@ export const useTasksRealtime = (userId: string) => {
             related_id: deletedTask.id,
             department: deletedTask.category as Department,
           });
+
+          // Force refresh notifications to show immediately
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.refetchQueries({ queryKey: ['notifications'] });
 
           // Show toast notification for task deletion
           toast({

@@ -67,7 +67,7 @@ export const useNotificationQuery = (limit: number = 10) => {
       };
     },
     enabled: !!user?.id,
-    staleTime: 5000,
-    refetchInterval: 30000,
+    staleTime: 1000, // Reduced from 5000 to make notifications appear faster
+    refetchInterval: 10000, // Reduced from 30000 to refresh more frequently
   });
 };
