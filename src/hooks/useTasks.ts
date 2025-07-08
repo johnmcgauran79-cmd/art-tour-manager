@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -146,9 +145,12 @@ export const useDeleteTask = () => {
       
       console.log('Task UI updates complete');
       
+      // Remove the manual toast notification - realtime will handle it
+      // Only show a toast if there's an error or for immediate feedback before realtime kicks in
       toast({
         title: "Task Deleted",
         description: `Task "${data.taskData?.title || 'Unknown'}" has been successfully deleted.`,
+        duration: 2000, // Shorter duration since realtime will also show notification
       });
     },
     onError: (error) => {

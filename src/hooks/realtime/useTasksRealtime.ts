@@ -12,7 +12,7 @@ export const useTasksRealtime = (userId: string) => {
   const { toast } = useToast();
   const { logOperation } = useAuditLog();
   const channelRef = useRef<any>(null);
-  const processedDeletions = useRef<Set<string>>(new Set());
+  const processedEvents = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userId) return;
@@ -182,17 +182,18 @@ export const useTasksRealtime = (userId: string) => {
           
           const deletedTask = payload.old as any;
           const taskId = deletedTask.id;
+          const eventKey = `delete-${taskId}-${Date.now()}`;
 
-          // Prevent duplicate processing of the same deletion
-          if (processedDeletions.current.has(taskId)) {
+          // Prevent duplicate processing of the same deletion with a more robust key
+          if (processedEvents.current.has(taskId)) {
             console.log('Deletion already processed for task:', taskId);
             return;
           }
-          processedDeletions.current.add(taskId);
+          processedEvents.current.add(taskId);
 
-          // Clean up processed deletions after 30 seconds to prevent memory leaks
+          // Clean up processed events after 30 seconds to prevent memory leaks
           setTimeout(() => {
-            processedDeletions.current.delete(taskId);
+            processedEvents.current.delete(taskId);
           }, 30000);
 
           // Force refresh of task queries to immediately update UI
@@ -201,7 +202,7 @@ export const useTasksRealtime = (userId: string) => {
           queryClient.refetchQueries({ queryKey: ['tasks'] });
           queryClient.refetchQueries({ queryKey: ['my-tasks'] });
 
-          // Skip notifications for tasks deleted by the current user
+          // Don't create notifications for tasks deleted by the current user
           if (deletedTask.created_by === userId) {
             console.log('Skipping deletion notification for self-deleted task');
             return;
@@ -218,7 +219,7 @@ export const useTasksRealtime = (userId: string) => {
           });
 
           // Use the task data from the payload directly since the task is already deleted
-          const taskName = deletedTask.title || 'Unknown Task';
+          const taskName = deletedTask.title || 'Untitled Task';
           let tourName = null;
 
           // Get tour name if tour_id exists
@@ -312,8 +313,8 @@ export const useTasksRealtime = (userId: string) => {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      // Clear processed deletions on cleanup
-      processedDeletions.current.clear();
+      // Clear processed events on cleanup
+      processedEvents.current.clear();
     };
   }, [queryClient, toast, userId, logOperation]);
 };
