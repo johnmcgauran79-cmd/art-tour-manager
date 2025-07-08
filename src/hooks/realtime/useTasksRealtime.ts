@@ -182,18 +182,19 @@ export const useTasksRealtime = (userId: string) => {
           
           const deletedTask = payload.old as any;
           const taskId = deletedTask.id;
-          const eventKey = `delete-${taskId}-${Date.now()}`;
+          const timestamp = Date.now();
+          const eventKey = `delete-${taskId}-${timestamp}`;
 
-          // Prevent duplicate processing of the same deletion with a more robust key
-          if (processedEvents.current.has(taskId)) {
+          // Use a more robust key that includes timestamp to prevent duplicates
+          if (processedEvents.current.has(`delete-${taskId}`)) {
             console.log('Deletion already processed for task:', taskId);
             return;
           }
-          processedEvents.current.add(taskId);
+          processedEvents.current.add(`delete-${taskId}`);
 
           // Clean up processed events after 30 seconds to prevent memory leaks
           setTimeout(() => {
-            processedEvents.current.delete(taskId);
+            processedEvents.current.delete(`delete-${taskId}`);
           }, 30000);
 
           // Force refresh of task queries to immediately update UI
