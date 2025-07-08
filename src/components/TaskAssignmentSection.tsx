@@ -24,7 +24,7 @@ interface TaskAssignment {
   user_id: string;
   task_id: string;
   assigned_at: string;
-  profiles?: User;
+  user?: User;
 }
 
 export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) => {
@@ -46,28 +46,36 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
     },
   });
 
-  // Fetch current task assignments
+  // Fetch current task assignments with user details
   const { data: assignments, isLoading } = useQuery({
     queryKey: ['task-assignments', taskId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: assignmentData, error: assignmentError } = await supabase
         .from('task_assignments')
-        .select(`
-          id,
-          user_id,
-          task_id,
-          assigned_at,
-          profiles (
-            id,
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('id, user_id, task_id, assigned_at')
         .eq('task_id', taskId);
 
-      if (error) throw error;
-      return data as TaskAssignment[];
+      if (assignmentError) throw assignmentError;
+
+      // Fetch user details for each assignment
+      const assignmentsWithUsers = await Promise.all(
+        (assignmentData || []).map(async (assignment) => {
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, email')
+            .eq('id', assignment.user_id)
+            .single();
+
+          if (userError) {
+            console.error('Error fetching user data:', userError);
+            return { ...assignment, user: null };
+          }
+
+          return { ...assignment, user: userData as User };
+        })
+      );
+
+      return assignmentsWithUsers as TaskAssignment[];
     },
   });
 
@@ -171,7 +179,7 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
             variant="secondary"
             className="flex items-center gap-1 px-3 py-1"
           >
-            {assignment.profiles ? getUserDisplayName(assignment.profiles) : 'Unknown User'}
+            {assignment.user ? getUserDisplayName(assignment.user) : 'Unknown User'}
             <Button
               size="sm"
               variant="ghost"
