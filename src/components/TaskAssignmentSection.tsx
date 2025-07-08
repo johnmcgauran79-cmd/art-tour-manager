@@ -57,7 +57,7 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
           user_id,
           task_id,
           assigned_at,
-          profiles:user_id (
+          profiles!task_assignments_user_id_fkey (
             id,
             first_name,
             last_name,

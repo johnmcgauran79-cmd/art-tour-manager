@@ -93,6 +93,11 @@ export const useTasksRealtime = (userId: string) => {
             ? `${shouldNotifyOperations ? 'Priority task' : 'New task'} "${taskName}" ${shouldNotifyOperations ? 'requires attention' : 'created'} for ${tourName}.`
             : `${shouldNotifyOperations ? 'Priority task' : 'New task'} "${taskName}" ${shouldNotifyOperations ? 'requires attention' : 'created'}.`;
 
+          // Normalize priority to match expected type
+          const normalizedPriority = ['low', 'medium', 'high', 'critical'].includes(newTask.priority) 
+            ? newTask.priority as 'low' | 'medium' | 'high' | 'critical'
+            : 'medium' as const;
+
           // Notify department users
           if (shouldNotifyOperations) {
             // Get operations department users
@@ -109,7 +114,7 @@ export const useTasksRealtime = (userId: string) => {
                 title: notificationTitle,
                 message: taskMessage,
                 type: 'task' as const,
-                priority: newTask.priority,
+                priority: normalizedPriority,
                 related_id: newTask.id,
                 department: 'operations' as Department,
               });
@@ -122,7 +127,7 @@ export const useTasksRealtime = (userId: string) => {
                 title: notificationTitle,
                 message: taskMessage,
                 type: 'task' as const,
-                priority: newTask.priority,
+                priority: normalizedPriority,
                 related_id: newTask.id,
                 department: newTask.category as Department,
               });
@@ -220,7 +225,7 @@ export const useTasksRealtime = (userId: string) => {
               title: "Task Completed",
               message: taskMessage,
               type: 'task' as const,
-              priority: 'medium',
+              priority: 'medium' as const,
               related_id: newTask.id,
               department: newTask.category as Department,
             }));
@@ -247,7 +252,7 @@ export const useTasksRealtime = (userId: string) => {
               title: "Task Started",
               message: taskMessage,
               type: 'task' as const,
-              priority: 'low',
+              priority: 'low' as const,
               related_id: newTask.id,
               department: newTask.category as Department,
             }));
@@ -356,7 +361,7 @@ export const useTasksRealtime = (userId: string) => {
             title: "Task Deleted",
             message: taskMessage,
             type: 'task' as const,
-            priority: 'medium',
+            priority: 'medium' as const,
             related_id: deletedTask.id,
             department: deletedTask.category as Department,
           }));
@@ -434,7 +439,7 @@ export const useTasksRealtime = (userId: string) => {
             title: "Task Assigned",
             message: assignmentMessage,
             type: 'task' as const,
-            priority: 'medium',
+            priority: 'medium' as const,
             related_id: assignment.task_id,
           });
 
@@ -450,7 +455,7 @@ export const useTasksRealtime = (userId: string) => {
                 title: "Task Assignment Update",
                 message: departmentMessage,
                 type: 'task' as const,
-                priority: 'low',
+                priority: 'low' as const,
                 related_id: assignment.task_id,
                 department: task?.category as Department,
               });
