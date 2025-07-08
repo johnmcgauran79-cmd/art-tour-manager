@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -40,16 +41,24 @@ export const useDeleteTask = () => {
 
   return useMutation({
     mutationFn: async (taskId: string) => {
-      console.log('Deleting task:', taskId);
+      console.log('Starting task deletion for task ID:', taskId);
       
-      // First get task details for logging
-      const { data: taskData } = await supabase
+      // First get task details for logging and notification
+      const { data: taskData, error: fetchError } = await supabase
         .from('tasks')
-        .select('title, tour_id, created_by')
+        .select('title, tour_id, created_by, tours(name)')
         .eq('id', taskId)
         .single();
 
+      if (fetchError) {
+        console.error('Error fetching task details:', fetchError);
+        throw new Error(`Failed to fetch task details: ${fetchError.message}`);
+      }
+
+      console.log('Task data before deletion:', taskData);
+
       // Delete task assignments first
+      console.log('Deleting task assignments...');
       const { error: assignmentError } = await supabase
         .from('task_assignments')
         .delete()
@@ -61,6 +70,7 @@ export const useDeleteTask = () => {
       }
 
       // Delete task comments
+      console.log('Deleting task comments...');
       const { error: commentsError } = await supabase
         .from('task_comments')    
         .delete()
@@ -72,6 +82,7 @@ export const useDeleteTask = () => {
       }
 
       // Delete task attachments
+      console.log('Deleting task attachments...');
       const { error: attachmentsError } = await supabase
         .from('task_attachments')
         .delete()
@@ -83,42 +94,57 @@ export const useDeleteTask = () => {
       }
 
       // Finally delete the task itself
-      const { error } = await supabase
+      console.log('Deleting the task...');
+      const { error: taskError } = await supabase
         .from('tasks')
         .delete()
         .eq('id', taskId);
 
-      if (error) {
-        console.error('Error deleting task:', error);
-        throw new Error(`Failed to delete task: ${error.message}`);
+      if (taskError) {
+        console.error('Error deleting task:', taskError);
+        throw new Error(`Failed to delete task: ${taskError.message}`);
       }
+
+      console.log('Task deletion successful');
 
       // Log the deletion
-      if (taskData) {
-        logOperation({
-          operation_type: 'DELETE',
-          table_name: 'tasks',
-          record_id: taskId,
-          details: {
-            task_title: taskData.title,
-            tour_id: taskData.tour_id,
-            deleted_manually: true
-          }
-        });
-      }
+      logOperation({
+        operation_type: 'DELETE',
+        table_name: 'tasks',
+        record_id: taskId,
+        details: {
+          task_title: taskData?.title,
+          tour_id: taskData?.tour_id,
+          tour_name: taskData?.tours?.name,
+          deleted_manually: true
+        }
+      });
 
-      console.log('Task deleted successfully:', taskId);
       return { taskId, taskData };
     },
     onSuccess: (data) => {
-      console.log('Task deletion successful, invalidating queries');
-      // Invalidate all task-related queries to ensure UI updates
+      console.log('Task deletion mutation successful, updating UI...');
+      
+      // Force immediate invalidation and refetch of all task-related queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       
-      // Force refetch to ensure immediate UI update
+      // Force immediate refetch to ensure UI updates
       queryClient.refetchQueries({ queryKey: ['tasks'] });
       queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
+      // Remove the deleted task from cache immediately
+      queryClient.setQueryData(['tasks'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.filter((task: any) => task.id !== data.taskId);
+      });
+      
+      queryClient.setQueryData(['my-tasks'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.filter((task: any) => task.id !== data.taskId);
+      });
+      
+      console.log('Task UI updates complete');
       
       toast({
         title: "Task Deleted",
@@ -126,7 +152,7 @@ export const useDeleteTask = () => {
       });
     },
     onError: (error) => {
-      console.error('Error deleting task:', error);
+      console.error('Task deletion failed:', error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete task. Please try again.",
