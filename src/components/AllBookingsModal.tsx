@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -157,6 +158,7 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
             </DialogClose>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
 
       <EditBookingModal 
         booking={selectedBooking} 
