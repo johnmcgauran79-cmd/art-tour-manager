@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,7 @@ interface ContactBookingsListProps {
 
 interface ContactBooking {
   id: string;
-  status: string;
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host';
   passenger_count: number;
   created_at: string;
   tours: {
@@ -39,6 +40,8 @@ const getStatusColor = (status: string) => {
       return 'bg-green-100 text-green-800';
     case 'cancelled':
       return 'bg-red-100 text-red-800';
+    case 'host':
+      return 'bg-emerald-100 text-emerald-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
