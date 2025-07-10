@@ -14,6 +14,7 @@ const getStatusColor = (status: string) => {
     case "invoiced": return "bg-yellow-100 text-yellow-800";
     case "pending": return "bg-gray-100 text-gray-800";
     case "cancelled": return "bg-red-100 text-red-800";
+    case "host": return "bg-emerald-100 text-emerald-800";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -198,6 +199,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         <option value="deposited">Deposited</option>
                         <option value="instalment_paid">Instalment Paid</option>
                         <option value="fully_paid">Fully Paid</option>
+                        <option value="host">Host</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </div>

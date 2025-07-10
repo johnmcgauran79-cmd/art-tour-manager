@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ const getStatusColor = (status: string) => {
     case "pending": return "bg-gray-100 text-gray-800";
     case "cancelled": return "bg-red-100 text-red-800";
     case "waitlisted": return "bg-orange-100 text-orange-800";
+    case "host": return "bg-emerald-100 text-emerald-800";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -30,9 +30,10 @@ const getStatusOrder = (status: string) => {
     case "deposited": return 3;
     case "instalment_paid": return 4;
     case "fully_paid": return 5;
-    case "waitlisted": return 6;
-    case "cancelled": return 7;
-    default: return 8;
+    case "host": return 6;
+    case "waitlisted": return 7;
+    case "cancelled": return 8;
+    default: return 9;
   }
 };
 

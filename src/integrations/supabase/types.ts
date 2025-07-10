@@ -1270,6 +1270,7 @@ export type Database = {
         | "fully_paid"
         | "cancelled"
         | "waitlisted"
+        | "host"
       department:
         | "operations"
         | "finance"
@@ -1452,6 +1453,7 @@ export const Constants = {
         "fully_paid",
         "cancelled",
         "waitlisted",
+        "host",
       ],
       department: [
         "operations",

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,6 +16,7 @@ const getStatusColor = (status: string) => {
     case "invoiced": return "bg-yellow-100 text-yellow-800";
     case "pending": return "bg-gray-100 text-gray-800";
     case "cancelled": return "bg-red-100 text-red-800";
+    case "host": return "bg-emerald-100 text-emerald-800";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -157,7 +157,6 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
             </DialogClose>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
 
       <EditBookingModal 
         booking={selectedBooking} 
