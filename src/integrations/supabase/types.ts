@@ -880,6 +880,7 @@ export type Database = {
           title: string
           tour_id: string | null
           updated_at: string
+          url_reference: string | null
         }
         Insert: {
           automated_rule?: string | null
@@ -898,6 +899,7 @@ export type Database = {
           title: string
           tour_id?: string | null
           updated_at?: string
+          url_reference?: string | null
         }
         Update: {
           automated_rule?: string | null
@@ -916,6 +918,7 @@ export type Database = {
           title?: string
           tour_id?: string | null
           updated_at?: string
+          url_reference?: string | null
         }
         Relationships: [
           {

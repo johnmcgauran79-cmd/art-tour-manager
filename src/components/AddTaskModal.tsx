@@ -33,6 +33,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
   const [dependsOnTaskId, setDependsOnTaskId] = useState<string | undefined>();
+  const [urlReference, setUrlReference] = useState("");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
@@ -94,6 +95,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       category,
       due_date: dueDate?.toISOString(),
       depends_on_task_id: dependsOnTaskId,
+      url_reference: urlReference.trim() || undefined,
       assignee_ids: selectedUsers,
     };
 
@@ -126,6 +128,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setSelectedUsers([]);
       setSelectedTourId(tourId);
       setDependsOnTaskId(undefined);
+      setUrlReference("");
       setValidationErrors([]);
       setValidationWarnings([]);
       
@@ -331,6 +334,23 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </Select>
             <p className="text-xs text-gray-500">
               This task will be blocked until the selected task is completed.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="url_reference" className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              URL Reference (optional)
+            </Label>
+            <Input
+              id="url_reference"
+              type="url"
+              value={urlReference}
+              onChange={(e) => setUrlReference(e.target.value)}
+              placeholder="https://example.com/related-link"
+            />
+            <p className="text-xs text-gray-500">
+              Add a link to external resources related to this task.
             </p>
           </div>
 

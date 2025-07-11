@@ -18,6 +18,7 @@ export interface Task {
   automated_rule: string | null;
   parent_task_id: string | null;
   depends_on_task_id: string | null;
+  url_reference: string | null;
   created_at: string;
   updated_at: string;
   tours?: {
@@ -172,6 +173,7 @@ export const useCreateTask = () => {
       due_date?: string;
       tour_id?: string;
       depends_on_task_id?: string;
+      url_reference?: string;
       assignee_ids?: string[];
     }) => {
       console.log('useCreateTask mutation called with:', taskData);
@@ -193,6 +195,7 @@ export const useCreateTask = () => {
         due_date: taskData.due_date || null,
         tour_id: taskData.tour_id || null,
         depends_on_task_id: taskData.depends_on_task_id || null,
+        url_reference: taskData.url_reference || null,
         created_by: user.user.id,
         status: 'not_started' as const,
         is_automated: false,
@@ -279,7 +282,7 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: async (data: {
       taskId: string;
-      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id'>>;
+      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>>;
     }) => {
       const updateData = { ...data.updates };
       

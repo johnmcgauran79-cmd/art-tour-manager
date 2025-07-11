@@ -38,7 +38,8 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
         status: task.status,
         priority: task.priority,
         category: task.category,
-        due_date: task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : ''
+        due_date: task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '',
+        url_reference: task.url_reference || ''
       });
     }
   }, [task]);
@@ -94,19 +95,21 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
       editedTask.status !== task.status ||
       editedTask.priority !== task.priority ||
       editedTask.category !== task.category ||
-      editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '')
+      editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '') ||
+      editedTask.url_reference !== (task.url_reference || '')
     );
   };
 
   const handleUpdateTask = async () => {
     try {
-      const updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at'>> = {};
+      const updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'url_reference'>> = {};
       
       if (editedTask.title !== task.title) updates.title = editedTask.title;
       if (editedTask.description !== task.description) updates.description = editedTask.description;
       if (editedTask.status !== task.status) updates.status = editedTask.status;
       if (editedTask.priority !== task.priority) updates.priority = editedTask.priority;
       if (editedTask.category !== task.category) updates.category = editedTask.category;
+      if (editedTask.url_reference !== (task.url_reference || '')) updates.url_reference = editedTask.url_reference;
       if (editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '')) {
         updates.due_date = editedTask.due_date ? new Date(editedTask.due_date).toISOString() : null;
       }
@@ -300,6 +303,33 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 placeholder="Task description"
                 rows={4}
               />
+            </div>
+
+            {/* URL Reference - Always in Edit Mode */}
+            <div>
+              <h3 className="font-medium mb-2 flex items-center gap-2">
+                <Link className="h-4 w-4" />
+                URL Reference
+              </h3>
+              <Input
+                type="url"
+                value={editedTask.url_reference || ''}
+                onChange={(e) => setEditedTask({ ...editedTask, url_reference: e.target.value })}
+                placeholder="https://example.com/related-link"
+              />
+              {editedTask.url_reference && (
+                <div className="mt-2">
+                  <a 
+                    href={editedTask.url_reference} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline text-sm flex items-center gap-1"
+                  >
+                    <Link className="h-3 w-3" />
+                    Open URL
+                  </a>
+                </div>
+              )}
             </div>
 
             {/* Due Date - Always in Edit Mode */}
