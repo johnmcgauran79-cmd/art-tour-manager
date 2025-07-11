@@ -1199,6 +1199,10 @@ export type Database = {
         Args: { check_in: string; check_out: string }
         Returns: number
       }
+      check_pending_bookings: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       create_capacity_monitoring_task: {
         Args: {
           p_rule_type: string
@@ -1207,6 +1211,10 @@ export type Database = {
           p_activity_id?: string
           p_additional_context?: Json
         }
+        Returns: string
+      }
+      create_pending_booking_task: {
+        Args: { p_booking_id: string }
         Returns: string
       }
       delete_automated_tour_tasks: {
