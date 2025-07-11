@@ -91,7 +91,69 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
   const roomingData = getRoomingData();
 
   const handleExportToPDF = () => {
-    window.print();
+    const tableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr>
+            ${['Room #', 'Lead Passenger', 'Other Passengers', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'].map(header => 
+              `<th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2; font-weight: bold;">${header}</th>`
+            ).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${roomingData.map(room => `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.roomNumber}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${room.leadPassenger}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">
+                ${room.passenger2 ? `<div>${room.passenger2}</div>` : ''}
+                ${room.passenger3 ? `<div>${room.passenger3}</div>` : ''}
+              </td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.groupName || ''}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.checkIn}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.checkOut}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.nights}</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-transform: capitalize;">${room.bedding}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.roomType}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.roomUpgrade}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;">${room.roomRequests}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Rooming List - ${hotel?.name}</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+              .hotel-info { margin-bottom: 20px; }
+              .hotel-info p { margin: 5px 0; }
+              @media print { 
+                body { margin: 0; }
+                tr { page-break-inside: avoid; }
+              }
+            </style>
+          </head>
+          <body>
+            <h1>Rooming List - ${hotel?.name}</h1>
+            <div class="hotel-info">
+              <p><strong>Hotel:</strong> ${hotel?.name}</p>
+              ${hotel?.address ? `<p><strong>Address:</strong> ${hotel?.address}</p>` : ''}
+              <p><strong>Total Rooms:</strong> ${roomingData.length}</p>
+            </div>
+            ${tableHTML}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   };
 
   const handleExportToTable = () => {
