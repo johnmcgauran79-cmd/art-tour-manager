@@ -28,7 +28,7 @@ interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
@@ -84,7 +84,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted',
+    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host',
     extra_requests: '',
     invoice_notes: '',
     accommodation_required: true,
@@ -210,7 +210,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
     });
   };
 
-  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted') => {
+  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host') => {
     if (newStatus === 'cancelled' && booking?.status !== 'cancelled') {
       setShowCancelDialog(true);
     } else {
@@ -417,6 +417,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                         <SelectItem value="instalment_paid">Instalment Paid</SelectItem>
                         <SelectItem value="fully_paid">Fully Paid</SelectItem>
                         <SelectItem value="waitlisted">Waitlisted</SelectItem>
+                        <SelectItem value="host">Host</SelectItem>
                         <SelectItem value="cancelled">Cancelled</SelectItem>
                       </SelectContent>
                     </Select>
