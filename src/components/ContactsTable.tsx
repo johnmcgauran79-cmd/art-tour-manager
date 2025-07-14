@@ -66,7 +66,7 @@ export const ContactsTable = () => {
             </Button>
           </CardTitle>
           <CardDescription>
-            Search and browse all contacts in the system
+            Search across all {totalCount.toLocaleString()} contacts in the database
           </CardDescription>
           <div className="flex items-center space-x-2 mt-4">
             <div className="relative flex-1 max-w-md">
