@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useTourAttachments, useUploadTourAttachment } from "@/hooks/useTourAttachments";
+import { useTours, useUpdateTour } from "@/hooks/useTours";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, Download, Upload, Trash2, Eye } from "lucide-react";
+import { Paperclip, Download, Upload, Trash2, Eye, Link, Save } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,15 +17,28 @@ interface TourAttachmentsSectionProps {
 
 export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [urlReference, setUrlReference] = useState("");
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
   const [pdfViewer, setPdfViewer] = useState<{ isOpen: boolean; fileName: string; filePath: string }>({
     isOpen: false,
     fileName: "",
     filePath: ""
   });
   const { data: attachments, isLoading, refetch } = useTourAttachments(tourId);
+  const { data: tours } = useTours();
   const uploadAttachment = useUploadTourAttachment();
+  const updateTour = useUpdateTour();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const currentTour = tours?.find(t => t.id === tourId);
+
+  // Initialize URL reference from tour data
+  useEffect(() => {
+    if (currentTour?.url_reference) {
+      setUrlReference(currentTour.url_reference);
+    }
+  }, [currentTour?.url_reference]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -158,6 +173,18 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
     return fileType === 'application/pdf';
   };
 
+  const handleSaveUrlReference = async () => {
+    try {
+      await updateTour.mutateAsync({
+        tourId,
+        updates: { url_reference: urlReference.trim() || null }
+      });
+      setIsEditingUrl(false);
+    } catch (error) {
+      console.error('Error saving URL reference:', error);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading attachments...</div>;
   }
@@ -165,11 +192,84 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
   console.log('Current attachments in render:', attachments);
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Paperclip className="h-4 w-4" />
-        <h4 className="font-medium">Attachments ({attachments?.length || 0})</h4>
+    <div className="space-y-6">
+      {/* URL Reference Section */}
+      <div className="space-y-3 p-4 border rounded-lg bg-gray-50/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Link className="h-4 w-4 text-brand-navy" />
+            <h4 className="font-medium text-brand-navy">External Reference</h4>
+          </div>
+          {!isEditingUrl && (
+            <Button
+              onClick={() => setIsEditingUrl(true)}
+              variant="outline"
+              size="sm"
+              className="text-brand-navy border-brand-navy/30 hover:bg-brand-navy/5"
+            >
+              {currentTour?.url_reference ? 'Edit' : 'Add URL'}
+            </Button>
+          )}
+        </div>
+        
+        {isEditingUrl ? (
+          <div className="space-y-2">
+            <Label htmlFor="url_reference">
+              URL Reference (Link to external files or documents)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                id="url_reference"
+                type="url"
+                value={urlReference}
+                onChange={(e) => setUrlReference(e.target.value)}
+                placeholder="https://example.com/important-document"
+                className="flex-1"
+              />
+              <Button
+                onClick={handleSaveUrlReference}
+                disabled={updateTour.isPending}
+                size="sm"
+                className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+              >
+                <Save className="h-4 w-4" />
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsEditingUrl(false);
+                  setUrlReference(currentTour?.url_reference || "");
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {currentTour?.url_reference ? (
+              <a
+                href={currentTour.url_reference}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 hover:underline break-all"
+              >
+                {currentTour.url_reference}
+              </a>
+            ) : (
+              <p className="text-sm text-gray-500 italic">No external reference added yet.</p>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Attachments Section */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Paperclip className="h-4 w-4" />
+          <h4 className="font-medium">Attachments ({attachments?.length || 0})</h4>
+        </div>
 
       {/* Upload Section */}
       <div className="flex gap-2 items-end">
@@ -250,12 +350,13 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
         )}
       </div>
 
-      <PDFViewer
-        isOpen={pdfViewer.isOpen}
-        onClose={closePDFViewer}
-        fileName={pdfViewer.fileName}
-        filePath={pdfViewer.filePath}
-      />
+        <PDFViewer
+          isOpen={pdfViewer.isOpen}
+          onClose={closePDFViewer}
+          fileName={pdfViewer.fileName}
+          filePath={pdfViewer.filePath}
+        />
+      </div>
     </div>
   );
 };

@@ -28,6 +28,7 @@ export interface Tour {
   capacity: number | null;
   minimum_passengers_required: number | null;
   tour_host: string;
+  url_reference: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -125,6 +126,58 @@ export const useCreateTour = () => {
       toast({
         title: "Error Creating Tour",
         description: error.message || "Failed to create tour. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateTour = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const { logOperation } = useAuditLog();
+
+  return useMutation({
+    mutationFn: async (data: { tourId: string; updates: Partial<Tour> }) => {
+      console.log('Updating tour with data:', data);
+      
+      const { data: updatedTour, error } = await supabase
+        .from('tours')
+        .update(data.updates)
+        .eq('id', data.tourId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Supabase error updating tour:', error);
+        throw error;
+      }
+
+      // Log the tour update
+      logOperation({
+        operation_type: 'UPDATE',
+        table_name: 'tours',
+        record_id: data.tourId,
+        details: {
+          updated_fields: Object.keys(data.updates),
+          ...data.updates,
+        },
+      });
+
+      return updatedTour;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      toast({
+        title: "Tour Updated",
+        description: `${data.name} has been successfully updated.`,
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error in mutation:', error);
+      toast({
+        title: "Error Updating Tour",
+        description: error.message || "Failed to update tour. Please try again.",
         variant: "destructive",
       });
     },
