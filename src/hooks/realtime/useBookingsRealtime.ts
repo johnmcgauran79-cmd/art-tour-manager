@@ -44,7 +44,7 @@ export const useBookingsRealtime = (userId: string) => {
           const newBooking = payload.new as any;
           
           // Get booking details for notification
-          const { data: bookingDetails } = await supabase
+          const { data: bookingDetails, error: bookingError } = await supabase
             .from('bookings')
             .select(`
               group_name,
@@ -53,7 +53,12 @@ export const useBookingsRealtime = (userId: string) => {
               customers(first_name, last_name)
             `)
             .eq('id', newBooking.id)
-            .single();
+            .maybeSingle();
+
+          if (bookingError) {
+            console.error('Error fetching booking details for notification:', bookingError);
+            return;
+          }
 
           const contactName = bookingDetails?.customers 
             ? `${bookingDetails.customers.first_name} ${bookingDetails.customers.last_name}`
