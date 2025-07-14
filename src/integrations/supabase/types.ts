@@ -1275,6 +1275,10 @@ export type Database = {
         | "fully_paid"
         | "confirmed"
         | "on_hold"
+        | "contacted_enquiry_sent"
+        | "tentative_booking"
+        | "finalised"
+        | "cancelled"
       app_role: "admin" | "manager" | "booking_agent"
       bedding_type: "single" | "double" | "twin"
       booking_status:
@@ -1458,6 +1462,10 @@ export const Constants = {
         "fully_paid",
         "confirmed",
         "on_hold",
+        "contacted_enquiry_sent",
+        "tentative_booking",
+        "finalised",
+        "cancelled",
       ],
       app_role: ["admin", "manager", "booking_agent"],
       bedding_type: ["single", "double", "twin"],
