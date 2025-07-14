@@ -1274,6 +1274,7 @@ export type Database = {
         | "paid_deposit"
         | "fully_paid"
         | "confirmed"
+        | "on_hold"
       app_role: "admin" | "manager" | "booking_agent"
       bedding_type: "single" | "double" | "twin"
       booking_status:
@@ -1456,6 +1457,7 @@ export const Constants = {
         "paid_deposit",
         "fully_paid",
         "confirmed",
+        "on_hold",
       ],
       app_role: ["admin", "manager", "booking_agent"],
       bedding_type: ["single", "double", "twin"],
