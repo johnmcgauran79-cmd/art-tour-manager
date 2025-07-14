@@ -124,9 +124,48 @@ export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] =
   return duplicateGroups;
 };
 
-export const useCustomers = () => {
+export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuery?: string) => {
   return useQuery({
-    queryKey: ['customers'],
+    queryKey: ['customers', page, pageSize, searchQuery],
+    queryFn: async () => {
+      console.log('Fetching customers page:', page, 'with search:', searchQuery);
+      
+      let query = supabase
+        .from('customers')
+        .select('*', { count: 'exact' })
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true });
+
+      // Add search filter if provided
+      if (searchQuery && searchQuery.trim()) {
+        const searchTerm = searchQuery.trim();
+        query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,state.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%,spouse_name.ilike.%${searchTerm}%`);
+      }
+
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+      
+      const { data, error, count } = await query.range(start, end);
+      
+      if (error) {
+        console.error('Error fetching customers:', error);
+        throw error;
+      }
+      
+      console.log(`Fetched page ${page}: ${data?.length || 0} customers, total: ${count}`);
+      return {
+        customers: (data || []) as Customer[],
+        totalCount: count || 0,
+        totalPages: Math.ceil((count || 0) / pageSize)
+      };
+    },
+  });
+};
+
+// Keep the old hook for components that need all customers (like CSV upload)
+export const useAllCustomers = () => {
+  return useQuery({
+    queryKey: ['all-customers'],
     queryFn: async () => {
       console.log('Fetching all customers...');
       
@@ -135,7 +174,6 @@ export const useCustomers = () => {
       const batchSize = 1000;
       let hasMore = true;
       
-      // Fetch customers in batches to avoid Supabase limits
       while (hasMore) {
         const { data, error } = await supabase
           .from('customers')
@@ -153,7 +191,6 @@ export const useCustomers = () => {
           allCustomers = [...allCustomers, ...data];
           console.log(`Fetched batch: ${data.length} customers (total so far: ${allCustomers.length})`);
           
-          // If we got fewer than batchSize, we've reached the end
           if (data.length < batchSize) {
             hasMore = false;
           } else {

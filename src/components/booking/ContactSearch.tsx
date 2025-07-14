@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check } from "lucide-react";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useAllCustomers } from "@/hooks/useCustomers";
 
 interface ContactSearchProps {
   value: string;
@@ -19,7 +19,7 @@ export const ContactSearch = ({
   selectedContactId 
 }: ContactSearchProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const { data: customers } = useCustomers();
+  const { data: customers } = useAllCustomers();
 
   const filteredContacts = customers?.filter(customer => {
     if (!value || value.length < 2) return false;

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload } from "lucide-react";
-import { useCreateCustomer, useUpdateCustomer, useCustomers } from "@/hooks/useCustomers";
+import { useCreateCustomer, useUpdateCustomer, useAllCustomers } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { parseCSV, CSVContact } from "@/utils/csvParser";
 import { findExistingCustomer, prepareCustomerData, getFieldsToUpdate } from "@/utils/contactProcessor";
@@ -25,7 +25,7 @@ export const CSVUploadModal = ({ open, onOpenChange }: CSVUploadModalProps) => {
   const [preview, setPreview] = useState<CSVContact[]>([]);
   const createCustomer = useCreateCustomer();
   const updateCustomer = useUpdateCustomer();
-  const { data: existingCustomers } = useCustomers();
+  const { data: existingCustomers } = useAllCustomers();
   const { toast } = useToast();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
