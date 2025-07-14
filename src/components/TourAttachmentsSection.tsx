@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useTourAttachments, useUploadTourAttachment } from "@/hooks/useTourAttachments";
 import { useTours, useUpdateTour } from "@/hooks/useTours";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, Download, Upload, Trash2, Eye, Link, Save } from "lucide-react";
+import { Paperclip, Download, Upload, Trash2, Eye, Link, Save, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -185,6 +185,18 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
     }
   };
 
+  const handleDeleteUrlReference = async () => {
+    try {
+      await updateTour.mutateAsync({
+        tourId,
+        updates: { url_reference: null }
+      });
+      setUrlReference("");
+    } catch (error) {
+      console.error('Error deleting URL reference:', error);
+    }
+  };
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading attachments...</div>;
   }
@@ -201,14 +213,28 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
             <h4 className="font-medium text-brand-navy">External Reference</h4>
           </div>
           {!isEditingUrl && (
-            <Button
-              onClick={() => setIsEditingUrl(true)}
-              variant="outline"
-              size="sm"
-              className="text-brand-navy border-brand-navy/30 hover:bg-brand-navy/5"
-            >
-              {currentTour?.url_reference ? 'Edit' : 'Add URL'}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setIsEditingUrl(true)}
+                variant="outline"
+                size="sm"
+                className="text-brand-navy border-brand-navy/30 hover:bg-brand-navy/5"
+              >
+                {currentTour?.url_reference ? 'Edit' : 'Add URL'}
+              </Button>
+              {currentTour?.url_reference && (
+                <Button
+                  onClick={handleDeleteUrlReference}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  disabled={updateTour.isPending}
+                >
+                  <X className="h-4 w-4" />
+                  Clear
+                </Button>
+              )}
+            </div>
           )}
         </div>
         
