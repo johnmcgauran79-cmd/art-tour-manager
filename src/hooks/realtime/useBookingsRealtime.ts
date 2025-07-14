@@ -67,14 +67,19 @@ export const useBookingsRealtime = (userId: string) => {
 
           console.log('Creating booking creation notification for:', contactName, 'on tour:', tourName);
           
-          await createNotification('', {
-            title: "New Booking Created",
-            message: `New booking created for ${contactName} on "${tourName}"`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: newBooking.id,
-            department: 'operations',
-          });
+          try {
+            await createNotification('', {
+              title: "New Booking Created",
+              message: `New booking created for ${contactName} on "${tourName}"`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+              department: 'operations',
+            });
+            console.log('Successfully created booking notification for:', newBooking.id);
+          } catch (notificationError) {
+            console.error('Error creating booking notification:', notificationError);
+          }
 
           logOperation({
             operation_type: 'CREATE',
