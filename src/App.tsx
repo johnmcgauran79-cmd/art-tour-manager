@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { RealtimeTaskNotifications } from "@/components/RealtimeTaskNotifications";
-import { Layout } from "@/components/Layout";
+
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -38,13 +38,11 @@ function App() {
             <RealtimeTaskNotifications />
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route
+                <Route
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Layout>
-                      <Index />
-                    </Layout>
+                    <Index />
                   </ProtectedRoute>
                 }
               />
