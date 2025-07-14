@@ -231,7 +231,7 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
                   disabled={updateTour.isPending}
                 >
                   <X className="h-4 w-4" />
-                  Clear
+                  Remove
                 </Button>
               )}
             </div>
