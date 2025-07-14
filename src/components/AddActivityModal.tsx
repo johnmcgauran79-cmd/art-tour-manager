@@ -284,9 +284,12 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="contacted_enquiry_sent">Contacted / Enquiry Sent</SelectItem>
                   <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="booked">Booked</SelectItem>
+                  <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
+                  <SelectItem value="fully_paid">Fully Paid</SelectItem>
                   <SelectItem value="confirmed">Confirmed</SelectItem>
                   <SelectItem value="finalised">Finalised</SelectItem>
-                  <SelectItem value="on_hold">On Hold</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
