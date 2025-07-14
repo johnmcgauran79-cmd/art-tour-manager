@@ -1012,6 +1012,7 @@ export type Database = {
           status: Database["public"]["Enums"]["tour_status"] | null
           tour_host: string
           updated_at: string | null
+          url_reference: string | null
         }
         Insert: {
           capacity?: number | null
@@ -1039,6 +1040,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
           updated_at?: string | null
+          url_reference?: string | null
         }
         Update: {
           capacity?: number | null
@@ -1066,6 +1068,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
           updated_at?: string | null
+          url_reference?: string | null
         }
         Relationships: []
       }
