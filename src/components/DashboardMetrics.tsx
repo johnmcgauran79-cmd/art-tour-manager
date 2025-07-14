@@ -1,11 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Users, Building, MapPin, DollarSign, TrendingUp } from "lucide-react";
+import { StatsSkeleton } from "@/components/ui/skeleton";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 
 export const DashboardMetrics = () => {
-  const { data: tours } = useTours();
-  const { data: bookings } = useBookings();
+  const { data: tours, isLoading: toursLoading } = useTours();
+  const { data: bookings, isLoading: bookingsLoading } = useBookings();
+
+  // Show skeleton while loading
+  if (toursLoading || bookingsLoading) {
+    return <StatsSkeleton />;
+  }
 
   // Calculate metrics
   const currentMonth = new Date().getMonth();

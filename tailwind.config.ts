@@ -67,7 +67,58 @@ export default {
 					navy: 'hsl(var(--brand-navy))',
 					yellow: 'hsl(var(--brand-yellow))',
 					gold: 'hsl(var(--brand-gold))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				info: {
+					DEFAULT: 'hsl(var(--info))',
+					foreground: 'hsl(var(--info-foreground))'
 				}
+			},
+			fontSize: {
+				'xs': 'var(--font-size-xs)',
+				'sm': 'var(--font-size-sm)',
+				'base': 'var(--font-size-base)',
+				'lg': 'var(--font-size-lg)',
+				'xl': 'var(--font-size-xl)',
+				'2xl': 'var(--font-size-2xl)',
+				'3xl': 'var(--font-size-3xl)',
+				'4xl': 'var(--font-size-4xl)'
+			},
+			fontWeight: {
+				'light': 'var(--font-weight-light)',
+				'normal': 'var(--font-weight-normal)',
+				'medium': 'var(--font-weight-medium)',
+				'semibold': 'var(--font-weight-semibold)',
+				'bold': 'var(--font-weight-bold)',
+				'extrabold': 'var(--font-weight-extrabold)'
+			},
+			lineHeight: {
+				'tight': 'var(--line-height-tight)',
+				'snug': 'var(--line-height-snug)',
+				'normal': 'var(--line-height-normal)',
+				'relaxed': 'var(--line-height-relaxed)',
+				'loose': 'var(--line-height-loose)'
+			},
+			spacing: {
+				'1': 'var(--space-1)',
+				'2': 'var(--space-2)',
+				'3': 'var(--space-3)',
+				'4': 'var(--space-4)',
+				'5': 'var(--space-5)',
+				'6': 'var(--space-6)',
+				'8': 'var(--space-8)',
+				'10': 'var(--space-10)',
+				'12': 'var(--space-12)',
+				'16': 'var(--space-16)',
+				'20': 'var(--space-20)',
+				'24': 'var(--space-24)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
