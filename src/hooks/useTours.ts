@@ -288,12 +288,21 @@ export const useUpdateTour = () => {
 
       return updatedTour;
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
-      toast({
-        title: "Tour Updated",
-        description: `${data.name} has been successfully updated.`,
-      });
+      // Only show toast for minor updates that don't trigger department notifications
+      const hasSignificantChanges = Object.keys(variables.updates).some(field => 
+        ['start_date', 'end_date', 'instalment_date', 'final_payment_date', 
+         'price_single', 'price_double', 'price_twin', 'deposit_required', 'instalment_amount',
+         'name', 'location', 'pickup_point', 'tour_host', 'status', 'capacity', 'minimum_passengers_required'].includes(field)
+      );
+      
+      if (!hasSignificantChanges) {
+        toast({
+          title: "Tour Updated",
+          description: `${data.name} has been successfully updated.`,
+        });
+      }
     },
     onError: (error: any) => {
       console.error('Error in mutation:', error);
