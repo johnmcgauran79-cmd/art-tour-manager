@@ -144,7 +144,7 @@ export const useUpdateTour = () => {
       // Get original tour data for comparison
       const { data: originalTour } = await supabase
         .from('tours')
-        .select('name, capacity, minimum_passengers_required')
+        .select('*')
         .eq('id', data.tourId)
         .single();
       
@@ -163,17 +163,69 @@ export const useUpdateTour = () => {
         throw error;
       }
 
-      // Check if capacity or minimum passengers changed and send notifications
-      const capacityChanged = data.updates.capacity !== undefined && 
-        originalTour?.capacity !== data.updates.capacity;
-      const minPassengersChanged = data.updates.minimum_passengers_required !== undefined && 
-        originalTour?.minimum_passengers_required !== data.updates.minimum_passengers_required;
+      // Check for all significant changes that should trigger notifications
+      const changesDetected = [];
+      
+      // Date changes
+      if (data.updates.start_date !== undefined && originalTour?.start_date !== data.updates.start_date) {
+        changesDetected.push('start date');
+      }
+      if (data.updates.end_date !== undefined && originalTour?.end_date !== data.updates.end_date) {
+        changesDetected.push('end date');
+      }
+      if (data.updates.instalment_date !== undefined && originalTour?.instalment_date !== data.updates.instalment_date) {
+        changesDetected.push('instalment date');
+      }
+      if (data.updates.final_payment_date !== undefined && originalTour?.final_payment_date !== data.updates.final_payment_date) {
+        changesDetected.push('final payment date');
+      }
+      
+      // Pricing changes
+      if (data.updates.price_single !== undefined && originalTour?.price_single !== data.updates.price_single) {
+        changesDetected.push('single room price');
+      }
+      if (data.updates.price_double !== undefined && originalTour?.price_double !== data.updates.price_double) {
+        changesDetected.push('double room price');
+      }
+      if (data.updates.price_twin !== undefined && originalTour?.price_twin !== data.updates.price_twin) {
+        changesDetected.push('twin room price');
+      }
+      if (data.updates.deposit_required !== undefined && originalTour?.deposit_required !== data.updates.deposit_required) {
+        changesDetected.push('deposit amount');
+      }
+      if (data.updates.instalment_amount !== undefined && originalTour?.instalment_amount !== data.updates.instalment_amount) {
+        changesDetected.push('instalment amount');
+      }
+      
+      // Tour details changes
+      if (data.updates.name !== undefined && originalTour?.name !== data.updates.name) {
+        changesDetected.push('tour name');
+      }
+      if (data.updates.location !== undefined && originalTour?.location !== data.updates.location) {
+        changesDetected.push('location');
+      }
+      if (data.updates.pickup_point !== undefined && originalTour?.pickup_point !== data.updates.pickup_point) {
+        changesDetected.push('pickup point');
+      }
+      if (data.updates.tour_host !== undefined && originalTour?.tour_host !== data.updates.tour_host) {
+        changesDetected.push('tour host');
+      }
+      if (data.updates.status !== undefined && originalTour?.status !== data.updates.status) {
+        changesDetected.push('tour status');
+      }
+      
+      // Capacity changes (existing logic)
+      if (data.updates.capacity !== undefined && originalTour?.capacity !== data.updates.capacity) {
+        changesDetected.push('capacity');
+      }
+      if (data.updates.minimum_passengers_required !== undefined && originalTour?.minimum_passengers_required !== data.updates.minimum_passengers_required) {
+        changesDetected.push('minimum passengers');
+      }
 
-      console.log('Capacity changed:', capacityChanged);
-      console.log('Min passengers changed:', minPassengersChanged);
+      console.log('Changes detected:', changesDetected);
 
-      if (capacityChanged || minPassengersChanged) {
-        console.log('Changes detected, fetching department users...');
+      if (changesDetected.length > 0) {
+        console.log('Significant changes detected, fetching department users...');
         
         // Send notifications to operations and booking department staff
         const { data: departmentUsers, error: deptError } = await supabase
@@ -192,10 +244,14 @@ export const useUpdateTour = () => {
           // Get unique user IDs to avoid duplicate notifications
           const uniqueUserIds = [...new Set(departmentUsers.map(user => user.user_id))];
           
+          // Create a descriptive message based on what changed
+          const changesList = changesDetected.slice(0, 3).join(', ') + 
+            (changesDetected.length > 3 ? ` and ${changesDetected.length - 3} other fields` : '');
+          
           const notifications = uniqueUserIds.map(userId => ({
             user_id: userId,
-            title: 'Tour Capacity/Minimum Updated',
-            message: `Tour "${originalTour?.name || 'Unknown'}" capacity or minimum passengers has been updated. Please review tour requirements.`,
+            title: 'Tour Details Updated',
+            message: `Tour "${originalTour?.name || 'Unknown'}" has been updated. Changes: ${changesList}. Please review and update any related operations or bookings.`,
             type: 'tour' as const,
             priority: 'medium' as const,
             related_id: data.tourId,
@@ -224,8 +280,8 @@ export const useUpdateTour = () => {
         record_id: data.tourId,
         details: {
           updated_fields: Object.keys(data.updates),
-          capacity_changed: capacityChanged,
-          min_passengers_changed: minPassengersChanged,
+          changes_detected: changesDetected,
+          significant_changes: changesDetected.length > 0,
           ...data.updates,
         },
       });
