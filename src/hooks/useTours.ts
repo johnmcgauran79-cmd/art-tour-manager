@@ -244,14 +244,14 @@ export const useUpdateTour = () => {
           // Get unique user IDs to avoid duplicate notifications
           const uniqueUserIds = [...new Set(departmentUsers.map(user => user.user_id))];
           
-          // Create a descriptive message based on what changed
+          // Create a concise message format
           const changesList = changesDetected.slice(0, 3).join(', ') + 
             (changesDetected.length > 3 ? ` and ${changesDetected.length - 3} other fields` : '');
           
           const notifications = uniqueUserIds.map(userId => ({
             user_id: userId,
             title: 'Tour Details Updated',
-            message: `Tour "${originalTour?.name || 'Unknown'}" has been updated. Changes: ${changesList}. Please review and update any related operations or bookings.`,
+            message: `"${originalTour?.name || 'Unknown'}" ${changesList} updated. Please review and update any related operations or bookings.`,
             type: 'tour' as const,
             priority: 'medium' as const,
             related_id: data.tourId,
