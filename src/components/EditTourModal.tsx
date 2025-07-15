@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/utils";
 import { Trash2 } from "lucide-react";
+import { useUpdateTour } from "@/hooks/useTours";
 
 interface Tour {
   id: string;
@@ -74,9 +75,11 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  const updateTourMutation = useUpdateTour();
+  
   const updateTour = useMutation({
     mutationFn: async (tourData: any) => {
-      console.log('Updating tour with data:', tourData);
+      console.log('EditTourModal: Updating tour with data:', tourData);
       
       // Calculate days and nights from start and end dates
       const startDate = new Date(tourData.start_date);
@@ -110,22 +113,13 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
         minimum_passengers_required: tourData.minimum_passengers_required ? parseInt(tourData.minimum_passengers_required) : null,
       };
 
-      console.log('Final update data:', updateData);
+      console.log('EditTourModal: Final update data:', updateData);
 
-      const { data, error } = await supabase
-        .from('tours')
-        .update(updateData)
-        .eq('id', tour?.id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
-      }
-      
-      console.log('Tour updated successfully:', data);
-      return data;
+      // Use the useUpdateTour hook which includes notification logic
+      return updateTourMutation.mutateAsync({
+        tourId: tour?.id || '',
+        updates: updateData
+      });
     },
     onSuccess: () => {
       // Invalidate all tour-related queries to ensure fresh data
@@ -148,7 +142,7 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
       onOpenChange(false);
     },
     onError: (error: any) => {
-      console.error('Update error:', error);
+      console.error('EditTourModal: Update error:', error);
       toast({
         title: "Error",
         description: `Failed to update tour: ${error.message || 'Please try again.'}`,
