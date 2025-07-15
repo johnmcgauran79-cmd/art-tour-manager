@@ -141,6 +141,13 @@ export const useUpdateTour = () => {
     mutationFn: async (data: { tourId: string; updates: Partial<Tour> }) => {
       console.log('Updating tour with data:', data);
       
+      // Get original tour data for comparison
+      const { data: originalTour } = await supabase
+        .from('tours')
+        .select('name, capacity, minimum_passengers_required')
+        .eq('id', data.tourId)
+        .single();
+      
       const { data: updatedTour, error } = await supabase
         .from('tours')
         .update(data.updates)
@@ -153,6 +160,35 @@ export const useUpdateTour = () => {
         throw error;
       }
 
+      // Check if capacity or minimum passengers changed and send notifications
+      const capacityChanged = data.updates.capacity !== undefined && 
+        originalTour?.capacity !== data.updates.capacity;
+      const minPassengersChanged = data.updates.minimum_passengers_required !== undefined && 
+        originalTour?.minimum_passengers_required !== data.updates.minimum_passengers_required;
+
+      if (capacityChanged || minPassengersChanged) {
+        // Send notifications to operations and booking department staff
+        const { data: departmentUsers } = await supabase
+          .from('user_departments')
+          .select('user_id')
+          .in('department', ['operations', 'booking']);
+
+        if (departmentUsers && departmentUsers.length > 0) {
+          const notifications = departmentUsers.map(user => ({
+            user_id: user.user_id,
+            title: 'Tour Capacity/Minimum Updated',
+            message: `Tour "${originalTour?.name || 'Unknown'}" capacity or minimum passengers has been updated. Please review tour requirements.`,
+            type: 'tour' as const,
+            priority: 'medium' as const,
+            related_id: data.tourId,
+          }));
+
+          await supabase
+            .from('user_notifications')
+            .insert(notifications);
+        }
+      }
+
       // Log the tour update
       logOperation({
         operation_type: 'UPDATE',
@@ -160,6 +196,8 @@ export const useUpdateTour = () => {
         record_id: data.tourId,
         details: {
           updated_fields: Object.keys(data.updates),
+          capacity_changed: capacityChanged,
+          min_passengers_changed: minPassengersChanged,
           ...data.updates,
         },
       });
