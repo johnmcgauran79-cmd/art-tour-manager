@@ -178,15 +178,22 @@ export const useUpdateTour = () => {
         // Send notifications to operations and booking department staff
         const { data: departmentUsers, error: deptError } = await supabase
           .from('user_departments')
-          .select('user_id')
+          .select(`
+            user_id,
+            department,
+            profiles!inner(email, first_name, last_name)
+          `)
           .in('department', ['operations', 'booking']);
 
         console.log('Department users found:', departmentUsers);
         console.log('Department query error:', deptError);
 
         if (departmentUsers && departmentUsers.length > 0) {
-          const notifications = departmentUsers.map(user => ({
-            user_id: user.user_id,
+          // Get unique user IDs to avoid duplicate notifications
+          const uniqueUserIds = [...new Set(departmentUsers.map(user => user.user_id))];
+          
+          const notifications = uniqueUserIds.map(userId => ({
+            user_id: userId,
             title: 'Tour Capacity/Minimum Updated',
             message: `Tour "${originalTour?.name || 'Unknown'}" capacity or minimum passengers has been updated. Please review tour requirements.`,
             type: 'tour' as const,
