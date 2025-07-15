@@ -148,6 +148,9 @@ export const useUpdateTour = () => {
         .eq('id', data.tourId)
         .single();
       
+      console.log('Original tour data:', originalTour);
+      console.log('Updates being applied:', data.updates);
+      
       const { data: updatedTour, error } = await supabase
         .from('tours')
         .update(data.updates)
@@ -166,12 +169,20 @@ export const useUpdateTour = () => {
       const minPassengersChanged = data.updates.minimum_passengers_required !== undefined && 
         originalTour?.minimum_passengers_required !== data.updates.minimum_passengers_required;
 
+      console.log('Capacity changed:', capacityChanged);
+      console.log('Min passengers changed:', minPassengersChanged);
+
       if (capacityChanged || minPassengersChanged) {
+        console.log('Changes detected, fetching department users...');
+        
         // Send notifications to operations and booking department staff
-        const { data: departmentUsers } = await supabase
+        const { data: departmentUsers, error: deptError } = await supabase
           .from('user_departments')
           .select('user_id')
           .in('department', ['operations', 'booking']);
+
+        console.log('Department users found:', departmentUsers);
+        console.log('Department query error:', deptError);
 
         if (departmentUsers && departmentUsers.length > 0) {
           const notifications = departmentUsers.map(user => ({
@@ -183,9 +194,19 @@ export const useUpdateTour = () => {
             related_id: data.tourId,
           }));
 
-          await supabase
+          console.log('Creating notifications:', notifications);
+
+          const { error: notifError } = await supabase
             .from('user_notifications')
             .insert(notifications);
+
+          console.log('Notification creation error:', notifError);
+          
+          if (!notifError) {
+            console.log('Notifications created successfully');
+          }
+        } else {
+          console.log('No department users found for operations/booking');
         }
       }
 
