@@ -79,6 +79,7 @@ export const useBookingsRealtime = (userId: string) => {
           console.log('Creating booking creation notification for:', contactName, 'on tour:', tourName);
           
           try {
+            // Notify both operations and booking departments
             await createNotification('', {
               title: "New Booking Created",
               message: `New booking created for ${contactName} on "${tourName}" by ${userName}`,
@@ -86,6 +87,15 @@ export const useBookingsRealtime = (userId: string) => {
               priority: 'medium',
               related_id: newBooking.id,
               department: 'operations',
+            });
+            
+            await createNotification('', {
+              title: "New Booking Created",
+              message: `New booking created for ${contactName} on "${tourName}" by ${userName}`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: newBooking.id,
+              department: 'booking',
             });
             console.log('Successfully created booking notification for:', newBooking.id);
           } catch (notificationError) {
@@ -163,6 +173,7 @@ export const useBookingsRealtime = (userId: string) => {
               .gte('created_at', new Date(Date.now() - 5000).toISOString());
             
             if (!existingNotifications || existingNotifications.length === 0) {
+              // Notify both operations and booking departments
               await createNotification('', {
                 title: "Booking Status Changed",
                 message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status} by ${userName}`,
@@ -170,6 +181,15 @@ export const useBookingsRealtime = (userId: string) => {
                 priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
                 related_id: newBooking.id,
                 department: 'operations',
+              });
+              
+              await createNotification('', {
+                title: "Booking Status Changed",
+                message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status} by ${userName}`,
+                type: 'booking',
+                priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+                related_id: newBooking.id,
+                department: 'booking',
               });
             } else {
               console.log('Duplicate booking status notification prevented for:', newBooking.id);
@@ -187,6 +207,7 @@ export const useBookingsRealtime = (userId: string) => {
               .gte('created_at', new Date(Date.now() - 5000).toISOString());
             
             if (!existingNotifications || existingNotifications.length === 0) {
+              // Notify both operations and booking departments
               await createNotification('', {
                 title: "Passenger Count Updated",
                 message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count} by ${userName}`,
@@ -194,6 +215,15 @@ export const useBookingsRealtime = (userId: string) => {
                 priority: 'medium',
                 related_id: newBooking.id,
                 department: 'operations',
+              });
+              
+              await createNotification('', {
+                title: "Passenger Count Updated",
+                message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count} by ${userName}`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: newBooking.id,
+                department: 'booking',
               });
             } else {
               console.log('Duplicate passenger count notification prevented for:', newBooking.id);
@@ -258,16 +288,36 @@ export const useBookingsRealtime = (userId: string) => {
             }
           }
 
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+
           console.log('Creating booking deletion notification for:', contactName, 'from tour:', tourName);
 
-          // Create only ONE notification for booking deletion
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "Booking Deleted",
-            message: `Booking for ${contactName} has been deleted from "${tourName}"`,
+            message: `Booking for ${contactName} has been deleted from "${tourName}" by ${userName}`,
             type: 'booking',
             priority: 'medium',
             related_id: deletedBooking.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "Booking Deleted",
+            message: `Booking for ${contactName} has been deleted from "${tourName}" by ${userName}`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: deletedBooking.id,
+            department: 'booking',
           });
 
           logOperation({

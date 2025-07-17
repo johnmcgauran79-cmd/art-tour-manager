@@ -42,14 +42,34 @@ export const useHotelsRealtime = (userId: string) => {
           
           const newHotel = payload.new as any;
           
-          // Single notification to operations department only
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "New Hotel Added",
-            message: `Hotel "${newHotel.name}" has been added`,
+            message: `Hotel "${newHotel.name}" has been added by ${userName}`,
             type: 'system',
             priority: 'medium',
             related_id: newHotel.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "New Hotel Added",
+            message: `Hotel "${newHotel.name}" has been added by ${userName}`,
+            type: 'system',
+            priority: 'medium',
+            related_id: newHotel.id,
+            department: 'booking',
           });
 
           logOperation({
@@ -79,14 +99,34 @@ export const useHotelsRealtime = (userId: string) => {
           const oldHotel = payload.old as any;
           const newHotel = payload.new as any;
           
-          // Single notification to operations department only
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "Hotel Updated",
-            message: `Hotel "${newHotel.name}" has been updated`,
+            message: `Hotel "${newHotel.name}" has been updated by ${userName}`,
             type: 'system',
             priority: 'medium',
             related_id: newHotel.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "Hotel Updated",
+            message: `Hotel "${newHotel.name}" has been updated by ${userName}`,
+            type: 'system',
+            priority: 'medium',
+            related_id: newHotel.id,
+            department: 'booking',
           });
 
           logOperation({
@@ -128,14 +168,34 @@ export const useHotelsRealtime = (userId: string) => {
 
           const deletedHotel = payload.old as any;
           
-          // Single notification to operations department only
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "Hotel Deleted",
-            message: `Hotel "${deletedHotel.name}" has been deleted`,
+            message: `Hotel "${deletedHotel.name}" has been deleted by ${userName}`,
             type: 'system',
             priority: 'medium',
             related_id: deletedHotel.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "Hotel Deleted",
+            message: `Hotel "${deletedHotel.name}" has been deleted by ${userName}`,
+            type: 'system',
+            priority: 'medium',
+            related_id: deletedHotel.id,
+            department: 'booking',
           });
 
           logOperation({

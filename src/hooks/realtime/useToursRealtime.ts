@@ -42,11 +42,22 @@ export const useToursRealtime = (userId: string) => {
 
           const newTour = payload.new as any;
 
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+
           console.log('Creating tour creation notification');
           
-          await createNotification(userId, {
+          await createNotification('', {
             title: "New Tour Created",
-            message: `Tour "${newTour.name}" has been created`,
+            message: `Tour "${newTour.name}" has been created by ${userName}`,
             type: 'tour',
             priority: 'medium',
             related_id: newTour.id,
@@ -137,11 +148,22 @@ export const useToursRealtime = (userId: string) => {
 
           const deletedTour = payload.old as any;
 
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+
           console.log('Creating tour deletion notification');
 
-          await createNotification(userId, {
+          await createNotification('', {
             title: "Tour Deleted",
-            message: `Tour "${deletedTour.name}" has been deleted`,
+            message: `Tour "${deletedTour.name}" has been deleted by ${userName}`,
             type: 'tour',
             priority: 'high',
             related_id: deletedTour.id,

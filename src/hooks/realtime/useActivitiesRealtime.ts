@@ -42,14 +42,34 @@ export const useActivitiesRealtime = (userId: string) => {
           
           const newActivity = payload.new as any;
           
-          // Single notification to operations department only
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "New Activity Added",
-            message: `Activity "${newActivity.name}" has been added`,
+            message: `Activity "${newActivity.name}" has been added by ${userName}`,
             type: 'system',
             priority: 'medium',
             related_id: newActivity.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "New Activity Added",
+            message: `Activity "${newActivity.name}" has been added by ${userName}`,
+            type: 'system',
+            priority: 'medium',
+            related_id: newActivity.id,
+            department: 'booking',
           });
 
           logOperation({
@@ -79,14 +99,34 @@ export const useActivitiesRealtime = (userId: string) => {
           const oldActivity = payload.old as any;
           const newActivity = payload.new as any;
           
-          // Single notification to operations department only
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "Activity Updated",
-            message: `Activity "${newActivity.name}" has been updated`,
+            message: `Activity "${newActivity.name}" has been updated by ${userName}`,
             type: 'system',
             priority: 'medium',
             related_id: newActivity.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "Activity Updated",
+            message: `Activity "${newActivity.name}" has been updated by ${userName}`,
+            type: 'system',
+            priority: 'medium',
+            related_id: newActivity.id,
+            department: 'booking',
           });
 
           logOperation({
@@ -128,14 +168,34 @@ export const useActivitiesRealtime = (userId: string) => {
 
           const deletedActivity = payload.old as any;
           
-          // Single notification to operations department only
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
+          // Notify both operations and booking departments
           await createNotification('', {
             title: "Activity Deleted",
-            message: `Activity "${deletedActivity.name}" has been deleted`,
+            message: `Activity "${deletedActivity.name}" has been deleted by ${userName}`,
             type: 'system',
             priority: 'medium',
             related_id: deletedActivity.id,
             department: 'operations',
+          });
+          
+          await createNotification('', {
+            title: "Activity Deleted",
+            message: `Activity "${deletedActivity.name}" has been deleted by ${userName}`,
+            type: 'system',
+            priority: 'medium',
+            related_id: deletedActivity.id,
+            department: 'booking',
           });
 
           logOperation({
