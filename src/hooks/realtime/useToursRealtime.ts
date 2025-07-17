@@ -108,16 +108,7 @@ export const useToursRealtime = (userId: string) => {
           );
 
           if (hasSignificantChange) {
-            console.log('Creating tour update notification for significant manual changes');
-
-            await createNotification(userId, {
-              title: "Tour Updated",
-              message: `Tour "${newTour.name}" has been updated`,
-              type: 'tour',
-              priority: 'medium',
-              related_id: newTour.id,
-              department: 'operations',
-            });
+            console.log('Tour update detected - notifications will be handled by useTours hook mutation');
 
             logOperation({
               operation_type: 'UPDATE',
