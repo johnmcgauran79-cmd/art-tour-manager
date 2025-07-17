@@ -135,6 +135,7 @@ export const useCreateTour = () => {
 export const useUpdateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { logOperation } = useAuditLog();
 
   return useMutation({
@@ -241,13 +242,17 @@ export const useUpdateTour = () => {
         console.log('Department query error:', deptError);
 
         if (departmentUsers && departmentUsers.length > 0) {
-          // Get unique user IDs to avoid duplicate notifications
+          // Get unique user IDs and ensure all department users get notified
           const uniqueUserIds = [...new Set(departmentUsers.map(user => user.user_id))];
+          
+          console.log('All department users to be notified:', uniqueUserIds);
+          console.log('Current user making change:', user?.id);
           
           // Create a concise message format
           const changesList = changesDetected.slice(0, 3).join(', ') + 
             (changesDetected.length > 3 ? ` and ${changesDetected.length - 3} other fields` : '');
           
+          // Send notifications to ALL department users (including the person making the change)
           const notifications = uniqueUserIds.map(userId => ({
             user_id: userId,
             title: 'Tour Details Updated',
