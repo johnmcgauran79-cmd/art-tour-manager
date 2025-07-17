@@ -43,6 +43,17 @@ export const useBookingsRealtime = (userId: string) => {
 
           const newBooking = payload.new as any;
           
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+          
           // Get booking details for notification
           const { data: bookingDetails, error: bookingError } = await supabase
             .from('bookings')
@@ -70,7 +81,7 @@ export const useBookingsRealtime = (userId: string) => {
           try {
             await createNotification('', {
               title: "New Booking Created",
-              message: `New booking created for ${contactName} on "${tourName}"`,
+              message: `New booking created for ${contactName} on "${tourName}" by ${userName}`,
               type: 'booking',
               priority: 'medium',
               related_id: newBooking.id,
@@ -128,30 +139,65 @@ export const useBookingsRealtime = (userId: string) => {
             : bookingDetails?.group_name || 'Unknown Contact';
           const tourName = bookingDetails?.tours?.name || 'Unknown Tour';
 
+          // Get the current user's profile to include who made the change
+          const { data: currentUserProfile } = await supabase
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', userId)
+            .single();
+          
+          const userName = currentUserProfile 
+            ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+            : 'Unknown User';
+
           // Only create notifications for significant changes
           if (oldBooking.status !== newBooking.status) {
-            console.log('Creating booking status change notification for:', contactName);
+            console.log('Creating booking status change notification for:', contactName, 'by userId:', userId);
             
-            await createNotification('', {
-              title: "Booking Status Changed",
-              message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status}`,
-              type: 'booking',
-              priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
-              related_id: newBooking.id,
-              department: 'operations',
-            });
+            // Check if a notification for this exact change already exists in the last 5 seconds to prevent duplicates
+            const { data: existingNotifications } = await supabase
+              .from('user_notifications')
+              .select('id')
+              .eq('related_id', newBooking.id)
+              .eq('title', 'Booking Status Changed')
+              .gte('created_at', new Date(Date.now() - 5000).toISOString());
+            
+            if (!existingNotifications || existingNotifications.length === 0) {
+              await createNotification('', {
+                title: "Booking Status Changed",
+                message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status} by ${userName}`,
+                type: 'booking',
+                priority: newBooking.status === 'cancelled' ? 'high' : 'medium',
+                related_id: newBooking.id,
+                department: 'operations',
+              });
+            } else {
+              console.log('Duplicate booking status notification prevented for:', newBooking.id);
+            }
 
           } else if (oldBooking.passenger_count !== newBooking.passenger_count) {
-            console.log('Creating booking passenger count change notification for:', contactName);
+            console.log('Creating booking passenger count change notification for:', contactName, 'by userId:', userId);
             
-            await createNotification('', {
-              title: "Passenger Count Updated",
-              message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count}`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: newBooking.id,
-              department: 'operations',
-            });
+            // Check for duplicates
+            const { data: existingNotifications } = await supabase
+              .from('user_notifications')
+              .select('id')
+              .eq('related_id', newBooking.id)
+              .eq('title', 'Passenger Count Updated')
+              .gte('created_at', new Date(Date.now() - 5000).toISOString());
+            
+            if (!existingNotifications || existingNotifications.length === 0) {
+              await createNotification('', {
+                title: "Passenger Count Updated",
+                message: `${contactName}'s booking for "${tourName}" passenger count changed from ${oldBooking.passenger_count} to ${newBooking.passenger_count} by ${userName}`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: newBooking.id,
+                department: 'operations',
+              });
+            } else {
+              console.log('Duplicate passenger count notification prevented for:', newBooking.id);
+            }
           }
         }
       )
