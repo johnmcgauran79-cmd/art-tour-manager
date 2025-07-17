@@ -228,6 +228,19 @@ export const useUpdateTour = () => {
       if (changesDetected.length > 0) {
         console.log('Significant changes detected, fetching department users...');
         
+        // Get the current user's profile information
+        const { data: currentUserProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', user?.id)
+          .single();
+
+        console.log('Current user profile:', currentUserProfile);
+        
+        const userName = currentUserProfile 
+          ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
+          : 'Unknown User';
+        
         // Send notifications to operations and booking department staff
         const { data: departmentUsers, error: deptError } = await supabase
           .from('user_departments')
@@ -256,7 +269,7 @@ export const useUpdateTour = () => {
           const notifications = uniqueUserIds.map(userId => ({
             user_id: userId,
             title: 'Tour Details Updated',
-            message: `"${originalTour?.name || 'Unknown'}" ${changesList} updated. Please review and update any related operations or bookings.`,
+            message: `"${originalTour?.name || 'Unknown'}" ${changesList} updated by ${userName}. Please review and update any related operations or bookings.`,
             type: 'tour' as const,
             priority: 'medium' as const,
             related_id: data.tourId,
