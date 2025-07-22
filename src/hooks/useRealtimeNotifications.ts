@@ -8,16 +8,20 @@ import { useActivitiesRealtime } from "@/hooks/realtime/useActivitiesRealtime";
 
 export const useRealtimeNotifications = () => {
   const { user } = useAuth();
-  const userId = user?.id || '';
   
-  console.log('useRealtimeNotifications called with userId:', userId);
+  console.log('useRealtimeNotifications called with user:', user?.id);
   
-  // Call the real-time hooks directly when we have a userId
-  useTasksRealtime(userId);
-  useToursRealtime(userId);
-  useBookingsRealtime(userId);
-  useHotelsRealtime(userId);
-  useActivitiesRealtime(userId);
+  // Only initialize real-time hooks when we have an authenticated user
+  if (user?.id) {
+    console.log('Initializing realtime subscriptions for user:', user.id);
+    useTasksRealtime(user.id);
+    useToursRealtime(user.id);
+    useBookingsRealtime(user.id);
+    useHotelsRealtime(user.id);
+    useActivitiesRealtime(user.id);
+  } else {
+    console.log('No authenticated user, skipping realtime subscriptions');
+  }
   
   return null;
 };
