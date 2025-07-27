@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { RealtimeTaskNotifications } from "@/components/RealtimeTaskNotifications";
+import { useNotificationSystem } from "@/hooks/useNotificationSystem";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -15,6 +15,9 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  
+  // Initialize notification system when user is authenticated
+  useNotificationSystem();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -35,7 +38,6 @@ function App() {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <RealtimeTaskNotifications />
             <Routes>
               <Route path="/login" element={<Login />} />
                 <Route
