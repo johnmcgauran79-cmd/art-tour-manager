@@ -415,6 +415,7 @@ export const useNotificationSystem = () => {
               .select('user_id')
               .eq('task_id', payload.new.id);
 
+            // Handle individual user assignments
             if (assignments && assignments.length > 0) {
               const notifications = [];
               
@@ -442,6 +443,33 @@ export const useNotificationSystem = () => {
                   console.error('❌ Failed to create task assignment notifications:', error);
                 } else {
                   console.log('✅ Task assignment notifications created successfully');
+                  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                }
+              }
+            }
+
+            // Also notify users in the task's department category (if no individual assignments or as additional notification)
+            if (task?.category && (!assignments || assignments.length === 0)) {
+              const departmentNotifications = await createDepartmentNotifications(
+                [task.category as any],
+                {
+                  title: 'New Task in Your Department',
+                  message: `A new ${task?.priority || 'medium'} priority task has been created in ${task.category}: "${task?.title}"${tourInfo}`,
+                  type: 'task',
+                  priority: task?.priority || 'medium',
+                  related_id: payload.new.id
+                }
+              );
+
+              if (departmentNotifications.length > 0) {
+                const { error } = await supabase
+                  .from('user_notifications')
+                  .insert(departmentNotifications);
+
+                if (error) {
+                  console.error('❌ Failed to create task department notifications:', error);
+                } else {
+                  console.log('✅ Task department notifications created successfully');
                   queryClient.invalidateQueries({ queryKey: ['notifications'] });
                 }
               }
