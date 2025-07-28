@@ -67,7 +67,7 @@ export const useNotificationQuery = (limit: number = 10) => {
       };
     },
     enabled: !!user?.id,
-    staleTime: 1000, // Reduced from 5000 to make notifications appear faster
-    refetchInterval: 10000, // Reduced from 30000 to refresh more frequently
+    staleTime: 30000, // 30 seconds - reasonable balance between freshness and performance
+    refetchInterval: 60000, // 1 minute - reduced server load while maintaining responsiveness
   });
 };
