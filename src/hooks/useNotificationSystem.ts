@@ -8,6 +8,8 @@ export const useNotificationSystem = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    console.log('🔄 useNotificationSystem effect triggered', { userId: user?.id });
+    
     if (!user?.id) {
       console.log('🚫 No user authenticated, skipping notification system setup');
       return;
