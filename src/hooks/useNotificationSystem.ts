@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { createDepartmentNotifications } from '@/utils/notificationUtils';
+import { createTaskNotifications } from '@/utils/taskNotificationUtils';
 
 export const useNotificationSystem = () => {
   const { user } = useAuth();
@@ -98,9 +99,9 @@ export const useNotificationSystem = () => {
           console.log('🆕 New tour detected:', payload.new);
           
           try {
-            // Create notifications for operations department about new tours
+            // Create notifications for operations and booking departments about new tours
             const notifications = await createDepartmentNotifications(
-              ['operations'],
+              ['operations', 'booking'],
               {
                 title: 'New Tour Created',
                 message: `New tour "${payload.new.name}" has been created`,
@@ -158,9 +159,9 @@ export const useNotificationSystem = () => {
             const tourName = task?.tours?.name || 'General';
             const taskType = task?.is_automated ? 'Automated Task' : 'Task';
 
-            // Create notifications for operations department for all tasks
-            const notifications = await createDepartmentNotifications(
-              ['operations'],
+            // Create notifications for assigned users and operations department
+            const notifications = await createTaskNotifications(
+              payload.new.id,
               {
                 title: `New ${taskType} Created`,
                 message: `New ${taskType.toLowerCase()}: "${task?.title}" for ${tourName}`,
