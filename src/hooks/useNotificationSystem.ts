@@ -22,11 +22,12 @@ export const useNotificationSystem = () => {
       console.log('🚫 No user authenticated, skipping notification system setup');
       return;
     }
-
-    // Prevent duplicate subscriptions
+    
+    // Prevent duplicate subscriptions - temporarily disabled for debugging
     if (subscriptionRef.current) {
-      console.log('⏭️ Subscription already exists, skipping');
-      return;
+      console.log('⏭️ Subscription already exists, cleaning up and recreating');
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
     }
 
     console.log('🔧 Setting up global notification system for all changes');
