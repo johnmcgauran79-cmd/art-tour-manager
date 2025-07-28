@@ -25,7 +25,7 @@ export const useNotificationSystem = () => {
       return;
     }
 
-    console.log('🔧 Setting up centralized notification system for user:', user.id);
+    console.log('🔧 Setting up global notification system for all changes');
 
     // Create a single channel for all notifications
     const channel = supabase
@@ -38,25 +38,15 @@ export const useNotificationSystem = () => {
           table: 'bookings'
         },
         async (payload) => {
-          console.log('🆕 New booking detected:', payload.new);
+          console.log('🆕 New booking detected by ANY user:', payload.new);
           
           try {
-            // Get user info
-            const { data: userProfile } = await supabase
-              .from('profiles')
-              .select('first_name, last_name')
-              .eq('id', user.id)
-              .single();
-            
-            const userName = userProfile 
-              ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim()
-              : 'Unknown User';
-
-            // Get booking details
+            // Get booking details with creator info via audit log
             const { data: booking } = await supabase
               .from('bookings')
               .select(`
                 group_name,
+                created_at,
                 customers(first_name, last_name),
                 tours(name)
               `)
@@ -68,12 +58,12 @@ export const useNotificationSystem = () => {
               : booking?.group_name || 'Unknown Contact';
             const tourName = booking?.tours?.name || 'Unknown Tour';
 
-            // Create notifications for departments
+            // Create notifications for departments - notify ALL departments regardless of who created it
             const notifications = [
               {
                 user_id: null,
                 title: 'New Booking Created',
-                message: `New booking created by ${userName} for ${contactName} on "${tourName}"`,
+                message: `New booking created for ${contactName} on "${tourName}"`,
                 type: 'booking' as const,
                 priority: 'medium' as const,
                 related_id: payload.new.id,
@@ -81,8 +71,8 @@ export const useNotificationSystem = () => {
               },
               {
                 user_id: null,
-                title: 'New Booking Created',
-                message: `New booking created by ${userName} for ${contactName} on "${tourName}"`,
+                title: 'New Booking Created', 
+                message: `New booking created for ${contactName} on "${tourName}"`,
                 type: 'booking' as const,
                 priority: 'medium' as const,
                 related_id: payload.new.id,
@@ -90,7 +80,7 @@ export const useNotificationSystem = () => {
               }
             ];
 
-            console.log('🔔 Creating booking notifications:', notifications);
+            console.log('🔔 Creating booking notifications for all departments:', notifications);
 
             const { error } = await supabase
               .from('user_notifications')
@@ -118,26 +108,18 @@ export const useNotificationSystem = () => {
           const oldBooking = payload.old as any;
           const newBooking = payload.new as any;
 
-          console.log('📝 Booking update detected:', { 
+          console.log('📝 Booking update detected by ANY user:', { 
             id: newBooking.id, 
             oldStatus: oldBooking.status, 
             newStatus: newBooking.status 
           });
 
           try {
-            // Only notify on status changes
-            if (oldBooking.status !== newBooking.status) {
-              // Get user info
-              const { data: userProfile } = await supabase
-                .from('profiles')
-                .select('first_name, last_name')
-                .eq('id', user.id)
-                .single();
+            // Notify on any significant changes (status or other important fields)
+            if (oldBooking.status !== newBooking.status || 
+                oldBooking.passenger_count !== newBooking.passenger_count ||
+                oldBooking.accommodation_required !== newBooking.accommodation_required) {
               
-              const userName = userProfile 
-                ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim()
-                : 'Unknown User';
-
               // Get booking details
               const { data: booking } = await supabase
                 .from('bookings')
@@ -159,8 +141,8 @@ export const useNotificationSystem = () => {
               const notifications = [
                 {
                   user_id: null,
-                  title: 'Booking Status Changed',
-                  message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status} by ${userName}`,
+                  title: 'Booking Updated',
+                  message: `${contactName}'s booking for "${tourName}" has been updated`,
                   type: 'booking' as const,
                   priority,
                   related_id: newBooking.id,
@@ -168,8 +150,8 @@ export const useNotificationSystem = () => {
                 },
                 {
                   user_id: null,
-                  title: 'Booking Status Changed',
-                  message: `${contactName}'s booking for "${tourName}" changed from ${oldBooking.status} to ${newBooking.status} by ${userName}`,
+                  title: 'Booking Updated',
+                  message: `${contactName}'s booking for "${tourName}" has been updated`,
                   type: 'booking' as const,
                   priority,
                   related_id: newBooking.id,
@@ -177,16 +159,16 @@ export const useNotificationSystem = () => {
                 }
               ];
 
-              console.log('🔔 Creating status change notifications:', notifications);
+              console.log('🔔 Creating booking update notifications:', notifications);
 
               const { error } = await supabase
                 .from('user_notifications')
                 .insert(notifications);
 
               if (error) {
-                console.error('❌ Failed to create status change notifications:', error);
+                console.error('❌ Failed to create booking update notifications:', error);
               } else {
-                console.log('✅ Status change notifications created successfully');
+                console.log('✅ Booking update notifications created successfully');
                 queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
@@ -203,29 +185,27 @@ export const useNotificationSystem = () => {
           table: 'tours'
         },
         async (payload) => {
-          console.log('🆕 New tour detected:', payload.new);
+          console.log('🆕 New tour detected by ANY user:', payload.new);
           
           try {
-            // Get user info
-            const { data: userProfile } = await supabase
-              .from('profiles')
-              .select('first_name, last_name')
-              .eq('id', user.id)
-              .single();
-            
-            const userName = userProfile 
-              ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim()
-              : 'Unknown User';
-
             const notifications = [
               {
                 user_id: null,
                 title: 'New Tour Created',
-                message: `New tour "${payload.new.name}" created by ${userName}`,
+                message: `New tour "${payload.new.name}" has been created`,
                 type: 'tour' as const,
                 priority: 'medium' as const,
                 related_id: payload.new.id,
                 department: 'operations' as const
+              },
+              {
+                user_id: null,
+                title: 'New Tour Created',
+                message: `New tour "${payload.new.name}" has been created`,
+                type: 'tour' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'booking' as const
               }
             ];
 
@@ -241,6 +221,205 @@ export const useNotificationSystem = () => {
             }
           } catch (error) {
             console.error('❌ Error in tour notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tours'
+        },
+        async (payload) => {
+          console.log('📝 Tour update detected by ANY user:', payload.new);
+          
+          try {
+            const notifications = [
+              {
+                user_id: null,
+                title: 'Tour Updated',
+                message: `Tour "${payload.new.name}" has been updated`,
+                type: 'tour' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'operations' as const
+              },
+              {
+                user_id: null,
+                title: 'Tour Updated',
+                message: `Tour "${payload.new.name}" has been updated`,
+                type: 'tour' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'booking' as const
+              }
+            ];
+
+            const { error } = await supabase
+              .from('user_notifications')
+              .insert(notifications);
+
+            if (error) {
+              console.error('❌ Failed to create tour update notifications:', error);
+            } else {
+              console.log('✅ Tour update notifications created successfully');
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            }
+          } catch (error) {
+            console.error('❌ Error in tour update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'hotels'
+        },
+        async (payload) => {
+          console.log('🆕 New hotel detected by ANY user:', payload.new);
+          
+          try {
+            const notifications = [
+              {
+                user_id: null,
+                title: 'Hotel Added',
+                message: `Hotel "${payload.new.name}" has been added`,
+                type: 'hotel' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'operations' as const
+              }
+            ];
+
+            const { error } = await supabase
+              .from('user_notifications')
+              .insert(notifications);
+
+            if (error) {
+              console.error('❌ Failed to create hotel notifications:', error);
+            } else {
+              console.log('✅ Hotel notifications created successfully');
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            }
+          } catch (error) {
+            console.error('❌ Error in hotel notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'hotels'
+        },
+        async (payload) => {
+          console.log('📝 Hotel update detected by ANY user:', payload.new);
+          
+          try {
+            const notifications = [
+              {
+                user_id: null,
+                title: 'Hotel Updated',
+                message: `Hotel "${payload.new.name}" has been updated`,
+                type: 'hotel' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'operations' as const
+              }
+            ];
+
+            const { error } = await supabase
+              .from('user_notifications')
+              .insert(notifications);
+
+            if (error) {
+              console.error('❌ Failed to create hotel update notifications:', error);
+            } else {
+              console.log('✅ Hotel update notifications created successfully');
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            }
+          } catch (error) {
+            console.error('❌ Error in hotel update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activities'
+        },
+        async (payload) => {
+          console.log('🆕 New activity detected by ANY user:', payload.new);
+          
+          try {
+            const notifications = [
+              {
+                user_id: null,
+                title: 'Activity Added',
+                message: `Activity "${payload.new.name}" has been added`,
+                type: 'activity' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'operations' as const
+              }
+            ];
+
+            const { error } = await supabase
+              .from('user_notifications')
+              .insert(notifications);
+
+            if (error) {
+              console.error('❌ Failed to create activity notifications:', error);
+            } else {
+              console.log('✅ Activity notifications created successfully');
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            }
+          } catch (error) {
+            console.error('❌ Error in activity notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activities'
+        },
+        async (payload) => {
+          console.log('📝 Activity update detected by ANY user:', payload.new);
+          
+          try {
+            const notifications = [
+              {
+                user_id: null,
+                title: 'Activity Updated',
+                message: `Activity "${payload.new.name}" has been updated`,
+                type: 'activity' as const,
+                priority: 'medium' as const,
+                related_id: payload.new.id,
+                department: 'operations' as const
+              }
+            ];
+
+            const { error } = await supabase
+              .from('user_notifications')
+              .insert(notifications);
+
+            if (error) {
+              console.error('❌ Failed to create activity update notifications:', error);
+            } else {
+              console.log('✅ Activity update notifications created successfully');
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            }
+          } catch (error) {
+            console.error('❌ Error in activity update notification handler:', error);
           }
         }
       )
