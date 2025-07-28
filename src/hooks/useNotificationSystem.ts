@@ -30,7 +30,12 @@ export const useNotificationSystem = () => {
 
     // Create a single channel for all notifications
     const channel = supabase
-      .channel(`notifications-system-${user.id}`)
+      .channel(`notifications-system-${user.id}`, {
+        config: {
+          broadcast: { self: true },
+          presence: { key: user.id }
+        }
+      })
       .on(
         'postgres_changes',
         {
