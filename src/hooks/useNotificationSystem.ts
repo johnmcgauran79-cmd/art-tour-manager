@@ -5,9 +5,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createDepartmentNotifications } from '@/utils/notificationUtils';
 
 export const useNotificationSystem = () => {
+  console.log('🎯 useNotificationSystem hook called');
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const subscriptionRef = useRef<any>(null);
+
+  console.log('🎯 useNotificationSystem hook initialized', { userId: user?.id });
 
   useEffect(() => {
     console.log('🔄 useNotificationSystem effect triggered', { 
