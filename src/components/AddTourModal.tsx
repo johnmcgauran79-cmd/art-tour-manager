@@ -69,7 +69,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
 
       const { error } = await supabase.from("tours").insert({
         name: formData.name,
-        tour_host: formData.tour_host,
+        tour_host: "TBD",
         location: formData.location,
         pickup_point: formData.pickup_point,
         start_date: formData.start_date,
@@ -161,10 +161,14 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               <Label htmlFor="tour_host">Tour Host</Label>
               <Input
                 id="tour_host"
-                value={formData.tour_host}
-                onChange={(e) => handleInputChange("tour_host", e.target.value)}
-                placeholder="Host name"
+                value="TBD"
+                readOnly
+                className="bg-muted text-muted-foreground"
+                placeholder="Automatically set from Host booking"
               />
+              <p className="text-xs text-muted-foreground">
+                Will be automatically populated when a booking with "Host" status is created
+              </p>
             </div>
 
             <div className="space-y-2">

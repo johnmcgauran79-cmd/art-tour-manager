@@ -91,7 +91,6 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
 
       const updateData = {
         name: tourData.name,
-        tour_host: tourData.tour_host,
         start_date: tourData.start_date,
         end_date: tourData.end_date,
         days: days,
@@ -230,10 +229,10 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
     console.log('Submitting form with data:', formData);
     
     // Validate required fields
-    if (!formData.name || !formData.tour_host || !formData.start_date || !formData.end_date) {
+    if (!formData.name || !formData.start_date || !formData.end_date) {
       toast({
         title: "Validation Error",
-        description: "Please fill in all required fields (Name, Tour Host, Start Date, End Date).",
+        description: "Please fill in all required fields (Name, Start Date, End Date).",
         variant: "destructive",
       });
       return;
@@ -283,13 +282,17 @@ export const EditTourModal = ({ tour, open, onOpenChange, onTourDeleted }: EditT
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tour_host">Tour Host *</Label>
+              <Label htmlFor="tour_host">Tour Host</Label>
               <Input
                 id="tour_host"
-                value={formData.tour_host}
-                onChange={(e) => handleInputChange("tour_host", e.target.value)}
-                required
+                value={formData.tour_host || 'TBD'}
+                readOnly
+                className="bg-muted text-muted-foreground"
+                placeholder="Automatically set from Host booking"
               />
+              <p className="text-xs text-muted-foreground">
+                Automatically populated from the lead passenger of the booking with "Host" status
+              </p>
             </div>
 
             <div className="space-y-2">
