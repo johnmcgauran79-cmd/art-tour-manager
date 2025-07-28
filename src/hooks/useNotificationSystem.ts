@@ -140,12 +140,6 @@ export const useNotificationSystem = () => {
           console.log('🆕 New task detected:', payload.new);
           
           try {
-            // Only create notifications for automated tasks to reduce noise
-            if (!payload.new.is_automated) {
-              console.log('🔇 Skipping notification for manual task');
-              return;
-            }
-
             // Get task details
             const { data: task } = await supabase
               .from('tasks')
@@ -155,19 +149,21 @@ export const useNotificationSystem = () => {
                 priority,
                 category,
                 tour_id,
+                is_automated,
                 tours(name)
               `)
               .eq('id', payload.new.id)
               .single();
 
             const tourName = task?.tours?.name || 'General';
+            const taskType = task?.is_automated ? 'Automated Task' : 'Task';
 
-            // Create notifications for operations department only for automated tasks
+            // Create notifications for operations department for all tasks
             const notifications = await createDepartmentNotifications(
               ['operations'],
               {
-                title: 'New Automated Task Created',
-                message: `New automated task: "${task?.title}" for ${tourName}`,
+                title: `New ${taskType} Created`,
+                message: `New ${taskType.toLowerCase()}: "${task?.title}" for ${tourName}`,
                 type: 'task',
                 priority: task?.priority || 'medium',
                 related_id: payload.new.id
@@ -190,6 +186,84 @@ export const useNotificationSystem = () => {
             }
           } catch (error) {
             console.error('❌ Error in task notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'hotels'
+        },
+        async (payload) => {
+          console.log('🆕 New hotel detected:', payload.new);
+          
+          try {
+            const notifications = await createDepartmentNotifications(
+              ['operations'],
+              {
+                title: 'New Hotel Added',
+                message: `New hotel "${payload.new.name}" has been added`,
+                type: 'tour',
+                priority: 'medium',
+                related_id: payload.new.id
+              }
+            );
+
+            if (notifications.length > 0) {
+              const { error } = await supabase
+                .from('user_notifications')
+                .insert(notifications);
+
+              if (error) {
+                console.error('❌ Failed to create hotel notifications:', error);
+              } else {
+                console.log('✅ Hotel notifications created successfully');
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in hotel notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'activities'
+        },
+        async (payload) => {
+          console.log('🆕 New activity detected:', payload.new);
+          
+          try {
+            const notifications = await createDepartmentNotifications(
+              ['operations'],
+              {
+                title: 'New Activity Added',
+                message: `New activity "${payload.new.name}" has been added`,
+                type: 'tour',
+                priority: 'medium',
+                related_id: payload.new.id
+              }
+            );
+
+            if (notifications.length > 0) {
+              const { error } = await supabase
+                .from('user_notifications')
+                .insert(notifications);
+
+              if (error) {
+                console.error('❌ Failed to create activity notifications:', error);
+              } else {
+                console.log('✅ Activity notifications created successfully');
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in activity notification handler:', error);
           }
         }
       )
