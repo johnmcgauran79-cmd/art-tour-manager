@@ -221,8 +221,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const handleClose = () => {
     if (hasUnsavedChanges) {
-      const confirmClose = window.confirm("You have unsaved changes. Are you sure you want to close?");
-      if (!confirmClose) return;
+      if (!confirm("You have unsaved changes. Are you sure you want to close?")) {
+        return;
+      }
     }
     
     // Reset form and state

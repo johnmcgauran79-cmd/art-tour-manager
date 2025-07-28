@@ -53,7 +53,10 @@ export const BookingDetailsForm = ({
               type="number"
               min="1"
               value={formData.passenger_count}
-              onChange={(e) => setFormData('passenger_count', parseInt(e.target.value) || 1)}
+              onChange={(e) => {
+                const value = Math.max(1, Number(e.target.value) || 1);
+                setFormData('passenger_count', value);
+              }}
               required
             />
           </div>

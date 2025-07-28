@@ -401,7 +401,10 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                       type="number"
                       min="1"
                       value={formData.passenger_count}
-                      onChange={(e) => setFormData(prev => ({ ...prev, passenger_count: parseInt(e.target.value) || 1 }))}
+                      onChange={(e) => {
+                        const value = Math.max(1, Number(e.target.value) || 1);
+                        setFormData(prev => ({ ...prev, passenger_count: value }));
+                      }}
                     />
                   </div>
                   <div>

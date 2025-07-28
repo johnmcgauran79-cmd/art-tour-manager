@@ -93,11 +93,11 @@ export const BulkTaskOperations = ({
   const handleBulkDelete = async () => {
     if (selectedTasks.length === 0) return;
     
-    const confirmed = window.confirm(
-      `Are you sure you want to delete ${selectedTasks.length} task(s)? This action cannot be undone.`
-    );
+    if (selectedTasks.length === 0) return;
     
-    if (!confirmed) return;
+    if (!confirm(`Are you sure you want to delete ${selectedTasks.length} task(s)? This action cannot be undone.`)) {
+      return;
+    }
 
     try {
       await bulkDelete.mutateAsync(selectedTasks);

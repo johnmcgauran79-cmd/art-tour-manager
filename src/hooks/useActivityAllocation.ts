@@ -151,7 +151,7 @@ export const useActivityAllocation = ({
     setSavingActivity(activityId);
 
     try {
-      const passengers = Math.max(0, parseInt(tempEditValue) || 0);
+      const passengers = Math.max(0, Number(tempEditValue) || 0);
       const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
       const oldCount = existingBooking?.passengers_attending ?? passengerCount;
       

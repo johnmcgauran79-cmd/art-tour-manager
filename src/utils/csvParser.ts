@@ -21,9 +21,11 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
   const rawHeaders = headerLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
   const headers = rawHeaders.map(h => h.toLowerCase());
   
-  console.log('=== CSV HEADER ANALYSIS ===');
-  console.log('Raw headers from CSV:', rawHeaders);
-  console.log('Normalized headers (lowercase):', headers);
+  // Development logging - consider removing in production
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Raw headers from CSV:', rawHeaders);
+    console.log('Normalized headers (lowercase):', headers);
+  }
 
   const contacts: CSVContact[] = [];
   const validationErrors: string[] = [];
@@ -32,8 +34,9 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
     const line = lines[i].trim();
     if (!line) continue; // Skip empty lines
 
-    console.log(`\n=== Processing Row ${i} ===`);
-    console.log('Raw line:', line);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Processing Row ${i}:`, line);
+    }
 
     // Simple CSV parsing - split by comma and handle basic quoted values
     const values = [];
@@ -55,14 +58,16 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
     }
     values.push(currentValue.trim()); // Add the last value
 
-    console.log(`Parsed values (${values.length}):`, values);
+    // Development logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Parsed values (${values.length}):`, values);
+    }
 
     const contact: any = {};
 
-    // Map headers to values with detailed logging
+    // Map headers to values
     headers.forEach((header, index) => {
       const rawValue = values[index];
-      console.log(`  ${header} [${index}]: "${rawValue}" (raw header: "${rawHeaders[index]}")`);
       
       // Clean the value
       let cleanValue = rawValue;
@@ -75,18 +80,11 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
         }
       }
       
-      console.log(`    Cleaned value for ${header}: "${cleanValue}"`);
-      
       // Only add non-empty values
       if (cleanValue && cleanValue !== '' && cleanValue !== 'undefined' && cleanValue !== 'null') {
         contact[header] = cleanValue;
-        console.log(`    ✓ Added to contact: ${header} = "${cleanValue}"`);
-      } else {
-        console.log(`    ✗ Skipped empty/invalid value for ${header}`);
       }
     });
-
-    console.log(`Final contact object:`, contact);
 
     // Validate required fields
     if (!contact.first_name || !contact.last_name) {
@@ -108,12 +106,12 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
       notes: contact.notes || undefined,
     };
 
-    console.log(`Final formatted contact:`, formattedContact);
     contacts.push(formattedContact);
   }
 
-  console.log(`\n=== FINAL RESULTS ===`);
-  console.log(`Total contacts parsed: ${contacts.length}`);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`Total contacts parsed: ${contacts.length}`);
+  }
   
   return { contacts, errors: validationErrors };
 };
