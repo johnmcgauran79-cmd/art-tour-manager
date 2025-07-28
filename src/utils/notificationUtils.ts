@@ -12,7 +12,9 @@ export const createDepartmentNotifications = async (
   }
 ) => {
   const notifications = [];
+  const uniqueUserIds = new Set<string>();
 
+  // Get all users from the specified departments
   for (const department of departments) {
     const { data: users } = await supabase
       .from('user_departments')
@@ -21,17 +23,22 @@ export const createDepartmentNotifications = async (
 
     if (users) {
       for (const user of users) {
-        notifications.push({
-          user_id: user.user_id,
-          title: notificationTemplate.title,
-          message: notificationTemplate.message,
-          type: notificationTemplate.type,
-          priority: notificationTemplate.priority,
-          related_id: notificationTemplate.related_id,
-          department: null // Individual notifications don't need department
-        });
+        uniqueUserIds.add(user.user_id);
       }
     }
+  }
+
+  // Create one notification per unique user (no duplicates)
+  for (const userId of uniqueUserIds) {
+    notifications.push({
+      user_id: userId,
+      title: notificationTemplate.title,
+      message: notificationTemplate.message,
+      type: notificationTemplate.type,
+      priority: notificationTemplate.priority,
+      related_id: notificationTemplate.related_id,
+      department: null // Individual notifications don't need department
+    });
   }
 
   return notifications;
