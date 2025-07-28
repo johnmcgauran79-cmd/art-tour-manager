@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { createDepartmentNotifications } from '@/utils/notificationUtils';
 
 export const useNotificationSystem = () => {
   const { user } = useAuth();
@@ -58,27 +59,17 @@ export const useNotificationSystem = () => {
               : booking?.group_name || 'Unknown Contact';
             const tourName = booking?.tours?.name || 'Unknown Tour';
 
-            // Create notifications for departments - notify ALL departments regardless of who created it
-            const notifications = [
+            // Create individual notifications for each user in departments
+            const notifications = await createDepartmentNotifications(
+              ['operations', 'booking'],
               {
-                user_id: null,
                 title: 'New Booking Created',
                 message: `New booking created for ${contactName} on "${tourName}"`,
-                type: 'booking' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
-              },
-              {
-                user_id: null,
-                title: 'New Booking Created', 
-                message: `New booking created for ${contactName} on "${tourName}"`,
-                type: 'booking' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'booking' as const
+                type: 'booking',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             console.log('🔔 Creating booking notifications for all departments:', notifications);
 
@@ -136,28 +127,19 @@ export const useNotificationSystem = () => {
                 : booking?.group_name || 'Unknown Contact';
               const tourName = booking?.tours?.name || 'Unknown Tour';
 
-              // Create notifications for departments
               const priority = newBooking.status === 'cancelled' ? 'high' as const : 'medium' as const;
-              const notifications = [
+              
+              // Create individual notifications for each user in departments
+              const notifications = await createDepartmentNotifications(
+                ['operations', 'booking'],
                 {
-                  user_id: null,
                   title: 'Booking Updated',
                   message: `${contactName}'s booking for "${tourName}" has been updated`,
-                  type: 'booking' as const,
+                  type: 'booking',
                   priority,
-                  related_id: newBooking.id,
-                  department: 'operations' as const
-                },
-                {
-                  user_id: null,
-                  title: 'Booking Updated',
-                  message: `${contactName}'s booking for "${tourName}" has been updated`,
-                  type: 'booking' as const,
-                  priority,
-                  related_id: newBooking.id,
-                  department: 'booking' as const
+                  related_id: newBooking.id
                 }
-              ];
+              );
 
               console.log('🔔 Creating booking update notifications:', notifications);
 
@@ -188,26 +170,16 @@ export const useNotificationSystem = () => {
           console.log('🆕 New tour detected by ANY user:', payload.new);
           
           try {
-            const notifications = [
+            const notifications = await createDepartmentNotifications(
+              ['operations', 'booking'],
               {
-                user_id: null,
                 title: 'New Tour Created',
                 message: `New tour "${payload.new.name}" has been created`,
-                type: 'tour' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
-              },
-              {
-                user_id: null,
-                title: 'New Tour Created',
-                message: `New tour "${payload.new.name}" has been created`,
-                type: 'tour' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'booking' as const
+                type: 'tour',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             const { error } = await supabase
               .from('user_notifications')
@@ -235,26 +207,16 @@ export const useNotificationSystem = () => {
           console.log('📝 Tour update detected by ANY user:', payload.new);
           
           try {
-            const notifications = [
+            const notifications = await createDepartmentNotifications(
+              ['operations', 'booking'],
               {
-                user_id: null,
                 title: 'Tour Updated',
                 message: `Tour "${payload.new.name}" has been updated`,
-                type: 'tour' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
-              },
-              {
-                user_id: null,
-                title: 'Tour Updated',
-                message: `Tour "${payload.new.name}" has been updated`,
-                type: 'tour' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'booking' as const
+                type: 'tour',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             const { error } = await supabase
               .from('user_notifications')
@@ -282,17 +244,16 @@ export const useNotificationSystem = () => {
           console.log('🆕 New hotel detected by ANY user:', payload.new);
           
           try {
-            const notifications = [
+            const notifications = await createDepartmentNotifications(
+              ['operations'],
               {
-                user_id: null,
                 title: 'Hotel Added',
                 message: `Hotel "${payload.new.name}" has been added`,
-                type: 'hotel' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
+                type: 'hotel',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             const { error } = await supabase
               .from('user_notifications')
@@ -320,17 +281,16 @@ export const useNotificationSystem = () => {
           console.log('📝 Hotel update detected by ANY user:', payload.new);
           
           try {
-            const notifications = [
+            const notifications = await createDepartmentNotifications(
+              ['operations'],
               {
-                user_id: null,
                 title: 'Hotel Updated',
                 message: `Hotel "${payload.new.name}" has been updated`,
-                type: 'hotel' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
+                type: 'hotel',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             const { error } = await supabase
               .from('user_notifications')
@@ -358,17 +318,16 @@ export const useNotificationSystem = () => {
           console.log('🆕 New activity detected by ANY user:', payload.new);
           
           try {
-            const notifications = [
+            const notifications = await createDepartmentNotifications(
+              ['operations'],
               {
-                user_id: null,
                 title: 'Activity Added',
                 message: `Activity "${payload.new.name}" has been added`,
-                type: 'activity' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
+                type: 'activity',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             const { error } = await supabase
               .from('user_notifications')
@@ -396,17 +355,16 @@ export const useNotificationSystem = () => {
           console.log('📝 Activity update detected by ANY user:', payload.new);
           
           try {
-            const notifications = [
+            const notifications = await createDepartmentNotifications(
+              ['operations'],
               {
-                user_id: null,
                 title: 'Activity Updated',
                 message: `Activity "${payload.new.name}" has been updated`,
-                type: 'activity' as const,
-                priority: 'medium' as const,
-                related_id: payload.new.id,
-                department: 'operations' as const
+                type: 'activity',
+                priority: 'medium',
+                related_id: payload.new.id
               }
-            ];
+            );
 
             const { error } = await supabase
               .from('user_notifications')
