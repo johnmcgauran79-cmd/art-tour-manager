@@ -381,6 +381,221 @@ export const useNotificationSystem = () => {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'tasks'
+        },
+        async (payload) => {
+          console.log('🆕 New task detected by ANY user:', payload.new);
+          
+          try {
+            // Get task details with creator info
+            const { data: task } = await supabase
+              .from('tasks')
+              .select(`
+                title,
+                description,
+                priority,
+                category,
+                created_by,
+                tour_id,
+                tours(name)
+              `)
+              .eq('id', payload.new.id)
+              .single();
+
+            const tourInfo = task?.tours?.name ? ` for tour "${task.tours.name}"` : '';
+
+            // Get assigned users for this task
+            const { data: assignments } = await supabase
+              .from('task_assignments')
+              .select('user_id')
+              .eq('task_id', payload.new.id);
+
+            if (assignments && assignments.length > 0) {
+              const notifications = [];
+              
+              for (const assignment of assignments) {
+                // Don't notify the creator if they assigned it to themselves
+                if (assignment.user_id !== task?.created_by) {
+                  notifications.push({
+                    user_id: assignment.user_id,
+                    title: 'New Task Assigned',
+                    message: `You have been assigned a new ${task?.priority || 'medium'} priority task: "${task?.title}"${tourInfo}`,
+                    type: 'task',
+                    priority: task?.priority || 'medium',
+                    related_id: payload.new.id,
+                    department: null
+                  });
+                }
+              }
+
+              if (notifications.length > 0) {
+                const { error } = await supabase
+                  .from('user_notifications')
+                  .insert(notifications);
+
+                if (error) {
+                  console.error('❌ Failed to create task assignment notifications:', error);
+                } else {
+                  console.log('✅ Task assignment notifications created successfully');
+                  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in task creation notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tasks'
+        },
+        async (payload) => {
+          const oldTask = payload.old as any;
+          const newTask = payload.new as any;
+
+          console.log('📝 Task update detected by ANY user:', { 
+            id: newTask.id, 
+            oldStatus: oldTask.status, 
+            newStatus: newTask.status 
+          });
+
+          try {
+            // Notify on significant changes (status, priority, or assignment changes)
+            if (oldTask.status !== newTask.status || 
+                oldTask.priority !== newTask.priority ||
+                oldTask.due_date !== newTask.due_date) {
+              
+              // Get task details
+              const { data: task } = await supabase
+                .from('tasks')
+                .select(`
+                  title,
+                  description,
+                  status,
+                  priority,
+                  tour_id,
+                  tours(name)
+                `)
+                .eq('id', newTask.id)
+                .single();
+
+              const tourInfo = task?.tours?.name ? ` for tour "${task.tours.name}"` : '';
+
+              // Get assigned users for this task
+              const { data: assignments } = await supabase
+                .from('task_assignments')
+                .select('user_id')
+                .eq('task_id', newTask.id);
+
+              if (assignments && assignments.length > 0) {
+                const notifications = [];
+                
+                let changeMessage = '';
+                if (oldTask.status !== newTask.status) {
+                  changeMessage = `Task status changed from ${oldTask.status} to ${newTask.status}`;
+                } else if (oldTask.priority !== newTask.priority) {
+                  changeMessage = `Task priority changed from ${oldTask.priority} to ${newTask.priority}`;
+                } else if (oldTask.due_date !== newTask.due_date) {
+                  changeMessage = `Task due date has been updated`;
+                } else {
+                  changeMessage = `Task has been updated`;
+                }
+                
+                for (const assignment of assignments) {
+                  notifications.push({
+                    user_id: assignment.user_id,
+                    title: 'Task Updated',
+                    message: `${changeMessage}: "${task?.title}"${tourInfo}`,
+                    type: 'task',
+                    priority: newTask.status === 'completed' ? 'low' : (task?.priority || 'medium'),
+                    related_id: newTask.id,
+                    department: null
+                  });
+                }
+
+                const { error } = await supabase
+                  .from('user_notifications')
+                  .insert(notifications);
+
+                if (error) {
+                  console.error('❌ Failed to create task update notifications:', error);
+                } else {
+                  console.log('✅ Task update notifications created successfully');
+                  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in task update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'task_assignments'
+        },
+        async (payload) => {
+          console.log('🆕 New task assignment detected:', payload.new);
+          
+          try {
+            // Get task details
+            const { data: task } = await supabase
+              .from('tasks')
+              .select(`
+                title,
+                description,
+                status,
+                priority,
+                category,
+                tour_id,
+                created_by,
+                tours(name)
+              `)
+              .eq('id', payload.new.task_id)
+              .single();
+
+            const tourInfo = task?.tours?.name ? ` for tour "${task.tours.name}"` : '';
+
+            // Only notify if the assigned user is not the task creator (to avoid self-notification)
+            if (payload.new.user_id !== task?.created_by) {
+              const notification = {
+                user_id: payload.new.user_id,
+                title: 'Task Assigned to You',
+                message: `You have been assigned to task: "${task?.title}"${tourInfo}`,
+                type: 'task',
+                priority: task?.priority || 'medium',
+                related_id: payload.new.task_id,
+                department: null
+              };
+
+              const { error } = await supabase
+                .from('user_notifications')
+                .insert([notification]);
+
+              if (error) {
+                console.error('❌ Failed to create task assignment notification:', error);
+              } else {
+                console.log('✅ Task assignment notification created successfully');
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in task assignment notification handler:', error);
+          }
+        }
+      )
       .subscribe((status) => {
         console.log('📡 Notification system subscription status:', status);
         if (status === 'SUBSCRIBED') {
