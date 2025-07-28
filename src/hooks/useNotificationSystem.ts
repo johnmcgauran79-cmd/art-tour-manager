@@ -637,6 +637,12 @@ export const useNotificationSystem = () => {
         } else if (status === 'CHANNEL_ERROR') {
           console.error('❌ Notification system subscription error');
           subscriptionRef.current = null;
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏰ Notification subscription timed out - will retry');
+          subscriptionRef.current = null;
+        } else if (status === 'CLOSED') {
+          console.log('🔒 Notification subscription closed');
+          subscriptionRef.current = null;
         }
       });
 
@@ -648,7 +654,7 @@ export const useNotificationSystem = () => {
         subscriptionRef.current = null;
       }
     };
-  }, [user?.id, queryClient]);
+  }, [user?.id]); // Removed queryClient from dependencies to prevent unnecessary re-subscriptions
 
   return null;
 };
