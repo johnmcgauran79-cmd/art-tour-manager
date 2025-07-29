@@ -49,6 +49,27 @@ export const useCreateHotelBooking = () => {
   return useMutation({
     mutationFn: async (hotelBookingData: HotelBookingInsert) => {
       console.log('Creating hotel booking with data:', hotelBookingData);
+      
+      // Check for existing allocated booking with same booking_id and hotel_id
+      if (hotelBookingData.booking_id && hotelBookingData.hotel_id && hotelBookingData.allocated) {
+        const { data: existingBookings, error: checkError } = await supabase
+          .from('hotel_bookings')
+          .select('id, allocated')
+          .eq('booking_id', hotelBookingData.booking_id)
+          .eq('hotel_id', hotelBookingData.hotel_id)
+          .eq('allocated', true);
+
+        if (checkError) {
+          console.error('Error checking for existing hotel booking:', checkError);
+          throw new Error('Failed to verify booking uniqueness');
+        }
+
+        if (existingBookings && existingBookings.length > 0) {
+          console.warn('Duplicate allocated hotel booking prevented:', existingBookings);
+          throw new Error('Hotel is already allocated to this booking. Please remove the existing allocation first.');
+        }
+      }
+
       const { data, error } = await supabase
         .from('hotel_bookings')
         .insert(hotelBookingData)
@@ -57,6 +78,10 @@ export const useCreateHotelBooking = () => {
 
       if (error) {
         console.error('Error creating hotel booking:', error);
+        // Handle unique constraint violation with user-friendly message
+        if (error.code === '23505' && error.message.includes('idx_hotel_bookings_unique_allocation')) {
+          throw new Error('Hotel is already allocated to this booking. Please remove the existing allocation first.');
+        }
         throw error;
       }
       console.log('Hotel booking created successfully:', data);
@@ -127,6 +152,118 @@ export const useUpdateHotelBooking = () => {
       toast({
         title: "Error",
         description: error?.message || "Failed to update hotel booking allocation. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// New hook for cleaning up duplicate hotel bookings
+export const useCleanupDuplicateHotelBookings = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ bookingId, hotelId, keepId }: { bookingId: string; hotelId: string; keepId: string }) => {
+      console.log('Cleaning up duplicate hotel bookings, keeping:', keepId);
+      
+      const { data: duplicates, error: findError } = await supabase
+        .from('hotel_bookings')
+        .select('id')
+        .eq('booking_id', bookingId)
+        .eq('hotel_id', hotelId)
+        .neq('id', keepId);
+
+      if (findError) {
+        console.error('Error finding duplicate hotel bookings:', findError);
+        throw findError;
+      }
+
+      if (!duplicates || duplicates.length === 0) {
+        console.log('No duplicates found to clean up');
+        return 0;
+      }
+
+      const { error: deleteError } = await supabase
+        .from('hotel_bookings')
+        .delete()
+        .in('id', duplicates.map(d => d.id));
+
+      if (deleteError) {
+        console.error('Error deleting duplicate hotel bookings:', deleteError);
+        throw deleteError;
+      }
+
+      console.log(`Successfully removed ${duplicates.length} duplicate hotel booking record(s)`);
+      return duplicates.length;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+    },
+  });
+};
+
+// New hook for safely removing hotel allocation
+export const useRemoveHotelAllocation = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ bookingId, hotelId }: { bookingId: string; hotelId: string }) => {
+      console.log('Removing hotel allocation for booking:', bookingId, 'hotel:', hotelId);
+      
+      // First find all hotel bookings for this booking and hotel combination
+      const { data: existingBookings, error: findError } = await supabase
+        .from('hotel_bookings')
+        .select('id, allocated')
+        .eq('booking_id', bookingId)
+        .eq('hotel_id', hotelId);
+
+      if (findError) {
+        console.error('Error finding hotel bookings to remove:', findError);
+        throw findError;
+      }
+
+      if (!existingBookings || existingBookings.length === 0) {
+        console.log('No hotel bookings found to remove');
+        return;
+      }
+
+      // Delete all hotel bookings for this combination
+      const { error: deleteError } = await supabase
+        .from('hotel_bookings')
+        .delete()
+        .eq('booking_id', bookingId)
+        .eq('hotel_id', hotelId);
+
+      if (deleteError) {
+        console.error('Error deleting hotel bookings:', deleteError);
+        throw deleteError;
+      }
+      
+      console.log(`Successfully removed ${existingBookings.length} hotel booking record(s)`);
+      return existingBookings.length;
+    },
+    onSuccess: (removedCount) => {
+      queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      if (removedCount && removedCount > 1) {
+        toast({
+          title: "Hotel Allocation Removed",
+          description: `Removed ${removedCount} duplicate hotel booking records.`,
+        });
+      } else {
+        toast({
+          title: "Hotel Allocation Removed",
+          description: "Hotel allocation has been successfully removed.",
+        });
+      }
+    },
+    onError: (error: any) => {
+      console.error('Hotel allocation removal failed:', error);
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to remove hotel allocation. Please try again.",
         variant: "destructive",
       });
     },

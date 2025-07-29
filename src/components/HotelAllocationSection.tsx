@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useHotels } from "@/hooks/useHotels";
-import { useHotelBookings, useCreateHotelBooking, useUpdateHotelBooking } from "@/hooks/useHotelBookings";
+import { useHotelBookings, useCreateHotelBooking, useUpdateHotelBooking, useRemoveHotelAllocation, useCleanupDuplicateHotelBookings } from "@/hooks/useHotelBookings";
 import { useUpdateBooking } from "@/hooks/useBookings";
 
 interface HotelAllocationSectionProps {
@@ -32,6 +32,8 @@ export const HotelAllocationSection = ({
   const { data: hotelBookings = [], refetch: refetchHotelBookings } = useHotelBookings(bookingId);
   const createHotelBooking = useCreateHotelBooking();
   const updateHotelBooking = useUpdateHotelBooking();
+  const removeHotelAllocation = useRemoveHotelAllocation();
+  const cleanupDuplicates = useCleanupDuplicateHotelBookings();
   const updateBooking = useUpdateBooking();
 
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
@@ -75,13 +77,17 @@ export const HotelAllocationSection = ({
   };
 
   const handleHotelAllocation = (hotelId: string, allocated: boolean) => {
-    const existingHotelBooking = hotelBookings.find(hb => hb.hotel_id === hotelId);
+    const existingHotelBookings = hotelBookings.filter(hb => hb.hotel_id === hotelId);
     const hotel = hotels.find(h => h.id === hotelId);
     
-    if (existingHotelBooking) {
-      updateHotelBooking.mutate({
-        id: existingHotelBooking.id,
-        allocated,
+    console.log(`Hotel allocation toggle: ${allocated ? 'allocating' : 'removing'} hotel ${hotelId} for booking ${bookingId}`);
+    console.log('Existing hotel bookings for this hotel:', existingHotelBookings);
+    
+    if (!allocated) {
+      // Use the safe removal hook that handles duplicates
+      removeHotelAllocation.mutate({
+        bookingId,
+        hotelId,
       }, {
         onSuccess: async () => {
           onUpdate?.();
@@ -93,25 +99,62 @@ export const HotelAllocationSection = ({
         }
       });
     } else if (allocated) {
-      createHotelBooking.mutate({
-        booking_id: bookingId,
-        hotel_id: hotelId,
-        allocated: true,
-        check_in_date: hotel?.default_check_in || defaultCheckIn,
-        check_out_date: hotel?.default_check_out || defaultCheckOut,
-        room_type: hotel?.default_room_type,
-        bedding: 'double',
-        required: true,
-      }, {
-        onSuccess: async () => {
-          onUpdate?.();
-          // Refetch hotel bookings and then update booking dates
-          const { data: updatedHotelBookings } = await refetchHotelBookings();
-          if (updatedHotelBookings) {
-            updateBookingDates(updatedHotelBookings);
+      // Check if there are any existing bookings (allocated or not) before creating
+      if (existingHotelBookings.length > 0) {
+        // If there are existing bookings, just update the first one to allocated
+        const bookingToUpdate = existingHotelBookings[0];
+        console.log('Updating existing hotel booking to allocated:', bookingToUpdate.id);
+        
+        updateHotelBooking.mutate({
+          id: bookingToUpdate.id,
+          allocated: true,
+          check_in_date: hotel?.default_check_in || defaultCheckIn,
+          check_out_date: hotel?.default_check_out || defaultCheckOut,
+          room_type: hotel?.default_room_type || bookingToUpdate.room_type,
+          bedding: bookingToUpdate.bedding || 'double',
+          required: true,
+        }, {
+          onSuccess: async () => {
+            onUpdate?.();
+            // If there were multiple existing bookings, clean them up
+            if (existingHotelBookings.length > 1) {
+              console.log(`Found ${existingHotelBookings.length} existing hotel bookings, cleaning up duplicates`);
+              cleanupDuplicates.mutate({
+                bookingId,
+                hotelId,
+                keepId: bookingToUpdate.id,
+              });
+            }
+            // Refetch hotel bookings and then update booking dates
+            const { data: updatedHotelBookings } = await refetchHotelBookings();
+            if (updatedHotelBookings) {
+              updateBookingDates(updatedHotelBookings);
+            }
           }
-        }
-      });
+        });
+      } else {
+        // Create new hotel booking
+        console.log('Creating new hotel booking');
+        createHotelBooking.mutate({
+          booking_id: bookingId,
+          hotel_id: hotelId,
+          allocated: true,
+          check_in_date: hotel?.default_check_in || defaultCheckIn,
+          check_out_date: hotel?.default_check_out || defaultCheckOut,
+          room_type: hotel?.default_room_type,
+          bedding: 'double',
+          required: true,
+        }, {
+          onSuccess: async () => {
+            onUpdate?.();
+            // Refetch hotel bookings and then update booking dates
+            const { data: updatedHotelBookings } = await refetchHotelBookings();
+            if (updatedHotelBookings) {
+              updateBookingDates(updatedHotelBookings);
+            }
+          }
+        });
+      }
     }
   };
 
@@ -192,8 +235,10 @@ export const HotelAllocationSection = ({
     <div className="space-y-4">
       <h3 className="text-lg font-semibold">Hotel Allocations</h3>
       {hotels.map((hotel) => {
-        const hotelBooking = hotelBookings.find(hb => hb.hotel_id === hotel.id);
-        const isAllocated = hotelBooking?.allocated || false;
+        const hotelBookingsForHotel = hotelBookings.filter(hb => hb.hotel_id === hotel.id);
+        const allocatedBooking = hotelBookingsForHotel.find(hb => hb.allocated);
+        const isAllocated = !!allocatedBooking;
+        const hotelBooking = allocatedBooking || hotelBookingsForHotel[0]; // Use allocated one or first one
 
         return (
           <Card key={hotel.id}>
