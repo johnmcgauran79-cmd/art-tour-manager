@@ -263,10 +263,7 @@ export const useCreateTask = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      toast({
-        title: "Task Created",
-        description: "The task has been successfully created.",
-      });
+      // Don't show toast here - let realtime handle notifications to avoid duplicates
     },
     onError: (error) => {
       console.error('Error creating task:', error);

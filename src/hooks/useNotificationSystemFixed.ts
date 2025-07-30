@@ -359,9 +359,11 @@ export const useNotificationSystemFixed = () => {
       try {
         const userIds = await getUsersFromDepartments(['operations']);
         if (userIds.length > 0) {
+          // Use the title from payload.old or fallback to a generic message
+          const taskTitle = payload.old.title || 'Unknown Task';
           await createNotificationForUsers(userIds, {
             title: 'Task Deleted',
-            message: `Task "${payload.old.title}" has been deleted`,
+            message: `Task "${taskTitle}" has been deleted`,
             type: 'task',
             priority: 'medium',
             related_id: payload.old.id
