@@ -92,27 +92,29 @@ export const useNotificationSystem = () => {
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
 
-  console.log('🔍 useNotificationSystem called - user:', user?.id);
+  console.log('🔍 useNotificationSystem called - user:', user?.id, 'ref state:', isSubscribedRef.current);
 
   useEffect(() => {
     console.log('🔍 useNotificationSystem useEffect triggered - user:', user?.id);
-    if (!user?.id) {
-      console.log('❌ No user authenticated, skipping notification system setup');
-      return;
-    }
+    
+    try {
+      if (!user?.id) {
+        console.log('❌ No user authenticated, skipping notification system setup');
+        return;
+      }
 
-    // Prevent multiple subscriptions
-    if (isSubscribedRef.current) {
-      console.log('⚠️ Notification system already subscribed, skipping');
-      return;
-    }
+      // Prevent multiple subscriptions
+      if (isSubscribedRef.current) {
+        console.log('⚠️ Notification system already subscribed, skipping');
+        return;
+      }
 
-    console.log('🔄 Setting up notification system for user:', user.id);
-    console.log('📡 Creating real-time subscription...');
+      console.log('🔄 Setting up notification system for user:', user.id);
+      console.log('📡 Creating real-time subscription...');
 
-    // Create a single channel with a consistent name (not timestamp-based)
-    const channel = supabase
-      .channel('global-notifications')
+      // Create a single channel with a consistent name (not timestamp-based)
+      const channel = supabase
+        .channel('global-notifications')
       .on(
         'postgres_changes',
         {
@@ -559,16 +561,20 @@ export const useNotificationSystem = () => {
         }
       });
 
-    channelRef.current = channel;
+      channelRef.current = channel;
 
-    // Cleanup function
-    return () => {
-      console.log('🧹 Cleaning up notification system');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      // Cleanup function
+      return () => {
+        console.log('🧹 Cleaning up notification system');
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
+        isSubscribedRef.current = false;
+      };
+    } catch (error) {
+      console.error('❌ Error setting up notification system:', error);
       isSubscribedRef.current = false;
-    };
+    }
   }, [user?.id, queryClient]);
 };
