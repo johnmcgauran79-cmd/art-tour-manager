@@ -131,136 +131,325 @@ export const useNotificationSystemFixed = () => {
     // Create a new channel
     const channel = supabase.channel(`notifications-${Date.now()}`);
     
-    // Add booking INSERT listener
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'bookings'
-      },
-      async (payload) => {
-        console.log('🆕 FIXED: New booking detected:', payload.new);
-        
-        try {
-          // Get booking details
-          const { data: booking, error } = await supabase
-            .from('bookings')
-            .select(`
-              *,
-              customers(first_name, last_name),
-              tours(name)
-            `)
-            .eq('id', payload.new.id)
-            .single();
+    // BOOKINGS - Insert, Update, Delete
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, async (payload) => {
+      console.log('🆕 FIXED: New booking detected:', payload.new);
+      try {
+        const { data: booking, error } = await supabase
+          .from('bookings')
+          .select('*, customers(first_name, last_name), tours(name)')
+          .eq('id', payload.new.id)
+          .single();
 
-          if (error) {
-            console.error('❌ Error fetching booking details:', error);
-            return;
-          }
+        if (error || !booking) return;
 
-          if (!booking) {
-            console.error('❌ No booking data returned');
-            return;
-          }
+        const customerName = booking.customers ? `${booking.customers.first_name} ${booking.customers.last_name}` : booking.group_name || 'Unknown Contact';
+        const tourName = booking.tours?.name || 'Unknown Tour';
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
 
-          console.log('✅ Booking details fetched:', booking);
-
-          const customerName = booking.customers
-            ? `${booking.customers.first_name} ${booking.customers.last_name}`
-            : booking.group_name || 'Unknown Contact';
-          
-          const tourName = booking.tours?.name || 'Unknown Tour';
-
-          // Get users from operations and booking departments
-          const userIds = await getUsersFromDepartments(['operations', 'booking']);
-
-          if (userIds.length > 0) {
-            const success = await createNotificationForUsers(userIds, {
-              title: 'New Booking Created',
-              message: `New booking created for ${customerName} on "${tourName}"`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: payload.new.id
-            });
-
-            if (success) {
-              console.log('🔄 Invalidating notification queries');
-              queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error in FIXED booking notification handler:', error);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'New Booking Created',
+            message: `New booking created for ${customerName} on "${tourName}"`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
+      } catch (error) {
+        console.error('❌ Error in booking insert notification:', error);
       }
-    );
+    });
 
-    // Add booking UPDATE listener
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'bookings'
-      },
-      async (payload) => {
-        console.log('📝 FIXED: Booking updated:', payload.new.id);
-        console.log('📊 Update details:', {
-          old_status: payload.old?.status,
-          new_status: payload.new?.status
-        });
-        
-        try {
-          // Get booking details
-          const { data: booking, error } = await supabase
-            .from('bookings')
-            .select(`
-              *,
-              customers(first_name, last_name),
-              tours(name)
-            `)
-            .eq('id', payload.new.id)
-            .single();
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings' }, async (payload) => {
+      console.log('📝 FIXED: Booking updated:', payload.new.id);
+      try {
+        const { data: booking, error } = await supabase
+          .from('bookings')
+          .select('*, customers(first_name, last_name), tours(name)')
+          .eq('id', payload.new.id)
+          .single();
 
-          if (error || !booking) {
-            console.error('❌ Could not fetch booking details for update notification:', error);
-            return;
-          }
+        if (error || !booking) return;
 
-          const customerName = booking.customers
-            ? `${booking.customers.first_name} ${booking.customers.last_name}`
-            : booking.group_name || 'Unknown Contact';
-          
-          const tourName = booking.tours?.name || 'Unknown Tour';
+        const customerName = booking.customers ? `${booking.customers.first_name} ${booking.customers.last_name}` : booking.group_name || 'Unknown Contact';
+        const tourName = booking.tours?.name || 'Unknown Tour';
+        let changeDescription = 'updated';
+        if (payload.old?.status !== payload.new?.status) {
+          changeDescription = `status changed to ${payload.new.status}`;
+        }
 
-          // Determine what changed
-          let changeDescription = 'updated';
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Booking Updated',
+            message: `Booking for ${customerName} on "${tourName}" - ${changeDescription}`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in booking update notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'bookings' }, async (payload) => {
+      console.log('🗑️ FIXED: Booking deleted:', payload.old.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Booking Deleted',
+            message: `Booking has been deleted from the system`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.old.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in booking delete notification:', error);
+      }
+    });
+
+    // TOURS - Insert, Update, Delete
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tours' }, async (payload) => {
+      console.log('🆕 FIXED: New tour detected:', payload.new);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'New Tour Created',
+            message: `New tour "${payload.new.name}" has been created`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in tour insert notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tours' }, async (payload) => {
+      console.log('📝 FIXED: Tour updated:', payload.new.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Tour Updated',
+            message: `Tour "${payload.new.name}" has been updated`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in tour update notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tours' }, async (payload) => {
+      console.log('🗑️ FIXED: Tour deleted:', payload.old.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Tour Deleted',
+            message: `Tour "${payload.old.name}" has been deleted`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: payload.old.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in tour delete notification:', error);
+      }
+    });
+
+    // TASKS - Insert, Update, Delete
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, async (payload) => {
+      console.log('🆕 FIXED: New task detected:', payload.new);
+      try {
+        const userIds = await getTaskUsers(payload.new.id);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'New Task Created',
+            message: `New task "${payload.new.title}" has been created`,
+            type: 'task',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in task insert notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, async (payload) => {
+      console.log('📝 FIXED: Task updated:', payload.new.id);
+      try {
+        const userIds = await getTaskUsers(payload.new.id);
+        if (userIds.length > 0) {
+          let message = `Task "${payload.new.title}" has been updated`;
           if (payload.old?.status !== payload.new?.status) {
-            changeDescription = `status changed to ${payload.new.status}`;
-          } else {
-            changeDescription = 'details updated';
+            message = `Task "${payload.new.title}" status changed to ${payload.new.status}`;
           }
-
-          const userIds = await getUsersFromDepartments(['operations', 'booking']);
-
-          if (userIds.length > 0) {
-            const success = await createNotificationForUsers(userIds, {
-              title: 'Booking Updated',
-              message: `Booking for ${customerName} on "${tourName}" - ${changeDescription}`,
-              type: 'booking',
-              priority: 'medium',
-              related_id: payload.new.id
-            });
-
-            if (success) {
-              queryClient.invalidateQueries({ queryKey: ['notifications'] });
-            }
-          }
-        } catch (error) {
-          console.error('❌ Error in FIXED booking update notification handler:', error);
+          await createNotificationForUsers(userIds, {
+            title: 'Task Updated',
+            message,
+            type: 'task',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }
+      } catch (error) {
+        console.error('❌ Error in task update notification:', error);
       }
-    );
+    });
+
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, async (payload) => {
+      console.log('🗑️ FIXED: Task deleted:', payload.old.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Task Deleted',
+            message: `Task "${payload.old.title}" has been deleted`,
+            type: 'task',
+            priority: 'medium',
+            related_id: payload.old.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in task delete notification:', error);
+      }
+    });
+
+    // ACTIVITIES - Insert, Update, Delete
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activities' }, async (payload) => {
+      console.log('🆕 FIXED: New activity detected:', payload.new);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'New Activity Created',
+            message: `New activity "${payload.new.name}" has been created`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in activity insert notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activities' }, async (payload) => {
+      console.log('📝 FIXED: Activity updated:', payload.new.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Activity Updated',
+            message: `Activity "${payload.new.name}" has been updated`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in activity update notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'activities' }, async (payload) => {
+      console.log('🗑️ FIXED: Activity deleted:', payload.old.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Activity Deleted',
+            message: `Activity "${payload.old.name}" has been deleted`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.old.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in activity delete notification:', error);
+      }
+    });
+
+    // HOTELS - Insert, Update, Delete
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hotels' }, async (payload) => {
+      console.log('🆕 FIXED: New hotel detected:', payload.new);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'New Hotel Created',
+            message: `New hotel "${payload.new.name}" has been created`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in hotel insert notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'hotels' }, async (payload) => {
+      console.log('📝 FIXED: Hotel updated:', payload.new.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Hotel Updated',
+            message: `Hotel "${payload.new.name}" has been updated`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in hotel update notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'hotels' }, async (payload) => {
+      console.log('🗑️ FIXED: Hotel deleted:', payload.old.id);
+      try {
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Hotel Deleted',
+            message: `Hotel "${payload.old.name}" has been deleted`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.old.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in hotel delete notification:', error);
+      }
+    });
 
     // Subscribe to the channel
     channel.subscribe((status) => {
