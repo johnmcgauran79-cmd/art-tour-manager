@@ -387,6 +387,7 @@ export const useTasks = (tourId?: string, filters?: {
             id, title, status
           )
         `)
+        .order('due_date', { ascending: true, nullsFirst: false })
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 
@@ -465,6 +466,7 @@ export const useMyTasks = () => {
             id, title, status
           )
         `)
+        .order('due_date', { ascending: true, nullsFirst: false })
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 
