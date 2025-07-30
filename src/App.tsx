@@ -13,11 +13,13 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+const NotificationSystemProvider = () => {
+  useNotificationSystem();
+  return null;
+};
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  
-  // Initialize notification system when user is authenticated
-  useNotificationSystem();
   
   if (loading) {
     return <div>Loading...</div>;
@@ -27,7 +29,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" />;
   }
   
-  return <>{children}</>;
+  return (
+    <>
+      <NotificationSystemProvider />
+      {children}
+    </>
+  );
 };
 
 function App() {

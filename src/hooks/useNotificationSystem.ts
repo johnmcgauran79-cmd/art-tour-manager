@@ -1,28 +1,114 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import { createDepartmentNotifications } from '@/utils/notificationUtils';
-import { createTaskNotifications } from '@/utils/taskNotificationUtils';
+
+type Department = 'operations' | 'finance' | 'marketing' | 'booking' | 'maintenance' | 'general';
+
+// Centralized notification creation utility
+const createNotificationForUsers = async (
+  userIds: string[],
+  notification: {
+    title: string;
+    message: string;
+    type: string;
+    priority: string;
+    related_id: string;
+  }
+) => {
+  if (userIds.length === 0) return;
+
+  const notifications = userIds.map(userId => ({
+    user_id: userId,
+    title: notification.title,
+    message: notification.message,
+    type: notification.type,
+    priority: notification.priority,
+    related_id: notification.related_id,
+    department: null
+  }));
+
+  const { error } = await supabase
+    .from('user_notifications')
+    .insert(notifications);
+
+  if (error) {
+    console.error('❌ Failed to create notifications:', error);
+    return false;
+  }
+
+  console.log(`✅ Created ${notifications.length} notifications`);
+  return true;
+};
+
+// Get unique users from departments (avoid duplicates)
+const getUsersFromDepartments = async (departments: Department[]) => {
+  const uniqueUserIds = new Set<string>();
+
+  for (const department of departments) {
+    const { data: users } = await supabase
+      .from('user_departments')
+      .select('user_id')
+      .eq('department', department);
+
+    if (users) {
+      for (const user of users) {
+        uniqueUserIds.add(user.user_id);
+      }
+    }
+  }
+
+  return Array.from(uniqueUserIds);
+};
+
+// Get users assigned to a task (avoid duplicates with operations)
+const getTaskUsers = async (taskId: string) => {
+  const uniqueUserIds = new Set<string>();
+
+  // Get assigned users
+  const { data: assignments } = await supabase
+    .from('task_assignments')
+    .select('user_id')
+    .eq('task_id', taskId);
+
+  if (assignments) {
+    for (const assignment of assignments) {
+      uniqueUserIds.add(assignment.user_id);
+    }
+  }
+
+  // Also include operations department users
+  const operationsUsers = await getUsersFromDepartments(['operations']);
+  for (const userId of operationsUsers) {
+    uniqueUserIds.add(userId);
+  }
+
+  return Array.from(uniqueUserIds);
+};
 
 export const useNotificationSystem = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
   useEffect(() => {
-    console.log('🔄 Setting up notification system for user:', user?.id);
-    
     if (!user?.id) {
       console.log('❌ No user authenticated, skipping notification system setup');
       return;
     }
 
-    console.log('✅ Starting real-time notification subscription');
-    console.log('📊 Query client available:', !!queryClient);
+    // Prevent multiple subscriptions
+    if (isSubscribedRef.current) {
+      console.log('⚠️ Notification system already subscribed, skipping');
+      return;
+    }
 
-    // Create a single channel for all notifications with a unique name
+    console.log('🔄 Setting up notification system for user:', user.id);
+
+    // Create a single channel with a consistent name (not timestamp-based)
     const channel = supabase
-      .channel(`global-notifications-${Date.now()}`)
+      .channel('global-notifications')
       .on(
         'postgres_changes',
         {
@@ -31,76 +117,44 @@ export const useNotificationSystem = () => {
           table: 'bookings'
         },
         async (payload) => {
-          console.log('🆕 New booking detected:', payload.new);
+          console.log('🆕 New booking detected:', payload.new.id);
           
           try {
-            // Get booking details with separate queries to avoid join issues
-            const { data: booking, error: bookingError } = await supabase
+            // Get booking details
+            const { data: booking } = await supabase
               .from('bookings')
-              .select('*')
+              .select(`
+                *,
+                customers(first_name, last_name),
+                tours(name)
+              `)
               .eq('id', payload.new.id)
               .single();
 
-            if (bookingError || !booking) {
-              console.error('❌ Could not fetch booking details:', bookingError);
+            if (!booking) {
+              console.error('❌ Could not fetch booking details');
               return;
             }
 
-            console.log('📋 Booking data:', booking);
+            const customerName = booking.customers
+              ? `${booking.customers.first_name} ${booking.customers.last_name}`
+              : booking.group_name || 'Unknown Contact';
+            
+            const tourName = booking.tours?.name || 'Unknown Tour';
 
-            // Get customer details if lead_passenger_id exists
-            let customerName = booking.group_name || 'Unknown Contact';
-            if (booking.lead_passenger_id) {
-              const { data: customer } = await supabase
-                .from('customers')
-                .select('first_name, last_name')
-                .eq('id', booking.lead_passenger_id)
-                .single();
-              
-              if (customer) {
-                customerName = `${customer.first_name} ${customer.last_name}`;
-              }
-            }
+            // Get users from operations and booking departments (deduplicated)
+            const userIds = await getUsersFromDepartments(['operations', 'booking']);
 
-            // Get tour details
-            let tourName = 'Unknown Tour';
-            if (booking.tour_id) {
-              const { data: tour } = await supabase
-                .from('tours')
-                .select('name')
-                .eq('id', booking.tour_id)
-                .single();
-              
-              if (tour) {
-                tourName = tour.name;
-              }
-            }
-
-            console.log('📝 Creating notifications for booking:', customerName, 'on', tourName);
-
-            // Create notifications for operations and booking departments
-            const notifications = await createDepartmentNotifications(
-              ['operations', 'booking'],
-              {
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
                 title: 'New Booking Created',
                 message: `New booking created for ${customerName} on "${tourName}"`,
                 type: 'booking',
                 priority: 'medium',
                 related_id: payload.new.id
-              }
-            );
+              });
 
-            console.log('📤 Inserting notifications:', notifications.length, 'notifications');
-
-            if (notifications.length > 0) {
-              const { error } = await supabase
-                .from('user_notifications')
-                .insert(notifications);
-
-              if (error) {
-                console.error('❌ Failed to create booking notifications:', error);
-              } else {
-                console.log('✅ Booking notifications created successfully');
+              if (success) {
                 queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
@@ -112,37 +166,78 @@ export const useNotificationSystem = () => {
       .on(
         'postgres_changes',
         {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings'
+        },
+        async (payload) => {
+          console.log('📝 Booking updated:', payload.new.id);
+          
+          try {
+            // Only notify if status changed
+            if (payload.old.status !== payload.new.status) {
+              const { data: booking } = await supabase
+                .from('bookings')
+                .select(`
+                  *,
+                  customers(first_name, last_name),
+                  tours(name)
+                `)
+                .eq('id', payload.new.id)
+                .single();
+
+              if (!booking) return;
+
+              const customerName = booking.customers
+                ? `${booking.customers.first_name} ${booking.customers.last_name}`
+                : booking.group_name || 'Unknown Contact';
+              
+              const tourName = booking.tours?.name || 'Unknown Tour';
+
+              const userIds = await getUsersFromDepartments(['operations', 'booking']);
+
+              if (userIds.length > 0) {
+                const success = await createNotificationForUsers(userIds, {
+                  title: 'Booking Status Updated',
+                  message: `Booking for ${customerName} on "${tourName}" changed to ${payload.new.status}`,
+                  type: 'booking',
+                  priority: 'medium',
+                  related_id: payload.new.id
+                });
+
+                if (success) {
+                  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in booking update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'INSERT',
           schema: 'public',
           table: 'tours'
         },
         async (payload) => {
-          console.log('🆕 New tour detected:', payload.new);
+          console.log('🆕 New tour detected:', payload.new.id);
           
           try {
-            // Create notifications for operations and booking departments about new tours
-            const notifications = await createDepartmentNotifications(
-              ['operations', 'booking'],
-              {
+            const userIds = await getUsersFromDepartments(['operations']);
+
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
                 title: 'New Tour Created',
                 message: `New tour "${payload.new.name}" has been created`,
                 type: 'tour',
                 priority: 'medium',
                 related_id: payload.new.id
-              }
-            );
+              });
 
-            console.log('📤 Creating tour notifications:', notifications.length, 'notifications');
-
-            if (notifications.length > 0) {
-              const { error } = await supabase
-                .from('user_notifications')
-                .insert(notifications);
-
-              if (error) {
-                console.error('❌ Failed to create tour notifications:', error);
-              } else {
-                console.log('✅ Tour notifications created successfully');
+              if (success) {
                 queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
@@ -159,10 +254,9 @@ export const useNotificationSystem = () => {
           table: 'tasks'
         },
         async (payload) => {
-          console.log('🆕 New task detected:', payload.new);
+          console.log('🆕 New task detected:', payload.new.id);
           
           try {
-            // Get task details
             const { data: task } = await supabase
               .from('tasks')
               .select(`
@@ -177,32 +271,23 @@ export const useNotificationSystem = () => {
               .eq('id', payload.new.id)
               .single();
 
-            const tourName = task?.tours?.name || 'General';
-            const taskType = task?.is_automated ? 'Automated Task' : 'Task';
+            if (!task) return;
 
-            // Create notifications for assigned users and operations department
-            const notifications = await createTaskNotifications(
-              payload.new.id,
-              {
+            const tourName = task.tours?.name || 'General';
+            const taskType = task.is_automated ? 'Automated Task' : 'Task';
+
+            const userIds = await getTaskUsers(payload.new.id);
+
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
                 title: `New ${taskType} Created`,
-                message: `New ${taskType.toLowerCase()}: "${task?.title}" for ${tourName}`,
+                message: `New ${taskType.toLowerCase()}: "${task.title}" for ${tourName}`,
                 type: 'task',
-                priority: task?.priority || 'medium',
+                priority: task.priority || 'medium',
                 related_id: payload.new.id
-              }
-            );
+              });
 
-            console.log('📤 Creating task notifications:', notifications.length, 'notifications');
-
-            if (notifications.length > 0) {
-              const { error } = await supabase
-                .from('user_notifications')
-                .insert(notifications);
-
-              if (error) {
-                console.error('❌ Failed to create task notifications:', error);
-              } else {
-                console.log('✅ Task notifications created successfully');
+              if (success) {
                 queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
@@ -214,34 +299,72 @@ export const useNotificationSystem = () => {
       .on(
         'postgres_changes',
         {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'tasks'
+        },
+        async (payload) => {
+          console.log('📝 Task updated:', payload.new.id);
+          
+          try {
+            // Only notify if status changed to completed
+            if (payload.old.status !== 'completed' && payload.new.status === 'completed') {
+              const { data: task } = await supabase
+                .from('tasks')
+                .select(`
+                  title,
+                  tours(name)
+                `)
+                .eq('id', payload.new.id)
+                .single();
+
+              if (!task) return;
+
+              const tourName = task.tours?.name || 'General';
+              const userIds = await getTaskUsers(payload.new.id);
+
+              if (userIds.length > 0) {
+                const success = await createNotificationForUsers(userIds, {
+                  title: 'Task Completed',
+                  message: `Task "${task.title}" for ${tourName} has been completed`,
+                  type: 'task',
+                  priority: 'low',
+                  related_id: payload.new.id
+                });
+
+                if (success) {
+                  queryClient.invalidateQueries({ queryKey: ['notifications'] });
+                }
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in task update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'INSERT',
           schema: 'public',
           table: 'hotels'
         },
         async (payload) => {
-          console.log('🆕 New hotel detected:', payload.new);
+          console.log('🆕 New hotel detected:', payload.new.id);
           
           try {
-            const notifications = await createDepartmentNotifications(
-              ['operations'],
-              {
+            const userIds = await getUsersFromDepartments(['operations']);
+
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
                 title: 'New Hotel Added',
                 message: `New hotel "${payload.new.name}" has been added`,
                 type: 'tour',
                 priority: 'medium',
                 related_id: payload.new.id
-              }
-            );
+              });
 
-            if (notifications.length > 0) {
-              const { error } = await supabase
-                .from('user_notifications')
-                .insert(notifications);
-
-              if (error) {
-                console.error('❌ Failed to create hotel notifications:', error);
-              } else {
-                console.log('✅ Hotel notifications created successfully');
+              if (success) {
                 queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
@@ -258,29 +381,21 @@ export const useNotificationSystem = () => {
           table: 'activities'
         },
         async (payload) => {
-          console.log('🆕 New activity detected:', payload.new);
+          console.log('🆕 New activity detected:', payload.new.id);
           
           try {
-            const notifications = await createDepartmentNotifications(
-              ['operations'],
-              {
+            const userIds = await getUsersFromDepartments(['operations']);
+
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
                 title: 'New Activity Added',
                 message: `New activity "${payload.new.name}" has been added`,
                 type: 'tour',
                 priority: 'medium',
                 related_id: payload.new.id
-              }
-            );
+              });
 
-            if (notifications.length > 0) {
-              const { error } = await supabase
-                .from('user_notifications')
-                .insert(notifications);
-
-              if (error) {
-                console.error('❌ Failed to create activity notifications:', error);
-              } else {
-                console.log('✅ Activity notifications created successfully');
+              if (success) {
                 queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
@@ -293,17 +408,23 @@ export const useNotificationSystem = () => {
         console.log('📡 Subscription status:', status);
         if (status === 'SUBSCRIBED') {
           console.log('✅ Successfully subscribed to real-time changes');
+          isSubscribedRef.current = true;
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
           console.error('❌ Subscription failed:', status);
+          isSubscribedRef.current = false;
         }
       });
 
-    console.log('🔧 Notification system channel created');
+    channelRef.current = channel;
 
     // Cleanup function
     return () => {
       console.log('🧹 Cleaning up notification system');
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      isSubscribedRef.current = false;
     };
   }, [user?.id, queryClient]);
 };
