@@ -174,8 +174,8 @@ export const useNotificationSystem = () => {
           console.log('📝 Booking updated:', payload.new.id);
           
           try {
-            // Only notify if status changed
-            if (payload.old.status !== payload.new.status) {
+            // Notify on any booking update (not just status changes)
+            if (true) {
               const { data: booking } = await supabase
                 .from('bookings')
                 .select(`
