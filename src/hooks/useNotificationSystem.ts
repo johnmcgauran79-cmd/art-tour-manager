@@ -92,7 +92,10 @@ export const useNotificationSystem = () => {
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
 
+  console.log('🔍 useNotificationSystem called - user:', user?.id);
+
   useEffect(() => {
+    console.log('🔍 useNotificationSystem useEffect triggered - user:', user?.id);
     if (!user?.id) {
       console.log('❌ No user authenticated, skipping notification system setup');
       return;
