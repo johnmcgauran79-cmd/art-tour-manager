@@ -241,6 +241,124 @@ export const useNotificationSystem = () => {
       .on(
         'postgres_changes',
         {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'hotel_bookings'
+        },
+        async (payload) => {
+          console.log('🏨 Hotel booking updated:', payload.new.id);
+          console.log('📊 Hotel booking update details:', {
+            old_check_in: payload.old.check_in_date,
+            new_check_in: payload.new.check_in_date,
+            old_check_out: payload.old.check_out_date,
+            new_check_out: payload.new.check_out_date,
+            old_updated_at: payload.old.updated_at,
+            new_updated_at: payload.new.updated_at
+          });
+          
+          try {
+            // Get the main booking to notify about hotel changes
+            const { data: hotelBooking } = await supabase
+              .from('hotel_bookings')
+              .select(`
+                booking_id,
+                bookings!inner(
+                  customers(first_name, last_name),
+                  tours(name),
+                  group_name
+                )
+              `)
+              .eq('id', payload.new.id)
+              .single();
+
+            if (!hotelBooking) {
+              console.error('❌ Could not fetch hotel booking details');
+              return;
+            }
+
+            const customerName = hotelBooking.bookings.customers
+              ? `${hotelBooking.bookings.customers.first_name} ${hotelBooking.bookings.customers.last_name}`
+              : hotelBooking.bookings.group_name || 'Unknown Contact';
+            
+            const tourName = hotelBooking.bookings.tours?.name || 'Unknown Tour';
+
+            const userIds = await getUsersFromDepartments(['operations', 'booking']);
+            console.log(`👥 Notifying ${userIds.length} users about hotel booking update`);
+
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
+                title: 'Hotel Details Updated',
+                message: `Hotel details updated for ${customerName} on "${tourName}"`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: hotelBooking.booking_id
+              });
+
+              if (success) {
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in hotel booking update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'activity_bookings'
+        },
+        async (payload) => {
+          console.log('🎯 Activity booking updated:', payload.new.id);
+          
+          try {
+            // Get the main booking to notify about activity changes
+            const { data: activityBooking } = await supabase
+              .from('activity_bookings')
+              .select(`
+                booking_id,
+                bookings!inner(
+                  customers(first_name, last_name),
+                  tours(name),
+                  group_name
+                )
+              `)
+              .eq('id', payload.new.id)
+              .single();
+
+            if (!activityBooking) return;
+
+            const customerName = activityBooking.bookings.customers
+              ? `${activityBooking.bookings.customers.first_name} ${activityBooking.bookings.customers.last_name}`
+              : activityBooking.bookings.group_name || 'Unknown Contact';
+            
+            const tourName = activityBooking.bookings.tours?.name || 'Unknown Tour';
+
+            const userIds = await getUsersFromDepartments(['operations', 'booking']);
+
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
+                title: 'Activity Details Updated',
+                message: `Activity details updated for ${customerName} on "${tourName}"`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: activityBooking.booking_id
+              });
+
+              if (success) {
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
+              }
+            }
+          } catch (error) {
+            console.error('❌ Error in activity booking update notification handler:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'INSERT',
           schema: 'public',
           table: 'tours'
@@ -424,112 +542,6 @@ export const useNotificationSystem = () => {
             }
           } catch (error) {
             console.error('❌ Error in activity notification handler:', error);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'hotel_bookings'
-        },
-        async (payload) => {
-          console.log('📝 Hotel booking updated:', payload.new.id);
-          
-          try {
-            // Get the main booking to notify about hotel changes
-            const { data: hotelBooking } = await supabase
-              .from('hotel_bookings')
-              .select(`
-                booking_id,
-                bookings!inner(
-                  customers(first_name, last_name),
-                  tours(name),
-                  group_name
-                )
-              `)
-              .eq('id', payload.new.id)
-              .single();
-
-            if (!hotelBooking) return;
-
-            const customerName = hotelBooking.bookings.customers
-              ? `${hotelBooking.bookings.customers.first_name} ${hotelBooking.bookings.customers.last_name}`
-              : hotelBooking.bookings.group_name || 'Unknown Contact';
-            
-            const tourName = hotelBooking.bookings.tours?.name || 'Unknown Tour';
-
-            const userIds = await getUsersFromDepartments(['operations', 'booking']);
-
-            if (userIds.length > 0) {
-              const success = await createNotificationForUsers(userIds, {
-                title: 'Booking Hotel Details Updated',
-                message: `Hotel details updated for ${customerName} on "${tourName}"`,
-                type: 'booking',
-                priority: 'medium',
-                related_id: hotelBooking.booking_id
-              });
-
-              if (success) {
-                queryClient.invalidateQueries({ queryKey: ['notifications'] });
-              }
-            }
-          } catch (error) {
-            console.error('❌ Error in hotel booking update notification handler:', error);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'activity_bookings'
-        },
-        async (payload) => {
-          console.log('📝 Activity booking updated:', payload.new.id);
-          
-          try {
-            // Get the main booking to notify about activity changes
-            const { data: activityBooking } = await supabase
-              .from('activity_bookings')
-              .select(`
-                booking_id,
-                bookings!inner(
-                  customers(first_name, last_name),
-                  tours(name),
-                  group_name
-                )
-              `)
-              .eq('id', payload.new.id)
-              .single();
-
-            if (!activityBooking) return;
-
-            const customerName = activityBooking.bookings.customers
-              ? `${activityBooking.bookings.customers.first_name} ${activityBooking.bookings.customers.last_name}`
-              : activityBooking.bookings.group_name || 'Unknown Contact';
-            
-            const tourName = activityBooking.bookings.tours?.name || 'Unknown Tour';
-
-            const userIds = await getUsersFromDepartments(['operations', 'booking']);
-
-            if (userIds.length > 0) {
-              const success = await createNotificationForUsers(userIds, {
-                title: 'Booking Activity Details Updated',
-                message: `Activity details updated for ${customerName} on "${tourName}"`,
-                type: 'booking',
-                priority: 'medium',
-                related_id: activityBooking.booking_id
-              });
-
-              if (success) {
-                queryClient.invalidateQueries({ queryKey: ['notifications'] });
-              }
-            }
-          } catch (error) {
-            console.error('❌ Error in activity booking update notification handler:', error);
           }
         }
       )
