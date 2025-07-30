@@ -289,6 +289,25 @@ export const useUpdateTask = () => {
       taskId: string;
       updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>>;
     }) => {
+      console.log('Updating task with data:', data);
+
+      // First verify the task exists
+      const { data: taskExists, error: taskError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('id', data.taskId)
+        .maybeSingle();
+
+      if (taskError) {
+        console.error('Error checking task existence:', taskError);
+        throw new Error(`Failed to verify task exists: ${taskError.message}`);
+      }
+
+      if (!taskExists) {
+        console.error('Task not found for update:', data.taskId);
+        throw new Error('Task not found. Cannot update non-existent task.');
+      }
+
       const updateData = { ...data.updates };
       
       // If marking as completed, set completed_at
@@ -301,9 +320,19 @@ export const useUpdateTask = () => {
         .update(updateData)
         .eq('id', data.taskId)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Task update error:', error);
+        throw new Error(`Failed to update task: ${error.message}`);
+      }
+
+      if (!task) {
+        console.error('No task returned after update');
+        throw new Error('Task update failed - no data returned');
+      }
+
+      console.log('Task updated successfully:', task);
 
       // Log the task update
       logOperation({
