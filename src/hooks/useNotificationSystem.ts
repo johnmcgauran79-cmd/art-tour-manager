@@ -92,7 +92,8 @@ export const useNotificationSystem = () => {
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
 
-  console.log('🔍 useNotificationSystem called - user:', user?.id, 'ref state:', isSubscribedRef.current);
+  console.log('🚨 NOTIFICATION SYSTEM HOOK CALLED - user:', user?.id, 'ref state:', isSubscribedRef.current);
+  console.warn('🚨 NOTIFICATION SYSTEM DEBUG - If you see this, the hook is running');
 
   useEffect(() => {
     console.log('🔍 useNotificationSystem useEffect triggered - user:', user?.id);
