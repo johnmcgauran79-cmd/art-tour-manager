@@ -96,7 +96,7 @@ export const useNotificationSystem = () => {
   console.warn('🚨 NOTIFICATION SYSTEM DEBUG - If you see this, the hook is running');
 
   useEffect(() => {
-    console.log('🔍 useNotificationSystem useEffect triggered - user:', user?.id);
+    console.log('🔍 useNotificationSystem useEffect triggered - user:', user?.id, 'current ref state:', isSubscribedRef.current);
     
     try {
       if (!user?.id) {
@@ -104,10 +104,12 @@ export const useNotificationSystem = () => {
         return;
       }
 
-      // Prevent multiple subscriptions
-      if (isSubscribedRef.current) {
-        console.log('⚠️ Notification system already subscribed, skipping');
-        return;
+      // Force cleanup of any existing subscription first
+      if (channelRef.current) {
+        console.log('🧹 Cleaning up existing subscription before creating new one');
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
       }
 
       console.log('🔄 Setting up notification system for user:', user.id);
