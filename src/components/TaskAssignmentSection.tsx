@@ -64,7 +64,7 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
             .from('profiles')
             .select('id, first_name, last_name, email')
             .eq('id', assignment.user_id)
-            .single();
+            .maybeSingle();
 
           if (userError) {
             console.error('Error fetching user data:', userError);
@@ -84,6 +84,23 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
     mutationFn: async (userId: string) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
+
+      // First verify the task exists
+      const { data: taskExists, error: taskError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('id', taskId)
+        .maybeSingle();
+
+      if (taskError) {
+        console.error('Error checking task existence:', taskError);
+        throw new Error(`Failed to verify task exists: ${taskError.message}`);
+      }
+
+      if (!taskExists) {
+        console.error('Task not found for assignment:', taskId);
+        throw new Error('Task not found. Cannot assign user to non-existent task.');
+      }
 
       const { error } = await supabase
         .from('task_assignments')

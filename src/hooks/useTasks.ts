@@ -48,11 +48,16 @@ export const useDeleteTask = () => {
         .from('tasks')
         .select('title, tour_id, created_by, tours(name)')
         .eq('id', taskId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) {
         console.error('Error fetching task details:', fetchError);
         throw new Error(`Failed to fetch task details: ${fetchError.message}`);
+      }
+
+      if (!taskData) {
+        console.error('Task not found:', taskId);
+        throw new Error(`Task not found: ${taskId}`);
       }
 
       console.log('Task data before deletion:', taskData);
