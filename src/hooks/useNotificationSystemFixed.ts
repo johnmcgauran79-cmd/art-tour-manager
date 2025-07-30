@@ -131,7 +131,7 @@ export const useNotificationSystemFixed = () => {
     // Create a new channel
     const channel = supabase.channel(`notifications-${Date.now()}`);
     
-    // BOOKINGS - Insert, Update, Delete
+    // BOOKINGS - Only primary user actions, ignore cascading updates
     channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, async (payload) => {
       console.log('🆕 FIXED: New booking detected:', payload.new);
       try {
@@ -165,6 +165,17 @@ export const useNotificationSystemFixed = () => {
     channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bookings' }, async (payload) => {
       console.log('📝 FIXED: Booking updated:', payload.new.id);
       try {
+        // Only notify for meaningful changes, not cascade updates
+        const meaningfulChanges = ['status', 'passenger_count', 'check_in_date', 'check_out_date'];
+        const hasmeaningfulChange = meaningfulChanges.some(field => 
+          payload.old?.[field] !== payload.new?.[field]
+        );
+
+        if (!hasmeaningfulChange) {
+          console.log('⏭️ Skipping notification for non-meaningful booking update');
+          return;
+        }
+
         const { data: booking, error } = await supabase
           .from('bookings')
           .select('*, customers(first_name, last_name), tours(name)')
@@ -175,9 +186,14 @@ export const useNotificationSystemFixed = () => {
 
         const customerName = booking.customers ? `${booking.customers.first_name} ${booking.customers.last_name}` : booking.group_name || 'Unknown Contact';
         const tourName = booking.tours?.name || 'Unknown Tour';
+        
         let changeDescription = 'updated';
         if (payload.old?.status !== payload.new?.status) {
           changeDescription = `status changed to ${payload.new.status}`;
+        } else if (payload.old?.passenger_count !== payload.new?.passenger_count) {
+          changeDescription = `passenger count changed to ${payload.new.passenger_count}`;
+        } else if (payload.old?.check_in_date !== payload.new?.check_in_date || payload.old?.check_out_date !== payload.new?.check_out_date) {
+          changeDescription = `dates updated`;
         }
 
         const userIds = await getUsersFromDepartments(['operations', 'booking']);
@@ -215,7 +231,7 @@ export const useNotificationSystemFixed = () => {
       }
     });
 
-    // TOURS - Insert, Update, Delete
+    // TOURS - Only direct user actions (create/delete), ignore automatic updates
     channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tours' }, async (payload) => {
       console.log('🆕 FIXED: New tour detected:', payload.new);
       try {
@@ -235,25 +251,6 @@ export const useNotificationSystemFixed = () => {
       }
     });
 
-    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tours' }, async (payload) => {
-      console.log('📝 FIXED: Tour updated:', payload.new.id);
-      try {
-        const userIds = await getUsersFromDepartments(['operations', 'booking']);
-        if (userIds.length > 0) {
-          await createNotificationForUsers(userIds, {
-            title: 'Tour Updated',
-            message: `Tour "${payload.new.name}" has been updated`,
-            type: 'tour',
-            priority: 'medium',
-            related_id: payload.new.id
-          });
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-        }
-      } catch (error) {
-        console.error('❌ Error in tour update notification:', error);
-      }
-    });
-
     channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tours' }, async (payload) => {
       console.log('🗑️ FIXED: Tour deleted:', payload.old.id);
       try {
@@ -270,6 +267,47 @@ export const useNotificationSystemFixed = () => {
         }
       } catch (error) {
         console.error('❌ Error in tour delete notification:', error);
+      }
+    });
+
+    // Tour updates - Only notify for direct user changes, not automatic capacity updates
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tours' }, async (payload) => {
+      console.log('📝 FIXED: Tour updated:', payload.new.id);
+      try {
+        // Ignore automatic capacity updates (these happen when bookings change)
+        if (payload.old?.capacity !== payload.new?.capacity && 
+            Object.keys(payload.new).length === Object.keys(payload.old).length &&
+            Object.keys(payload.new).every(key => 
+              key === 'capacity' || key === 'updated_at' || payload.old[key] === payload.new[key]
+            )) {
+          console.log('⏭️ Skipping notification for automatic tour capacity update');
+          return;
+        }
+
+        // Only notify for meaningful user-driven changes
+        const meaningfulFields = ['name', 'start_date', 'end_date', 'status', 'location', 'price_single', 'price_double'];
+        const hasUserChange = meaningfulFields.some(field => 
+          payload.old?.[field] !== payload.new?.[field]
+        );
+
+        if (!hasUserChange) {
+          console.log('⏭️ Skipping notification for non-meaningful tour update');
+          return;
+        }
+
+        const userIds = await getUsersFromDepartments(['operations', 'booking']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Tour Updated',
+            message: `Tour "${payload.new.name}" has been updated`,
+            type: 'tour',
+            priority: 'medium',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in tour update notification:', error);
       }
     });
 
@@ -335,7 +373,7 @@ export const useNotificationSystemFixed = () => {
       }
     });
 
-    // ACTIVITIES - Insert, Update, Delete
+    // ACTIVITIES - Only direct user actions (create/delete), ignore automatic updates
     channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activities' }, async (payload) => {
       console.log('🆕 FIXED: New activity detected:', payload.new);
       try {
@@ -358,6 +396,27 @@ export const useNotificationSystemFixed = () => {
     channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activities' }, async (payload) => {
       console.log('📝 FIXED: Activity updated:', payload.new.id);
       try {
+        // Ignore automatic spots_booked updates (these happen when bookings change)
+        if (payload.old?.spots_booked !== payload.new?.spots_booked && 
+            Object.keys(payload.new).length === Object.keys(payload.old).length &&
+            Object.keys(payload.new).every(key => 
+              key === 'spots_booked' || key === 'updated_at' || payload.old[key] === payload.new[key]
+            )) {
+          console.log('⏭️ Skipping notification for automatic activity spots_booked update');
+          return;
+        }
+
+        // Only notify for meaningful user-driven changes
+        const meaningfulFields = ['name', 'activity_date', 'start_time', 'end_time', 'spots_available', 'activity_status'];
+        const hasUserChange = meaningfulFields.some(field => 
+          payload.old?.[field] !== payload.new?.[field]
+        );
+
+        if (!hasUserChange) {
+          console.log('⏭️ Skipping notification for non-meaningful activity update');
+          return;
+        }
+
         const userIds = await getUsersFromDepartments(['operations', 'booking']);
         if (userIds.length > 0) {
           await createNotificationForUsers(userIds, {
@@ -393,7 +452,7 @@ export const useNotificationSystemFixed = () => {
       }
     });
 
-    // HOTELS - Insert, Update, Delete
+    // HOTELS - Only direct user actions (create/delete), ignore automatic updates  
     channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'hotels' }, async (payload) => {
       console.log('🆕 FIXED: New hotel detected:', payload.new);
       try {
@@ -416,6 +475,27 @@ export const useNotificationSystemFixed = () => {
     channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'hotels' }, async (payload) => {
       console.log('📝 FIXED: Hotel updated:', payload.new.id);
       try {
+        // Ignore automatic rooms_booked updates (these happen when bookings change)
+        if (payload.old?.rooms_booked !== payload.new?.rooms_booked && 
+            Object.keys(payload.new).length === Object.keys(payload.old).length &&
+            Object.keys(payload.new).every(key => 
+              key === 'rooms_booked' || key === 'updated_at' || payload.old[key] === payload.new[key]
+            )) {
+          console.log('⏭️ Skipping notification for automatic hotel rooms_booked update');
+          return;
+        }
+
+        // Only notify for meaningful user-driven changes
+        const meaningfulFields = ['name', 'address', 'rooms_available', 'rooms_reserved', 'booking_status'];
+        const hasUserChange = meaningfulFields.some(field => 
+          payload.old?.[field] !== payload.new?.[field]
+        );
+
+        if (!hasUserChange) {
+          console.log('⏭️ Skipping notification for non-meaningful hotel update');
+          return;
+        }
+
         const userIds = await getUsersFromDepartments(['operations', 'booking']);
         if (userIds.length > 0) {
           await createNotificationForUsers(userIds, {
