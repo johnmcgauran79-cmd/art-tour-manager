@@ -33,36 +33,56 @@ export const useNotificationSystem = () => {
           console.log('🆕 New booking detected:', payload.new);
           
           try {
-            // Get booking details
-            const { data: booking } = await supabase
+            // Get booking details with separate queries to avoid join issues
+            const { data: booking, error: bookingError } = await supabase
               .from('bookings')
-              .select(`
-                group_name,
-                created_at,
-                customers(first_name, last_name),
-                tours(name)
-              `)
+              .select('*')
               .eq('id', payload.new.id)
               .single();
 
-            if (!booking) {
-              console.error('❌ Could not fetch booking details');
+            if (bookingError || !booking) {
+              console.error('❌ Could not fetch booking details:', bookingError);
               return;
             }
 
-            const contactName = booking.customers 
-              ? `${booking.customers.first_name} ${booking.customers.last_name}`
-              : booking.group_name || 'Unknown Contact';
-            const tourName = booking.tours?.name || 'Unknown Tour';
+            console.log('📋 Booking data:', booking);
 
-            console.log('📝 Creating notifications for booking:', contactName, 'on', tourName);
+            // Get customer details if lead_passenger_id exists
+            let customerName = booking.group_name || 'Unknown Contact';
+            if (booking.lead_passenger_id) {
+              const { data: customer } = await supabase
+                .from('customers')
+                .select('first_name, last_name')
+                .eq('id', booking.lead_passenger_id)
+                .single();
+              
+              if (customer) {
+                customerName = `${customer.first_name} ${customer.last_name}`;
+              }
+            }
+
+            // Get tour details
+            let tourName = 'Unknown Tour';
+            if (booking.tour_id) {
+              const { data: tour } = await supabase
+                .from('tours')
+                .select('name')
+                .eq('id', booking.tour_id)
+                .single();
+              
+              if (tour) {
+                tourName = tour.name;
+              }
+            }
+
+            console.log('📝 Creating notifications for booking:', customerName, 'on', tourName);
 
             // Create notifications for operations and booking departments
             const notifications = await createDepartmentNotifications(
               ['operations', 'booking'],
               {
                 title: 'New Booking Created',
-                message: `New booking created for ${contactName} on "${tourName}"`,
+                message: `New booking created for ${customerName} on "${tourName}"`,
                 type: 'booking',
                 priority: 'medium',
                 related_id: payload.new.id
