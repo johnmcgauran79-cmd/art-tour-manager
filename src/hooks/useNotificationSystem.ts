@@ -105,6 +105,7 @@ export const useNotificationSystem = () => {
     }
 
     console.log('🔄 Setting up notification system for user:', user.id);
+    console.log('📡 Creating real-time subscription...');
 
     // Create a single channel with a consistent name (not timestamp-based)
     const channel = supabase
@@ -172,42 +173,64 @@ export const useNotificationSystem = () => {
         },
         async (payload) => {
           console.log('📝 Booking updated:', payload.new.id);
+          console.log('📊 Booking update details:', {
+            old_status: payload.old.status,
+            new_status: payload.new.status,
+            old_check_in: payload.old.check_in_date,
+            new_check_in: payload.new.check_in_date,
+            old_check_out: payload.old.check_out_date,
+            new_check_out: payload.new.check_out_date,
+            old_updated_at: payload.old.updated_at,
+            new_updated_at: payload.new.updated_at
+          });
           
           try {
-            // Notify on any booking update (not just status changes)
-            if (true) {
-              const { data: booking } = await supabase
-                .from('bookings')
-                .select(`
-                  *,
-                  customers(first_name, last_name),
-                  tours(name)
-                `)
-                .eq('id', payload.new.id)
-                .single();
+            // Get booking details
+            const { data: booking } = await supabase
+              .from('bookings')
+              .select(`
+                *,
+                customers(first_name, last_name),
+                tours(name)
+              `)
+              .eq('id', payload.new.id)
+              .single();
 
-              if (!booking) return;
+            if (!booking) {
+              console.error('❌ Could not fetch booking details for update notification');
+              return;
+            }
 
-              const customerName = booking.customers
-                ? `${booking.customers.first_name} ${booking.customers.last_name}`
-                : booking.group_name || 'Unknown Contact';
-              
-              const tourName = booking.tours?.name || 'Unknown Tour';
+            const customerName = booking.customers
+              ? `${booking.customers.first_name} ${booking.customers.last_name}`
+              : booking.group_name || 'Unknown Contact';
+            
+            const tourName = booking.tours?.name || 'Unknown Tour';
 
-              const userIds = await getUsersFromDepartments(['operations', 'booking']);
+            // Determine what changed
+            let changeDescription = 'updated';
+            if (payload.old.status !== payload.new.status) {
+              changeDescription = `status changed to ${payload.new.status}`;
+            } else if (payload.old.check_in_date !== payload.new.check_in_date || payload.old.check_out_date !== payload.new.check_out_date) {
+              changeDescription = 'hotel dates updated';
+            } else {
+              changeDescription = 'details updated';
+            }
 
-              if (userIds.length > 0) {
-                const success = await createNotificationForUsers(userIds, {
-                  title: 'Booking Status Updated',
-                  message: `Booking for ${customerName} on "${tourName}" changed to ${payload.new.status}`,
-                  type: 'booking',
-                  priority: 'medium',
-                  related_id: payload.new.id
-                });
+            const userIds = await getUsersFromDepartments(['operations', 'booking']);
+            console.log(`👥 Notifying ${userIds.length} users about booking update`);
 
-                if (success) {
-                  queryClient.invalidateQueries({ queryKey: ['notifications'] });
-                }
+            if (userIds.length > 0) {
+              const success = await createNotificationForUsers(userIds, {
+                title: 'Booking Updated',
+                message: `Booking for ${customerName} on "${tourName}" - ${changeDescription}`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: payload.new.id
+              });
+
+              if (success) {
+                queryClient.invalidateQueries({ queryKey: ['notifications'] });
               }
             }
           } catch (error) {
