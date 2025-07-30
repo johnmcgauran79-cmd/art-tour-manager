@@ -18,6 +18,7 @@ export const useNotificationSystem = () => {
     }
 
     console.log('✅ Starting real-time notification subscription');
+    console.log('📊 Query client available:', !!queryClient);
 
     // Create a single channel for all notifications with a unique name
     const channel = supabase
