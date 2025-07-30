@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { useNotificationSystem } from "@/hooks/useNotificationSystem";
+import { useNotificationSystemFixed } from "@/hooks/useNotificationSystemFixed";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -14,7 +14,8 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const NotificationSystemProvider = () => {
-  useNotificationSystem();
+  const { isSubscribed } = useNotificationSystemFixed();
+  console.log('🔥 NotificationSystemProvider - isSubscribed:', isSubscribed);
   return null;
 };
 
