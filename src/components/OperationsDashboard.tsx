@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
-import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
+import { PaginatedNotificationsView } from "@/components/PaginatedNotificationsView";
 import { useAuth } from "@/hooks/useAuth";
 import { OperationsHeader } from "@/components/operations/OperationsHeader";
 import { OperationsNotificationsCard } from "@/components/operations/OperationsNotificationsCard";
@@ -86,7 +86,7 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
             Back to Operations
           </Button>
         </div>
-        <MyNotificationsWidget showCard={true} onNavigateToItem={onNavigateToItem} />
+        <PaginatedNotificationsView onNavigateToItem={onNavigateToItem} />
       </div>
     );
   }
