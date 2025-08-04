@@ -21,18 +21,17 @@ export const PaginatedNotificationsView = ({ onNavigateToItem }: PaginatedNotifi
   const [currentPage, setCurrentPage] = useState(1);
   const notificationsPerPage = 25;
   
-  // Calculate offset for pagination
-  const offset = (currentPage - 1) * notificationsPerPage;
-  
-  const { data, isLoading, refetch } = useNotificationQuery(notificationsPerPage * currentPage);
-  const notifications = data?.notifications || [];
+  // Fetch all notifications (use a large limit to get all)
+  const { data, isLoading, refetch } = useNotificationQuery(1000);
+  const allNotifications = data?.notifications || [];
   const totalUnreadCount = data?.totalUnreadCount || 0;
   
   const { markAsReadMutation, deleteNotificationMutation, bulkDeleteMutation } = useNotificationMutations();
 
-  // Get current page notifications
-  const currentPageNotifications = notifications.slice(offset, offset + notificationsPerPage);
-  const totalPages = Math.ceil(notifications.length / notificationsPerPage);
+  // Calculate pagination
+  const offset = (currentPage - 1) * notificationsPerPage;
+  const currentPageNotifications = allNotifications.slice(offset, offset + notificationsPerPage);
+  const totalPages = Math.ceil(allNotifications.length / notificationsPerPage);
 
   const handleNotificationClick = (notification: Notification) => {
     if (!notification.read) {
@@ -197,7 +196,7 @@ export const PaginatedNotificationsView = ({ onNavigateToItem }: PaginatedNotifi
       />
       
       <CardContent className="space-y-4">
-        {notifications.length > 0 && (
+        {allNotifications.length > 0 && (
           <NotificationActions
             selectedCount={selectedNotifications.length}
             totalCount={currentPageNotifications.length}
@@ -207,7 +206,7 @@ export const PaginatedNotificationsView = ({ onNavigateToItem }: PaginatedNotifi
           />
         )}
 
-        {notifications.length === 0 ? (
+        {allNotifications.length === 0 ? (
           <NotificationEmptyState />
         ) : (
           <>
@@ -246,7 +245,7 @@ export const PaginatedNotificationsView = ({ onNavigateToItem }: PaginatedNotifi
             )}
 
             <div className="text-sm text-muted-foreground text-center">
-              Showing {offset + 1}-{Math.min(offset + notificationsPerPage, notifications.length)} of {notifications.length} notifications
+              Showing {offset + 1}-{Math.min(offset + notificationsPerPage, allNotifications.length)} of {allNotifications.length} notifications
             </div>
           </>
         )}
