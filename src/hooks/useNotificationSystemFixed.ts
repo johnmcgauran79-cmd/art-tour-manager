@@ -588,6 +588,125 @@ export const useNotificationSystemFixed = () => {
       }
     });
 
+    // CUSTOMERS - Insert, Update, Delete
+    channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'customers' }, async (payload) => {
+      console.log('🆕 FIXED: New customer detected:', payload.new);
+      try {
+        const userIds = await getUsersFromDepartments(['booking', 'operations']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'New Contact Created',
+            message: `New contact "${payload.new.first_name} ${payload.new.last_name}" has been created`,
+            type: 'booking',
+            priority: 'low',
+            related_id: payload.new.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in customer insert notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'customers' }, async (payload) => {
+      console.log('📝 FIXED: Customer updated:', payload.new.id);
+      try {
+        // Only notify for dietary requirements changes (important for operations)
+        if (payload.old?.dietary_requirements !== payload.new?.dietary_requirements) {
+          const userIds = await getUsersFromDepartments(['booking', 'operations']);
+          if (userIds.length > 0) {
+            await createNotificationForUsers(userIds, {
+              title: 'Dietary Requirements Updated',
+              message: `Dietary requirements updated for ${payload.new.first_name} ${payload.new.last_name}`,
+              type: 'booking',
+              priority: 'medium',
+              related_id: payload.new.id
+            });
+            queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error in customer update notification:', error);
+      }
+    });
+
+    channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'customers' }, async (payload) => {
+      console.log('🗑️ FIXED: Customer deleted:', payload.old.id);
+      try {
+        const userIds = await getUsersFromDepartments(['booking', 'operations']);
+        if (userIds.length > 0) {
+          await createNotificationForUsers(userIds, {
+            title: 'Contact Deleted',
+            message: `Contact "${payload.old.first_name} ${payload.old.last_name}" has been deleted`,
+            type: 'booking',
+            priority: 'medium',
+            related_id: payload.old.id
+          });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        }
+      } catch (error) {
+        console.error('❌ Error in customer delete notification:', error);
+      }
+    });
+
+    // ACTIVITY_BOOKINGS - Track attendance changes (separate from activity updates)
+    channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activity_bookings' }, async (payload) => {
+      console.log('📝 FIXED: Activity booking updated:', payload.new.id);
+      try {
+        // Check if this is within a booking creation window
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('id')
+          .eq('id', payload.new.booking_id)
+          .single();
+
+        if (booking && isWithinBookingOperationWindow(booking.id)) {
+          console.log('⏭️ Skipping activity booking notification - within booking creation window');
+          return;
+        }
+
+        // Only notify for attendance changes
+        if (payload.old?.passengers_attending !== payload.new?.passengers_attending) {
+          const { data: activityBooking } = await supabase
+            .from('activity_bookings')
+            .select(`
+              activity_id,
+              booking_id,
+              activities(name),
+              bookings(
+                group_name,
+                customers(first_name, last_name),
+                tours(name)
+              )
+            `)
+            .eq('id', payload.new.id)
+            .single();
+
+          if (activityBooking) {
+            const customerName = activityBooking.bookings.customers 
+              ? `${activityBooking.bookings.customers.first_name} ${activityBooking.bookings.customers.last_name}`
+              : activityBooking.bookings.group_name || 'Unknown Contact';
+            const tourName = activityBooking.bookings.tours?.name || 'Unknown Tour';
+            const activityName = activityBooking.activities?.name || 'Unknown Activity';
+
+            const userIds = await getUsersFromDepartments(['operations', 'booking']);
+            if (userIds.length > 0) {
+              await createNotificationForUsers(userIds, {
+                title: 'Activity Attendance Updated',
+                message: `${activityName} - attendance updated from ${payload.old.passengers_attending} to ${payload.new.passengers_attending} pax for ${customerName} on "${tourName}"`,
+                type: 'booking',
+                priority: 'medium',
+                related_id: activityBooking.booking_id
+              });
+              queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error in activity booking update notification:', error);
+      }
+    });
+
     // Subscribe to the channel
     channel.subscribe((status) => {
       console.log('📡 FIXED Subscription status:', status);

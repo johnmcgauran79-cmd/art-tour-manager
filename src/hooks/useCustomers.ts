@@ -28,24 +28,7 @@ export interface DuplicateGroup {
   mergedContact: Customer;
 }
 
-const createNotification = async (userId: string, notification: {
-  title: string;
-  message: string;
-  type: 'task' | 'tour' | 'booking' | 'system';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  related_id?: string;
-}) => {
-  const { error } = await supabase
-    .from('user_notifications')
-    .insert({
-      user_id: userId,
-      ...notification,
-    });
-
-  if (error) {
-    console.error('Error creating notification:', error);
-  }
-};
+// Manual notifications removed - now handled by centralized notification system
 
 // Function to format Australian mobile numbers
 export const formatAustralianMobile = (phone: string | null): string | null => {
@@ -311,13 +294,7 @@ export const useUpdateCustomer = () => {
           relatedId = recentBooking.id; // Use booking ID instead of customer ID
         }
 
-        await createNotification(user.id, {
-          title: "Dietary Update",
-          message,
-          type: 'system',
-          priority: 'medium',
-          related_id: relatedId,
-        });
+        // Notification will be created automatically by centralized system
       }
       
       console.log('Customer updated successfully:', data);
@@ -388,14 +365,7 @@ export const useDeleteCustomer = () => {
       }
       
       // Create notification for deletion (not via realtime to avoid duplicates)
-      if (user?.id && customer) {
-        await createNotification(user.id, {
-          title: "Contact Deleted",
-          message: `${customer.first_name} ${customer.last_name} contact deleted`,
-          type: 'system',
-          priority: 'medium',
-        });
-      }
+      // Notification will be created automatically by centralized system
       
       console.log('Customer deleted successfully');
       return id;

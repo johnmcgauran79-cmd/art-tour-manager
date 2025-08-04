@@ -33,24 +33,7 @@ export interface Tour {
   updated_at: string;
 }
 
-const createNotification = async (userId: string, notification: {
-  title: string;
-  message: string;
-  type: 'task' | 'tour' | 'booking' | 'system';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  related_id?: string;
-}) => {
-  const { error } = await supabase
-    .from('user_notifications')
-    .insert({
-      user_id: userId,
-      ...notification,
-    });
-
-  if (error) {
-    console.error('Error creating notification:', error);
-  }
-};
+// Manual notifications removed - now handled by centralized notification system
 
 export const useTours = () => {
   return useQuery({
@@ -164,132 +147,7 @@ export const useUpdateTour = () => {
         throw error;
       }
 
-      // Check for all significant changes that should trigger notifications
-      const changesDetected = [];
-      
-      // Date changes
-      if (data.updates.start_date !== undefined && originalTour?.start_date !== data.updates.start_date) {
-        changesDetected.push('start date');
-      }
-      if (data.updates.end_date !== undefined && originalTour?.end_date !== data.updates.end_date) {
-        changesDetected.push('end date');
-      }
-      if (data.updates.instalment_date !== undefined && originalTour?.instalment_date !== data.updates.instalment_date) {
-        changesDetected.push('instalment date');
-      }
-      if (data.updates.final_payment_date !== undefined && originalTour?.final_payment_date !== data.updates.final_payment_date) {
-        changesDetected.push('final payment date');
-      }
-      
-      // Pricing changes
-      if (data.updates.price_single !== undefined && originalTour?.price_single !== data.updates.price_single) {
-        changesDetected.push('single room price');
-      }
-      if (data.updates.price_double !== undefined && originalTour?.price_double !== data.updates.price_double) {
-        changesDetected.push('double room price');
-      }
-      if (data.updates.price_twin !== undefined && originalTour?.price_twin !== data.updates.price_twin) {
-        changesDetected.push('twin room price');
-      }
-      if (data.updates.deposit_required !== undefined && originalTour?.deposit_required !== data.updates.deposit_required) {
-        changesDetected.push('deposit amount');
-      }
-      if (data.updates.instalment_amount !== undefined && originalTour?.instalment_amount !== data.updates.instalment_amount) {
-        changesDetected.push('instalment amount');
-      }
-      
-      // Tour details changes
-      if (data.updates.name !== undefined && originalTour?.name !== data.updates.name) {
-        changesDetected.push('tour name');
-      }
-      if (data.updates.location !== undefined && originalTour?.location !== data.updates.location) {
-        changesDetected.push('location');
-      }
-      if (data.updates.pickup_point !== undefined && originalTour?.pickup_point !== data.updates.pickup_point) {
-        changesDetected.push('pickup point');
-      }
-      if (data.updates.tour_host !== undefined && originalTour?.tour_host !== data.updates.tour_host) {
-        changesDetected.push('tour host');
-      }
-      if (data.updates.status !== undefined && originalTour?.status !== data.updates.status) {
-        changesDetected.push('tour status');
-      }
-      
-      // Capacity changes (existing logic)
-      if (data.updates.capacity !== undefined && originalTour?.capacity !== data.updates.capacity) {
-        changesDetected.push('capacity');
-      }
-      if (data.updates.minimum_passengers_required !== undefined && originalTour?.minimum_passengers_required !== data.updates.minimum_passengers_required) {
-        changesDetected.push('minimum passengers');
-      }
-
-      console.log('Changes detected:', changesDetected);
-
-      if (changesDetected.length > 0) {
-        console.log('Significant changes detected, fetching department users...');
-        
-        // Get the current user's profile information
-        const { data: currentUserProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('first_name, last_name')
-          .eq('id', user?.id)
-          .single();
-
-        console.log('Current user profile:', currentUserProfile);
-        
-        const userName = currentUserProfile 
-          ? `${currentUserProfile.first_name || ''} ${currentUserProfile.last_name || ''}`.trim()
-          : 'Unknown User';
-        
-        // Send notifications to operations and booking department staff
-        const { data: departmentUsers, error: deptError } = await supabase
-          .from('user_departments')
-          .select(`
-            user_id,
-            department,
-            profiles!inner(email, first_name, last_name)
-          `)
-          .in('department', ['operations', 'booking']);
-
-        console.log('Department users found:', departmentUsers);
-        console.log('Department query error:', deptError);
-
-        if (departmentUsers && departmentUsers.length > 0) {
-          // Get unique user IDs and ensure all department users get notified
-          const uniqueUserIds = [...new Set(departmentUsers.map(user => user.user_id))];
-          
-          console.log('All department users to be notified:', uniqueUserIds);
-          console.log('Current user making change:', user?.id);
-          
-          // Create a concise message format
-          const changesList = changesDetected.slice(0, 3).join(', ') + 
-            (changesDetected.length > 3 ? ` and ${changesDetected.length - 3} other fields` : '');
-          
-          // Send notifications to ALL department users (including the person making the change)
-          const notifications = uniqueUserIds.map(userId => ({
-            user_id: userId,
-            title: 'Tour Details Updated',
-            message: `"${originalTour?.name || 'Unknown'}" ${changesList} updated by ${userName}. Please review and update any related operations or bookings.`,
-            type: 'tour' as const,
-            priority: 'medium' as const,
-            related_id: data.tourId,
-          }));
-
-          console.log('Creating notifications:', notifications);
-
-          const { error: notifError } = await supabase
-            .from('user_notifications')
-            .insert(notifications);
-
-          console.log('Notification creation error:', notifError);
-          
-          if (!notifError) {
-            console.log('Notifications created successfully');
-          }
-        } else {
-          console.log('No department users found for operations/booking');
-        }
-      }
+      // Notification will be created automatically by centralized system
 
       // Log the tour update
       logOperation({
@@ -298,8 +156,6 @@ export const useUpdateTour = () => {
         record_id: data.tourId,
         details: {
           updated_fields: Object.keys(data.updates),
-          changes_detected: changesDetected,
-          significant_changes: changesDetected.length > 0,
           ...data.updates,
         },
       });

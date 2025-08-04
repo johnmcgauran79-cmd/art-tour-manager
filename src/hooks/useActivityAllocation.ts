@@ -100,46 +100,8 @@ export const useActivityAllocation = ({
     }
   };
 
-  const createNotification = async (activityName: string, newCount: number, oldCount: number, isInitialBooking: boolean = false) => {
-    if (!user?.id || isInitialBooking) {
-      // Skip notifications during initial booking creation
-      console.log('Skipping activity notification - initial booking creation');
-      return;
-    }
-
-    try {
-      const { data: booking } = await supabase
-        .from('bookings')
-        .select(`
-          group_name,
-          lead_passenger_id,
-          tours(name),
-          customers(first_name, last_name)
-        `)
-        .eq('id', bookingId)
-        .single();
-
-      if (booking) {
-        const contactName = booking.customers 
-          ? `${booking.customers.first_name} ${booking.customers.last_name}`
-          : booking.group_name || 'Unknown Contact';
-        const tourName = booking.tours?.name || 'Unknown Tour';
-
-        await supabase
-          .from('user_notifications')
-          .insert({
-            user_id: user.id,
-            title: "Activity Update",
-            message: `${activityName} - attendance updated from ${oldCount} to ${newCount} pax for ${contactName} on "${tourName}"`,
-            type: 'booking',
-            priority: 'medium',
-            related_id: bookingId,
-          });
-      }
-    } catch (error) {
-      console.error('Error creating notification:', error);
-    }
-  };
+  // Remove manual notification creation - this is now handled by the centralized notification system
+  // The real-time system will detect activity_booking changes and create appropriate notifications
 
   const startEditing = (activityId: string) => {
     const currentValue = allocations[activityId] ?? 0;
@@ -179,10 +141,7 @@ export const useActivityAllocation = ({
       
       setAllocations(prev => ({ ...prev, [activityId]: passengers }));
       
-      // Only create notification if this is a user-driven change, not initial booking creation
-      if (oldCount !== passengers && hasInitialized) {
-        await createNotification(activityName, passengers, oldCount, false);
-      }
+      // Notification will be created automatically by the centralized notification system
       
       setEditingActivity(null);
       setTempEditValue('');
