@@ -208,8 +208,8 @@ export const useCreateBooking = () => {
           status: bookingData.status as any,
           extra_requests: bookingData.extra_requests || null,
           accommodation_required: bookingData.accommodation_required,
-          check_in_date: bookingData.check_in_date || null,
-          check_out_date: bookingData.check_out_date || null,
+          check_in_date: bookingData.accommodation_required ? (bookingData.check_in_date || null) : null,
+          check_out_date: bookingData.accommodation_required ? (bookingData.check_out_date || null) : null,
           total_nights: totalNights,
           invoice_notes: bookingData.invoice_notes || null,
           

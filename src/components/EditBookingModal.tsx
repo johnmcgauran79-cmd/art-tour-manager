@@ -457,24 +457,28 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                       onChange={(e) => setFormData(prev => ({ ...prev, booking_agent: e.target.value }))}
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="check_in_date">Check In Date</Label>
-                    <Input
-                      id="check_in_date"
-                      type="date"
-                      value={formData.check_in_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, check_in_date: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="check_out_date">Check Out Date</Label>
-                    <Input
-                      id="check_out_date"
-                      type="date"
-                      value={formData.check_out_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, check_out_date: e.target.value }))}
-                    />
-                  </div>
+                  {formData.accommodation_required && (
+                    <>
+                      <div>
+                        <Label htmlFor="check_in_date">Check In Date</Label>
+                        <Input
+                          id="check_in_date"
+                          type="date"
+                          value={formData.check_in_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, check_in_date: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="check_out_date">Check Out Date</Label>
+                        <Input
+                          id="check_out_date"
+                          type="date"
+                          value={formData.check_out_date}
+                          onChange={(e) => setFormData(prev => ({ ...prev, check_out_date: e.target.value }))}
+                        />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">

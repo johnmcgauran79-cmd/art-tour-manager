@@ -145,10 +145,10 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
                       </TableCell>
                       <TableCell className="w-[60px]">{booking.passenger_count}</TableCell>
                       <TableCell className="w-[100px]">
-                        {formatDateToDDMMYYYY(booking.check_in_date)}
+                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : '-'}
                       </TableCell>
                       <TableCell className="w-[100px]">
-                        {formatDateToDDMMYYYY(booking.check_out_date)}
+                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : '-'}
                       </TableCell>
                       <TableCell className="w-[70px]">{booking.total_nights || '-'}</TableCell>
                       <TableCell className="w-[80px]">

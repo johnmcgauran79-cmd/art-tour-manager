@@ -23,7 +23,7 @@ interface AddBookingModalProps {
   defaultStatus?: string;
 }
 
-export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "pending" }: AddBookingModalProps) => {
+export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "invoiced" }: AddBookingModalProps) => {
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
@@ -76,7 +76,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       toursCount: tours?.length 
     });
     
-    if (formData.tour_id && tours && tours.length > 0) {
+    if (formData.tour_id && tours && tours.length > 0 && formData.accommodation_required) {
       const selectedTour = tours.find(tour => tour.id === formData.tour_id);
       console.log('Selected tour found:', selectedTour);
       
