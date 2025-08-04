@@ -215,6 +215,62 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 placeholder="Task title"
                 className="text-xl font-semibold"
               />
+              
+              {/* Task details under title */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-4">
+                {task.tours && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">Tour:</span>
+                    <span>{task.tours.name}</span>
+                  </div>
+                )}
+                
+                {task.due_date && (
+                  <div className={`flex items-center gap-2 text-sm ${isOverdue ? 'text-red-600' : 'text-gray-600'}`}>
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">Due:</span>
+                    <span>{formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}</span>
+                    {isOverdue && <span className="font-semibold">(Overdue)</span>}
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Clock className="h-4 w-4 text-gray-500" />
+                  <span className="font-medium">Created:</span>
+                  <span>{formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}</span>
+                </div>
+                
+                {task.task_assignments && task.task_assignments.length > 0 && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <User className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">Assigned to:</span>
+                    <span>{task.task_assignments.length} user{task.task_assignments.length > 1 ? 's' : ''}</span>
+                  </div>
+                )}
+
+                {dependentTask && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600 col-span-2">
+                    <Link className="h-4 w-4 text-gray-500" />
+                    <span className="font-medium">Depends on:</span>
+                    <span className="flex items-center gap-2">
+                      {dependentTask.title}
+                      <Badge variant="outline" className={`text-xs ${getStatusColor(dependentTask.status)}`}>
+                        {formatStatus(dependentTask.status)}
+                      </Badge>
+                    </span>
+                  </div>
+                )}
+
+                {task.completed_at && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 col-span-2">
+                    <CheckCircle className="h-4 w-4" />
+                    <span className="font-medium">Completed:</span>
+                    <span>{formatDistanceToNow(new Date(task.completed_at), { addSuffix: true })}</span>
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-3 gap-3">
                 <Select
                   value={editedTask.priority}
@@ -368,51 +424,6 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
               )}
             </div>
 
-            {/* Task Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {task.tours && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">Tour:</span>
-                  <span>{task.tours.name}</span>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="font-medium">Created:</span>
-                <span>{formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}</span>
-              </div>
-              
-              {task.task_assignments && task.task_assignments.length > 0 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">Assigned to:</span>
-                  <span>{task.task_assignments.length} user{task.task_assignments.length > 1 ? 's' : ''}</span>
-                </div>
-              )}
-
-              {dependentTask && (
-                <div className="flex items-center gap-2 text-sm col-span-2">
-                  <Link className="h-4 w-4 text-gray-500" />
-                  <span className="font-medium">Depends on:</span>
-                  <span className="flex items-center gap-2">
-                    {dependentTask.title}
-                    <Badge variant="outline" className={`text-xs ${getStatusColor(dependentTask.status)}`}>
-                      {formatStatus(dependentTask.status)}
-                    </Badge>
-                  </span>
-                </div>
-              )}
-
-              {task.completed_at && (
-                <div className="flex items-center gap-2 text-sm text-green-600">
-                  <CheckCircle className="h-4 w-4" />
-                  <span className="font-medium">Completed:</span>
-                  <span>{formatDistanceToNow(new Date(task.completed_at), { addSuffix: true })}</span>
-                </div>
-              )}
-            </div>
 
             {/* Blocked Warning */}
             {isBlocked && (
