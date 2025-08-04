@@ -5,7 +5,27 @@ import { useQueryClient } from '@tanstack/react-query';
 
 type Department = 'operations' | 'finance' | 'marketing' | 'booking' | 'maintenance' | 'general';
 
-// Centralized notification creation utility
+// Track recent booking operations to prevent cascade notifications
+const recentBookingOperations = new Map<string, { operation: string; timestamp: number }>();
+const OPERATION_WINDOW_MS = 5000; // 5 seconds window
+
+const trackBookingOperation = (bookingId: string, operation: string) => {
+  recentBookingOperations.set(bookingId, { operation, timestamp: Date.now() });
+  
+  // Clean up old entries
+  setTimeout(() => {
+    recentBookingOperations.delete(bookingId);
+  }, OPERATION_WINDOW_MS);
+};
+
+const isWithinBookingOperationWindow = (bookingId: string) => {
+  const operation = recentBookingOperations.get(bookingId);
+  if (!operation) return false;
+  
+  return (Date.now() - operation.timestamp) < OPERATION_WINDOW_MS;
+};
+
+// Centralized notification creation utility with deduplication
 const createNotificationForUsers = async (
   userIds: string[],
   notification: {
@@ -20,6 +40,20 @@ const createNotificationForUsers = async (
   
   if (userIds.length === 0) {
     console.warn('⚠️ No users to notify');
+    return false;
+  }
+
+  // Check for duplicate notifications in the last 30 seconds to prevent spam
+  const { data: recentNotifications } = await supabase
+    .from('user_notifications')
+    .select('id')
+    .eq('title', notification.title)
+    .eq('message', notification.message)
+    .eq('related_id', notification.related_id)
+    .gte('created_at', new Date(Date.now() - 30000).toISOString());
+
+  if (recentNotifications && recentNotifications.length > 0) {
+    console.log('🚫 Duplicate notification detected, skipping:', notification.title);
     return false;
   }
 
@@ -134,6 +168,10 @@ export const useNotificationSystemFixed = () => {
     // BOOKINGS - Only primary user actions, ignore cascading updates
     channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, async (payload) => {
       console.log('🆕 FIXED: New booking detected:', payload.new);
+      
+      // Track this booking operation to prevent cascade notifications
+      trackBookingOperation(payload.new.id, 'create');
+      
       try {
         const { data: booking, error } = await supabase
           .from('bookings')
@@ -398,6 +436,23 @@ export const useNotificationSystemFixed = () => {
     channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'activities' }, async (payload) => {
       console.log('📝 FIXED: Activity updated:', payload.new.id);
       try {
+        // Check if this activity is related to a recent booking operation
+        const { data: activityBookings } = await supabase
+          .from('activity_bookings')
+          .select('booking_id')
+          .eq('activity_id', payload.new.id);
+
+        if (activityBookings) {
+          const isWithinBookingWindow = activityBookings.some(ab => 
+            isWithinBookingOperationWindow(ab.booking_id)
+          );
+          
+          if (isWithinBookingWindow) {
+            console.log('⏭️ Skipping activity notification - within booking creation window');
+            return;
+          }
+        }
+
         // Ignore automatic spots_booked updates (these happen when bookings change)
         if (payload.old?.spots_booked !== payload.new?.spots_booked && 
             Object.keys(payload.new).length === Object.keys(payload.old).length &&

@@ -58,7 +58,7 @@ export const useActivityAllocation = ({
       setAllocations(newAllocations);
       setHasInitialized(true);
       
-      // Initialize missing activity bookings
+      // Initialize missing activity bookings (silently, without notifications)
       if (toInitialize.length > 0) {
         initializeActivityBookings(toInitialize);
       }
@@ -100,8 +100,12 @@ export const useActivityAllocation = ({
     }
   };
 
-  const createNotification = async (activityName: string, newCount: number, oldCount: number) => {
-    if (!user?.id) return;
+  const createNotification = async (activityName: string, newCount: number, oldCount: number, isInitialBooking: boolean = false) => {
+    if (!user?.id || isInitialBooking) {
+      // Skip notifications during initial booking creation
+      console.log('Skipping activity notification - initial booking creation');
+      return;
+    }
 
     try {
       const { data: booking } = await supabase
@@ -175,8 +179,9 @@ export const useActivityAllocation = ({
       
       setAllocations(prev => ({ ...prev, [activityId]: passengers }));
       
-      if (oldCount !== passengers) {
-        await createNotification(activityName, passengers, oldCount);
+      // Only create notification if this is a user-driven change, not initial booking creation
+      if (oldCount !== passengers && hasInitialized) {
+        await createNotification(activityName, passengers, oldCount, false);
       }
       
       setEditingActivity(null);
