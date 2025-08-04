@@ -76,7 +76,38 @@ export const TaskCard = ({ task, showTourName = false, onTaskClick }: TaskCardPr
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h4 className="font-semibold text-sm mb-2">{task.title}</h4>
-            <div className="flex flex-wrap gap-2 mb-2">
+            
+            {/* Task details under title */}
+            <div className="space-y-1 mb-3">
+              {showTourName && task.tours && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <MapPin className="h-3 w-3" />
+                  {task.tours.name}
+                </div>
+              )}
+              
+              {task.due_date && (
+                <div className={`flex items-center gap-2 text-xs ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
+                  <Calendar className="h-3 w-3" />
+                  Due {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
+                  {isOverdue && <span className="font-semibold">(Overdue)</span>}
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Clock className="h-3 w-3" />
+                Created {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
+              </div>
+              
+              {task.task_assignments && task.task_assignments.length > 0 && (
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <User className="h-3 w-3" />
+                  Assigned to {task.task_assignments.length} user{task.task_assignments.length > 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
               <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
                 {task.priority}
               </Badge>
@@ -105,37 +136,8 @@ export const TaskCard = ({ task, showTourName = false, onTaskClick }: TaskCardPr
       </CardHeader>
       <CardContent className="pt-0">
         {task.description && (
-          <p className="text-sm text-gray-600 mb-3">{task.description}</p>
+          <p className="text-sm text-gray-600">{task.description}</p>
         )}
-        
-        <div className="space-y-2">
-          {showTourName && task.tours && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <MapPin className="h-3 w-3" />
-              {task.tours.name}
-            </div>
-          )}
-          
-          {task.due_date && (
-            <div className={`flex items-center gap-2 text-xs ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
-              <Calendar className="h-3 w-3" />
-              Due {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
-              {isOverdue && <span className="font-semibold">(Overdue)</span>}
-            </div>
-          )}
-          
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <Clock className="h-3 w-3" />
-            Created {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
-          </div>
-          
-          {task.task_assignments && task.task_assignments.length > 0 && (
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <User className="h-3 w-3" />
-              Assigned to {task.task_assignments.length} user{task.task_assignments.length > 1 ? 's' : ''}
-            </div>
-          )}
-        </div>
       </CardContent>
     </Card>
   );

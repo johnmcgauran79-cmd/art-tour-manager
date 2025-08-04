@@ -172,12 +172,44 @@ export const TasksTable = ({
                 <TableCell>
                   <div>
                     <div className="font-medium text-sm">{task.title}</div>
+                    
+                    {/* Task details under title */}
+                    <div className="space-y-1 mt-1">
+                      {showTourName && task.tours && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <MapPin className="h-3 w-3" />
+                          {task.tours.name}
+                        </div>
+                      )}
+                      
+                      {task.due_date && (
+                        <div className={`flex items-center gap-2 text-xs ${isOverdue ? 'text-red-600' : 'text-gray-500'}`}>
+                          <Calendar className="h-3 w-3" />
+                          Due {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}
+                          {isOverdue && <span className="font-semibold">(Overdue)</span>}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        <Clock className="h-3 w-3" />
+                        Created {formatDistanceToNow(new Date(task.created_at), { addSuffix: true })}
+                      </div>
+                      
+                      {task.task_assignments && task.task_assignments.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <User className="h-3 w-3" />
+                          Assigned to {task.task_assignments.length} user{task.task_assignments.length > 1 ? 's' : ''}
+                        </div>
+                      )}
+                    </div>
+
                     {task.description && (
-                      <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">
+                      <div className="text-xs text-gray-500 mt-2 truncate max-w-xs">
                         {task.description}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 mt-1">
+                    
+                    <div className="flex items-center gap-2 mt-2">
                       {task.is_automated && (
                         <Badge variant="outline" className="text-xs bg-purple-100 text-purple-800 border-purple-200">
                           Auto
