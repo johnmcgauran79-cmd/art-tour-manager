@@ -4,12 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { useAuth } from "@/hooks/useAuth";
+import { createNotification } from "@/utils/notificationHelpers";
+import { useUserDepartments } from "@/hooks/useUserDepartments";
 
 export const useSecureDeleteBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { logOperation } = useAuditLog();
   const { user } = useAuth();
+  const { data: departments } = useUserDepartments();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -35,8 +38,21 @@ export const useSecureDeleteBooking = () => {
 
       if (error) throw error;
 
-      // Note: Notification will be created automatically by realtime subscription
-      // We don't create a duplicate notification here
+      // Create notification since realtime subscription isn't working
+      if (booking && user?.id) {
+        const contactName = booking.group_name || 'Unknown Contact';
+        const tourName = booking.tours?.name || 'Unknown Tour';
+        
+        // Create notification for operations department
+        await createNotification(user.id, {
+          title: 'Booking Deleted',
+          message: `Booking for ${contactName} on tour ${tourName} has been deleted`,
+          type: 'booking',
+          priority: 'medium',
+          related_id: id,
+          department: 'operations'
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
