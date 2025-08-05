@@ -1,4 +1,5 @@
 
+import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +21,16 @@ export const BookingDetailsForm = ({
   preSelectedTourId,
   isWaitlistMode = false
 }: BookingDetailsFormProps) => {
+  // Clear check-in/out dates when accommodation is not required
+  useEffect(() => {
+    if (!formData.accommodation_required) {
+      if (formData.check_in_date || formData.check_out_date) {
+        setFormData('check_in_date', '');
+        setFormData('check_out_date', '');
+      }
+    }
+  }, [formData.accommodation_required, formData.check_in_date, formData.check_out_date, setFormData]);
+
   return (
     <div className="space-y-6">
       {/* Tour Selection */}
