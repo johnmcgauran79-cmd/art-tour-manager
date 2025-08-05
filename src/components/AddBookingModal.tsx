@@ -30,6 +30,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isTabNavigationEnabled, setIsTabNavigationEnabled] = useState(false);
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
     lead_passenger_name: '',
@@ -173,7 +174,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     setHasUnsavedChanges(true);
   };
 
-  const handleCreateBooking = (e: React.FormEvent) => {
+  const handleValidateAndProceed = (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.tour_id) {
@@ -186,6 +187,19 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       return;
     }
 
+    // Enable tab navigation and proceed to next tab
+    setIsTabNavigationEnabled(true);
+    setHasUnsavedChanges(false);
+    
+    // Navigate to next tab based on accommodation requirement
+    if (formData.accommodation_required) {
+      setActiveTab("hotels");
+    } else {
+      setActiveTab("activities");
+    }
+  };
+
+  const handleCreateBooking = () => {
     // Clean up date fields - convert empty strings to null
     const cleanedFormData = {
       ...formData,
@@ -198,13 +212,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       onSuccess: (data) => {
         setCreatedBookingId(data.id);
         setHasUnsavedChanges(false);
-        
-        // Navigate to next tab based on accommodation requirement
-        if (formData.accommodation_required) {
-          setActiveTab("hotels");
-        } else {
-          setActiveTab("activities");
-        }
+        onOpenChange(false);
       }
     });
   };
@@ -260,6 +268,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     setCreatedBookingId(null);
     setActiveTab("details");
     setHasUnsavedChanges(false);
+    setIsTabNavigationEnabled(false);
     onOpenChange(false);
   };
 
@@ -278,26 +287,26 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="hotels" className="flex items-center gap-1" disabled={!createdBookingId}>
+              <TabsTrigger value="hotels" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
                 <MapPin className="h-4 w-4" />
                 Hotels
               </TabsTrigger>
-              <TabsTrigger value="activities" className="flex items-center gap-1" disabled={!createdBookingId}>
+              <TabsTrigger value="activities" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
                 <Calendar className="h-4 w-4" />
                 Activities
               </TabsTrigger>
-              <TabsTrigger value="medical" className="flex items-center gap-1" disabled={!createdBookingId}>
+              <TabsTrigger value="medical" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
                 <Heart className="h-4 w-4" />
                 Medical & Emergency
               </TabsTrigger>
-              <TabsTrigger value="travel" className="flex items-center gap-1" disabled={!createdBookingId}>
+              <TabsTrigger value="travel" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
                 <FileText className="h-4 w-4" />
                 Travel Docs
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-4">
-              <form onSubmit={handleCreateBooking} className="space-y-4">
+              <form onSubmit={handleValidateAndProceed} className="space-y-4">
                 {/* Lead Passenger Section */}
                 <div className="border rounded-lg p-4 space-y-4">
                   <div className="flex items-center justify-between">
@@ -364,67 +373,73 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                     disabled={createBooking.isPending}
                     className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
                   >
-                    {createBooking.isPending ? 'Creating...' : (isWaitlistMode ? 'Add to Waitlist' : 'Create Booking')}
+                    {isWaitlistMode ? 'Continue to Waitlist' : 'Continue'}
                   </Button>
                 </div>
               </form>
             </TabsContent>
 
             <TabsContent value="hotels" className="space-y-4">
-              {createdBookingId && formData.tour_id ? (
-                <>
-                  <HotelAllocationSection
-                    tourId={formData.tour_id}
-                    bookingId={createdBookingId}
-                    accommodationRequired={formData.accommodation_required}
-                    defaultCheckIn={formData.check_in_date}
-                    defaultCheckOut={formData.check_out_date}
-                    onUpdate={() => setHasUnsavedChanges(false)}
-                  />
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={handleClose}>
-                      Close
-                    </Button>
-                    <Button 
-                      onClick={() => handleTabUpdate("activities")}
-                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                    >
-                      Next: Activities
-                    </Button>
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Hotel Preferences</h3>
+                <p className="text-muted-foreground">
+                  Hotel allocations will be managed after the booking is created. 
+                  {formData.accommodation_required ? " Check-in and check-out dates have been set based on your tour selection." : " No accommodation required for this booking."}
+                </p>
+                {formData.accommodation_required && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Check-in Date</Label>
+                      <div className="p-2 bg-muted rounded border">
+                        {formData.check_in_date || "Not set"}
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Check-out Date</Label>
+                      <div className="p-2 bg-muted rounded border">
+                        {formData.check_out_date || "Not set"}
+                      </div>
+                    </div>
                   </div>
-                </>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Please create the booking first to manage hotel allocations.</p>
-                </div>
-              )}
+                )}
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => handleTabUpdate("activities")}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Next: Activities
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="activities" className="space-y-4">
-              {createdBookingId && formData.tour_id ? (
-                <>
-                  <ActivityAllocationSection
-                    tourId={formData.tour_id}
-                    bookingId={createdBookingId}
-                    passengerCount={formData.passenger_count}
-                  />
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={handleClose}>
-                      Close
-                    </Button>
-                    <Button 
-                      onClick={() => handleTabUpdate("medical")}
-                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                    >
-                      Next: Medical & Emergency
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>Please create the booking first to manage activity allocations.</p>
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="text-lg font-medium text-brand-navy">Activity Preferences</h3>
+                <p className="text-muted-foreground">
+                  Activity allocations will be managed after the booking is created. You have {formData.passenger_count} passenger{formData.passenger_count > 1 ? 's' : ''} for this booking.
+                </p>
+                <div className="p-4 bg-muted rounded border">
+                  <p className="font-medium">Passenger Count: {formData.passenger_count}</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Activities will be automatically allocated for all passengers when the booking is created.
+                  </p>
                 </div>
-              )}
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={handleClose}>
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => handleTabUpdate("medical")}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Next: Medical & Emergency
+                </Button>
+              </div>
             </TabsContent>
 
             <TabsContent value="medical" className="space-y-4">
@@ -575,10 +590,11 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                   Close
                 </Button>
                 <Button 
-                  onClick={() => handleTabUpdate()}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                  onClick={handleCreateBooking}
+                  disabled={createBooking.isPending}
+                  className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
                 >
-                  Update & Complete
+                  {createBooking.isPending ? 'Creating...' : (isWaitlistMode ? 'Add to Waitlist' : 'Create Booking')}
                 </Button>
               </div>
             </TabsContent>
