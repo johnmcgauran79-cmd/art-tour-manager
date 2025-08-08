@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { useSimpleNotifications } from "@/hooks/useSimpleNotifications";
 
 export interface Tour {
   id: string;
@@ -60,6 +61,7 @@ export const useCreateTour = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { logOperation } = useAuditLog();
+  const { sendTourCreatedNotification } = useSimpleNotifications();
 
   return useMutation({
     mutationFn: async (tourData: Omit<Tour, 'id' | 'created_at' | 'updated_at'>) => {
@@ -90,19 +92,24 @@ export const useCreateTour = () => {
         }
       });
       
-      // Note: Realtime notifications will handle notifying all users
-      // No need to create notification here to avoid duplicates
-      
       console.log('Tour created successfully:', data);
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Tour Created",
         description: `${data.name} has been successfully created.`,
       });
+      
+      // Send notification about new tour
+      try {
+        await sendTourCreatedNotification(data.id, data.name);
+      } catch (error) {
+        console.error('Failed to send tour creation notification:', error);
+        // Don't fail the creation if notification fails
+      }
     },
     onError: (error: any) => {
       console.error('Error in mutation:', error);

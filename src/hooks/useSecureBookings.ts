@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { useAuth } from "@/hooks/useAuth";
-import { createNotification } from "@/utils/notificationHelpers";
+import { useSimpleNotifications } from "@/hooks/useSimpleNotifications";
 import { useUserDepartments } from "@/hooks/useUserDepartments";
 
 export const useSecureDeleteBooking = () => {
@@ -13,6 +13,7 @@ export const useSecureDeleteBooking = () => {
   const { logOperation } = useAuditLog();
   const { user } = useAuth();
   const { data: departments } = useUserDepartments();
+  const { sendBookingDeletedNotification } = useSimpleNotifications();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -38,20 +39,14 @@ export const useSecureDeleteBooking = () => {
 
       if (error) throw error;
 
-      // Create notification since realtime subscription isn't working
-      if (booking && user?.id) {
-        const contactName = booking.group_name || 'Unknown Contact';
-        const tourName = booking.tours?.name || 'Unknown Tour';
-        
-        // Create notification for operations department
-        await createNotification(user.id, {
-          title: 'Booking Deleted',
-          message: `Booking for ${contactName} on tour ${tourName} has been deleted`,
-          type: 'booking',
-          priority: 'medium',
-          related_id: id,
-          department: 'operations'
-        });
+      // Send notification about deletion
+      if (booking) {
+        try {
+          await sendBookingDeletedNotification(id);
+        } catch (error) {
+          console.error('Failed to send deletion notification:', error);
+          // Don't fail the deletion if notification fails
+        }
       }
     },
     onSuccess: () => {

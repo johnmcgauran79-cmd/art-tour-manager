@@ -5,19 +5,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import { useNotificationSystemFixed } from "@/hooks/useNotificationSystemFixed";
-
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
-
-const NotificationSystemProvider = () => {
-  const { isSubscribed } = useNotificationSystemFixed();
-  console.log('🔥 NotificationSystemProvider - isSubscribed:', isSubscribed);
-  return null;
-};
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
@@ -30,12 +22,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" />;
   }
   
-  return (
-    <>
-      <NotificationSystemProvider />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 };
 
 function App() {
