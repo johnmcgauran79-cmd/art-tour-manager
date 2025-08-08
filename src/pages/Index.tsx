@@ -9,7 +9,7 @@ import { ContactsTable } from "@/components/ContactsTable";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
-import { MyNotificationsWidget } from "@/components/MyNotificationsWidget";
+
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
@@ -26,7 +26,7 @@ import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell } from "lucide-react";
+
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -113,13 +113,6 @@ const Index = () => {
     setAddBookingModalOpen(true);
   };
 
-  const handleViewAllNotifications = () => {
-    setActiveTab("operations");
-    setTimeout(() => {
-      const event = new CustomEvent('navigate-to-all-notifications');
-      window.dispatchEvent(event);
-    }, 100);
-  };
 
   const handleViewAllTasks = () => {
     setActiveTab("operations");
@@ -160,32 +153,6 @@ const Index = () => {
               onAddContact={() => setAddContactModalOpen(true)}
               onAddTask={() => setAddTaskModalOpen(true)}
             />
-
-            <Card className="border-brand-navy/20 shadow-lg">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-brand-navy" />
-                    <CardTitle className="text-brand-navy">Recent Notifications</CardTitle>
-                  </div>
-                  <Button
-                    onClick={handleViewAllNotifications}
-                    size="sm"
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Bell className="h-4 w-4" />
-                    View All Notifications
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <MyNotificationsWidget 
-                  onNavigateToItem={handleNavigateToItem} 
-                  showCard={false} 
-                />
-              </CardContent>
-            </Card>
 
             <div className="w-full">
               <MyTasksWidget onViewAllTasks={handleViewAllTasks} />

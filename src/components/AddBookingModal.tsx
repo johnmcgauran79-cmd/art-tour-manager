@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, Heart, Plus, User, MapPin, Calendar } from "lucide-react";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
-import { useSimpleNotifications } from "@/hooks/useSimpleNotifications";
+
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
@@ -69,7 +69,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
-  const { sendBookingCreatedNotification } = useSimpleNotifications();
+  
 
   // Auto-fill check-in/out dates when tour is selected - Enhanced version
   useEffect(() => {
@@ -216,17 +216,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         setHasUnsavedChanges(false);
         onOpenChange(false);
         
-        // Send notification after successful booking creation
-        try {
-          const selectedTour = tours?.find(tour => tour.id === formData.tour_id);
-          const customerName = formData.lead_passenger_name || formData.group_name || 'Unknown Contact';
-          const tourName = selectedTour?.name || 'Unknown Tour';
-          
-          await sendBookingCreatedNotification(data.id, customerName, tourName);
-        } catch (error) {
-          console.error('Failed to send booking notification:', error);
-          // Don't fail the booking creation if notification fails
-        }
       }
     });
   };

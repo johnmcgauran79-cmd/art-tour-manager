@@ -3,10 +3,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
-import { PaginatedNotificationsView } from "@/components/PaginatedNotificationsView";
 import { useAuth } from "@/hooks/useAuth";
 import { OperationsHeader } from "@/components/operations/OperationsHeader";
-import { OperationsNotificationsCard } from "@/components/operations/OperationsNotificationsCard";
 import { OperationsTasksCard } from "@/components/operations/OperationsTasksCard";
 import { OperationsToursOverview } from "@/components/operations/OperationsToursOverview";
 
@@ -15,7 +13,7 @@ interface OperationsDashboardProps {
 }
 
 export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardProps) => {
-  const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks' | 'allNotifications'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'templates' | 'allTasks'>('dashboard');
   const { userRole } = useAuth();
 
   // Check if user has admin or manager role
@@ -23,19 +21,13 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
 
   // Listen for navigation events from dashboard
   useEffect(() => {
-    const handleNavigateToAllNotifications = () => {
-      setCurrentView('allNotifications');
-    };
-
     const handleNavigateToAllTasks = () => {
       setCurrentView('allTasks');
     };
 
-    window.addEventListener('navigate-to-all-notifications', handleNavigateToAllNotifications);
     window.addEventListener('navigate-to-all-tasks', handleNavigateToAllTasks);
     
     return () => {
-      window.removeEventListener('navigate-to-all-notifications', handleNavigateToAllNotifications);
       window.removeEventListener('navigate-to-all-tasks', handleNavigateToAllTasks);
     };
   }, []);
@@ -74,31 +66,9 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
     );
   }
 
-  if (currentView === 'allNotifications') {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-brand-navy">All My Notifications</h2>
-          <Button
-            variant="outline"
-            onClick={() => setCurrentView('dashboard')}
-          >
-            Back to Operations
-          </Button>
-        </div>
-        <PaginatedNotificationsView onNavigateToItem={onNavigateToItem} />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <OperationsHeader />
-
-      <OperationsNotificationsCard 
-        onViewAllNotifications={() => setCurrentView('allNotifications')}
-        onNavigateToItem={onNavigateToItem}
-      />
 
       <OperationsTasksCard
         canManageTemplates={canManageTemplates}
