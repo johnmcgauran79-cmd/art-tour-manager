@@ -164,6 +164,18 @@ Deno.serve(async (req) => {
         console.log(`Updated assigned_by references for user ${userId}`)
       }
 
+      // Update task comments to transfer ownership to admin user
+      const { error: updateCommentsError } = await supabaseAdmin
+        .from('task_comments')
+        .update({ user_id: adminUserId })
+        .eq('user_id', userId)
+
+      if (updateCommentsError) {
+        console.error('Error updating task comments user_id:', updateCommentsError)
+      } else {
+        console.log(`Updated task comments ownership for user ${userId}`)
+      }
+
     } catch (taskError) {
       console.error('Error handling task reassignment:', taskError)
       // Continue with deletion even if task reassignment fails
