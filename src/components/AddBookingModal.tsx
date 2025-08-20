@@ -16,6 +16,9 @@ import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
+import { useHotels } from "@/hooks/useHotels";
+import { useActivities } from "@/hooks/useActivities";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -69,6 +72,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
+  
+  // Load hotels and activities for the selected tour
+  const { data: hotels = [] } = useHotels(formData.tour_id);
+  const { data: activities = [] } = useActivities(formData.tour_id);
   
 
   // Auto-fill check-in/out dates when tour is selected - Enhanced version
@@ -424,28 +431,86 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
             <TabsContent value="hotels" className="space-y-4">
               <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Hotel Preferences</h3>
+                <h3 className="text-lg font-medium text-brand-navy">Available Hotels</h3>
                 <p className="text-muted-foreground">
-                  Hotel allocations will be managed after the booking is created. 
-                  {formData.accommodation_required ? " Check-in and check-out dates have been set based on your tour selection." : " No accommodation required for this booking."}
+                  {formData.accommodation_required 
+                    ? "Here are the hotels available for this tour. Hotel allocation will be managed after the booking is created."
+                    : "No accommodation required for this booking."}
                 </p>
+                
                 {formData.accommodation_required && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Check-in Date</Label>
-                      <div className="p-2 bg-muted rounded border">
-                        {formData.check_in_date || "Not set"}
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <Label>Tour Check-in Date</Label>
+                        <div className="p-2 bg-muted rounded border">
+                          {formData.check_in_date ? formatDateToDDMMYYYY(formData.check_in_date) : "Not set"}
+                        </div>
+                      </div>
+                      <div>
+                        <Label>Tour Check-out Date</Label>
+                        <div className="p-2 bg-muted rounded border">
+                          {formData.check_out_date ? formatDateToDDMMYYYY(formData.check_out_date) : "Not set"}
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <Label>Check-out Date</Label>
-                      <div className="p-2 bg-muted rounded border">
-                        {formData.check_out_date || "Not set"}
+
+                    {hotels && hotels.length > 0 ? (
+                      <div className="space-y-4">
+                        {hotels.map((hotel) => (
+                          <div key={hotel.id} className="border rounded-lg p-4 bg-card">
+                            <div className="flex justify-between items-start mb-2">
+                              <h4 className="font-semibold text-lg">{hotel.name}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                {hotel.rooms_reserved || 0} rooms reserved
+                              </div>
+                            </div>
+                            
+                            {hotel.address && (
+                              <p className="text-muted-foreground mb-2 flex items-center gap-1">
+                                <MapPin className="h-4 w-4" />
+                                {hotel.address}
+                              </p>
+                            )}
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              {hotel.default_check_in && (
+                                <div>
+                                  <span className="font-medium">Check-in:</span>
+                                  <div>{formatDateToDDMMYYYY(hotel.default_check_in)}</div>
+                                </div>
+                              )}
+                              {hotel.default_check_out && (
+                                <div>
+                                  <span className="font-medium">Check-out:</span>
+                                  <div>{formatDateToDDMMYYYY(hotel.default_check_out)}</div>
+                                </div>
+                              )}
+                              {hotel.default_room_type && (
+                                <div>
+                                  <span className="font-medium">Room Type:</span>
+                                  <div>{hotel.default_room_type}</div>
+                                </div>
+                              )}
+                              {hotel.extra_night_price && (
+                                <div>
+                                  <span className="font-medium">Extra Night:</span>
+                                  <div>${hotel.extra_night_price}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </div>
-                  </div>
+                    ) : (
+                      <div className="text-center py-8 text-muted-foreground">
+                        {formData.tour_id ? "No hotels available for this tour yet." : "Please select a tour to view available hotels."}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
+              
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Close
@@ -461,10 +526,72 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
             <TabsContent value="activities" className="space-y-4">
               <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Activity Preferences</h3>
+                <h3 className="text-lg font-medium text-brand-navy">Available Activities</h3>
                 <p className="text-muted-foreground">
-                  Activity allocations will be managed after the booking is created. You have {formData.passenger_count} passenger{formData.passenger_count > 1 ? 's' : ''} for this booking.
+                  Here are the activities available for this tour. Activity allocation will be managed after the booking is created.
+                  You have {formData.passenger_count} passenger{formData.passenger_count > 1 ? 's' : ''} for this booking.
                 </p>
+                
+                {activities && activities.length > 0 ? (
+                  <div className="space-y-4">
+                    {activities.map((activity) => (
+                      <div key={activity.id} className="border rounded-lg p-4 bg-card">
+                        <div className="flex justify-between items-start mb-2">
+                          <h4 className="font-semibold text-lg">{activity.name}</h4>
+                          <div className="text-sm text-muted-foreground">
+                            {activity.spots_available ? `${activity.spots_available} spots available` : 'Unlimited spots'}
+                          </div>
+                        </div>
+                        
+                        {activity.location && (
+                          <p className="text-muted-foreground mb-2 flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {activity.location}
+                          </p>
+                        )}
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                          {activity.activity_date && (
+                            <div>
+                              <span className="font-medium">Date:</span>
+                              <div>{formatDateToDDMMYYYY(activity.activity_date)}</div>
+                            </div>
+                          )}
+                          {activity.start_time && (
+                            <div>
+                              <span className="font-medium">Start Time:</span>
+                              <div>{activity.start_time}</div>
+                            </div>
+                          )}
+                          {activity.pickup_time && (
+                            <div>
+                              <span className="font-medium">Pickup Time:</span>
+                              <div>{activity.pickup_time}</div>
+                            </div>
+                          )}
+                          {activity.pickup_location && (
+                            <div>
+                              <span className="font-medium">Pickup Location:</span>
+                              <div>{activity.pickup_location}</div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        {activity.notes && (
+                          <div className="mt-3 pt-3 border-t">
+                            <span className="text-sm font-medium">Notes:</span>
+                            <p className="text-sm text-muted-foreground mt-1">{activity.notes}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    {formData.tour_id ? "No activities available for this tour yet." : "Please select a tour to view available activities."}
+                  </div>
+                )}
+                
                 <div className="p-4 bg-muted rounded border">
                   <p className="font-medium">Passenger Count: {formData.passenger_count}</p>
                   <p className="text-sm text-muted-foreground mt-1">
@@ -472,6 +599,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                   </p>
                 </div>
               </div>
+              
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={handleClose}>
                   Close
