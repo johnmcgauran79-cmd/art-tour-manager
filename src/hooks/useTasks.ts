@@ -342,6 +342,20 @@ export const useUpdateTask = () => {
       
       console.log('Database update successful, no errors');
 
+      // Verify the update persisted by checking the database again
+      console.log('Verifying update persisted in database...');
+      const { data: verifyTask, error: verifyError } = await supabase
+        .from('tasks')
+        .select('id, status, updated_at')
+        .eq('id', data.taskId)
+        .maybeSingle();
+      
+      if (!verifyError && verifyTask) {
+        console.log('Database verification successful:', verifyTask);
+      } else {
+        console.log('Database verification failed or no access:', verifyError);
+      }
+
       // Then fetch the updated task to verify
       console.log('Fetching updated task to verify...');
       const { data: task, error: selectError } = await supabase
@@ -369,12 +383,23 @@ export const useUpdateTask = () => {
       return task;
     },
     onSuccess: (task, variables) => {
-      console.log('Task update successful, updating cache and UI...');
+      console.log('Task update successful, invalidating all task queries...');
       
-      // Instead of optimistic updates that get overridden by realtime,
-      // just invalidate queries to fetch fresh data
+      // Invalidate all task-related queries with different cache keys
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', undefined] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', null] });
+      
+      // Force refetch immediately
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
+      // Remove stale data completely and force re-render
+      queryClient.removeQueries({ queryKey: ['tasks'] });
+      queryClient.removeQueries({ queryKey: ['my-tasks'] });
+      
+      console.log('Cache invalidation complete');
       
       toast({
         title: "Task Updated",
