@@ -119,6 +119,46 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   }, [preSelectedTourId, tours]);
 
+  // Reset form data when modal opens
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        tour_id: preSelectedTourId || '',
+        lead_passenger_name: '',
+        lead_passenger_email: '',
+        lead_passenger_phone: '',
+        passenger_count: 1,
+        passenger_2_name: '',
+        passenger_3_name: '',
+        group_name: '',
+        booking_agent: '',
+        status: defaultStatus,
+        extra_requests: '',
+        accommodation_required: true,
+        check_in_date: '',
+        check_out_date: '',
+        invoice_notes: '',
+        emergency_contact_name: '',
+        emergency_contact_phone: '',
+        emergency_contact_relationship: '',
+        passport_number: '',
+        passport_expiry_date: '',
+        passport_country: '',
+        id_number: '',
+        nationality: '',
+        medical_conditions: '',
+        accessibility_needs: '',
+        dietary_restrictions: '',
+      });
+      setSelectedContact(null);
+      setLeadPassengerName('');
+      setCreatedBookingId(null);
+      setActiveTab("details");
+      setHasUnsavedChanges(false);
+      setIsTabNavigationEnabled(false);
+    }
+  }, [open, preSelectedTourId, defaultStatus]);
+
   // Set default status
   useEffect(() => {
     if (defaultStatus) {
