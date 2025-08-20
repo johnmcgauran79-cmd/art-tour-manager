@@ -78,6 +78,85 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Get an admin user to reassign tasks to
+    const { data: adminUser, error: adminError } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'admin')
+      .neq('user_id', userId) // Don't use the user being deleted
+      .limit(1)
+      .single()
+
+    if (adminError || !adminUser) {
+      return new Response(
+        JSON.stringify({ error: 'No admin user found for task reassignment' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const adminUserId = adminUser.user_id
+
+    // Handle task reassignment before deleting user
+    try {
+      // Find all tasks assigned to the user being deleted
+      const { data: userTasks, error: tasksError } = await supabaseAdmin
+        .from('task_assignments')
+        .select('task_id')
+        .eq('user_id', userId)
+
+      if (tasksError) {
+        console.error('Error fetching user tasks:', tasksError)
+      } else if (userTasks && userTasks.length > 0) {
+        const taskIds = userTasks.map(t => t.task_id)
+
+        // For each task, check how many users are assigned
+        for (const taskId of taskIds) {
+          const { data: taskAssignments, error: assignmentError } = await supabaseAdmin
+            .from('task_assignments')
+            .select('user_id')
+            .eq('task_id', taskId)
+
+          if (!assignmentError && taskAssignments) {
+            if (taskAssignments.length === 1) {
+              // Only assigned to the deleted user - reassign to admin
+              await supabaseAdmin
+                .from('task_assignments')
+                .update({ user_id: adminUserId })
+                .eq('task_id', taskId)
+                .eq('user_id', userId)
+              
+              console.log(`Reassigned task ${taskId} to admin ${adminUserId}`)
+            } else {
+              // Multiple users assigned - just remove the deleted user
+              await supabaseAdmin
+                .from('task_assignments')
+                .delete()
+                .eq('task_id', taskId)
+                .eq('user_id', userId)
+              
+              console.log(`Removed user ${userId} from task ${taskId}`)
+            }
+          }
+        }
+      }
+
+      // Update tasks created by the deleted user to be owned by admin
+      const { error: updateTasksError } = await supabaseAdmin
+        .from('tasks')
+        .update({ created_by: adminUserId })
+        .eq('created_by', userId)
+
+      if (updateTasksError) {
+        console.error('Error updating task ownership:', updateTasksError)
+      } else {
+        console.log(`Updated task ownership for tasks created by ${userId}`)
+      }
+
+    } catch (taskError) {
+      console.error('Error handling task reassignment:', taskError)
+      // Continue with deletion even if task reassignment fails
+    }
+
     // Delete the user using admin client
     const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userId)
 
