@@ -288,10 +288,24 @@ export const useUpdateTask = () => {
     }) => {
       console.log('Starting task update mutation with data:', data);
 
-      // First verify the task exists
+      // First verify the user is authenticated
+      const { data: user, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Authentication error:', authError);
+        throw new Error('Authentication failed. Please log in again.');
+      }
+      
+      if (!user.user) {
+        console.error('No authenticated user found');
+        throw new Error('You must be logged in to update tasks.');
+      }
+      
+      console.log('Authenticated user:', user.user.id);
+
+      // Verify the task exists and user has permission
       const { data: taskExists, error: taskError } = await supabase
         .from('tasks')
-        .select('id')
+        .select('id, created_by')
         .eq('id', data.taskId)
         .maybeSingle();
 
@@ -304,6 +318,8 @@ export const useUpdateTask = () => {
         console.error('Task not found for update:', data.taskId);
         throw new Error('Task not found. Cannot update non-existent task.');
       }
+      
+      console.log('Task found, created by:', taskExists.created_by);
 
       const updateData = { ...data.updates };
       
@@ -355,30 +371,10 @@ export const useUpdateTask = () => {
     onSuccess: (task, variables) => {
       console.log('Task update successful, updating cache and UI...');
       
-      // Force immediate invalidation and refetch of all task-related queries
+      // Instead of optimistic updates that get overridden by realtime,
+      // just invalidate queries to fetch fresh data
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      
-      // Force immediate refetch to ensure UI updates
-      queryClient.refetchQueries({ queryKey: ['tasks'] });
-      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      
-      // Update the task in cache immediately
-      queryClient.setQueryData(['tasks'], (oldData: any) => {
-        if (!oldData) return oldData;
-        return oldData.map((t: any) => 
-          t.id === variables.taskId ? { ...t, ...variables.updates } : t
-        );
-      });
-      
-      queryClient.setQueryData(['my-tasks'], (oldData: any) => {
-        if (!oldData) return oldData;
-        return oldData.map((t: any) => 
-          t.id === variables.taskId ? { ...t, ...variables.updates } : t
-        );
-      });
-      
-      console.log('Task UI updates complete');
       
       toast({
         title: "Task Updated",
