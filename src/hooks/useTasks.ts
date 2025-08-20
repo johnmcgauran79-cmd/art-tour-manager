@@ -346,8 +346,33 @@ export const useUpdateTask = () => {
       return task;
     },
     onSuccess: (task, variables) => {
+      console.log('Task update successful, updating cache and UI...');
+      
+      // Force immediate invalidation and refetch of all task-related queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      
+      // Force immediate refetch to ensure UI updates
+      queryClient.refetchQueries({ queryKey: ['tasks'] });
+      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
+      
+      // Update the task in cache immediately
+      queryClient.setQueryData(['tasks'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((t: any) => 
+          t.id === variables.taskId ? { ...t, ...variables.updates } : t
+        );
+      });
+      
+      queryClient.setQueryData(['my-tasks'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return oldData.map((t: any) => 
+          t.id === variables.taskId ? { ...t, ...variables.updates } : t
+        );
+      });
+      
+      console.log('Task UI updates complete');
+      
       toast({
         title: "Task Updated",
         description: "The task has been successfully updated.",
