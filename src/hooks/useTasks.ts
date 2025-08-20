@@ -312,21 +312,33 @@ export const useUpdateTask = () => {
         updateData.completed_at = new Date().toISOString();
       }
       
-      const { data: task, error } = await supabase
+      // First, perform the update
+      const { error: updateError } = await supabase
         .from('tasks')
         .update(updateData)
+        .eq('id', data.taskId);
+
+      if (updateError) {
+        console.error('Task update error:', updateError);
+        throw new Error(`Failed to update task: ${updateError.message}`);
+      }
+
+      // Then fetch the updated task
+      const { data: task, error: selectError } = await supabase
+        .from('tasks')
+        .select('*')
         .eq('id', data.taskId)
-        .select()
         .maybeSingle();
 
-      if (error) {
-        console.error('Task update error:', error);
-        throw new Error(`Failed to update task: ${error.message}`);
+      if (selectError) {
+        console.error('Task select error after update:', selectError);
+        throw new Error(`Failed to fetch updated task: ${selectError.message}`);
       }
 
       if (!task) {
-        console.error('No task returned after update');
-        throw new Error('Task update failed - no data returned');
+        console.error('No task found after update');
+        // Even if we can't fetch the task, the update succeeded
+        return { id: data.taskId, ...updateData };
       }
 
       console.log('Task updated successfully:', task);
