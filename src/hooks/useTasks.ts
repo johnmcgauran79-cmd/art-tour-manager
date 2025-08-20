@@ -328,19 +328,26 @@ export const useUpdateTask = () => {
         updateData.completed_at = new Date().toISOString();
       }
       
-      // First, perform the update
+      // First, perform the update and return the updated data
       console.log('Attempting database update with data:', updateData);
-      const { error: updateError } = await supabase
+      const { data: updatedTask, error: updateError } = await supabase
         .from('tasks')
         .update(updateData)
-        .eq('id', data.taskId);
+        .eq('id', data.taskId)
+        .select()
+        .single();
 
       if (updateError) {
         console.error('Task update error:', updateError);
         throw new Error(`Failed to update task: ${updateError.message}`);
       }
       
-      console.log('Database update successful, no errors');
+      if (!updatedTask) {
+        console.error('No data returned from update - RLS permission denied');
+        throw new Error('Failed to update task - you may not have permission to modify this task');
+      }
+      
+      console.log('Database update successful:', updatedTask);
 
       // Verify the update persisted by checking the database again
       console.log('Verifying update persisted in database...');
