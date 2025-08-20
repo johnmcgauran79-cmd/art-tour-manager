@@ -152,6 +152,18 @@ Deno.serve(async (req) => {
         console.log(`Updated task ownership for tasks created by ${userId}`)
       }
 
+      // Update task assignments where the deleted user was the one who assigned tasks
+      const { error: updateAssignedByError } = await supabaseAdmin
+        .from('task_assignments')
+        .update({ assigned_by: adminUserId })
+        .eq('assigned_by', userId)
+
+      if (updateAssignedByError) {
+        console.error('Error updating task assignment assigned_by:', updateAssignedByError)
+      } else {
+        console.log(`Updated assigned_by references for user ${userId}`)
+      }
+
     } catch (taskError) {
       console.error('Error handling task reassignment:', taskError)
       // Continue with deletion even if task reassignment fails
