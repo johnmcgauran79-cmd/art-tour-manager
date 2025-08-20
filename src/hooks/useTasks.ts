@@ -331,25 +331,25 @@ export const useUpdateTask = () => {
 
       console.log('Task updated successfully:', task);
 
-      // Log the task update
-      logOperation({
-        operation_type: 'UPDATE',
-        table_name: 'tasks',
-        record_id: data.taskId,
-        details: {
-          updated_fields: Object.keys(updateData),
-          status_change: data.updates.status ? `to ${data.updates.status}` : undefined
-        }
-      });
-
       return task;
     },
-    onSuccess: () => {
+    onSuccess: (task, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       toast({
         title: "Task Updated",
         description: "The task has been successfully updated.",
+      });
+      
+      // Log the task update after successful completion
+      logOperation({
+        operation_type: 'UPDATE',
+        table_name: 'tasks',
+        record_id: variables.taskId,
+        details: {
+          updated_fields: Object.keys(variables.updates),
+          status_change: variables.updates.status ? `to ${variables.updates.status}` : undefined
+        }
       });
     },
     onError: (error) => {
