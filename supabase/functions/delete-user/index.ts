@@ -176,6 +176,52 @@ Deno.serve(async (req) => {
         console.log(`Updated task comments ownership for user ${userId}`)
       }
 
+      // Update booking comments to transfer ownership to admin user
+      const { error: updateBookingCommentsError } = await supabaseAdmin
+        .from('booking_comments')
+        .update({ user_id: adminUserId })
+        .eq('user_id', userId)
+
+      if (updateBookingCommentsError) {
+        console.error('Error updating booking comments user_id:', updateBookingCommentsError)
+      } else {
+        console.log(`Updated booking comments ownership for user ${userId}`)
+      }
+
+      // Update any file attachments uploaded by the user
+      const { error: updateTaskAttachmentsError } = await supabaseAdmin
+        .from('task_attachments')
+        .update({ uploaded_by: adminUserId })
+        .eq('uploaded_by', userId)
+
+      if (updateTaskAttachmentsError) {
+        console.error('Error updating task attachments uploaded_by:', updateTaskAttachmentsError)
+      } else {
+        console.log(`Updated task attachments ownership for user ${userId}`)
+      }
+
+      const { error: updateTourAttachmentsError } = await supabaseAdmin
+        .from('tour_attachments')
+        .update({ uploaded_by: adminUserId })
+        .eq('uploaded_by', userId)
+
+      if (updateTourAttachmentsError) {
+        console.error('Error updating tour attachments uploaded_by:', updateTourAttachmentsError)
+      } else {
+        console.log(`Updated tour attachments ownership for user ${userId}`)
+      }
+
+      const { error: updateHotelAttachmentsError } = await supabaseAdmin
+        .from('hotel_attachments')
+        .update({ uploaded_by: adminUserId })
+        .eq('uploaded_by', userId)
+
+      if (updateHotelAttachmentsError) {
+        console.error('Error updating hotel attachments uploaded_by:', updateHotelAttachmentsError)
+      } else {
+        console.log(`Updated hotel attachments ownership for user ${userId}`)
+      }
+
     } catch (taskError) {
       console.error('Error handling task reassignment:', taskError)
       // Continue with deletion even if task reassignment fails
