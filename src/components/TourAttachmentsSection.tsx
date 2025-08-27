@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTourAttachments, useUploadTourAttachment } from "@/hooks/useTourAttachments";
 import { useTours, useUpdateTour } from "@/hooks/useTours";
+import { useTourExternalLinks, useCreateTourExternalLink, useUpdateTourExternalLink, useDeleteTourExternalLink } from "@/hooks/useTourExternalLinks";
 import { supabase } from "@/integrations/supabase/client";
-import { Paperclip, Download, Upload, Trash2, Eye, Link, Save, X } from "lucide-react";
+import { Paperclip, Download, Upload, Trash2, Eye, Link, Save, X, Plus, Edit2, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,28 +18,26 @@ interface TourAttachmentsSectionProps {
 
 export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [urlReference, setUrlReference] = useState("");
-  const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [newLink, setNewLink] = useState({ label: "", url: "" });
+  const [editingLink, setEditingLink] = useState<{ id: string; label: string; url: string } | null>(null);
+  const [isAddingLink, setIsAddingLink] = useState(false);
   const [pdfViewer, setPdfViewer] = useState<{ isOpen: boolean; fileName: string; filePath: string }>({
     isOpen: false,
     fileName: "",
     filePath: ""
   });
   const { data: attachments, isLoading, refetch } = useTourAttachments(tourId);
+  const { data: externalLinks, isLoading: isLoadingLinks } = useTourExternalLinks(tourId);
   const { data: tours } = useTours();
   const uploadAttachment = useUploadTourAttachment();
   const updateTour = useUpdateTour();
+  const createExternalLink = useCreateTourExternalLink();
+  const updateExternalLink = useUpdateTourExternalLink();
+  const deleteExternalLink = useDeleteTourExternalLink();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const currentTour = tours?.find(t => t.id === tourId);
-
-  // Initialize URL reference from tour data
-  useEffect(() => {
-    if (currentTour?.url_reference) {
-      setUrlReference(currentTour.url_reference);
-    }
-  }, [currentTour?.url_reference]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -173,97 +172,115 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
     return fileType === 'application/pdf';
   };
 
-  const handleSaveUrlReference = async () => {
+  const handleAddExternalLink = async () => {
+    if (!newLink.label.trim() || !newLink.url.trim()) return;
+
     try {
-      await updateTour.mutateAsync({
+      await createExternalLink.mutateAsync({
         tourId,
-        updates: { url_reference: urlReference.trim() || null }
+        label: newLink.label.trim(),
+        url: newLink.url.trim(),
       });
-      setIsEditingUrl(false);
+      setNewLink({ label: "", url: "" });
+      setIsAddingLink(false);
     } catch (error) {
-      console.error('Error saving URL reference:', error);
+      console.error('Error adding external link:', error);
     }
   };
 
-  const handleDeleteUrlReference = async () => {
+  const handleUpdateExternalLink = async () => {
+    if (!editingLink || !editingLink.label.trim() || !editingLink.url.trim()) return;
+
     try {
-      await updateTour.mutateAsync({
+      await updateExternalLink.mutateAsync({
+        id: editingLink.id,
         tourId,
-        updates: { url_reference: null }
+        label: editingLink.label.trim(),
+        url: editingLink.url.trim(),
       });
-      setUrlReference("");
+      setEditingLink(null);
     } catch (error) {
-      console.error('Error deleting URL reference:', error);
+      console.error('Error updating external link:', error);
     }
   };
 
-  if (isLoading) {
-    return <div className="text-sm text-muted-foreground">Loading attachments...</div>;
+  const handleDeleteExternalLink = async (linkId: string) => {
+    try {
+      await deleteExternalLink.mutateAsync({
+        id: linkId,
+        tourId,
+      });
+    } catch (error) {
+      console.error('Error deleting external link:', error);
+    }
+  };
+
+  if (isLoading || isLoadingLinks) {
+    return <div className="text-sm text-muted-foreground">Loading...</div>;
   }
 
   console.log('Current attachments in render:', attachments);
 
   return (
     <div className="space-y-6">
-      {/* URL Reference Section */}
+      {/* External Links Section */}
       <div className="space-y-3 p-4 border rounded-lg bg-gray-50/50">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Link className="h-4 w-4 text-brand-navy" />
-            <h4 className="font-medium text-brand-navy">External Reference</h4>
+            <ExternalLink className="h-4 w-4 text-brand-navy" />
+            <h4 className="font-medium text-brand-navy">External Links ({externalLinks?.length || 0})</h4>
           </div>
-          {!isEditingUrl && (
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => setIsEditingUrl(true)}
-                variant="outline"
-                size="sm"
-                className="text-brand-navy border-brand-navy/30 hover:bg-brand-navy/5"
-              >
-                {currentTour?.url_reference ? 'Edit' : 'Add URL'}
-              </Button>
-              {currentTour?.url_reference && (
-                <Button
-                  onClick={handleDeleteUrlReference}
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                  disabled={updateTour.isPending}
-                >
-                  <X className="h-4 w-4" />
-                  Remove
-                </Button>
-              )}
-            </div>
+          {!isAddingLink && (
+            <Button
+              onClick={() => setIsAddingLink(true)}
+              variant="outline"
+              size="sm"
+              className="text-brand-navy border-brand-navy/30 hover:bg-brand-navy/5"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Link
+            </Button>
           )}
         </div>
         
-        {isEditingUrl ? (
-          <div className="space-y-2">
-            <Label htmlFor="url_reference">
-              URL Reference (Link to external files or documents)
-            </Label>
-            <div className="flex gap-2">
+        {/* Add New Link Form */}
+        {isAddingLink && (
+          <div className="space-y-3 p-3 border rounded bg-white">
+            <div className="space-y-2">
+              <Label htmlFor="new_link_label">Link Label</Label>
               <Input
-                id="url_reference"
-                type="url"
-                value={urlReference}
-                onChange={(e) => setUrlReference(e.target.value)}
-                placeholder="https://example.com/important-document"
-                className="flex-1"
+                id="new_link_label"
+                value={newLink.label}
+                onChange={(e) => setNewLink({ ...newLink, label: e.target.value })}
+                placeholder="e.g., Booking Confirmation, Hotel Contract"
+                className="w-full"
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new_link_url">URL</Label>
+              <Input
+                id="new_link_url"
+                type="url"
+                value={newLink.url}
+                onChange={(e) => setNewLink({ ...newLink, url: e.target.value })}
+                placeholder="https://example.com/document"
+                className="w-full"
+              />
+            </div>
+            <div className="flex gap-2">
               <Button
-                onClick={handleSaveUrlReference}
-                disabled={updateTour.isPending}
+                onClick={handleAddExternalLink}
+                disabled={!newLink.label.trim() || !newLink.url.trim() || createExternalLink.isPending}
                 size="sm"
                 className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-4 w-4 mr-1" />
+                Save Link
               </Button>
               <Button
                 onClick={() => {
-                  setIsEditingUrl(false);
-                  setUrlReference(currentTour?.url_reference || "");
+                  setIsAddingLink(false);
+                  setNewLink({ label: "", url: "" });
                 }}
                 variant="outline"
                 size="sm"
@@ -272,22 +289,93 @@ export const TourAttachmentsSection = ({ tourId }: TourAttachmentsSectionProps) 
               </Button>
             </div>
           </div>
-        ) : (
-          <div>
-            {currentTour?.url_reference ? (
-              <a
-                href={currentTour.url_reference}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-800 hover:underline break-all"
-              >
-                {currentTour.url_reference}
-              </a>
-            ) : (
-              <p className="text-sm text-gray-500 italic">No external reference added yet.</p>
-            )}
-          </div>
         )}
+
+        {/* Existing Links */}
+        <div className="space-y-2">
+          {externalLinks && externalLinks.length > 0 ? (
+            externalLinks.map((link) => (
+              <div key={link.id} className="flex items-center justify-between p-3 border rounded bg-white">
+                {editingLink?.id === link.id ? (
+                  <div className="flex-1 space-y-2 mr-3">
+                    <Input
+                      value={editingLink.label}
+                      onChange={(e) => setEditingLink({ ...editingLink, label: e.target.value })}
+                      placeholder="Link label"
+                      className="w-full"
+                    />
+                    <Input
+                      type="url"
+                      value={editingLink.url}
+                      onChange={(e) => setEditingLink({ ...editingLink, url: e.target.value })}
+                      placeholder="URL"
+                      className="w-full"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleUpdateExternalLink}
+                        disabled={!editingLink.label.trim() || !editingLink.url.trim() || updateExternalLink.isPending}
+                        size="sm"
+                        className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                      >
+                        <Save className="h-3 w-3 mr-1" />
+                        Save
+                      </Button>
+                      <Button
+                        onClick={() => setEditingLink(null)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{link.label}</span>
+                      <ExternalLink className="h-3 w-3 text-gray-400" />
+                    </div>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 hover:underline break-all text-sm"
+                    >
+                      {link.url}
+                    </a>
+                  </div>
+                )}
+                
+                {editingLink?.id !== link.id && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      onClick={() => setEditingLink({ id: link.id, label: link.label, url: link.url })}
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-1"
+                    >
+                      <Edit2 className="h-3 w-3" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteExternalLink(link.id)}
+                      size="sm"
+                      variant="outline"
+                      className="flex items-center gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      disabled={deleteExternalLink.isPending}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <p className="text-sm text-gray-500 italic">No external links added yet.</p>
+          )}
+        </div>
       </div>
 
       {/* Attachments Section */}
