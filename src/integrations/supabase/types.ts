@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -985,6 +985,36 @@ export type Database = {
           },
         ]
       }
+      tour_external_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          tour_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          label: string
+          tour_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          tour_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       tours: {
         Row: {
           capacity: number | null
@@ -1211,11 +1241,11 @@ export type Database = {
       }
       create_capacity_monitoring_task: {
         Args: {
-          p_rule_type: string
-          p_tour_id?: string
-          p_hotel_id?: string
           p_activity_id?: string
           p_additional_context?: Json
+          p_hotel_id?: string
+          p_rule_type: string
+          p_tour_id?: string
         }
         Returns: string
       }
@@ -1245,24 +1275,24 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       log_sensitive_operation: {
         Args: {
-          operation_type: string
-          table_name: string
-          record_id: string
           details?: Json
+          operation_type: string
+          record_id: string
+          table_name: string
         }
         Returns: undefined
       }
       user_has_department: {
         Args: {
-          _user_id: string
           _department: Database["public"]["Enums"]["department"]
+          _user_id: string
         }
         Returns: boolean
       }
