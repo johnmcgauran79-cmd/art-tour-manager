@@ -284,7 +284,7 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: async (data: {
       taskId: string;
-      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>>;
+      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>> & { tour_id?: string | null };
     }) => {
       console.log('Starting task update mutation with data:', data);
 
@@ -392,19 +392,9 @@ export const useUpdateTask = () => {
     onSuccess: (task, variables) => {
       console.log('Task update successful, invalidating all task queries...');
       
-      // Invalidate all task-related queries with different cache keys
+      // Invalidate all task-related queries
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', undefined] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', null] });
-      
-      // Force refetch immediately
-      queryClient.refetchQueries({ queryKey: ['tasks'] });
-      queryClient.refetchQueries({ queryKey: ['my-tasks'] });
-      
-      // Remove stale data completely and force re-render
-      queryClient.removeQueries({ queryKey: ['tasks'] });
-      queryClient.removeQueries({ queryKey: ['my-tasks'] });
       
       console.log('Cache invalidation complete');
       

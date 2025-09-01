@@ -15,6 +15,7 @@ import { TaskAttachmentsSection } from "@/components/TaskAttachmentsSection";
 import { TaskDependencyChain } from "@/components/TaskDependencyChain";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTours } from "@/hooks/useTours";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -29,6 +30,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
   const deleteTask = useDeleteTask();
   const autoUnblock = useAutoUnblockTasks();
   const { data: allTasks } = useTasks();
+  const { data: tours } = useTours();
 
   useEffect(() => {
     if (task) {
@@ -39,7 +41,8 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
         priority: task.priority,
         category: task.category,
         due_date: task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '',
-        url_reference: task.url_reference || ''
+        url_reference: task.url_reference || '',
+        tour_id: task.tour_id || ''
       });
     }
   }, [task]);
@@ -96,13 +99,14 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
       editedTask.priority !== task.priority ||
       editedTask.category !== task.category ||
       editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '') ||
-      editedTask.url_reference !== (task.url_reference || '')
+      editedTask.url_reference !== (task.url_reference || '') ||
+      editedTask.tour_id !== (task.tour_id || '')
     );
   };
 
   const handleUpdateTask = async () => {
     try {
-      const updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'url_reference'>> = {};
+      const updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'url_reference'>> & { tour_id?: string } = {};
       
       if (editedTask.title !== task.title) updates.title = editedTask.title;
       if (editedTask.description !== task.description) updates.description = editedTask.description;
@@ -110,6 +114,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
       if (editedTask.priority !== task.priority) updates.priority = editedTask.priority;
       if (editedTask.category !== task.category) updates.category = editedTask.category;
       if (editedTask.url_reference !== (task.url_reference || '')) updates.url_reference = editedTask.url_reference;
+      if (editedTask.tour_id !== (task.tour_id || '')) updates.tour_id = editedTask.tour_id || null;
       if (editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '')) {
         updates.due_date = editedTask.due_date ? new Date(editedTask.due_date).toISOString() : null;
       }
@@ -271,7 +276,7 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 )}
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 gap-3 mb-3">
                 <Select
                   value={editedTask.priority}
                   onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => 
@@ -324,6 +329,32 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                     <SelectItem value="marketing">Marketing</SelectItem>
                     <SelectItem value="maintenance">Maintenance</SelectItem>
                     <SelectItem value="general">General</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Associated Tour Field */}
+              <div>
+                <h3 className="font-medium mb-2 flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Associated Tour
+                </h3>
+                <Select
+                  value={editedTask.tour_id || ''}
+                  onValueChange={(value: string) => 
+                    setEditedTask({ ...editedTask, tour_id: value === 'none' ? '' : value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a tour..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Tour Associated</SelectItem>
+                    {tours?.map((tour) => (
+                      <SelectItem key={tour.id} value={tour.id}>
+                        {tour.name} ({format(new Date(tour.start_date), 'MMM dd, yyyy')})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
