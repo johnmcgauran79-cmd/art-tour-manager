@@ -34,6 +34,16 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
   
   const { data: allBookings, isLoading } = useBookings();
 
+  // Calculate bookings this month
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const bookingsThisMonth = (allBookings || []).filter(booking => {
+    const bookingDate = new Date(booking.created_at);
+    return bookingDate.getMonth() === currentMonth && 
+           bookingDate.getFullYear() === currentYear &&
+           booking.status !== 'cancelled';
+  }).length;
+
   // Filter all bookings based on search query
   const filteredBookings = (allBookings || []).filter(booking => {
     if (!searchQuery.trim()) return true;
@@ -73,7 +83,12 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            All Bookings ({filteredBookings.length} {searchQuery ? 'found' : 'total'})
+            <div className="flex items-center gap-4">
+              <span>All Bookings ({filteredBookings.length} {searchQuery ? 'found' : 'total'})</span>
+              <Badge variant="secondary" className="text-sm">
+                {bookingsThisMonth} this month
+              </Badge>
+            </div>
             <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
               <Plus className="h-4 w-4 mr-2" />
               Add Booking

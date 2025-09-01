@@ -145,9 +145,7 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
-            <DashboardMetrics />
-
-            <DashboardQuickActions 
+            <DashboardQuickActions
               onAddTour={() => setAddTourModalOpen(true)}
               onAddBooking={() => setAddBookingModalOpen(true)}
               onAddContact={() => setAddContactModalOpen(true)}
