@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter } from "lucide-react";
 import { useTasks, Task } from "@/hooks/useTasks";
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskFilters } from "@/components/TaskFilters";
@@ -123,10 +123,9 @@ export const EnhancedTasksTable = ({
             onClearSelection={handleClearSelection}
           />
 
-          <TasksTable
+          <StreamlinedTasksTable
             tasks={tasks || []}
             loading={isLoading}
-            showTourName={!tourId}
             onTaskClick={handleTaskClick}
             title=""
             selectedTasks={selectedTasks}

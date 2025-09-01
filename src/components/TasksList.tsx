@@ -1,5 +1,5 @@
 
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { Task } from "@/hooks/useTasks";
 
 interface TasksListProps {
@@ -20,10 +20,9 @@ export const TasksList = ({
   title = "Tasks" 
 }: TasksListProps) => {
   return (
-    <TasksTable
+    <StreamlinedTasksTable
       tasks={tasks}
       loading={loading}
-      showTourName={showTourName}
       onCreateTask={onCreateTask}
       onTaskClick={onTaskClick}
       title={title}

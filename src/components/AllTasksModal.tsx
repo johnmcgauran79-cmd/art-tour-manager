@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Task, useMyTasks } from "@/hooks/useTasks";
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { Search, X } from "lucide-react";
 import {
   Pagination,
@@ -134,10 +134,9 @@ export const AllTasksModal = ({ open, onOpenChange, onTaskClick }: AllTasksModal
               {searchTerm ? `No tasks found matching "${searchTerm}"` : "No tasks found"}
             </div>
           ) : (
-            <TasksTable
+            <StreamlinedTasksTable
               tasks={paginatedTasks}
               loading={false}
-              showTourName={true}
               onTaskClick={onTaskClick}
               title=""
             />

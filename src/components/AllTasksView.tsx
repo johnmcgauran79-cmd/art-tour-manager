@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Plus, ArrowLeft } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
@@ -259,10 +259,9 @@ export const AllTasksView = () => {
                 </p>
               </div>
             ) : (
-              <TasksTable
+              <StreamlinedTasksTable
                 tasks={currentFilteredTasks}
                 loading={false}
-                showTourName={true}
                 onTaskClick={handleTaskClick}
                 title=""
               />

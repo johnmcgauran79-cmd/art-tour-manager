@@ -2,7 +2,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Task } from "@/hooks/useTasks";
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 
 interface FilteredTasksModalProps {
   open: boolean;
@@ -36,11 +36,10 @@ export const FilteredTasksModal = ({
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden">
-          <TasksTable
+          <StreamlinedTasksTable
             tasks={tasks}
             loading={false}
             title={title}
-            showTourName={false}
             onTaskClick={onTaskClick}
           />
         </div>

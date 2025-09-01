@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Plus, List, ArrowLeft } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
@@ -302,10 +302,9 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
                       : `Showing ${hasSearchFilters ? 'filtered' : 'top 10 most urgent'} tasks`
                     }
                   </div>
-                  <TasksTable
+                  <StreamlinedTasksTable
                     tasks={displayTasks}
                     loading={false}
-                    showTourName={true}
                     onTaskClick={handleTaskClick}
                     title=""
                   />
@@ -361,10 +360,9 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
           <div className="text-sm text-gray-600 mb-3">
             Showing {displayTasks.length} most urgent tasks
           </div>
-          <TasksTable
+          <StreamlinedTasksTable
             tasks={displayTasks}
             loading={false}
-            showTourName={true}
             onTaskClick={handleTaskClick}
             title=""
           />

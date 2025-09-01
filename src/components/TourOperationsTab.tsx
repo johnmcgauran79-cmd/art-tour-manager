@@ -8,7 +8,7 @@ import { useHotels } from "@/hooks/useHotels";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
-import { TasksTable } from "@/components/TasksTable";
+import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
@@ -331,11 +331,10 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
       </Card>
 
       {/* Tour Tasks Table */}
-      <TasksTable
+      <StreamlinedTasksTable
         tasks={tasks || []}
         loading={tasksLoading}
         title={`${tourName} - Tasks`}
-        showTourName={false}
         onCreateTask={() => setAddTaskModalOpen(true)}
         onTaskClick={handleTaskClick}
       />
