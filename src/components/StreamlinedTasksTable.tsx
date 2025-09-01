@@ -132,13 +132,13 @@ export const StreamlinedTasksTable = ({
                 />
               </TableHead>
             )}
-            <TableHead className="w-[200px]">Name</TableHead>
-            <TableHead className="w-[150px]">Associated Tour</TableHead>
-            <TableHead className="w-[100px]">Status</TableHead>
-            <TableHead className="w-[100px]">Priority</TableHead>
-            <TableHead className="w-[120px]">Due Date</TableHead>
-            <TableHead className="w-[100px]">Category</TableHead>
-            <TableHead className="w-[120px]">Actions</TableHead>
+            <TableHead className="w-[280px]">Name</TableHead>
+            <TableHead className="w-[140px]">Associated Tour</TableHead>
+            <TableHead className="w-[90px]">Status</TableHead>
+            <TableHead className="w-[80px]">Priority</TableHead>
+            <TableHead className="w-[110px]">Due Date</TableHead>
+            <TableHead className="w-[90px]">Category</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -165,20 +165,20 @@ export const StreamlinedTasksTable = ({
                   </TableCell>
                 )}
                 
-                <TableCell className="w-[200px]">
-                  <div className="font-medium text-sm truncate" title={task.title}>
+                <TableCell className="w-[280px]">
+                  <div className="font-medium text-sm truncate max-w-[260px]" title={task.title}>
                     {task.title}
                   </div>
                   {task.description && (
-                    <div className="text-xs text-muted-foreground truncate mt-1" title={task.description}>
+                    <div className="text-xs text-muted-foreground truncate max-w-[260px] mt-1" title={task.description}>
                       {task.description}
                     </div>
                   )}
                 </TableCell>
                 
-                <TableCell className="w-[150px]">
+                <TableCell className="w-[140px]">
                   {task.tours ? (
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1 text-sm max-w-[120px]">
                       <MapPin className="h-3 w-3 text-muted-foreground" />
                       <span className="truncate" title={task.tours.name}>
                         {task.tours.name}
@@ -189,19 +189,19 @@ export const StreamlinedTasksTable = ({
                   )}
                 </TableCell>
                 
-                <TableCell className="w-[100px]">
+                <TableCell className="w-[90px]">
                   <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
                     {formatStatus(task.status)}
                   </Badge>
                 </TableCell>
                 
-                <TableCell className="w-[100px]">
+                <TableCell className="w-[80px]">
                   <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
                     {task.priority}
                   </Badge>
                 </TableCell>
                 
-                <TableCell className="w-[120px]">
+                <TableCell className="w-[110px]">
                   {task.due_date ? (
                     <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
                       <div className="flex items-center gap-1">
@@ -219,11 +219,11 @@ export const StreamlinedTasksTable = ({
                   )}
                 </TableCell>
                 
-                <TableCell className="w-[100px]">
+                <TableCell className="w-[90px]">
                   <span className="text-sm capitalize">{task.category}</span>
                 </TableCell>
                 
-                <TableCell className="w-[120px]">
+                <TableCell className="w-[100px]">
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     {task.status !== 'completed' && (
                       <Button
