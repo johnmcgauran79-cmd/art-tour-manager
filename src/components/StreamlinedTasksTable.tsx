@@ -118,8 +118,8 @@ export const StreamlinedTasksTable = ({
   }
 
   return (
-    <div className="space-y-4">
-      <Table>
+    <div className="space-y-4 overflow-x-auto">
+      <Table className="table-fixed w-full">
         <TableHeader>
           <TableRow>
             {onTaskSelection && (
@@ -165,20 +165,20 @@ export const StreamlinedTasksTable = ({
                   </TableCell>
                 )}
                 
-                <TableCell className="w-[280px]">
-                  <div className="font-medium text-sm truncate max-w-[260px]" title={task.title}>
+                <TableCell className="w-[280px] max-w-[280px]">
+                  <div className="font-medium text-sm truncate" title={task.title}>
                     {task.title}
                   </div>
                   {task.description && (
-                    <div className="text-xs text-muted-foreground truncate max-w-[260px] mt-1" title={task.description}>
+                    <div className="text-xs text-muted-foreground truncate mt-1" title={task.description}>
                       {task.description}
                     </div>
                   )}
                 </TableCell>
                 
-                <TableCell className="w-[140px]">
+                <TableCell className="w-[140px] max-w-[140px]">
                   {task.tours ? (
-                    <div className="flex items-center gap-1 text-sm max-w-[120px]">
+                    <div className="flex items-center gap-1 text-sm overflow-hidden">
                       <MapPin className="h-3 w-3 text-muted-foreground" />
                       <span className="truncate" title={task.tours.name}>
                         {task.tours.name}
@@ -189,19 +189,19 @@ export const StreamlinedTasksTable = ({
                   )}
                 </TableCell>
                 
-                <TableCell className="w-[90px]">
+                <TableCell className="w-[90px] max-w-[90px]">
                   <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
                     {formatStatus(task.status)}
                   </Badge>
                 </TableCell>
                 
-                <TableCell className="w-[80px]">
+                <TableCell className="w-[80px] max-w-[80px]">
                   <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
                     {task.priority}
                   </Badge>
                 </TableCell>
                 
-                <TableCell className="w-[110px]">
+                <TableCell className="w-[110px] max-w-[110px]">
                   {task.due_date ? (
                     <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
                       <div className="flex items-center gap-1">
@@ -219,11 +219,11 @@ export const StreamlinedTasksTable = ({
                   )}
                 </TableCell>
                 
-                <TableCell className="w-[90px]">
+                <TableCell className="w-[90px] max-w-[90px]">
                   <span className="text-sm capitalize">{task.category}</span>
                 </TableCell>
                 
-                <TableCell className="w-[100px]">
+                <TableCell className="w-[100px] max-w-[100px]">
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     {task.status !== 'completed' && (
                       <Button
