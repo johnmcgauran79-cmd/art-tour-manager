@@ -71,6 +71,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     medical_conditions: '',
     accessibility_needs: '',
     dietary_restrictions: '',
+    
+    // Activity allocations
+    activityAllocations: {} as Record<string, number>,
   });
 
   const { data: tours } = useTours();
@@ -161,6 +164,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         medical_conditions: '',
         accessibility_needs: '',
         dietary_restrictions: '',
+        activityAllocations: {},
       });
       setSelectedContact(null);
       setLeadPassengerName('');
@@ -253,29 +257,52 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   };
 
-  const handleCreateBooking = () => {
-    // Clean up date fields - convert empty strings to null
-    const cleanedFormData = {
-      ...formData,
-      check_in_date: formData.check_in_date || null,
-      check_out_date: formData.check_out_date || null,
-      passport_expiry_date: formData.passport_expiry_date || null,
-    };
+  const handleCreateBooking = async () => {
+    try {
+      // Clean up date fields - convert empty strings to null
+      const cleanedFormData = {
+        ...formData,
+        check_in_date: formData.check_in_date || null,
+        check_out_date: formData.check_out_date || null,
+        passport_expiry_date: formData.passport_expiry_date || null,
+      };
 
-    createBooking.mutate(cleanedFormData, {
-      onSuccess: async (data) => {
-        setCreatedBookingId(data.id);
-        setHasUnsavedChanges(false);
+      const newBooking = await createBooking.mutateAsync(cleanedFormData);
+      setCreatedBookingId(newBooking.id);
+      setHasUnsavedChanges(false);
+      
+      // Create activity bookings based on activity allocations
+      if (formData.activityAllocations && Object.keys(formData.activityAllocations).length > 0) {
+        const { supabase } = await import("@/integrations/supabase/client");
         
-        // Switch to hotels tab to allow immediate allocation
-        setActiveTab("hotels");
-        
-        toast({
-          title: "Success",
-          description: `Booking created successfully! You can now allocate hotels and activities.`,
-        });
+        for (const [activityId, passengerCount] of Object.entries(formData.activityAllocations)) {
+          if (passengerCount > 0) {
+            await supabase
+              .from('activity_bookings')
+              .insert({
+                booking_id: newBooking.id,
+                activity_id: activityId,
+                passenger_count: passengerCount,
+              });
+          }
+        }
       }
-    });
+      
+      toast({
+        title: "Success",
+        description: `Booking created successfully with all allocations!`,
+      });
+      
+      // Close the modal
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create booking. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTabUpdate = (nextTab?: string) => {
@@ -323,6 +350,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       medical_conditions: '',
       accessibility_needs: '',
       dietary_restrictions: '',
+      activityAllocations: {},
     });
     setSelectedContact(null);
     setLeadPassengerName('');
@@ -442,34 +470,61 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
             <TabsContent value="hotels" className="space-y-4">
               <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Hotel Allocation</h3>
+                <h3 className="text-lg font-medium text-brand-navy">Hotel Selection</h3>
                 <p className="text-muted-foreground">
                   Select and configure hotel accommodations for this booking. You can customize check-in and check-out dates for each hotel.
                 </p>
                 
                 {formData.accommodation_required ? (
-                  <>
-                    {createdBookingId ? (
-                      <HotelAllocationSection
-                        tourId={formData.tour_id}
-                        bookingId={createdBookingId}
-                        accommodationRequired={formData.accommodation_required}
-                        defaultCheckIn={formData.check_in_date}
-                        defaultCheckOut={formData.check_out_date}
-                        onDatesChange={(checkIn, checkOut) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            check_in_date: checkIn,
-                            check_out_date: checkOut,
-                          }));
-                        }}
-                      />
+                  <div className="space-y-4">
+                    {hotels && hotels.length > 0 ? (
+                      <div className="space-y-4">
+                        {hotels.map((hotel) => (
+                          <div key={hotel.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">{hotel.name}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                {hotel.rooms_available ? `${hotel.rooms_available} rooms available` : 'Check availability'}
+                              </div>
+                            </div>
+                            {hotel.address && (
+                              <p className="text-sm text-muted-foreground">{hotel.address}</p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label htmlFor={`hotel-checkin-${hotel.id}`}>Check In Date</Label>
+                                <Input
+                                  id={`hotel-checkin-${hotel.id}`}
+                                  type="date"
+                                  value={formData.check_in_date}
+                                  onChange={(e) => handleFormChange('check_in_date', e.target.value)}
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor={`hotel-checkout-${hotel.id}`}>Check Out Date</Label>
+                                <Input
+                                  id={`hotel-checkout-${hotel.id}`}
+                                  type="date"
+                                  value={formData.check_out_date}
+                                  onChange={(e) => handleFormChange('check_out_date', e.target.value)}
+                                />
+                              </div>
+                            </div>
+                            {hotel.operations_notes && (
+                              <div className="text-sm">
+                                <span className="font-medium">Notes: </span>
+                                <span className="text-muted-foreground">{hotel.operations_notes}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
-                        Please create the booking first to allocate hotels.
+                        No hotels found for this tour. Please add hotels to the tour first.
                       </div>
                     )}
-                  </>
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
                     Accommodation is not required for this booking.
@@ -492,22 +547,81 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
             <TabsContent value="activities" className="space-y-4">
               <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Activity Allocation</h3>
+                <h3 className="text-lg font-medium text-brand-navy">Activity Selection</h3>
                 <p className="text-muted-foreground">
                   Select and configure activity participation for this booking. You can specify how many passengers will attend each activity.
                 </p>
                 
-                {createdBookingId ? (
-                  <ActivityAllocationSection
-                    tourId={formData.tour_id}
-                    bookingId={createdBookingId}
-                    passengerCount={formData.passenger_count}
-                  />
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Please create the booking first to allocate activities.
-                  </div>
-                )}
+                <div className="space-y-4">
+                  {activities && activities.length > 0 ? (
+                    <div className="space-y-4">
+                      {activities
+                        .sort((a, b) => {
+                          if (a.activity_date && b.activity_date) {
+                            const dateComparison = new Date(a.activity_date).getTime() - new Date(b.activity_date).getTime();
+                            if (dateComparison !== 0) return dateComparison;
+                            
+                            if (a.start_time && b.start_time) {
+                              return a.start_time.localeCompare(b.start_time);
+                            }
+                            if (a.start_time && !b.start_time) return -1;
+                            if (!a.start_time && b.start_time) return 1;
+                          }
+                          
+                          if (a.activity_date && !b.activity_date) return -1;
+                          if (!a.activity_date && b.activity_date) return 1;
+                          
+                          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                        })
+                        .map((activity) => (
+                          <div key={activity.id} className="border rounded-lg p-4 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium">{activity.name}</h4>
+                              <div className="text-sm text-muted-foreground">
+                                {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : 'Date TBA'}
+                                {activity.start_time && ` at ${activity.start_time}`}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor={`activity-pax-${activity.id}`}>Passengers Attending:</Label>
+                                <Input
+                                  id={`activity-pax-${activity.id}`}
+                                  type="number"
+                                  min="0"
+                                  max={formData.passenger_count}
+                                  value={formData.activityAllocations[activity.id] ?? formData.passenger_count}
+                                  onChange={(e) => {
+                                    // Store activity allocations in formData for later use
+                                    const activityAllocations = formData.activityAllocations || {};
+                                    const newAllocations = {
+                                      ...activityAllocations,
+                                      [activity.id]: Math.min(Math.max(0, Number(e.target.value) || 0), formData.passenger_count)
+                                    };
+                                    handleFormChange('activityAllocations', newAllocations);
+                                  }}
+                                  className="w-20"
+                                />
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                of {formData.passenger_count} total passengers
+                              </div>
+                            </div>
+                            {activity.location && (
+                              <div className="text-sm">
+                                <span className="font-medium">Location: </span>
+                                <span className="text-muted-foreground">{activity.location}</span>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No activities found for this tour. Please add activities to the tour first.
+                    </div>
+                  )}
+                </div>
               </div>
               
               <div className="flex justify-end gap-2 pt-4 border-t">
