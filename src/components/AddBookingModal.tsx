@@ -74,6 +74,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     
     // Activity allocations
     activityAllocations: {} as Record<string, number>,
+    
+    // Hotel date allocations - stores individual hotel dates
+    hotelDates: {} as Record<string, { check_in: string; check_out: string }>,
   });
 
   const { data: tours } = useTours();
@@ -83,6 +86,49 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   // Load hotels and activities for the selected tour
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
+  
+  // Initialize hotel dates when hotels are loaded
+  useEffect(() => {
+    if (hotels && hotels.length > 0) {
+      const initialHotelDates: Record<string, { check_in: string; check_out: string }> = {};
+      
+      hotels.forEach(hotel => {
+        initialHotelDates[hotel.id] = {
+          check_in: hotel.default_check_in || '',
+          check_out: hotel.default_check_out || '',
+        };
+      });
+      
+      setFormData(prev => ({
+        ...prev,
+        hotelDates: initialHotelDates,
+      }));
+      
+      // Update overall booking dates to encompass all hotel dates
+      updateOverallBookingDates(initialHotelDates);
+    }
+  }, [hotels]);
+  
+  // Function to update overall booking check-in/out dates based on hotel dates
+  const updateOverallBookingDates = (hotelDates: Record<string, { check_in: string; check_out: string }>) => {
+    const dates = Object.values(hotelDates).filter(d => d.check_in && d.check_out);
+    
+    if (dates.length > 0) {
+      const earliestCheckIn = dates.reduce((earliest, current) => 
+        !earliest || (current.check_in && current.check_in < earliest) ? current.check_in : earliest
+      , '');
+      
+      const latestCheckOut = dates.reduce((latest, current) => 
+        !latest || (current.check_out && current.check_out > latest) ? current.check_out : latest
+      , '');
+      
+      setFormData(prev => ({
+        ...prev,
+        check_in_date: earliestCheckIn,
+        check_out_date: latestCheckOut,
+      }));
+    }
+  };
   
 
   // Auto-fill check-in/out dates when tour is selected
@@ -165,6 +211,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         accessibility_needs: '',
         dietary_restrictions: '',
         activityAllocations: {},
+        hotelDates: {},
       });
       setSelectedContact(null);
       setLeadPassengerName('');
@@ -288,6 +335,25 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         }
       }
       
+      // Create hotel bookings based on hotel date allocations
+      if (formData.hotelDates && Object.keys(formData.hotelDates).length > 0) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        
+        for (const [hotelId, dates] of Object.entries(formData.hotelDates)) {
+          if (dates.check_in && dates.check_out) {
+            await supabase
+              .from('hotel_bookings')
+              .insert({
+                booking_id: newBooking.id,
+                hotel_id: hotelId,
+                check_in_date: dates.check_in,
+                check_out_date: dates.check_out,
+                booking_status: 'pending',
+              });
+          }
+        }
+      }
+      
       toast({
         title: "Success",
         description: `Booking created successfully with all allocations!`,
@@ -351,6 +417,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       accessibility_needs: '',
       dietary_restrictions: '',
       activityAllocations: {},
+      hotelDates: {},
     });
     setSelectedContact(null);
     setLeadPassengerName('');
@@ -496,8 +563,18 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                 <Input
                                   id={`hotel-checkin-${hotel.id}`}
                                   type="date"
-                                  value={formData.check_in_date}
-                                  onChange={(e) => handleFormChange('check_in_date', e.target.value)}
+                                  value={formData.hotelDates[hotel.id]?.check_in || ''}
+                                  onChange={(e) => {
+                                    const newHotelDates = {
+                                      ...formData.hotelDates,
+                                      [hotel.id]: {
+                                        ...formData.hotelDates[hotel.id],
+                                        check_in: e.target.value,
+                                      }
+                                    };
+                                    handleFormChange('hotelDates', newHotelDates);
+                                    updateOverallBookingDates(newHotelDates);
+                                  }}
                                 />
                               </div>
                               <div>
@@ -505,8 +582,18 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                 <Input
                                   id={`hotel-checkout-${hotel.id}`}
                                   type="date"
-                                  value={formData.check_out_date}
-                                  onChange={(e) => handleFormChange('check_out_date', e.target.value)}
+                                  value={formData.hotelDates[hotel.id]?.check_out || ''}
+                                  onChange={(e) => {
+                                    const newHotelDates = {
+                                      ...formData.hotelDates,
+                                      [hotel.id]: {
+                                        ...formData.hotelDates[hotel.id],
+                                        check_out: e.target.value,
+                                      }
+                                    };
+                                    handleFormChange('hotelDates', newHotelDates);
+                                    updateOverallBookingDates(newHotelDates);
+                                  }}
                                 />
                               </div>
                             </div>
