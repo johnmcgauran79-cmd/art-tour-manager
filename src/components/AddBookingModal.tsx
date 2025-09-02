@@ -78,33 +78,22 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: activities = [] } = useActivities(formData.tour_id);
   
 
-  // Auto-fill check-in/out dates when tour is selected - Enhanced version
+  // Auto-fill check-in/out dates when tour is selected
   useEffect(() => {
-    console.log('Tour selection effect triggered:', { 
-      tourId: formData.tour_id, 
-      toursLoaded: !!tours, 
-      toursCount: tours?.length 
-    });
-    
-    if (formData.tour_id && tours && tours.length > 0 && formData.accommodation_required) {
+    if (formData.tour_id && tours && tours.length > 0) {
       const selectedTour = tours.find(tour => tour.id === formData.tour_id);
-      console.log('Selected tour found:', selectedTour);
       
       if (selectedTour && selectedTour.start_date && selectedTour.end_date) {
-        console.log('Auto-filling dates:', {
-          checkIn: selectedTour.start_date,
-          checkOut: selectedTour.end_date
-        });
-        
-        setFormData(prev => ({
-          ...prev,
-          check_in_date: selectedTour.start_date,
-          check_out_date: selectedTour.end_date,
-        }));
-      } else {
-        console.log('Tour found but missing dates:', {
-          hasStartDate: !!selectedTour?.start_date,
-          hasEndDate: !!selectedTour?.end_date
+        // Only auto-fill if dates are empty to avoid overwriting user changes
+        setFormData(prev => {
+          if (!prev.check_in_date && !prev.check_out_date) {
+            return {
+              ...prev,
+              check_in_date: selectedTour.start_date,
+              check_out_date: selectedTour.end_date,
+            };
+          }
+          return prev;
         });
       }
     }
