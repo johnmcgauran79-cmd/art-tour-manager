@@ -25,9 +25,11 @@ interface AddBookingModalProps {
   onOpenChange: (open: boolean) => void;
   preSelectedTourId?: string;
   defaultStatus?: string;
+  preSelectedTourStartDate?: string;
+  preSelectedTourEndDate?: string;
 }
 
-export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "invoiced" }: AddBookingModalProps) => {
+export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "invoiced", preSelectedTourStartDate, preSelectedTourEndDate }: AddBookingModalProps) => {
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
@@ -101,19 +103,31 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   // Initialize form with preSelectedTourId and auto-fill dates immediately
   useEffect(() => {
-    if (preSelectedTourId && tours && tours.length > 0) {
-      const selectedTour = tours.find(tour => tour.id === preSelectedTourId);
-      if (selectedTour) {
-        console.log('Pre-selected tour auto-fill:', selectedTour);
+    if (preSelectedTourId) {
+      // Use pre-selected tour dates if provided (from TourDetailModal)
+      if (preSelectedTourStartDate && preSelectedTourEndDate) {
+        console.log('Pre-selected tour auto-fill with provided dates:', preSelectedTourStartDate, preSelectedTourEndDate);
         setFormData(prev => ({
           ...prev,
           tour_id: preSelectedTourId,
-          check_in_date: selectedTour.start_date || '',
-          check_out_date: selectedTour.end_date || '',
+          check_in_date: preSelectedTourStartDate,
+          check_out_date: preSelectedTourEndDate,
         }));
+      } else if (tours && tours.length > 0) {
+        // Fallback to finding tour in tours array
+        const selectedTour = tours.find(tour => tour.id === preSelectedTourId);
+        if (selectedTour) {
+          console.log('Pre-selected tour auto-fill from tours array:', selectedTour);
+          setFormData(prev => ({
+            ...prev,
+            tour_id: preSelectedTourId,
+            check_in_date: selectedTour.start_date || '',
+            check_out_date: selectedTour.end_date || '',
+          }));
+        }
       }
     }
-  }, [preSelectedTourId, tours]);
+  }, [preSelectedTourId, tours, preSelectedTourStartDate, preSelectedTourEndDate]);
 
   // Reset form data when modal opens
   useEffect(() => {

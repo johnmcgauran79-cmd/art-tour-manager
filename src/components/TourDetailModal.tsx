@@ -354,6 +354,8 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         open={addBookingModalOpen}
         onOpenChange={setAddBookingModalOpen}
         preSelectedTourId={currentTour?.id}
+        preSelectedTourStartDate={currentTour?.start_date}
+        preSelectedTourEndDate={currentTour?.end_date}
       />
 
       <AddActivityModal
