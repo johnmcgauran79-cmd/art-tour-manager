@@ -532,6 +532,13 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                     accommodationRequired={formData.accommodation_required}
                     defaultCheckIn={formData.check_in_date}
                     defaultCheckOut={formData.check_out_date}
+                    onDatesChange={(checkIn, checkOut) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        check_in_date: checkIn,
+                        check_out_date: checkOut,
+                      }));
+                    }}
                   />
                   <div className="flex justify-end gap-2 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

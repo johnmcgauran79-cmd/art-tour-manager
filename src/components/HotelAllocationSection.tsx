@@ -18,6 +18,7 @@ interface HotelAllocationSectionProps {
   defaultCheckIn?: string;
   defaultCheckOut?: string;
   onUpdate?: () => void;
+  onDatesChange?: (checkIn: string, checkOut: string) => void;
 }
 
 export const HotelAllocationSection = ({ 
@@ -26,7 +27,8 @@ export const HotelAllocationSection = ({
   accommodationRequired, 
   defaultCheckIn, 
   defaultCheckOut,
-  onUpdate
+  onUpdate,
+  onDatesChange
 }: HotelAllocationSectionProps) => {
   const { data: hotels = [] } = useHotels(tourId);
   const { data: hotelBookings = [], refetch: refetchHotelBookings } = useHotelBookings(bookingId);
@@ -68,7 +70,10 @@ export const HotelAllocationSection = ({
 
     console.log('Calculated dates - earliest check-in:', earliestCheckIn, 'latest check-out:', latestCheckOut);
 
-    // Update the booking with new dates
+    // Notify parent component about date changes (for form updates during creation)
+    onDatesChange?.(earliestCheckIn, latestCheckOut);
+
+    // Update the booking with new dates (for existing bookings)
     updateBooking.mutate({
       id: bookingId,
       check_in_date: earliestCheckIn,
