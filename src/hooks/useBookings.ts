@@ -290,20 +290,37 @@ export const useUpdateBooking = () => {
     mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
       console.log('Updating booking with data:', { id, updates });
       
-      // Calculate nights if check-in/out dates are being updated
+      // Handle accommodation requirement changes
       const finalUpdates = { ...updates };
-      if (updates.check_in_date !== undefined || updates.check_out_date !== undefined) {
+      
+      // If accommodation is set to false, clear accommodation dates
+      if (updates.accommodation_required === false) {
+        finalUpdates.check_in_date = null;
+        finalUpdates.check_out_date = null;
+        finalUpdates.total_nights = null;
+      }
+      // Calculate nights if check-in/out dates are being updated and accommodation is required
+      else if (updates.check_in_date !== undefined || updates.check_out_date !== undefined) {
         // Get current booking data to ensure we have both dates
         const { data: currentBooking } = await supabase
           .from('bookings')
-          .select('check_in_date, check_out_date')
+          .select('check_in_date, check_out_date, accommodation_required')
           .eq('id', id)
           .single();
         
-        const checkInDate = updates.check_in_date !== undefined ? updates.check_in_date : currentBooking?.check_in_date;
-        const checkOutDate = updates.check_out_date !== undefined ? updates.check_out_date : currentBooking?.check_out_date;
+        // Only calculate nights if accommodation is required
+        const accommodationRequired = updates.accommodation_required !== undefined ? updates.accommodation_required : currentBooking?.accommodation_required;
         
-        finalUpdates.total_nights = calculateNights(checkInDate, checkOutDate);
+        if (accommodationRequired) {
+          const checkInDate = updates.check_in_date !== undefined ? updates.check_in_date : currentBooking?.check_in_date;
+          const checkOutDate = updates.check_out_date !== undefined ? updates.check_out_date : currentBooking?.check_out_date;
+          
+          finalUpdates.total_nights = calculateNights(checkInDate, checkOutDate);
+        } else {
+          finalUpdates.check_in_date = null;
+          finalUpdates.check_out_date = null;
+          finalUpdates.total_nights = null;
+        }
       }
       
       const { data, error } = await supabase
