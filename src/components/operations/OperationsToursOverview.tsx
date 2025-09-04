@@ -116,7 +116,7 @@ export const OperationsToursOverview = () => {
                   </div>
                   
                   {/* Column 2: Operations Notes Breakdown (50% width) */}
-                  <div className="w-[50%] space-y-2 pr-2">
+                  <div className="w-[50%] space-y-1 pr-2">
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Accomm:</span>
                       <span className="text-muted-foreground">{tour.ops_accomm_notes || "No notes"}</span>
