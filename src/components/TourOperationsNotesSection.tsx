@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 interface TourOperationsNotesSectionProps {
   tourId: string;
   tourName: string;
+  onNavigate?: (destination: { type: 'tab'; value: string }) => void;
 }
 
 interface TourOperationsData {
@@ -21,7 +22,7 @@ interface TourOperationsData {
   ops_activities_notes?: string;
 }
 
-export const TourOperationsNotesSection = ({ tourId, tourName }: TourOperationsNotesSectionProps) => {
+export const TourOperationsNotesSection = ({ tourId, tourName, onNavigate }: TourOperationsNotesSectionProps) => {
   const { data: tours } = useTours();
   const updateTour = useUpdateTour();
   const { toast } = useToast();
@@ -89,12 +90,22 @@ export const TourOperationsNotesSection = ({ tourId, tourName }: TourOperationsN
     }));
   };
 
+  const handleLabelClick = (label: string) => {
+    if (!onNavigate) return;
+    
+    if (label === 'Accommodation') {
+      onNavigate({ type: 'tab', value: 'hotels' });
+    } else if (['Races', 'Dinner', 'Activities', 'Transport'].includes(label)) {
+      onNavigate({ type: 'tab', value: 'activities' });
+    }
+  };
+
   const smallNotesSections = [
-    { key: 'ops_accomm_notes' as keyof TourOperationsData, label: 'Accommodation', placeholder: 'Accommodation notes...' },
-    { key: 'ops_races_notes' as keyof TourOperationsData, label: 'Races', placeholder: 'Races notes...' },
-    { key: 'ops_transport_notes' as keyof TourOperationsData, label: 'Transport', placeholder: 'Transport notes...' },
-    { key: 'ops_dinner_notes' as keyof TourOperationsData, label: 'Dinner', placeholder: 'Dinner notes...' },
-    { key: 'ops_activities_notes' as keyof TourOperationsData, label: 'Activities', placeholder: 'Activities notes...' }
+    { key: 'ops_accomm_notes' as keyof TourOperationsData, label: 'Accommodation', placeholder: 'Accommodation notes...', navigable: true },
+    { key: 'ops_races_notes' as keyof TourOperationsData, label: 'Races', placeholder: 'Races notes...', navigable: true },
+    { key: 'ops_transport_notes' as keyof TourOperationsData, label: 'Transport', placeholder: 'Transport notes...', navigable: true },
+    { key: 'ops_dinner_notes' as keyof TourOperationsData, label: 'Dinner', placeholder: 'Dinner notes...', navigable: true },
+    { key: 'ops_activities_notes' as keyof TourOperationsData, label: 'Activities', placeholder: 'Activities notes...', navigable: true }
   ];
 
   return (
@@ -170,9 +181,16 @@ export const TourOperationsNotesSection = ({ tourId, tourName }: TourOperationsN
 
         {/* Specific Operations Notes */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {smallNotesSections.map(({ key, label, placeholder }) => (
+          {smallNotesSections.map(({ key, label, placeholder, navigable }) => (
             <div key={key}>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label 
+                className={`text-sm font-medium mb-2 block ${
+                  navigable && onNavigate 
+                    ? 'text-primary cursor-pointer hover:text-primary/80 hover:underline' 
+                    : 'text-gray-700'
+                }`}
+                onClick={() => navigable && handleLabelClick(label)}
+              >
                 {label}
               </label>
               {isEditing ? (

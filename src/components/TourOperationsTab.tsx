@@ -142,7 +142,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   return (
     <div className="space-y-6">
       {/* Operations Notes Section */}
-      <TourOperationsNotesSection tourId={tourId} tourName={tourName} />
+      <TourOperationsNotesSection 
+        tourId={tourId} 
+        tourName={tourName}
+        onNavigate={onNavigate}
+      />
 
       {/* Operations Reports Summary Card */}
       <Card className="border-brand-navy/20 shadow-lg">
