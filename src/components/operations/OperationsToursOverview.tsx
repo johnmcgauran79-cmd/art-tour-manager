@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, Search } from "lucide-react";
 import { useTours, Tour } from "@/hooks/useTours";
+import { useBookings } from "@/hooks/useBookings";
 import { formatDisplayDate } from "@/lib/utils";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 
@@ -29,9 +30,23 @@ const getMilestoneDate = (startDate: string, daysOffset: number) => {
 
 export const OperationsToursOverview = () => {
   const { data: tours, isLoading } = useTours();
+  const { data: bookings } = useBookings();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTour, setSelectedTour] = useState<Tour | null>(null);
   const [showTourDetail, setShowTourDetail] = useState(false);
+
+  // Function to get confirmed passenger count for a tour
+  const getConfirmedPassengerCount = (tourId: string) => {
+    if (!bookings) return 0;
+    
+    return bookings
+      .filter(booking => 
+        booking.tour_id === tourId && 
+        booking.status !== 'cancelled' && 
+        booking.status !== 'waitlisted'
+      )
+      .reduce((total, booking) => total + booking.passenger_count, 0);
+  };
 
   // Filter tours by search query
   const filteredTours = tours?.filter(tour => {
@@ -115,6 +130,7 @@ export const OperationsToursOverview = () => {
           {filteredTours.map((tour) => {
             const daysUntilTour = getDaysUntilTour(tour.start_date);
             const daysColorClass = getDaysColorClass(daysUntilTour);
+            const confirmedPax = getConfirmedPassengerCount(tour.id);
             
             return (
               <div 
@@ -122,9 +138,14 @@ export const OperationsToursOverview = () => {
                 className="border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:bg-accent/20 hover:border-primary/30"
                 onClick={() => handleTourClick(tour)}
               >
-                {/* Tour Name and Date Milestones Row */}
+                {/* Tour Name, Pax Count, and Date Milestones Row */}
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold text-lg">{tour.name}</h3>
+                  <div className="flex items-center gap-4">
+                    <h3 className="font-semibold text-lg">{tour.name}</h3>
+                    <span className="text-sm font-medium text-muted-foreground bg-accent/50 px-2 py-1 rounded">
+                      Pax: {confirmedPax}
+                    </span>
+                  </div>
                   <div className="flex gap-4 text-xs">
                     <div className="text-center">
                       <div className="font-medium">6mths out:</div>
