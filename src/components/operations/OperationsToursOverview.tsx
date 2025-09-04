@@ -110,7 +110,7 @@ export const OperationsToursOverview = () => {
                 <div className="flex gap-2 text-sm min-h-32">
                   {/* Column 1: Days Remaining (10% width) */}
                   <div className="w-[10%] flex items-center justify-center">
-                    <div className={`px-3 py-6 rounded text-center font-bold ${daysColorClass}`}>
+                    <div className={`w-full h-full flex items-center justify-center rounded text-center font-bold ${daysColorClass}`}>
                       {daysUntilTour}
                     </div>
                   </div>
