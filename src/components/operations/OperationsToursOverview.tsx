@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, Search } from "lucide-react";
-import { useTours } from "@/hooks/useTours";
+import { useTours, Tour } from "@/hooks/useTours";
 import { formatDisplayDate } from "@/lib/utils";
+import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 
 const getDaysUntilTour = (startDate: string) => {
   const start = new Date(startDate);
@@ -29,6 +30,8 @@ const getMilestoneDate = (startDate: string, daysOffset: number) => {
 export const OperationsToursOverview = () => {
   const { data: tours, isLoading } = useTours();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTour, setSelectedTour] = useState<Tour | null>(null);
+  const [showTourDetail, setShowTourDetail] = useState(false);
 
   // Filter tours by search query
   const filteredTours = tours?.filter(tour => {
@@ -47,6 +50,11 @@ export const OperationsToursOverview = () => {
       tour.ops_activities_notes?.toLowerCase().includes(searchTerm)
     );
   }) || [];
+
+  const handleTourClick = (tour: Tour) => {
+    setSelectedTour(tour);
+    setShowTourDetail(true);
+  };
 
   if (isLoading) {
     return (
@@ -109,7 +117,11 @@ export const OperationsToursOverview = () => {
             const daysColorClass = getDaysColorClass(daysUntilTour);
             
             return (
-              <div key={tour.id} className="border rounded-lg p-4">
+              <div 
+                key={tour.id} 
+                className="border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:bg-accent/20 hover:border-primary/30"
+                onClick={() => handleTourClick(tour)}
+              >
                 {/* Tour Name and Date Milestones Row */}
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold text-lg">{tour.name}</h3>
@@ -191,6 +203,14 @@ export const OperationsToursOverview = () => {
           )}
         </div>
       </CardContent>
+
+      {/* Tour Detail Modal */}
+      <TourDetailModalWithHotelsTab
+        tour={selectedTour}
+        open={showTourDetail}
+        onOpenChange={setShowTourDetail}
+        defaultTab="operations"
+      />
     </Card>
   );
 };
