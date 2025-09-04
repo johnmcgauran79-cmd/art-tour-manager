@@ -107,16 +107,16 @@ export const OperationsToursOverview = () => {
                 </div>
 
                 {/* Main Operations Table */}
-                <div className="grid grid-cols-12 gap-2 text-sm">
+                <div className="flex gap-2 text-sm min-h-32">
                   {/* Column 1: Days Remaining (10% width) */}
-                  <div className="col-span-1 flex items-center justify-center">
+                  <div className="w-[10%] flex items-center justify-center">
                     <div className={`px-3 py-6 rounded text-center font-bold ${daysColorClass}`}>
                       {daysUntilTour}
                     </div>
                   </div>
                   
                   {/* Column 2: Operations Notes Breakdown (50% width) */}
-                  <div className="col-span-6 space-y-2">
+                  <div className="w-[50%] space-y-2 pr-2">
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Accommodation:</span>
                       <span className="text-muted-foreground">{tour.ops_accomm_notes || "No notes"}</span>
@@ -140,7 +140,7 @@ export const OperationsToursOverview = () => {
                   </div>
                   
                   {/* Column 3: General Operations Notes (40% width) */}
-                  <div className="col-span-5">
+                  <div className="w-[40%]">
                     <div className="bg-accent/30 p-3 rounded h-full">
                       <div className="font-medium mb-2">General Operations Notes:</div>
                       <div className="text-muted-foreground text-sm whitespace-pre-wrap">
