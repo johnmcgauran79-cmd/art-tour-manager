@@ -30,6 +30,19 @@ export const TourOperationsNotesSection = ({ tourId, tourName }: TourOperationsN
 
   const tour = tours?.find(t => t.id === tourId);
 
+  // Calculate days until tour starts
+  const daysToGo = tour?.start_date 
+    ? Math.ceil((new Date(tour.start_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  // Get color variant based on days to go
+  const getDaysToGoVariant = (days: number | null) => {
+    if (days === null) return "secondary";
+    if (days > 60) return "default"; // Green
+    if (days >= 31) return "secondary"; // Orange  
+    return "destructive"; // Red
+  };
+
   const operationsData: TourOperationsData = {
     ops_notes: tour?.ops_notes || "",
     ops_accomm_notes: tour?.ops_accomm_notes || "",
@@ -91,9 +104,11 @@ export const TourOperationsNotesSection = ({ tourId, tourName }: TourOperationsN
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-brand-navy" />
             <CardTitle className="text-brand-navy">Operations Notes</CardTitle>
-            <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-              Tour Specific
-            </Badge>
+            {daysToGo !== null && (
+              <Badge variant={getDaysToGoVariant(daysToGo)}>
+                {daysToGo > 0 ? `${daysToGo} days to go` : daysToGo === 0 ? 'Today' : `${Math.abs(daysToGo)} days ago`}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {isEditing ? (
