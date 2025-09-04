@@ -118,7 +118,7 @@ export const OperationsToursOverview = () => {
                   {/* Column 2: Operations Notes Breakdown (50% width) */}
                   <div className="w-[50%] space-y-2 pr-2">
                     <div className="flex">
-                      <span className="font-medium w-24 shrink-0">Accommodation:</span>
+                      <span className="font-medium w-24 shrink-0">Accomm:</span>
                       <span className="text-muted-foreground">{tour.ops_accomm_notes || "No notes"}</span>
                     </div>
                     <div className="flex">
@@ -141,7 +141,7 @@ export const OperationsToursOverview = () => {
                   
                   {/* Column 3: General Operations Notes (40% width) */}
                   <div className="w-[40%]">
-                    <div className="bg-accent/30 p-3 rounded h-full">
+                    <div className="bg-gray-100 p-3 rounded h-full">
                       <div className="font-medium mb-2">General Operations Notes:</div>
                       <div className="text-muted-foreground text-sm whitespace-pre-wrap">
                         {tour.ops_notes || "No general operations notes"}
