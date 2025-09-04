@@ -79,30 +79,30 @@ export const OperationsToursOverview = () => {
             
             return (
               <div key={tour.id} className="border rounded-lg p-4">
-                {/* Tour Name */}
-                <h3 className="font-semibold text-lg mb-3">{tour.name}</h3>
-                
-                {/* Date Milestones Row */}
-                <div className="grid grid-cols-5 gap-2 mb-4 text-xs">
-                  <div className="text-center">
-                    <div className="font-medium">6mths out:</div>
-                    <div>{getMilestoneDate(tour.start_date, 180)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-medium">90 days:</div>
-                    <div>{getMilestoneDate(tour.start_date, 90)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-medium">60 days:</div>
-                    <div>{getMilestoneDate(tour.start_date, 60)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-medium">30 days:</div>
-                    <div>{getMilestoneDate(tour.start_date, 30)}</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-medium">Start date:</div>
-                    <div>{formatDisplayDate(tour.start_date).split(',')[0]}</div>
+                {/* Tour Name and Date Milestones Row */}
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-lg">{tour.name}</h3>
+                  <div className="flex gap-4 text-xs">
+                    <div className="text-center">
+                      <div className="font-medium">6mths out:</div>
+                      <div>{getMilestoneDate(tour.start_date, 180)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">90 days:</div>
+                      <div>{getMilestoneDate(tour.start_date, 90)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">60 days:</div>
+                      <div>{getMilestoneDate(tour.start_date, 60)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">30 days:</div>
+                      <div>{getMilestoneDate(tour.start_date, 30)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium">Start date:</div>
+                      <div>{formatDisplayDate(tour.start_date).split(',')[0]}</div>
+                    </div>
                   </div>
                 </div>
 
