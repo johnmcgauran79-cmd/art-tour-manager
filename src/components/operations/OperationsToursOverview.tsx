@@ -62,7 +62,8 @@ export const OperationsToursOverview = () => {
       tour.ops_races_notes?.toLowerCase().includes(searchTerm) ||
       tour.ops_transport_notes?.toLowerCase().includes(searchTerm) ||
       tour.ops_dinner_notes?.toLowerCase().includes(searchTerm) ||
-      tour.ops_activities_notes?.toLowerCase().includes(searchTerm)
+      tour.ops_activities_notes?.toLowerCase().includes(searchTerm) ||
+      tour.ops_other_notes?.toLowerCase().includes(searchTerm)
     );
   }) || [];
 
@@ -200,6 +201,10 @@ export const OperationsToursOverview = () => {
                     <div className="flex flex-col">
                       <span className="font-medium">Activities:</span>
                       <span className="text-muted-foreground mt-1">{tour.ops_activities_notes || "No notes"}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="font-medium w-24 shrink-0">Other:</span>
+                      <span className="text-muted-foreground">{tour.ops_other_notes || "No notes"}</span>
                     </div>
                   </div>
                   

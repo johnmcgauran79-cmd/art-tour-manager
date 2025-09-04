@@ -36,6 +36,7 @@ export interface Tour {
   ops_transport_notes: string | null;
   ops_dinner_notes: string | null;
   ops_activities_notes: string | null;
+  ops_other_notes: string | null;
   created_at: string;
   updated_at: string;
 }
