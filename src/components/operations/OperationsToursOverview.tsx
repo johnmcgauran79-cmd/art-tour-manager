@@ -142,7 +142,7 @@ export const OperationsToursOverview = () => {
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold text-lg">{tour.name}</h3>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-muted-foreground bg-accent/50 px-2 py-1 rounded">
+                    <span className="text-sm font-medium text-muted-foreground bg-accent/50 px-2 py-1 rounded mr-6">
                       Pax: {confirmedPax}
                     </span>
                       <div className="flex gap-4 text-xs">
