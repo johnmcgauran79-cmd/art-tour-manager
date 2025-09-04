@@ -1034,6 +1034,12 @@ export type Database = {
           name: string
           nights: number
           notes: string | null
+          ops_accomm_notes: string | null
+          ops_activities_notes: string | null
+          ops_dinner_notes: string | null
+          ops_notes: string | null
+          ops_races_notes: string | null
+          ops_transport_notes: string | null
           pickup_point: string | null
           price_double: number | null
           price_single: number | null
@@ -1062,6 +1068,12 @@ export type Database = {
           name: string
           nights: number
           notes?: string | null
+          ops_accomm_notes?: string | null
+          ops_activities_notes?: string | null
+          ops_dinner_notes?: string | null
+          ops_notes?: string | null
+          ops_races_notes?: string | null
+          ops_transport_notes?: string | null
           pickup_point?: string | null
           price_double?: number | null
           price_single?: number | null
@@ -1090,6 +1102,12 @@ export type Database = {
           name?: string
           nights?: number
           notes?: string | null
+          ops_accomm_notes?: string | null
+          ops_activities_notes?: string | null
+          ops_dinner_notes?: string | null
+          ops_notes?: string | null
+          ops_races_notes?: string | null
+          ops_transport_notes?: string | null
           pickup_point?: string | null
           price_double?: number | null
           price_single?: number | null

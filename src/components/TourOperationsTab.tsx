@@ -12,8 +12,8 @@ import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
-
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
+import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -141,6 +141,9 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
 
   return (
     <div className="space-y-6">
+      {/* Operations Notes Section */}
+      <TourOperationsNotesSection tourId={tourId} tourName={tourName} />
+
       {/* Operations Reports Summary Card */}
       <Card className="border-brand-navy/20 shadow-lg">
         <CardHeader>

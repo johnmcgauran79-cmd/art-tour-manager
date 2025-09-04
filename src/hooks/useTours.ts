@@ -30,6 +30,12 @@ export interface Tour {
   minimum_passengers_required: number | null;
   tour_host: string;
   url_reference: string | null;
+  ops_notes: string | null;
+  ops_accomm_notes: string | null;
+  ops_races_notes: string | null;
+  ops_transport_notes: string | null;
+  ops_dinner_notes: string | null;
+  ops_activities_notes: string | null;
   created_at: string;
   updated_at: string;
 }
