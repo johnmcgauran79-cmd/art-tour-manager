@@ -138,37 +138,37 @@ export const OperationsToursOverview = () => {
                 className="border rounded-lg p-4 cursor-pointer transition-all duration-200 hover:shadow-md hover:bg-accent/20 hover:border-primary/30"
                 onClick={() => handleTourClick(tour)}
               >
-                {/* Tour Name, Pax Count, and Date Milestones Row */}
+                {/* Tour Name and Date Milestones Row */}
                 <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-lg">{tour.name}</h3>
                   <div className="flex items-center gap-4">
-                    <h3 className="font-semibold text-lg">{tour.name}</h3>
                     <span className="text-sm font-medium text-muted-foreground bg-accent/50 px-2 py-1 rounded">
                       Pax: {confirmedPax}
                     </span>
+                      <div className="flex gap-4 text-xs">
+                        <div className="text-center">
+                          <div className="font-medium">6mths out:</div>
+                          <div>{getMilestoneDate(tour.start_date, 180)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium">90 days:</div>
+                          <div>{getMilestoneDate(tour.start_date, 90)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium">60 days:</div>
+                          <div>{getMilestoneDate(tour.start_date, 60)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium">30 days:</div>
+                          <div>{getMilestoneDate(tour.start_date, 30)}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-medium">Start date:</div>
+                          <div>{formatDisplayDate(tour.start_date).split(',')[0]}</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-4 text-xs">
-                    <div className="text-center">
-                      <div className="font-medium">6mths out:</div>
-                      <div>{getMilestoneDate(tour.start_date, 180)}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium">90 days:</div>
-                      <div>{getMilestoneDate(tour.start_date, 90)}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium">60 days:</div>
-                      <div>{getMilestoneDate(tour.start_date, 60)}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium">30 days:</div>
-                      <div>{getMilestoneDate(tour.start_date, 30)}</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="font-medium">Start date:</div>
-                      <div>{formatDisplayDate(tour.start_date).split(',')[0]}</div>
-                    </div>
-                  </div>
-                </div>
 
                 {/* Main Operations Table */}
                 <div className="flex gap-2 text-sm min-h-32">
