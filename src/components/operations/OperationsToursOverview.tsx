@@ -184,27 +184,27 @@ export const OperationsToursOverview = () => {
                   <div className="w-[50%] space-y-1 pr-2">
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Accomm:</span>
-                      <span className="text-muted-foreground">{tour.ops_accomm_notes || "No notes"}</span>
+                      <span className="text-muted-foreground whitespace-pre-wrap">{tour.ops_accomm_notes || "No notes"}</span>
                     </div>
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Races:</span>
-                      <span className="text-muted-foreground">{tour.ops_races_notes || "No notes"}</span>
+                      <span className="text-muted-foreground whitespace-pre-wrap">{tour.ops_races_notes || "No notes"}</span>
                     </div>
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Transport:</span>
-                      <span className="text-muted-foreground">{tour.ops_transport_notes || "No notes"}</span>
+                      <span className="text-muted-foreground whitespace-pre-wrap">{tour.ops_transport_notes || "No notes"}</span>
                     </div>
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Dinner:</span>
-                      <span className="text-muted-foreground">{tour.ops_dinner_notes || "No notes"}</span>
+                      <span className="text-muted-foreground whitespace-pre-wrap">{tour.ops_dinner_notes || "No notes"}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="font-medium">Activities:</span>
-                      <span className="text-muted-foreground mt-1">{tour.ops_activities_notes || "No notes"}</span>
+                      <span className="text-muted-foreground mt-1 whitespace-pre-wrap">{tour.ops_activities_notes || "No notes"}</span>
                     </div>
                     <div className="flex">
                       <span className="font-medium w-24 shrink-0">Other:</span>
-                      <span className="text-muted-foreground">{tour.ops_other_notes || "No notes"}</span>
+                      <span className="text-muted-foreground whitespace-pre-wrap">{tour.ops_other_notes || "No notes"}</span>
                     </div>
                   </div>
                   
