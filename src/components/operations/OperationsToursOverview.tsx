@@ -1,6 +1,7 @@
-
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { AlertTriangle, Search } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { formatDisplayDate } from "@/lib/utils";
 
@@ -27,6 +28,25 @@ const getMilestoneDate = (startDate: string, daysOffset: number) => {
 
 export const OperationsToursOverview = () => {
   const { data: tours, isLoading } = useTours();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter tours by search query
+  const filteredTours = tours?.filter(tour => {
+    if (!searchQuery.trim()) return true;
+    const searchTerm = searchQuery.toLowerCase();
+    
+    return (
+      tour.name.toLowerCase().includes(searchTerm) ||
+      tour.tour_host?.toLowerCase().includes(searchTerm) ||
+      tour.location?.toLowerCase().includes(searchTerm) ||
+      tour.ops_notes?.toLowerCase().includes(searchTerm) ||
+      tour.ops_accomm_notes?.toLowerCase().includes(searchTerm) ||
+      tour.ops_races_notes?.toLowerCase().includes(searchTerm) ||
+      tour.ops_transport_notes?.toLowerCase().includes(searchTerm) ||
+      tour.ops_dinner_notes?.toLowerCase().includes(searchTerm) ||
+      tour.ops_activities_notes?.toLowerCase().includes(searchTerm)
+    );
+  }) || [];
 
   if (isLoading) {
     return (
@@ -72,8 +92,19 @@ export const OperationsToursOverview = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Search Bar */}
+        <div className="relative mb-6">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search tours by name, location, host, or operations notes..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
         <div className="space-y-6">
-          {tours.map((tour) => {
+          {filteredTours.map((tour) => {
             const daysUntilTour = getDaysUntilTour(tour.start_date);
             const daysColorClass = getDaysColorClass(daysUntilTour);
             
@@ -152,6 +183,12 @@ export const OperationsToursOverview = () => {
               </div>
             );
           })}
+          
+          {filteredTours.length === 0 && searchQuery && (
+            <div className="text-center py-8 text-muted-foreground">
+              No tours found matching "{searchQuery}"
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
