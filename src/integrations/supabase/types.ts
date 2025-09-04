@@ -1038,6 +1038,7 @@ export type Database = {
           ops_activities_notes: string | null
           ops_dinner_notes: string | null
           ops_notes: string | null
+          ops_other_notes: string | null
           ops_races_notes: string | null
           ops_transport_notes: string | null
           pickup_point: string | null
@@ -1072,6 +1073,7 @@ export type Database = {
           ops_activities_notes?: string | null
           ops_dinner_notes?: string | null
           ops_notes?: string | null
+          ops_other_notes?: string | null
           ops_races_notes?: string | null
           ops_transport_notes?: string | null
           pickup_point?: string | null
@@ -1106,6 +1108,7 @@ export type Database = {
           ops_activities_notes?: string | null
           ops_dinner_notes?: string | null
           ops_notes?: string | null
+          ops_other_notes?: string | null
           ops_races_notes?: string | null
           ops_transport_notes?: string | null
           pickup_point?: string | null
