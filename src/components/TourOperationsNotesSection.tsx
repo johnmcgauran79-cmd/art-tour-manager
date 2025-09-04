@@ -20,6 +20,7 @@ interface TourOperationsData {
   ops_transport_notes?: string;
   ops_dinner_notes?: string;
   ops_activities_notes?: string;
+  ops_other_notes?: string;
 }
 
 export const TourOperationsNotesSection = ({ tourId, tourName, onNavigate }: TourOperationsNotesSectionProps) => {
@@ -50,7 +51,8 @@ export const TourOperationsNotesSection = ({ tourId, tourName, onNavigate }: Tou
     ops_races_notes: tour?.ops_races_notes || "",
     ops_transport_notes: tour?.ops_transport_notes || "",
     ops_dinner_notes: tour?.ops_dinner_notes || "",
-    ops_activities_notes: tour?.ops_activities_notes || ""
+    ops_activities_notes: tour?.ops_activities_notes || "",
+    ops_other_notes: tour?.ops_other_notes || ""
   };
 
   const handleEdit = () => {
@@ -105,7 +107,8 @@ export const TourOperationsNotesSection = ({ tourId, tourName, onNavigate }: Tou
     { key: 'ops_races_notes' as keyof TourOperationsData, label: 'Races', placeholder: 'Races notes...', navigable: true },
     { key: 'ops_transport_notes' as keyof TourOperationsData, label: 'Transport', placeholder: 'Transport notes...', navigable: true },
     { key: 'ops_dinner_notes' as keyof TourOperationsData, label: 'Dinner', placeholder: 'Dinner notes...', navigable: true },
-    { key: 'ops_activities_notes' as keyof TourOperationsData, label: 'Activities', placeholder: 'Activities notes...', navigable: true }
+    { key: 'ops_activities_notes' as keyof TourOperationsData, label: 'Activities', placeholder: 'Activities notes...', navigable: true },
+    { key: 'ops_other_notes' as keyof TourOperationsData, label: 'Other', placeholder: 'Other operations notes...', navigable: false }
   ];
 
   return (
