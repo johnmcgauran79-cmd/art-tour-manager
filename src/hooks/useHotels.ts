@@ -49,13 +49,17 @@ export const useHotels = (tourId: string) => {
         throw hotelsError;
       }
 
-      // Then fetch total nights for each hotel from hotel_bookings
+      // Then fetch total nights for each hotel from hotel_bookings (only for non-cancelled bookings)
       const hotelsWithNights = await Promise.all(
         (hotels || []).map(async (hotel) => {
           const { data: bookings, error: bookingsError } = await supabase
             .from('hotel_bookings')
-            .select('nights')
+            .select(`
+              nights,
+              bookings!inner(status)
+            `)
             .eq('hotel_id', hotel.id)
+            .neq('bookings.status', 'cancelled')
             .not('nights', 'is', null);
 
           if (bookingsError) {
@@ -64,6 +68,7 @@ export const useHotels = (tourId: string) => {
           }
 
           const totalNights = bookings?.reduce((sum, booking) => sum + (booking.nights || 0), 0) || 0;
+          console.log(`Hotel ${hotel.name}: Found ${bookings?.length} bookings with total nights: ${totalNights}`);
           return { ...hotel, total_nights: totalNights };
         })
       );
