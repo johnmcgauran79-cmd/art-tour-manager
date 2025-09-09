@@ -460,22 +460,34 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
                   {formData.accommodation_required && (
                     <>
                       <div>
-                        <Label htmlFor="check_in_date">Check In Date</Label>
+                        <Label htmlFor="check_in_date">Check In Date (Auto-calculated)</Label>
                         <Input
                           id="check_in_date"
                           type="date"
                           value={formData.check_in_date}
-                          onChange={(e) => setFormData(prev => ({ ...prev, check_in_date: e.target.value }))}
+                          readOnly
+                          disabled
+                          className="bg-muted cursor-not-allowed"
+                          title="This date is automatically calculated from your hotel bookings"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Automatically set from earliest hotel check-in
+                        </p>
                       </div>
                       <div>
-                        <Label htmlFor="check_out_date">Check Out Date</Label>
+                        <Label htmlFor="check_out_date">Check Out Date (Auto-calculated)</Label>
                         <Input
                           id="check_out_date"
                           type="date"
                           value={formData.check_out_date}
-                          onChange={(e) => setFormData(prev => ({ ...prev, check_out_date: e.target.value }))}
+                          readOnly
+                          disabled
+                          className="bg-muted cursor-not-allowed"
+                          title="This date is automatically calculated from your hotel bookings"
                         />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Automatically set from latest hotel check-out
+                        </p>
                       </div>
                     </>
                   )}

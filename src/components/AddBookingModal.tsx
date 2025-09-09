@@ -312,10 +312,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const handleCreateBooking = async () => {
     try {
       // Clean up date fields - convert empty strings to null
+      // Note: check_in_date and check_out_date will be auto-calculated by database triggers
       const cleanedFormData = {
         ...formData,
-        check_in_date: formData.check_in_date || null,
-        check_out_date: formData.check_out_date || null,
         passport_expiry_date: formData.passport_expiry_date || null,
       };
 
