@@ -162,6 +162,12 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                       <span>Cancellation: {(hotel as any).cancellation_policy}</span>
                     </div>
                   )}
+                  {hotel.upgrade_options && (
+                    <div className="flex items-center gap-1">
+                      <Bed className="h-4 w-4 text-muted-foreground" />
+                      <span>Upgrade Options: {hotel.upgrade_options}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
