@@ -126,28 +126,22 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                   {/* Total Room Nights calculation */}
                   <div className="flex items-center gap-1">
                     <Calculator className="h-4 w-4 text-muted-foreground" />
-                    <span>Total Room Nights: </span>
-                    <button 
-                      onClick={() => setSelectedHotelForBreakdown(hotel)}
-                      className="font-semibold text-primary hover:underline cursor-pointer"
-                    >
-                      {hotel.total_nights || 0}
-                    </button>
+                    <span>Total Room Nights: {hotel.total_nights || 0}</span>
                   </div>
                 </div>
 
                 {/* Operations Notes */}
-                {hotel.operations_notes && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-start gap-2">
-                      <NotebookPen className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Operations Notes:</span>
-                        <p className="text-sm mt-1">{hotel.operations_notes}</p>
-                      </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-start gap-2">
+                    <NotebookPen className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground">Operations Notes:</span>
+                      <p className="text-sm mt-1">
+                        {hotel.operations_notes || <span className="text-muted-foreground italic">Nil</span>}
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {/* Third row with cutoff dates */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t">
@@ -163,26 +157,24 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                       <span>Final Cutoff: {formatDateToDDMMYYYY((hotel as any).final_rooms_cutoff_date)}</span>
                     </div>
                   )}
-                  {(hotel as any).cancellation_policy && (
-                    <div className="flex items-center gap-1">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span>Cancellation: {(hotel as any).cancellation_policy}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <span>Cancellation: {(hotel as any).cancellation_policy || <span className="text-muted-foreground italic">Nil</span>}</span>
+                  </div>
                 </div>
 
                 {/* Upgrade Options */}
-                {hotel.upgrade_options && (
-                  <div className="mt-4 pt-4 border-t">
-                    <div className="flex items-start gap-2">
-                      <Bed className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <span className="text-sm font-medium text-muted-foreground">Upgrade Options:</span>
-                        <p className="text-sm mt-1">{hotel.upgrade_options}</p>
-                      </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-start gap-2">
+                    <Bed className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <span className="text-sm font-medium text-muted-foreground">Upgrade Options:</span>
+                      <p className="text-sm mt-1">
+                        {hotel.upgrade_options || <span className="text-muted-foreground italic">Nil</span>}
+                      </p>
                     </div>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           ))}
