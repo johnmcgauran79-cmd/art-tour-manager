@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Calendar, Bed, Edit, FileText } from "lucide-react";
+import { MapPin, Calendar, Bed, Edit, FileText, Users } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
@@ -10,9 +10,10 @@ interface TourHotelsTabProps {
   onAddHotel: () => void;
   onEditHotel: (hotel: any) => void;
   onRoomingList: (hotel: any) => void;
+  onBulkEdit: (hotel: any) => void;
 }
 
-export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList }: TourHotelsTabProps) => {
+export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, onBulkEdit }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
 
   const calculateNights = (checkIn: string, checkOut: string) => {
@@ -52,6 +53,15 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList }
                     >
                       <Edit className="h-3 w-3" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onBulkEdit(hotel)}
+                      className="flex items-center gap-1"
+                    >
+                      <Users className="h-3 w-3" />
+                      Bulk Edit
                     </Button>
                     <Button
                       variant="outline"

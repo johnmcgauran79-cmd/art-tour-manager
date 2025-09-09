@@ -12,6 +12,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { EditTourModal } from "@/components/EditTourModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
+import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
@@ -42,6 +43,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [editTourModalOpen, setEditTourModalOpen] = useState(false);
   const [roomingListModalOpen, setEditRoomingListModalOpen] = useState(false);
+  const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
@@ -130,6 +132,11 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
   const handleRoomingList = (hotel: any) => {
     setSelectedHotel(hotel);
     setEditRoomingListModalOpen(true);
+  };
+
+  const handleBulkEdit = (hotel: any) => {
+    setSelectedHotel(hotel);
+    setBulkEditModalOpen(true);
   };
 
   const handleDuplicateTour = () => {
@@ -315,6 +322,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 tourId={currentTour?.id || ""}
                 onAddHotel={() => setAddHotelModalOpen(true)}
                 onEditHotel={handleEditHotel}
+                onBulkEdit={handleBulkEdit}
                 onRoomingList={handleRoomingList}
               />
             </TabsContent>
@@ -414,6 +422,13 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
         }}
         tour={tourForEdit || transformedTour}
         onTourDeleted={handleTourDeleted}
+      />
+
+      <BulkRoomingEditModal
+        hotel={selectedHotel}
+        tourId={currentTour?.id || ""}
+        open={bulkEditModalOpen}
+        onOpenChange={setBulkEditModalOpen}
       />
 
       <DuplicateTourDialog

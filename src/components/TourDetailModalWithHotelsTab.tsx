@@ -10,6 +10,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { EditTourModal } from "@/components/EditTourModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
+import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
@@ -41,6 +42,7 @@ export const TourDetailModalWithHotelsTab = ({
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [editTourModalOpen, setEditTourModalOpen] = useState(false);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
+  const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [transformedTour, setTransformedTour] = useState<any>(null);
@@ -130,6 +132,11 @@ export const TourDetailModalWithHotelsTab = ({
     setRoomingListModalOpen(true);
   };
 
+  const handleBulkEdit = (hotel: any) => {
+    setSelectedHotel(hotel);
+    setBulkEditModalOpen(true);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -196,6 +203,7 @@ export const TourDetailModalWithHotelsTab = ({
                 tourId={currentTour?.id || ""}
                 onAddHotel={() => setAddHotelModalOpen(true)}
                 onEditHotel={handleEditHotel}
+                onBulkEdit={handleBulkEdit}
                 onRoomingList={handleRoomingList}
               />
             </TabsContent>
@@ -289,6 +297,14 @@ export const TourDetailModalWithHotelsTab = ({
           tour={transformedTour}
         />
       )}
+
+      {/* Bulk Rooming Edit Modal */}
+      <BulkRoomingEditModal
+        hotel={selectedHotel}
+        tourId={currentTour?.id || ""}
+        open={bulkEditModalOpen}
+        onOpenChange={setBulkEditModalOpen}
+      />
     </>
   );
 };
