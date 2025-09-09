@@ -219,7 +219,7 @@ export const TaskTemplatesManagement = () => {
                                 <p className="text-sm text-gray-600 mb-2">{template.description}</p>
                               )}
                               <p className="text-xs text-gray-500">
-                                Created: {new Date(template.created_at).toLocaleDateString()}
+                                Created: {new Date(template.created_at).toLocaleDateString('en-AU')}
                               </p>
                             </div>
                             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>

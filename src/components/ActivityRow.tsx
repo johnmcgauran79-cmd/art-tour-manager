@@ -34,7 +34,7 @@ export const ActivityRow = ({
       <TableCell className="font-medium">{activity.name}</TableCell>
       <TableCell>
         {activity.activity_date 
-          ? new Date(activity.activity_date).toLocaleDateString()
+          ? new Date(activity.activity_date).toLocaleDateString('en-AU')
           : 'TBD'
         }
       </TableCell>

@@ -190,7 +190,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                     <span className="font-medium">Instalment:</span> ${tour.instalmentAmount}
                     {tour.instalmentDate && (
                       <span className="text-muted-foreground ml-1">
-                        (Due: {new Date(tour.instalmentDate).toLocaleDateString()})
+                        (Due: {new Date(tour.instalmentDate).toLocaleDateString('en-AU')})
                       </span>
                     )}
                   </div>
@@ -198,7 +198,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                 {tour.finalPaymentDate && (
                   <div>
                     <span className="font-medium">Final Payment Due:</span>{" "}
-                    {new Date(tour.finalPaymentDate).toLocaleDateString()}
+                    {new Date(tour.finalPaymentDate).toLocaleDateString('en-AU')}
                   </div>
                 )}
               </div>

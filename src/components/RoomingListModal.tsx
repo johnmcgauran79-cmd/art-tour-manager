@@ -6,6 +6,7 @@ import { FileText, Printer } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { formatDateToAustralian } from "@/lib/utils";
 
 interface Hotel {
   id: string;
@@ -77,8 +78,8 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         passenger2: booking.passenger_2_name,
         passenger3: booking.passenger_3_name,
         groupName: booking.group_name,
-        checkIn: hotelBooking.check_in_date ? new Date(hotelBooking.check_in_date).toLocaleDateString() : '-',
-        checkOut: hotelBooking.check_out_date ? new Date(hotelBooking.check_out_date).toLocaleDateString() : '-',
+        checkIn: formatDateToAustralian(hotelBooking.check_in_date),
+        checkOut: formatDateToAustralian(hotelBooking.check_out_date),
         nights: hotelBooking.nights || '-',
         bedding: hotelBooking.bedding || '-',
         roomType: hotelBooking.room_type || '-',
