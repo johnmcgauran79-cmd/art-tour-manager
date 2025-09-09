@@ -132,14 +132,9 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
 
                 {/* Operations Notes */}
                 <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-start gap-2">
-                    <NotebookPen className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <span className="text-sm font-medium text-muted-foreground">Operations Notes:</span>
-                      <p className="text-sm mt-1">
-                        {hotel.operations_notes || <span className="text-muted-foreground italic">Nil</span>}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <NotebookPen className="h-4 w-4 text-muted-foreground" />
+                    <span>Operations Notes: {hotel.operations_notes || <span className="text-muted-foreground italic">Nil</span>}</span>
                   </div>
                 </div>
 
@@ -165,14 +160,9 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
 
                 {/* Upgrade Options */}
                 <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-start gap-2">
-                    <Bed className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <span className="text-sm font-medium text-muted-foreground">Upgrade Options:</span>
-                      <p className="text-sm mt-1">
-                        {hotel.upgrade_options || <span className="text-muted-foreground italic">Nil</span>}
-                      </p>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <Bed className="h-4 w-4 text-muted-foreground" />
+                    <span>Upgrade Options: {hotel.upgrade_options || <span className="text-muted-foreground italic">Nil</span>}</span>
                   </div>
                 </div>
               </CardContent>
