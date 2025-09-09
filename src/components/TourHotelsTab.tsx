@@ -121,12 +121,10 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                     <span>Rooms Booked: {hotel.rooms_booked || 0}</span>
                   </div>
                   {/* Total Room Nights calculation */}
-                  {hotel.default_check_in && hotel.default_check_out && (
-                    <div className="flex items-center gap-1">
-                      <Calculator className="h-4 w-4 text-muted-foreground" />
-                      <span>Total Room Nights: {(hotel.rooms_booked || 0) * calculateNights(hotel.default_check_in, hotel.default_check_out)}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <Calculator className="h-4 w-4 text-muted-foreground" />
+                    <span>Total Room Nights: {hotel.total_nights || 0}</span>
+                  </div>
                 </div>
 
                 {/* Operations Notes */}

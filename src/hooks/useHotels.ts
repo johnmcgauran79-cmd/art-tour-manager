@@ -23,6 +23,7 @@ export interface Hotel {
   upgrade_options: string | null;
   created_at: string;
   updated_at: string;
+  total_nights?: number;
 }
 
 export const useHotels = (tourId: string) => {
@@ -36,18 +37,39 @@ export const useHotels = (tourId: string) => {
         return [];
       }
       
-      const { data, error } = await supabase
+      // First fetch the hotels
+      const { data: hotels, error: hotelsError } = await supabase
         .from('hotels')
         .select('*')
         .eq('tour_id', tourId)
         .order('created_at', { ascending: true });
       
-      if (error) {
-        console.error('Error fetching hotels:', error);
-        throw error;
+      if (hotelsError) {
+        console.error('Error fetching hotels:', hotelsError);
+        throw hotelsError;
       }
-      console.log('Hotels fetched successfully:', data);
-      return data as Hotel[];
+
+      // Then fetch total nights for each hotel from hotel_bookings
+      const hotelsWithNights = await Promise.all(
+        (hotels || []).map(async (hotel) => {
+          const { data: bookings, error: bookingsError } = await supabase
+            .from('hotel_bookings')
+            .select('nights')
+            .eq('hotel_id', hotel.id)
+            .not('nights', 'is', null);
+
+          if (bookingsError) {
+            console.error('Error fetching hotel bookings for hotel:', hotel.id, bookingsError);
+            return { ...hotel, total_nights: 0 };
+          }
+
+          const totalNights = bookings?.reduce((sum, booking) => sum + (booking.nights || 0), 0) || 0;
+          return { ...hotel, total_nights: totalNights };
+        })
+      );
+      
+      console.log('Hotels with nights fetched successfully:', hotelsWithNights);
+      return hotelsWithNights as Hotel[];
     },
     enabled: !!tourId && tourId.trim() !== '',
   });
