@@ -2,8 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator } from "lucide-react";
-import { useHotels } from "@/hooks/useHotels";
+import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
+import { useState } from "react";
 
 interface TourHotelsTabProps {
   tourId: string;
@@ -15,6 +17,7 @@ interface TourHotelsTabProps {
 
 export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, onBulkEdit }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
+  const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
 
   const calculateNights = (checkIn: string, checkOut: string) => {
     if (!checkIn || !checkOut) return 0;
@@ -123,7 +126,13 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                   {/* Total Room Nights calculation */}
                   <div className="flex items-center gap-1">
                     <Calculator className="h-4 w-4 text-muted-foreground" />
-                    <span>Total Room Nights: {hotel.total_nights || 0}</span>
+                    <span>Total Room Nights: </span>
+                    <button 
+                      onClick={() => setSelectedHotelForBreakdown(hotel)}
+                      className="font-semibold text-primary hover:underline cursor-pointer"
+                    >
+                      {hotel.total_nights || 0}
+                    </button>
                   </div>
                 </div>
 
@@ -188,6 +197,15 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
             Add First Hotel
           </Button>
         </div>
+      )}
+
+      {selectedHotelForBreakdown && (
+        <HotelNightsBreakdownModal
+          hotelId={selectedHotelForBreakdown.id}
+          hotelName={selectedHotelForBreakdown.name}
+          open={!!selectedHotelForBreakdown}
+          onOpenChange={(open) => !open && setSelectedHotelForBreakdown(null)}
+        />
       )}
     </div>
   );
