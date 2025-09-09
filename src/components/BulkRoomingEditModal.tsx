@@ -152,6 +152,21 @@ export const BulkRoomingEditModal = ({ hotel, tourId, open, onOpenChange }: Bulk
     updateMutation.mutate(editedData);
   };
 
+  // Calculate totals
+  const totalRoomNights = editedData.reduce((total, room) => {
+    if (room.check_in_date && room.check_out_date) {
+      const nights = Math.ceil((new Date(room.check_out_date).getTime() - new Date(room.check_in_date).getTime()) / (1000 * 60 * 60 * 24));
+      return total + (nights > 0 ? nights : 0);
+    }
+    return total;
+  }, 0);
+
+  const beddingCounts = editedData.reduce((counts, room) => {
+    const bedding = room.bedding || 'double';
+    counts[bedding] = (counts[bedding] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+
   if (!hotel) return null;
 
   return (
@@ -180,6 +195,8 @@ export const BulkRoomingEditModal = ({ hotel, tourId, open, onOpenChange }: Bulk
           <div className="text-sm text-muted-foreground">
             <p><strong>Hotel:</strong> {hotel.name}</p>
             <p><strong>Total Rooms:</strong> {editedData.length}</p>
+            <p><strong>Total Room Nights:</strong> {totalRoomNights}</p>
+            <p><strong>Bedding Types:</strong> Single: {beddingCounts.single || 0}, Twin: {beddingCounts.twin || 0}, Double: {beddingCounts.double || 0}</p>
           </div>
 
           {isLoading ? (
