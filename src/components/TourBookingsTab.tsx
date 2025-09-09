@@ -6,6 +6,7 @@ import { TourBookingsList } from "@/components/TourBookingsList";
 import { BulkBookingStatusModal } from "@/components/BulkBookingStatusModal";
 import { BulkDietaryModal } from "@/components/BulkDietaryModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
+import { useTours } from "@/hooks/useTours";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -17,6 +18,10 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
   const [bulkDietaryModalOpen, setBulkDietaryModalOpen] = useState(false);
   const [addWaitlistModalOpen, setAddWaitlistModalOpen] = useState(false);
+  const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
+  
+  const { data: tours } = useTours();
+  const currentTour = tours?.find(tour => tour.id === tourId);
 
   return (
     <>
@@ -52,7 +57,7 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
               Add to Waitlist
             </Button>
             <Button
-              onClick={onAddBooking}
+              onClick={() => setAddBookingModalOpen(true)}
               size="sm"
               className="flex items-center gap-2 bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
             >
@@ -81,7 +86,17 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
         open={addWaitlistModalOpen} 
         onOpenChange={setAddWaitlistModalOpen} 
         preSelectedTourId={tourId}
+        preSelectedTourStartDate={currentTour?.start_date}
+        preSelectedTourEndDate={currentTour?.end_date}
         defaultStatus="waitlisted"
+      />
+
+      <AddBookingModal 
+        open={addBookingModalOpen} 
+        onOpenChange={setAddBookingModalOpen} 
+        preSelectedTourId={tourId}
+        preSelectedTourStartDate={currentTour?.start_date}
+        preSelectedTourEndDate={currentTour?.end_date}
       />
     </>
   );

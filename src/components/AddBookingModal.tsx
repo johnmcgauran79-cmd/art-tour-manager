@@ -94,8 +94,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       
       hotels.forEach(hotel => {
         initialHotelDates[hotel.id] = {
-          check_in: hotel.default_check_in || '',
-          check_out: hotel.default_check_out || '',
+          check_in: hotel.default_check_in || formData.check_in_date || '',
+          check_out: hotel.default_check_out || formData.check_out_date || '',
         };
       });
       
@@ -104,10 +104,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         hotelDates: initialHotelDates,
       }));
       
-      // Update overall booking dates to encompass all hotel dates
-      updateOverallBookingDates(initialHotelDates);
+      // Only update overall booking dates if they're empty to avoid overriding tour dates
+      if (!formData.check_in_date && !formData.check_out_date) {
+        updateOverallBookingDates(initialHotelDates);
+      }
     }
-  }, [hotels]);
+  }, [hotels, formData.check_in_date, formData.check_out_date]);
   
   // Function to update overall booking check-in/out dates based on hotel dates
   const updateOverallBookingDates = (hotelDates: Record<string, { check_in: string; check_out: string }>) => {
@@ -180,9 +182,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   }, [preSelectedTourId, tours, preSelectedTourStartDate, preSelectedTourEndDate]);
 
-  // Reset form data when modal opens
+  // Reset form data when modal opens, but preserve pre-selected dates
   useEffect(() => {
     if (open) {
+      const initialCheckIn = preSelectedTourStartDate || '';
+      const initialCheckOut = preSelectedTourEndDate || '';
+      
       setFormData({
         tour_id: preSelectedTourId || '',
         lead_passenger_name: '',
@@ -196,8 +201,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         status: defaultStatus,
         extra_requests: '',
         accommodation_required: true,
-        check_in_date: '',
-        check_out_date: '',
+        check_in_date: initialCheckIn,
+        check_out_date: initialCheckOut,
         invoice_notes: '',
         emergency_contact_name: '',
         emergency_contact_phone: '',
@@ -220,7 +225,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       setHasUnsavedChanges(false);
       setIsTabNavigationEnabled(false);
     }
-  }, [open, preSelectedTourId, defaultStatus]);
+  }, [open, preSelectedTourId, defaultStatus, preSelectedTourStartDate, preSelectedTourEndDate]);
 
   // Set default status
   useEffect(() => {
