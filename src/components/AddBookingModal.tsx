@@ -104,55 +104,14 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         hotelDates: initialHotelDates,
       }));
       
-      // Only update overall booking dates if they're empty to avoid overriding tour dates
-      if (!formData.check_in_date && !formData.check_out_date) {
-        updateOverallBookingDates(initialHotelDates);
-      }
+      // Note: Overall booking dates will be automatically calculated by database triggers
+      // from hotel bookings, so we don't need to set them manually
     }
-  }, [hotels, formData.check_in_date, formData.check_out_date]);
+  }, [hotels]);
   
-  // Function to update overall booking check-in/out dates based on hotel dates
-  const updateOverallBookingDates = (hotelDates: Record<string, { check_in: string; check_out: string }>) => {
-    const dates = Object.values(hotelDates).filter(d => d.check_in && d.check_out);
-    
-    if (dates.length > 0) {
-      const earliestCheckIn = dates.reduce((earliest, current) => 
-        !earliest || (current.check_in && current.check_in < earliest) ? current.check_in : earliest
-      , '');
-      
-      const latestCheckOut = dates.reduce((latest, current) => 
-        !latest || (current.check_out && current.check_out > latest) ? current.check_out : latest
-      , '');
-      
-      setFormData(prev => ({
-        ...prev,
-        check_in_date: earliestCheckIn,
-        check_out_date: latestCheckOut,
-      }));
-    }
-  };
+  // Note: updateOverallBookingDates function removed since dates are now auto-calculated by database
   
-
-  // Auto-fill check-in/out dates when tour is selected
-  useEffect(() => {
-    if (formData.tour_id && tours && tours.length > 0) {
-      const selectedTour = tours.find(tour => tour.id === formData.tour_id);
-      
-      if (selectedTour && selectedTour.start_date && selectedTour.end_date) {
-        // Only auto-fill if dates are empty to avoid overwriting user changes
-        setFormData(prev => {
-          if (!prev.check_in_date && !prev.check_out_date) {
-            return {
-              ...prev,
-              check_in_date: selectedTour.start_date,
-              check_out_date: selectedTour.end_date,
-            };
-          }
-          return prev;
-        });
-      }
-    }
-  }, [formData.tour_id, tours]);
+  // Note: Auto-fill logic removed since check-in/out dates are now automatically calculated from hotel bookings
 
   // Initialize form with preSelectedTourId and auto-fill dates immediately
   useEffect(() => {
@@ -174,13 +133,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           setFormData(prev => ({
             ...prev,
             tour_id: preSelectedTourId,
-            check_in_date: selectedTour.start_date || '',
-            check_out_date: selectedTour.end_date || '',
+            // Note: check_in_date and check_out_date will be auto-calculated from hotel bookings
           }));
         }
       }
     }
-  }, [preSelectedTourId, tours, preSelectedTourStartDate, preSelectedTourEndDate]);
+  }, [preSelectedTourId, tours]);
 
   // Reset form data when modal opens, but preserve pre-selected dates
   useEffect(() => {
@@ -577,7 +535,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                       }
                                     };
                                     handleFormChange('hotelDates', newHotelDates);
-                                    updateOverallBookingDates(newHotelDates);
+                                    // Note: Overall booking dates will be auto-calculated by database triggers
                                   }}
                                 />
                               </div>
@@ -596,7 +554,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                       }
                                     };
                                     handleFormChange('hotelDates', newHotelDates);
-                                    updateOverallBookingDates(newHotelDates);
+                                    // Note: Overall booking dates will be auto-calculated by database triggers
                                   }}
                                 />
                               </div>
