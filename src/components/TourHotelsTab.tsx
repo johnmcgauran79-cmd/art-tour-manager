@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Calendar, Bed, Edit, FileText, Users } from "lucide-react";
+import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
@@ -120,9 +120,29 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                     <Bed className="h-4 w-4 text-muted-foreground" />
                     <span>Rooms Booked: {hotel.rooms_booked || 0}</span>
                   </div>
+                  {/* Total Room Nights calculation */}
+                  {hotel.default_check_in && hotel.default_check_out && (
+                    <div className="flex items-center gap-1">
+                      <Calculator className="h-4 w-4 text-muted-foreground" />
+                      <span>Total Room Nights: {(hotel.rooms_booked || 0) * calculateNights(hotel.default_check_in, hotel.default_check_out)}</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Third row with new fields */}
+                {/* Operations Notes */}
+                {hotel.operations_notes && (
+                  <div className="mt-4 pt-4 border-t">
+                    <div className="flex items-start gap-2">
+                      <NotebookPen className="h-4 w-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <span className="text-sm font-medium text-muted-foreground">Operations Notes:</span>
+                        <p className="text-sm mt-1">{hotel.operations_notes}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Third row with cutoff dates */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t">
                   {(hotel as any).initial_rooms_cutoff_date && (
                     <div className="flex items-center gap-1">
