@@ -129,7 +129,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
             <span className="ml-2">Loading email preview...</span>
           </div>
         ) : emailData ? (
-          <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
+          <div className="flex-1 overflow-y-auto max-h-[calc(90vh-120px)]">
             <div className="space-y-4 p-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -169,17 +169,14 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
 
             <div className="flex-1">
               <Label htmlFor="content">Email Content:</Label>
-              <ScrollArea className="h-64 mt-2 border rounded-md">
-                <Textarea
-                  id="content"
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="min-h-[240px] border-0 resize-none"
-                  placeholder="Email content..."
-                />
-              </ScrollArea>
+              <Textarea
+                id="content"
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                className="min-h-[240px] mt-2 resize-none"
+                placeholder="Email content..."
+              />
             </div>
-
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button 
@@ -205,7 +202,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
               </Button>
             </div>
             </div>
-          </ScrollArea>
+          </div>
         ) : (
           <div className="p-8 text-center text-gray-500">
             No booking data available
