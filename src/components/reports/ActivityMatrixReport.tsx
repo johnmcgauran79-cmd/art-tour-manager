@@ -32,12 +32,13 @@ interface BookingActivityData {
 
 export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixReportProps) => {
   const [allActivityBookings, setAllActivityBookings] = useState<BookingActivityData>({});
+  const [activityTotalBookings, setActivityTotalBookings] = useState<{[activityId: string]: number}>({});
   const [loading, setLoading] = useState(true);
 
   const matrixData = data[0] || { activities: [], bookings: [] };
   const { activities, bookings } = matrixData;
 
-  // Fetch activity bookings for all bookings
+  // Fetch activity bookings for all bookings and calculate totals
   useEffect(() => {
     const fetchAllActivityBookings = async () => {
       try {
@@ -51,7 +52,7 @@ export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixRep
           }
         }
 
-        // Fetch actual activity bookings from database
+        // Fetch actual activity bookings from database (for this tour only)
         const { data: activityBookings, error } = await supabase
           .from('activity_bookings')
           .select('booking_id, activity_id, passengers_attending')
@@ -68,8 +69,19 @@ export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixRep
             }
           });
         }
+
+        // Calculate total bookings for each activity
+        const totalBookings: {[activityId: string]: number} = {};
+        activities.forEach(activity => {
+          totalBookings[activity.id] = activityBookings 
+            ? activityBookings
+                .filter(ab => ab.activity_id === activity.id)
+                .reduce((sum, ab) => sum + ab.passengers_attending, 0)
+            : 0;
+        });
         
         setAllActivityBookings(activityBookingsData);
+        setActivityTotalBookings(totalBookings);
         setLoading(false);
       } catch (error) {
         console.error('Error in fetchAllActivityBookings:', error);
@@ -203,11 +215,9 @@ export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixRep
                     <div className="text-muted-foreground">
                       {formatDateToDDMMYYYY(activity.activity_date)}
                     </div>
-                    {activity.start_time && (
-                      <div className="text-muted-foreground">
-                        {activity.start_time}
-                      </div>
-                    )}
+                    <div className="text-muted-foreground font-medium">
+                      Total: {activityTotalBookings[activity.id] || 0}
+                    </div>
                   </div>
                 </TableHead>
               ))}

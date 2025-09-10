@@ -292,7 +292,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors">
                 <Grid3X3 className="h-5 w-5 text-red-600" />
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Matrix</p>
+              <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Report</p>
               <p className="text-xs text-gray-600">{bookingsWithDiscrepancies.length} alerts</p>
             </div>
           </div>
