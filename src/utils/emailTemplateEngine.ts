@@ -92,6 +92,7 @@ export interface EmailTemplate {
   type: string;
   subject_template: string;
   content_template: string;
+  from_email: string;
   is_active: boolean;
   is_default: boolean;
 }

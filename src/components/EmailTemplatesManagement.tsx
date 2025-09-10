@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Type, Bold, Italic, Underline } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
+import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -63,6 +64,7 @@ export const EmailTemplatesManagement = () => {
   const quillRef = useRef<ReactQuill>(null);
   
   const { data: templates = [], isLoading } = useEmailTemplates();
+  const { data: userEmails = [] } = useUserEmails();
   const createTemplate = useCreateEmailTemplate();
   const updateTemplate = useUpdateEmailTemplate();
   const deleteTemplate = useDeleteEmailTemplate();
@@ -72,6 +74,7 @@ export const EmailTemplatesManagement = () => {
     type: "",
     subject_template: "",
     content_template: "",
+    from_email: "info@australianracingtours.com.au",
     is_active: true,
     is_default: false,
   });
@@ -86,6 +89,7 @@ export const EmailTemplatesManagement = () => {
       type: "",
       subject_template: "",
       content_template: "",
+      from_email: "info@australianracingtours.com.au",
       is_active: true,
       is_default: false,
     });
@@ -104,6 +108,7 @@ export const EmailTemplatesManagement = () => {
       type: template.type,
       subject_template: template.subject_template,
       content_template: template.content_template,
+      from_email: template.from_email,
       is_active: template.is_active,
       is_default: template.is_default,
     });
@@ -117,6 +122,7 @@ export const EmailTemplatesManagement = () => {
       type: template.type,
       subject_template: template.subject_template,
       content_template: template.content_template,
+      from_email: template.from_email,
       is_active: template.is_active,
       is_default: false, // Never duplicate as default
     });
@@ -315,6 +321,25 @@ export const EmailTemplatesManagement = () => {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="from_email">From Email Address</Label>
+                  <Select 
+                    value={formData.from_email} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, from_email: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select from email..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {userEmails.map((email) => (
+                        <SelectItem key={email} value={email}>
+                          {email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>

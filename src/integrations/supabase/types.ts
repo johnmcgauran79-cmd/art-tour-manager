@@ -491,6 +491,7 @@ export type Database = {
           content_template: string
           created_at: string
           created_by: string
+          from_email: string
           id: string
           is_active: boolean
           is_default: boolean
@@ -503,6 +504,7 @@ export type Database = {
           content_template: string
           created_at?: string
           created_by: string
+          from_email?: string
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -515,6 +517,7 @@ export type Database = {
           content_template?: string
           created_at?: string
           created_by?: string
+          from_email?: string
           id?: string
           is_active?: boolean
           is_default?: boolean
