@@ -67,7 +67,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
 
       // Generate hotel details
       const hotelDetails = booking.hotel_bookings?.map((hb: any) => 
-        `• ${hb.hotels?.name || 'Hotel TBD'}: ${new Date(hb.check_in_date).toLocaleDateString()} - ${new Date(hb.check_out_date).toLocaleDateString()}, ${hb.room_type || 'Standard'} room, ${hb.bedding || 'Double'} bed${hb.room_upgrade ? `, Upgrade: ${hb.room_upgrade}` : ''}`
+        `• ${hb.hotels?.name || 'Hotel TBD'}: ${new Date(hb.check_in_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${new Date(hb.check_out_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' })}, ${hb.room_type || 'Standard'} room, ${hb.bedding || 'Double'} bed${hb.room_upgrade ? `, Upgrade: ${hb.room_upgrade}` : ''}`
       ).join('\n') || 'No hotel bookings';
 
       const textContent = `
@@ -78,7 +78,7 @@ Thank you for your booking! Please find your booking confirmation details below:
 TOUR DETAILS:
 • Tour: ${booking.tours?.name || 'TBD'}
 • Location: ${booking.tours?.location || 'TBD'}
-• Tour Dates: ${booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString() : 'TBD'} - ${booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString() : 'TBD'}
+• Tour Dates: ${booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'} - ${booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}
 
 PASSENGER INFORMATION:
 • Lead Passenger: ${recipientName}
