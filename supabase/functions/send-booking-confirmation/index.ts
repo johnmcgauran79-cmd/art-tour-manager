@@ -100,8 +100,8 @@ const handler = async (req: Request): Promise<Response> => {
         customer_country: booking.customers?.country || '',
         tour_name: booking.tours?.name || '',
         tour_location: booking.tours?.location || '',
-        tour_start_date: booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString('en-AU') : '',
-        tour_end_date: booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString('en-AU') : '',
+        tour_start_date: booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
+        tour_end_date: booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
         tour_days: booking.tours?.days || '',
         tour_nights: booking.tours?.nights || '',
         tour_pickup_point: booking.tours?.pickup_point || '',
@@ -109,8 +109,8 @@ const handler = async (req: Request): Promise<Response> => {
         tour_exclusions: booking.tours?.exclusions || '',
         booking_passenger_count: booking.passenger_count || 1,
         booking_status: booking.status || '',
-        booking_check_in_date: booking.check_in_date ? new Date(booking.check_in_date).toLocaleDateString('en-AU') : '',
-        booking_check_out_date: booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString('en-AU') : '',
+        booking_check_in_date: booking.check_in_date ? new Date(booking.check_in_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
+        booking_check_out_date: booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
         booking_total_nights: booking.total_nights || '',
         booking_passenger_2_name: booking.passenger_2_name || '',
         booking_passenger_3_name: booking.passenger_3_name || '',
@@ -145,8 +145,8 @@ const handler = async (req: Request): Promise<Response> => {
         const hotelBookingsHtml = booking.hotel_bookings.map((hb: any) => `
           <div style="margin-bottom: 15px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
             <p><strong>Hotel:</strong> ${hb.hotels?.name || 'Hotel TBD'}</p>
-            <p><strong>Check-in:</strong> ${hb.check_in_date ? new Date(hb.check_in_date).toLocaleDateString('en-AU') : 'TBD'}</p>
-            <p><strong>Check-out:</strong> ${hb.check_out_date ? new Date(hb.check_out_date).toLocaleDateString('en-AU') : 'TBD'}</p>
+            <p><strong>Check-in:</strong> ${hb.check_in_date ? new Date(hb.check_in_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}</p>
+            <p><strong>Check-out:</strong> ${hb.check_out_date ? new Date(hb.check_out_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}</p>
             <p><strong>Nights:</strong> ${hb.nights || 'TBD'}</p>
             <p><strong>Room Type:</strong> ${hb.room_type || 'Standard'}</p>
             <p><strong>Bedding:</strong> ${hb.bedding || 'Double'}</p>
@@ -164,7 +164,7 @@ const handler = async (req: Request): Promise<Response> => {
         const activityBookingsHtml = booking.activity_bookings.map((ab: any) => `
           <div style="margin-bottom: 15px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
             <p><strong>Activity:</strong> ${ab.activities?.name || 'Activity TBD'}</p>
-            <p><strong>Date:</strong> ${ab.activities?.activity_date ? new Date(ab.activities.activity_date).toLocaleDateString('en-AU') : 'TBD'}</p>
+            <p><strong>Date:</strong> ${ab.activities?.activity_date ? new Date(ab.activities.activity_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}</p>
             <p><strong>Start Time:</strong> ${ab.activities?.start_time || 'TBD'}</p>
             <p><strong>Location:</strong> ${ab.activities?.location || 'TBD'}</p>
             <p><strong>Guide:</strong> ${ab.activities?.guide_name || 'TBD'}</p>
