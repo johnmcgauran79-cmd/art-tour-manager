@@ -6,7 +6,11 @@ export const useBulkBookingEmail = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (tourId: string) => {
+    mutationFn: async ({ tourId, customSubject, customContent }: { 
+      tourId: string; 
+      customSubject?: string; 
+      customContent?: string; 
+    }) => {
       // Get all bookings with email addresses for this tour
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
@@ -26,7 +30,11 @@ export const useBulkBookingEmail = () => {
       // Send emails for each booking
       const emailPromises = bookings.map(async (booking) => {
         const { error } = await supabase.functions.invoke('send-booking-confirmation', {
-          body: { bookingId: booking.id }
+          body: { 
+            bookingId: booking.id,
+            customSubject,
+            customContent
+          }
         });
         if (error) throw error;
         return booking;

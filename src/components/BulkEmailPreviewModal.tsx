@@ -112,7 +112,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     if (!tourId || !selectedTemplateId) return;
     
     try {
-      await bulkEmailMutation.mutateAsync(tourId);
+      await bulkEmailMutation.mutateAsync({
+        tourId,
+        customSubject: editedSubject,
+        customContent: editedContent
+      });
       onOpenChange(false);
     } catch (error) {
       // Error handling is done in the hook

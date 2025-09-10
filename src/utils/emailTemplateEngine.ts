@@ -146,11 +146,10 @@ export class EmailTemplateEngine {
   static formatDate(dateString?: string): string {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString('en-AU', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
     });
   }
   
