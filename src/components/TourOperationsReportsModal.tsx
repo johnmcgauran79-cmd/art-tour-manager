@@ -9,6 +9,7 @@ import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
 import { PassengerSummaryReport } from "@/components/reports/PassengerSummaryReport";
 import { PassengerListReport } from "@/components/reports/PassengerListReport";
+import { ActivityMatrixReport } from "@/components/reports/ActivityMatrixReport";
 import { HotelSelectionDialog } from "@/components/reports/HotelSelectionDialog";
 import { useReportData } from "@/components/reports/useReportData";
 import { exportReportToCSV, printReport } from "@/components/reports/ReportExportUtils";
@@ -18,7 +19,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null;
   hotelId?: string;
 }
 
@@ -58,6 +59,8 @@ export const TourOperationsReportsModal = ({
         return <PassengerSummaryReport data={report.data} />;
       case 'passengerlist':
         return <PassengerListReport data={report.data} />;
+      case 'activitymatrix':
+        return <ActivityMatrixReport data={report.data} />;
       default:
         return null;
     }
@@ -123,24 +126,28 @@ export const TourOperationsReportsModal = ({
                 <Badge variant="secondary">{displayReport.count} items</Badge>
               </div>
               <div className="flex items-center gap-2">
-                <Button 
-                  onClick={() => exportReportToCSV(displayReport, tourName)}
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Export CSV
-                </Button>
-                <Button 
-                  onClick={() => printReport(displayReport, tourName)}
-                  variant="outline" 
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <FileText className="h-4 w-4" />
-                  Print/PDF
-                </Button>
+                {displayReport.type !== 'activitymatrix' && (
+                  <>
+                    <Button 
+                      onClick={() => exportReportToCSV(displayReport, tourName)}
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export CSV
+                    </Button>
+                    <Button 
+                      onClick={() => printReport(displayReport, tourName)}
+                      variant="outline" 
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Print/PDF
+                    </Button>
+                  </>
+                )}
                 <DialogClose asChild>
                   <Button variant="outline" size="sm">
                     Close

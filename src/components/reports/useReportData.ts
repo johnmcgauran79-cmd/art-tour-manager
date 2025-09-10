@@ -1,12 +1,14 @@
 
 import { useBookings } from "@/hooks/useBookings";
+import { useActivities } from "@/hooks/useActivities";
+import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { Phone, Utensils, Users, ClipboardList } from "lucide-react";
+import { Phone, Utensils, Users, ClipboardList, Grid3X3 } from "lucide-react";
 import React from "react";
 
 interface ReportItem {
   id: string;
-  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist';
+  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix';
   title: string;
   description: string;
   icon: React.ReactNode;
@@ -16,6 +18,7 @@ interface ReportItem {
 
 export const useReportData = (tourId: string): ReportItem[] => {
   const { data: allBookings } = useBookings();
+  const { data: activities } = useActivities(tourId);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && booking.status !== 'cancelled'
@@ -87,6 +90,20 @@ export const useReportData = (tourId: string): ReportItem[] => {
     return passengers;
   }).sort((a, b) => a.name.localeCompare(b.name));
 
+  // Activity Allocation Matrix Report
+  const activityMatrix = [
+    {
+      activities: activities || [],
+      bookings: tourBookings.map(booking => ({
+        id: booking.id,
+        leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+        passengerCount: booking.passenger_count,
+        groupName: booking.group_name || '',
+        status: booking.status
+      }))
+    }
+  ];
+
   return [
     {
       id: 'contacts',
@@ -123,6 +140,15 @@ export const useReportData = (tourId: string): ReportItem[] => {
       icon: React.createElement(ClipboardList, { className: "h-5 w-5 text-orange-600" }),
       count: passengerList.length,
       data: passengerList
+    },
+    {
+      id: 'activitymatrix',
+      type: 'activitymatrix',
+      title: 'Activity Allocation Matrix',
+      description: 'Passenger allocation across all activities to identify discrepancies',
+      icon: React.createElement(Grid3X3, { className: "h-5 w-5 text-red-600" }),
+      count: tourBookings.length,
+      data: activityMatrix
     }
   ];
 };

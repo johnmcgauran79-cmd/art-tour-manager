@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3 } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -32,7 +32,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
 
@@ -57,7 +57,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     return total + booking.passenger_count;
   }, 0);
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist') => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
@@ -160,7 +160,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-6 gap-3">
             <div 
               className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('contacts')}
@@ -210,6 +210,16 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-indigo-700 text-xs">Hotel Reports</p>
               <p className="text-xs text-gray-600">{hotels?.length || 0} hotels</p>
+            </div>
+            <div 
+              className="text-center p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('activitymatrix')}
+            >
+              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors">
+                <Grid3X3 className="h-5 w-5 text-red-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Matrix</p>
+              <p className="text-xs text-gray-600">{tourBookings.length} bookings</p>
             </div>
           </div>
           <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">

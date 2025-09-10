@@ -1,6 +1,6 @@
 interface ReportItem {
   id: string;
-  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist';
+  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix';
   title: string;
   description: string;
   count: number;
