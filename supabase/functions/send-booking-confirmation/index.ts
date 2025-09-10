@@ -202,6 +202,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Booking confirmation email sent successfully:", emailResponse);
 
+    // Check if Resend returned an error
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ 
+          error: `Email sending failed: ${emailResponse.error.message || emailResponse.error}` 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
