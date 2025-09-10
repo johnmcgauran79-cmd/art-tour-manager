@@ -6,9 +6,13 @@ export const useSendBookingConfirmation = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (bookingId: string) => {
+    mutationFn: async ({ bookingId, customSubject, customContent }: { 
+      bookingId: string; 
+      customSubject?: string; 
+      customContent?: string; 
+    }) => {
       const { data, error } = await supabase.functions.invoke('send-booking-confirmation', {
-        body: { bookingId }
+        body: { bookingId, customSubject, customContent }
       });
 
       if (error) throw error;

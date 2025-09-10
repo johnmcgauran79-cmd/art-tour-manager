@@ -108,7 +108,11 @@ The Team
     if (!bookingId) return;
     
     try {
-      await sendEmail.mutateAsync(bookingId);
+      await sendEmail.mutateAsync({
+        bookingId,
+        customSubject: editedSubject,
+        customContent: editedContent
+      });
       onOpenChange(false);
     } catch (error) {
       // Error handling is done in the hook
