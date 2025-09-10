@@ -130,7 +130,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
           </div>
         ) : emailData ? (
           <div className="flex-1 space-y-4 overflow-hidden">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="template">Email Template:</Label>
                 <Select value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
@@ -155,14 +155,15 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                   className="bg-gray-50"
                 />
               </div>
-              <div>
-                <Label htmlFor="subject">Subject:</Label>
-                <Input
-                  id="subject"
-                  value={editedSubject}
-                  onChange={(e) => setEditedSubject(e.target.value)}
-                />
-              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="subject">Subject:</Label>
+              <Input
+                id="subject"
+                value={editedSubject}
+                onChange={(e) => setEditedSubject(e.target.value)}
+              />
             </div>
 
             <div className="flex-1">
