@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Edit, Trash2, Plus, Search, Users } from "lucide-react";
+import { Edit, Trash2, Plus, Search, Users, Mail } from "lucide-react";
 import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
+import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -51,6 +52,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const [showWaitlistOnly, setShowWaitlistOnly] = useState(false);
   const { data: allBookings, isLoading } = useBookings();
   const deleteBookingMutation = useDeleteBooking();
+  const sendBookingConfirmation = useSendBookingConfirmation();
 
   const handleEditBooking = (booking: any) => {
     setSelectedBooking(booking);
@@ -253,6 +255,16 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                             onClick={() => handleEditBooking(booking)}
                           >
                             <Edit className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="text-blue-600 hover:text-blue-700"
+                            onClick={() => sendBookingConfirmation.mutate(booking.id)}
+                            disabled={sendBookingConfirmation.isPending || !booking.customers?.email}
+                            title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
+                          >
+                            <Mail className="h-3 w-3" />
                           </Button>
                           <Button 
                             size="sm" 

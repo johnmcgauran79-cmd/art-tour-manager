@@ -11,6 +11,7 @@ import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, In
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
+import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
@@ -118,6 +119,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
   const deleteBooking = useDeleteBooking();
   const cancelBooking = useCancelBooking();
   const updateCustomer = useUpdateCustomer();
+  const sendBookingConfirmation = useSendBookingConfirmation();
 
   useEffect(() => {
     if (booking) {
@@ -524,6 +526,15 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                     Cancel
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    onClick={() => booking && sendBookingConfirmation.mutate(booking.id)}
+                    disabled={sendBookingConfirmation.isPending || !booking?.customers?.email}
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  >
+                    {sendBookingConfirmation.isPending ? 'Sending...' : 'Send Confirmation Email'}
                   </Button>
                   <Button 
                     type="submit" 
