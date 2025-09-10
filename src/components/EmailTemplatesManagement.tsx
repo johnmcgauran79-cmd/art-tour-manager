@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,9 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Type, Bold, Italic, Underline } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
@@ -57,7 +59,8 @@ const MERGE_FIELDS = {
 export const EmailTemplatesManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
-  const [selectedType, setSelectedType] = useState<string>("");
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const quillRef = useRef<ReactQuill>(null);
   
   const { data: templates = [], isLoading } = useEmailTemplates();
   const createTemplate = useCreateEmailTemplate();
@@ -73,7 +76,7 @@ export const EmailTemplatesManagement = () => {
     is_default: false,
   });
 
-  const filteredTemplates = selectedType 
+  const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
     : templates;
 
@@ -146,24 +149,38 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertMergeField = (field: string) => {
-    const textarea = document.getElementById('content_template') as HTMLTextAreaElement;
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const text = textarea.value;
-      const before = text.substring(0, start);
-      const after = text.substring(end, text.length);
-      const newValue = before + field + after;
-      
-      setFormData(prev => ({ ...prev, content_template: newValue }));
-      
-      // Set cursor position after inserted field
-      setTimeout(() => {
-        textarea.focus();
-        textarea.setSelectionRange(start + field.length, start + field.length);
-      }, 0);
+    if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      if (range) {
+        quill.insertText(range.index, field);
+        quill.setSelection(range.index + field.length, 0);
+      } else {
+        const length = quill.getLength();
+        const insertIndex = length > 0 ? length - 1 : 0;
+        quill.insertText(insertIndex, field);
+        quill.setSelection(insertIndex + field.length, 0);
+      }
+      quill.focus();
     }
   };
+
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'align': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header', 'bold', 'italic', 'underline', 'strike',
+    'color', 'background', 'list', 'bullet', 'align', 'link'
+  ];
 
   return (
     <div className="space-y-6">
@@ -175,7 +192,7 @@ export const EmailTemplatesManagement = () => {
               <SelectValue placeholder="Filter by type..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Types</SelectItem>
+              <SelectItem value="all">All Types</SelectItem>
               {EMAIL_TEMPLATE_TYPES.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
@@ -313,14 +330,17 @@ export const EmailTemplatesManagement = () => {
 
                 <div className="flex-1 flex flex-col">
                   <Label htmlFor="content_template">Email Content Template</Label>
-                  <Textarea
-                    id="content_template"
-                    value={formData.content_template}
-                    onChange={(e) => setFormData(prev => ({ ...prev, content_template: e.target.value }))}
-                    className="flex-1 min-h-[300px] font-mono text-sm"
-                    placeholder="Dear {{customer_first_name}},..."
-                    required
-                  />
+                  <div className="flex-1 min-h-[300px] border border-input rounded-md">
+                    <ReactQuill
+                      ref={quillRef}
+                      value={formData.content_template}
+                      onChange={(value) => setFormData(prev => ({ ...prev, content_template: value }))}
+                      modules={quillModules}
+                      formats={quillFormats}
+                      placeholder="Dear {{customer_first_name}}, ..."
+                      className="h-full"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-6">
