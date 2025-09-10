@@ -129,7 +129,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
             <span className="ml-2">Loading email preview...</span>
           </div>
         ) : emailData ? (
-          <div className="flex-1 space-y-4 overflow-hidden">
+          <ScrollArea className="flex-1 max-h-[calc(90vh-120px)]">
+            <div className="space-y-4 p-1">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="template">Email Template:</Label>
@@ -211,7 +212,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                 )}
               </Button>
             </div>
-          </div>
+            </div>
+          </ScrollArea>
         ) : (
           <div className="p-8 text-center text-gray-500">
             No booking data available
