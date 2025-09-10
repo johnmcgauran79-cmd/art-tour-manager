@@ -9,6 +9,7 @@ import { ContactsTable } from "@/components/ContactsTable";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
+import { Settings } from "@/pages/Settings";
 
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
@@ -43,6 +44,7 @@ const Index = () => {
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
@@ -126,22 +128,28 @@ const Index = () => {
     return <UserManagement onClose={() => setShowUserManagement(false)} />;
   }
 
+  if (showSettings) {
+    return <Settings onBack={() => setShowSettings(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader 
         isAdmin={isAdmin}
         onShowUserManagement={() => setShowUserManagement(true)}
         onShowSystemLogs={() => setSystemLogModalOpen(true)}
+        onShowSettings={() => setShowSettings(true)}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 mb-8">
+          <TabsList className="grid w-full grid-cols-6 mb-8">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
@@ -171,6 +179,15 @@ const Index = () => {
           
           <TabsContent value="contacts" className="space-y-4">
             <ContactsTable />
+          </TabsContent>
+          
+          <TabsContent value="settings" className="space-y-4">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">Configure system settings, email templates, and more.</p>
+              <Button onClick={() => setShowSettings(true)}>
+                Open Settings
+              </Button>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
