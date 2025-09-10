@@ -11,10 +11,12 @@ export const useSendBookingConfirmation = () => {
       customSubject?: string; 
       customContent?: string; 
     }) => {
+      console.log('Sending booking confirmation:', { bookingId, customSubject, customContent });
       const { data, error } = await supabase.functions.invoke('send-booking-confirmation', {
         body: { bookingId, customSubject, customContent }
       });
 
+      console.log('Edge function response:', { data, error });
       if (error) throw error;
       return data;
     },
