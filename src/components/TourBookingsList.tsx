@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Edit, Trash2, Plus, Search, Users, Mail } from "lucide-react";
 import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
 import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
+import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -50,6 +51,8 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showWaitlistOnly, setShowWaitlistOnly] = useState(false);
+  const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
+  const [emailBookingId, setEmailBookingId] = useState<string | null>(null);
   const { data: allBookings, isLoading } = useBookings();
   const deleteBookingMutation = useDeleteBooking();
   const sendBookingConfirmation = useSendBookingConfirmation();
@@ -260,8 +263,11 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                             size="sm" 
                             variant="outline"
                             className="text-blue-600 hover:text-blue-700"
-                            onClick={() => sendBookingConfirmation.mutate(booking.id)}
-                            disabled={sendBookingConfirmation.isPending || !booking.customers?.email}
+                            onClick={() => {
+                              setEmailBookingId(booking.id);
+                              setEmailPreviewOpen(true);
+                            }}
+                            disabled={!booking.customers?.email}
                             title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
                           >
                             <Mail className="h-3 w-3" />
@@ -306,6 +312,12 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
           onOpenChange={setEditBookingModalOpen}
         />
       )}
+
+      <EmailPreviewModal
+        open={emailPreviewOpen}
+        onOpenChange={setEmailPreviewOpen}
+        bookingId={emailBookingId}
+      />
     </>
   );
 };

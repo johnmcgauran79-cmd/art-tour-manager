@@ -17,6 +17,7 @@ import { ActivityAllocationSection } from "@/components/ActivityAllocationSectio
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
 import { EditContactModal } from "@/components/EditContactModal";
 import { BookingCommentsSection } from "@/components/BookingCommentsSection";
+import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -114,6 +115,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showEditContact, setShowEditContact] = useState(false);
   const [contactToEdit, setContactToEdit] = useState<any>(null);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
 
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
@@ -530,11 +532,11 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                   <Button 
                     type="button" 
                     variant="outline"
-                    onClick={() => booking && sendBookingConfirmation.mutate(booking.id)}
-                    disabled={sendBookingConfirmation.isPending || !booking?.customers?.email}
+                    onClick={() => setShowEmailPreview(true)}
+                    disabled={!booking?.customers?.email}
                     className="border-blue-200 text-blue-700 hover:bg-blue-50"
                   >
-                    {sendBookingConfirmation.isPending ? 'Sending...' : 'Send Confirmation Email'}
+                    Send Confirmation Email
                   </Button>
                   <Button 
                     type="submit" 
@@ -761,6 +763,12 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
         open={showEditContact}
         onOpenChange={setShowEditContact}
         onContactUpdated={handleContactUpdated}
+      />
+
+      <EmailPreviewModal
+        open={showEmailPreview}
+        onOpenChange={setShowEmailPreview}
+        bookingId={booking?.id || null}
       />
     </>
   );

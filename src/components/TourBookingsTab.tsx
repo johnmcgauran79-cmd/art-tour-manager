@@ -8,6 +8,7 @@ import { BulkDietaryModal } from "@/components/BulkDietaryModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { useTours } from "@/hooks/useTours";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
+import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -20,10 +21,10 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
   const [bulkDietaryModalOpen, setBulkDietaryModalOpen] = useState(false);
   const [addWaitlistModalOpen, setAddWaitlistModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
+  const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
   
   const { data: tours } = useTours();
   const currentTour = tours?.find(tour => tour.id === tourId);
-  const bulkEmailMutation = useBulkBookingEmail();
 
   return (
     <>
@@ -41,14 +42,13 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
               Bulk Update Dietary
             </Button>
             <Button
-              onClick={() => bulkEmailMutation.mutate(tourId)}
+              onClick={() => setBulkEmailModalOpen(true)}
               variant="outline"
               size="sm"
-              disabled={bulkEmailMutation.isPending}
               className="flex items-center gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/5"
             >
               <Mail className="h-4 w-4" />
-              {bulkEmailMutation.isPending ? 'Sending...' : 'Email All Confirmations'}
+              Email All Confirmations
             </Button>
             <Button
               onClick={() => setBulkStatusModalOpen(true)}
@@ -109,6 +109,12 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
         preSelectedTourId={tourId}
         preSelectedTourStartDate={currentTour?.start_date}
         preSelectedTourEndDate={currentTour?.end_date}
+      />
+
+      <BulkEmailPreviewModal
+        open={bulkEmailModalOpen}
+        onOpenChange={setBulkEmailModalOpen}
+        tourId={tourId}
       />
     </>
   );
