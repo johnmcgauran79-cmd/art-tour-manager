@@ -130,10 +130,6 @@ const Index = () => {
     return <UserManagement onClose={() => setShowUserManagement(false)} />;
   }
 
-  // Redirect to settings directly when settings tab is clicked
-  if (activeTab === "settings" && isAdminOrManager) {
-    return <Settings onBack={() => setActiveTab("dashboard")} />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -185,6 +181,12 @@ const Index = () => {
           <TabsContent value="contacts" className="space-y-4">
             <ContactsTable />
           </TabsContent>
+
+          {isAdminOrManager && (
+            <TabsContent value="settings" className="space-y-4">
+              <Settings onBack={() => setActiveTab("dashboard")} />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
