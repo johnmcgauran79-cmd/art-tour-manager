@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Grid3X3 } from "lucide-react";
 
 interface ActivityMatrixReportProps {
   data: Array<{
@@ -100,10 +100,34 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
     }
   };
 
+  // Filter bookings to only show those with discrepancies
+  const bookingsWithDiscrepancies = bookings.filter(booking => {
+    // Check if this booking has any discrepancies across all activities
+    return activities.some(activity => {
+      const allocation = allActivityBookings[booking.id]?.[activity.id] || 0;
+      const status = getDiscrepancyStatus(booking.passengerCount, allocation);
+      return status !== 'correct';
+    });
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="text-sm text-muted-foreground">Loading activity allocations...</div>
+      </div>
+    );
+  }
+
+  if (bookingsWithDiscrepancies.length === 0 && !loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="bg-green-100 p-3 rounded-full mx-auto mb-3 w-fit">
+            <Grid3X3 className="h-8 w-8 text-green-600" />
+          </div>
+          <div className="text-sm font-medium text-green-800 mb-1">All Activity Allocations Correct!</div>
+          <div className="text-xs text-green-600">No discrepancies found - all bookings have proper activity allocations</div>
+        </div>
       </div>
     );
   }
@@ -132,6 +156,17 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Alert Header */}
+      <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <AlertTriangle className="h-5 w-5 text-red-600" />
+        <div>
+          <div className="font-medium text-red-800">Activity Allocation Discrepancies Found</div>
+          <div className="text-sm text-red-600">
+            {bookingsWithDiscrepancies.length} booking{bookingsWithDiscrepancies.length !== 1 ? 's' : ''} with incorrect activity allocations
+          </div>
+        </div>
+      </div>
+
       {/* Legend */}
       <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
         <div className="text-sm font-medium">Legend:</div>
@@ -178,7 +213,7 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {bookings.map((booking) => (
+            {bookingsWithDiscrepancies.map((booking) => (
               <TableRow key={booking.id}>
                 <TableCell className="sticky left-0 bg-white z-10 border-r">
                   <div className="space-y-1">
@@ -218,12 +253,13 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
       </div>
 
       {/* Summary */}
-      <div className="text-xs text-muted-foreground p-3 bg-gray-50 rounded-lg">
-        <div className="font-medium mb-1">Report Summary:</div>
+      <div className="text-xs text-muted-foreground p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div className="font-medium mb-1 text-yellow-800">Discrepancy Alert Summary:</div>
+        <div>• This report only shows bookings with activity allocation errors</div>
         <div>• Green cells indicate correct allocation (passengers = booking count)</div>
         <div>• Yellow cells indicate mismatched allocation (different passenger count)</div>
         <div>• Red cells indicate missing or zero allocation</div>
-        <div>• This report helps identify booking changes that need activity allocation updates</div>
+        <div>• Review and update activity allocations for the bookings shown above</div>
       </div>
     </div>
   );
