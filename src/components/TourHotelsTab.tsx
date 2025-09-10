@@ -132,9 +132,14 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
 
                 {/* Operations Notes */}
                 <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-1">
-                    <NotebookPen className="h-4 w-4 text-muted-foreground" />
-                    <span>Operations Notes: {hotel.operations_notes || <span className="text-muted-foreground italic">Nil</span>}</span>
+                  <div className="flex items-start gap-2">
+                    <NotebookPen className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <span className="text-sm font-bold">Operations Notes:</span>
+                      <p className="text-sm mt-1 whitespace-pre-wrap break-words">
+                        {hotel.operations_notes || <span className="text-muted-foreground italic">Nil</span>}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -152,17 +157,27 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                       <span>Final Cutoff: {formatDateToDDMMYYYY((hotel as any).final_rooms_cutoff_date)}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-1">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span>Cancellation: {(hotel as any).cancellation_policy || <span className="text-muted-foreground italic">Nil</span>}</span>
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <span className="text-sm font-bold">Cancellation:</span>
+                      <p className="text-sm mt-1 whitespace-pre-wrap break-words">
+                        {(hotel as any).cancellation_policy || <span className="text-muted-foreground italic">Nil</span>}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
                 {/* Upgrade Options */}
                 <div className="mt-4 pt-4 border-t">
-                  <div className="flex items-center gap-1">
-                    <Bed className="h-4 w-4 text-muted-foreground" />
-                    <span>Upgrade Options: {hotel.upgrade_options || <span className="text-muted-foreground italic">Nil</span>}</span>
+                  <div className="flex items-start gap-2">
+                    <Bed className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <span className="text-sm font-bold">Upgrade Options:</span>
+                      <p className="text-sm mt-1 whitespace-pre-wrap break-words">
+                        {hotel.upgrade_options || <span className="text-muted-foreground italic">Nil</span>}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
