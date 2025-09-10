@@ -1,20 +1,12 @@
 
 import { Button } from "@/components/ui/button";
 import { UserDropdown } from "@/components/UserDropdown";
-import { Users, FileText, Settings } from "lucide-react";
-
 interface DashboardHeaderProps {
   isAdmin: boolean;
-  onShowUserManagement: () => void;
-  onShowSystemLogs: () => void;
-  onShowSettings: () => void;
 }
 
 export const DashboardHeader = ({ 
-  isAdmin, 
-  onShowUserManagement, 
-  onShowSystemLogs,
-  onShowSettings 
+  isAdmin
 }: DashboardHeaderProps) => {
   return (
     <div className="bg-brand-navy border-b shadow-sm">
@@ -36,29 +28,6 @@ export const DashboardHeader = ({
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {isAdmin && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-brand-navy/80 p-2"
-                  onClick={onShowUserManagement}
-                  title="User Management"
-                >
-                  <Users className="h-5 w-5" />
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-brand-navy/80 p-2"
-                  onClick={onShowSystemLogs}
-                  title="System Logs"
-                >
-                  <FileText className="h-5 w-5" />
-                </Button>
-              </>
-            )}
             <UserDropdown />
           </div>
         </div>

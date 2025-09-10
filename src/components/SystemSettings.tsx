@@ -3,7 +3,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings, Database, Mail, Shield, Users, FileText } from "lucide-react";
 
-export const SystemSettings = () => {
+interface SystemSettingsProps {
+  onShowUserManagement?: () => void;
+  onShowSystemLogs?: () => void;
+}
+
+export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: SystemSettingsProps) => {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -89,35 +94,43 @@ export const SystemSettings = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              User Roles & Departments
+              User Management
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-muted-foreground">
-              Manage user roles, department assignments, and permissions.
+              Manage user accounts, roles, department assignments, and permissions.
             </div>
-            <Button variant="outline" size="sm" disabled>
-              Manage
-              <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onShowUserManagement}
+              disabled={!onShowUserManagement}
+            >
+              Manage Users
             </Button>
           </CardContent>
         </Card>
 
-        {/* Integration Settings */}
+        {/* System Logs */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Integrations
+              System Logs
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-muted-foreground">
-              Configure external integrations, APIs, and third-party services.
+              View system audit logs, security events, and operational history.
             </div>
-            <Button variant="outline" size="sm" disabled>
-              Configure
-              <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onShowSystemLogs}
+              disabled={!onShowSystemLogs}
+            >
+              View Logs
             </Button>
           </CardContent>
         </Card>

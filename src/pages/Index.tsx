@@ -135,9 +135,6 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader 
         isAdmin={isAdmin}
-        onShowUserManagement={() => setShowUserManagement(true)}
-        onShowSystemLogs={() => setSystemLogModalOpen(true)}
-        onShowSettings={() => setActiveTab("settings")}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -184,7 +181,11 @@ const Index = () => {
 
           {isAdminOrManager && (
             <TabsContent value="settings" className="space-y-4">
-              <Settings onBack={() => setActiveTab("dashboard")} />
+              <Settings 
+                onBack={() => setActiveTab("dashboard")}
+                onShowUserManagement={() => setShowUserManagement(true)}
+                onShowSystemLogs={() => setSystemLogModalOpen(true)}
+              />
             </TabsContent>
           )}
         </Tabs>
