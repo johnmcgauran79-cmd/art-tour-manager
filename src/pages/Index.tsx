@@ -27,6 +27,7 @@ import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
+import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 
 
 const Index = () => {
@@ -47,6 +48,7 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
 
   const { userRole } = useAuth();
+  const { isAdminOrManager } = useIsAdminOrManager();
   const isAdmin = userRole === 'admin';
 
   const { data: bookings = [] } = useBookings();
@@ -128,8 +130,9 @@ const Index = () => {
     return <UserManagement onClose={() => setShowUserManagement(false)} />;
   }
 
-  if (showSettings) {
-    return <Settings onBack={() => setShowSettings(false)} />;
+  // Redirect to settings directly when settings tab is clicked
+  if (activeTab === "settings" && isAdminOrManager) {
+    return <Settings onBack={() => setActiveTab("dashboard")} />;
   }
 
   return (
@@ -138,18 +141,20 @@ const Index = () => {
         isAdmin={isAdmin}
         onShowUserManagement={() => setShowUserManagement(true)}
         onShowSystemLogs={() => setSystemLogModalOpen(true)}
-        onShowSettings={() => setShowSettings(true)}
+        onShowSettings={() => setActiveTab("settings")}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 mb-8">
+          <TabsList className={`grid w-full ${isAdminOrManager ? 'grid-cols-6' : 'grid-cols-5'} mb-8`}>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="bookings">Bookings</TabsTrigger>
             <TabsTrigger value="contacts">Contacts</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            {isAdminOrManager && (
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+            )}
           </TabsList>
           
           <TabsContent value="dashboard" className="space-y-8">
@@ -179,15 +184,6 @@ const Index = () => {
           
           <TabsContent value="contacts" className="space-y-4">
             <ContactsTable />
-          </TabsContent>
-          
-          <TabsContent value="settings" className="space-y-4">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground mb-4">Configure system settings, email templates, and more.</p>
-              <Button onClick={() => setShowSettings(true)}>
-                Open Settings
-              </Button>
-            </div>
           </TabsContent>
         </Tabs>
       </div>

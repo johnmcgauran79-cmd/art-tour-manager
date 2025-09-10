@@ -42,16 +42,6 @@ export const DashboardHeader = ({
                   variant="ghost"
                   size="sm"
                   className="text-white hover:bg-brand-navy/80 p-2"
-                  onClick={onShowSettings}
-                  title="Settings"
-                >
-                  <Settings className="h-5 w-5" />
-                </Button>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-brand-navy/80 p-2"
                   onClick={onShowUserManagement}
                   title="User Management"
                 >
