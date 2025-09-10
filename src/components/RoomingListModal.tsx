@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Printer } from "lucide-react";
+import { FileText, Printer, Calendar } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToAustralian } from "@/lib/utils";
+import { HotelRoomTypeReport } from "./HotelRoomTypeReport";
 
 interface Hotel {
   id: string;
@@ -22,6 +23,7 @@ interface RoomingListModalProps {
 }
 
 export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingListModalProps) => {
+  const [roomTypeReportOpen, setRoomTypeReportOpen] = useState(false);
   const { data: allBookings = [] } = useBookings();
   
   // Filter bookings for this tour
@@ -194,6 +196,15 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
           <div className="flex items-center justify-between">
             <DialogTitle>Rooming List - {hotel.name}</DialogTitle>
             <div className="flex gap-2">
+              <Button 
+                onClick={() => setRoomTypeReportOpen(true)} 
+                variant="outline" 
+                size="sm"
+                className="bg-primary/10 border-primary/20 hover:bg-primary/20"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                View Room Type/Date Report
+              </Button>
               <Button onClick={handleExportToTable} variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
                 Export CSV
@@ -271,6 +282,13 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
           )}
         </div>
       </DialogContent>
+      
+      <HotelRoomTypeReport
+        hotel={hotel}
+        tourId={tourId}
+        open={roomTypeReportOpen}
+        onOpenChange={setRoomTypeReportOpen}
+      />
     </Dialog>
   );
 };
