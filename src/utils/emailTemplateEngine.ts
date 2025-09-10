@@ -1,0 +1,250 @@
+// Email template engine with comprehensive mail merge fields
+export interface EmailMergeData {
+  // Customer fields
+  customer_first_name?: string;
+  customer_last_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+  customer_city?: string;
+  customer_state?: string;
+  customer_country?: string;
+  customer_spouse_name?: string;
+  customer_dietary_requirements?: string;
+  customer_notes?: string;
+  
+  // Tour fields
+  tour_name?: string;
+  tour_location?: string;
+  tour_start_date?: string;
+  tour_end_date?: string;
+  tour_days?: number;
+  tour_nights?: number;
+  tour_pickup_point?: string;
+  tour_notes?: string;
+  tour_inclusions?: string;
+  tour_exclusions?: string;
+  tour_host?: string;
+  tour_price_single?: number;
+  tour_price_double?: number;
+  tour_deposit_required?: number;
+  tour_final_payment_date?: string;
+  tour_instalment_date?: string;
+  tour_instalment_amount?: number;
+  
+  // Booking fields
+  booking_passenger_count?: number;
+  booking_status?: string;
+  booking_check_in_date?: string;
+  booking_check_out_date?: string;
+  booking_total_nights?: number;
+  booking_passenger_2_name?: string;
+  booking_passenger_3_name?: string;
+  booking_group_name?: string;
+  booking_booking_agent?: string;
+  booking_extra_requests?: string;
+  booking_dietary_restrictions?: string;
+  booking_medical_conditions?: string;
+  booking_accessibility_needs?: string;
+  booking_emergency_contact_name?: string;
+  booking_emergency_contact_phone?: string;
+  booking_emergency_contact_relationship?: string;
+  booking_passport_number?: string;
+  booking_passport_country?: string;
+  booking_passport_expiry_date?: string;
+  booking_nationality?: string;
+  booking_id_number?: string;
+  booking_revenue?: number;
+  
+  // Hotel booking fields (for multiple hotels, will be handled as arrays)
+  hotel_bookings?: Array<{
+    hotel_name?: string;
+    hotel_check_in_date?: string;
+    hotel_check_out_date?: string;
+    hotel_nights?: number;
+    hotel_room_type?: string;
+    hotel_bedding?: string;
+    hotel_room_upgrade?: string;
+    hotel_room_requests?: string;
+    hotel_confirmation_number?: string;
+    hotel_address?: string;
+    hotel_contact_name?: string;
+    hotel_contact_phone?: string;
+    hotel_contact_email?: string;
+  }>;
+  
+  // Activity booking fields
+  activity_bookings?: Array<{
+    activity_name?: string;
+    activity_date?: string;
+    activity_start_time?: string;
+    activity_end_time?: string;
+    activity_pickup_time?: string;
+    activity_location?: string;
+    activity_guide_name?: string;
+    activity_guide_phone?: string;
+    passengers_attending?: number;
+  }>;
+}
+
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  type: string;
+  subject_template: string;
+  content_template: string;
+  is_active: boolean;
+  is_default: boolean;
+}
+
+export class EmailTemplateEngine {
+  // Process template with merge data using Mustache-like syntax
+  static processTemplate(template: string, data: EmailMergeData): string {
+    let processed = template;
+    
+    // Handle simple variable replacements {{variable}}
+    processed = processed.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+      const value = this.getNestedValue(data, key.trim());
+      return value !== undefined && value !== null ? String(value) : '';
+    });
+    
+    // Handle conditional sections {{#variable}}...{{/variable}}
+    processed = processed.replace(/\{\{#([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
+      const value = this.getNestedValue(data, key.trim());
+      
+      // For arrays (like hotel_bookings), repeat the content for each item
+      if (Array.isArray(value)) {
+        return value.map(item => {
+          return content.replace(/\{\{([^}]+)\}\}/g, (innerMatch, innerKey) => {
+            const itemValue = this.getNestedValue(item, innerKey.trim());
+            return itemValue !== undefined && itemValue !== null ? String(itemValue) : '';
+          });
+        }).join('');
+      }
+      
+      // For boolean/truthy values, include the content if truthy
+      return value ? content : '';
+    });
+    
+    // Handle inverted conditional sections {{^variable}}...{{/variable}}
+    processed = processed.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
+      const value = this.getNestedValue(data, key.trim());
+      return !value ? content : '';
+    });
+    
+    return processed;
+  }
+  
+  // Get nested object value using dot notation
+  private static getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => {
+      return current && current[key] !== undefined ? current[key] : undefined;
+    }, obj);
+  }
+  
+  // Format date for display
+  static formatDate(dateString?: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+  
+  // Convert booking data to merge data format
+  static convertBookingToMergeData(booking: any): EmailMergeData {
+    const customer = booking.customers || {};
+    const tour = booking.tours || {};
+    const hotelBookings = booking.hotel_bookings || [];
+    const activityBookings = booking.activity_bookings || [];
+    
+    return {
+      // Customer fields
+      customer_first_name: customer.first_name,
+      customer_last_name: customer.last_name,
+      customer_email: customer.email,
+      customer_phone: customer.phone,
+      customer_city: customer.city,
+      customer_state: customer.state,
+      customer_country: customer.country,
+      customer_spouse_name: customer.spouse_name,
+      customer_dietary_requirements: customer.dietary_requirements,
+      customer_notes: customer.notes,
+      
+      // Tour fields
+      tour_name: tour.name,
+      tour_location: tour.location,
+      tour_start_date: this.formatDate(tour.start_date),
+      tour_end_date: this.formatDate(tour.end_date),
+      tour_days: tour.days,
+      tour_nights: tour.nights,
+      tour_pickup_point: tour.pickup_point,
+      tour_notes: tour.notes,
+      tour_inclusions: tour.inclusions,
+      tour_exclusions: tour.exclusions,
+      tour_host: tour.tour_host,
+      tour_price_single: tour.price_single,
+      tour_price_double: tour.price_double,
+      tour_deposit_required: tour.deposit_required,
+      tour_final_payment_date: this.formatDate(tour.final_payment_date),
+      tour_instalment_date: this.formatDate(tour.instalment_date),
+      tour_instalment_amount: tour.instalment_amount,
+      
+      // Booking fields
+      booking_passenger_count: booking.passenger_count,
+      booking_status: booking.status,
+      booking_check_in_date: this.formatDate(booking.check_in_date),
+      booking_check_out_date: this.formatDate(booking.check_out_date),
+      booking_total_nights: booking.total_nights,
+      booking_passenger_2_name: booking.passenger_2_name,
+      booking_passenger_3_name: booking.passenger_3_name,
+      booking_group_name: booking.group_name,
+      booking_booking_agent: booking.booking_agent,
+      booking_extra_requests: booking.extra_requests,
+      booking_dietary_restrictions: booking.dietary_restrictions,
+      booking_medical_conditions: booking.medical_conditions,
+      booking_accessibility_needs: booking.accessibility_needs,
+      booking_emergency_contact_name: booking.emergency_contact_name,
+      booking_emergency_contact_phone: booking.emergency_contact_phone,
+      booking_emergency_contact_relationship: booking.emergency_contact_relationship,
+      booking_passport_number: booking.passport_number,
+      booking_passport_country: booking.passport_country,
+      booking_passport_expiry_date: this.formatDate(booking.passport_expiry_date),
+      booking_nationality: booking.nationality,
+      booking_id_number: booking.id_number,
+      booking_revenue: booking.revenue,
+      
+      // Hotel bookings
+      hotel_bookings: hotelBookings.map((hb: any) => ({
+        hotel_name: hb.hotels?.name,
+        hotel_check_in_date: this.formatDate(hb.check_in_date),
+        hotel_check_out_date: this.formatDate(hb.check_out_date),
+        hotel_nights: hb.nights,
+        hotel_room_type: hb.room_type,
+        hotel_bedding: hb.bedding,
+        hotel_room_upgrade: hb.room_upgrade,
+        hotel_room_requests: hb.room_requests,
+        hotel_confirmation_number: hb.confirmation_number,
+        hotel_address: hb.hotels?.address,
+        hotel_contact_name: hb.hotels?.contact_name,
+        hotel_contact_phone: hb.hotels?.contact_phone,
+        hotel_contact_email: hb.hotels?.contact_email,
+      })),
+      
+      // Activity bookings
+      activity_bookings: activityBookings.map((ab: any) => ({
+        activity_name: ab.activities?.name,
+        activity_date: this.formatDate(ab.activities?.activity_date),
+        activity_start_time: ab.activities?.start_time,
+        activity_end_time: ab.activities?.end_time,
+        activity_pickup_time: ab.activities?.pickup_time,
+        activity_location: ab.activities?.location,
+        activity_guide_name: ab.activities?.guide_name,
+        activity_guide_phone: ab.activities?.guide_phone,
+        passengers_attending: ab.passengers_attending,
+      })),
+    };
+  }
+}

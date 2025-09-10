@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { EmailTemplateEngine, type EmailMergeData } from "@/utils/emailTemplateEngine";
 
 interface BulkEmailPreviewModalProps {
   open: boolean;
@@ -13,28 +20,96 @@ interface BulkEmailPreviewModalProps {
 }
 
 export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailPreviewModalProps) => {
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [editedSubject, setEditedSubject] = useState("");
+  const [editedContent, setEditedContent] = useState("");
+  const [previewBooking, setPreviewBooking] = useState<any>(null);
+  
   const bulkEmailMutation = useBulkBookingEmail();
+  const { data: templates, isLoading: templatesLoading } = useEmailTemplates('booking_confirmation');
 
-  // Get count of bookings with emails for this tour
-  const { data: emailCount, isLoading } = useQuery({
-    queryKey: ['tour-email-count', tourId],
+  // Get bookings with emails for this tour and sample booking for preview
+  const { data: bookingsData, isLoading } = useQuery({
+    queryKey: ['tour-bulk-email-data', tourId],
     queryFn: async () => {
-      if (!tourId) return 0;
+      if (!tourId) return { count: 0, sampleBooking: null };
       
-      const { count, error } = await supabase
+      // Get count
+      const { count, error: countError } = await supabase
         .from('bookings')
         .select('id', { count: 'exact' })
         .eq('tour_id', tourId)
         .not('customers.email', 'is', null);
 
-      if (error) throw error;
-      return count || 0;
+      if (countError) throw countError;
+
+      // Get sample booking for preview
+      const { data: sampleBooking, error: bookingError } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          tours:tour_id (
+            name, location, start_date, end_date, days, nights, pickup_point,
+            notes, inclusions, exclusions, tour_host, price_single, price_double,
+            deposit_required, final_payment_date, instalment_date, instalment_amount
+          ),
+          customers:lead_passenger_id (
+            first_name, last_name, email, phone, city, state, country,
+            spouse_name, dietary_requirements, notes
+          ),
+          hotel_bookings (
+            check_in_date, check_out_date, nights, room_type, bedding,
+            room_upgrade, room_requests, confirmation_number,
+            hotels (name, address, contact_name, contact_phone, contact_email)
+          ),
+          activity_bookings (
+            passengers_attending,
+            activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+          )
+        `)
+        .eq('tour_id', tourId)
+        .not('customers.email', 'is', null)
+        .limit(1)
+        .single();
+
+      return { 
+        count: count || 0, 
+        sampleBooking: bookingError ? null : sampleBooking 
+      };
     },
     enabled: !!tourId && open,
   });
 
+  // Update preview when template changes
+  useEffect(() => {
+    if (selectedTemplateId && templates && bookingsData?.sampleBooking) {
+      const template = templates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        const mergeData = EmailTemplateEngine.convertBookingToMergeData(bookingsData.sampleBooking);
+        const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
+        const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
+        
+        setEditedSubject(processedSubject);
+        setEditedContent(processedContent);
+        setPreviewBooking(bookingsData.sampleBooking);
+      }
+    }
+  }, [selectedTemplateId, templates, bookingsData?.sampleBooking]);
+
+  // Auto-select default template
+  useEffect(() => {
+    if (templates && !selectedTemplateId) {
+      const defaultTemplate = templates.find(t => t.is_default);
+      if (defaultTemplate) {
+        setSelectedTemplateId(defaultTemplate.id);
+      } else if (templates.length > 0) {
+        setSelectedTemplateId(templates[0].id);
+      }
+    }
+  }, [templates, selectedTemplateId]);
+
   const handleSendEmails = async () => {
-    if (!tourId) return;
+    if (!tourId || !selectedTemplateId) return;
     
     try {
       await bulkEmailMutation.mutateAsync(tourId);
@@ -48,52 +123,114 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Send Bulk Confirmation Emails</DialogTitle>
+          <DialogTitle>Bulk Email Preview & Send</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2">Checking bookings...</span>
-            </div>
-          ) : (
-            <div className="text-center space-y-2">
-              <p className="text-lg font-medium">
-                {emailCount} booking{emailCount !== 1 ? 's' : ''} with email addresses found
-              </p>
-              <p className="text-sm text-gray-600">
-                Confirmation emails will be sent to all passengers with valid email addresses for this tour.
-              </p>
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendEmails}
-              disabled={bulkEmailMutation.isPending || isLoading || !emailCount}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {bulkEmailMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Sending...
-                </>
-              ) : (
-                `Send ${emailCount} Email${emailCount !== 1 ? 's' : ''}`
-              )}
-            </Button>
+        {isLoading || templatesLoading ? (
+          <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <span className="ml-2">Loading email preview...</span>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 space-y-4 overflow-hidden">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="template">Email Template:</Label>
+                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates?.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Recipients:</Label>
+                <div className="flex items-center h-9 px-3 border rounded-md bg-muted">
+                  <span className="text-sm">
+                    {bookingsData?.count || 0} booking{(bookingsData?.count || 0) !== 1 ? 's' : ''}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <Label>Preview Based On:</Label>
+                <div className="flex items-center h-9 px-3 border rounded-md bg-muted">
+                  <span className="text-sm">
+                    {previewBooking?.customers?.first_name} {previewBooking?.customers?.last_name}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="subject">Subject Line:</Label>
+              <Input
+                id="subject"
+                value={editedSubject}
+                onChange={(e) => setEditedSubject(e.target.value)}
+                placeholder="Email subject..."
+              />
+            </div>
+
+            <div className="flex-1">
+              <Label htmlFor="content">Email Content:</Label>
+              <ScrollArea className="h-80 mt-2 border rounded-md">
+                <Textarea
+                  id="content"
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="min-h-[300px] border-0 resize-none"
+                  placeholder="Email content..."
+                />
+              </ScrollArea>
+            </div>
+
+            <div className="bg-muted p-4 rounded-md">
+              <h4 className="font-medium mb-2">Email Preview:</h4>
+              <ScrollArea className="h-40 bg-background p-3 rounded border">
+                <div className="space-y-2">
+                  <div className="text-sm font-medium border-b pb-2">
+                    Subject: {editedSubject}
+                  </div>
+                  <pre className="text-sm whitespace-pre-wrap font-sans">
+                    {editedContent}
+                  </pre>
+                </div>
+              </ScrollArea>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => onOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSendEmails}
+                disabled={bulkEmailMutation.isPending || isLoading || !bookingsData?.count || !editedContent.trim()}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {bulkEmailMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  `Send ${bookingsData?.count || 0} Email${(bookingsData?.count || 0) !== 1 ? 's' : ''}`
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

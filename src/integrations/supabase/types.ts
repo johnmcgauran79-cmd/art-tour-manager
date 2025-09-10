@@ -486,6 +486,45 @@ export type Database = {
         }
         Relationships: []
       }
+      email_templates: {
+        Row: {
+          content_template: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          subject_template: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          content_template: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          subject_template: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          content_template?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          subject_template?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hotel_attachments: {
         Row: {
           file_name: string
