@@ -26,7 +26,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [previewBooking, setPreviewBooking] = useState<any>(null);
   
   const bulkEmailMutation = useBulkBookingEmail();
-  const { data: templates, isLoading: templatesLoading } = useEmailTemplates('booking_confirmation');
+  const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
 
   // Get bookings with emails for this tour and sample booking for preview
   const { data: bookingsData, isLoading } = useQuery({

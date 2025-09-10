@@ -5,10 +5,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 
 interface EmailPreviewModalProps {
   open: boolean;
@@ -27,7 +30,9 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const [emailData, setEmailData] = useState<BookingEmailData | null>(null);
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const sendEmail = useSendBookingConfirmation();
+  const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
 
   // Fetch booking details to generate email preview
   const { data: booking, isLoading } = useQuery({
@@ -59,50 +64,40 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
     enabled: !!bookingId && open,
   });
 
+  // Auto-select default template on load
   useEffect(() => {
-    if (booking) {
-      const subject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
+    if (emailTemplates && emailTemplates.length > 0 && !selectedTemplateId) {
+      const defaultTemplate = emailTemplates.find(t => t.is_default) || emailTemplates[0];
+      setSelectedTemplateId(defaultTemplate.id);
+    }
+  }, [emailTemplates, selectedTemplateId]);
+
+  // Generate email content when booking or template changes
+  useEffect(() => {
+    if (booking && selectedTemplateId && emailTemplates) {
+      const template = emailTemplates.find(t => t.id === selectedTemplateId);
+      if (!template) return;
+
       const recipientEmail = booking.customers?.email || '';
       const recipientName = `${booking.customers?.first_name} ${booking.customers?.last_name}`;
 
-      // Generate hotel details
-      const hotelDetails = booking.hotel_bookings?.map((hb: any) => 
-        `• ${hb.hotels?.name || 'Hotel TBD'}: ${new Date(hb.check_in_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' })} - ${new Date(hb.check_out_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' })}, ${hb.room_type || 'Standard'} room, ${hb.bedding || 'Double'} bed${hb.room_upgrade ? `, Upgrade: ${hb.room_upgrade}` : ''}`
-      ).join('\n') || 'No hotel bookings';
+      // Convert booking data to merge format
+      const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
 
-      const textContent = `
-Dear ${recipientName},
-
-Thank you for your booking! Please find your booking confirmation details below:
-
-TOUR DETAILS:
-• Tour: ${booking.tours?.name || 'TBD'}
-• Location: ${booking.tours?.location || 'TBD'}
-• Tour Dates: ${booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'} - ${booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}
-
-PASSENGER INFORMATION:
-• Lead Passenger: ${recipientName}
-• Total Passengers: ${booking.passenger_count}${booking.passenger_2_name ? `\n• Passenger 2: ${booking.passenger_2_name}` : ''}${booking.passenger_3_name ? `\n• Passenger 3: ${booking.passenger_3_name}` : ''}${booking.group_name ? `\n• Group Name: ${booking.group_name}` : ''}
-
-ACCOMMODATION:
-${hotelDetails}${booking.dietary_restrictions ? `\n\nDIETARY REQUIREMENTS:\n${booking.dietary_restrictions}` : ''}${booking.extra_requests ? `\n\nSPECIAL REQUESTS:\n${booking.extra_requests}` : ''}
-
-If you have any questions or need to make changes to your booking, please reply to this email and we'll get back to you promptly.
-
-Best regards,
-The Team
-      `.trim();
+      // Process template with merge data
+      const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
+      const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
 
       setEmailData({
-        subject,
+        subject: processedSubject,
         recipientEmail,
         recipientName,
-        htmlContent: textContent
+        htmlContent: processedContent
       });
-      setEditedSubject(subject);
-      setEditedContent(textContent);
+      setEditedSubject(processedSubject);
+      setEditedContent(processedContent);
     }
-  }, [booking]);
+  }, [booking, selectedTemplateId, emailTemplates]);
 
   const handleSendEmail = async () => {
     if (!bookingId) return;
@@ -135,7 +130,22 @@ The Team
           </div>
         ) : emailData ? (
           <div className="flex-1 space-y-4 overflow-hidden">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="template">Email Template:</Label>
+                <Select value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emailTemplates?.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label htmlFor="recipient">To:</Label>
                 <Input
