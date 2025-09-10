@@ -180,14 +180,6 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
               </ScrollArea>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-md">
-              <h4 className="font-medium mb-2">Preview:</h4>
-              <ScrollArea className="h-32 bg-white p-3 rounded border">
-                <pre className="text-sm whitespace-pre-wrap font-sans">
-                  {editedContent}
-                </pre>
-              </ScrollArea>
-            </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button 
