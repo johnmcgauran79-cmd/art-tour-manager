@@ -101,26 +101,52 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
 
     const roomTypes = Object.keys(roomTypeData).sort();
 
-    // Calculate total room nights for each room type
-    const roomNightsData: { [date: string]: number } = {};
-    allDates.forEach(date => {
-      roomNightsData[date] = 0;
-      roomTypes.forEach(roomType => {
-        roomNightsData[date] += roomTypeData[roomType][date] || 0;
-      });
-    });
-
-    // Add Room Nights row
-    roomTypeData['Room Nights'] = roomNightsData;
-    roomTypes.push('Room Nights');
-
     return { roomTypeData, allDates, roomTypes };
   };
 
+  const generateBeddingData = (): { beddingData: RoomTypeData; beddingTypes: string[] } => {
+    if (!hotelBookingsData.length) return { beddingData: {}, beddingTypes: [] };
+
+    const beddingData: RoomTypeData = {};
+    const beddingSet = new Set<string>();
+
+    // Process each booking to count bedding types per date
+    hotelBookingsData.forEach(booking => {
+      if (!booking.check_in_date || !booking.check_out_date) return;
+
+      const checkIn = new Date(booking.check_in_date);
+      const checkOut = new Date(booking.check_out_date);
+      const beddingType = booking.bedding || 'Unspecified';
+      beddingSet.add(beddingType);
+
+      // Initialize bedding type if not exists
+      if (!beddingData[beddingType]) {
+        beddingData[beddingType] = {};
+      }
+
+      // Count this bedding type for each night
+      const currentDate = new Date(checkIn);
+      while (currentDate < checkOut) {
+        const dateStr = format(currentDate, 'dd/MM/yyyy');
+        
+        if (!beddingData[beddingType][dateStr]) {
+          beddingData[beddingType][dateStr] = 0;
+        }
+        beddingData[beddingType][dateStr]++;
+        
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+
+    const beddingTypes = Array.from(beddingSet).sort();
+    return { beddingData, beddingTypes };
+  };
+
   const { roomTypeData, allDates, roomTypes } = generateRoomTypeData();
+  const { beddingData, beddingTypes } = generateBeddingData();
 
   const handleExportToPDF = () => {
-    const tableHTML = `
+    const roomTypeTableHTML = `
       <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
         <thead>
           <tr>
@@ -132,10 +158,33 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
         </thead>
         <tbody>
           ${roomTypes.map(roomType => `
-            <tr ${roomType === 'Room Nights' ? 'style="font-weight: bold; background-color: #f9f9f9;"' : ''}>
+            <tr>
               <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${roomType}</td>
               ${allDates.map(date => 
                 `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${roomTypeData[roomType]?.[date] || 0}</td>`
+              ).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    const beddingTableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-top: 30px;">
+        <thead>
+          <tr>
+            <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #e8f4f8; font-weight: bold;">Bedding Type</th>
+            ${allDates.map(date => 
+              `<th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #e8f4f8; font-weight: bold;">${date}</th>`
+            ).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${beddingTypes.map(beddingType => `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; text-transform: capitalize;">${beddingType}</td>
+              ${allDates.map(date => 
+                `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${beddingData[beddingType]?.[date] || 0}</td>`
               ).join('')}
             </tr>
           `).join('')}
@@ -152,6 +201,7 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
             <style>
               body { font-family: Arial, sans-serif; margin: 20px; }
               h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+              h2 { color: #555; margin-top: 30px; margin-bottom: 15px; }
               .hotel-info { margin-bottom: 20px; }
               .hotel-info p { margin: 5px 0; }
               @media print { 
@@ -165,9 +215,12 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
             <div class="hotel-info">
               <p><strong>Hotel:</strong> ${hotel?.name}</p>
               ${hotel?.address ? `<p><strong>Address:</strong> ${hotel?.address}</p>` : ''}
-              <p><strong>Total Room Types:</strong> ${roomTypes.length - 1}</p>
+              <p><strong>Total Room Types:</strong> ${roomTypes.length}</p>
             </div>
-            ${tableHTML}
+            <h2>By Room Type</h2>
+            ${roomTypeTableHTML}
+            <h2>By Bedding Type</h2>
+            ${beddingTableHTML}
           </body>
         </html>
       `);
@@ -177,13 +230,25 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
   };
 
   const handleExportToCSV = () => {
-    const csvContent = [
+    const roomTypeCsvContent = [
       ['Room Type', ...allDates],
       ...roomTypes.map(roomType => [
         roomType,
         ...allDates.map(date => (roomTypeData[roomType]?.[date] || 0).toString())
       ])
-    ].map(row => row.join(',')).join('\n');
+    ];
+
+    const beddingCsvContent = [
+      [],
+      ['Bedding Type', ...allDates],
+      ...beddingTypes.map(beddingType => [
+        beddingType,
+        ...allDates.map(date => (beddingData[beddingType]?.[date] || 0).toString())
+      ])
+    ];
+
+    const csvContent = [...roomTypeCsvContent, ...beddingCsvContent]
+      .map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -224,7 +289,8 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
           <div className="text-sm text-muted-foreground">
             <p><strong>Hotel:</strong> {hotel.name}</p>
             {hotel.address && <p><strong>Address:</strong> {hotel.address}</p>}
-            <p><strong>Total Room Types:</strong> {roomTypes.length - 1}</p>
+            <p><strong>Total Room Types:</strong> {roomTypes.length}</p>
+            <p><strong>Total Bedding Types:</strong> {beddingTypes.length}</p>
           </div>
 
           {allDates.length === 0 ? (
@@ -232,37 +298,75 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
               No room allocations found for this hotel.
             </p>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="sticky left-0 bg-background z-10 border-r">Room Type</TableHead>
-                      {allDates.map(date => (
-                        <TableHead key={date} className="text-center min-w-[100px]">
-                          {date}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {roomTypes.map((roomType) => (
-                      <TableRow 
-                        key={roomType} 
-                        className={roomType === 'Room Nights' ? 'font-semibold bg-muted/50' : ''}
-                      >
-                        <TableCell className="sticky left-0 bg-background z-10 border-r font-medium">
-                          {roomType}
-                        </TableCell>
-                        {allDates.map(date => (
-                          <TableCell key={date} className="text-center">
-                            {roomTypeData[roomType]?.[date] || 0}
-                          </TableCell>
+            <div className="space-y-8">
+              {/* Room Type Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">By Room Type</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="sticky left-0 bg-background z-10 border-r">Room Type</TableHead>
+                          {allDates.map(date => (
+                            <TableHead key={date} className="text-center min-w-[100px]">
+                              {date}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {roomTypes.map((roomType) => (
+                          <TableRow key={roomType}>
+                            <TableCell className="sticky left-0 bg-background z-10 border-r font-medium">
+                              {roomType}
+                            </TableCell>
+                            {allDates.map(date => (
+                              <TableCell key={date} className="text-center">
+                                {roomTypeData[roomType]?.[date] || 0}
+                              </TableCell>
+                            ))}
+                          </TableRow>
                         ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bedding Type Section */}
+              <div>
+                <h3 className="text-lg font-semibold mb-3">By Bedding Type</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-muted/30">
+                          <TableHead className="sticky left-0 bg-muted/30 z-10 border-r">Bedding Type</TableHead>
+                          {allDates.map(date => (
+                            <TableHead key={date} className="text-center min-w-[100px]">
+                              {date}
+                            </TableHead>
+                          ))}
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {beddingTypes.map((beddingType) => (
+                          <TableRow key={beddingType}>
+                            <TableCell className="sticky left-0 bg-background z-10 border-r font-medium capitalize">
+                              {beddingType}
+                            </TableCell>
+                            {allDates.map(date => (
+                              <TableCell key={date} className="text-center">
+                                {beddingData[beddingType]?.[date] || 0}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
               </div>
             </div>
           )}
