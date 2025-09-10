@@ -69,9 +69,10 @@ interface EditBookingModalProps {
   booking: Booking | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTab?: string;
 }
 
-export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingModalProps) => {
+export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "details" }: EditBookingModalProps) => {
   const [formData, setFormData] = useState({
     // Basic booking info
     lead_passenger_first_name: '',
@@ -285,7 +286,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange }: EditBookingMod
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs defaultValue="details" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="hotels" className="flex items-center gap-1">

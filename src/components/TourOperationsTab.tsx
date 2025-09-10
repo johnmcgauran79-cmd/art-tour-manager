@@ -14,6 +14,7 @@ import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
+import { EditBookingModal } from "@/components/EditBookingModal";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -31,7 +32,9 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
+  const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
@@ -74,11 +77,19 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     setReportsModalOpen(false);
     setSelectedReportType(null);
     
-    // Navigate to the bookings tab to show activity allocation
-    onNavigate?.({ type: 'tab', value: 'bookings' });
-    
-    // Note: The actual booking selection would need to be handled by the parent component
-    // For now, we'll just navigate to the bookings tab
+    // Find the booking by ID and set it as selected
+    const booking = tourBookings.find(b => b.id === bookingId);
+    if (booking) {
+      setSelectedBooking(booking);
+      setEditBookingModalOpen(true);
+    }
+  };
+
+  const handleEditBookingModalClose = (open: boolean) => {
+    setEditBookingModalOpen(open);
+    if (!open) {
+      setSelectedBooking(null);
+    }
   };
 
   const handleTaskClick = (task: Task) => {
@@ -399,6 +410,13 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         tourName={tourName}
         open={cleanupModalOpen}
         onOpenChange={setCleanupModalOpen}
+      />
+
+      <EditBookingModal
+        booking={selectedBooking}
+        open={editBookingModalOpen}
+        onOpenChange={handleEditBookingModalClose}
+        defaultTab="activities"
       />
     </div>
   );
