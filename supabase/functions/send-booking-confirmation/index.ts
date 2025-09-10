@@ -29,20 +29,39 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { bookingId }: BookingConfirmationRequest = await req.json();
 
+    // Fetch email template for booking confirmation
+    const { data: template, error: templateError } = await supabaseClient
+      .from('email_templates')
+      .select('*')
+      .eq('type', 'booking_confirmation')
+      .eq('is_active', true)
+      .order('is_default', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (templateError) {
+      console.error('Error fetching email template:', templateError);
+    }
+
     // Fetch booking details with all related information
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
         *,
-        tours:tour_id (name, start_date, end_date, location),
-        customers:lead_passenger_id (first_name, last_name, email),
+        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions),
+        customers:lead_passenger_id (first_name, last_name, email, phone, city, state, country),
         hotel_bookings (
           check_in_date,
           check_out_date,
+          nights,
           room_type,
           room_upgrade,
           bedding,
-          hotels (name)
+          hotels (name, contact_name, contact_phone, contact_email)
+        ),
+        activity_bookings (
+          passengers_attending,
+          activities (name, activity_date, start_time, location, guide_name)
         )
       `)
       .eq('id', bookingId)
@@ -63,86 +82,111 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Format hotel details
-    const hotelDetails = booking.hotel_bookings?.map((hb: any) => `
-      <tr>
-        <td style="padding: 8px; border: 1px solid #ddd;"><strong>${hb.hotels?.name || 'Hotel TBD'}</strong></td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${new Date(hb.check_in_date).toLocaleDateString()}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${new Date(hb.check_out_date).toLocaleDateString()}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${hb.room_type || 'Standard'}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${hb.bedding || 'Double'}</td>
-        <td style="padding: 8px; border: 1px solid #ddd;">${hb.room_upgrade || 'None'}</td>
-      </tr>
-    `).join('') || '<tr><td colspan="6" style="padding: 8px; border: 1px solid #ddd; text-align: center;">No hotel bookings</td></tr>';
+    // Process email template if available
+    let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
+    let emailHtml = '';
 
-    // Create email HTML
-    const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
-        <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-          <h1 style="color: #333; margin-bottom: 30px;">Booking Confirmation</h1>
-          
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px;">Tour Details</h2>
-            <p><strong>Tour:</strong> ${booking.tours?.name || 'TBD'}</p>
-            <p><strong>Location:</strong> ${booking.tours?.location || 'TBD'}</p>
-            <p><strong>Tour Dates:</strong> ${booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString() : 'TBD'} - ${booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString() : 'TBD'}</p>
-          </div>
+    if (template) {
+      // Create merge data object
+      const mergeData = {
+        customer_first_name: booking.customers?.first_name || '',
+        customer_last_name: booking.customers?.last_name || '',
+        customer_email: booking.customers?.email || '',
+        customer_phone: booking.customers?.phone || '',
+        customer_city: booking.customers?.city || '',
+        customer_state: booking.customers?.state || '',
+        customer_country: booking.customers?.country || '',
+        tour_name: booking.tours?.name || '',
+        tour_location: booking.tours?.location || '',
+        tour_start_date: booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString() : '',
+        tour_end_date: booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString() : '',
+        tour_days: booking.tours?.days || '',
+        tour_nights: booking.tours?.nights || '',
+        tour_pickup_point: booking.tours?.pickup_point || '',
+        tour_inclusions: booking.tours?.inclusions || '',
+        tour_exclusions: booking.tours?.exclusions || '',
+        booking_passenger_count: booking.passenger_count || 1,
+        booking_status: booking.status || '',
+        booking_check_in_date: booking.check_in_date ? new Date(booking.check_in_date).toLocaleDateString() : '',
+        booking_check_out_date: booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString() : '',
+        booking_total_nights: booking.total_nights || '',
+        booking_passenger_2_name: booking.passenger_2_name || '',
+        booking_passenger_3_name: booking.passenger_3_name || '',
+        booking_group_name: booking.group_name || '',
+        booking_dietary_restrictions: booking.dietary_restrictions || '',
+        booking_extra_requests: booking.extra_requests || '',
+        booking_medical_conditions: booking.medical_conditions || '',
+        booking_emergency_contact_name: booking.emergency_contact_name || '',
+        booking_passport_number: booking.passport_number || ''
+      };
 
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px;">Passenger Information</h2>
-            <p><strong>Lead Passenger:</strong> ${booking.customers?.first_name} ${booking.customers?.last_name}</p>
-            <p><strong>Total Passengers:</strong> ${booking.passenger_count}</p>
-            ${booking.passenger_2_name ? `<p><strong>Passenger 2:</strong> ${booking.passenger_2_name}</p>` : ''}
-            ${booking.passenger_3_name ? `<p><strong>Passenger 3:</strong> ${booking.passenger_3_name}</p>` : ''}
-            ${booking.group_name ? `<p><strong>Group Name:</strong> ${booking.group_name}</p>` : ''}
-          </div>
+      // Process subject template
+      emailSubject = template.subject_template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        return mergeData[key.trim() as keyof typeof mergeData] || '';
+      });
 
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px;">Hotel Accommodation</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
-              <thead>
-                <tr style="background-color: #f5f5f5;">
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Hotel</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Check In</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Check Out</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Room Type</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Bedding</th>
-                  <th style="padding: 12px; border: 1px solid #ddd; text-align: left;">Upgrade</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${hotelDetails}
-              </tbody>
-            </table>
-          </div>
+      // Process content template
+      emailHtml = template.content_template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        return mergeData[key.trim() as keyof typeof mergeData] || '';
+      });
 
-          ${booking.dietary_restrictions ? `
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px;">Dietary Requirements</h2>
-            <p>${booking.dietary_restrictions}</p>
+      // Handle hotel bookings loop
+      if (booking.hotel_bookings && booking.hotel_bookings.length > 0) {
+        const hotelBookingsHtml = booking.hotel_bookings.map((hb: any) => `
+          <div style="margin-bottom: 15px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
+            <p><strong>Hotel:</strong> ${hb.hotels?.name || 'Hotel TBD'}</p>
+            <p><strong>Check-in:</strong> ${hb.check_in_date ? new Date(hb.check_in_date).toLocaleDateString() : 'TBD'}</p>
+            <p><strong>Check-out:</strong> ${hb.check_out_date ? new Date(hb.check_out_date).toLocaleDateString() : 'TBD'}</p>
+            <p><strong>Nights:</strong> ${hb.nights || 'TBD'}</p>
+            <p><strong>Room Type:</strong> ${hb.room_type || 'Standard'}</p>
+            <p><strong>Bedding:</strong> ${hb.bedding || 'Double'}</p>
+            ${hb.room_upgrade ? `<p><strong>Room Upgrade:</strong> ${hb.room_upgrade}</p>` : ''}
           </div>
-          ` : ''}
+        `).join('');
+        
+        emailHtml = emailHtml.replace(/\{\{#hotel_bookings\}\}[\s\S]*?\{\{\/hotel_bookings\}\}/g, hotelBookingsHtml);
+      } else {
+        emailHtml = emailHtml.replace(/\{\{#hotel_bookings\}\}[\s\S]*?\{\{\/hotel_bookings\}\}/g, '<p>No hotel bookings</p>');
+      }
 
-          ${booking.extra_requests ? `
-          <div style="margin-bottom: 30px;">
-            <h2 style="color: #555; border-bottom: 2px solid #eee; padding-bottom: 10px;">Special Requests</h2>
-            <p>${booking.extra_requests}</p>
+      // Handle activity bookings loop
+      if (booking.activity_bookings && booking.activity_bookings.length > 0) {
+        const activityBookingsHtml = booking.activity_bookings.map((ab: any) => `
+          <div style="margin-bottom: 15px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
+            <p><strong>Activity:</strong> ${ab.activities?.name || 'Activity TBD'}</p>
+            <p><strong>Date:</strong> ${ab.activities?.activity_date ? new Date(ab.activities.activity_date).toLocaleDateString() : 'TBD'}</p>
+            <p><strong>Start Time:</strong> ${ab.activities?.start_time || 'TBD'}</p>
+            <p><strong>Location:</strong> ${ab.activities?.location || 'TBD'}</p>
+            <p><strong>Guide:</strong> ${ab.activities?.guide_name || 'TBD'}</p>
+            <p><strong>Passengers Attending:</strong> ${ab.passengers_attending || 'TBD'}</p>
           </div>
-          ` : ''}
+        `).join('');
+        
+        emailHtml = emailHtml.replace(/\{\{#activity_bookings\}\}[\s\S]*?\{\{\/activity_bookings\}\}/g, activityBookingsHtml);
+      } else {
+        emailHtml = emailHtml.replace(/\{\{#activity_bookings\}\}[\s\S]*?\{\{\/activity_bookings\}\}/g, '<p>No activity bookings</p>');
+      }
 
-          <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
-            <p style="margin: 0; color: #666;"><strong>Questions or Changes?</strong></p>
-            <p style="margin: 5px 0 0 0; color: #666;">If you have any questions or need to make changes to your booking, please reply to this email and we'll get back to you promptly.</p>
-          </div>
+      // Convert line breaks to HTML breaks
+      emailHtml = emailHtml.replace(/\n/g, '<br>');
+    } else {
+      // Fallback to simple HTML if no template found
+      emailHtml = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h1>Booking Confirmation</h1>
+          <p>Dear ${booking.customers?.first_name} ${booking.customers?.last_name},</p>
+          <p>Thank you for your booking confirmation for <strong>${booking.tours?.name || 'your tour'}</strong>.</p>
+          <p>We will be in touch with more details soon.</p>
+          <p>Best regards,<br>The Team</p>
         </div>
-      </div>
-    `;
+      `;
+    }
 
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "Bookings <onboarding@resend.dev>", // Replace with your verified domain
+      from: template?.from_email ? `Bookings <${template.from_email}>` : "Bookings <onboarding@resend.dev>",
       to: [booking.customers.email],
-      subject: `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`,
+      subject: emailSubject,
       html: emailHtml,
     });
 
