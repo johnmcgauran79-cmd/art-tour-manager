@@ -1,12 +1,13 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Utensils, UserPlus } from "lucide-react";
+import { Plus, Users, Utensils, UserPlus, Mail } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { BulkBookingStatusModal } from "@/components/BulkBookingStatusModal";
 import { BulkDietaryModal } from "@/components/BulkDietaryModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { useTours } from "@/hooks/useTours";
+import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -22,6 +23,7 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
   
   const { data: tours } = useTours();
   const currentTour = tours?.find(tour => tour.id === tourId);
+  const bulkEmailMutation = useBulkBookingEmail();
 
   return (
     <>
@@ -37,6 +39,16 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
             >
               <Utensils className="h-4 w-4" />
               Bulk Update Dietary
+            </Button>
+            <Button
+              onClick={() => bulkEmailMutation.mutate(tourId)}
+              variant="outline"
+              size="sm"
+              disabled={bulkEmailMutation.isPending}
+              className="flex items-center gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/5"
+            >
+              <Mail className="h-4 w-4" />
+              {bulkEmailMutation.isPending ? 'Sending...' : 'Email All Confirmations'}
             </Button>
             <Button
               onClick={() => setBulkStatusModalOpen(true)}
