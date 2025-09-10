@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3 } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
+import { useActivities } from "@/hooks/useActivities";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
@@ -15,6 +16,7 @@ import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
 import { EditBookingModal } from "@/components/EditBookingModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -25,6 +27,7 @@ interface TourOperationsTabProps {
 export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperationsTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
+  const { data: activities } = useActivities(tourId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
   const { userRole } = useAuth();
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
@@ -38,8 +41,56 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
+  const [activityBookingsData, setActivityBookingsData] = useState<any>({});
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
+
+  // Fetch activity bookings to calculate discrepancies
+  useEffect(() => {
+    const fetchActivityBookings = async () => {
+      if (!tourBookings.length || !activities?.length) return;
+
+      try {
+        const { data: activityBookings } = await supabase
+          .from('activity_bookings')
+          .select('booking_id, activity_id, passengers_attending')
+          .in('booking_id', tourBookings.map(b => b.id))
+          .in('activity_id', activities.map(a => a.id));
+
+        const bookingsData: any = {};
+        tourBookings.forEach(booking => {
+          bookingsData[booking.id] = {};
+          activities.forEach(activity => {
+            bookingsData[booking.id][activity.id] = 0;
+          });
+        });
+
+        if (activityBookings) {
+          activityBookings.forEach(ab => {
+            if (bookingsData[ab.booking_id] && bookingsData[ab.booking_id][ab.activity_id] !== undefined) {
+              bookingsData[ab.booking_id][ab.activity_id] = ab.passengers_attending;
+            }
+          });
+        }
+
+        setActivityBookingsData(bookingsData);
+      } catch (error) {
+        console.error('Error fetching activity bookings:', error);
+      }
+    };
+
+    fetchActivityBookings();
+  }, [tourBookings, activities]);
+
+  // Calculate bookings with discrepancies
+  const bookingsWithDiscrepancies = tourBookings.filter(booking => {
+    if (!activities?.length || !activityBookingsData[booking.id]) return false;
+    
+    return activities.some(activity => {
+      const allocation = activityBookingsData[booking.id][activity.id] || 0;
+      return allocation === 0 || allocation !== booking.passenger_count;
+    });
+  });
 
   // Get all dietary requirements
   const dietaryRequirements = tourBookings
@@ -242,7 +293,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
                 <Grid3X3 className="h-5 w-5 text-red-600" />
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Matrix</p>
-              <p className="text-xs text-gray-600">{tourBookings.length} bookings</p>
+              <p className="text-xs text-gray-600">{bookingsWithDiscrepancies.length} alerts</p>
             </div>
           </div>
           <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
