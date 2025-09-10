@@ -21,6 +21,7 @@ interface ActivityMatrixReportProps {
       status: string;
     }>;
   }>;
+  onBookingClick?: (bookingId: string) => void;
 }
 
 interface BookingActivityData {
@@ -29,7 +30,7 @@ interface BookingActivityData {
   };
 }
 
-export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
+export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixReportProps) => {
   const [allActivityBookings, setAllActivityBookings] = useState<BookingActivityData>({});
   const [loading, setLoading] = useState(true);
 
@@ -162,7 +163,7 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
         <div>
           <div className="font-medium text-red-800">Activity Allocation Discrepancies Found</div>
           <div className="text-sm text-red-600">
-            {bookingsWithDiscrepancies.length} booking{bookingsWithDiscrepancies.length !== 1 ? 's' : ''} with incorrect activity allocations
+            {bookingsWithDiscrepancies.length} booking{bookingsWithDiscrepancies.length !== 1 ? 's' : ''} with different activity allocations
           </div>
         </div>
       </div>
@@ -214,8 +215,13 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
           </TableHeader>
           <TableBody>
             {bookingsWithDiscrepancies.map((booking) => (
-              <TableRow key={booking.id}>
-                <TableCell className="sticky left-0 bg-white z-10 border-r">
+              <TableRow 
+                key={booking.id} 
+                className="hover:bg-blue-50 cursor-pointer transition-colors"
+                onClick={() => onBookingClick?.(booking.id)}
+                title="Click to open booking and edit activity allocations"
+              >
+                <TableCell className="sticky left-0 bg-white z-10 border-r hover:bg-blue-50">
                   <div className="space-y-1">
                     <div className="font-medium text-sm">{booking.leadPassenger}</div>
                     {booking.groupName && (
@@ -223,9 +229,6 @@ export const ActivityMatrixReport = ({ data }: ActivityMatrixReportProps) => {
                         Group: {booking.groupName}
                       </div>
                     )}
-                    <Badge variant="outline" className="text-xs">
-                      {booking.status}
-                    </Badge>
                   </div>
                 </TableCell>
                 <TableCell className="text-center font-medium">

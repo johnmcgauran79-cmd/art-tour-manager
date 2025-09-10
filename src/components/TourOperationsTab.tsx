@@ -69,6 +69,18 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     }
   };
 
+  const handleBookingClick = (bookingId: string) => {
+    // Close the reports modal first
+    setReportsModalOpen(false);
+    setSelectedReportType(null);
+    
+    // Navigate to the bookings tab to show activity allocation
+    onNavigate?.({ type: 'tab', value: 'bookings' });
+    
+    // Note: The actual booking selection would need to be handled by the parent component
+    // For now, we'll just navigate to the bookings tab
+  };
+
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setTaskDetailModalOpen(true);
@@ -359,6 +371,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         open={reportsModalOpen}
         onOpenChange={handleModalClose}
         reportType={selectedReportType}
+        onBookingClick={handleBookingClick}
       />
 
       <AddTaskModal

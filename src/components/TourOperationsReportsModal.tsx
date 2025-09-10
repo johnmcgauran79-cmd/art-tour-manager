@@ -21,6 +21,7 @@ interface TourOperationsReportsModalProps {
   onOpenChange: (open: boolean) => void;
   reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null;
   hotelId?: string;
+  onBookingClick?: (bookingId: string) => void;
 }
 
 export const TourOperationsReportsModal = ({ 
@@ -29,7 +30,8 @@ export const TourOperationsReportsModal = ({
   open, 
   onOpenChange,
   reportType = null,
-  hotelId = undefined
+  hotelId = undefined,
+  onBookingClick
 }: TourOperationsReportsModalProps) => {
   const { data: hotels } = useHotels(tourId);
   const reports = useReportData(tourId);
@@ -60,7 +62,7 @@ export const TourOperationsReportsModal = ({
       case 'passengerlist':
         return <PassengerListReport data={report.data} />;
       case 'activitymatrix':
-        return <ActivityMatrixReport data={report.data} />;
+        return <ActivityMatrixReport data={report.data} onBookingClick={onBookingClick} />;
       default:
         return null;
     }
