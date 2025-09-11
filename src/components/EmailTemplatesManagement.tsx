@@ -282,7 +282,7 @@ export const EmailTemplatesManagement = () => {
 
       {/* Create/Edit Modal */}
       <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-7xl max-h-[95vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingTemplate ? 'Edit Email Template' : 'Create New Email Template'}
@@ -355,7 +355,7 @@ export const EmailTemplatesManagement = () => {
 
                 <div className="flex-1 flex flex-col">
                   <Label htmlFor="content_template">Email Content Template</Label>
-                  <div className="flex-1 min-h-[300px] border border-input rounded-md">
+                  <div className="flex-1 min-h-[400px] border border-input rounded-md overflow-hidden">
                     <ReactQuill
                       ref={quillRef}
                       value={formData.content_template}
@@ -363,7 +363,7 @@ export const EmailTemplatesManagement = () => {
                       modules={quillModules}
                       formats={quillFormats}
                       placeholder="Dear {{customer_first_name}}, ..."
-                      className="h-full"
+                      style={{ height: '350px' }}
                     />
                   </div>
                 </div>
