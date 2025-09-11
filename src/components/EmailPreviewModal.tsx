@@ -37,6 +37,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const sendEmail = useSendBookingConfirmation();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
+  const { data: userEmails } = useUserEmails();
 
   // Fetch booking details to generate email preview
   const { data: booking, isLoading } = useQuery({
@@ -180,7 +181,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                     <SelectItem value="info@australianracingtours.com.au">
                       info@australianracingtours.com.au
                     </SelectItem>
-                    {useUserEmails().data?.map((email) => (
+                    {userEmails?.map((email) => (
                       <SelectItem key={email} value={email}>
                         {email}
                       </SelectItem>

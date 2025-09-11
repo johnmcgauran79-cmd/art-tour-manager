@@ -32,6 +32,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const bulkEmailMutation = useBulkBookingEmail();
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
+  const { data: userEmails } = useUserEmails();
 
   // Get bookings with emails for this tour and sample booking for preview
   const { data: bookingsData, isLoading } = useQuery({
@@ -269,7 +270,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     <SelectItem value="info@australianracingtours.com.au">
                       info@australianracingtours.com.au
                     </SelectItem>
-                    {useUserEmails().data?.map((email) => (
+                    {userEmails?.map((email) => (
                       <SelectItem key={email} value={email}>
                         {email}
                       </SelectItem>
