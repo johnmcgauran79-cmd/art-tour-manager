@@ -34,47 +34,66 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     queryFn: async () => {
       if (!tourId) return { count: 0, sampleBooking: null };
       
-      // Get count
-      const { count, error: countError } = await supabase
-        .from('bookings')
-        .select('id', { count: 'exact' })
-        .eq('tour_id', tourId)
-        .not('customers.email', 'is', null);
-
-      if (countError) throw countError;
-
-      // Get sample booking for preview
-      const { data: sampleBooking, error: bookingError } = await supabase
+      // Get bookings with email addresses for this tour
+      const { data: bookingsWithEmails, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
-          *,
-          tours:tour_id (
-            name, location, start_date, end_date, days, nights, pickup_point,
-            notes, inclusions, exclusions, tour_host, price_single, price_double,
-            deposit_required, final_payment_date, instalment_date, instalment_amount
-          ),
-          customers:lead_passenger_id (
-            first_name, last_name, email, phone, city, state, country,
-            spouse_name, dietary_requirements, notes
-          ),
-          hotel_bookings (
-            check_in_date, check_out_date, nights, room_type, bedding,
-            room_upgrade, room_requests, confirmation_number,
-            hotels (name, address, contact_name, contact_phone, contact_email)
-          ),
-          activity_bookings (
-            passengers_attending,
-            activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+          id,
+          customers:lead_passenger_id!inner (
+            email
           )
         `)
         .eq('tour_id', tourId)
-        .not('customers.email', 'is', null)
-        .limit(1)
-        .single();
+        .not('customers.email', 'is', null);
+
+      if (bookingsError) {
+        console.error('Error fetching bookings with emails:', bookingsError);
+        throw bookingsError;
+      }
+
+      const count = bookingsWithEmails?.length || 0;
+
+      // Get sample booking for preview if we have bookings
+      let sampleBooking = null;
+      if (count > 0) {
+        const { data, error: sampleError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            tours:tour_id (
+              name, location, start_date, end_date, days, nights, pickup_point,
+              notes, inclusions, exclusions, tour_host, price_single, price_double,
+              deposit_required, final_payment_date, instalment_date, instalment_amount
+            ),
+            customers:lead_passenger_id (
+              first_name, last_name, email, phone, city, state, country,
+              spouse_name, dietary_requirements, notes
+            ),
+            hotel_bookings (
+              check_in_date, check_out_date, nights, room_type, bedding,
+              room_upgrade, room_requests, confirmation_number,
+              hotels (name, address, contact_name, contact_phone, contact_email)
+            ),
+            activity_bookings (
+              passengers_attending,
+              activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+            )
+          `)
+          .eq('tour_id', tourId)
+          .not('customers.email', 'is', null)
+          .limit(1)
+          .maybeSingle();
+
+        if (sampleError) {
+          console.error('Error fetching sample booking:', sampleError);
+        } else {
+          sampleBooking = data;
+        }
+      }
 
       return { 
-        count: count || 0, 
-        sampleBooking: bookingError ? null : sampleBooking 
+        count, 
+        sampleBooking 
       };
     },
     enabled: !!tourId && open,
@@ -82,9 +101,17 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   // Update preview when template changes
   useEffect(() => {
-    if (selectedTemplateId && templates && bookingsData?.sampleBooking) {
+    console.log('Template or booking data changed:', { 
+      selectedTemplateId, 
+      hasTemplates: !!templates, 
+      hasSampleBooking: !!bookingsData?.sampleBooking,
+      bookingCount: bookingsData?.count 
+    });
+    
+    if (selectedTemplateId && selectedTemplateId !== "blank" && templates && bookingsData?.sampleBooking) {
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
+        console.log('Processing template:', template.name);
         const mergeData = EmailTemplateEngine.convertBookingToMergeData(bookingsData.sampleBooking);
         const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
         const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
@@ -105,9 +132,15 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   // Generate content when template or booking changes
   useEffect(() => {
+    console.log('Blank template effect triggered:', { 
+      selectedTemplateId, 
+      hasSampleBooking: !!bookingsData?.sampleBooking 
+    });
+    
     if (bookingsData?.sampleBooking) {
       if (selectedTemplateId === "blank") {
         const customerName = bookingsData.sampleBooking.customers?.first_name || 'Customer';
+        console.log('Setting blank template content for customer:', customerName);
         setEditedSubject(`Email for ${customerName}`);
         setEditedContent(`Dear ${customerName},\n\n\n\nBest regards,\nYour Team`);
         setPreviewBooking(bookingsData.sampleBooking);
