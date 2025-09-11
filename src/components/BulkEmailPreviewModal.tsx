@@ -197,8 +197,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       await bulkEmailMutation.mutateAsync({
         tourId,
         recipientType,
-        customSubject: editedSubject,
-        customContent: editedContent,
+        subjectTemplate: editedSubject,
+        contentTemplate: editedContent,
         fromEmail
       });
       onOpenChange(false);

@@ -1,68 +1,115 @@
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 
 export const useBulkBookingEmail = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, customSubject, customContent, fromEmail }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail }: { 
       tourId: string; 
       recipientType?: string;
-      customSubject?: string; 
-      customContent?: string; 
+      subjectTemplate?: string; 
+      contentTemplate?: string; 
       fromEmail?: string;
     }) => {
       let bookings;
       
       if (recipientType === "activities_only") {
-        // Get bookings without accommodation
+        // Get bookings without accommodation with full details for mail merge
         const { data, error } = await supabase
           .from('bookings')
           .select(`
-            id,
-            accommodation_required,
-            customers:lead_passenger_id (email, first_name, last_name),
-            hotel_bookings (id)
+            *,
+            tours:tour_id (
+              name, location, start_date, end_date, days, nights, pickup_point,
+              notes, inclusions, exclusions, tour_host, price_single, price_double,
+              deposit_required, final_payment_date, instalment_date, instalment_amount
+            ),
+            customers:lead_passenger_id (
+              first_name, last_name, email, phone, city, state, country,
+              spouse_name, dietary_requirements, notes
+            ),
+            hotel_bookings (
+              check_in_date, check_out_date, nights, room_type, bedding,
+              room_upgrade, room_requests, confirmation_number,
+              hotels (name, address, contact_name, contact_phone, contact_email)
+            ),
+            activity_bookings (
+              passengers_attending,
+              activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+            )
           `)
           .eq('tour_id', tourId)
           .neq('status', 'cancelled')
           .eq('accommodation_required', false)
           .not('customers.email', 'is', null);
-          
+           
         if (error) throw error;
         // Filter out any that have hotel bookings
         bookings = data?.filter(booking => 
           !booking.hotel_bookings || booking.hotel_bookings.length === 0
         );
       } else {
-        // Get bookings with accommodation (default)
+        // Get bookings with accommodation with full details for mail merge
         const { data, error } = await supabase
           .from('bookings')
           .select(`
-            id,
-            customers:lead_passenger_id (email, first_name, last_name),
-            hotel_bookings!inner (id)
+            *,
+            tours:tour_id (
+              name, location, start_date, end_date, days, nights, pickup_point,
+              notes, inclusions, exclusions, tour_host, price_single, price_double,
+              deposit_required, final_payment_date, instalment_date, instalment_amount
+            ),
+            customers:lead_passenger_id (
+              first_name, last_name, email, phone, city, state, country,
+              spouse_name, dietary_requirements, notes
+            ),
+            hotel_bookings (
+              check_in_date, check_out_date, nights, room_type, bedding,
+              room_upgrade, room_requests, confirmation_number,
+              hotels (name, address, contact_name, contact_phone, contact_email)
+            ),
+            activity_bookings (
+              passengers_attending,
+              activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+            )
           `)
           .eq('tour_id', tourId)
           .neq('status', 'cancelled')
           .not('customers.email', 'is', null);
-          
+           
         if (error) throw error;
-        bookings = data;
+        // Only include bookings that have hotel bookings
+        bookings = data?.filter(booking => 
+          booking.hotel_bookings && booking.hotel_bookings.length > 0
+        );
       }
 
       if (!bookings || bookings.length === 0) {
         throw new Error('No bookings with email addresses found for this tour');
       }
 
-      // Send emails for each booking
+      // Process each booking individually with mail merge
       const emailPromises = bookings.map(async (booking) => {
+        // Convert booking to merge data format
+        const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
+        
+        // Process templates with individual booking data
+        const personalizedSubject = subjectTemplate ? 
+          EmailTemplateEngine.processTemplate(subjectTemplate, mergeData) : 
+          `Email for ${booking.customers?.first_name || 'Customer'}`;
+          
+        const personalizedContent = contentTemplate ? 
+          EmailTemplateEngine.processTemplate(contentTemplate, mergeData) : 
+          `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
+        
         const { error } = await supabase.functions.invoke('send-booking-confirmation', {
           body: { 
             bookingId: booking.id,
-            customSubject,
-            customContent,
+            customSubject: personalizedSubject,
+            customContent: personalizedContent,
             fromEmail
           }
         });
