@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplateEngine, type EmailMergeData } from "@/utils/emailTemplateEngine";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserEmails } from "@/hooks/useUserEmails";
 
 interface BulkEmailPreviewModalProps {
   open: boolean;
@@ -268,11 +269,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     <SelectItem value="info@australianracingtours.com.au">
                       info@australianracingtours.com.au
                     </SelectItem>
-                    {profile?.email && (
-                      <SelectItem value={profile.email}>
-                        {profile.email}
+                    {useUserEmails().data?.map((email) => (
+                      <SelectItem key={email} value={email}>
+                        {email}
                       </SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

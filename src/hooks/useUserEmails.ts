@@ -13,13 +13,19 @@ export const useUserEmails = () => {
       
       if (error) throw error;
       
-      // Add the default email if not already in the list
+      // Add the default emails if not already in the list
       const emails = data.map(profile => profile.email);
-      const defaultEmail = 'info@australianracingtours.com.au';
+      const defaultEmails = [
+        'bookings@australianracingtours.com.au',
+        'info@australianracingtours.com.au'
+      ];
       
-      if (!emails.includes(defaultEmail)) {
-        emails.unshift(defaultEmail);
-      }
+      // Add default emails to the beginning if they're not already included
+      defaultEmails.reverse().forEach(defaultEmail => {
+        if (!emails.includes(defaultEmail)) {
+          emails.unshift(defaultEmail);
+        }
+      });
       
       return emails;
     },

@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserEmails } from "@/hooks/useUserEmails";
 
 interface EmailPreviewModalProps {
   open: boolean;
@@ -179,11 +180,11 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                     <SelectItem value="info@australianracingtours.com.au">
                       info@australianracingtours.com.au
                     </SelectItem>
-                    {profile?.email && (
-                      <SelectItem value={profile.email}>
-                        {profile.email}
+                    {useUserEmails().data?.map((email) => (
+                      <SelectItem key={email} value={email}>
+                        {email}
                       </SelectItem>
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
