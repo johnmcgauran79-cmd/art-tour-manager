@@ -64,38 +64,52 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
     enabled: !!bookingId && open,
   });
 
-  // Auto-select default template on load
+  // Auto-select blank template as default
   useEffect(() => {
-    if (emailTemplates && emailTemplates.length > 0 && !selectedTemplateId) {
-      const defaultTemplate = emailTemplates.find(t => t.is_default) || emailTemplates[0];
-      setSelectedTemplateId(defaultTemplate.id);
+    if (selectedTemplateId === null) {
+      setSelectedTemplateId("blank");
     }
-  }, [emailTemplates, selectedTemplateId]);
+  }, [selectedTemplateId]);
 
   // Generate email content when booking or template changes
   useEffect(() => {
-    if (booking && selectedTemplateId && emailTemplates) {
-      const template = emailTemplates.find(t => t.id === selectedTemplateId);
-      if (!template) return;
-
+    if (booking) {
       const recipientEmail = booking.customers?.email || '';
       const recipientName = `${booking.customers?.first_name} ${booking.customers?.last_name}`;
 
-      // Convert booking data to merge format
-      const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
+      if (selectedTemplateId && selectedTemplateId !== "blank" && emailTemplates) {
+        const template = emailTemplates.find(t => t.id === selectedTemplateId);
+        if (template) {
+          // Convert booking data to merge format
+          const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
 
-      // Process template with merge data
-      const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
-      const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
+          // Process template with merge data
+          const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
+          const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
 
-      setEmailData({
-        subject: processedSubject,
-        recipientEmail,
-        recipientName,
-        htmlContent: processedContent
-      });
-      setEditedSubject(processedSubject);
-      setEditedContent(processedContent);
+          setEmailData({
+            subject: processedSubject,
+            recipientEmail,
+            recipientName,
+            htmlContent: processedContent
+          });
+          setEditedSubject(processedSubject);
+          setEditedContent(processedContent);
+        }
+      } else {
+        // Default blank email template
+        const defaultSubject = `Email for ${recipientName}`;
+        const defaultContent = `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
+
+        setEmailData({
+          subject: defaultSubject,
+          recipientEmail,
+          recipientName,
+          htmlContent: defaultContent
+        });
+        setEditedSubject(defaultSubject);
+        setEditedContent(defaultContent);
+      }
     }
   }, [booking, selectedTemplateId, emailTemplates]);
 
@@ -139,6 +153,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                     <SelectValue placeholder="Select template..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="blank">Blank Email</SelectItem>
                     {emailTemplates?.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}

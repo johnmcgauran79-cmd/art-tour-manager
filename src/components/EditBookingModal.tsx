@@ -279,14 +279,28 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              Edit Booking - {formData.lead_passenger_first_name} {formData.lead_passenger_last_name}
-              {formData.status === 'waitlisted' && (
-                <Badge className="bg-orange-100 text-orange-800 ml-2">WAITLISTED</Badge>
-              )}
-              <Button onClick={handleDelete} variant="destructive" size="sm">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Booking
-              </Button>
+              <div className="flex items-center gap-2">
+                Edit Booking - {formData.lead_passenger_first_name} {formData.lead_passenger_last_name}
+                {formData.status === 'waitlisted' && (
+                  <Badge className="bg-orange-100 text-orange-800">WAITLISTED</Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={() => setShowEmailPreview(true)}
+                  disabled={!booking?.customers?.email}
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  size="sm"
+                >
+                  Send Email
+                </Button>
+                <Button onClick={handleDelete} variant="destructive" size="sm">
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Booking
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
 
@@ -528,15 +542,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                 <div className="flex justify-end gap-2 pt-4 border-t">
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                     Cancel
-                  </Button>
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => setShowEmailPreview(true)}
-                    disabled={!booking?.customers?.email}
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50"
-                  >
-                    Send Confirmation Email
                   </Button>
                   <Button 
                     type="submit" 
