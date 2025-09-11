@@ -5,82 +5,39 @@
 
 /* ReactQuill Editor Improvements */
 .ql-editor {
-  line-height: 1.8 !important;
+  line-height: 1.6 !important;
   font-size: 14px !important;
-  padding: 20px !important;
+  padding: 16px !important;
   min-height: 300px !important;
-  font-family: ui-sans-serif, system-ui, sans-serif !important;
 }
 
 .ql-editor p {
-  margin-bottom: 16px !important;
-  margin-top: 0 !important;
-}
-
-.ql-editor p:last-child {
-  margin-bottom: 0 !important;
+  margin-bottom: 12px !important;
 }
 
 .ql-editor h1, .ql-editor h2, .ql-editor h3 {
-  margin-top: 24px !important;
-  margin-bottom: 16px !important;
-  font-weight: 600 !important;
-}
-
-.ql-editor h1:first-child, .ql-editor h2:first-child, .ql-editor h3:first-child {
-  margin-top: 0 !important;
+  margin-top: 16px !important;
+  margin-bottom: 12px !important;
 }
 
 .ql-editor ul, .ql-editor ol {
-  margin-bottom: 16px !important;
-  margin-top: 8px !important;
-  padding-left: 32px !important;
+  margin-bottom: 12px !important;
+  padding-left: 24px !important;
 }
 
 .ql-editor li {
-  margin-bottom: 8px !important;
-  line-height: 1.6 !important;
-}
-
-.ql-editor br {
-  line-height: 1.8 !important;
-}
-
-.ql-editor strong {
-  font-weight: 600 !important;
+  margin-bottom: 4px !important;
 }
 
 .ql-toolbar {
   border-bottom: 1px solid hsl(var(--border)) !important;
   border-top-left-radius: 6px !important;
   border-top-right-radius: 6px !important;
-  background: hsl(var(--background)) !important;
 }
 
 .ql-container {
   border-bottom-left-radius: 6px !important;
   border-bottom-right-radius: 6px !important;
-  border: 1px solid hsl(var(--border)) !important;
-  border-top: none !important;
-}
-
-/* Force proper spacing and formatting in Quill */
-.ql-editor div {
-  margin-bottom: 8px !important;
-}
-
-.ql-editor .ql-blank::before {
-  font-style: normal !important;
-  color: hsl(var(--muted-foreground)) !important;
-}
-
-/* Ensure HTML content displays properly */
-.ql-editor * {
-  line-height: inherit !important;
-}
-
-.ql-editor > * + * {
-  margin-top: 8px !important;
 }
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
