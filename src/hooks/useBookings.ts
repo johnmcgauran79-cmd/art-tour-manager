@@ -133,7 +133,6 @@ export const useCreateBooking = () => {
       accessibility_needs?: string;
       dietary_restrictions?: string;
     }) => {
-      console.log('Creating booking with data:', bookingData);
       
       // Calculate nights
       const totalNights = calculateNights(bookingData.check_in_date, bookingData.check_out_date);
@@ -233,12 +232,7 @@ export const useCreateBooking = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error('Error creating booking:', error);
-        throw error;
-      }
-
-      console.log('Booking created successfully:', data);
+      if (error) throw error;
 
       // Log the booking creation
       logOperation({
@@ -257,7 +251,6 @@ export const useCreateBooking = () => {
       return data;
     },
     onSuccess: (data, variables) => {
-      console.log('Booking creation successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -271,7 +264,6 @@ export const useCreateBooking = () => {
       });
     },
     onError: (error) => {
-      console.error('Booking creation failed:', error);
       toast({
         title: "Error",
         description: "Failed to create booking. Please try again.",
@@ -288,7 +280,6 @@ export const useUpdateBooking = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
-      console.log('Updating booking with data:', { id, updates });
       
       // Handle accommodation requirement changes
       const finalUpdates = { ...updates };
@@ -330,10 +321,7 @@ export const useUpdateBooking = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error('Supabase error updating booking:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       // Log the booking update
       logOperation({
@@ -345,8 +333,6 @@ export const useUpdateBooking = () => {
           status_change: updates.status ? `to ${updates.status}` : undefined
         }
       });
-
-      console.log('Booking updated successfully:', data);
       return data;
     },
     onSuccess: () => {
@@ -364,7 +350,7 @@ export const useUpdateBooking = () => {
         description: "Failed to update booking. Please try again.",
         variant: "destructive",
       });
-      console.error('Error updating booking:', error);
+      
     },
   });
 };
@@ -375,26 +361,15 @@ export const useDeleteBooking = () => {
 
   return useMutation({
     mutationFn: async (bookingId: string) => {
-      console.log('Starting deletion process for booking:', bookingId);
+      const { error } = await supabase.rpc('delete_booking_simple', {
+        p_booking_id: bookingId
+      });
 
-      try {
-        // Use the new database function that handles triggers efficiently
-        const { error } = await supabase.rpc('delete_booking_simple', {
-          p_booking_id: bookingId
-        });
-
-        if (error) {
-          console.error('Database function error:', error);
-          throw new Error(`Failed to delete booking: ${error.message}`);
-        }
-
-        console.log('Booking deleted successfully using database function');
-        return bookingId;
-
-      } catch (error) {
-        console.error('Deletion process failed:', error);
-        throw error;
+      if (error) {
+        throw new Error(`Failed to delete booking: ${error.message}`);
       }
+
+      return bookingId;
     },
     onSuccess: () => {
       // Invalidate all related queries to refresh the UI
@@ -411,7 +386,6 @@ export const useDeleteBooking = () => {
       });
     },
     onError: (error: Error) => {
-      console.error('Error deleting booking:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to delete booking. Please try again.",

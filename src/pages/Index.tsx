@@ -1,14 +1,10 @@
 
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ToursTable } from "@/components/ToursTable";
 import { BookingsTable } from "@/components/BookingsTable";
 import { ContactsTable } from "@/components/ContactsTable";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
-import { UserDropdown } from "@/components/UserDropdown";
-import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { Settings } from "@/pages/Settings";
 
 import { MyTasksWidget } from "@/components/MyTasksWidget";
@@ -45,7 +41,7 @@ const Index = () => {
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  
 
   const { userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
@@ -56,11 +52,8 @@ const Index = () => {
   const { data: tasks = [] } = useTasks();
 
   // Handle navigation from notifications - stay on current tab
-  const handleNavigateToItem = async (type: string, itemId: string, hotelId?: string) => {
-    console.log('handleNavigateToItem called with:', { type, itemId, hotelId });
-    
+  const handleNavigateToItem = (type: string, itemId: string, hotelId?: string) => {
     if (type === 'tour') {
-      console.log('Navigating to tour overview:', itemId);
       const tour = tours.find(t => t.id === itemId);
       if (tour) {
         setSelectedTour(tour);
@@ -68,13 +61,10 @@ const Index = () => {
         setTourModalOpen(true);
       }
     } else if (type === 'booking') {
-      console.log('Navigating to booking - looking for tour:', itemId);
       const tour = tours.find(t => t.id === itemId);
-      console.log('Found tour for booking navigation:', tour);
       if (tour) {
         setSelectedTour(tour);
         setTourModalDefaultTab("bookings");
-        console.log('Setting tour modal default tab to bookings');
         setTourModalOpen(true);
       }
     } else if (type === 'task') {
@@ -90,19 +80,12 @@ const Index = () => {
 
   useEffect(() => {
     const handleOpenBookingDetail = (event: CustomEvent) => {
-      console.log('Received open-booking-detail event:', event.detail);
-      const { bookingId, hotelId } = event.detail;
-      
+      const { bookingId } = event.detail;
       const booking = bookings.find(b => b.id === bookingId);
-      console.log('Found booking:', booking);
       
       if (booking) {
         setSelectedBooking(booking);
         setBookingModalOpen(true);
-        
-        if (hotelId === 'auto-navigate') {
-          console.log('Auto-navigating to hotel allocation tab');
-        }
       }
     };
 
@@ -120,10 +103,8 @@ const Index = () => {
 
   const handleViewAllTasks = () => {
     setActiveTab("operations");
-    setTimeout(() => {
-      const event = new CustomEvent('navigate-to-all-tasks');
-      window.dispatchEvent(event);
-    }, 100);
+    const event = new CustomEvent('navigate-to-all-tasks');
+    window.dispatchEvent(event);
   };
 
   if (showUserManagement && isAdmin) {

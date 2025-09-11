@@ -6,6 +6,17 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Helper function to add ordinal suffix to day
+const addOrdinalSuffix = (day: number) => {
+  if (day > 3 && day < 21) return day + 'th';
+  switch (day % 10) {
+    case 1: return day + 'st';
+    case 2: return day + 'nd';
+    case 3: return day + 'rd';
+    default: return day + 'th';
+  }
+};
+
 export function formatDateToDDMMYYYY(dateString: string | null): string {
   if (!dateString) return 'TBD';
   
@@ -31,17 +42,6 @@ export function formatDisplayDate(dateString: string): string {
   const month = date.toLocaleDateString('en-GB', { month: 'long' });
   const year = date.getFullYear();
   const weekday = date.toLocaleDateString('en-GB', { weekday: 'long' });
-  
-  // Add ordinal suffix to day
-  const addOrdinalSuffix = (day: number) => {
-    if (day > 3 && day < 21) return day + 'th';
-    switch (day % 10) {
-      case 1: return day + 'st';
-      case 2: return day + 'nd';
-      case 3: return day + 'rd';
-      default: return day + 'th';
-    }
-  };
 
   const dayWithSuffix = addOrdinalSuffix(day);
   return `${weekday} ${dayWithSuffix} ${month} ${year}`;
@@ -54,17 +54,6 @@ export function formatDateToLongFormat(dateString: string): string {
   const day = date.getDate();
   const month = date.toLocaleDateString('en-GB', { month: 'long' });
   const year = date.getFullYear();
-  
-  // Add ordinal suffix to day
-  const addOrdinalSuffix = (day: number) => {
-    if (day > 3 && day < 21) return day + 'th';
-    switch (day % 10) {
-      case 1: return day + 'st';
-      case 2: return day + 'nd';
-      case 3: return day + 'rd';
-      default: return day + 'th';
-    }
-  };
 
   const dayWithSuffix = addOrdinalSuffix(day);
   return `${dayWithSuffix} ${month} ${year}`;

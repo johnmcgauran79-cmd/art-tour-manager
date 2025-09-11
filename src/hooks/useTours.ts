@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import { useAuditLog } from "@/hooks/useAuditLog";
 
 
@@ -47,17 +46,12 @@ export const useTours = () => {
   return useQuery({
     queryKey: ['tours'],
     queryFn: async () => {
-      console.log('Fetching tours...');
       const { data, error } = await supabase
         .from('tours')
         .select('*')
         .order('start_date', { ascending: true });
       
-      if (error) {
-        console.error('Error fetching tours:', error);
-        throw error;
-      }
-      console.log('Tours fetched successfully:', data);
+      if (error) throw error;
       return data as Tour[];
     },
   });
@@ -66,24 +60,18 @@ export const useTours = () => {
 export const useCreateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAuth();
   const { logOperation } = useAuditLog();
   
 
   return useMutation({
     mutationFn: async (tourData: Omit<Tour, 'id' | 'created_at' | 'updated_at'>) => {
-      console.log('Creating tour with data:', tourData);
-      
       const { data, error } = await supabase
         .from('tours')
         .insert([tourData])
         .select()
         .single();
 
-      if (error) {
-        console.error('Supabase error creating tour:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       // Log the tour creation
       logOperation({
@@ -99,7 +87,6 @@ export const useCreateTour = () => {
         }
       });
       
-      console.log('Tour created successfully:', data);
       return data;
     },
     onSuccess: async (data) => {
@@ -112,7 +99,6 @@ export const useCreateTour = () => {
       
     },
     onError: (error: any) => {
-      console.error('Error in mutation:', error);
       toast({
         title: "Error Creating Tour",
         description: error.message || "Failed to create tour. Please try again.",
@@ -125,23 +111,10 @@ export const useCreateTour = () => {
 export const useUpdateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { user } = useAuth();
   const { logOperation } = useAuditLog();
 
   return useMutation({
     mutationFn: async (data: { tourId: string; updates: Partial<Tour> }) => {
-      console.log('Updating tour with data:', data);
-      
-      // Get original tour data for comparison
-      const { data: originalTour } = await supabase
-        .from('tours')
-        .select('*')
-        .eq('id', data.tourId)
-        .single();
-      
-      console.log('Original tour data:', originalTour);
-      console.log('Updates being applied:', data.updates);
-      
       const { data: updatedTour, error } = await supabase
         .from('tours')
         .update(data.updates)
@@ -149,12 +122,7 @@ export const useUpdateTour = () => {
         .select()
         .single();
 
-      if (error) {
-        console.error('Supabase error updating tour:', error);
-        throw error;
-      }
-
-      // Notification will be created automatically by centralized system
+      if (error) throw error;
 
       // Log the tour update
       logOperation({
@@ -186,7 +154,6 @@ export const useUpdateTour = () => {
       }
     },
     onError: (error: any) => {
-      console.error('Error in mutation:', error);
       toast({
         title: "Error Updating Tour",
         description: error.message || "Failed to update tour. Please try again.",

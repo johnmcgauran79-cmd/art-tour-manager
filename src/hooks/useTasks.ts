@@ -480,10 +480,7 @@ export const useTasks = (tourId?: string, filters?: {
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error('Error fetching tasks:', error);
-        throw error;
-      }
+      if (error) throw error;
 
       // Transform the data to match our Task interface
       const transformedData = data?.map(task => ({

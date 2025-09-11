@@ -42,16 +42,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile and role
-          setTimeout(async () => {
-            await fetchUserProfile(session.user.id);
-            await fetchUserRole(session.user.id);
-          }, 0);
+          // Fetch user profile and role in parallel
+          await Promise.all([
+            fetchUserProfile(session.user.id),
+            fetchUserRole(session.user.id)
+          ]);
         } else {
           setProfile(null);
           setUserRole(null);
@@ -77,7 +76,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         setLoading(false);
       } catch (error) {
-        console.error('Auth initialization error:', error);
         setLoading(false);
       }
     };
@@ -95,15 +93,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
+      if (!error && data) {
+        setProfile(data);
+        setMustChangePassword(data?.must_change_password || false);
       }
-      
-      setProfile(data);
-      setMustChangePassword(data?.must_change_password || false);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      // Silent error handling for profile fetch
     }
   };
 
@@ -115,14 +110,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('user_id', userId)
         .single();
       
-      if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
-        console.error('Error fetching role:', error);
-        return;
+      if (!error || error.code === 'PGRST116') { // PGRST116 is "not found"
+        setUserRole(data?.role || null);
       }
-      
-      setUserRole(data?.role || null);
     } catch (error) {
-      console.error('Error fetching role:', error);
+      // Silent error handling for role fetch
     }
   };
 
