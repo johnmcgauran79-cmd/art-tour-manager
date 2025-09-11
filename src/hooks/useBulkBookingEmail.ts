@@ -11,7 +11,7 @@ export const useBulkBookingEmail = () => {
       customSubject?: string; 
       customContent?: string; 
     }) => {
-      // Get all bookings with email addresses for this tour
+      // Get all bookings with email addresses for this tour (excluding cancelled bookings)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -19,6 +19,7 @@ export const useBulkBookingEmail = () => {
           customers:lead_passenger_id (email, first_name, last_name)
         `)
         .eq('tour_id', tourId)
+        .neq('status', 'cancelled')
         .not('customers.email', 'is', null);
 
       if (bookingsError) throw bookingsError;

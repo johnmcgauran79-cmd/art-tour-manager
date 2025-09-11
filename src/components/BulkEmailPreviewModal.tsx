@@ -34,7 +34,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     queryFn: async () => {
       if (!tourId) return { count: 0, sampleBooking: null };
       
-      // Get bookings with email addresses for this tour
+      // Get bookings with email addresses for this tour (excluding cancelled bookings)
       const { data: bookingsWithEmails, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -44,6 +44,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           )
         `)
         .eq('tour_id', tourId)
+        .neq('status', 'cancelled')
         .not('customers.email', 'is', null);
 
       if (bookingsError) {
@@ -80,6 +81,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
             )
           `)
           .eq('tour_id', tourId)
+          .neq('status', 'cancelled')
           .not('customers.email', 'is', null)
           .limit(1)
           .maybeSingle();
