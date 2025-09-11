@@ -96,17 +96,24 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     }
   }, [selectedTemplateId, templates, bookingsData?.sampleBooking]);
 
-  // Auto-select default template
+  // Auto-select blank template
   useEffect(() => {
     if (templates && !selectedTemplateId) {
-      const defaultTemplate = templates.find(t => t.is_default);
-      if (defaultTemplate) {
-        setSelectedTemplateId(defaultTemplate.id);
-      } else if (templates.length > 0) {
-        setSelectedTemplateId(templates[0].id);
-      }
+      setSelectedTemplateId("blank");
     }
   }, [templates, selectedTemplateId]);
+
+  // Generate content when template or booking changes
+  useEffect(() => {
+    if (bookingsData?.sampleBooking) {
+      if (selectedTemplateId === "blank") {
+        const customerName = bookingsData.sampleBooking.customers?.first_name || 'Customer';
+        setEditedSubject(`Email for ${customerName}`);
+        setEditedContent(`Dear ${customerName},\n\n\n\nBest regards,\nYour Team`);
+        setPreviewBooking(bookingsData.sampleBooking);
+      }
+    }
+  }, [selectedTemplateId, bookingsData?.sampleBooking]);
 
   const handleSendEmails = async () => {
     if (!tourId || !selectedTemplateId) return;
@@ -147,6 +154,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     <SelectValue placeholder="Select template..." />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="blank">Blank Email</SelectItem>
                     {templates?.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}

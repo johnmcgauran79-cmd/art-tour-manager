@@ -48,7 +48,7 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
               className="flex items-center gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/5"
             >
               <Mail className="h-4 w-4" />
-              Email All Confirmations
+              Email All
             </Button>
             <Button
               onClick={() => setBulkStatusModalOpen(true)}
