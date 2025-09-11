@@ -83,6 +83,27 @@ export const EmailTemplatesManagement = () => {
     ? templates.filter(t => t.type === selectedType)
     : templates;
 
+  // Preprocess old template content for better editor display
+  const preprocessContentForEditor = (content: string) => {
+    if (!content) return content;
+    
+    // Convert common HTML patterns to better formatted content
+    let processedContent = content
+      // Add proper paragraph breaks after closing tags
+      .replace(/<\/p>/g, '</p><br>')
+      .replace(/<\/div>/g, '</div><br>')
+      .replace(/<\/h[1-6]>/g, '$&<br>')
+      // Convert line breaks to proper paragraph breaks
+      .replace(/\n\s*\n/g, '</p><p>')
+      // Clean up multiple consecutive breaks
+      .replace(/(<br>\s*){3,}/g, '<br><br>')
+      // Ensure content starts and ends with proper tags
+      .replace(/^(?!<p>)/, '<p>')
+      .replace(/(?!<\/p>)$/, '</p>');
+    
+    return processedContent;
+  };
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -107,7 +128,7 @@ export const EmailTemplatesManagement = () => {
       name: template.name,
       type: template.type,
       subject_template: template.subject_template,
-      content_template: template.content_template,
+      content_template: preprocessContentForEditor(template.content_template),
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: template.is_default,
@@ -121,7 +142,7 @@ export const EmailTemplatesManagement = () => {
       name: `${template.name} (Copy)`,
       type: template.type,
       subject_template: template.subject_template,
-      content_template: template.content_template,
+      content_template: preprocessContentForEditor(template.content_template),
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: false, // Never duplicate as default
