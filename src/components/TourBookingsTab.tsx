@@ -33,15 +33,6 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
           <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
           <div className="flex items-center gap-2">
             <Button
-              onClick={() => setBulkDietaryModalOpen(true)}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
-            >
-              <Utensils className="h-4 w-4" />
-              Bulk Update Dietary
-            </Button>
-            <Button
               onClick={() => setBulkEmailModalOpen(true)}
               variant="outline"
               size="sm"
@@ -58,6 +49,15 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
             >
               <Users className="h-4 w-4" />
               Bulk Update Status
+            </Button>
+            <Button
+              onClick={() => setBulkDietaryModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
+            >
+              <Utensils className="h-4 w-4" />
+              Bulk Update Dietary
             </Button>
             <Button
               onClick={() => setAddWaitlistModalOpen(true)}
