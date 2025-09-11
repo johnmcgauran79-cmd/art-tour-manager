@@ -25,6 +25,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
+  const [originalSubjectTemplate, setOriginalSubjectTemplate] = useState("");
+  const [originalContentTemplate, setOriginalContentTemplate] = useState("");
   const [previewBooking, setPreviewBooking] = useState<any>(null);
   const [recipientType, setRecipientType] = useState<string>("with_accommodation");
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
@@ -149,6 +151,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
         console.log('Processing template:', template.name);
+        // Store original templates for mail merge
+        setOriginalSubjectTemplate(template.subject_template);
+        setOriginalContentTemplate(template.content_template);
+        
+        // Process for preview only
         const mergeData = EmailTemplateEngine.convertBookingToMergeData(bookingsData.sampleBooking);
         const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
         const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
@@ -178,6 +185,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       if (selectedTemplateId === "blank") {
         const customerName = bookingsData.sampleBooking.customers?.first_name || 'Customer';
         console.log('Setting blank template content for customer:', customerName);
+        // Store original templates for mail merge (with placeholders)
+        setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
+        setOriginalContentTemplate(`Dear {{customer.first_name}},\n\n\n\nBest regards,\nYour Team`);
+        
+        // Set preview content (processed)
         setEditedSubject(`Email for ${customerName}`);
         setEditedContent(`Dear ${customerName},\n\n\n\nBest regards,\nYour Team`);
         setPreviewBooking(bookingsData.sampleBooking);
@@ -195,11 +207,15 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     if (!tourId || !selectedTemplateId || !recipientType) return;
     
     try {
+      // Use original templates with placeholders for mail merge, or edited content if manually modified
+      const subjectTemplate = originalSubjectTemplate || editedSubject;
+      const contentTemplate = originalContentTemplate || editedContent;
+      
       await bulkEmailMutation.mutateAsync({
         tourId,
         recipientType,
-        subjectTemplate: editedSubject,
-        contentTemplate: editedContent,
+        subjectTemplate,
+        contentTemplate,
         fromEmail
       });
       onOpenChange(false);
@@ -293,7 +309,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <Input
                 id="subject"
                 value={editedSubject}
-                onChange={(e) => setEditedSubject(e.target.value)}
+                onChange={(e) => {
+                  setEditedSubject(e.target.value);
+                  // Update original template when manually edited
+                  setOriginalSubjectTemplate(e.target.value);
+                }}
                 placeholder="Email subject..."
               />
             </div>
@@ -304,7 +324,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 <Textarea
                   id="content"
                   value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
+                  onChange={(e) => {
+                    setEditedContent(e.target.value);
+                    // Update original template when manually edited
+                    setOriginalContentTemplate(e.target.value);
+                  }}
                   className="min-h-[300px] border-0 resize-none"
                   placeholder="Email content..."
                 />
