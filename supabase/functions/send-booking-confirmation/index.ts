@@ -14,6 +14,7 @@ interface BookingConfirmationRequest {
   bookingId: string;
   customSubject?: string;
   customContent?: string;
+  fromEmail?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -29,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { bookingId, customSubject, customContent }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail }: BookingConfirmationRequest = await req.json();
 
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
@@ -192,9 +193,10 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     }
 
-    // Send email
+    // Send email - use provided fromEmail, fallback to template from_email, then default
+    const finalFromEmail = fromEmail || template?.from_email || "onboarding@resend.dev";
     const emailResponse = await resend.emails.send({
-      from: template?.from_email ? `Bookings <${template.from_email}>` : "Bookings <onboarding@resend.dev>",
+      from: `Bookings <${finalFromEmail}>`,
       to: [booking.customers.email],
       subject: emailSubject,
       html: emailHtml,

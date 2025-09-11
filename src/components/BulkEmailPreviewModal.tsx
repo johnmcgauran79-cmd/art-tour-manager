@@ -12,6 +12,7 @@ import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplateEngine, type EmailMergeData } from "@/utils/emailTemplateEngine";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BulkEmailPreviewModalProps {
   open: boolean;
@@ -25,9 +26,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [editedContent, setEditedContent] = useState("");
   const [previewBooking, setPreviewBooking] = useState<any>(null);
   const [recipientType, setRecipientType] = useState<string>("with_accommodation");
+  const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   
   const bulkEmailMutation = useBulkBookingEmail();
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
+  const { profile } = useAuth();
 
   // Get bookings with emails for this tour and sample booking for preview
   const { data: bookingsData, isLoading } = useQuery({
@@ -194,7 +197,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         tourId,
         recipientType,
         customSubject: editedSubject,
-        customContent: editedContent
+        customContent: editedContent,
+        fromEmail
       });
       onOpenChange(false);
     } catch (error) {
@@ -218,7 +222,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           </div>
         ) : (
           <div className="flex-1 space-y-4 overflow-hidden">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="template">Email Template:</Label>
                 <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
@@ -248,6 +252,27 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     <SelectItem value="activities_only">
                       {bookingsData?.activityOnlyCount || 0} booking{(bookingsData?.activityOnlyCount || 0) !== 1 ? 's' : ''} with activities only
                     </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>From Email:</Label>
+                <Select value={fromEmail} onValueChange={setFromEmail}>
+                  <SelectTrigger className="bg-background border z-50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="bookings@australianracingtours.com.au">
+                      bookings@australianracingtours.com.au
+                    </SelectItem>
+                    <SelectItem value="info@australianracingtours.com.au">
+                      info@australianracingtours.com.au
+                    </SelectItem>
+                    {profile?.email && (
+                      <SelectItem value={profile.email}>
+                        {profile.email}
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

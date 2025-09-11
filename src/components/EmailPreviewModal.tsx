@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
+import { useAuth } from "@/hooks/useAuth";
 
 interface EmailPreviewModalProps {
   open: boolean;
@@ -31,8 +32,10 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const sendEmail = useSendBookingConfirmation();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
+  const { profile } = useAuth();
 
   // Fetch booking details to generate email preview
   const { data: booking, isLoading } = useQuery({
@@ -120,7 +123,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
       await sendEmail.mutateAsync({
         bookingId,
         customSubject: editedSubject,
-        customContent: editedContent
+        customContent: editedContent,
+        fromEmail
       });
       onOpenChange(false);
     } catch (error) {
@@ -145,7 +149,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
         ) : emailData ? (
           <div className="flex-1 overflow-y-auto max-h-[calc(90vh-120px)]">
             <div className="space-y-4 p-1">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="template">Email Template:</Label>
                 <Select value={selectedTemplateId || ""} onValueChange={setSelectedTemplateId}>
@@ -159,6 +163,27 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                         {template.name}
                       </SelectItem>
                     ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="fromEmail">From Email:</Label>
+                <Select value={fromEmail} onValueChange={setFromEmail}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="bookings@australianracingtours.com.au">
+                      bookings@australianracingtours.com.au
+                    </SelectItem>
+                    <SelectItem value="info@australianracingtours.com.au">
+                      info@australianracingtours.com.au
+                    </SelectItem>
+                    {profile?.email && (
+                      <SelectItem value={profile.email}>
+                        {profile.email}
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>

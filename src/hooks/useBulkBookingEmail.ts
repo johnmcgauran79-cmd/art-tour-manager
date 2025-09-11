@@ -6,11 +6,12 @@ export const useBulkBookingEmail = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, customSubject, customContent }: { 
+    mutationFn: async ({ tourId, recipientType, customSubject, customContent, fromEmail }: { 
       tourId: string; 
       recipientType?: string;
       customSubject?: string; 
       customContent?: string; 
+      fromEmail?: string;
     }) => {
       let bookings;
       
@@ -61,7 +62,8 @@ export const useBulkBookingEmail = () => {
           body: { 
             bookingId: booking.id,
             customSubject,
-            customContent
+            customContent,
+            fromEmail
           }
         });
         if (error) throw error;
