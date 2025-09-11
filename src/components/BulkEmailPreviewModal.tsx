@@ -204,19 +204,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               </ScrollArea>
             </div>
 
-            <div className="bg-muted p-4 rounded-md">
-              <h4 className="font-medium mb-2">Email Preview:</h4>
-              <ScrollArea className="h-40 bg-background p-3 rounded border">
-                <div className="space-y-2">
-                  <div className="text-sm font-medium border-b pb-2">
-                    Subject: {editedSubject}
-                  </div>
-                  <pre className="text-sm whitespace-pre-wrap font-sans">
-                    {editedContent}
-                  </pre>
-                </div>
-              </ScrollArea>
-            </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
               <Button 
