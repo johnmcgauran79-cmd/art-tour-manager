@@ -6,23 +6,50 @@ export const useBulkBookingEmail = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, customSubject, customContent }: { 
+    mutationFn: async ({ tourId, recipientType, customSubject, customContent }: { 
       tourId: string; 
+      recipientType?: string;
       customSubject?: string; 
       customContent?: string; 
     }) => {
-      // Get all bookings with email addresses for this tour (excluding cancelled bookings)
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          customers:lead_passenger_id (email, first_name, last_name)
-        `)
-        .eq('tour_id', tourId)
-        .neq('status', 'cancelled')
-        .not('customers.email', 'is', null);
-
-      if (bookingsError) throw bookingsError;
+      let bookings;
+      
+      if (recipientType === "activities_only") {
+        // Get bookings without accommodation
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            accommodation_required,
+            customers:lead_passenger_id (email, first_name, last_name),
+            hotel_bookings (id)
+          `)
+          .eq('tour_id', tourId)
+          .neq('status', 'cancelled')
+          .eq('accommodation_required', false)
+          .not('customers.email', 'is', null);
+          
+        if (error) throw error;
+        // Filter out any that have hotel bookings
+        bookings = data?.filter(booking => 
+          !booking.hotel_bookings || booking.hotel_bookings.length === 0
+        );
+      } else {
+        // Get bookings with accommodation (default)
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            customers:lead_passenger_id (email, first_name, last_name),
+            hotel_bookings!inner (id)
+          `)
+          .eq('tour_id', tourId)
+          .neq('status', 'cancelled')
+          .not('customers.email', 'is', null);
+          
+        if (error) throw error;
+        bookings = data;
+      }
 
       if (!bookings || bookings.length === 0) {
         throw new Error('No bookings with email addresses found for this tour');

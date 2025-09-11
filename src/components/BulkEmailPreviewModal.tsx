@@ -24,6 +24,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [previewBooking, setPreviewBooking] = useState<any>(null);
+  const [recipientType, setRecipientType] = useState<string>("with_accommodation");
   
   const bulkEmailMutation = useBulkBookingEmail();
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
@@ -34,29 +35,60 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     queryFn: async () => {
       if (!tourId) return { count: 0, sampleBooking: null };
       
-      // Get bookings with email addresses for this tour (excluding cancelled bookings)
-      const { data: bookingsWithEmails, error: bookingsError } = await supabase
+      // Get bookings with accommodation (have hotel_bookings)
+      const { data: accommodationBookings, error: accommError } = await supabase
         .from('bookings')
         .select(`
           id,
+          accommodation_required,
           customers:lead_passenger_id!inner (
             email
+          ),
+          hotel_bookings!inner (
+            id
           )
         `)
         .eq('tour_id', tourId)
         .neq('status', 'cancelled')
         .not('customers.email', 'is', null);
 
-      if (bookingsError) {
-        console.error('Error fetching bookings with emails:', bookingsError);
-        throw bookingsError;
+      // Get bookings without accommodation (no hotel_bookings or accommodation_required = false)
+      const { data: activityOnlyBookings, error: activityError } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          accommodation_required,
+          customers:lead_passenger_id!inner (
+            email
+          ),
+          hotel_bookings (
+            id
+          )
+        `)
+        .eq('tour_id', tourId)
+        .neq('status', 'cancelled')
+        .eq('accommodation_required', false)
+        .not('customers.email', 'is', null);
+
+      if (accommError) {
+        console.error('Error fetching accommodation bookings:', accommError);
+        throw accommError;
+      }
+      if (activityError) {
+        console.error('Error fetching activity-only bookings:', activityError);
+        throw activityError;
       }
 
-      const count = bookingsWithEmails?.length || 0;
+      const accommodationCount = accommodationBookings?.length || 0;
+      const activityOnlyCount = activityOnlyBookings?.filter(booking => 
+        !booking.hotel_bookings || booking.hotel_bookings.length === 0
+      ).length || 0;
 
-      // Get sample booking for preview if we have bookings
+      // Get sample booking based on selected recipient type
       let sampleBooking = null;
-      if (count > 0) {
+      const targetBookings = recipientType === "with_accommodation" ? accommodationBookings : activityOnlyBookings;
+      
+      if (targetBookings && targetBookings.length > 0) {
         const { data, error: sampleError } = await supabase
           .from('bookings')
           .select(`
@@ -80,10 +112,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
             )
           `)
-          .eq('tour_id', tourId)
-          .neq('status', 'cancelled')
-          .not('customers.email', 'is', null)
-          .limit(1)
+          .eq('id', targetBookings[0].id)
           .maybeSingle();
 
         if (sampleError) {
@@ -94,7 +123,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       }
 
       return { 
-        count, 
+        accommodationCount,
+        activityOnlyCount,
         sampleBooking 
       };
     },
@@ -150,12 +180,19 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     }
   }, [selectedTemplateId, bookingsData?.sampleBooking]);
 
+  const getCurrentCount = () => {
+    return recipientType === "with_accommodation" 
+      ? bookingsData?.accommodationCount || 0 
+      : bookingsData?.activityOnlyCount || 0;
+  };
+
   const handleSendEmails = async () => {
-    if (!tourId || !selectedTemplateId) return;
+    if (!tourId || !selectedTemplateId || !recipientType) return;
     
     try {
       await bulkEmailMutation.mutateAsync({
         tourId,
+        recipientType,
         customSubject: editedSubject,
         customContent: editedContent
       });
@@ -185,10 +222,10 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <div>
                 <Label htmlFor="template">Email Template:</Label>
                 <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                  <SelectTrigger>
+                  <SelectTrigger className="bg-background border z-50">
                     <SelectValue placeholder="Select template..." />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border shadow-lg z-50">
                     <SelectItem value="blank">Blank Email</SelectItem>
                     {templates?.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
@@ -200,11 +237,19 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               </div>
               <div>
                 <Label>Recipients:</Label>
-                <div className="flex items-center h-9 px-3 border rounded-md bg-muted">
-                  <span className="text-sm">
-                    {bookingsData?.count || 0} booking{(bookingsData?.count || 0) !== 1 ? 's' : ''}
-                  </span>
-                </div>
+                <Select value={recipientType} onValueChange={setRecipientType}>
+                  <SelectTrigger className="bg-background border z-50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border shadow-lg z-50">
+                    <SelectItem value="with_accommodation">
+                      {bookingsData?.accommodationCount || 0} booking{(bookingsData?.accommodationCount || 0) !== 1 ? 's' : ''} with accommodation
+                    </SelectItem>
+                    <SelectItem value="activities_only">
+                      {bookingsData?.activityOnlyCount || 0} booking{(bookingsData?.activityOnlyCount || 0) !== 1 ? 's' : ''} with activities only
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Preview Based On:</Label>
@@ -250,7 +295,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               </Button>
               <Button
                 onClick={handleSendEmails}
-                disabled={bulkEmailMutation.isPending || isLoading || !bookingsData?.count || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || isLoading || !getCurrentCount() || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {bulkEmailMutation.isPending ? (
@@ -259,7 +304,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     Sending...
                   </>
                 ) : (
-                  `Send ${bookingsData?.count || 0} Email${(bookingsData?.count || 0) !== 1 ? 's' : ''}`
+                  `Send ${getCurrentCount()} Email${getCurrentCount() !== 1 ? 's' : ''}`
                 )}
               </Button>
             </div>
