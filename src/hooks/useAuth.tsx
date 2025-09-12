@@ -72,9 +72,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
+    console.debug('[Auth] Initializing auth listener and session check');
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.debug('[Auth] onAuthStateChange event:', event, { hasSession: !!session });
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -94,10 +96,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
+    // Fallback to ensure we never hang on loading
+    const fallbackTimeout = setTimeout(() => {
+      console.debug('[Auth] Fallback timeout triggered – forcing loading=false');
+      setLoading(false);
+    }, 5000);
+
     // Check for existing session
     const initializeAuth = async () => {
       try {
+        console.debug('[Auth] getSession start');
         const { data: { session } } = await supabase.auth.getSession();
+        console.debug('[Auth] getSession result:', { hasSession: !!session });
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -109,13 +119,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
         setLoading(false);
       } catch (error) {
+        console.debug('[Auth] getSession error, forcing loading=false');
         setLoading(false);
       }
     };
     
     initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.debug('[Auth] Cleaning up auth listener');
+      clearTimeout(fallbackTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
