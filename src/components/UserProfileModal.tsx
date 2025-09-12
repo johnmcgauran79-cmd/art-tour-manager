@@ -26,7 +26,7 @@ const DEPARTMENTS: { value: Department; label: string }[] = [
 
 export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) => {
   const { profile, user } = useAuth();
-  const { data: userDepartments = [] } = useUserDepartments();
+  const { data: userDepartments } = useUserDepartments();
   const updateDepartments = useUpdateUserDepartments();
   const { toast } = useToast();
 
@@ -44,7 +44,11 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   }, [profile?.first_name, profile?.last_name]); // Only depend on the specific fields we're using
 
   useEffect(() => {
-    setSelectedDepartments(userDepartments);
+    if (!userDepartments) return;
+    setSelectedDepartments((prev) => {
+      const same = prev.length === userDepartments.length && prev.every((d) => userDepartments.includes(d));
+      return same ? prev : userDepartments;
+    });
   }, [userDepartments]);
 
   const handleDepartmentChange = (department: Department, checked: boolean) => {
