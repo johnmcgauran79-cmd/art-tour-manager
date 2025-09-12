@@ -497,77 +497,80 @@ export const useMyTasks = () => {
   return useQuery({
     queryKey: ['my-tasks'],
     queryFn: async () => {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) throw new Error('User not authenticated');
+      try {
+        const { data: user } = await supabase.auth.getUser();
+        if (!user.user) {
+          // Auth not ready yet – return empty list instead of throwing to avoid UI errors
+          return [] as Task[];
+        }
 
-      console.log('Fetching my tasks for user:', user.user.id);
+        console.log('Fetching my tasks for user:', user.user.id);
 
-      // First, get user's departments
-      const { data: userDepartments } = await supabase
-        .from('user_departments')
-        .select('department')
-        .eq('user_id', user.user.id);
+        // First, get user's departments
+        const { data: userDepartments, error: deptError } = await supabase
+          .from('user_departments')
+          .select('department')
+          .eq('user_id', user.user.id);
 
-      const departments = userDepartments?.map(d => d.department) || [];
-      console.log('User departments:', departments);
+        if (deptError) {
+          console.warn('Could not fetch user departments, continuing without:', deptError);
+        }
 
-      // Get all tasks with their assignments
-      const { data: allTasks, error } = await supabase
-        .from('tasks')
-        .select(`
-          *,
-          tours (name),
-          task_assignments (user_id),
-          dependent_task:tasks!depends_on_task_id (
-            id, title, status
-          )
-        `)
-        .order('due_date', { ascending: true, nullsFirst: false })
-        .order('priority', { ascending: false })
-        .order('created_at', { ascending: false });
+        const departments = userDepartments?.map(d => d.department) || [];
+        console.log('User departments:', departments);
 
-      if (error) {
-        console.error('Error fetching tasks:', error);
-        throw error;
+        // Get all tasks with their assignments (RLS will restrict rows appropriately)
+        const { data: allTasks, error } = await supabase
+          .from('tasks')
+          .select(`
+            *,
+            tours (name),
+            task_assignments (user_id),
+            dependent_task:tasks!depends_on_task_id (
+              id, title, status
+            )
+          `)
+          .order('due_date', { ascending: true, nullsFirst: false })
+          .order('priority', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching tasks:', error);
+          return [] as Task[];
+        }
+
+        console.log('All tasks fetched:', allTasks?.length);
+
+        // Filter tasks that should be shown to the user
+        const myTasks = allTasks?.filter(task => {
+          // Show tasks created by the user
+          if (task.created_by === user.user.id) return true;
+          
+          // Show tasks assigned to the user
+          if (task.task_assignments && task.task_assignments.some(assignment => assignment.user_id === user.user.id)) return true;
+          
+          // Show tasks that match user's departments (if user has departments)
+          if (departments.length > 0 && departments.includes(task.category)) return true;
+          
+          // Show unassigned tasks only if user belongs to the task's department
+          if ((!task.task_assignments || task.task_assignments.length === 0) && departments.length > 0 && departments.includes(task.category)) return true;
+          
+          return false;
+        }) || [];
+
+        console.log('Filtered my tasks:', myTasks.length);
+
+        // Transform the data to match our Task interface
+        const transformedData = myTasks.map(task => ({
+          ...task,
+          dependent_task: task.dependent_task?.[0] || null
+        }));
+
+        return transformedData as Task[];
+      } catch (e) {
+        console.warn('useMyTasks failed gracefully, returning empty list');
+        return [] as Task[];
       }
-
-      console.log('All tasks fetched:', allTasks?.length);
-
-      // Filter tasks that should be shown to the user
-      const myTasks = allTasks?.filter(task => {
-        // Show tasks created by the user
-        if (task.created_by === user.user.id) {
-          return true;
-        }
-        
-        // Show tasks assigned to the user
-        if (task.task_assignments && task.task_assignments.some(assignment => assignment.user_id === user.user.id)) {
-          return true;
-        }
-        
-        // Show tasks that match user's departments (if user has departments)
-        if (departments.length > 0 && departments.includes(task.category)) {
-          return true;
-        }
-        
-        // Show unassigned tasks (tasks with no assignments) only if user belongs to the task's department
-        if ((!task.task_assignments || task.task_assignments.length === 0) && 
-            departments.length > 0 && departments.includes(task.category)) {
-          return true;
-        }
-        
-        return false;
-      }) || [];
-
-      console.log('Filtered my tasks:', myTasks.length);
-
-      // Transform the data to match our Task interface
-      const transformedData = myTasks.map(task => ({
-        ...task,
-        dependent_task: task.dependent_task?.[0] || null
-      }));
-
-      return transformedData as Task[];
     },
   });
 };

@@ -46,6 +46,7 @@ export const TourDetailModalWithHotelsTab = ({
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [transformedTour, setTransformedTour] = useState<any>(null);
+  const [currentTab, setCurrentTab] = useState(defaultTab);
 
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
@@ -59,6 +60,13 @@ export const TourDetailModalWithHotelsTab = ({
   console.log('TourDetailModal defaultTab received:', defaultTab);
   const actualDefaultTab = defaultTab;
   console.log('TourDetailModal actualDefaultTab set to:', actualDefaultTab);
+
+  // Sync the current tab whenever the modal opens or defaultTab changes
+  useEffect(() => {
+    if (open) {
+      setCurrentTab(defaultTab);
+    }
+  }, [defaultTab, open]);
 
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {
@@ -168,7 +176,7 @@ export const TourDetailModalWithHotelsTab = ({
             </div>
           </DialogHeader>
 
-          <Tabs defaultValue={actualDefaultTab} className={`w-full`}>
+          <Tabs value={currentTab} onValueChange={setCurrentTab} className={`w-full`}>
             <TabsList className={`grid w-full ${canViewOperations ? 'grid-cols-5' : 'grid-cols-4'} bg-gray-50`}>
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
