@@ -63,10 +63,10 @@ export const TourDetailModalWithHotelsTab = ({
 
   // Sync the current tab whenever the modal opens or defaultTab changes
   useEffect(() => {
-    if (open) {
+    if (open && currentTour) {
       setCurrentTab(defaultTab);
     }
-  }, [defaultTab, open]);
+  }, [defaultTab, open, currentTour?.id]);
 
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {
@@ -144,6 +144,11 @@ export const TourDetailModalWithHotelsTab = ({
     setSelectedHotel(hotel);
     setBulkEditModalOpen(true);
   };
+
+  // Don't render modal content if no tour is provided
+  if (!currentTour) {
+    return null;
+  }
 
   return (
     <>

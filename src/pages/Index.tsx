@@ -172,12 +172,14 @@ const Index = () => {
         </Tabs>
       </div>
 
-      <TourDetailModalWithHotelsTab
-        tour={selectedTour}
-        open={tourModalOpen}
-        onOpenChange={setTourModalOpen}
-        defaultTab={tourModalDefaultTab}
-      />
+      {selectedTour && (
+        <TourDetailModalWithHotelsTab
+          tour={selectedTour}
+          open={tourModalOpen}
+          onOpenChange={setTourModalOpen}
+          defaultTab={tourModalDefaultTab}
+        />
+      )}
 
       <EditBookingModal
         booking={selectedBooking}
