@@ -35,21 +35,20 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fix the infinite re-render issue by properly managing dependencies
+  // Only update form fields when modal opens or profile data actually changes
   useEffect(() => {
-    if (profile) {
+    if (open && profile) {
       setFirstName(profile.first_name || '');
       setLastName(profile.last_name || '');
     }
-  }, [profile?.first_name, profile?.last_name]); // Only depend on the specific fields we're using
+  }, [open, profile?.first_name, profile?.last_name]);
 
+  // Only update departments when modal opens or departments data changes
   useEffect(() => {
-    if (!userDepartments) return;
-    setSelectedDepartments((prev) => {
-      const same = prev.length === userDepartments.length && prev.every((d) => userDepartments.includes(d));
-      return same ? prev : userDepartments;
-    });
-  }, [userDepartments]);
+    if (open && userDepartments) {
+      setSelectedDepartments(userDepartments);
+    }
+  }, [open, userDepartments]);
 
   const handleDepartmentChange = (department: Department, checked: boolean) => {
     if (checked) {
