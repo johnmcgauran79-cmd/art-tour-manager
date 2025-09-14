@@ -44,14 +44,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
+      
+      console.log('[Auth] Profile fetch result:', { data, error });
       
       if (!error && data) {
         setProfile(data);
         setMustChangePassword(data?.must_change_password || false);
+      } else if (error) {
+        console.log('[Auth] Profile fetch error:', error);
       }
     } catch (error) {
-      // Silent error handling for profile fetch
+      console.log('[Auth] Profile fetch exception:', error);
     }
   };
 
@@ -85,17 +89,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     console.log('[Auth] Initializing auth listener and session check');
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('[Auth] onAuthStateChange event:', event, { hasSession: !!session, userId: session?.user?.id });
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile and role in parallel
-          await Promise.all([
-            fetchUserProfile(session.user.id),
-            fetchUserRole(session.user.id)
-          ]);
+          // Defer Supabase calls with setTimeout to prevent deadlock
+          setTimeout(() => {
+            Promise.all([
+              fetchUserProfile(session.user.id),
+              fetchUserRole(session.user.id)
+            ]);
+          }, 0);
         } else {
           setProfile(null);
           setUserRole(null);
