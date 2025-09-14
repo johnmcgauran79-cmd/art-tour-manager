@@ -498,9 +498,12 @@ export const useMyTasks = () => {
     queryKey: ['my-tasks'],
     queryFn: async () => {
       try {
+        console.log('[useMyTasks] Starting query...');
         const { data: user } = await supabase.auth.getUser();
+        console.log('[useMyTasks] Auth user:', { hasUser: !!user.user, userId: user.user?.id });
         if (!user.user) {
           // Auth not ready yet – return empty list instead of throwing to avoid UI errors
+          console.log('[useMyTasks] No user found, returning empty array');
           return [] as Task[];
         }
 

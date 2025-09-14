@@ -43,13 +43,22 @@ const Index = () => {
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   
 
-  const { userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
   const isAdmin = userRole === 'admin';
 
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
   const { data: tasks = [] } = useTasks();
+
+  // Debug logging
+  console.log('[Index] Data status:', { 
+    user: user?.id, 
+    userRole, 
+    tours: tours.length, 
+    bookings: bookings.length, 
+    tasks: tasks.length 
+  });
 
   // Handle navigation from notifications - stay on current tab
   const handleNavigateToItem = (type: string, itemId: string, hotelId?: string) => {

@@ -46,10 +46,13 @@ export const useTours = () => {
   return useQuery({
     queryKey: ['tours'],
     queryFn: async () => {
+      console.log('[useTours] Starting query...');
       const { data, error } = await supabase
         .from('tours')
         .select('*')
         .order('start_date', { ascending: true });
+
+      console.log('[useTours] Query result:', { hasData: !!data, dataLength: data?.length, error });
       
       if (error) throw error;
       return data as Tour[];

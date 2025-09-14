@@ -55,6 +55,7 @@ export const useBookings = () => {
   return useQuery({
     queryKey: ['bookings'],
     queryFn: async () => {
+      console.log('[useBookings] Starting query...');
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -64,6 +65,7 @@ export const useBookings = () => {
         `)
         .order('created_at', { ascending: false });
       
+      console.log('[useBookings] Query result:', { hasData: !!data, dataLength: data?.length, error });
       if (error) throw error;
       return data;
     },

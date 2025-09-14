@@ -145,8 +145,8 @@ export const TourDetailModalWithHotelsTab = ({
     setBulkEditModalOpen(true);
   };
 
-  // Don't render modal content if no tour is provided
-  if (!currentTour) {
+  // Don't render modal content if no tour is provided or modal is not open
+  if (!open || !currentTour) {
     return null;
   }
 
