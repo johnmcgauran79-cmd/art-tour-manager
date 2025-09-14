@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { UserDropdown } from "@/components/UserDropdown";
+import { DateTimeDisplay } from "./DateTimeDisplay";
 interface DashboardHeaderProps {
   isAdmin: boolean;
 }
@@ -27,7 +28,8 @@ export const DashboardHeader = ({
               </p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-6">
+            <DateTimeDisplay />
             <UserDropdown />
           </div>
         </div>
