@@ -3,14 +3,14 @@ import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
 const DEFAULT_TIMEZONES = [
-  { code: 'DRW', name: 'Darwin', timezone: 'Australia/Darwin' },
-  { code: 'BRIS', name: 'Brisbane', timezone: 'Australia/Brisbane' },
-  { code: 'LON', name: 'London', timezone: 'Europe/London' },
-  { code: 'HK', name: 'Hong Kong', timezone: 'Asia/Hong_Kong' },
-  { code: 'TKY', name: 'Tokyo', timezone: 'Asia/Tokyo' },
+  { code: 'DRW', name: 'Darwin', timezone: 'Australia/Darwin', utc: '+9:30' },
+  { code: 'BRIS', name: 'Brisbane', timezone: 'Australia/Brisbane', utc: '+10' },
+  { code: 'LON', name: 'London', timezone: 'Europe/London', utc: '+0/+1' },
+  { code: 'HK', name: 'Hong Kong', timezone: 'Asia/Hong_Kong', utc: '+8' },
+  { code: 'TKY', name: 'Tokyo', timezone: 'Asia/Tokyo', utc: '+9' },
 ];
 
-const MELBOURNE_TIMEZONE = { code: 'MEL', name: 'Melbourne', timezone: 'Australia/Melbourne' };
+const MELBOURNE_TIMEZONE = { code: 'MEL', name: 'Melbourne', timezone: 'Australia/Melbourne', utc: '+10/+11' };
 const STORAGE_KEY = 'dashboard-timezones';
 
 export const DateTimeDisplay = () => {
