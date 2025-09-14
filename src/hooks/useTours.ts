@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { useAuth } from "@/hooks/useAuth";
 
 
 export interface Tour {
@@ -43,6 +44,8 @@ export interface Tour {
 // Manual notifications removed - now handled by centralized notification system
 
 export const useTours = () => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['tours'],
     queryFn: async () => {
@@ -65,6 +68,7 @@ export const useTours = () => {
         throw error;
       }
     },
+    enabled: !!user, // Wait for authentication
   });
 };
 

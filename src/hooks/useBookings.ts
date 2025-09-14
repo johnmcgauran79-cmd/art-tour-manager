@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Booking {
   id: string;
@@ -52,6 +53,8 @@ const calculateNights = (checkIn: string | null, checkOut: string | null): numbe
 };
 
 export const useBookings = () => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['bookings'],
     queryFn: async () => {
@@ -77,6 +80,7 @@ export const useBookings = () => {
         throw error;
       }
     },
+    enabled: !!user, // Wait for authentication
   });
 };
 

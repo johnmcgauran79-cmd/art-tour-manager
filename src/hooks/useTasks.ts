@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { useAuth } from "@/hooks/useAuth";
 
 export interface Task {
   id: string;
@@ -433,6 +434,8 @@ export const useTasks = (tourId?: string, filters?: {
   startDate?: string;
   endDate?: string;
 }) => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['tasks', tourId, filters],
     queryFn: async () => {
@@ -490,6 +493,7 @@ export const useTasks = (tourId?: string, filters?: {
 
       return transformedData as Task[];
     },
+    enabled: !!user, // Wait for authentication
   });
 };
 
