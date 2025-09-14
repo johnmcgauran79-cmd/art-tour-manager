@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings, Database, Mail, Shield, Users, FileText } from "lucide-react";
+import { TimezoneSettings } from "./TimezoneSettings";
 
 interface SystemSettingsProps {
   onShowUserManagement?: () => void;
@@ -13,6 +14,11 @@ export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: Syste
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         
+        {/* Timezone Settings */}
+        <div className="md:col-span-2 lg:col-span-3">
+          <TimezoneSettings />
+        </div>
+
         {/* General Settings */}
         <Card>
           <CardHeader>
@@ -23,7 +29,7 @@ export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: Syste
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="text-sm text-muted-foreground">
-              Configure global application settings, time zones, and default preferences.
+              Configure global application settings and default preferences.
             </div>
             <Button variant="outline" size="sm" disabled>
               Configure

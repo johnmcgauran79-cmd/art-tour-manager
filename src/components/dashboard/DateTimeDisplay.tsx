@@ -2,17 +2,20 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 
-const timezones = [
-  { code: 'MEL', timezone: 'Australia/Melbourne' },
-  { code: 'DRW', timezone: 'Australia/Darwin' },
-  { code: 'BRIS', timezone: 'Australia/Brisbane' },
-  { code: 'LON', timezone: 'Europe/London' },
-  { code: 'HK', timezone: 'Asia/Hong_Kong' },
-  { code: 'TKY', timezone: 'Asia/Tokyo' },
+const DEFAULT_TIMEZONES = [
+  { code: 'DRW', name: 'Darwin', timezone: 'Australia/Darwin' },
+  { code: 'BRIS', name: 'Brisbane', timezone: 'Australia/Brisbane' },
+  { code: 'LON', name: 'London', timezone: 'Europe/London' },
+  { code: 'HK', name: 'Hong Kong', timezone: 'Asia/Hong_Kong' },
+  { code: 'TKY', name: 'Tokyo', timezone: 'Asia/Tokyo' },
 ];
+
+const MELBOURNE_TIMEZONE = { code: 'MEL', name: 'Melbourne', timezone: 'Australia/Melbourne' };
+const STORAGE_KEY = 'dashboard-timezones';
 
 export const DateTimeDisplay = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [timezones, setTimezones] = useState([MELBOURNE_TIMEZONE, ...DEFAULT_TIMEZONES]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -20,6 +23,30 @@ export const DateTimeDisplay = () => {
     }, 1000);
 
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const loadTimezones = () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const selectedTimezones = JSON.parse(saved);
+          setTimezones([MELBOURNE_TIMEZONE, ...selectedTimezones]);
+        } catch (error) {
+          console.error('Failed to parse saved timezones:', error);
+        }
+      }
+    };
+
+    loadTimezones();
+
+    // Listen for timezone updates
+    const handleTimezoneUpdate = () => {
+      loadTimezones();
+    };
+
+    window.addEventListener('timezones-updated', handleTimezoneUpdate);
+    return () => window.removeEventListener('timezones-updated', handleTimezoneUpdate);
   }, []);
 
   const formattedDate = format(currentTime, 'EEEE d MMMM yyyy');
