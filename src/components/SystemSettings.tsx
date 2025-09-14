@@ -4,14 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings, Database, Mail, Shield, Users, FileText } from "lucide-react";
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
+import { UserManagementModal } from "./UserManagementModal";
+import { SystemLogModal } from "./SystemLogModal";
 
 interface SystemSettingsProps {
-  onShowUserManagement?: () => void;
-  onShowSystemLogs?: () => void;
+  // Remove the external handlers since we'll handle modals internally
 }
 
-export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: SystemSettingsProps) => {
+export const SystemSettings = ({ }: SystemSettingsProps) => {
   const [generalSettingsOpen, setGeneralSettingsOpen] = useState(false);
+  const [userManagementOpen, setUserManagementOpen] = useState(false);
+  const [systemLogOpen, setSystemLogOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -111,8 +114,7 @@ export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: Syste
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={onShowUserManagement}
-              disabled={!onShowUserManagement}
+              onClick={() => setUserManagementOpen(true)}
             >
               Manage Users
             </Button>
@@ -134,8 +136,7 @@ export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: Syste
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={onShowSystemLogs}
-              disabled={!onShowSystemLogs}
+              onClick={() => setSystemLogOpen(true)}
             >
               View Logs
             </Button>
@@ -174,6 +175,16 @@ export const SystemSettings = ({ onShowUserManagement, onShowSystemLogs }: Syste
       <GeneralSettingsModal 
         open={generalSettingsOpen} 
         onOpenChange={setGeneralSettingsOpen} 
+      />
+      
+      <UserManagementModal 
+        open={userManagementOpen} 
+        onOpenChange={setUserManagementOpen} 
+      />
+      
+      <SystemLogModal 
+        open={systemLogOpen} 
+        onOpenChange={setSystemLogOpen} 
       />
     </div>
   );

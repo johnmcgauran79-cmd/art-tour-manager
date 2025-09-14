@@ -9,11 +9,9 @@ import { SystemSettings } from "@/components/SystemSettings";
 
 interface SettingsProps {
   onBack: () => void;
-  onShowUserManagement?: () => void;
-  onShowSystemLogs?: () => void;
 }
 
-export const Settings = ({ onBack, onShowUserManagement, onShowSystemLogs }: SettingsProps) => {
+export const Settings = ({ onBack }: SettingsProps) => {
   const [activeTab, setActiveTab] = useState("email-templates");
 
   return (
@@ -62,10 +60,7 @@ export const Settings = ({ onBack, onShowUserManagement, onShowSystemLogs }: Set
               </p>
             </CardHeader>
             <CardContent>
-            <SystemSettings 
-              onShowUserManagement={onShowUserManagement}
-              onShowSystemLogs={onShowSystemLogs}
-            />
+            <SystemSettings />
             </CardContent>
           </Card>
         </TabsContent>

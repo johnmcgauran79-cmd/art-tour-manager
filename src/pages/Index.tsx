@@ -14,7 +14,6 @@ import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
 import { SystemLogModal } from "@/components/SystemLogModal";
-import { UserManagement } from "@/components/UserManagement";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -39,7 +38,6 @@ const Index = () => {
   const [addContactModalOpen, setAddContactModalOpen] = useState(false);
   const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
-  const [showUserManagement, setShowUserManagement] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   
 
@@ -116,10 +114,6 @@ const Index = () => {
     window.dispatchEvent(event);
   };
 
-  if (showUserManagement && isAdmin) {
-    return <UserManagement onClose={() => setShowUserManagement(false)} />;
-  }
-
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -173,8 +167,6 @@ const Index = () => {
             <TabsContent value="settings" className="space-y-4">
               <Settings 
                 onBack={() => setActiveTab("dashboard")}
-                onShowUserManagement={() => setShowUserManagement(true)}
-                onShowSystemLogs={() => setSystemLogModalOpen(true)}
               />
             </TabsContent>
           )}
