@@ -66,14 +66,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       console.log('[Auth] User role query result:', { data, error });
       
-      if (error && error.code !== 'PGRST116') {
-        console.log('[Auth] Role fetch error:', error);
-        setUserRole(null);
-      } else {
-        const role = data?.role || null;
-        console.log('[Auth] Setting user role to:', role);
-        setUserRole(role);
+      if (error) {
+        console.log('[Auth] Role fetch error:', error.message, error.code);
+        if (error.code !== 'PGRST116') { // PGRST116 = no rows found
+          setUserRole(null);
+          return;
+        }
       }
+      
+      const role = data?.role || null;
+      console.log('[Auth] Setting user role to:', role);
+      setUserRole(role);
     } catch (error) {
       console.log('[Auth] Role fetch exception:', error);
       setUserRole(null);

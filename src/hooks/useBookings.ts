@@ -56,18 +56,26 @@ export const useBookings = () => {
     queryKey: ['bookings'],
     queryFn: async () => {
       console.log('[useBookings] Starting query...');
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          tours (name),
-          customers (id, first_name, last_name, email, phone, dietary_requirements)
-        `)
-        .order('created_at', { ascending: false });
-      
-      console.log('[useBookings] Query result:', { hasData: !!data, dataLength: data?.length, error });
-      if (error) throw error;
-      return data;
+      try {
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            tours (name),
+            customers (id, first_name, last_name, email, phone, dietary_requirements)
+          `)
+          .order('created_at', { ascending: false });
+        
+        console.log('[useBookings] Query result:', { hasData: !!data, dataLength: data?.length, error: error?.message });
+        if (error) {
+          console.log('[useBookings] Query error details:', error);
+          throw error;
+        }
+        return data;
+      } catch (error) {
+        console.log('[useBookings] Exception in query:', error);
+        throw error;
+      }
     },
   });
 };

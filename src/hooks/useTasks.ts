@@ -516,11 +516,11 @@ export const useMyTasks = () => {
           .eq('user_id', user.user.id);
 
         if (deptError) {
-          console.warn('Could not fetch user departments, continuing without:', deptError);
+          console.warn('[useMyTasks] Could not fetch user departments:', deptError.message);
         }
 
         const departments = userDepartments?.map(d => d.department) || [];
-        console.log('User departments:', departments);
+        console.log('[useMyTasks] User departments:', departments);
 
         // Get all tasks with their assignments (RLS will restrict rows appropriately)
         const { data: allTasks, error } = await supabase
@@ -537,8 +537,9 @@ export const useMyTasks = () => {
           .order('priority', { ascending: false })
           .order('created_at', { ascending: false });
 
+        console.log('[useMyTasks] Tasks query result:', { hasData: !!allTasks, dataLength: allTasks?.length, error: error?.message });
         if (error) {
-          console.error('Error fetching tasks:', error);
+          console.error('[useMyTasks] Error fetching tasks:', error);
           return [] as Task[];
         }
 

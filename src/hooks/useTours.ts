@@ -47,15 +47,23 @@ export const useTours = () => {
     queryKey: ['tours'],
     queryFn: async () => {
       console.log('[useTours] Starting query...');
-      const { data, error } = await supabase
-        .from('tours')
-        .select('*')
-        .order('start_date', { ascending: true });
+      try {
+        const { data, error } = await supabase
+          .from('tours')
+          .select('*')
+          .order('start_date', { ascending: true });
 
-      console.log('[useTours] Query result:', { hasData: !!data, dataLength: data?.length, error });
-      
-      if (error) throw error;
-      return data as Tour[];
+        console.log('[useTours] Query result:', { hasData: !!data, dataLength: data?.length, error: error?.message });
+        
+        if (error) {
+          console.log('[useTours] Query error details:', error);
+          throw error;
+        }
+        return data as Tour[];
+      } catch (error) {
+        console.log('[useTours] Exception in query:', error);
+        throw error;
+      }
     },
   });
 };
