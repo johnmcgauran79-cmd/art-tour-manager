@@ -57,17 +57,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchUserRole = async (userId: string) => {
     try {
+      console.log('[Auth] Fetching user role for:', userId);
       const { data, error } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
         .single();
       
-      if (!error || error.code === 'PGRST116') { // PGRST116 is "not found"
-        setUserRole(data?.role || null);
+      console.log('[Auth] User role query result:', { data, error });
+      
+      if (error && error.code !== 'PGRST116') {
+        console.log('[Auth] Role fetch error:', error);
+        setUserRole(null);
+      } else {
+        const role = data?.role || null;
+        console.log('[Auth] Setting user role to:', role);
+        setUserRole(role);
       }
     } catch (error) {
-      // Silent error handling for role fetch
+      console.log('[Auth] Role fetch exception:', error);
+      setUserRole(null);
     }
   };
 
