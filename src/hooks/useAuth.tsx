@@ -100,7 +100,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const fallbackTimeout = setTimeout(() => {
       console.debug('[Auth] Fallback timeout triggered – forcing loading=false');
       setLoading(false);
-    }, 3000);
+    }, 5000);
 
     // Check for existing session
     const initializeAuth = async () => {

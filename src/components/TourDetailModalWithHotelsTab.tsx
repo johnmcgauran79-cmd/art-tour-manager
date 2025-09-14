@@ -61,12 +61,12 @@ export const TourDetailModalWithHotelsTab = ({
   const actualDefaultTab = defaultTab;
   console.log('TourDetailModal actualDefaultTab set to:', actualDefaultTab);
 
-  // Only sync tab when modal opens with a valid tour
+  // Sync the current tab whenever the modal opens or defaultTab changes
   useEffect(() => {
-    if (open && currentTour) {
+    if (open) {
       setCurrentTab(defaultTab);
     }
-  }, [defaultTab, open, currentTour?.id]);
+  }, [defaultTab, open]);
 
   useEffect(() => {
     console.log('Hotels tab tour data transformation triggered:', {

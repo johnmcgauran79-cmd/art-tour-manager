@@ -35,20 +35,28 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Only update form fields when modal opens or profile data actually changes
+  // Only sync form data when modal opens to prevent infinite re-renders
   useEffect(() => {
-    if (open && profile) {
-      setFirstName(profile.first_name || '');
-      setLastName(profile.last_name || '');
+    if (open) {
+      console.log('[UserProfileModal] Modal opened, syncing data');
+      if (profile) {
+        setFirstName(profile.first_name || '');
+        setLastName(profile.last_name || '');
+      }
+      if (userDepartments) {
+        setSelectedDepartments(userDepartments);
+      }
     }
-  }, [open, profile?.first_name, profile?.last_name]);
+  }, [open]); // Only depend on modal opening
 
-  // Only update departments when modal opens or departments data changes
+  // Reset form when modal closes
   useEffect(() => {
-    if (open && userDepartments) {
-      setSelectedDepartments(userDepartments);
+    if (!open) {
+      setFirstName('');
+      setLastName('');
+      setSelectedDepartments([]);
     }
-  }, [open, userDepartments]);
+  }, [open]);
 
   const handleDepartmentChange = (department: Department, checked: boolean) => {
     if (checked) {
