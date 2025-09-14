@@ -498,26 +498,27 @@ export const useTasks = (tourId?: string, filters?: {
 };
 
 export const useMyTasks = () => {
+  const { user } = useAuth();
+  
   return useQuery({
     queryKey: ['my-tasks'],
     queryFn: async () => {
       try {
         console.log('[useMyTasks] Starting query...');
-        const { data: user } = await supabase.auth.getUser();
-        console.log('[useMyTasks] Auth user:', { hasUser: !!user.user, userId: user.user?.id });
-        if (!user.user) {
-          // Auth not ready yet – return empty list instead of throwing to avoid UI errors
+        console.log('[useMyTasks] Auth user:', { hasUser: !!user, userId: user?.id });
+        
+        if (!user?.id) {
           console.log('[useMyTasks] No user found, returning empty array');
           return [] as Task[];
         }
 
-        console.log('Fetching my tasks for user:', user.user.id);
+        console.log('Fetching my tasks for user:', user.id);
 
         // First, get user's departments
         const { data: userDepartments, error: deptError } = await supabase
           .from('user_departments')
           .select('department')
-          .eq('user_id', user.user.id);
+          .eq('user_id', user.id);
 
         if (deptError) {
           console.warn('[useMyTasks] Could not fetch user departments:', deptError.message);
@@ -552,10 +553,10 @@ export const useMyTasks = () => {
         // Filter tasks that should be shown to the user
         const myTasks = allTasks?.filter(task => {
           // Show tasks created by the user
-          if (task.created_by === user.user.id) return true;
+          if (task.created_by === user.id) return true;
           
           // Show tasks assigned to the user
-          if (task.task_assignments && task.task_assignments.some(assignment => assignment.user_id === user.user.id)) return true;
+          if (task.task_assignments && task.task_assignments.some(assignment => assignment.user_id === user.id)) return true;
           
           // Show tasks that match user's departments (if user has departments)
           if (departments.length > 0 && departments.includes(task.category)) return true;
@@ -580,5 +581,6 @@ export const useMyTasks = () => {
         return [] as Task[];
       }
     },
+    enabled: !!user, // Wait for authentication
   });
 };
