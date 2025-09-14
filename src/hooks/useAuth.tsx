@@ -62,16 +62,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       console.log('[Auth] User role query result:', { data, error });
       
       if (error) {
         console.log('[Auth] Role fetch error:', error.message, error.code);
-        if (error.code !== 'PGRST116') { // PGRST116 = no rows found
-          setUserRole(null);
-          return;
-        }
+        setUserRole(null);
+        return;
       }
       
       const role = data?.role || null;
