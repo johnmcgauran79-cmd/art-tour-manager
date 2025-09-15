@@ -51,6 +51,9 @@ export const TaskCard = ({ task, showTourName = false, onTaskClick }: TaskCardPr
 
   const handleMarkComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    if (updateTask.isPending) return;
+    
     updateTask.mutate({
       taskId: task.id,
       updates: { status: 'completed' }

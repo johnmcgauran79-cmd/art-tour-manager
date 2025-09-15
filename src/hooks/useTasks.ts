@@ -287,40 +287,15 @@ export const useUpdateTask = () => {
       taskId: string;
       updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>> & { tour_id?: string | null };
     }) => {
-      console.log('Starting task update mutation with data:', data);
-
       // First verify the user is authenticated
       const { data: user, error: authError } = await supabase.auth.getUser();
       if (authError) {
-        console.error('Authentication error:', authError);
         throw new Error('Authentication failed. Please log in again.');
       }
       
       if (!user.user) {
-        console.error('No authenticated user found');
         throw new Error('You must be logged in to update tasks.');
       }
-      
-      console.log('Authenticated user:', user.user.id);
-
-      // Verify the task exists and user has permission
-      const { data: taskExists, error: taskError } = await supabase
-        .from('tasks')
-        .select('id, created_by')
-        .eq('id', data.taskId)
-        .maybeSingle();
-
-      if (taskError) {
-        console.error('Error checking task existence:', taskError);
-        throw new Error(`Failed to verify task exists: ${taskError.message}`);
-      }
-
-      if (!taskExists) {
-        console.error('Task not found for update:', data.taskId);
-        throw new Error('Task not found. Cannot update non-existent task.');
-      }
-      
-      console.log('Task found, created by:', taskExists.created_by);
 
       const updateData = { ...data.updates };
       
@@ -329,8 +304,7 @@ export const useUpdateTask = () => {
         updateData.completed_at = new Date().toISOString();
       }
       
-      // First, perform the update and return the updated data
-      console.log('Attempting database update with data:', updateData);
+      // Perform the update with a single database call
       const { data: updatedTask, error: updateError } = await supabase
         .from('tasks')
         .update(updateData)
@@ -339,65 +313,21 @@ export const useUpdateTask = () => {
         .single();
 
       if (updateError) {
-        console.error('Task update error:', updateError);
         throw new Error(`Failed to update task: ${updateError.message}`);
       }
       
       if (!updatedTask) {
-        console.error('No data returned from update - RLS permission denied');
         throw new Error('Failed to update task - you may not have permission to modify this task');
       }
-      
-      console.log('Database update successful:', updatedTask);
 
-      // Verify the update persisted by checking the database again
-      console.log('Verifying update persisted in database...');
-      const { data: verifyTask, error: verifyError } = await supabase
-        .from('tasks')
-        .select('id, status, updated_at')
-        .eq('id', data.taskId)
-        .maybeSingle();
-      
-      if (!verifyError && verifyTask) {
-        console.log('Database verification successful:', verifyTask);
-      } else {
-        console.log('Database verification failed or no access:', verifyError);
-      }
-
-      // Then fetch the updated task to verify
-      console.log('Fetching updated task to verify...');
-      const { data: task, error: selectError } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', data.taskId)
-        .maybeSingle();
-
-      if (selectError) {
-        console.error('Task select error after update:', selectError);
-        // Don't throw here - the update might have succeeded
-        console.log('Update likely succeeded despite select error');
-        return { id: data.taskId, ...updateData };
-      }
-
-      if (!task) {
-        console.error('No task found after update - might be RLS policy issue');
-        // Even if we can't fetch the task, the update succeeded
-        console.log('Returning update data as task was likely updated successfully');
-        return { id: data.taskId, ...updateData };
-      }
-
-      console.log('Task fetched successfully after update:', task);
-
-      return task;
+      return updatedTask;
     },
     onSuccess: (task, variables) => {
-      console.log('Task update successful, invalidating all task queries...');
-      
-      // Invalidate all task-related queries
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      
-      console.log('Cache invalidation complete');
+      // Use setTimeout to defer cache invalidation and prevent race conditions
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
+      }, 100);
       
       toast({
         title: "Task Updated",
@@ -416,13 +346,14 @@ export const useUpdateTask = () => {
       });
     },
     onError: (error) => {
-      console.error('Error updating task:', error);
       toast({
         title: "Error",
         description: "Failed to update task. Please try again.",
         variant: "destructive",
       });
     },
+    retry: 1,
+    retryDelay: 500,
   });
 };
 

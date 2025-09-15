@@ -71,6 +71,9 @@ export const TasksTable = ({
 
   const handleMarkComplete = (e: React.MouseEvent, taskId: string) => {
     e.stopPropagation();
+    
+    if (updateTask.isPending) return;
+    
     updateTask.mutate({
       taskId: taskId,
       updates: { status: 'completed' }

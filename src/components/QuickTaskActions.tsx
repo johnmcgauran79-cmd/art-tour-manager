@@ -36,23 +36,13 @@ export const QuickTaskActions = ({ task, onTaskClick }: QuickTaskActionsProps) =
 
   const handleMarkComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('QuickTaskActions: handleMarkComplete clicked for task:', task.id);
     
-    try {
-      updateTask.mutate({
-        taskId: task.id,
-        updates: { status: 'completed' }
-      }, {
-        onError: (error) => {
-          console.error('QuickTaskActions: Update task error:', error);
-        },
-        onSuccess: (data) => {
-          console.log('QuickTaskActions: Update task success:', data);
-        }
-      });
-    } catch (error) {
-      console.error('QuickTaskActions: Exception in handleMarkComplete:', error);
-    }
+    if (updateTask.isPending) return;
+    
+    updateTask.mutate({
+      taskId: task.id,
+      updates: { status: 'completed' }
+    });
   };
 
   const handleStatusChange = (status: string, e: React.MouseEvent) => {
