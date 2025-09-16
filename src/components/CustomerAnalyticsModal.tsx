@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCustomerAnalytics, useCustomerLifetimeStats, CustomerAnalytics } from "@/hooks/useCustomerAnalytics";
+import { useCustomerById } from "@/hooks/useCustomers";
+import { EditContactModal } from "./EditContactModal";
 import { Search, TrendingUp, Users, DollarSign, Repeat } from "lucide-react";
 import { format } from "date-fns";
 
@@ -18,9 +20,12 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<keyof CustomerAnalytics>("total_revenue");
   const [filterType, setFilterType] = useState<"all" | "repeat" | "single">("all");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const { data: analytics, isLoading } = useCustomerAnalytics();
   const { data: stats } = useCustomerLifetimeStats();
+  const { data: selectedCustomer } = useCustomerById(selectedCustomerId);
 
   const filteredAnalytics = analytics?.filter(customer => {
     const matchesSearch = 
@@ -42,6 +47,16 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
   });
 
   const formatCurrency = (amount: number) => `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const handleCustomerClick = (customerId: string) => {
+    setSelectedCustomerId(customerId);
+    setEditModalOpen(true);
+  };
+
+  const handleContactUpdated = () => {
+    // Optionally refresh analytics data
+    // The query will automatically refetch due to invalidation in the update mutation
+  };
 
   if (isLoading) {
     return (
@@ -170,7 +185,11 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
             </TableHeader>
             <TableBody>
               {filteredAnalytics?.map((customer) => (
-                <TableRow key={customer.customer_id}>
+                <TableRow 
+                  key={customer.customer_id}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleCustomerClick(customer.customer_id)}
+                >
                   <TableCell>
                     <div>
                       <div className="font-medium">
@@ -230,6 +249,16 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
           </div>
         )}
       </DialogContent>
+
+      {/* Edit Contact Modal */}
+      {selectedCustomer && (
+        <EditContactModal
+          contact={selectedCustomer}
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          onContactUpdated={handleContactUpdated}
+        />
+      )}
     </Dialog>
   );
 };

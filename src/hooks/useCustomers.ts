@@ -107,6 +107,29 @@ export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] =
   return duplicateGroups;
 };
 
+export const useCustomerById = (id: string | null) => {
+  return useQuery({
+    queryKey: ['customer', id],
+    queryFn: async () => {
+      if (!id) return null;
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching customer:', error);
+        throw error;
+      }
+      
+      return data as Customer;
+    },
+    enabled: !!id,
+  });
+};
+
 export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuery?: string) => {
   return useQuery({
     queryKey: ['customers', page, pageSize, searchQuery],
