@@ -216,11 +216,6 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
                           {customer.status_breakdown.pending} Pending
                         </Badge>
                       )}
-                      {customer.status_breakdown.host > 0 && (
-                        <Badge variant="outline" className="mr-1">
-                          {customer.status_breakdown.host} Host
-                        </Badge>
-                      )}
                     </div>
                   </TableCell>
                 </TableRow>

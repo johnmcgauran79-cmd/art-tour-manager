@@ -16,7 +16,6 @@ export interface CustomerAnalytics {
   status_breakdown: {
     completed: number;
     pending: number;
-    host: number;
     cancelled: number;
   };
 }
@@ -52,6 +51,11 @@ export const useCustomerAnalytics = () => {
       const customerMap = new Map<string, any>();
 
       data.forEach((booking: any) => {
+        // Skip host bookings as they are staff, not customers
+        if (booking.status === 'host') {
+          return;
+        }
+
         const customerId = booking.lead_passenger_id;
         const customer = booking.customers;
         
@@ -67,7 +71,6 @@ export const useCustomerAnalytics = () => {
             status_breakdown: {
               completed: 0,
               pending: 0,
-              host: 0,
               cancelled: 0
             }
           });
@@ -144,6 +147,11 @@ export const useCustomerLifetimeStats = () => {
       const customerMap = new Map<string, any>();
 
       data.forEach((booking: any) => {
+        // Skip host bookings as they are staff, not customers
+        if (booking.status === 'host') {
+          return;
+        }
+
         const customerId = booking.lead_passenger_id;
         const customer = booking.customers;
         
