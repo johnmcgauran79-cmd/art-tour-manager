@@ -209,6 +209,41 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_assignments: {
+        Row: {
+          agent_id: string
+          assigned_at: string
+          assigned_by: string
+          booking_id: string
+          id: string
+          is_active: boolean
+        }
+        Insert: {
+          agent_id: string
+          assigned_at?: string
+          assigned_by: string
+          booking_id: string
+          id?: string
+          is_active?: boolean
+        }
+        Update: {
+          agent_id?: string
+          assigned_at?: string
+          assigned_by?: string
+          booking_id?: string
+          id?: string
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_assignments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_comments: {
         Row: {
           booking_id: string
@@ -1294,6 +1329,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agent_assigned_to_booking: {
+        Args: { _agent_id: string; _booking_id: string }
+        Returns: boolean
+      }
       calculate_nights: {
         Args: { check_in: string; check_out: string }
         Returns: number
