@@ -268,7 +268,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
             {/* Always show categories grid */}
             <div className="mt-4">
               <TaskCategoriesGrid 
-                tasks={pendingTasks}
+                tasks={tasks || []}
                 onCategoryClick={handleCategoryClick}
               />
             </div>
