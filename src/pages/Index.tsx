@@ -16,6 +16,7 @@ import { AddContactModal } from "@/components/AddContactModal";
 import { SystemLogModal } from "@/components/SystemLogModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
+import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { useBookings } from "@/hooks/useBookings";
@@ -39,6 +40,7 @@ const Index = () => {
   const [systemLogModalOpen, setSystemLogModalOpen] = useState(false);
   const [tourModalDefaultTab, setTourModalDefaultTab] = useState("overview");
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [customerAnalyticsOpen, setCustomerAnalyticsOpen] = useState(false);
   
 
   const { user, userRole } = useAuth();
@@ -140,6 +142,7 @@ const Index = () => {
               onAddBooking={() => setAddBookingModalOpen(true)}
               onAddContact={() => setAddContactModalOpen(true)}
               onAddTask={() => setAddTaskModalOpen(true)}
+              onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
             />
 
             <div className="w-full">
@@ -217,6 +220,11 @@ const Index = () => {
       <AddContactModal
         open={addContactModalOpen}
         onOpenChange={setAddContactModalOpen}
+      />
+
+      <CustomerAnalyticsModal
+        open={customerAnalyticsOpen}
+        onOpenChange={setCustomerAnalyticsOpen}
       />
     </div>
   );

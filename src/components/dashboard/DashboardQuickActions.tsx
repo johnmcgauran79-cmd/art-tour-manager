@@ -1,20 +1,22 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Users, Calendar, Settings } from "lucide-react";
+import { Plus, Users, Calendar, Settings, TrendingUp } from "lucide-react";
 
 interface DashboardQuickActionsProps {
   onAddTour: () => void;
   onAddBooking: () => void;
   onAddContact: () => void;
   onAddTask: () => void;
+  onViewAnalytics?: () => void;
 }
 
 export const DashboardQuickActions = ({
   onAddTour,
   onAddBooking,
   onAddContact,
-  onAddTask
+  onAddTask,
+  onViewAnalytics
 }: DashboardQuickActionsProps) => {
   const quickActions = [
     {
@@ -40,7 +42,13 @@ export const DashboardQuickActions = ({
       label: "Add Task",
       onClick: onAddTask,
       color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-    }
+    },
+    ...(onViewAnalytics ? [{
+      icon: TrendingUp,
+      label: "Analytics",
+      onClick: onViewAnalytics,
+      color: "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+    }] : [])
   ];
 
   return (
@@ -52,7 +60,7 @@ export const DashboardQuickActions = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className={`grid grid-cols-2 gap-4 ${onViewAnalytics ? 'md:grid-cols-5' : 'md:grid-cols-4'}`}>
           {quickActions.map((action, index) => (
             <Button
               key={index}
