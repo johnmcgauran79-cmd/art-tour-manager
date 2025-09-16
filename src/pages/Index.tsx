@@ -142,7 +142,6 @@ const Index = () => {
               onAddBooking={() => setAddBookingModalOpen(true)}
               onAddContact={() => setAddContactModalOpen(true)}
               onAddTask={() => setAddTaskModalOpen(true)}
-              onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
             />
 
             <div className="w-full">
@@ -159,7 +158,10 @@ const Index = () => {
           </TabsContent>
           
           <TabsContent value="bookings" className="space-y-4">
-            <BookingsTable onAddBooking={handleAddBooking} />
+            <BookingsTable 
+              onAddBooking={handleAddBooking} 
+              onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
+            />
           </TabsContent>
           
           <TabsContent value="contacts" className="space-y-4">

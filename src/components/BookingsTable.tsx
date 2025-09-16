@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, TrendingUp } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { EditBookingModal } from "./EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -25,9 +25,10 @@ const getStatusColor = (status: string) => {
 
 interface BookingsTableProps {
   onAddBooking: () => void;
+  onViewAnalytics?: () => void;
 }
 
-export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
+export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTableProps) => {
   const [showEditBooking, setShowEditBooking] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -89,10 +90,22 @@ export const BookingsTable = ({ onAddBooking }: BookingsTableProps) => {
                 {bookingsThisMonth} this month
               </Badge>
             </div>
-            <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Booking
-            </Button>
+            <div className="flex gap-2">
+              {onViewAnalytics && (
+                <Button 
+                  onClick={onViewAnalytics} 
+                  variant="outline"
+                  className="bg-white hover:bg-gray-50"
+                >
+                  <TrendingUp className="h-4 w-4 mr-2" />
+                  Analytics
+                </Button>
+              )}
+              <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Booking
+              </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             Search across all bookings in the system
