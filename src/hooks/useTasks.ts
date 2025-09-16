@@ -287,22 +287,31 @@ export const useUpdateTask = () => {
       taskId: string;
       updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>> & { tour_id?: string | null };
     }) => {
+      console.log('[useUpdateTask] Starting update for task:', data.taskId, 'with updates:', data.updates);
+      
       // First verify the user is authenticated
       const { data: user, error: authError } = await supabase.auth.getUser();
       if (authError) {
+        console.error('[useUpdateTask] Auth error:', authError);
         throw new Error('Authentication failed. Please log in again.');
       }
       
       if (!user.user) {
+        console.error('[useUpdateTask] No authenticated user found');
         throw new Error('You must be logged in to update tasks.');
       }
+
+      console.log('[useUpdateTask] Authenticated user:', user.user.id);
 
       const updateData = { ...data.updates };
       
       // If marking as completed, set completed_at
       if (data.updates.status === 'completed' && !data.updates.completed_at) {
         updateData.completed_at = new Date().toISOString();
+        console.log('[useUpdateTask] Setting completed_at to:', updateData.completed_at);
       }
+      
+      console.log('[useUpdateTask] Final update data:', updateData);
       
       // Perform the update with a single database call
       const { data: updatedTask, error: updateError } = await supabase
@@ -312,14 +321,19 @@ export const useUpdateTask = () => {
         .select()
         .single();
 
+      console.log('[useUpdateTask] Database response:', { updatedTask, updateError });
+
       if (updateError) {
+        console.error('[useUpdateTask] Database update error:', updateError);
         throw new Error(`Failed to update task: ${updateError.message}`);
       }
       
       if (!updatedTask) {
+        console.error('[useUpdateTask] No task returned from update');
         throw new Error('Failed to update task - you may not have permission to modify this task');
       }
 
+      console.log('[useUpdateTask] Update successful:', updatedTask);
       return updatedTask;
     },
     onSuccess: (task, variables) => {
@@ -346,9 +360,10 @@ export const useUpdateTask = () => {
       });
     },
     onError: (error) => {
+      console.error('[useUpdateTask] Mutation error:', error);
       toast({
         title: "Error",
-        description: "Failed to update task. Please try again.",
+        description: `Failed to update task: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive",
       });
     },
