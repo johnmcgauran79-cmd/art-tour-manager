@@ -94,8 +94,8 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
               {onViewAnalytics && (
                 <Button 
                   onClick={onViewAnalytics} 
-                  variant="outline"
-                  className="bg-white hover:bg-gray-50"
+                  variant="secondary"
+                  className="bg-secondary hover:bg-secondary/80"
                 >
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Analytics
