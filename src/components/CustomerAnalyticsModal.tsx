@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCustomerAnalytics, useCustomerLifetimeStats, CustomerAnalytics } from "@/hooks/useCustomerAnalytics";
 import { useCustomerById } from "@/hooks/useCustomers";
 import { EditContactModal } from "./EditContactModal";
-import { Search, TrendingUp, Users, DollarSign, Repeat } from "lucide-react";
+import { Search, TrendingUp, Users, DollarSign, Repeat, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 
 interface CustomerAnalyticsModalProps {
@@ -77,9 +78,20 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5" />
-            Customer Lifetime Value Analytics
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Customer Lifetime Value Analytics
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="h-6 w-6 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
           </DialogTitle>
         </DialogHeader>
 
