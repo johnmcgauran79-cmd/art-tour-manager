@@ -319,7 +319,7 @@ export const useUpdateTask = () => {
         .update(updateData)
         .eq('id', data.taskId)
         .select()
-        .single();
+        .maybeSingle();
 
       console.log('[useUpdateTask] Database response:', { updatedTask, updateError });
 
