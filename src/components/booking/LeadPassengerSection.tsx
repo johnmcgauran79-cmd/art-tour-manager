@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Edit, Plus } from "lucide-react";
 import { ContactSearch } from "./ContactSearch";
+import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
 
 interface LeadPassengerSectionProps {
   formData: {
@@ -81,7 +82,13 @@ export const LeadPassengerSection = ({
             type="tel"
             value={formData.leadPhone}
             onChange={(e) => onInputChange("leadPhone", e.target.value)}
-            placeholder="e.g., +1234567890"
+            onBlur={(e) => {
+              const formatted = formatPhoneForWhatsApp(e.target.value);
+              if (formatted && formatted !== e.target.value) {
+                onInputChange("leadPhone", formatted);
+              }
+            }}
+            placeholder="e.g., +61412345678"
           />
         </div>
       </div>

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateCustomer } from "@/hooks/useCustomers";
+import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
 
 interface AddContactModalProps {
   open: boolean;
@@ -120,8 +121,16 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
+                type="tel"
                 value={formData.phone}
                 onChange={(e) => handleInputChange("phone", e.target.value)}
+                onBlur={(e) => {
+                  const formatted = formatPhoneForWhatsApp(e.target.value);
+                  if (formatted && formatted !== e.target.value) {
+                    handleInputChange("phone", formatted);
+                  }
+                }}
+                placeholder="e.g., +61412345678"
               />
             </div>
           </div>

@@ -30,20 +30,12 @@ export interface DuplicateGroup {
 
 // Manual notifications removed - now handled by centralized notification system
 
-// Function to format Australian mobile numbers
+// Import the new phone formatter
+import { formatPhoneForWhatsApp } from '@/utils/phoneFormatter';
+
+// Function to format Australian mobile numbers (legacy - use formatPhoneForWhatsApp instead)
 export const formatAustralianMobile = (phone: string | null): string | null => {
-  if (!phone) return phone;
-  
-  // Remove all non-digit characters (spaces, parentheses, dashes, etc.)
-  const digitsOnly = phone.replace(/\D/g, '');
-  
-  // Check if it's a 9-digit number starting with 4
-  if (digitsOnly.length === 9 && digitsOnly.startsWith('4')) {
-    return '0' + digitsOnly;
-  }
-  
-  // Return the cleaned number (digits only) for other cases
-  return digitsOnly || phone;
+  return formatPhoneForWhatsApp(phone, 'AU');
 };
 
 // Function to merge contact data, preferring non-null values

@@ -1,6 +1,6 @@
 
 import { Customer } from "@/hooks/useCustomers";
-import { formatAustralianMobile } from "@/hooks/useCustomers";
+import { formatPhoneForWhatsApp } from "./phoneFormatter";
 import { CSVContact } from "./csvParser";
 
 export const findExistingCustomer = (contact: CSVContact, existingCustomers: Customer[] | undefined) => {
@@ -27,7 +27,7 @@ export const prepareCustomerData = (contact: CSVContact) => {
     first_name: contact.first_name,
     last_name: contact.last_name,
     email: contact.email || null,
-    phone: contact.phone ? formatAustralianMobile(contact.phone) || contact.phone : null,
+    phone: contact.phone ? formatPhoneForWhatsApp(contact.phone) || contact.phone : null,
     city: contact.city || null,
     state: contact.state || null,
     country: contact.country || null,

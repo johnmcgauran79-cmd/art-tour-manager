@@ -1,6 +1,8 @@
 
 // Utility functions for input sanitization and validation
 
+import { sanitizeAndFormatPhone } from './phoneFormatter';
+
 export const sanitizeText = (input: string): string => {
   if (!input) return '';
   
@@ -19,12 +21,12 @@ export const sanitizeEmail = (email: string): string => {
 
 export const sanitizePhone = (phone: string): string => {
   if (!phone) return '';
-  return phone.replace(/[^\d\s\-\(\)\+]/g, '').trim();
+  return sanitizeAndFormatPhone(phone);
 };
 
 export const validateInput = {
   email: (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-  phone: (phone: string): boolean => /^[\+]?[\d\s\-\(\)]{10,}$/.test(phone),
+  phone: (phone: string): boolean => /^\+\d{10,15}$/.test(phone),
   text: (text: string, maxLength: number = 1000): boolean => 
     text.length <= maxLength && !/<script/i.test(text),
   strongPassword: (password: string): boolean => {
