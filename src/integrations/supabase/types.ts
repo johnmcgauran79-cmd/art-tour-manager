@@ -429,6 +429,48 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_integration_settings: {
+        Row: {
+          api_key_configured: boolean
+          created_at: string
+          error_message: string | null
+          id: string
+          is_enabled: boolean
+          last_sync_at: string | null
+          provider_name: string
+          settings: Json | null
+          sync_status: string | null
+          updated_at: string
+          webhook_url: string | null
+        }
+        Insert: {
+          api_key_configured?: boolean
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_sync_at?: string | null
+          provider_name?: string
+          settings?: Json | null
+          sync_status?: string | null
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Update: {
+          api_key_configured?: boolean
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_enabled?: boolean
+          last_sync_at?: string | null
+          provider_name?: string
+          settings?: Json | null
+          sync_status?: string | null
+          updated_at?: string
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       crm_sync_log: {
         Row: {
           contact_id: string | null

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -7,18 +6,91 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 }
 
+// Format phone numbers for WhatsApp compatibility
+function formatPhoneForWhatsApp(phone: string | null): string | null {
+  if (!phone || phone === '') return null;
+  
+  // Remove all non-digit characters except +
+  let cleaned = phone.replace(/[^0-9+]/g, '');
+  
+  // If already starts with +, validate and return
+  if (cleaned.startsWith('+')) {
+    const digitsOnly = cleaned.substring(1);
+    if (digitsOnly.length >= 10 && digitsOnly.length <= 15) {
+      return cleaned;
+    }
+    return null;
+  }
+  
+  // Get digits only
+  const digitsOnly = cleaned.replace(/[^0-9]/g, '');
+  
+  // Return null if too short or too long
+  if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+    return null;
+  }
+  
+  // Check if it already includes a country code
+  if (digitsOnly.startsWith('61') && digitsOnly.length >= 11) {
+    return '+' + digitsOnly;
+  }
+  
+  // Handle Australian numbers (default for this business)
+  let withoutLeadingZero = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+  
+  // Australian mobile numbers start with 4 and are 9 digits
+  if (withoutLeadingZero.startsWith('4') && withoutLeadingZero.length === 9) {
+    return '+61' + withoutLeadingZero;
+  }
+  
+  // Australian landline numbers
+  if (/^[2378]/.test(withoutLeadingZero) && withoutLeadingZero.length === 9) {
+    return '+61' + withoutLeadingZero;
+  }
+  
+  // If it's 10 digits and starts with 0, it's likely Australian
+  if (digitsOnly.length === 10 && digitsOnly.startsWith('0')) {
+    return '+61' + digitsOnly.substring(1);
+  }
+  
+  // Default: assume Australian and remove leading 0
+  return '+61' + withoutLeadingZero;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
+
   try {
     console.log('=== SYNC CRM CONTACTS FUNCTION CALLED ===');
     console.log('Request method:', req.method);
-    console.log('Request headers:', Object.fromEntries(req.headers.entries()));
     
-    // Log the raw request body for debugging
+    // Check if CRM integration is enabled
+    const { data: integrationSettings } = await supabase
+      .from('crm_integration_settings')
+      .select('*')
+      .eq('provider_name', 'keap')
+      .single();
+
+    if (!integrationSettings?.is_enabled) {
+      console.log('CRM integration is disabled');
+      return new Response(
+        JSON.stringify({ error: 'CRM integration is disabled' }),
+        { 
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Get and validate request data
     const requestText = await req.text();
     console.log('Raw request body:', requestText);
     
@@ -37,14 +109,10 @@ serve(async (req) => {
       );
     }
 
-    // Check for API key in header (optional - for external integrations like Zapier)
+    // Check for API key if configured
     const apiKey = req.headers.get('x-api-key');
     const expectedApiKey = Deno.env.get('CRM_SYNC_API_KEY');
     
-    console.log('API Key from request:', apiKey ? 'Present' : 'Missing');
-    console.log('Expected API Key:', expectedApiKey ? 'Set in environment' : 'Not set in environment');
-    
-    // If an API key is set, require it for external requests
     if (expectedApiKey && apiKey !== expectedApiKey) {
       console.log('API key validation failed');
       return new Response(
@@ -55,11 +123,6 @@ serve(async (req) => {
         }
       );
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     const { contacts } = requestData;
     console.log('Extracted contacts:', contacts);
@@ -72,10 +135,15 @@ serve(async (req) => {
     console.log(`Processing ${contacts.length} contacts`);
 
     const results = []
+    let successCount = 0;
+    let errorCount = 0;
 
     for (const contact of contacts) {
       console.log('Processing contact:', contact);
       try {
+        // Format phone number
+        const formattedPhone = formatPhoneForWhatsApp(contact.phone);
+        
         // Check if contact already exists by CRM ID or email
         const { data: existingContact } = await supabase
           .from('customers')
@@ -92,8 +160,10 @@ serve(async (req) => {
               first_name: contact.first_name,
               last_name: contact.last_name,
               email: contact.email,
-              phone: contact.phone,
+              phone: formattedPhone,
+              city: contact.city,
               state: contact.state,
+              country: contact.country,
               dietary_requirements: contact.dietary_requirements,
               crm_id: contact.crm_id,
               last_synced_at: new Date().toISOString(),
@@ -113,6 +183,7 @@ serve(async (req) => {
           })
 
           results.push({ action: 'updated', contact: updatedContact })
+          successCount++;
         } else {
           console.log('Creating new contact');
           // Create new contact
@@ -122,8 +193,10 @@ serve(async (req) => {
               first_name: contact.first_name,
               last_name: contact.last_name,
               email: contact.email,
-              phone: contact.phone,
+              phone: formattedPhone,
+              city: contact.city,
               state: contact.state,
+              country: contact.country,
               dietary_requirements: contact.dietary_requirements,
               crm_id: contact.crm_id,
               last_synced_at: new Date().toISOString(),
@@ -142,14 +215,16 @@ serve(async (req) => {
           })
 
           results.push({ action: 'created', contact: newContact })
+          successCount++;
         }
       } catch (contactError) {
         console.error('Error processing contact:', contactError)
+        errorCount++;
         
         // Log sync error
         await supabase.from('crm_sync_log').insert({
           crm_contact_id: contact.crm_id,
-          sync_action: 'created',
+          sync_action: 'failed',
           sync_status: 'failed',
           error_message: contactError.message,
         })
@@ -158,10 +233,25 @@ serve(async (req) => {
       }
     }
 
+    // Update integration settings with sync status
+    await supabase
+      .from('crm_integration_settings')
+      .update({
+        last_sync_at: new Date().toISOString(),
+        sync_status: errorCount > 0 ? 'partial_success' : 'success',
+        error_message: errorCount > 0 ? `${errorCount} contacts failed to sync` : null
+      })
+      .eq('provider_name', 'keap');
+
     const response = {
       success: true, 
-      message: `Processed ${contacts.length} contacts`,
-      results 
+      message: `Processed ${contacts.length} contacts - ${successCount} successful, ${errorCount} failed`,
+      results,
+      summary: {
+        total: contacts.length,
+        successful: successCount,
+        failed: errorCount
+      }
     };
     
     console.log('Final response:', response);
@@ -175,6 +265,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in sync-crm-contacts function:', error)
+    
+    // Update integration settings with error status
+    await supabase
+      .from('crm_integration_settings')
+      .update({
+        sync_status: 'error',
+        error_message: error.message
+      })
+      .eq('provider_name', 'keap');
+
     return new Response(
       JSON.stringify({ error: error.message, stack: error.stack }),
       { 

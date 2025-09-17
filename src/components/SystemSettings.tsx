@@ -6,6 +6,7 @@ import { Settings, Database, Mail, Shield, Users, FileText } from "lucide-react"
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
+import { CRMIntegrationSettings } from "./CRMIntegrationSettings";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -143,6 +144,12 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
           </CardContent>
         </Card>
 
+      </div>
+
+      {/* CRM Integration Settings */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">CRM Integration</h2>
+        <CRMIntegrationSettings />
       </div>
 
       {/* System Status */}
