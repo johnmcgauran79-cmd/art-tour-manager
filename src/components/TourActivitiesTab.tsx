@@ -44,7 +44,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
     
     const activityIds = sortedActivities.map(activity => activity.id);
     
-    // Get activity bookings for these activities with confirmed bookings only
+    // Get activity bookings for these activities with confirmed bookings only (exclude cancelled)
     const { data, error } = await supabase
       .from('activity_bookings')
       .select(`
@@ -53,7 +53,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
         bookings!inner(id, status)
       `)
       .in('activity_id', activityIds)
-      .in('bookings.status', ['fully_paid', 'invoiced', 'deposited', 'instalment_paid']);
+      .not('bookings.status', 'eq', 'cancelled');
 
     if (error) {
       console.error('Error fetching activity bookings:', error);
