@@ -144,11 +144,11 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         .header {
           text-align: center;
           margin-bottom: 30px;
-          border-bottom: 2px solid hsl(0, 0%, 20%);
+          border-bottom: 2px solid hsl(220, 8%, 15%);
           padding-bottom: 20px;
         }
         .tour-title {
-          color: hsl(0, 0%, 20%);
+          color: hsl(220, 8%, 15%);
           font-size: 2.5em;
           margin-bottom: 10px;
           font-weight: 700;
@@ -178,20 +178,20 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         }
         .hotel-name {
           font-size: 1.3em;
-          color: hsl(0, 0%, 20%);
+          color: hsl(220, 8%, 15%);
           margin-bottom: 10px;
           font-weight: 600;
         }
         .day-card {
           background: #fff;
           border: 1px solid #ddd;
-          border-left: 4px solid hsl(0, 0%, 20%);
+          border-left: 4px solid hsl(220, 8%, 15%);
           border-radius: 8px;
           padding: 20px;
           margin-bottom: 20px;
         }
         .day-header {
-          background: hsl(0, 0%, 20%);
+          background: hsl(220, 8%, 15%);
           color: white;
           padding: 10px 15px;
           margin: -20px -20px 15px -20px;
@@ -209,7 +209,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           border-left: 3px solid hsl(45, 100%, 55%);
         }
         .activity-time {
-          background: hsl(0, 0%, 20%);
+          background: hsl(220, 8%, 15%);
           color: white;
           padding: 4px 8px;
           border-radius: 4px;
@@ -219,7 +219,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         }
         .activity-title {
           font-weight: bold;
-          color: hsl(0, 0%, 20%);
+          color: hsl(220, 8%, 15%);
           margin-bottom: 8px;
         }
         .activity-content {
@@ -227,7 +227,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           white-space: pre-wrap;
         }
         .section-title {
-          color: hsl(0, 0%, 20%);
+          color: hsl(220, 8%, 15%);
           border-bottom: 2px solid hsl(45, 100%, 55%);
           padding-bottom: 5px;
           margin-bottom: 20px;
