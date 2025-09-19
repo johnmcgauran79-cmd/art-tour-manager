@@ -144,13 +144,14 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         .header {
           text-align: center;
           margin-bottom: 30px;
-          border-bottom: 2px solid #2c5aa0;
+          border-bottom: 2px solid hsl(210, 100%, 12%);
           padding-bottom: 20px;
         }
         .tour-title {
-          color: #2c5aa0;
+          color: hsl(210, 100%, 12%);
           font-size: 2.5em;
           margin-bottom: 10px;
+          font-weight: 700;
         }
         .tour-dates {
           font-size: 1.2em;
@@ -162,6 +163,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           padding: 20px;
           border-radius: 8px;
           margin-bottom: 30px;
+          border-left: 4px solid hsl(45, 100%, 55%);
         }
         .hotels-section {
           margin-bottom: 30px;
@@ -172,22 +174,24 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           border-radius: 8px;
           padding: 15px;
           margin-bottom: 15px;
+          border-left: 4px solid hsl(42, 87%, 55%);
         }
         .hotel-name {
           font-size: 1.3em;
-          color: #2c5aa0;
+          color: hsl(210, 100%, 12%);
           margin-bottom: 10px;
+          font-weight: 600;
         }
         .day-card {
           background: #fff;
           border: 1px solid #ddd;
-          border-left: 4px solid #2c5aa0;
+          border-left: 4px solid hsl(210, 100%, 12%);
           border-radius: 8px;
           padding: 20px;
           margin-bottom: 20px;
         }
         .day-header {
-          background: #2c5aa0;
+          background: hsl(210, 100%, 12%);
           color: white;
           padding: 10px 15px;
           margin: -20px -20px 15px -20px;
@@ -202,9 +206,10 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           border-radius: 6px;
           padding: 15px;
           margin-bottom: 10px;
+          border-left: 3px solid hsl(45, 100%, 55%);
         }
         .activity-time {
-          background: #2c5aa0;
+          background: hsl(210, 100%, 12%);
           color: white;
           padding: 4px 8px;
           border-radius: 4px;
@@ -214,12 +219,18 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         }
         .activity-title {
           font-weight: bold;
-          color: #2c5aa0;
+          color: hsl(210, 100%, 12%);
           margin-bottom: 8px;
         }
         .activity-content {
           color: #555;
           white-space: pre-wrap;
+        }
+        .section-title {
+          color: hsl(210, 100%, 12%);
+          border-bottom: 2px solid hsl(45, 100%, 55%);
+          padding-bottom: 5px;
+          margin-bottom: 20px;
         }
         @media print {
           body { font-size: 12px; }
@@ -238,7 +249,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
   if (options.includeTourInfo) {
     html += `
       <div class="tour-info">
-        <h2>Tour Information</h2>
+        <h2 class="section-title">Tour Information</h2>
         <p><strong>Location:</strong> ${tour.location || 'N/A'}</p>
         <p><strong>Pickup Point:</strong> ${tour.pickup_point || 'N/A'}</p>
         ${tour.notes ? `<p><strong>Notes:</strong> ${tour.notes}</p>` : ''}
@@ -251,7 +262,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
   if (options.includeHotels && hotels.length > 0) {
     html += `
       <div class="hotels-section">
-        <h2>Accommodation</h2>
+        <h2 class="section-title">Accommodation</h2>
     `;
 
     hotels.forEach(hotel => {
@@ -273,7 +284,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
 
   html += `
     <div class="itinerary-section">
-      <h2>Daily Itinerary</h2>
+      <h2 class="section-title">Daily Itinerary</h2>
   `;
 
   days.forEach(day => {
