@@ -1134,6 +1134,102 @@ export type Database = {
         }
         Relationships: []
       }
+      tour_itineraries: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_current: boolean
+          notes: string | null
+          title: string | null
+          tour_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          title?: string | null
+          tour_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_current?: boolean
+          notes?: string | null
+          title?: string | null
+          tour_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      tour_itinerary_days: {
+        Row: {
+          activity_date: string
+          created_at: string
+          day_number: number
+          id: string
+          itinerary_id: string
+          updated_at: string
+        }
+        Insert: {
+          activity_date: string
+          created_at?: string
+          day_number: number
+          id?: string
+          itinerary_id: string
+          updated_at?: string
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string
+          day_number?: number
+          id?: string
+          itinerary_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tour_itinerary_entries: {
+        Row: {
+          content: string | null
+          created_at: string
+          day_id: string
+          id: string
+          sort_order: number
+          subject: string
+          time_slot: string | null
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          day_id: string
+          id?: string
+          sort_order?: number
+          subject: string
+          time_slot?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          day_id?: string
+          id?: string
+          sort_order?: number
+          subject?: string
+          time_slot?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tours: {
         Row: {
           capacity: number | null

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Settings, Trash2, Paperclip } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Settings, Trash2, Paperclip, Clock } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -19,6 +19,7 @@ import { TourHotelsTab } from "@/components/TourHotelsTab";
 import { TourBookingsTab } from "@/components/TourBookingsTab";
 import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { TourAttachmentsSection } from "@/components/TourAttachmentsSection";
+import { TourItineraryTab } from "@/components/TourItineraryTab";
 import { DuplicateTourDialog } from "@/components/DuplicateTourDialog";
 import { Tour, useTours } from "@/hooks/useTours";
 import { useDuplicateTour } from "@/hooks/useDuplicateTour";
@@ -286,7 +287,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
           </DialogHeader>
 
           <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-6 bg-gray-50">
+            <TabsList className="grid w-full grid-cols-7 bg-gray-50">
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
                 Overview
@@ -302,6 +303,10 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
               <TabsTrigger value="bookings" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <Users className="h-4 w-4" />
                 Bookings
+              </TabsTrigger>
+              <TabsTrigger value="itinerary" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
+                <Clock className="h-4 w-4" />
+                Itinerary
               </TabsTrigger>
               <TabsTrigger value="operations" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <Settings className="h-4 w-4" />
@@ -341,6 +346,10 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                 tourName={currentTour?.name || ""}
                 onAddBooking={() => setAddBookingModalOpen(true)}
               />
+            </TabsContent>
+
+            <TabsContent value="itinerary" className="space-y-4">
+              {transformedTour && <TourItineraryTab tour={transformedTour} />}
             </TabsContent>
 
             <TabsContent value="operations" className="space-y-4">
