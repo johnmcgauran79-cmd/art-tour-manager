@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Download, Printer, X } from "lucide-react";
+import html2pdf from "html2pdf.js";
 
 interface ItineraryPDFViewerProps {
   open: boolean;
@@ -29,15 +30,18 @@ export const ItineraryPDFViewer = ({
   };
 
   const handleDownload = () => {
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const element = document.createElement('div');
+    element.innerHTML = htmlContent;
+    
+    const opt = {
+      margin: 1,
+      filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
+    };
+    
+    html2pdf().set(opt).from(element).save();
   };
 
   return (
@@ -63,7 +67,7 @@ export const ItineraryPDFViewer = ({
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                Download HTML
+                Download PDF
               </Button>
               <Button
                 variant="outline"
