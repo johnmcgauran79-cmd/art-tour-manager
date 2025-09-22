@@ -7,6 +7,7 @@ import { FileText, Download } from "lucide-react";
 import { Itinerary } from "@/hooks/useItinerary";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { ItineraryPDFViewer } from "./ItineraryPDFViewer";
 
 interface GenerateDocumentModalProps {
   open: boolean;
@@ -33,6 +34,8 @@ export const GenerateDocumentModal = ({
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
   const [format, setFormat] = useState<'pdf' | 'html'>('pdf');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
+  const [generatedHTML, setGeneratedHTML] = useState('');
   const { toast } = useToast();
 
   const handleGenerate = async () => {
@@ -53,38 +56,9 @@ export const GenerateDocumentModal = ({
 
       if (error) throw error;
 
-      if (format === 'pdf') {
-        if (data.pdfBuffer && !data.isPrintReady) {
-          // Handle actual PDF download
-          const blob = new Blob([new Uint8Array(data.pdfBuffer)], { type: 'application/pdf' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        } else {
-          // Fallback: Open HTML in new window with print dialog
-          const newWindow = window.open();
-          if (newWindow) {
-            newWindow.document.write(data.html);
-            newWindow.document.close();
-            // Trigger print dialog after a short delay
-            setTimeout(() => {
-              newWindow.print();
-            }, 1000);
-          }
-        }
-      } else {
-        // Handle HTML view
-        const newWindow = window.open();
-        if (newWindow) {
-          newWindow.document.write(data.html);
-          newWindow.document.close();
-        }
-      }
+      // Show the PDF viewer with the generated HTML content
+      setGeneratedHTML(data.html);
+      setShowViewer(true);
 
       toast({
         title: "Document Generated",
@@ -105,93 +79,101 @@ export const GenerateDocumentModal = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Generate Itinerary Document
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <Label className="text-base font-medium">Document Format</Label>
-            <div className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="pdf"
-                  name="format"
-                  checked={format === 'pdf'}
-                  onChange={() => setFormat('pdf')}
-                  className="w-4 h-4 text-brand-navy"
-                />
-                <Label htmlFor="pdf">PDF (Download)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id="html"
-                  name="format"
-                  checked={format === 'html'}
-                  onChange={() => setFormat('html')}
-                  className="w-4 h-4 text-brand-navy"
-                />
-                <Label htmlFor="html">HTML (View)</Label>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Generate Itinerary Document
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Document Format</Label>
+              <div className="flex gap-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="pdf"
+                    name="format"
+                    checked={format === 'pdf'}
+                    onChange={() => setFormat('pdf')}
+                    className="w-4 h-4 text-brand-navy"
+                  />
+                  <Label htmlFor="pdf">PDF (Preview)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="html"
+                    name="format"
+                    checked={format === 'html'}
+                    onChange={() => setFormat('html')}
+                    className="w-4 h-4 text-brand-navy"
+                  />
+                  <Label htmlFor="html">HTML (Preview)</Label>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="space-y-4">
-            <Label className="text-base font-medium">Include in Document</Label>
-            
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="tour-info"
-                  checked={includeTourInfo}
-                  onCheckedChange={(checked) => setIncludeTourInfo(checked as boolean)}
-                />
-                <Label htmlFor="tour-info">Tour Information (dates, location, etc.)</Label>
-              </div>
+            <div className="space-y-4">
+              <Label className="text-base font-medium">Include in Document</Label>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="hotels"
-                  checked={includeHotels}
-                  onCheckedChange={(checked) => setIncludeHotels(checked as boolean)}
-                />
-                <Label htmlFor="hotels">Hotel Information</Label>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="tour-info"
+                    checked={includeTourInfo}
+                    onCheckedChange={(checked) => setIncludeTourInfo(checked as boolean)}
+                  />
+                  <Label htmlFor="tour-info">Tour Information (dates, location, etc.)</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hotels"
+                    checked={includeHotels}
+                    onCheckedChange={(checked) => setIncludeHotels(checked as boolean)}
+                  />
+                  <Label htmlFor="hotels">Hotel Information</Label>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600">
-              This will generate a formatted itinerary document with the selected options. 
-              {format === 'pdf' ? ' The PDF will be downloaded to your device.' : ' The HTML will open in a new window for viewing and printing.'}
-            </p>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">
+                This will generate a formatted itinerary document with the selected options and open it in a preview window with print and download options.
+              </p>
+            </div>
           </div>
-        </div>
-        
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="bg-brand-navy hover:bg-brand-navy/90"
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isGenerating ? 'Generating...' : `Generate ${format.toUpperCase()}`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="bg-brand-navy hover:bg-brand-navy/90"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isGenerating ? 'Generating...' : `Generate Preview`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ItineraryPDFViewer
+        open={showViewer}
+        onOpenChange={setShowViewer}
+        htmlContent={generatedHTML}
+        tourName={tour.name}
+      />
+    </>
   );
 };
