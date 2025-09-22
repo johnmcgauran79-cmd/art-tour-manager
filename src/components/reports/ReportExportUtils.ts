@@ -179,3 +179,185 @@ export const printReport = (report: ReportItem, tourName: string) => {
     printWindow.print();
   }
 };
+
+// Generate HTML content for PDF viewing
+export const generateReportHTML = (report: ReportItem, tourName: string): string => {
+  const title = `${report.title} - ${tourName}`;
+  
+  let tableContent = '';
+  
+  switch (report.type) {
+    case 'contacts':
+      tableContent = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">First Name</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Last Name</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.firstName}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.lastName}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.phone}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
+    case 'dietary':
+      tableContent = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Lead Passenger</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Additional Passengers</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Dietary Requirements</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.leadPassenger}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.additionalPassengers.join(', ')}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.dietaryRequirements}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
+    case 'summary':
+      tableContent = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Lead Passenger</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Additional Passengers</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Pax</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Check In</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Check Out</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Nights</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Status</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Group</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.leadPassenger}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.additionalPassengers.join(', ')}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerCount}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.checkIn}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.checkOut}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.nights}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;"><span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background-color: #f3f4f6; color: #374151;">${item.status.toUpperCase()}</span></td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.groupName}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.notes}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
+    case 'passengerlist':
+      tableContent = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passenger Name</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Dietary Requirements</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Notes / Meal Orders</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr style="height: 50px;">
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.name}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.dietaryRequirements || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; border-left: 3px solid #333; min-height: 40px;">_________________________</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
+    default:
+      tableContent = '<p>No data available for this report.</p>';
+  }
+  
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>${title}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 40px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 2px solid #333;
+          padding-bottom: 20px;
+        }
+        .tour-name {
+          font-size: 24px;
+          font-weight: bold;
+          color: #1e3a8a;
+          margin-bottom: 5px;
+        }
+        .report-title {
+          font-size: 18px;
+          color: #666;
+          margin-bottom: 10px;
+        }
+        .report-date {
+          font-size: 14px;
+          color: #888;
+        }
+        .content {
+          margin-top: 30px;
+        }
+        .summary {
+          background-color: #f8f9fa;
+          padding: 15px;
+          border-radius: 5px;
+          margin-bottom: 20px;
+          border-left: 4px solid #1e3a8a;
+        }
+        @media print {
+          body { margin: 20px; }
+          .header { break-inside: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="tour-name">${tourName}</div>
+        <div class="report-title">${report.title}</div>
+        <div class="report-date">Generated on ${new Date().toLocaleDateString()}</div>
+      </div>
+      
+      <div class="content">
+        <div class="summary">
+          <strong>Summary:</strong> ${report.description}<br>
+          <strong>Total Records:</strong> ${report.data?.length || 0}
+        </div>
+        
+        ${report.type === 'passengerlist' ? '<p><strong>Instructions:</strong> Use the blank spaces in the Notes column to write meal orders, preferences, or other tour-related notes for each passenger.</p>' : ''}
+        
+        ${tableContent}
+      </div>
+    </body>
+    </html>
+  `;
+};

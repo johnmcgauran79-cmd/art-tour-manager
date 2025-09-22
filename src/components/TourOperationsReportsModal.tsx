@@ -12,7 +12,8 @@ import { PassengerListReport } from "@/components/reports/PassengerListReport";
 import { ActivityMatrixReport } from "@/components/reports/ActivityMatrixReport";
 import { HotelSelectionDialog } from "@/components/reports/HotelSelectionDialog";
 import { useReportData } from "@/components/reports/useReportData";
-import { exportReportToCSV, printReport } from "@/components/reports/ReportExportUtils";
+import { exportReportToCSV, generateReportHTML } from "@/components/reports/ReportExportUtils";
+import { ReportPDFViewer } from "@/components/reports/ReportPDFViewer";
 
 interface TourOperationsReportsModalProps {
   tourId: string;
@@ -39,6 +40,8 @@ export const TourOperationsReportsModal = ({
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   const [hotelSelectionOpen, setHotelSelectionOpen] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [generatedHTML, setGeneratedHTML] = useState('');
 
   // Get the specific report to display
   const displayReport = reportType && reportType !== 'hotel' 
@@ -49,6 +52,12 @@ export const TourOperationsReportsModal = ({
     setSelectedHotel(hotel);
     setHotelSelectionOpen(false);
     setRoomingListModalOpen(true);
+  };
+
+  const handleViewPDF = (report: any) => {
+    const htmlContent = generateReportHTML(report, tourName);
+    setGeneratedHTML(htmlContent);
+    setShowPDFViewer(true);
   };
 
   const renderReportTable = (report: any) => {
@@ -118,79 +127,99 @@ export const TourOperationsReportsModal = ({
   // Individual report display
   if (displayReport) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {displayReport.icon}
-                <DialogTitle>{displayReport.title}</DialogTitle>
-                <Badge variant="secondary">{displayReport.count} items</Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                {displayReport.type !== 'activitymatrix' && (
-                  <>
-                    <Button 
-                      onClick={() => exportReportToCSV(displayReport, tourName)}
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Export CSV
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {displayReport.icon}
+                  <DialogTitle>{displayReport.title}</DialogTitle>
+                  <Badge variant="secondary">{displayReport.count} items</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  {displayReport.type !== 'activitymatrix' && (
+                    <>
+                      <Button 
+                        onClick={() => exportReportToCSV(displayReport, tourName)}
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Export CSV
+                      </Button>
+                      <Button 
+                        onClick={() => handleViewPDF(displayReport)}
+                        variant="outline" 
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <FileText className="h-4 w-4" />
+                        View PDF
+                      </Button>
+                    </>
+                  )}
+                  <DialogClose asChild>
+                    <Button variant="outline" size="sm">
+                      Close
                     </Button>
-                    <Button 
-                      onClick={() => printReport(displayReport, tourName)}
-                      variant="outline" 
-                      size="sm"
-                      className="flex items-center gap-2"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Print/PDF
-                    </Button>
-                  </>
-                )}
-                <DialogClose asChild>
-                  <Button variant="outline" size="sm">
-                    Close
-                  </Button>
-                </DialogClose>
+                  </DialogClose>
+                </div>
               </div>
-            </div>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">{displayReport.description}</span>
-            </div>
+            </DialogHeader>
             
-            <div className="border rounded-lg">
-              {renderReportTable(displayReport)}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">{displayReport.description}</span>
+              </div>
+              
+              <div className="border rounded-lg">
+                {renderReportTable(displayReport)}
+              </div>
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+
+        <ReportPDFViewer
+          open={showPDFViewer}
+          onOpenChange={setShowPDFViewer}
+          htmlContent={generatedHTML}
+          reportTitle={displayReport?.title || "Report"}
+          tourName={tourName}
+        />
+      </>
     );
   }
 
   // Fallback view
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm">
-                Close
-              </Button>
-            </DialogClose>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">
+                  Close
+                </Button>
+              </DialogClose>
+            </div>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-gray-600">Click on individual report types in the Operations tab to view specific reports.</p>
           </div>
-        </DialogHeader>
-        <div className="space-y-4">
-          <p className="text-gray-600">Click on individual report types in the Operations tab to view specific reports.</p>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <ReportPDFViewer
+        open={showPDFViewer}
+        onOpenChange={setShowPDFViewer}
+        htmlContent={generatedHTML}
+        reportTitle={displayReport?.title || "Report"}
+        tourName={tourName}
+      />
+    </>
   );
 };
