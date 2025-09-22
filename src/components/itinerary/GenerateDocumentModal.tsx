@@ -54,16 +54,29 @@ export const GenerateDocumentModal = ({
       if (error) throw error;
 
       if (format === 'pdf') {
-        // Handle PDF download
-        const blob = new Blob([new Uint8Array(data.pdfBuffer)], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        if (data.pdfBuffer && !data.isPrintReady) {
+          // Handle actual PDF download
+          const blob = new Blob([new Uint8Array(data.pdfBuffer)], { type: 'application/pdf' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } else {
+          // Fallback: Open HTML in new window with print dialog
+          const newWindow = window.open();
+          if (newWindow) {
+            newWindow.document.write(data.html);
+            newWindow.document.close();
+            // Trigger print dialog after a short delay
+            setTimeout(() => {
+              newWindow.print();
+            }, 1000);
+          }
+        }
       } else {
         // Handle HTML view
         const newWindow = window.open();

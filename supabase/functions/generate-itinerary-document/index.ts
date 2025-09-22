@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
+import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -91,11 +92,55 @@ serve(async (req) => {
       });
     }
 
-    // For PDF, you would need to use a PDF generation library
-    // For now, we'll return the HTML version
-    return new Response(JSON.stringify({ html }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    // Generate PDF using puppeteer
+    try {
+      const pdfResponse = await fetch('https://api.htmlcsstoimage.com/v1/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('your-user-id:your-api-key'), // You would need to add these as secrets
+        },
+        body: JSON.stringify({
+          html: html,
+          css: '',
+          google_fonts: 'Arial',
+          format: 'pdf',
+          width: 800,
+          height: 1200,
+          quality: 100
+        })
+      });
+
+      if (!pdfResponse.ok) {
+        console.error('PDF generation failed, falling back to browser print API');
+        // Fallback to simpler approach using browser's print functionality
+        return new Response(JSON.stringify({ 
+          html,
+          isPrintReady: true,
+          format: 'pdf'
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      
+      return new Response(JSON.stringify({ 
+        pdfBuffer: Array.from(new Uint8Array(pdfBuffer))
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } catch (pdfError) {
+      console.error('PDF generation error:', pdfError);
+      // Fallback to HTML with print-ready styling
+      return new Response(JSON.stringify({ 
+        html,
+        isPrintReady: true,
+        format: 'pdf'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
   } catch (error) {
     console.error('Error generating document:', error);
