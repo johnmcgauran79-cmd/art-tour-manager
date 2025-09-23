@@ -1,5 +1,6 @@
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatAustralianMobile } from "@/hooks/useCustomers";
 
 interface ContactsReportProps {
   data: Array<{
@@ -24,7 +25,7 @@ export const ContactsReport = ({ data }: ContactsReportProps) => {
           <TableRow key={index}>
             <TableCell>{item.firstName}</TableCell>
             <TableCell>{item.lastName}</TableCell>
-            <TableCell>{item.phone || '-'}</TableCell>
+            <TableCell>{formatAustralianMobile(item.phone) || '-'}</TableCell>
           </TableRow>
         ))}
       </TableBody>
