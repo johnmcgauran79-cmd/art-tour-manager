@@ -4,15 +4,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, ChevronLeft, ChevronRight, Upload, Download } from "lucide-react";
 import { useCustomers, useDeleteCustomer } from "@/hooks/useCustomers";
 import { ContactTableRow } from "./ContactTableRow";
 import { AddContactModal } from "./AddContactModal";
 import { EditContactModal } from "./EditContactModal";
+import { ContactExportModal } from "./ContactExportModal";
+import { ContactImportModal } from "./ContactImportModal";
 
 export const ContactsTable = () => {
   const [showAddContact, setShowAddContact] = useState(false);
   const [editingContact, setEditingContact] = useState<any>(null);
+  const [showExport, setShowExport] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -60,10 +64,28 @@ export const ContactsTable = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             All Contacts ({totalCount.toLocaleString()} total)
-            <Button onClick={() => setShowAddContact(true)} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Contact
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => setShowExport(true)} 
+                variant="outline"
+                size="sm"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+              <Button 
+                onClick={() => setShowImport(true)} 
+                variant="outline"
+                size="sm"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+              <Button onClick={() => setShowAddContact(true)} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Contact
+              </Button>
+            </div>
           </CardTitle>
           <CardDescription>
             Search across all {totalCount.toLocaleString()} contacts in the database
@@ -159,6 +181,18 @@ export const ContactsTable = () => {
       <AddContactModal 
         open={showAddContact} 
         onOpenChange={setShowAddContact} 
+      />
+
+      <ContactExportModal
+        open={showExport}
+        onOpenChange={setShowExport}
+        searchQuery={debouncedSearch}
+        filteredCount={totalCount}
+      />
+
+      <ContactImportModal
+        open={showImport}
+        onOpenChange={setShowImport}
       />
 
       {editingContact && (
