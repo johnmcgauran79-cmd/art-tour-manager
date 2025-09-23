@@ -35,8 +35,12 @@ export const formatPhoneForWhatsApp = (
 ): string | null => {
   if (!phone) return null;
   
+  console.log('formatPhoneForWhatsApp input:', phone);
+  
   // Remove all non-digit characters except +
-  const cleaned = phone.replace(/[^\\d+]/g, '');
+  const cleaned = phone.replace(/[^\d+]/g, '');
+  
+  console.log('formatPhoneForWhatsApp cleaned:', cleaned);
   
   if (!cleaned) return null;
   

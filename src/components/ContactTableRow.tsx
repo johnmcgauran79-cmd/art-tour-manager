@@ -10,6 +10,14 @@ interface ContactTableRowProps {
 
 export const ContactTableRow = ({ customer, onClick }: ContactTableRowProps) => {
   const displayPhone = formatAustralianMobile(customer.phone);
+  
+  // Debug logging
+  console.log('ContactTableRow phone debug:', {
+    customerId: customer.id,
+    customerName: `${customer.first_name} ${customer.last_name}`,
+    originalPhone: customer.phone,
+    formattedPhone: displayPhone
+  });
 
   return (
     <TableRow
