@@ -19,9 +19,9 @@ export const sanitizeEmail = (email: string): string => {
   return email.toLowerCase().replace(/[^a-z0-9@._-]/g, '').trim();
 };
 
-export const sanitizePhone = (phone: string): string => {
+export const sanitizePhone = (phone: string, preferredCountry: string = 'AU'): string => {
   if (!phone) return '';
-  return sanitizeAndFormatPhone(phone);
+  return sanitizeAndFormatPhone(phone, preferredCountry);
 };
 
 export const validateInput = {
@@ -41,8 +41,12 @@ export const validateInput = {
   }
 };
 
-export const sanitizeFormData = <T extends Record<string, any>>(data: T): T => {
+export const sanitizeFormData = <T extends Record<string, any>>(
+  data: T, 
+  options: { preferredCountry?: string } = {}
+): T => {
   const sanitized = {} as T;
+  const { preferredCountry = 'AU' } = options;
   
   Object.keys(data).forEach(key => {
     const value = data[key];
@@ -50,7 +54,7 @@ export const sanitizeFormData = <T extends Record<string, any>>(data: T): T => {
       if (key.includes('email')) {
         (sanitized as any)[key] = sanitizeEmail(value);
       } else if (key.includes('phone')) {
-        (sanitized as any)[key] = sanitizePhone(value);
+        (sanitized as any)[key] = sanitizePhone(value, preferredCountry);
       } else {
         (sanitized as any)[key] = sanitizeText(value);
       }

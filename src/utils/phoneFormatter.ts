@@ -24,30 +24,96 @@ export const COUNTRY_CODES: CountryCode[] = [
 ];
 
 /**
- * Formats a phone number to WhatsApp-compatible international format (+country code + number)
+ * Intelligently detects the likely country for a phone number
  * @param phone - The input phone number
- * @param defaultCountryCode - Default country code if none detected (defaults to AU)
+ * @returns Detected country code or null if unclear
+ */
+export const detectPhoneCountry = (phone: string | null): string | null => {
+  if (!phone) return null;
+  
+  const cleaned = phone.replace(/[^\d+]/g, '');
+  const digitsOnly = cleaned.replace(/\+/g, '');
+  
+  // If already has country code
+  if (cleaned.startsWith('+')) {
+    for (const country of COUNTRY_CODES) {
+      const dialCodeDigits = country.dialCode.substring(1);
+      if (cleaned.startsWith(country.dialCode)) {
+        return country.code;
+      }
+    }
+  }
+  
+  // Pattern-based detection for common formats
+  if (digitsOnly.length === 10) {
+    // New Zealand mobile: 021/022/027/028/029
+    if (digitsOnly.startsWith('021') || digitsOnly.startsWith('022') || 
+        digitsOnly.startsWith('027') || digitsOnly.startsWith('028') || 
+        digitsOnly.startsWith('029')) {
+      return 'NZ';
+    }
+    
+    // US/Canada: (xxx) xxx-xxxx format typically
+    if (digitsOnly.match(/^[2-9]\d{9}$/)) {
+      return 'US'; // Could be CA too, but US is more common
+    }
+    
+    // Australian: 04xx xxx xxx or 0x xxxx xxxx
+    if (digitsOnly.startsWith('04') || 
+        ['02', '03', '07', '08'].some(prefix => digitsOnly.startsWith(prefix))) {
+      return 'AU';
+    }
+  }
+  
+  if (digitsOnly.length === 11) {
+    // UK mobile: 07xxx xxxxxx (11 digits with leading 0)
+    if (digitsOnly.startsWith('07')) {
+      return 'GB';
+    }
+    
+    // US/Canada with 1: 1xxx xxx xxxx
+    if (digitsOnly.startsWith('1') && digitsOnly.match(/^1[2-9]\d{9}$/)) {
+      return 'US';
+    }
+  }
+  
+  if (digitsOnly.length === 9) {
+    // New Zealand without leading 0: 21xxxxxxx, 22xxxxxxx, etc.
+    if (digitsOnly.match(/^[2-9]\d{8}$/)) {
+      return 'NZ';
+    }
+  }
+  
+  // Default patterns by length
+  if (digitsOnly.length === 8 || digitsOnly.length === 9) {
+    // Could be AU without country code
+    return 'AU';
+  }
+  
+  return null;
+};
+
+/**
+ * Formats a phone number to WhatsApp-compatible international format with smart detection
+ * @param phone - The input phone number
+ * @param preferredCountryCode - Preferred country code if detection is unclear
  * @returns Formatted phone number or null if invalid
  */
 export const formatPhoneForWhatsApp = (
   phone: string | null,
-  defaultCountryCode: string = 'AU'
+  preferredCountryCode: string = 'AU'
 ): string | null => {
   if (!phone) return null;
   
-  console.log('formatPhoneForWhatsApp input:', phone);
-  
   // Remove all non-digit characters except +
   const cleaned = phone.replace(/[^\d+]/g, '');
-  
-  console.log('formatPhoneForWhatsApp cleaned:', cleaned);
   
   if (!cleaned) return null;
   
   // If already has + at start, validate and return
   if (cleaned.startsWith('+')) {
     const digits = cleaned.substring(1);
-    if (digits.length >= 10 && digits.length <= 15) {
+    if (digits.length >= 8 && digits.length <= 15) {
       return cleaned;
     }
     return null;
@@ -57,47 +123,62 @@ export const formatPhoneForWhatsApp = (
   const digitsOnly = cleaned.replace(/\+/g, '');
   
   // If too short or too long, return null
-  if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+  if (digitsOnly.length < 7 || digitsOnly.length > 15) {
     return null;
   }
   
-  // Check if it already includes a country code
-  for (const country of COUNTRY_CODES) {
-    const dialCodeDigits = country.dialCode.substring(1); // Remove +
-    if (digitsOnly.startsWith(dialCodeDigits)) {
-      return `+${digitsOnly}`;
-    }
+  // Try to detect country first
+  const detectedCountry = detectPhoneCountry(phone);
+  const countryToUse = detectedCountry || preferredCountryCode;
+  
+  // Get the dial code for the country
+  const country = COUNTRY_CODES.find(c => c.code === countryToUse);
+  const dialCode = country?.dialCode || '+61';
+  
+  // Handle specific country formatting
+  switch (countryToUse) {
+    case 'AU':
+      // Remove leading 0 if present
+      const auNumber = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+      if (auNumber.length === 9) {
+        return `+61${auNumber}`;
+      }
+      break;
+      
+    case 'NZ':
+      // Remove leading 0 if present
+      const nzNumber = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+      if (nzNumber.length === 8 || nzNumber.length === 9) {
+        return `+64${nzNumber}`;
+      }
+      break;
+      
+    case 'GB':
+      // Remove leading 0 if present
+      const gbNumber = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+      if (gbNumber.length === 10) {
+        return `+44${gbNumber}`;
+      }
+      break;
+      
+    case 'US':
+    case 'CA':
+      // Remove leading 1 if present
+      const naNumber = digitsOnly.startsWith('1') ? digitsOnly.substring(1) : digitsOnly;
+      if (naNumber.length === 10) {
+        return `+1${naNumber}`;
+      }
+      break;
+      
+    default:
+      // For other countries, remove leading 0 and apply dial code
+      const genericNumber = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
+      if (genericNumber.length >= 7 && genericNumber.length <= 12) {
+        return `${dialCode}${genericNumber}`;
+      }
   }
   
-  // Handle Australian numbers specifically (most common for this business)
-  if (defaultCountryCode === 'AU') {
-    // Remove leading 0 if present
-    const withoutLeadingZero = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
-    
-    // Australian mobile numbers start with 4 and are 9 digits
-    if (withoutLeadingZero.startsWith('4') && withoutLeadingZero.length === 9) {
-      return `+61${withoutLeadingZero}`;
-    }
-    
-    // Australian landline numbers (state codes: 2,3,7,8) are typically 9 digits
-    if (['2', '3', '7', '8'].includes(withoutLeadingZero[0]) && withoutLeadingZero.length === 9) {
-      return `+61${withoutLeadingZero}`;
-    }
-    
-    // If it's 10 digits and starts with 0, it's likely Australian
-    if (digitsOnly.length === 10 && digitsOnly.startsWith('0')) {
-      return `+61${digitsOnly.substring(1)}`;
-    }
-  }
-  
-  // For other countries, apply default country code
-  const defaultDialCode = COUNTRY_CODES.find(c => c.code === defaultCountryCode)?.dialCode || '+61';
-  const defaultDigits = defaultDialCode.substring(1);
-  
-  // Remove leading 0 if present for most countries
-  const withoutLeadingZero = digitsOnly.startsWith('0') ? digitsOnly.substring(1) : digitsOnly;
-  
-  return `${defaultDialCode}${withoutLeadingZero}`;
+  return null;
 };
 
 /**

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Trash2, Calendar, X } from "lucide-react";
 import { useUpdateCustomer, useDeleteCustomer } from "@/hooks/useCustomers";
 import { Customer } from "@/hooks/useCustomers";
@@ -257,11 +258,11 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
+                  <PhoneInput
                     value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    onChange={(value) => handleInputChange("phone", value)}
+                    label="Phone"
+                    placeholder="Enter phone number"
                   />
                 </div>
               </div>

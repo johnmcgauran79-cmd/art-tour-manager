@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { parseCSV, CSVContact } from "@/utils/csvParser";
 import { findExistingCustomer, prepareCustomerData } from "@/utils/contactProcessor";
 import { CSVTemplateDownload } from "./CSVTemplateDownload";
+import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
 
 interface ContactImportModalProps {
   open: boolean;
@@ -171,7 +172,15 @@ export const ContactImportModal = ({ open, onOpenChange }: ContactImportModalPro
         const mapped: any = {};
         Object.entries(fieldMapping).forEach(([csvField, dbField]) => {
           if (dbField && contact[csvField as keyof CSVContact]) {
-            mapped[dbField] = contact[csvField as keyof CSVContact];
+            let value = contact[csvField as keyof CSVContact];
+            
+            // Apply smart phone formatting for phone fields
+            if (dbField === 'phone' && value) {
+              const formatted = formatPhoneForWhatsApp(value as string);
+              value = formatted || value;
+            }
+            
+            mapped[dbField] = value;
           }
         });
         return mapped as CSVContact;
