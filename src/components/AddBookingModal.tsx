@@ -75,8 +75,16 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     // Activity allocations
     activityAllocations: {} as Record<string, number>,
     
-    // Hotel date allocations - stores individual hotel dates
-    hotelDates: {} as Record<string, { check_in: string; check_out: string }>,
+    // Hotel date allocations - stores individual hotel dates and room details
+    hotelDates: {} as Record<string, { 
+      check_in: string; 
+      check_out: string; 
+      bedding?: string; 
+      room_type?: string; 
+      room_upgrade?: string; 
+      confirmation_number?: string; 
+      room_requests?: string; 
+    }>,
   });
 
   const { data: tours } = useTours();
@@ -93,10 +101,19 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       const initialHotelDates: Record<string, { check_in: string; check_out: string }> = {};
       
       hotels.forEach(hotel => {
-        initialHotelDates[hotel.id] = {
+        // Only set properties that have values
+        const hotelData: any = {
           check_in: hotel.default_check_in || formData.check_in_date || '',
           check_out: hotel.default_check_out || formData.check_out_date || '',
         };
+        
+        // Add optional properties with defaults
+        if (hotel.default_room_type) {
+          hotelData.room_type = hotel.default_room_type;
+        }
+        hotelData.bedding = 'double';
+        
+        initialHotelDates[hotel.id] = hotelData;
       });
       
       setFormData(prev => ({
@@ -308,18 +325,28 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           .eq('tour_id', formData.tour_id);
         
         if (tourHotels && tourHotels.length > 0) {
-          // Create hotel bookings for each hotel (initially not allocated)
+          // Create hotel bookings for each hotel with details from form
           for (const hotel of tourHotels) {
+            const hotelFormData = formData.hotelDates[hotel.id];
+            // Map bedding types that aren't in the enum to valid ones
+            let beddingType = hotelFormData?.bedding || 'double';
+            if (beddingType === 'triple' || beddingType === 'family') {
+              beddingType = 'twin'; // Default triple/family to twin
+            }
+            
             await supabase
               .from('hotel_bookings')
               .insert({
                 booking_id: newBooking.id,
                 hotel_id: hotel.id,
                 allocated: true,
-                check_in_date: hotel.default_check_in || formData.check_in_date || null,
-                check_out_date: hotel.default_check_out || formData.check_out_date || null,
-                room_type: hotel.default_room_type,
-                bedding: 'double',
+                check_in_date: hotelFormData?.check_in || hotel.default_check_in || formData.check_in_date || null,
+                check_out_date: hotelFormData?.check_out || hotel.default_check_out || formData.check_out_date || null,
+                room_type: hotelFormData?.room_type || hotel.default_room_type,
+                bedding: beddingType as 'single' | 'double' | 'twin',
+                room_upgrade: hotelFormData?.room_upgrade || null,
+                confirmation_number: hotelFormData?.confirmation_number || null,
+                room_requests: hotelFormData?.room_requests || null,
                 required: true,
               });
           }
@@ -538,65 +565,163 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                   <div className="space-y-4">
                     {hotels && hotels.length > 0 ? (
                       <div className="space-y-4">
-                        {hotels.map((hotel) => (
-                          <div key={hotel.id} className="border rounded-lg p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium">{hotel.name}</h4>
-                              <div className="text-sm text-muted-foreground">
-                                {hotel.rooms_available ? `${hotel.rooms_available} rooms available` : 'Check availability'}
-                              </div>
-                            </div>
-                            {hotel.address && (
-                              <p className="text-sm text-muted-foreground">{hotel.address}</p>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label htmlFor={`hotel-checkin-${hotel.id}`}>Check In Date</Label>
-                                <Input
-                                  id={`hotel-checkin-${hotel.id}`}
-                                  type="date"
-                                  value={formData.hotelDates[hotel.id]?.check_in || ''}
-                                  onChange={(e) => {
-                                    const newHotelDates = {
-                                      ...formData.hotelDates,
-                                      [hotel.id]: {
-                                        ...formData.hotelDates[hotel.id],
-                                        check_in: e.target.value,
-                                      }
-                                    };
-                                    handleFormChange('hotelDates', newHotelDates);
-                                    // Note: Overall booking dates will be auto-calculated by database triggers
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <Label htmlFor={`hotel-checkout-${hotel.id}`}>Check Out Date</Label>
-                                <Input
-                                  id={`hotel-checkout-${hotel.id}`}
-                                  type="date"
-                                  value={formData.hotelDates[hotel.id]?.check_out || ''}
-                                  onChange={(e) => {
-                                    const newHotelDates = {
-                                      ...formData.hotelDates,
-                                      [hotel.id]: {
-                                        ...formData.hotelDates[hotel.id],
-                                        check_out: e.target.value,
-                                      }
-                                    };
-                                    handleFormChange('hotelDates', newHotelDates);
-                                    // Note: Overall booking dates will be auto-calculated by database triggers
-                                  }}
-                                />
-                              </div>
-                            </div>
-                            {hotel.operations_notes && (
-                              <div className="text-sm">
-                                <span className="font-medium">Notes: </span>
-                                <span className="text-muted-foreground">{hotel.operations_notes}</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                         {hotels.map((hotel) => (
+                           <div key={hotel.id} className="border rounded-lg p-4 space-y-3">
+                             <div className="flex items-center justify-between">
+                               <h4 className="font-medium">{hotel.name}</h4>
+                               <div className="text-sm text-muted-foreground">
+                                 {hotel.rooms_available ? `${hotel.rooms_available} rooms available` : 'Check availability'}
+                               </div>
+                             </div>
+                             {hotel.address && (
+                               <p className="text-sm text-muted-foreground">{hotel.address}</p>
+                             )}
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                 <Label htmlFor={`hotel-checkin-${hotel.id}`}>Check In Date</Label>
+                                 <Input
+                                   id={`hotel-checkin-${hotel.id}`}
+                                   type="date"
+                                   value={formData.hotelDates[hotel.id]?.check_in || ''}
+                                   onChange={(e) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         check_in: e.target.value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor={`hotel-checkout-${hotel.id}`}>Check Out Date</Label>
+                                 <Input
+                                   id={`hotel-checkout-${hotel.id}`}
+                                   type="date"
+                                   value={formData.hotelDates[hotel.id]?.check_out || ''}
+                                   onChange={(e) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         check_out: e.target.value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor={`hotel-bedding-${hotel.id}`}>Bedding Type</Label>
+                                 <Select 
+                                   value={formData.hotelDates[hotel.id]?.bedding || 'double'} 
+                                   onValueChange={(value) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         bedding: value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                 >
+                                   <SelectTrigger>
+                                     <SelectValue />
+                                   </SelectTrigger>
+                                   <SelectContent>
+                                     <SelectItem value="single">Single</SelectItem>
+                                     <SelectItem value="double">Double</SelectItem>
+                                     <SelectItem value="twin">Twin</SelectItem>
+                                     <SelectItem value="triple">Triple</SelectItem>
+                                     <SelectItem value="family">Family</SelectItem>
+                                   </SelectContent>
+                                 </Select>
+                               </div>
+                               <div>
+                                 <Label htmlFor={`hotel-room-type-${hotel.id}`}>Room Type</Label>
+                                 <Input
+                                   id={`hotel-room-type-${hotel.id}`}
+                                   value={formData.hotelDates[hotel.id]?.room_type || hotel.default_room_type || ''}
+                                   onChange={(e) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         room_type: e.target.value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                   placeholder="Standard room, Suite, etc."
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor={`hotel-room-upgrade-${hotel.id}`}>Room Upgrade</Label>
+                                 <Input
+                                   id={`hotel-room-upgrade-${hotel.id}`}
+                                   value={formData.hotelDates[hotel.id]?.room_upgrade || ''}
+                                   onChange={(e) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         room_upgrade: e.target.value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                   placeholder="Ocean view, Balcony, etc."
+                                 />
+                               </div>
+                               <div>
+                                 <Label htmlFor={`hotel-confirmation-${hotel.id}`}>Confirmation Number</Label>
+                                 <Input
+                                   id={`hotel-confirmation-${hotel.id}`}
+                                   value={formData.hotelDates[hotel.id]?.confirmation_number || ''}
+                                   onChange={(e) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         confirmation_number: e.target.value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                   placeholder="Hotel confirmation number"
+                                 />
+                               </div>
+                               <div className="md:col-span-2">
+                                 <Label htmlFor={`hotel-requests-${hotel.id}`}>Room Requests</Label>
+                                 <Textarea
+                                   id={`hotel-requests-${hotel.id}`}
+                                   value={formData.hotelDates[hotel.id]?.room_requests || ''}
+                                   onChange={(e) => {
+                                     const newHotelDates = {
+                                       ...formData.hotelDates,
+                                       [hotel.id]: {
+                                         ...formData.hotelDates[hotel.id],
+                                         room_requests: e.target.value,
+                                       }
+                                     };
+                                     handleFormChange('hotelDates', newHotelDates);
+                                   }}
+                                   placeholder="High floor, near elevator, quiet room, etc."
+                                   rows={2}
+                                 />
+                               </div>
+                             </div>
+                             {hotel.operations_notes && (
+                               <div className="text-sm">
+                                 <span className="font-medium">Notes: </span>
+                                 <span className="text-muted-foreground">{hotel.operations_notes}</span>
+                               </div>
+                             )}
+                           </div>
+                         ))}
                       </div>
                     ) : (
                       <div className="text-center py-8 text-muted-foreground">
