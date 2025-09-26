@@ -255,8 +255,82 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       }
     }
     
+    // Handle accommodation toggle - recalculate dates when turned back on
+    if (field === 'accommodation_required' && value === true) {
+      const recalculatedDates = calculateDefaultDatesFromHotels();
+      setFormData(prev => ({ 
+        ...prev, 
+        [field]: value,
+        ...recalculatedDates
+      }));
+      setHasUnsavedChanges(true);
+      return;
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
     setHasUnsavedChanges(true);
+  };
+
+  // Function to calculate default check-in/out dates from hotel data
+  const calculateDefaultDatesFromHotels = () => {
+    let earliestCheckIn = '';
+    let latestCheckOut = '';
+    
+    // First, try to get dates from existing hotel date allocations
+    if (formData.hotelDates && Object.keys(formData.hotelDates).length > 0) {
+      const hotelCheckInDates = Object.values(formData.hotelDates)
+        .map(hotel => hotel.check_in)
+        .filter(date => date)
+        .sort();
+      
+      const hotelCheckOutDates = Object.values(formData.hotelDates)
+        .map(hotel => hotel.check_out)
+        .filter(date => date)
+        .sort();
+      
+      if (hotelCheckInDates.length > 0) {
+        earliestCheckIn = hotelCheckInDates[0];
+      }
+      if (hotelCheckOutDates.length > 0) {
+        latestCheckOut = hotelCheckOutDates[hotelCheckOutDates.length - 1];
+      }
+    }
+    
+    // If no hotel dates found, fall back to tour dates or hotel defaults
+    if (!earliestCheckIn || !latestCheckOut) {
+      if (hotels && hotels.length > 0) {
+        const hotelCheckInDates = hotels
+          .map(hotel => hotel.default_check_in)
+          .filter(date => date)
+          .sort();
+        
+        const hotelCheckOutDates = hotels
+          .map(hotel => hotel.default_check_out)
+          .filter(date => date)
+          .sort();
+        
+        if (hotelCheckInDates.length > 0 && !earliestCheckIn) {
+          earliestCheckIn = hotelCheckInDates[0];
+        }
+        if (hotelCheckOutDates.length > 0 && !latestCheckOut) {
+          latestCheckOut = hotelCheckOutDates[hotelCheckOutDates.length - 1];
+        }
+      }
+      
+      // Final fallback to tour dates
+      if ((!earliestCheckIn || !latestCheckOut) && formData.tour_id && tours) {
+        const selectedTour = tours.find(tour => tour.id === formData.tour_id);
+        if (selectedTour) {
+          if (!earliestCheckIn) earliestCheckIn = selectedTour.start_date || '';
+          if (!latestCheckOut) latestCheckOut = selectedTour.end_date || '';
+        }
+      }
+    }
+    
+    return {
+      check_in_date: earliestCheckIn,
+      check_out_date: latestCheckOut,
+    };
   };
 
   const handleValidateAndProceed = (e: React.FormEvent) => {
