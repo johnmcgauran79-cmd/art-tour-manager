@@ -371,20 +371,27 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       setCreatedBookingId(newBooking.id);
       setHasUnsavedChanges(false);
       
-      // Create activity bookings based on activity allocations
-      if (formData.activityAllocations && Object.keys(formData.activityAllocations).length > 0) {
-        const { supabase } = await import("@/integrations/supabase/client");
-        
-        for (const [activityId, passengerCount] of Object.entries(formData.activityAllocations)) {
-          if (passengerCount > 0) {
-            await supabase
-              .from('activity_bookings')
-              .insert({
-                booking_id: newBooking.id,
-                activity_id: activityId,
-                passenger_count: passengerCount,
-              });
-          }
+      // Create activity bookings for all activities (auto-allocate with passenger count if not specified)
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      // Get all activities for this tour
+      const { data: tourActivities } = await supabase
+        .from('activities')
+        .select('id')
+        .eq('tour_id', formData.tour_id);
+      
+      if (tourActivities && tourActivities.length > 0) {
+        for (const activity of tourActivities) {
+          // Use specified allocation or default to passenger count
+          const passengerCount = formData.activityAllocations?.[activity.id] || formData.passenger_count;
+          
+          await supabase
+            .from('activity_bookings')
+            .insert({
+              booking_id: newBooking.id,
+              activity_id: activity.id,
+              passengers_attending: passengerCount,
+            });
         }
       }
       

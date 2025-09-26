@@ -93,7 +93,10 @@ export const useReportData = (tourId: string): ReportItem[] => {
   // Activity Allocation Matrix Report
   const activityMatrix = [
     {
-      activities: activities || [],
+      activities: (activities || []).map(activity => ({
+        ...activity,
+        tour_id: tourId
+      })),
       bookings: tourBookings.map(booking => ({
         id: booking.id,
         leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
