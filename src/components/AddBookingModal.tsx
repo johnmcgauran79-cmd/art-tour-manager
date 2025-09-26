@@ -297,21 +297,51 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         }
       }
       
-      // Create hotel bookings based on hotel date allocations
+      // Create hotel bookings for all hotels if accommodation is required
+      if (formData.accommodation_required) {
+        const { supabase } = await import("@/integrations/supabase/client");
+        
+        // Fetch hotels for the selected tour
+        const { data: tourHotels } = await supabase
+          .from('hotels')
+          .select('id, default_check_in, default_check_out, default_room_type')
+          .eq('tour_id', formData.tour_id);
+        
+        if (tourHotels && tourHotels.length > 0) {
+          // Create hotel bookings for each hotel (initially not allocated)
+          for (const hotel of tourHotels) {
+            await supabase
+              .from('hotel_bookings')
+              .insert({
+                booking_id: newBooking.id,
+                hotel_id: hotel.id,
+                allocated: false,
+                check_in_date: hotel.default_check_in || formData.check_in_date || null,
+                check_out_date: hotel.default_check_out || formData.check_out_date || null,
+                room_type: hotel.default_room_type,
+                bedding: 'double',
+                required: true,
+              });
+          }
+        }
+      }
+      
+      // Update any specific hotel date allocations if provided
       if (formData.hotelDates && Object.keys(formData.hotelDates).length > 0) {
         const { supabase } = await import("@/integrations/supabase/client");
         
         for (const [hotelId, dates] of Object.entries(formData.hotelDates)) {
           if (dates.check_in && dates.check_out) {
+            // Update the existing hotel booking with specific dates and mark as allocated
             await supabase
               .from('hotel_bookings')
-              .insert({
-                booking_id: newBooking.id,
-                hotel_id: hotelId,
+              .update({
+                allocated: true,
                 check_in_date: dates.check_in,
                 check_out_date: dates.check_out,
-                booking_status: 'pending',
-              });
+              })
+              .eq('booking_id', newBooking.id)
+              .eq('hotel_id', hotelId);
           }
         }
       }
