@@ -315,7 +315,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
               .insert({
                 booking_id: newBooking.id,
                 hotel_id: hotel.id,
-                allocated: false,
+                allocated: true,
                 check_in_date: hotel.default_check_in || formData.check_in_date || null,
                 check_out_date: hotel.default_check_out || formData.check_out_date || null,
                 room_type: hotel.default_room_type,
