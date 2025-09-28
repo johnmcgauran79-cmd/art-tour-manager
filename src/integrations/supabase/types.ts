@@ -1529,6 +1529,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      secure_customer_search: {
+        Args: { search_term: string }
+        Returns: {
+          email: string
+          first_name: string
+          has_active_bookings: boolean
+          id: string
+          last_name: string
+        }[]
+      }
       user_has_department: {
         Args: {
           _department: Database["public"]["Enums"]["department"]
