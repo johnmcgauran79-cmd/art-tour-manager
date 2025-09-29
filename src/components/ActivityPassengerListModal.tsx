@@ -90,8 +90,8 @@ export const ActivityPassengerListModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center justify-between">
             <div>
               <h3 className="text-xl font-semibold">{activityName}</h3>
@@ -111,60 +111,66 @@ export const ActivityPassengerListModal = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div id="passenger-list-content" className="space-y-4">
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <p className="font-semibold text-lg">
-              Total Passengers: {totalPassengers}
-            </p>
-            <p className="text-muted-foreground">
-              Total Bookings: {passengers?.length || 0}
-            </p>
-          </div>
+        <div className="flex-1 flex flex-col min-h-0">
+          <div id="passenger-list-content" className="flex-1 flex flex-col space-y-4 min-h-0">
+            <div className="bg-muted/50 p-4 rounded-lg flex-shrink-0">
+              <p className="font-semibold text-lg">
+                Total Passengers: {totalPassengers}
+              </p>
+              <p className="text-muted-foreground">
+                Total Bookings: {passengers?.length || 0}
+              </p>
+            </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Loading passenger list...</p>
-            </div>
-          ) : passengers && passengers.length > 0 ? (
-            <div className="border rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Lead Passenger</TableHead>
-                    <TableHead>Additional Passengers</TableHead>
-                    <TableHead>Tickets</TableHead>
-                    <TableHead>Dietary Requirements</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {passengers.map((passenger) => (
-                    <TableRow key={passenger.booking_id}>
-                      <TableCell className="font-medium">
-                        {passenger.lead_passenger_name}
-                      </TableCell>
-                      <TableCell>
-                        {[passenger.passenger_2_name, passenger.passenger_3_name]
-                          .filter(Boolean)
-                          .join(', ') || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-bold text-lg">
-                          {passenger.passengers_attending}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {passenger.dietary_restrictions || '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">No passengers found for this activity.</p>
-            </div>
-          )}
+            {isLoading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading passenger list...</p>
+              </div>
+            ) : passengers && passengers.length > 0 ? (
+              <div className="border rounded-lg flex-1 flex flex-col min-h-0">
+                <div className="flex-1 overflow-auto">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10">
+                      <TableRow>
+                        <TableHead className="w-[25%]">Lead Passenger</TableHead>
+                        <TableHead className="w-[30%]">Additional Passengers</TableHead>
+                        <TableHead className="w-[15%]">Tickets</TableHead>
+                        <TableHead className="w-[30%]">Dietary Requirements</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {passengers.map((passenger) => (
+                        <TableRow key={passenger.booking_id}>
+                          <TableCell className="font-medium">
+                            {passenger.lead_passenger_name}
+                          </TableCell>
+                          <TableCell>
+                            {[passenger.passenger_2_name, passenger.passenger_3_name]
+                              .filter(Boolean)
+                              .join(', ') || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-bold text-lg">
+                              {passenger.passengers_attending}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            <div className="max-w-xs break-words">
+                              {passenger.dietary_restrictions || '-'}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No passengers with tickets found for this activity.</p>
+              </div>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

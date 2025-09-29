@@ -33,6 +33,7 @@ export const useActivityPassengers = (activityId: string) => {
           )
         `)
         .eq('activity_id', activityId)
+        .gt('passengers_attending', 0) // Only passengers with positive ticket count
         .not('bookings.status', 'eq', 'cancelled');
       
       if (error) {
