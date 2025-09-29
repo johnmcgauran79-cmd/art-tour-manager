@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit } from "lucide-react";
+import { Edit, Printer } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -19,6 +20,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   
   const { data: activities, isLoading, error, refetch } = useActivities(tourId);
   const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
+  const [selectedActivityForPrint, setSelectedActivityForPrint] = useState<any>(null);
 
   // Log activities data
   console.log('Activities data in tab:', {
@@ -167,13 +169,24 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEditActivity(activity)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEditActivity(activity)}
+                        title="Edit Activity"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedActivityForPrint(activity)}
+                        title="Print Passenger List"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -190,6 +203,19 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
             Add First Activity
           </Button>
         </div>
+      )}
+
+      {selectedActivityForPrint && (
+        <ActivityPassengerListModal
+          open={!!selectedActivityForPrint}
+          onOpenChange={(open) => !open && setSelectedActivityForPrint(null)}
+          activityId={selectedActivityForPrint.id}
+          activityName={selectedActivityForPrint.name}
+          activityDate={selectedActivityForPrint.activity_date 
+            ? formatDateToDDMMYYYY(selectedActivityForPrint.activity_date) 
+            : undefined
+          }
+        />
       )}
     </div>
   );
