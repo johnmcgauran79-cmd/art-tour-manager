@@ -5,11 +5,9 @@ export interface ActivityPassenger {
   booking_id: string;
   passengers_attending: number;
   lead_passenger_name: string;
-  lead_passenger_email: string;
   passenger_2_name?: string;
   passenger_3_name?: string;
-  group_name?: string;
-  booking_status: string;
+  dietary_restrictions?: string;
 }
 
 export const useActivityPassengers = (activityId: string) => {
@@ -25,14 +23,12 @@ export const useActivityPassengers = (activityId: string) => {
           passengers_attending,
           bookings!inner(
             id,
-            status,
             passenger_2_name,
             passenger_3_name,
-            group_name,
+            dietary_restrictions,
             customers!inner(
               first_name,
-              last_name,
-              email
+              last_name
             )
           )
         `)
@@ -49,11 +45,9 @@ export const useActivityPassengers = (activityId: string) => {
         booking_id: item.booking_id,
         passengers_attending: item.passengers_attending,
         lead_passenger_name: `${item.bookings.customers.first_name} ${item.bookings.customers.last_name}`,
-        lead_passenger_email: item.bookings.customers.email || '',
         passenger_2_name: item.bookings.passenger_2_name || undefined,
         passenger_3_name: item.bookings.passenger_3_name || undefined, 
-        group_name: item.bookings.group_name || undefined,
-        booking_status: item.bookings.status
+        dietary_restrictions: item.bookings.dietary_restrictions || undefined
       })) || [];
 
       console.log('Activity passengers fetched:', passengers);

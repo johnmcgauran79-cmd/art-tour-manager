@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Printer, X } from "lucide-react";
 import { useActivityPassengers } from "@/hooks/useActivityPassengers";
-import { Badge } from "@/components/ui/badge";
 
 interface ActivityPassengerListModalProps {
   open: boolean;
@@ -43,11 +42,6 @@ export const ActivityPassengerListModal = ({
             th { background-color: #f5f5f5; font-weight: bold; }
             tr:nth-child(even) { background-color: #f9f9f9; }
             .summary { background-color: #e6f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
-            .badge { padding: 2px 8px; border-radius: 12px; font-size: 12px; }
-            .status-confirmed { background-color: #d4edda; color: #155724; }
-            .status-host { background-color: #fff3cd; color: #856404; }
-            .status-invoiced { background-color: #cce5ff; color: #004085; }
-            .status-pending { background-color: #f8d7da; color: #721c24; }
           </style>
         </head>
         <body>
@@ -60,30 +54,22 @@ export const ActivityPassengerListModal = ({
             <thead>
               <tr>
                 <th>Lead Passenger</th>
-                <th>Group Name</th>
                 <th>Additional Passengers</th>
-                <th>Total Tickets</th>
-                <th>Status</th>
-                <th>Email</th>
+                <th>Tickets</th>
+                <th>Dietary Requirements</th>
               </tr>
             </thead>
             <tbody>
               ${passengers?.map(passenger => `
                 <tr>
                   <td>${passenger.lead_passenger_name}</td>
-                  <td>${passenger.group_name || '-'}</td>
                   <td>
                     ${[passenger.passenger_2_name, passenger.passenger_3_name]
                       .filter(Boolean)
                       .join(', ') || '-'}
                   </td>
                   <td><strong>${passenger.passengers_attending}</strong></td>
-                  <td>
-                    <span class="badge status-${passenger.booking_status.toLowerCase()}">
-                      ${passenger.booking_status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td>${passenger.lead_passenger_email}</td>
+                  <td>${passenger.dietary_restrictions || '-'}</td>
                 </tr>
               `).join('') || ''}
             </tbody>
@@ -145,11 +131,9 @@ export const ActivityPassengerListModal = ({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Lead Passenger</TableHead>
-                    <TableHead>Group Name</TableHead>
                     <TableHead>Additional Passengers</TableHead>
                     <TableHead>Tickets</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Email</TableHead>
+                    <TableHead>Dietary Requirements</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -157,9 +141,6 @@ export const ActivityPassengerListModal = ({
                     <TableRow key={passenger.booking_id}>
                       <TableCell className="font-medium">
                         {passenger.lead_passenger_name}
-                      </TableCell>
-                      <TableCell>
-                        {passenger.group_name || '-'}
                       </TableCell>
                       <TableCell>
                         {[passenger.passenger_2_name, passenger.passenger_3_name]
@@ -171,15 +152,8 @@ export const ActivityPassengerListModal = ({
                           {passenger.passengers_attending}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={passenger.booking_status === 'confirmed' ? 'default' : 'secondary'}
-                        >
-                          {passenger.booking_status.toUpperCase()}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {passenger.lead_passenger_email}
+                      <TableCell className="text-sm">
+                        {passenger.dietary_restrictions || '-'}
                       </TableCell>
                     </TableRow>
                   ))}
