@@ -43,7 +43,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
 
-  const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled');
+  const tourBookings = (allBookings || []).filter(booking => 
+    booking.tour_id === tourId && 
+    booking.status !== 'cancelled' && 
+    booking.status !== 'waitlisted'
+  );
 
   // Fetch activity bookings to calculate discrepancies
   useEffect(() => {
