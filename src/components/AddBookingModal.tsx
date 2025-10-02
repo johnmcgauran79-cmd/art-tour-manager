@@ -358,6 +358,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   };
 
+  // Scroll to top when changing tabs
+  useEffect(() => {
+    if (activeTab === "hotels" || activeTab === "activities") {
+      // Find the dialog content and scroll to top
+      const dialogContent = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
+      if (dialogContent) {
+        dialogContent.scrollTop = 0;
+      }
+    }
+  }, [activeTab]);
+
   const handleCreateBooking = async () => {
     try {
       // Clean up date fields - convert empty strings to null
