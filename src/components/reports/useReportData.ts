@@ -21,7 +21,9 @@ export const useReportData = (tourId: string): ReportItem[] => {
   const { data: activities } = useActivities(tourId);
 
   const tourBookings = (allBookings || []).filter(booking => 
-    booking.tour_id === tourId && booking.status !== 'cancelled'
+    booking.tour_id === tourId && 
+    booking.status !== 'cancelled' && 
+    booking.status !== 'waitlisted'
   );
 
   // Contact List Report
