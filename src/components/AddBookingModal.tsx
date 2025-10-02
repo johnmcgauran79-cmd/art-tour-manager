@@ -95,16 +95,16 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
   
-  // Initialize hotel dates when hotels are loaded
+  // Initialize hotel dates when hotels are loaded or modal opens
   useEffect(() => {
-    if (hotels && hotels.length > 0) {
+    if (open && hotels && hotels.length > 0) {
       const initialHotelDates: Record<string, { check_in: string; check_out: string }> = {};
       
       hotels.forEach(hotel => {
-        // Only set properties that have values
+        // Prioritize hotel's default dates over booking dates
         const hotelData: any = {
-          check_in: hotel.default_check_in || formData.check_in_date || '',
-          check_out: hotel.default_check_out || formData.check_out_date || '',
+          check_in: hotel.default_check_in || '',
+          check_out: hotel.default_check_out || '',
         };
         
         // Add optional properties with defaults
@@ -124,7 +124,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       // Note: Overall booking dates will be automatically calculated by database triggers
       // from hotel bookings, so we don't need to set them manually
     }
-  }, [hotels]);
+  }, [open, hotels]);
   
   // Note: updateOverallBookingDates function removed since dates are now auto-calculated by database
   
