@@ -42,7 +42,7 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
   const allItems = [...mainItems, ...adminItems];
 
   return (
-    <Sidebar collapsible="icon" className="border-r h-full pt-[88px]">
+    <Sidebar collapsible="icon" className="border-r h-full pt-[90px]">
       <SidebarContent className="px-2 py-4">
         <SidebarGroup>
           <SidebarGroupContent>
