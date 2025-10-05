@@ -15,6 +15,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -42,12 +43,15 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
   const allItems = [...mainItems, ...adminItems];
 
   return (
-    <Sidebar collapsible="icon" className="border-r bg-background relative">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r">
+      <SidebarHeader className="border-b px-2 py-4">
+        <div className="flex items-center gap-2 px-2">
+          {open && <span className="font-semibold text-sm">ART Tours</span>}
+        </div>
+      </SidebarHeader>
+      
+      <SidebarContent className="px-2 py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className={!open ? "sr-only" : ""}>
-            Navigation
-          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {allItems.map((item) => {
