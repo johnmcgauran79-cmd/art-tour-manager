@@ -46,7 +46,7 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
       collapsible="icon" 
       className="border-r h-full lg:pt-[95px]"
       style={{
-        '--sidebar-width': '110px',
+        '--sidebar-width': '140px',
         '--sidebar-width-icon': '48px',
       } as React.CSSProperties}
     >
