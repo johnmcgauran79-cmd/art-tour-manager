@@ -119,10 +119,10 @@ const Index = () => {
 
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
-      <DashboardHeader isAdmin={isAdmin} />
-      
-      <SidebarProvider defaultOpen={true}>
+    <SidebarProvider defaultOpen={true}>
+      <div className="min-h-screen w-full flex flex-col">
+        <DashboardHeader isAdmin={isAdmin} />
+        
         <div className="flex flex-1 w-full overflow-hidden">
           <AppSidebar 
             activeTab={activeTab}
@@ -183,7 +183,7 @@ const Index = () => {
             </main>
           </div>
         </div>
-      </SidebarProvider>
+      </div>
 
       {selectedTour && (
         <TourDetailModalWithHotelsTab
@@ -235,7 +235,7 @@ const Index = () => {
         open={customerAnalyticsOpen}
         onOpenChange={setCustomerAnalyticsOpen}
       />
-    </div>
+    </SidebarProvider>
   );
 };
 
