@@ -123,14 +123,14 @@ const Index = () => {
       <DashboardHeader isAdmin={isAdmin} />
       
       <SidebarProvider defaultOpen={true}>
-        <div className="flex flex-1 w-full">
+        <div className="flex flex-1 w-full overflow-hidden">
           <AppSidebar 
             activeTab={activeTab}
             onTabChange={setActiveTab}
             isAdminOrManager={isAdminOrManager}
           />
           
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             <div className="flex items-center border-b bg-background px-4 py-2 lg:hidden">
               <SidebarTrigger />
               <span className="ml-2 text-sm font-medium">Menu</span>
