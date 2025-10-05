@@ -123,7 +123,7 @@ const Index = () => {
       <div className="min-h-screen w-full flex flex-col">
         <DashboardHeader isAdmin={isAdmin} />
         
-        <div className="flex flex-1 w-full overflow-hidden">
+        <div className="flex flex-1 w-full overflow-hidden bg-gray-50">
           <AppSidebar 
             activeTab={activeTab}
             onTabChange={setActiveTab}
