@@ -42,7 +42,7 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
   const allItems = [...mainItems, ...adminItems];
 
   return (
-    <Sidebar collapsible="icon" className="border-r bg-background">
+    <Sidebar collapsible="icon" className="border-r bg-background relative">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className={!open ? "sr-only" : ""}>
