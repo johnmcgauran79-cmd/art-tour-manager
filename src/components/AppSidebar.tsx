@@ -51,8 +51,8 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
         '--sidebar-width-icon': '48px',
       } as React.CSSProperties}
     >
-      <SidebarHeader className="border-b">
-        <SidebarTrigger className="ml-auto" />
+      <SidebarHeader className="pt-4">
+        <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent className="px-2 py-4">
         <SidebarGroup>
