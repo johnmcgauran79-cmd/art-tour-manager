@@ -126,7 +126,7 @@ const Index = () => {
       >
         <DashboardHeader isAdmin={isAdmin} />
         
-        <div className="flex flex-1 w-full">
+        <div className="flex flex-1 w-full bg-yellow-300">
           <AppSidebar 
             activeTab={activeTab}
             onTabChange={setActiveTab}
