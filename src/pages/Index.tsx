@@ -133,7 +133,7 @@ const Index = () => {
             isAdminOrManager={isAdminOrManager}
           />
           
-          <main className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 flex flex-col overflow-hidden ml-[150px] md:ml-[150px] ml-0">
             <div className="flex items-center border-b bg-background px-4 py-2 lg:hidden">
               <SidebarTrigger />
               <span className="ml-2 text-sm font-medium">Menu</span>
