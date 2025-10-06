@@ -45,14 +45,13 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
   return (
     <Sidebar 
       collapsible="icon"
-      className="border-r relative"
-      variant="sidebar"
+      className="border-r"
       style={{
         '--sidebar-width': '150px',
         '--sidebar-width-icon': '48px',
       } as React.CSSProperties}
     >
-      <SidebarHeader className="px-2 pt-2 pb-2">
+      <SidebarHeader className="px-2 pt-8 pb-2">
         <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent className="px-2 pt-2 pb-4">
