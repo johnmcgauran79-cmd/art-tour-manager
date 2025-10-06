@@ -123,20 +123,20 @@ const Index = () => {
       <div className="min-h-screen w-full flex flex-col">
         <DashboardHeader isAdmin={isAdmin} />
         
-        <div className="flex flex-1 w-full overflow-hidden bg-gray-50">
+        <div className="flex flex-1 w-full overflow-hidden bg-yellow-300">
           <AppSidebar 
             activeTab={activeTab}
             onTabChange={setActiveTab}
             isAdminOrManager={isAdminOrManager}
           />
           
-          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-green-300">
             <div className="flex items-center border-b bg-background px-4 py-2 lg:hidden">
               <SidebarTrigger />
               <span className="ml-2 text-sm font-medium">Menu</span>
             </div>
 
-            <main className="flex-1 overflow-auto bg-gray-50 pr-4 sm:pr-6 lg:pr-8 py-8">
+            <main className="flex-1 overflow-auto bg-blue-300 pr-4 sm:pr-6 lg:pr-8 py-8">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="dashboard" className="space-y-8 mt-0">
                   <DashboardQuickActions
