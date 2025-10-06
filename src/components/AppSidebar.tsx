@@ -15,6 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarHeader,
+  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -43,13 +44,16 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
 
   return (
     <Sidebar 
-      collapsible="offcanvas"
+      collapsible="icon"
       className="border-r"
       style={{
         '--sidebar-width': '150px',
         '--sidebar-width-icon': '48px',
       } as React.CSSProperties}
     >
+      <SidebarHeader className="border-b">
+        <SidebarTrigger className="ml-auto" />
+      </SidebarHeader>
       <SidebarContent className="px-2 py-4">
         <SidebarGroup>
           <SidebarGroupContent>
