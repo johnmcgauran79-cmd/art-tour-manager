@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DateTimeDisplay } from "./DateTimeDisplay";
+import { useIsMobile } from "@/hooks/use-mobile";
 interface DashboardHeaderProps {
   isAdmin: boolean;
 }
@@ -9,6 +10,8 @@ interface DashboardHeaderProps {
 export const DashboardHeader = ({ 
   isAdmin
 }: DashboardHeaderProps) => {
+  const isMobile = useIsMobile();
+  
   return (
     <div className="bg-brand-navy border-b shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,7 +32,7 @@ export const DashboardHeader = ({
             </div>
           </div>
           <div className="flex items-center space-x-6">
-            <DateTimeDisplay />
+            {!isMobile && <DateTimeDisplay />}
             <UserDropdown />
           </div>
         </div>
