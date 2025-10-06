@@ -7,7 +7,7 @@ import { ContactsTable } from "@/components/ContactsTable";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { Settings } from "@/pages/Settings";
 import { AppSidebar } from "@/components/AppSidebar";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { EditBookingModal } from "@/components/EditBookingModal";
@@ -27,7 +27,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 
 
-const Index = () => {
+const IndexContent = () => {
+  const { state } = useSidebar();
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -119,67 +120,68 @@ const Index = () => {
 
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div 
-        className="min-h-screen w-full flex flex-col"
-        style={{ '--header-height': '95px' } as React.CSSProperties}
-      >
-        <DashboardHeader isAdmin={isAdmin} />
+    <>
+      <div
+          className="min-h-screen w-full flex flex-col"
+          style={{ '--header-height': '95px' } as React.CSSProperties}
+        >
+          <DashboardHeader isAdmin={isAdmin} />
         
-        <div className="flex flex-1 overflow-hidden">
-          <AppSidebar 
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            isAdminOrManager={isAdminOrManager}
-          />
-          
-          <main className="flex-1 flex flex-col min-w-0">
-            <div className="flex-1 overflow-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-8">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsContent value="dashboard" className="space-y-8 mt-0">
-                  <DashboardQuickActions
-                    onAddTour={() => setAddTourModalOpen(true)}
-                    onAddBooking={() => setAddBookingModalOpen(true)}
-                    onAddContact={() => setAddContactModalOpen(true)}
-                    onAddTask={() => setAddTaskModalOpen(true)}
-                  />
+          <div className="flex flex-1 overflow-hidden relative">
+            <AppSidebar 
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              isAdminOrManager={isAdminOrManager}
+            />
+            
+            <main 
+              className="flex-1 flex flex-col min-w-0 transition-[margin-left] duration-200 ease-linear"
+              style={{
+                marginLeft: state === "expanded" ? "150px" : "48px"
+              }}
+            >
+              <div className="flex-1 overflow-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-8">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsContent value="dashboard" className="space-y-8 mt-0">
+                    <DashboardQuickActions
+                      onAddTour={() => setAddTourModalOpen(true)}
+                      onAddBooking={() => setAddBookingModalOpen(true)}
+                      onAddContact={() => setAddContactModalOpen(true)}
+                      onAddTask={() => setAddTaskModalOpen(true)}
+                    />
 
-                  <div className="w-full">
-                    <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
-                  </div>
-                </TabsContent>
-                
-                <TabsContent value="operations" className="space-y-4 mt-0">
-                  <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
-                </TabsContent>
-                
-                <TabsContent value="tours" className="space-y-4 mt-0">
-                  <ToursTable />
-                </TabsContent>
-                
-                <TabsContent value="bookings" className="space-y-4 mt-0">
-                  <BookingsTable 
-                    onAddBooking={handleAddBooking} 
-                    onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="contacts" className="space-y-4 mt-0">
-                  <ContactsTable />
-                </TabsContent>
-
-                {isAdminOrManager && (
-                  <TabsContent value="settings" className="space-y-4 mt-0">
-                    <Settings 
-                      onBack={() => setActiveTab("dashboard")}
+                    <div className="w-full">
+                      <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
+                    </div>
+                  </TabsContent>
+                  <TabsContent value="operations" className="space-y-4 mt-0">
+                    <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
+                  </TabsContent>
+                  <TabsContent value="tours" className="space-y-4 mt-0">
+                    <ToursTable />
+                  </TabsContent>
+                  <TabsContent value="bookings" className="space-y-4 mt-0">
+                    <BookingsTable 
+                      onAddBooking={handleAddBooking} 
+                      onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
                     />
                   </TabsContent>
-                )}
-              </Tabs>
-            </div>
-          </main>
+                  <TabsContent value="contacts" className="space-y-4 mt-0">
+                    <ContactsTable />
+                  </TabsContent>
+
+                  {isAdminOrManager && (
+                    <TabsContent value="settings" className="space-y-4 mt-0">
+                      <Settings 
+                        onBack={() => setActiveTab("dashboard")}
+                      />
+                    </TabsContent>
+                  )}
+                </Tabs>
+              </div>
+            </main>
+          </div>
         </div>
-      </div>
 
       {selectedTour && (
         <TourDetailModalWithHotelsTab
@@ -231,6 +233,14 @@ const Index = () => {
         open={customerAnalyticsOpen}
         onOpenChange={setCustomerAnalyticsOpen}
       />
+    </>
+  );
+};
+
+const Index = () => {
+  return (
+    <SidebarProvider defaultOpen={true}>
+      <IndexContent />
     </SidebarProvider>
   );
 };
