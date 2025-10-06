@@ -130,11 +130,13 @@ const Index = () => {
             isAdminOrManager={isAdminOrManager}
           />
           
-          <main className="flex-1 overflow-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex items-center border-b bg-background px-4 py-2 mb-4 -mx-4 sm:-mx-6 lg:-mx-8 lg:hidden">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div className="flex items-center border-b bg-background px-4 py-2 lg:hidden">
               <SidebarTrigger />
               <span className="ml-2 text-sm font-medium">Menu</span>
             </div>
+
+            <main className="flex-1 overflow-auto bg-gray-50 pl-4 sm:pl-6 lg:pl-8 pr-4 sm:pr-6 lg:pr-8 py-8">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="dashboard" className="space-y-8 mt-0">
                   <DashboardQuickActions
@@ -176,7 +178,8 @@ const Index = () => {
                   </TabsContent>
                 )}
               </Tabs>
-          </main>
+            </main>
+          </div>
         </div>
       </div>
 
