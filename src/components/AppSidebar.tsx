@@ -45,7 +45,8 @@ export function AppSidebar({ activeTab, onTabChange, isAdminOrManager }: AppSide
   return (
     <Sidebar 
       collapsible="icon"
-      className="border-r"
+      className="border-r relative"
+      variant="sidebar"
       style={{
         '--sidebar-width': '150px',
         '--sidebar-width-icon': '48px',

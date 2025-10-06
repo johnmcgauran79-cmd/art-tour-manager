@@ -126,14 +126,14 @@ const Index = () => {
       >
         <DashboardHeader isAdmin={isAdmin} />
         
-        <div className="flex flex-1 w-full">
+        <div className="flex flex-1 w-full overflow-hidden">
           <AppSidebar 
             activeTab={activeTab}
             onTabChange={setActiveTab}
             isAdminOrManager={isAdminOrManager}
           />
           
-          <main className="flex-1 flex flex-col overflow-hidden">
+          <main className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 overflow-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-8">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="dashboard" className="space-y-8 mt-0">
