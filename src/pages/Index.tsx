@@ -136,7 +136,7 @@ const Index = () => {
               <span className="ml-2 text-sm font-medium">Menu</span>
             </div>
 
-            <main className="flex-1 overflow-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-8">
+            <main className="flex-1 overflow-auto bg-gray-50 pr-4 sm:pr-6 lg:pr-8 py-8 pl-0">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="dashboard" className="space-y-8 mt-0">
                   <DashboardQuickActions
