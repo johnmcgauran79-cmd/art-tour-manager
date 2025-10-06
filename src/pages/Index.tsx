@@ -133,7 +133,7 @@ const Index = () => {
             isAdminOrManager={isAdminOrManager}
           />
           
-          <main className="flex-1 flex flex-col overflow-hidden ml-[150px] peer-data-[state=collapsed]:ml-[48px] transition-[margin] duration-200">
+          <main className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-8">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="dashboard" className="space-y-8 mt-0">
