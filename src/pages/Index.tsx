@@ -24,6 +24,7 @@ import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const Index = () => {
@@ -46,6 +47,7 @@ const Index = () => {
   const { user, userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
   const isAdmin = userRole === 'admin';
+  const isMobile = useIsMobile();
 
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
@@ -125,7 +127,7 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid w-full ${isAdminOrManager ? 'grid-cols-6' : 'grid-cols-5'} mb-8`}>
+          <TabsList className={`w-full mb-8 ${isMobile ? 'h-auto grid grid-cols-3 gap-1' : `grid ${isAdminOrManager ? 'grid-cols-6' : 'grid-cols-5'}`}`}>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
