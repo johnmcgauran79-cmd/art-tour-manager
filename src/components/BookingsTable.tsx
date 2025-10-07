@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Plus, Search, TrendingUp } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
-import { EditBookingModal } from "./EditBookingModal";
+import { BookingDetailModal } from "./BookingDetailModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
@@ -201,7 +201,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
         </CardContent>
       </Card>
 
-      <EditBookingModal 
+      <BookingDetailModal 
         booking={selectedBooking} 
         open={showEditBooking} 
         onOpenChange={setShowEditBooking} 
