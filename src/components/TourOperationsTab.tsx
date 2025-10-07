@@ -15,7 +15,7 @@ import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
-import { EditBookingModal } from "@/components/EditBookingModal";
+import { BookingDetailModal } from "@/components/BookingDetailModal";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TourOperationsTabProps {
@@ -467,7 +467,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         onOpenChange={setCleanupModalOpen}
       />
 
-      <EditBookingModal
+      <BookingDetailModal
         booking={selectedBooking}
         open={editBookingModalOpen}
         onOpenChange={handleEditBookingModalClose}
