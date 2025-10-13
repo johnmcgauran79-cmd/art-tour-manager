@@ -85,13 +85,69 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Helper function to format dates
+    const formatDate = (dateString?: string): string => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-AU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    };
+
+    // Helper function to get nested value from object
+    const getNestedValue = (obj: any, path: string): any => {
+      return path.split('.').reduce((current, key) => {
+        return current && current[key] !== undefined ? current[key] : undefined;
+      }, obj);
+    };
+
+    // Helper function to process template (simplified version of EmailTemplateEngine)
+    const processTemplate = (template: string, data: any): string => {
+      let processed = template;
+      
+      // Handle simple variable replacements {{variable}}
+      processed = processed.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
+        const value = getNestedValue(data, key.trim());
+        return value !== undefined && value !== null ? String(value) : '';
+      });
+      
+      // Handle conditional sections {{#variable}}...{{/variable}}
+      processed = processed.replace(/\{\{#([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
+        const value = getNestedValue(data, key.trim());
+        
+        // For arrays (like hotel_bookings), repeat the content for each item
+        if (Array.isArray(value)) {
+          return value.map(item => {
+            return content.replace(/\{\{([^}]+)\}\}/g, (innerMatch, innerKey) => {
+              const itemValue = getNestedValue(item, innerKey.trim());
+              return itemValue !== undefined && itemValue !== null ? String(itemValue) : '';
+            });
+          }).join('');
+        }
+        
+        // For boolean/truthy values, include the content if truthy
+        return value ? content : '';
+      });
+      
+      // Handle inverted conditional sections {{^variable}}...{{/variable}}
+      processed = processed.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
+        const value = getNestedValue(data, key.trim());
+        return !value ? content : '';
+      });
+      
+      return processed;
+    };
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
 
     if (template) {
-      // Create merge data object
+      // Create comprehensive merge data object with nested structures
       const mergeData = {
+        // Customer fields
         customer_first_name: booking.customers?.first_name || '',
         customer_last_name: booking.customers?.last_name || '',
         customer_email: booking.customers?.email || '',
@@ -99,19 +155,27 @@ const handler = async (req: Request): Promise<Response> => {
         customer_city: booking.customers?.city || '',
         customer_state: booking.customers?.state || '',
         customer_country: booking.customers?.country || '',
+        customer_spouse_name: booking.customers?.spouse_name || '',
+        customer_dietary_requirements: booking.customers?.dietary_requirements || '',
+        customer_notes: booking.customers?.notes || '',
+        
+        // Tour fields
         tour_name: booking.tours?.name || '',
         tour_location: booking.tours?.location || '',
-        tour_start_date: booking.tours?.start_date ? new Date(booking.tours.start_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
-        tour_end_date: booking.tours?.end_date ? new Date(booking.tours.end_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
+        tour_start_date: formatDate(booking.tours?.start_date),
+        tour_end_date: formatDate(booking.tours?.end_date),
         tour_days: booking.tours?.days || '',
         tour_nights: booking.tours?.nights || '',
         tour_pickup_point: booking.tours?.pickup_point || '',
+        tour_notes: booking.tours?.notes || '',
         tour_inclusions: booking.tours?.inclusions || '',
         tour_exclusions: booking.tours?.exclusions || '',
+        
+        // Booking fields
         booking_passenger_count: booking.passenger_count || 1,
         booking_status: booking.status || '',
-        booking_check_in_date: booking.check_in_date ? new Date(booking.check_in_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
-        booking_check_out_date: booking.check_out_date ? new Date(booking.check_out_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '',
+        booking_check_in_date: formatDate(booking.check_in_date),
+        booking_check_out_date: formatDate(booking.check_out_date),
         booking_total_nights: booking.total_nights || '',
         booking_passenger_2_name: booking.passenger_2_name || '',
         booking_passenger_3_name: booking.passenger_3_name || '',
@@ -120,62 +184,52 @@ const handler = async (req: Request): Promise<Response> => {
         booking_extra_requests: booking.extra_requests || '',
         booking_medical_conditions: booking.medical_conditions || '',
         booking_emergency_contact_name: booking.emergency_contact_name || '',
-        booking_passport_number: booking.passport_number || ''
+        booking_emergency_contact_phone: booking.emergency_contact_phone || '',
+        booking_passport_number: booking.passport_number || '',
+        
+        // Hotel bookings array
+        hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
+          hotel_name: hb.hotels?.name || '',
+          hotel_address: hb.hotels?.address || '',
+          hotel_contact_name: hb.hotels?.contact_name || '',
+          hotel_contact_phone: hb.hotels?.contact_phone || '',
+          hotel_contact_email: hb.hotels?.contact_email || '',
+          hotel_check_in_date: formatDate(hb.check_in_date),
+          hotel_check_out_date: formatDate(hb.check_out_date),
+          hotel_nights: hb.nights || '',
+          hotel_room_type: hb.room_type || '',
+          hotel_bedding: hb.bedding || '',
+          hotel_room_upgrade: hb.room_upgrade || '',
+          hotel_room_requests: hb.room_requests || '',
+          hotel_confirmation_number: hb.confirmation_number || '',
+        })),
+        
+        // Activity bookings array
+        activity_bookings: (booking.activity_bookings || []).map((ab: any) => ({
+          activity_name: ab.activities?.name || '',
+          activity_date: formatDate(ab.activities?.activity_date),
+          activity_start_time: ab.activities?.start_time || '',
+          activity_end_time: ab.activities?.end_time || '',
+          activity_pickup_time: ab.activities?.pickup_time || '',
+          activity_location: ab.activities?.location || '',
+          activity_guide_name: ab.activities?.guide_name || '',
+          activity_guide_phone: ab.activities?.guide_phone || '',
+          passengers_attending: ab.passengers_attending || '',
+        })),
       };
 
       // Process subject template (use custom if provided)
       if (customSubject) {
         emailSubject = customSubject;
       } else {
-        emailSubject = template.subject_template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-          return mergeData[key.trim() as keyof typeof mergeData] || '';
-        });
+        emailSubject = processTemplate(template.subject_template, mergeData);
       }
 
       // Process content template (use custom if provided)
       if (customContent) {
         emailHtml = customContent;
       } else {
-        emailHtml = template.content_template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-          return mergeData[key.trim() as keyof typeof mergeData] || '';
-        });
-      }
-
-      // Handle hotel bookings loop
-      if (booking.hotel_bookings && booking.hotel_bookings.length > 0) {
-        const hotelBookingsHtml = booking.hotel_bookings.map((hb: any) => `
-          <div style="margin-bottom: 15px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
-            <p><strong>Hotel:</strong> ${hb.hotels?.name || 'Hotel TBD'}</p>
-            <p><strong>Check-in:</strong> ${hb.check_in_date ? new Date(hb.check_in_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}</p>
-            <p><strong>Check-out:</strong> ${hb.check_out_date ? new Date(hb.check_out_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}</p>
-            <p><strong>Nights:</strong> ${hb.nights || 'TBD'}</p>
-            <p><strong>Room Type:</strong> ${hb.room_type || 'Standard'}</p>
-            <p><strong>Bedding:</strong> ${hb.bedding || 'Double'}</p>
-            ${hb.room_upgrade ? `<p><strong>Room Upgrade:</strong> ${hb.room_upgrade}</p>` : ''}
-          </div>
-        `).join('');
-        
-        emailHtml = emailHtml.replace(/\{\{#hotel_bookings\}\}[\s\S]*?\{\{\/hotel_bookings\}\}/g, hotelBookingsHtml);
-      } else {
-        emailHtml = emailHtml.replace(/\{\{#hotel_bookings\}\}[\s\S]*?\{\{\/hotel_bookings\}\}/g, '<p>No hotel bookings</p>');
-      }
-
-      // Handle activity bookings loop
-      if (booking.activity_bookings && booking.activity_bookings.length > 0) {
-        const activityBookingsHtml = booking.activity_bookings.map((ab: any) => `
-          <div style="margin-bottom: 15px; padding: 15px; border: 1px solid #eee; border-radius: 5px;">
-            <p><strong>Activity:</strong> ${ab.activities?.name || 'Activity TBD'}</p>
-            <p><strong>Date:</strong> ${ab.activities?.activity_date ? new Date(ab.activities.activity_date).toLocaleDateString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'TBD'}</p>
-            <p><strong>Start Time:</strong> ${ab.activities?.start_time || 'TBD'}</p>
-            <p><strong>Location:</strong> ${ab.activities?.location || 'TBD'}</p>
-            <p><strong>Guide:</strong> ${ab.activities?.guide_name || 'TBD'}</p>
-            <p><strong>Passengers Attending:</strong> ${ab.passengers_attending || 'TBD'}</p>
-          </div>
-        `).join('');
-        
-        emailHtml = emailHtml.replace(/\{\{#activity_bookings\}\}[\s\S]*?\{\{\/activity_bookings\}\}/g, activityBookingsHtml);
-      } else {
-        emailHtml = emailHtml.replace(/\{\{#activity_bookings\}\}[\s\S]*?\{\{\/activity_bookings\}\}/g, '<p>No activity bookings</p>');
+        emailHtml = processTemplate(template.content_template, mergeData);
       }
 
       // Convert line breaks to HTML breaks
