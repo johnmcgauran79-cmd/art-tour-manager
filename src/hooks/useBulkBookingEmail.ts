@@ -1,7 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 
 export const useBulkBookingEmail = () => {
   const { toast } = useToast();
@@ -91,25 +90,13 @@ export const useBulkBookingEmail = () => {
         throw new Error('No bookings with email addresses found for this tour');
       }
 
-      // Process each booking individually with mail merge
+      // Send emails - let edge function handle template processing with full hotel data
       const emailPromises = bookings.map(async (booking) => {
-        // Convert booking to merge data format
-        const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
-        
-        // Process templates with individual booking data
-        const personalizedSubject = subjectTemplate ? 
-          EmailTemplateEngine.processTemplate(subjectTemplate, mergeData) : 
-          `Email for ${booking.customers?.first_name || 'Customer'}`;
-          
-        const personalizedContent = contentTemplate ? 
-          EmailTemplateEngine.processTemplate(contentTemplate, mergeData) : 
-          `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
-        
         const { error } = await supabase.functions.invoke('send-booking-confirmation', {
           body: { 
             bookingId: booking.id,
-            customSubject: personalizedSubject,
-            customContent: personalizedContent,
+            // Don't send customSubject/customContent - let edge function process templates
+            // This ensures hotel loops and all merge fields work correctly
             fromEmail
           }
         });
