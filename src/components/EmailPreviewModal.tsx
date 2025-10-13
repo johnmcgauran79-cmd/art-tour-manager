@@ -49,15 +49,22 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
         .from('bookings')
         .select(`
           *,
-          tours:tour_id (name, start_date, end_date, location),
-          customers:lead_passenger_id (first_name, last_name, email),
+          tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, notes, inclusions, exclusions, tour_host, price_single, price_double, deposit_required, final_payment_date, instalment_date, instalment_amount),
+          customers:lead_passenger_id (first_name, last_name, email, phone, city, state, country, spouse_name, dietary_requirements, notes),
           hotel_bookings (
             check_in_date,
             check_out_date,
+            nights,
             room_type,
             room_upgrade,
             bedding,
-            hotels (name)
+            room_requests,
+            confirmation_number,
+            hotels (name, address, contact_name, contact_phone, contact_email)
+          ),
+          activity_bookings (
+            passengers_attending,
+            activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
           )
         `)
         .eq('id', bookingId)
