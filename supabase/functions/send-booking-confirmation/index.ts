@@ -145,6 +145,19 @@ const handler = async (req: Request): Promise<Response> => {
     let emailHtml = '';
 
     if (template) {
+      console.log('=== TEMPLATE PROCESSING DEBUG ===');
+      console.log('Custom subject provided:', !!customSubject);
+      console.log('Custom content provided:', !!customContent);
+      console.log('Hotel bookings count:', booking.hotel_bookings?.length || 0);
+      
+      if (booking.hotel_bookings && booking.hotel_bookings.length > 0) {
+        console.log('First hotel booking:', JSON.stringify({
+          hotel_name: booking.hotel_bookings[0].hotels?.name,
+          check_in: booking.hotel_bookings[0].check_in_date,
+          check_out: booking.hotel_bookings[0].check_out_date
+        }));
+      }
+      
       // Create comprehensive merge data object with nested structures
       const mergeData = {
         // Customer fields
@@ -217,19 +230,29 @@ const handler = async (req: Request): Promise<Response> => {
           passengers_attending: ab.passengers_attending || '',
         })),
       };
+      
+      console.log('Merge data hotel_bookings:', mergeData.hotel_bookings?.length || 0);
+      if (mergeData.hotel_bookings && mergeData.hotel_bookings.length > 0) {
+        console.log('First merge hotel:', JSON.stringify(mergeData.hotel_bookings[0]));
+      }
 
       // Process subject template (use custom if provided)
       if (customSubject) {
         emailSubject = customSubject;
+        console.log('Using custom subject (already processed)');
       } else {
         emailSubject = processTemplate(template.subject_template, mergeData);
+        console.log('Processed subject from template');
       }
 
       // Process content template (use custom if provided)
       if (customContent) {
         emailHtml = customContent;
+        console.log('Using custom content (already processed)');
+        console.log('Custom content preview (first 200 chars):', customContent.substring(0, 200));
       } else {
         emailHtml = processTemplate(template.content_template, mergeData);
+        console.log('Processed content from template');
       }
 
       // Convert line breaks to HTML breaks
