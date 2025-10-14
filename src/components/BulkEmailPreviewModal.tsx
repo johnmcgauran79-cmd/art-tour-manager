@@ -151,14 +151,21 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
         console.log('Processing template:', template.name);
+        console.log('Sample booking hotel_bookings:', bookingsData.sampleBooking.hotel_bookings);
+        
         // Store original templates for mail merge
         setOriginalSubjectTemplate(template.subject_template);
         setOriginalContentTemplate(template.content_template);
         
         // Process for preview only
         const mergeData = EmailTemplateEngine.convertBookingToMergeData(bookingsData.sampleBooking);
+        console.log('Merge data hotel_bookings array:', mergeData.hotel_bookings);
+        console.log('Template content contains hotel_bookings loop:', template.content_template.includes('{{#hotel_bookings}}'));
+        
         const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
         const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
+        
+        console.log('Processed content preview:', processedContent.substring(0, 300));
         
         setEditedSubject(processedSubject);
         setEditedContent(processedContent);
