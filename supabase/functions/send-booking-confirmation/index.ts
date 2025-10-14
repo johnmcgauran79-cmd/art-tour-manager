@@ -121,7 +121,21 @@ const handler = async (req: Request): Promise<Response> => {
         if (Array.isArray(value)) {
           return value.map(item => {
             return content.replace(/\{\{([^}]+)\}\}/g, (innerMatch, innerKey) => {
-              const itemValue = getNestedValue(item, innerKey.trim());
+              const trimmedKey = innerKey.trim();
+              // Remove the parent prefix (e.g., "hotel_" from "hotel_name") when looking in the item
+              const keyParts = trimmedKey.split('_');
+              const parentPrefix = key.trim() + '_'; // e.g., "hotel_bookings_" -> "hotel_"
+              const prefixToRemove = parentPrefix.replace('_bookings_', '_');
+              
+              let itemValue;
+              if (trimmedKey.startsWith(prefixToRemove)) {
+                // Remove the prefix and look for the field in the item
+                const fieldName = trimmedKey.substring(prefixToRemove.length);
+                itemValue = getNestedValue(item, fieldName);
+              } else {
+                itemValue = getNestedValue(item, trimmedKey);
+              }
+              
               return itemValue !== undefined && itemValue !== null ? String(itemValue) : '';
             });
           }).join('');
