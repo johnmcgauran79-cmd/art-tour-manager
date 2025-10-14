@@ -114,11 +114,18 @@ export class EmailTemplateEngine {
       
       // For arrays (like hotel_bookings), repeat the content for each item
       if (Array.isArray(value)) {
-        return value.map(item => {
-          return content.replace(/\{\{([^}]+)\}\}/g, (innerMatch, innerKey) => {
-            const itemValue = this.getNestedValue(item, innerKey.trim());
+        console.log(`Processing array loop for ${key}:`, value.length, 'items');
+        return value.map((item, index) => {
+          console.log(`Processing item ${index}:`, Object.keys(item));
+          let itemContent = content;
+          // Replace all variables within this iteration
+          itemContent = itemContent.replace(/\{\{([^}#^/]+)\}\}/g, (innerMatch, innerKey) => {
+            const trimmedKey = innerKey.trim();
+            const itemValue = this.getNestedValue(item, trimmedKey);
+            console.log(`  Replacing {{${trimmedKey}}} with:`, itemValue);
             return itemValue !== undefined && itemValue !== null ? String(itemValue) : '';
           });
+          return itemContent;
         }).join('');
       }
       
