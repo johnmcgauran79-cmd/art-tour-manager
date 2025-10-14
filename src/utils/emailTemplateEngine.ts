@@ -120,7 +120,12 @@ export class EmailTemplateEngine {
             const trimmedKey = innerKey.trim();
             const itemValue = this.getNestedValue(item, trimmedKey);
             console.log(`  Replacing {{${trimmedKey}}} with:`, itemValue);
-            return itemValue !== undefined && itemValue !== null ? String(itemValue) : '';
+            
+            // Show N/A for empty values in loops (hotel/activity bookings)
+            if (itemValue === undefined || itemValue === null || itemValue === '') {
+              return 'N/A';
+            }
+            return String(itemValue);
           });
           return itemContent;
         }).join('');
@@ -138,8 +143,26 @@ export class EmailTemplateEngine {
     
     // Handle simple variable replacements {{variable}} AFTER loops
     processed = processed.replace(/\{\{([^}#^/]+)\}\}/g, (match, key) => {
-      const value = this.getNestedValue(data, key.trim());
-      return value !== undefined && value !== null ? String(value) : '';
+      const trimmedKey = key.trim();
+      const value = this.getNestedValue(data, trimmedKey);
+      
+      // If value is empty/null/undefined, show "N/A" for passenger and optional fields
+      if (value === undefined || value === null || value === '') {
+        // Show N/A for passenger names and other optional booking fields
+        if (trimmedKey.includes('passenger_') || 
+            trimmedKey.includes('booking_') ||
+            trimmedKey.includes('emergency_') ||
+            trimmedKey.includes('passport_') ||
+            trimmedKey.includes('customer_spouse') ||
+            trimmedKey.includes('customer_dietary') ||
+            trimmedKey.includes('hotel_') ||
+            trimmedKey.includes('activity_')) {
+          return 'N/A';
+        }
+        return '';
+      }
+      
+      return String(value);
     });
     
     return processed;
