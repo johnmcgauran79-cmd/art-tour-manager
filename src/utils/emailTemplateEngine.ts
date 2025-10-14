@@ -102,11 +102,8 @@ export class EmailTemplateEngine {
   static processTemplate(template: string, data: EmailMergeData): string {
     let processed = template;
     
-    // Handle simple variable replacements {{variable}}
-    processed = processed.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-      const value = this.getNestedValue(data, key.trim());
-      return value !== undefined && value !== null ? String(value) : '';
-    });
+    // CRITICAL: Process loops FIRST before simple variable replacements
+    // This ensures variables inside loops aren't replaced prematurely
     
     // Handle conditional sections {{#variable}}...{{/variable}}
     processed = processed.replace(/\{\{#([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
@@ -137,6 +134,12 @@ export class EmailTemplateEngine {
     processed = processed.replace(/\{\{\^([^}]+)\}\}(.*?)\{\{\/\1\}\}/gs, (match, key, content) => {
       const value = this.getNestedValue(data, key.trim());
       return !value ? content : '';
+    });
+    
+    // Handle simple variable replacements {{variable}} AFTER loops
+    processed = processed.replace(/\{\{([^}#^/]+)\}\}/g, (match, key) => {
+      const value = this.getNestedValue(data, key.trim());
+      return value !== undefined && value !== null ? String(value) : '';
     });
     
     return processed;
