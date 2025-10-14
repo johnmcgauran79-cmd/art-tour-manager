@@ -251,12 +251,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="bookings@australianracingtours.com.au">
-                        bookings@australianracingtours.com.au
-                      </SelectItem>
-                      <SelectItem value="info@australianracingtours.com.au">
-                        info@australianracingtours.com.au
-                      </SelectItem>
                       {userEmails?.map((email) => (
                         <SelectItem key={email} value={email}>
                           {email}
