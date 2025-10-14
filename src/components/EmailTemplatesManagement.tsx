@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Type, Bold, Italic, Underline } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2 } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
@@ -61,6 +61,7 @@ export const EmailTemplatesManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
   const [selectedType, setSelectedType] = useState<string>("all");
+  const [isHtmlView, setIsHtmlView] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
   
   const { data: templates = [], isLoading } = useEmailTemplates();
@@ -83,25 +84,9 @@ export const EmailTemplatesManagement = () => {
     ? templates.filter(t => t.type === selectedType)
     : templates;
 
-  // Preprocess old template content for better editor display
+  // No preprocessing needed - return content as-is to prevent spacing issues
   const preprocessContentForEditor = (content: string) => {
-    if (!content) return content;
-    
-    // Convert common HTML patterns to better formatted content
-    let processedContent = content
-      // Add proper paragraph breaks after closing tags
-      .replace(/<\/p>/g, '</p><br>')
-      .replace(/<\/div>/g, '</div><br>')
-      .replace(/<\/h[1-6]>/g, '$&<br>')
-      // Convert line breaks to proper paragraph breaks
-      .replace(/\n\s*\n/g, '</p><p>')
-      // Clean up multiple consecutive breaks
-      .replace(/(<br>\s*){3,}/g, '<br><br>')
-      // Ensure content starts and ends with proper tags
-      .replace(/^(?!<p>)/, '<p>')
-      .replace(/(?!<\/p>)$/, '</p>');
-    
-    return processedContent;
+    return content;
   };
 
   const resetForm = () => {
@@ -115,6 +100,7 @@ export const EmailTemplatesManagement = () => {
       is_default: false,
     });
     setEditingTemplate(null);
+    setIsHtmlView(false);
   };
 
   const handleCreate = () => {
@@ -375,18 +361,40 @@ export const EmailTemplatesManagement = () => {
                 </div>
 
                 <div className="flex-1 flex flex-col">
-                  <Label htmlFor="content_template">Email Content Template</Label>
-                  <div className="flex-1 min-h-[400px] border border-input rounded-md overflow-hidden">
-                    <ReactQuill
-                      ref={quillRef}
-                      value={formData.content_template}
-                      onChange={(value) => setFormData(prev => ({ ...prev, content_template: value }))}
-                      modules={quillModules}
-                      formats={quillFormats}
-                      placeholder="Dear {{customer_first_name}}, ..."
-                      style={{ height: '350px' }}
-                    />
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="content_template">Email Content Template</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsHtmlView(!isHtmlView)}
+                      className="flex items-center gap-2"
+                    >
+                      <Code2 className="h-4 w-4" />
+                      {isHtmlView ? 'WYSIWYG View' : 'HTML View'}
+                    </Button>
                   </div>
+                  {isHtmlView ? (
+                    <Textarea
+                      id="content_template"
+                      value={formData.content_template}
+                      onChange={(e) => setFormData(prev => ({ ...prev, content_template: e.target.value }))}
+                      className="flex-1 min-h-[400px] font-mono text-sm"
+                      placeholder="<p>Dear {{customer_first_name}}, ...</p>"
+                    />
+                  ) : (
+                    <div className="flex-1 min-h-[400px] border border-input rounded-md overflow-hidden">
+                      <ReactQuill
+                        ref={quillRef}
+                        value={formData.content_template}
+                        onChange={(value) => setFormData(prev => ({ ...prev, content_template: value }))}
+                        modules={quillModules}
+                        formats={quillFormats}
+                        placeholder="Dear {{customer_first_name}}, ..."
+                        style={{ height: '350px' }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-6">
