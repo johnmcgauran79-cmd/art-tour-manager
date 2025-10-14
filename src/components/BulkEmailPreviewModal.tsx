@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
@@ -30,11 +31,44 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [previewBooking, setPreviewBooking] = useState<any>(null);
   const [recipientType, setRecipientType] = useState<string>("with_accommodation");
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
+  const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
   
   const bulkEmailMutation = useBulkBookingEmail();
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
   const { data: userEmails } = useUserEmails();
+
+  // Get all bookings for selection
+  const { data: allBookingsData, isLoading: allBookingsLoading } = useQuery({
+    queryKey: ['tour-all-bookings', tourId],
+    queryFn: async () => {
+      if (!tourId) return [];
+      
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          accommodation_required,
+          customers:lead_passenger_id (
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          hotel_bookings (
+            id
+          )
+        `)
+        .eq('tour_id', tourId)
+        .neq('status', 'cancelled')
+        .not('customers.email', 'is', null)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tourId && open,
+  });
 
   // Get bookings with emails for this tour and sample booking for preview
   const { data: bookingsData, isLoading } = useQuery({
@@ -132,7 +166,9 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       return { 
         accommodationCount,
         activityOnlyCount,
-        sampleBooking 
+        sampleBooking,
+        accommodationBookings,
+        activityOnlyBookings
       };
     },
     enabled: !!tourId && open,
@@ -205,13 +241,35 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   }, [selectedTemplateId, bookingsData?.sampleBooking]);
 
   const getCurrentCount = () => {
+    if (selectedBookingIds.size > 0) return selectedBookingIds.size;
     return recipientType === "with_accommodation" 
       ? bookingsData?.accommodationCount || 0 
       : bookingsData?.activityOnlyCount || 0;
   };
 
+  const toggleBookingSelection = (bookingId: string) => {
+    setSelectedBookingIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(bookingId)) {
+        newSet.delete(bookingId);
+      } else {
+        newSet.add(bookingId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleAllBookings = () => {
+    if (selectedBookingIds.size > 0) {
+      setSelectedBookingIds(new Set());
+    } else {
+      const allIds = new Set(allBookingsData?.map(b => b.id) || []);
+      setSelectedBookingIds(allIds);
+    }
+  };
+
   const handleSendEmails = async () => {
-    if (!tourId || !selectedTemplateId || !recipientType) return;
+    if (!tourId || !selectedTemplateId) return;
     
     try {
       // Use original templates with placeholders for mail merge, or edited content if manually modified
@@ -220,12 +278,14 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       
       await bulkEmailMutation.mutateAsync({
         tourId,
-        recipientType,
+        recipientType: selectedBookingIds.size > 0 ? 'selected' : recipientType,
         subjectTemplate,
         contentTemplate,
-        fromEmail
+        fromEmail,
+        selectedBookingIds: selectedBookingIds.size > 0 ? Array.from(selectedBookingIds) : undefined
       });
       onOpenChange(false);
+      setSelectedBookingIds(new Set());
     } catch (error) {
       // Error handling is done in the hook
     }
@@ -247,67 +307,123 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           </div>
         ) : (
           <div className="flex-1 space-y-4 overflow-hidden">
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="template">Email Template:</Label>
-                <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
-                  <SelectTrigger className="bg-background border z-50">
-                    <SelectValue placeholder="Select template..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
-                    <SelectItem value="blank">Blank Email</SelectItem>
-                    {templates?.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Recipients:</Label>
-                <Select value={recipientType} onValueChange={setRecipientType}>
-                  <SelectTrigger className="bg-background border z-50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
-                    <SelectItem value="with_accommodation">
-                      {bookingsData?.accommodationCount || 0} booking{(bookingsData?.accommodationCount || 0) !== 1 ? 's' : ''} with accommodation
-                    </SelectItem>
-                    <SelectItem value="activities_only">
-                      {bookingsData?.activityOnlyCount || 0} booking{(bookingsData?.activityOnlyCount || 0) !== 1 ? 's' : ''} with activities only
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>From Email:</Label>
-                <Select value={fromEmail} onValueChange={setFromEmail}>
-                  <SelectTrigger className="bg-background border z-50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border shadow-lg z-50">
-                    <SelectItem value="bookings@australianracingtours.com.au">
-                      bookings@australianracingtours.com.au
-                    </SelectItem>
-                    <SelectItem value="info@australianracingtours.com.au">
-                      info@australianracingtours.com.au
-                    </SelectItem>
-                    {userEmails?.map((email) => (
-                      <SelectItem key={email} value={email}>
-                        {email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Preview Based On:</Label>
-                <div className="flex items-center h-9 px-3 border rounded-md bg-muted">
-                  <span className="text-sm">
-                    {previewBooking?.customers?.first_name} {previewBooking?.customers?.last_name}
-                  </span>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="template">Email Template:</Label>
+                  <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                    <SelectTrigger className="bg-background border z-50">
+                      <SelectValue placeholder="Select template..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="blank">Blank Email</SelectItem>
+                      {templates?.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+                <div>
+                  <Label>Recipients:</Label>
+                  <Select 
+                    value={recipientType} 
+                    onValueChange={(val) => {
+                      setRecipientType(val);
+                      setSelectedBookingIds(new Set());
+                    }}
+                    disabled={selectedBookingIds.size > 0}
+                  >
+                    <SelectTrigger className="bg-background border z-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="with_accommodation">
+                        {bookingsData?.accommodationCount || 0} booking{(bookingsData?.accommodationCount || 0) !== 1 ? 's' : ''} with accommodation
+                      </SelectItem>
+                      <SelectItem value="activities_only">
+                        {bookingsData?.activityOnlyCount || 0} booking{(bookingsData?.activityOnlyCount || 0) !== 1 ? 's' : ''} with activities only
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>From Email:</Label>
+                  <Select value={fromEmail} onValueChange={setFromEmail}>
+                    <SelectTrigger className="bg-background border z-50">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border shadow-lg z-50">
+                      <SelectItem value="bookings@australianracingtours.com.au">
+                        bookings@australianracingtours.com.au
+                      </SelectItem>
+                      <SelectItem value="info@australianracingtours.com.au">
+                        info@australianracingtours.com.au
+                      </SelectItem>
+                      {userEmails?.map((email) => (
+                        <SelectItem key={email} value={email}>
+                          {email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Preview Based On:</Label>
+                  <div className="flex items-center h-9 px-3 border rounded-md bg-muted">
+                    <span className="text-sm">
+                      {previewBooking?.customers?.first_name} {previewBooking?.customers?.last_name}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <Label>Select Individual Bookings:</Label>
+                  <Button 
+                    type="button"
+                    variant="ghost" 
+                    size="sm"
+                    onClick={toggleAllBookings}
+                  >
+                    {selectedBookingIds.size > 0 ? 'Clear All' : 'Select All'}
+                  </Button>
+                </div>
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                  {allBookingsLoading ? (
+                    <div className="flex items-center justify-center p-4">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {allBookingsData?.map((booking: any) => (
+                        <div key={booking.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={booking.id}
+                            checked={selectedBookingIds.has(booking.id)}
+                            onCheckedChange={() => toggleBookingSelection(booking.id)}
+                          />
+                          <label
+                            htmlFor={booking.id}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                          >
+                            {booking.customers?.first_name} {booking.customers?.last_name}
+                            <span className="text-muted-foreground ml-2">
+                              ({booking.customers?.email})
+                            </span>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+                {selectedBookingIds.size > 0 && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {selectedBookingIds.size} booking{selectedBookingIds.size !== 1 ? 's' : ''} selected
+                  </p>
+                )}
               </div>
             </div>
 
