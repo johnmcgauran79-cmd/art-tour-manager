@@ -29,7 +29,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [originalSubjectTemplate, setOriginalSubjectTemplate] = useState("");
   const [originalContentTemplate, setOriginalContentTemplate] = useState("");
   const [previewBooking, setPreviewBooking] = useState<any>(null);
-  const [recipientType, setRecipientType] = useState<string>("with_accommodation");
+  const [recipientType, setRecipientType] = useState<string>("");
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
   
@@ -70,138 +70,59 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     enabled: !!tourId && open,
   });
 
-  // Get bookings with emails for this tour and sample booking for preview
+  // Get sample booking for preview
   const { data: bookingsData, isLoading } = useQuery({
     queryKey: ['tour-bulk-email-data', tourId],
     queryFn: async () => {
-      if (!tourId) return { count: 0, sampleBooking: null };
+      if (!tourId || !allBookingsData || allBookingsData.length === 0) return { sampleBooking: null };
       
-      // Get bookings with accommodation (have hotel_bookings)
-      const { data: accommodationBookings, error: accommError } = await supabase
+      // Get first booking for preview
+      const { data, error: sampleError } = await supabase
         .from('bookings')
         .select(`
-          id,
-          accommodation_required,
-          customers:lead_passenger_id!inner (
-            email
+          *,
+          tours:tour_id (
+            name, location, start_date, end_date, days, nights, pickup_point,
+            notes, inclusions, exclusions, tour_host, price_single, price_double,
+            deposit_required, final_payment_date, instalment_date, instalment_amount
           ),
-          hotel_bookings!inner (
-            id
-          )
-        `)
-        .eq('tour_id', tourId)
-        .neq('status', 'cancelled')
-        .not('customers.email', 'is', null);
-
-      // Get bookings without accommodation (no hotel_bookings or accommodation_required = false)
-      const { data: activityOnlyBookings, error: activityError } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          accommodation_required,
-          customers:lead_passenger_id!inner (
-            email
+          customers:lead_passenger_id (
+            first_name, last_name, email, phone, city, state, country,
+            spouse_name, dietary_requirements, notes
           ),
           hotel_bookings (
-            id
+            check_in_date, check_out_date, nights, room_type, bedding,
+            room_upgrade, room_requests, confirmation_number,
+            hotels (name, address, contact_name, contact_phone, contact_email)
+          ),
+          activity_bookings (
+            passengers_attending,
+            activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
           )
         `)
-        .eq('tour_id', tourId)
-        .neq('status', 'cancelled')
-        .eq('accommodation_required', false)
-        .not('customers.email', 'is', null);
+        .eq('id', allBookingsData[0].id)
+        .maybeSingle();
 
-      if (accommError) {
-        console.error('Error fetching accommodation bookings:', accommError);
-        throw accommError;
-      }
-      if (activityError) {
-        console.error('Error fetching activity-only bookings:', activityError);
-        throw activityError;
+      if (sampleError) {
+        console.error('Error fetching sample booking:', sampleError);
       }
 
-      const accommodationCount = accommodationBookings?.length || 0;
-      const activityOnlyCount = activityOnlyBookings?.filter(booking => 
-        !booking.hotel_bookings || booking.hotel_bookings.length === 0
-      ).length || 0;
-
-      // Get sample booking based on selected recipient type
-      let sampleBooking = null;
-      const targetBookings = recipientType === "with_accommodation" ? accommodationBookings : activityOnlyBookings;
-      
-      if (targetBookings && targetBookings.length > 0) {
-        const { data, error: sampleError } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            tours:tour_id (
-              name, location, start_date, end_date, days, nights, pickup_point,
-              notes, inclusions, exclusions, tour_host, price_single, price_double,
-              deposit_required, final_payment_date, instalment_date, instalment_amount
-            ),
-            customers:lead_passenger_id (
-              first_name, last_name, email, phone, city, state, country,
-              spouse_name, dietary_requirements, notes
-            ),
-            hotel_bookings (
-              check_in_date, check_out_date, nights, room_type, bedding,
-              room_upgrade, room_requests, confirmation_number,
-              hotels (name, address, contact_name, contact_phone, contact_email)
-            ),
-            activity_bookings (
-              passengers_attending,
-              activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
-            )
-          `)
-          .eq('id', targetBookings[0].id)
-          .maybeSingle();
-
-        if (sampleError) {
-          console.error('Error fetching sample booking:', sampleError);
-        } else {
-          sampleBooking = data;
-        }
-      }
-
-      return { 
-        accommodationCount,
-        activityOnlyCount,
-        sampleBooking,
-        accommodationBookings,
-        activityOnlyBookings
-      };
+      return { sampleBooking: data };
     },
-    enabled: !!tourId && open,
+    enabled: !!tourId && open && !!allBookingsData && allBookingsData.length > 0,
   });
 
   // Update preview when template changes
   useEffect(() => {
-    console.log('Template or booking data changed:', { 
-      selectedTemplateId, 
-      hasTemplates: !!templates, 
-      hasSampleBooking: !!bookingsData?.sampleBooking,
-      bookingCount: bookingsData?.count 
-    });
-    
     if (selectedTemplateId && selectedTemplateId !== "blank" && templates && bookingsData?.sampleBooking) {
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
-        console.log('Processing template:', template.name);
-        console.log('Sample booking hotel_bookings:', bookingsData.sampleBooking.hotel_bookings);
-        
-        // Store original templates for mail merge
         setOriginalSubjectTemplate(template.subject_template);
         setOriginalContentTemplate(template.content_template);
         
-        // Process for preview only
         const mergeData = EmailTemplateEngine.convertBookingToMergeData(bookingsData.sampleBooking);
-        console.log('Merge data hotel_bookings array:', mergeData.hotel_bookings);
-        console.log('Template content contains hotel_bookings loop:', template.content_template.includes('{{#hotel_bookings}}'));
-        
         const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
         const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
-        
-        console.log('Processed content preview:', processedContent.substring(0, 300));
         
         setEditedSubject(processedSubject);
         setEditedContent(processedContent);
@@ -219,20 +140,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   // Generate content when template or booking changes
   useEffect(() => {
-    console.log('Blank template effect triggered:', { 
-      selectedTemplateId, 
-      hasSampleBooking: !!bookingsData?.sampleBooking 
-    });
-    
     if (bookingsData?.sampleBooking) {
       if (selectedTemplateId === "blank") {
         const customerName = bookingsData.sampleBooking.customers?.first_name || 'Customer';
-        console.log('Setting blank template content for customer:', customerName);
-        // Store original templates for mail merge (with placeholders)
         setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
         setOriginalContentTemplate(`Dear {{customer.first_name}},\n\n\n\nBest regards,\nYour Team`);
         
-        // Set preview content (processed)
         setEditedSubject(`Email for ${customerName}`);
         setEditedContent(`Dear ${customerName},\n\n\n\nBest regards,\nYour Team`);
         setPreviewBooking(bookingsData.sampleBooking);
@@ -240,11 +153,25 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     }
   }, [selectedTemplateId, bookingsData?.sampleBooking]);
 
-  const getCurrentCount = () => {
-    if (selectedBookingIds.size > 0) return selectedBookingIds.size;
-    return recipientType === "with_accommodation" 
-      ? bookingsData?.accommodationCount || 0 
-      : bookingsData?.activityOnlyCount || 0;
+  const handleRecipientTypeChange = (type: string) => {
+    setRecipientType(type);
+    
+    if (!allBookingsData) return;
+    
+    if (type === "with_accommodation") {
+      const withAccomm = allBookingsData
+        .filter(b => b.hotel_bookings && b.hotel_bookings.length > 0)
+        .map(b => b.id);
+      setSelectedBookingIds(new Set(withAccomm));
+    } else if (type === "activities_only") {
+      const activitiesOnly = allBookingsData
+        .filter(b => (!b.hotel_bookings || b.hotel_bookings.length === 0) && b.accommodation_required === false)
+        .map(b => b.id);
+      setSelectedBookingIds(new Set(activitiesOnly));
+    } else if (type === "all") {
+      const allIds = allBookingsData.map(b => b.id);
+      setSelectedBookingIds(new Set(allIds));
+    }
   };
 
   const toggleBookingSelection = (bookingId: string) => {
@@ -257,35 +184,27 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       }
       return newSet;
     });
-  };
-
-  const toggleAllBookings = () => {
-    if (selectedBookingIds.size > 0) {
-      setSelectedBookingIds(new Set());
-    } else {
-      const allIds = new Set(allBookingsData?.map(b => b.id) || []);
-      setSelectedBookingIds(allIds);
-    }
+    setRecipientType("");
   };
 
   const handleSendEmails = async () => {
-    if (!tourId || !selectedTemplateId) return;
+    if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
     
     try {
-      // Use original templates with placeholders for mail merge, or edited content if manually modified
       const subjectTemplate = originalSubjectTemplate || editedSubject;
       const contentTemplate = originalContentTemplate || editedContent;
       
       await bulkEmailMutation.mutateAsync({
         tourId,
-        recipientType: selectedBookingIds.size > 0 ? 'selected' : recipientType,
+        recipientType: 'selected',
         subjectTemplate,
         contentTemplate,
         fromEmail,
-        selectedBookingIds: selectedBookingIds.size > 0 ? Array.from(selectedBookingIds) : undefined
+        selectedBookingIds: Array.from(selectedBookingIds)
       });
       onOpenChange(false);
       setSelectedBookingIds(new Set());
+      setRecipientType("");
     } catch (error) {
       // Error handling is done in the hook
     }
@@ -297,7 +216,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Bulk Email Preview & Send</DialogTitle>
+          <DialogTitle>Send Email</DialogTitle>
         </DialogHeader>
 
         {isLoading || templatesLoading ? (
@@ -322,29 +241,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                           {template.name}
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Recipients:</Label>
-                  <Select 
-                    value={recipientType} 
-                    onValueChange={(val) => {
-                      setRecipientType(val);
-                      setSelectedBookingIds(new Set());
-                    }}
-                    disabled={selectedBookingIds.size > 0}
-                  >
-                    <SelectTrigger className="bg-background border z-50">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-lg z-50">
-                      <SelectItem value="with_accommodation">
-                        {bookingsData?.accommodationCount || 0} booking{(bookingsData?.accommodationCount || 0) !== 1 ? 's' : ''} with accommodation
-                      </SelectItem>
-                      <SelectItem value="activities_only">
-                        {bookingsData?.activityOnlyCount || 0} booking{(bookingsData?.activityOnlyCount || 0) !== 1 ? 's' : ''} with activities only
-                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -381,15 +277,45 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Select Individual Bookings:</Label>
-                  <Button 
-                    type="button"
-                    variant="ghost" 
-                    size="sm"
-                    onClick={toggleAllBookings}
-                  >
-                    {selectedBookingIds.size > 0 ? 'Clear All' : 'Select All'}
-                  </Button>
+                  <Label>Select Recipients ({selectedBookingIds.size} selected):</Label>
+                  <div className="flex gap-1">
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleRecipientTypeChange("all")}
+                      className="text-xs"
+                    >
+                      All
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleRecipientTypeChange("with_accommodation")}
+                      className="text-xs"
+                    >
+                      With Accomm
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleRecipientTypeChange("activities_only")}
+                      className="text-xs"
+                    >
+                      Activities Only
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSelectedBookingIds(new Set())}
+                      className="text-xs"
+                    >
+                      Clear
+                    </Button>
+                  </div>
                 </div>
                 <ScrollArea className="h-[200px] border rounded-md p-2">
                   {allBookingsLoading ? (
@@ -398,32 +324,30 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {allBookingsData?.map((booking: any) => (
-                        <div key={booking.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={booking.id}
-                            checked={selectedBookingIds.has(booking.id)}
-                            onCheckedChange={() => toggleBookingSelection(booking.id)}
-                          />
-                          <label
-                            htmlFor={booking.id}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
-                          >
-                            {booking.customers?.first_name} {booking.customers?.last_name}
-                            <span className="text-muted-foreground ml-2">
-                              ({booking.customers?.email})
-                            </span>
-                          </label>
-                        </div>
-                      ))}
+                      {allBookingsData?.map((booking: any) => {
+                        const hasAccommodation = booking.hotel_bookings && booking.hotel_bookings.length > 0;
+                        return (
+                          <div key={booking.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={booking.id}
+                              checked={selectedBookingIds.has(booking.id)}
+                              onCheckedChange={() => toggleBookingSelection(booking.id)}
+                            />
+                            <label
+                              htmlFor={booking.id}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                            >
+                              {booking.customers?.first_name} {booking.customers?.last_name}
+                              <span className="text-muted-foreground ml-2 text-xs">
+                                {hasAccommodation ? '🏨' : '🎯'}
+                              </span>
+                            </label>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </ScrollArea>
-                {selectedBookingIds.size > 0 && (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {selectedBookingIds.size} booking{selectedBookingIds.size !== 1 ? 's' : ''} selected
-                  </p>
-                )}
               </div>
             </div>
 
@@ -434,7 +358,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 value={editedSubject}
                 onChange={(e) => {
                   setEditedSubject(e.target.value);
-                  // Update original template when manually edited
                   setOriginalSubjectTemplate(e.target.value);
                 }}
                 placeholder="Email subject..."
@@ -449,7 +372,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                   value={editedContent}
                   onChange={(e) => {
                     setEditedContent(e.target.value);
-                    // Update original template when manually edited
                     setOriginalContentTemplate(e.target.value);
                   }}
                   className="min-h-[300px] border-0 resize-none"
@@ -469,7 +391,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               </Button>
               <Button
                 onClick={handleSendEmails}
-                disabled={bulkEmailMutation.isPending || isLoading || !getCurrentCount() || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || isLoading || selectedBookingIds.size === 0 || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {bulkEmailMutation.isPending ? (
@@ -478,7 +400,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     Sending...
                   </>
                 ) : (
-                  `Send ${getCurrentCount()} Email${getCurrentCount() !== 1 ? 's' : ''}`
+                  `Send ${selectedBookingIds.size} Email${selectedBookingIds.size !== 1 ? 's' : ''}`
                 )}
               </Button>
             </div>
