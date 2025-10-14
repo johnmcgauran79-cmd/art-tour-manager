@@ -57,7 +57,7 @@ export const BulkRoomingEditModal = ({ hotel, tourId, open, onOpenChange }: Bulk
             passenger_2_name,
             passenger_3_name,
             status,
-            customers (first_name, last_name)
+            customers!lead_passenger_id (first_name, last_name)
           )
         `)
         .eq('hotel_id', hotel.id)

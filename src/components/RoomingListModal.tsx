@@ -52,7 +52,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
             group_name,
             status,
             created_at,
-            customers (first_name, last_name)
+            customers!lead_passenger_id (first_name, last_name)
           )
         `)
         .eq('hotel_id', hotel.id)

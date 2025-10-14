@@ -39,7 +39,7 @@ export const HotelNightsBreakdownModal = ({
           bookings!inner(
             status,
             lead_passenger_id,
-            customers!inner(
+            customers!lead_passenger_id!inner(
               first_name,
               last_name
             )

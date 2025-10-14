@@ -26,7 +26,7 @@ export const FixMissingActivityBookings = ({ tourId, onFixComplete }: FixMissing
           passenger_count,
           status,
           lead_passenger_id,
-          customers!inner(first_name, last_name)
+          customers!lead_passenger_id!inner(first_name, last_name)
         `)
         .eq('tour_id', tourId)
         .neq('status', 'cancelled');

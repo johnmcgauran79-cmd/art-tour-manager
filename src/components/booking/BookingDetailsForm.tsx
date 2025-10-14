@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { ContactSearch } from "@/components/booking/ContactSearch";
 
 interface BookingDetailsFormProps {
   formData: any;
@@ -12,6 +13,8 @@ interface BookingDetailsFormProps {
   tours: any[];
   preSelectedTourId?: string;
   isWaitlistMode?: boolean;
+  onSecondaryContactSelect?: (contact: any) => void;
+  selectedSecondaryContact?: any;
 }
 
 export const BookingDetailsForm = ({ 
@@ -19,7 +22,9 @@ export const BookingDetailsForm = ({
   setFormData, 
   tours = [], 
   preSelectedTourId,
-  isWaitlistMode = false
+  isWaitlistMode = false,
+  onSecondaryContactSelect,
+  selectedSecondaryContact
 }: BookingDetailsFormProps) => {
   // Clear check-in/out dates when accommodation is not required
   useEffect(() => {
@@ -105,6 +110,17 @@ export const BookingDetailsForm = ({
           </div>
         </div>
       )}
+
+      {/* Secondary Contact */}
+      <div className="border rounded-lg p-4 space-y-4">
+        <h3 className="text-lg font-medium text-brand-navy">Secondary Contact (Optional)</h3>
+        <p className="text-sm text-muted-foreground">
+          Add a secondary contact who will also receive booking emails
+        </p>
+        <div className="text-sm text-gray-600">
+          Note: Secondary contact feature coming soon in the next update
+        </div>
+      </div>
 
       {/* Booking Information */}
       <div className="border rounded-lg p-4 space-y-4">

@@ -26,7 +26,7 @@ export const useActivityPassengers = (activityId: string) => {
             passenger_2_name,
             passenger_3_name,
             dietary_restrictions,
-            customers!inner(
+            customers!lead_passenger_id!inner(
               first_name,
               last_name
             )

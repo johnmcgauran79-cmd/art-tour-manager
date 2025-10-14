@@ -309,6 +309,7 @@ export type Database = {
           passport_expiry_date: string | null
           passport_number: string | null
           revenue: number | null
+          secondary_contact_id: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           total_nights: number | null
           tour_id: string | null
@@ -340,6 +341,7 @@ export type Database = {
           passport_expiry_date?: string | null
           passport_number?: string | null
           revenue?: number | null
+          secondary_contact_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
@@ -371,6 +373,7 @@ export type Database = {
           passport_expiry_date?: string | null
           passport_number?: string | null
           revenue?: number | null
+          secondary_contact_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
@@ -380,6 +383,13 @@ export type Database = {
           {
             foreignKeyName: "bookings_lead_passenger_id_fkey"
             columns: ["lead_passenger_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_secondary_contact_id_fkey"
+            columns: ["secondary_contact_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]

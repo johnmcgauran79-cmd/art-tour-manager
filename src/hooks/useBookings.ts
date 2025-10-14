@@ -65,7 +65,8 @@ export const useBookings = () => {
           .select(`
             *,
             tours (name),
-            customers (id, first_name, last_name, email, phone, dietary_requirements)
+            customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `)
           .order('created_at', { ascending: false });
         
@@ -96,7 +97,8 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) =>
         .select(`
           *,
           tours (name),
-          customers (id, first_name, last_name, email, phone, dietary_requirements)
+          customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
+          secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
         `, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(start, end);

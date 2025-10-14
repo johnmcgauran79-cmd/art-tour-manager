@@ -86,9 +86,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
             notes, inclusions, exclusions, tour_host, price_single, price_double,
             deposit_required, final_payment_date, instalment_date, instalment_amount
           ),
-          customers:lead_passenger_id (
+          customers!lead_passenger_id (
             first_name, last_name, email, phone, city, state, country,
             spouse_name, dietary_requirements, notes
+          ),
+          secondary_contact:customers!secondary_contact_id (
+            first_name, last_name, email, phone
           ),
           hotel_bookings (
             check_in_date, check_out_date, nights, room_type, bedding,

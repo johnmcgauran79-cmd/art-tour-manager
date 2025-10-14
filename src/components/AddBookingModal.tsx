@@ -32,6 +32,7 @@ interface AddBookingModalProps {
 
 export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "invoiced", preSelectedTourStartDate, preSelectedTourEndDate }: AddBookingModalProps) => {
   const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
@@ -194,6 +195,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         hotelDates: {},
       });
       setSelectedContact(null);
+      setSelectedSecondaryContact(null);
       setLeadPassengerName('');
       setCreatedBookingId(null);
       setActiveTab("details");
