@@ -114,12 +114,36 @@ export const BookingDetailsForm = ({
       {/* Secondary Contact */}
       <div className="border rounded-lg p-4 space-y-4">
         <h3 className="text-lg font-medium text-brand-navy">Secondary Contact (Optional)</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground mb-4">
           Add a secondary contact who will also receive booking emails
         </p>
-        <div className="text-sm text-gray-600">
-          Note: Secondary contact feature coming soon in the next update
-        </div>
+        {selectedSecondaryContact ? (
+          <div className="bg-gray-50 p-3 rounded border">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">{selectedSecondaryContact.first_name} {selectedSecondaryContact.last_name}</p>
+                <p className="text-sm text-gray-600">{selectedSecondaryContact.email}</p>
+                {selectedSecondaryContact.phone && (
+                  <p className="text-sm text-gray-600">{selectedSecondaryContact.phone}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => onSecondaryContactSelect?.(null)}
+                className="text-sm text-red-600 hover:text-red-700"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        ) : (
+          <ContactSearch
+            value={formData.secondary_contact_search || ''}
+            onValueChange={(value) => setFormData('secondary_contact_search', value)}
+            onContactSelect={(contact) => onSecondaryContactSelect?.(contact)}
+            selectedContactId={formData.secondary_contact_id || ''}
+          />
+        )}
       </div>
 
       {/* Booking Information */}

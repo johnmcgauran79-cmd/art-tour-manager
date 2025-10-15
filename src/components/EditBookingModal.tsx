@@ -25,6 +25,7 @@ interface Booking {
   id: string;
   tour_id: string;
   lead_passenger_id: string | null;
+  secondary_contact_id: string | null;
   passenger_count: number;
   passenger_2_name: string | null;
   passenger_3_name: string | null;
@@ -40,19 +41,14 @@ interface Booking {
   created_at: string;
   updated_at: string;
   
-  // Emergency contact
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relationship: string | null;
-  
-  // Travel documents
   passport_number: string | null;
   passport_expiry_date: string | null;
   passport_country: string | null;
   id_number: string | null;
   nationality: string | null;
-  
-  // Medical info
   medical_conditions: string | null;
   accessibility_needs: string | null;
   dietary_restrictions: string | null;
@@ -64,6 +60,13 @@ interface Booking {
     email: string;
     phone: string;
     dietary_requirements?: string;
+  };
+  secondary_contact?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
   };
 }
 
@@ -180,7 +183,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
     // Then update the booking with all fields except removed payment fields
     updateBooking.mutate({
       id: booking.id,
-      // Basic booking fields
       passenger_count: formData.passenger_count,
       passenger_2_name: formData.passenger_2_name,
       passenger_3_name: formData.passenger_3_name,
@@ -192,20 +194,15 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
       accommodation_required: formData.accommodation_required,
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
-      
-      // Emergency contact
+      secondary_contact_id: formData.secondary_contact_id || null,
       emergency_contact_name: formData.emergency_contact_name || null,
       emergency_contact_phone: formData.emergency_contact_phone || null,
       emergency_contact_relationship: formData.emergency_contact_relationship || null,
-      
-      // Travel documents
       passport_number: formData.passport_number || null,
       passport_expiry_date: formData.passport_expiry_date || null,
       passport_country: formData.passport_country || null,
       id_number: formData.id_number || null,
       nationality: formData.nationality || null,
-      
-      // Medical info (removed dietary_restrictions as it's duplicate)
       medical_conditions: formData.medical_conditions || null,
       accessibility_needs: formData.accessibility_needs || null,
     }, {

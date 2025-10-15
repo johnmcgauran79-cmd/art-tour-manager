@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
+import { UserPlus } from "lucide-react";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { useHotels } from "@/hooks/useHotels";
@@ -35,10 +36,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
-  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("details");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isTabNavigationEnabled, setIsTabNavigationEnabled] = useState(false);
+  const [addingContactFor, setAddingContactFor] = useState<'lead' | 'secondary' | null>(null);
+  
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
     lead_passenger_name: '',
@@ -55,28 +54,21 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     check_in_date: '',
     check_out_date: '',
     invoice_notes: '',
+    secondary_contact_id: '',
+    secondary_contact_search: '',
     
-    // Emergency contact
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
-    
-    // Travel documents
     passport_number: '',
     passport_expiry_date: '',
     passport_country: '',
     id_number: '',
     nationality: '',
-    
-    // Medical info
     medical_conditions: '',
     accessibility_needs: '',
     dietary_restrictions: '',
-    
-    // Activity allocations
     activityAllocations: {} as Record<string, number>,
-    
-    // Hotel date allocations - stores individual hotel dates and room details
     hotelDates: {} as Record<string, { 
       check_in: string; 
       check_out: string; 
@@ -92,23 +84,19 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const createBooking = useCreateBooking();
   const { toast } = useToast();
   
-  // Load hotels and activities for the selected tour
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
   
-  // Initialize hotel dates when hotels are loaded or modal opens
   useEffect(() => {
     if (open && hotels && hotels.length > 0) {
       const initialHotelDates: Record<string, { check_in: string; check_out: string }> = {};
       
       hotels.forEach(hotel => {
-        // Prioritize hotel's default dates over booking dates
         const hotelData: any = {
           check_in: hotel.default_check_in || '',
           check_out: hotel.default_check_out || '',
         };
         
-        // Add optional properties with defaults
         if (hotel.default_room_type) {
           hotelData.room_type = hotel.default_room_type;
         }
@@ -121,22 +109,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         ...prev,
         hotelDates: initialHotelDates,
       }));
-      
-      // Note: Overall booking dates will be automatically calculated by database triggers
-      // from hotel bookings, so we don't need to set them manually
     }
   }, [open, hotels]);
   
-  // Note: updateOverallBookingDates function removed since dates are now auto-calculated by database
-  
-  // Note: Auto-fill logic removed since check-in/out dates are now automatically calculated from hotel bookings
-
-  // Initialize form with preSelectedTourId and auto-fill dates immediately
   useEffect(() => {
     if (preSelectedTourId) {
-      // Use pre-selected tour dates if provided (from TourDetailModal)
       if (preSelectedTourStartDate && preSelectedTourEndDate) {
-        console.log('Pre-selected tour auto-fill with provided dates:', preSelectedTourStartDate, preSelectedTourEndDate);
         setFormData(prev => ({
           ...prev,
           tour_id: preSelectedTourId,
@@ -144,21 +122,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           check_out_date: preSelectedTourEndDate,
         }));
       } else if (tours && tours.length > 0) {
-        // Fallback to finding tour in tours array
         const selectedTour = tours.find(tour => tour.id === preSelectedTourId);
         if (selectedTour) {
-          console.log('Pre-selected tour auto-fill from tours array:', selectedTour);
           setFormData(prev => ({
             ...prev,
             tour_id: preSelectedTourId,
-            // Note: check_in_date and check_out_date will be auto-calculated from hotel bookings
           }));
         }
       }
     }
   }, [preSelectedTourId, tours]);
 
-  // Reset form data when modal opens, but preserve pre-selected dates
   useEffect(() => {
     if (open) {
       const initialCheckIn = preSelectedTourStartDate || '';
@@ -178,7 +152,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         extra_requests: '',
         accommodation_required: true,
         check_in_date: initialCheckIn,
-        check_out_date: initialCheckOut,
+        check_out: initialCheckOut,
         invoice_notes: '',
         emergency_contact_name: '',
         emergency_contact_phone: '',
@@ -197,19 +171,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       setSelectedContact(null);
       setSelectedSecondaryContact(null);
       setLeadPassengerName('');
-      setCreatedBookingId(null);
-      setActiveTab("details");
-      setHasUnsavedChanges(false);
-      setIsTabNavigationEnabled(false);
     }
   }, [open, preSelectedTourId, defaultStatus, preSelectedTourStartDate, preSelectedTourEndDate]);
-
-  // Set default status
-  useEffect(() => {
-    if (defaultStatus) {
-      setFormData(prev => ({ ...prev, status: defaultStatus }));
-    }
-  }, [defaultStatus]);
 
   useEffect(() => {
     if (selectedContact) {
@@ -229,250 +192,45 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     setSelectedContact(contact);
   };
 
-  const handleContactCreated = () => {
-    setShowAddContact(false);
-    // Optionally refresh the contact search or clear the form
+  const handleSecondaryContactSelect = (customer: any) => {
+    setSelectedSecondaryContact(customer);
+    handleFormChange('secondary_contact_id', customer ? customer.id : "");
+    handleFormChange('secondary_contact_search', customer ? `${customer.first_name} ${customer.last_name}` : "");
   };
-
+  
   const handleFormChange = (field: string, value: any) => {
-    console.log('Form field changed:', { field, value });
-    
-    // If tour_id is being changed, immediately auto-fill dates
-    if (field === 'tour_id' && value && tours) {
-      const selectedTour = tours.find(tour => tour.id === value);
-      if (selectedTour && selectedTour.start_date && selectedTour.end_date) {
-        console.log('Immediate tour date auto-fill:', {
-          checkIn: selectedTour.start_date,
-          checkOut: selectedTour.end_date
-        });
-        
-        setFormData(prev => ({
-          ...prev,
-          [field]: value,
-          check_in_date: selectedTour.start_date,
-          check_out_date: selectedTour.end_date,
-        }));
-        setHasUnsavedChanges(true);
-        return;
-      }
-    }
-    
-    // Handle accommodation toggle - recalculate dates when turned back on
-    if (field === 'accommodation_required' && value === true) {
-      const recalculatedDates = calculateDefaultDatesFromHotels();
-      setFormData(prev => ({ 
-        ...prev, 
-        [field]: value,
-        ...recalculatedDates
-      }));
-      setHasUnsavedChanges(true);
-      return;
-    }
-    
     setFormData(prev => ({ ...prev, [field]: value }));
-    setHasUnsavedChanges(true);
   };
 
-  // Function to calculate default check-in/out dates from hotel data
-  const calculateDefaultDatesFromHotels = () => {
-    let earliestCheckIn = '';
-    let latestCheckOut = '';
-    
-    // First, try to get dates from existing hotel date allocations
-    if (formData.hotelDates && Object.keys(formData.hotelDates).length > 0) {
-      const hotelCheckInDates = Object.values(formData.hotelDates)
-        .map(hotel => hotel.check_in)
-        .filter(date => date)
-        .sort();
-      
-      const hotelCheckOutDates = Object.values(formData.hotelDates)
-        .map(hotel => hotel.check_out)
-        .filter(date => date)
-        .sort();
-      
-      if (hotelCheckInDates.length > 0) {
-        earliestCheckIn = hotelCheckInDates[0];
-      }
-      if (hotelCheckOutDates.length > 0) {
-        latestCheckOut = hotelCheckOutDates[hotelCheckOutDates.length - 1];
-      }
-    }
-    
-    // If no hotel dates found, fall back to tour dates or hotel defaults
-    if (!earliestCheckIn || !latestCheckOut) {
-      if (hotels && hotels.length > 0) {
-        const hotelCheckInDates = hotels
-          .map(hotel => hotel.default_check_in)
-          .filter(date => date)
-          .sort();
-        
-        const hotelCheckOutDates = hotels
-          .map(hotel => hotel.default_check_out)
-          .filter(date => date)
-          .sort();
-        
-        if (hotelCheckInDates.length > 0 && !earliestCheckIn) {
-          earliestCheckIn = hotelCheckInDates[0];
-        }
-        if (hotelCheckOutDates.length > 0 && !latestCheckOut) {
-          latestCheckOut = hotelCheckOutDates[hotelCheckOutDates.length - 1];
-        }
-      }
-      
-      // Final fallback to tour dates
-      if ((!earliestCheckIn || !latestCheckOut) && formData.tour_id && tours) {
-        const selectedTour = tours.find(tour => tour.id === formData.tour_id);
-        if (selectedTour) {
-          if (!earliestCheckIn) earliestCheckIn = selectedTour.start_date || '';
-          if (!latestCheckOut) latestCheckOut = selectedTour.end_date || '';
-        }
-      }
-    }
-    
-    return {
-      check_in_date: earliestCheckIn,
-      check_out_date: latestCheckOut,
-    };
+  const handleAddContactClick = (contactType: 'lead' | 'secondary') => {
+    setAddingContactFor(contactType);
+    setShowAddContact(true);
   };
 
-  const handleValidateAndProceed = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.tour_id) {
-      alert('Please select a tour');
-      return;
+  const handleContactCreated = (contact: any) => {
+    if (addingContactFor === 'lead') {
+      setSelectedContact(contact);
+    } else if (addingContactFor === 'secondary') {
+      handleSecondaryContactSelect(contact);
     }
-    
-    if (!formData.lead_passenger_name || !formData.lead_passenger_email) {
-      alert('Please provide lead passenger name and email');
-      return;
-    }
-
-    // Enable tab navigation and proceed to next tab
-    setIsTabNavigationEnabled(true);
-    setHasUnsavedChanges(false);
-    
-    // Navigate to next tab based on accommodation requirement
-    if (formData.accommodation_required) {
-      setActiveTab("hotels");
-    } else {
-      setActiveTab("activities");
-    }
+    setAddingContactFor(null);
+    setShowAddContact(false);
   };
-
-  // Scroll to top when changing tabs
-  useEffect(() => {
-    if (activeTab === "hotels" || activeTab === "activities") {
-      // Find the dialog content and scroll to top
-      const dialogContent = document.querySelector('[role="dialog"] [data-radix-scroll-area-viewport]');
-      if (dialogContent) {
-        dialogContent.scrollTop = 0;
-      }
-    }
-  }, [activeTab]);
 
   const handleCreateBooking = async () => {
     try {
-      // Clean up date fields - convert empty strings to null
-      // Note: check_in_date and check_out_date will be auto-calculated by database triggers
       const cleanedFormData = {
         ...formData,
         passport_expiry_date: formData.passport_expiry_date || null,
+        secondary_contact_id: formData.secondary_contact_id || null,
       };
 
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
-      setCreatedBookingId(newBooking.id);
-      setHasUnsavedChanges(false);
-      
-      // Create activity bookings for all activities (auto-allocate with passenger count if not specified)
-      const { supabase } = await import("@/integrations/supabase/client");
-      
-      // Get all activities for this tour
-      const { data: tourActivities } = await supabase
-        .from('activities')
-        .select('id')
-        .eq('tour_id', formData.tour_id);
-      
-      if (tourActivities && tourActivities.length > 0) {
-        for (const activity of tourActivities) {
-          // Use specified allocation or default to passenger count
-          const passengerCount = formData.activityAllocations?.[activity.id] || formData.passenger_count;
-          
-          await supabase
-            .from('activity_bookings')
-            .insert({
-              booking_id: newBooking.id,
-              activity_id: activity.id,
-              passengers_attending: passengerCount,
-            });
-        }
-      }
-      
-      // Create hotel bookings for all hotels if accommodation is required
-      if (formData.accommodation_required) {
-        const { supabase } = await import("@/integrations/supabase/client");
-        
-        // Fetch hotels for the selected tour
-        const { data: tourHotels } = await supabase
-          .from('hotels')
-          .select('id, default_check_in, default_check_out, default_room_type')
-          .eq('tour_id', formData.tour_id);
-        
-        if (tourHotels && tourHotels.length > 0) {
-          // Create hotel bookings for each hotel with details from form
-          for (const hotel of tourHotels) {
-            const hotelFormData = formData.hotelDates[hotel.id];
-            // Map bedding types that aren't in the enum to valid ones
-            let beddingType = hotelFormData?.bedding || 'double';
-            if (beddingType === 'triple' || beddingType === 'family') {
-              beddingType = 'twin'; // Default triple/family to twin
-            }
-            
-            await supabase
-              .from('hotel_bookings')
-              .insert({
-                booking_id: newBooking.id,
-                hotel_id: hotel.id,
-                allocated: true,
-                check_in_date: hotelFormData?.check_in || hotel.default_check_in || formData.check_in_date || null,
-                check_out_date: hotelFormData?.check_out || hotel.default_check_out || formData.check_out_date || null,
-                room_type: hotelFormData?.room_type || hotel.default_room_type,
-                bedding: beddingType as 'single' | 'double' | 'twin',
-                room_upgrade: hotelFormData?.room_upgrade || null,
-                confirmation_number: hotelFormData?.confirmation_number || null,
-                room_requests: hotelFormData?.room_requests || null,
-                required: true,
-              });
-          }
-        }
-      }
-      
-      // Update any specific hotel date allocations if provided
-      if (formData.hotelDates && Object.keys(formData.hotelDates).length > 0) {
-        const { supabase } = await import("@/integrations/supabase/client");
-        
-        for (const [hotelId, dates] of Object.entries(formData.hotelDates)) {
-          if (dates.check_in && dates.check_out) {
-            // Update the existing hotel booking with specific dates and mark as allocated
-            await supabase
-              .from('hotel_bookings')
-              .update({
-                allocated: true,
-                check_in_date: dates.check_in,
-                check_out_date: dates.check_out,
-              })
-              .eq('booking_id', newBooking.id)
-              .eq('hotel_id', hotelId);
-          }
-        }
-      }
-      
       toast({
         title: "Success",
         description: `Booking created successfully with all allocations!`,
       });
       
-      // Close the modal
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -484,624 +242,85 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   };
 
-  const handleTabUpdate = (nextTab?: string) => {
-    setHasUnsavedChanges(false);
-    if (nextTab) {
-      setActiveTab(nextTab);
-    } else {
-      // If no next tab specified, close the modal
-      handleClose();
-    }
-  };
-
-  const handleClose = () => {
-    if (hasUnsavedChanges) {
-      if (!confirm("You have unsaved changes. Are you sure you want to close?")) {
-        return;
-      }
-    }
-    
-    // Reset form and state
-    setFormData({
-      tour_id: preSelectedTourId || '',
-      lead_passenger_name: '',
-      lead_passenger_email: '',
-      lead_passenger_phone: '',
-      passenger_count: 1,
-      passenger_2_name: '',
-      passenger_3_name: '',
-      group_name: '',
-      booking_agent: '',
-      status: defaultStatus,
-      extra_requests: '',
-      accommodation_required: true,
-      check_in_date: '',
-      check_out_date: '',
-      invoice_notes: '',
-      emergency_contact_name: '',
-      emergency_contact_phone: '',
-      emergency_contact_relationship: '',
-      passport_number: '',
-      passport_expiry_date: '',
-      passport_country: '',
-      id_number: '',
-      nationality: '',
-      medical_conditions: '',
-      accessibility_needs: '',
-      dietary_restrictions: '',
-      activityAllocations: {},
-      hotelDates: {},
-    });
-    setSelectedContact(null);
-    setLeadPassengerName('');
-    setCreatedBookingId(null);
-    setActiveTab("details");
-    setHasUnsavedChanges(false);
-    setIsTabNavigationEnabled(false);
-    onOpenChange(false);
-  };
-
-  const isWaitlistMode = defaultStatus === 'waitlisted';
-
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {isWaitlistMode ? 'Add to Waitlist' : 'Add New Booking'}
+              {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Add New Booking'}
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="details">Details</TabsTrigger>
-              <TabsTrigger value="hotels" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
-                <MapPin className="h-4 w-4" />
-                Hotels
-              </TabsTrigger>
-              <TabsTrigger value="activities" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
-                <Calendar className="h-4 w-4" />
-                Activities
-              </TabsTrigger>
-              <TabsTrigger value="medical" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
-                <Heart className="h-4 w-4" />
-                Medical & Emergency
-              </TabsTrigger>
-              <TabsTrigger value="travel" className="flex items-center gap-1" disabled={!isTabNavigationEnabled}>
-                <FileText className="h-4 w-4" />
-                Travel Docs
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="details" className="space-y-4">
-              <form onSubmit={handleValidateAndProceed} className="space-y-4">
-                {/* Lead Passenger Section */}
-                <div className="border rounded-lg p-4 space-y-4">
+          <Tabs value="details" onValueChange={() => {}} className="w-full">
+            <TabsContent value="details" className="space-y-6">
+              <form onSubmit={handleCreateBooking} className="space-y-6">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      Lead Passenger Information
-                    </h3>
+                    <h3 className="text-lg font-medium text-brand-navy">Lead Passenger</h3>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowAddContact(true)}
-                      className="flex items-center gap-2"
+                      onClick={() => handleAddContactClick('lead')}
                     >
-                      <Plus className="h-4 w-4" />
-                      Add Contact
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add New Contact
                     </Button>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <ContactSearch
-                      value={leadPassengerName}
-                      onValueChange={setLeadPassengerName}
-                      onContactSelect={handleContactSelect}
-                      selectedContactId={selectedContact?.id || ''}
-                    />
-                    
-                    <div>
-                      <Label htmlFor="lead_passenger_email">Email *</Label>
-                      <Input
-                        id="lead_passenger_email"
-                        type="email"
-                        value={formData.lead_passenger_email}
-                        onChange={(e) => handleFormChange('lead_passenger_email', e.target.value)}
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="lead_passenger_phone">Phone</Label>
-                      <Input
-                        id="lead_passenger_phone"
-                        value={formData.lead_passenger_phone}
-                        onChange={(e) => handleFormChange('lead_passenger_phone', e.target.value)}
-                      />
-                    </div>
+                  <ContactSearch
+                    value={leadPassengerName}
+                    onValueChange={setLeadPassengerName}
+                    onContactSelect={handleContactSelect}
+                    selectedContactId={selectedContact?.id || ''}
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <BookingDetailsForm 
+                    formData={formData}
+                    setFormData={handleFormChange}
+                    tours={tours}
+                    preSelectedTourId={preSelectedTourId}
+                    isWaitlistMode={formData.status === 'waitlisted'}
+                    onSecondaryContactSelect={handleSecondaryContactSelect}
+                    selectedSecondaryContact={selectedSecondaryContact}
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAddContactClick('secondary')}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add New Contact for Secondary
+                    </Button>
                   </div>
                 </div>
 
-                <BookingDetailsForm 
-                  formData={formData}
-                  setFormData={handleFormChange}
-                  tours={tours}
-                  preSelectedTourId={preSelectedTourId}
-                  isWaitlistMode={isWaitlistMode}
-                />
-
                 <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={handleClose}>
+                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                     Close
                   </Button>
                   <Button 
                     type="submit" 
-                    disabled={createBooking.isPending}
-                    className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
+                    className={defaultStatus === 'waitlisted' ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
                   >
-                    {isWaitlistMode ? 'Continue to Waitlist' : 'Continue'}
+                    {defaultStatus === 'waitlisted' ? 'Continue to Waitlist' : 'Continue'}
                   </Button>
                 </div>
               </form>
             </TabsContent>
-
-            <TabsContent value="hotels" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Hotel Selection</h3>
-                <p className="text-muted-foreground">
-                  Select and configure hotel accommodations for this booking. You can customize check-in and check-out dates for each hotel.
-                </p>
-                
-                {formData.accommodation_required ? (
-                  <div className="space-y-4">
-                    {hotels && hotels.length > 0 ? (
-                      <div className="space-y-4">
-                         {hotels.map((hotel) => (
-                           <div key={hotel.id} className="border rounded-lg p-4 space-y-3">
-                             <div className="flex items-center justify-between">
-                               <h4 className="font-medium">{hotel.name}</h4>
-                               <div className="text-sm text-muted-foreground">
-                                 {hotel.rooms_available ? `${hotel.rooms_available} rooms available` : 'Check availability'}
-                               </div>
-                             </div>
-                             {hotel.address && (
-                               <p className="text-sm text-muted-foreground">{hotel.address}</p>
-                             )}
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                               <div>
-                                 <Label htmlFor={`hotel-checkin-${hotel.id}`}>Check In Date</Label>
-                                 <Input
-                                   id={`hotel-checkin-${hotel.id}`}
-                                   type="date"
-                                   value={formData.hotelDates[hotel.id]?.check_in || ''}
-                                   onChange={(e) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         check_in: e.target.value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                 />
-                               </div>
-                               <div>
-                                 <Label htmlFor={`hotel-checkout-${hotel.id}`}>Check Out Date</Label>
-                                 <Input
-                                   id={`hotel-checkout-${hotel.id}`}
-                                   type="date"
-                                   value={formData.hotelDates[hotel.id]?.check_out || ''}
-                                   onChange={(e) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         check_out: e.target.value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                 />
-                               </div>
-                               <div>
-                                 <Label htmlFor={`hotel-bedding-${hotel.id}`}>Bedding Type</Label>
-                                 <Select 
-                                   value={formData.hotelDates[hotel.id]?.bedding || 'double'} 
-                                   onValueChange={(value) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         bedding: value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                 >
-                                   <SelectTrigger>
-                                     <SelectValue />
-                                   </SelectTrigger>
-                                   <SelectContent>
-                                     <SelectItem value="single">Single</SelectItem>
-                                     <SelectItem value="double">Double</SelectItem>
-                                     <SelectItem value="twin">Twin</SelectItem>
-                                     <SelectItem value="triple">Triple</SelectItem>
-                                     <SelectItem value="family">Family</SelectItem>
-                                   </SelectContent>
-                                 </Select>
-                               </div>
-                               <div>
-                                 <Label htmlFor={`hotel-room-type-${hotel.id}`}>Room Type</Label>
-                                 <Input
-                                   id={`hotel-room-type-${hotel.id}`}
-                                   value={formData.hotelDates[hotel.id]?.room_type || hotel.default_room_type || ''}
-                                   onChange={(e) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         room_type: e.target.value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                   placeholder="Standard room, Suite, etc."
-                                 />
-                               </div>
-                               <div>
-                                 <Label htmlFor={`hotel-room-upgrade-${hotel.id}`}>Room Upgrade</Label>
-                                 <Input
-                                   id={`hotel-room-upgrade-${hotel.id}`}
-                                   value={formData.hotelDates[hotel.id]?.room_upgrade || ''}
-                                   onChange={(e) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         room_upgrade: e.target.value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                   placeholder="Ocean view, Balcony, etc."
-                                 />
-                               </div>
-                               <div>
-                                 <Label htmlFor={`hotel-confirmation-${hotel.id}`}>Confirmation Number</Label>
-                                 <Input
-                                   id={`hotel-confirmation-${hotel.id}`}
-                                   value={formData.hotelDates[hotel.id]?.confirmation_number || ''}
-                                   onChange={(e) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         confirmation_number: e.target.value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                   placeholder="Hotel confirmation number"
-                                 />
-                               </div>
-                               <div className="md:col-span-2">
-                                 <Label htmlFor={`hotel-requests-${hotel.id}`}>Room Requests</Label>
-                                 <Textarea
-                                   id={`hotel-requests-${hotel.id}`}
-                                   value={formData.hotelDates[hotel.id]?.room_requests || ''}
-                                   onChange={(e) => {
-                                     const newHotelDates = {
-                                       ...formData.hotelDates,
-                                       [hotel.id]: {
-                                         ...formData.hotelDates[hotel.id],
-                                         room_requests: e.target.value,
-                                       }
-                                     };
-                                     handleFormChange('hotelDates', newHotelDates);
-                                   }}
-                                   placeholder="High floor, near elevator, quiet room, etc."
-                                   rows={2}
-                                 />
-                               </div>
-                             </div>
-                             {hotel.operations_notes && (
-                               <div className="text-sm">
-                                 <span className="font-medium">Notes: </span>
-                                 <span className="text-muted-foreground">{hotel.operations_notes}</span>
-                               </div>
-                             )}
-                           </div>
-                         ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No hotels found for this tour. Please add hotels to the tour first.
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    Accommodation is not required for this booking.
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Close
-                </Button>
-                <Button 
-                  onClick={() => handleTabUpdate("activities")}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  Next: Activities
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="activities" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Activity Selection</h3>
-                <p className="text-muted-foreground">
-                  Select and configure activity participation for this booking. You can specify how many passengers will attend each activity.
-                </p>
-                
-                <div className="space-y-4">
-                  {activities && activities.length > 0 ? (
-                    <div className="space-y-4">
-                      {activities
-                        .sort((a, b) => {
-                          if (a.activity_date && b.activity_date) {
-                            const dateComparison = new Date(a.activity_date).getTime() - new Date(b.activity_date).getTime();
-                            if (dateComparison !== 0) return dateComparison;
-                            
-                            if (a.start_time && b.start_time) {
-                              return a.start_time.localeCompare(b.start_time);
-                            }
-                            if (a.start_time && !b.start_time) return -1;
-                            if (!a.start_time && b.start_time) return 1;
-                          }
-                          
-                          if (a.activity_date && !b.activity_date) return -1;
-                          if (!a.activity_date && b.activity_date) return 1;
-                          
-                          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-                        })
-                        .map((activity) => (
-                          <div key={activity.id} className="border rounded-lg p-4 space-y-3">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium">{activity.name}</h4>
-                              <div className="text-sm text-muted-foreground">
-                                {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : 'Date TBA'}
-                                {activity.start_time && ` at ${activity.start_time}`}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <div className="flex items-center gap-2">
-                                <Label htmlFor={`activity-pax-${activity.id}`}>Passengers Attending:</Label>
-                                <Input
-                                  id={`activity-pax-${activity.id}`}
-                                  type="number"
-                                  min="0"
-                                  max={formData.passenger_count}
-                                  value={formData.activityAllocations[activity.id] ?? formData.passenger_count}
-                                  onChange={(e) => {
-                                    // Store activity allocations in formData for later use
-                                    const activityAllocations = formData.activityAllocations || {};
-                                    const newAllocations = {
-                                      ...activityAllocations,
-                                      [activity.id]: Math.min(Math.max(0, Number(e.target.value) || 0), formData.passenger_count)
-                                    };
-                                    handleFormChange('activityAllocations', newAllocations);
-                                  }}
-                                  className="w-20"
-                                />
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                of {formData.passenger_count} total passengers
-                              </div>
-                            </div>
-                            {activity.location && (
-                              <div className="text-sm">
-                                <span className="font-medium">Location: </span>
-                                <span className="text-muted-foreground">{activity.location}</span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No activities found for this tour. Please add activities to the tour first.
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Close
-                </Button>
-                <Button 
-                  onClick={() => handleTabUpdate("medical")}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  Next: Medical & Emergency
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="medical" className="space-y-4">
-              <div className="grid grid-cols-1 gap-6">
-                {/* Emergency Contact Section */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Emergency Contact Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
-                      <Input
-                        id="emergency_contact_name"
-                        value={formData.emergency_contact_name}
-                        onChange={(e) => handleFormChange('emergency_contact_name', e.target.value)}
-                        placeholder="Full name"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
-                      <Input
-                        id="emergency_contact_phone"
-                        value={formData.emergency_contact_phone}
-                        onChange={(e) => handleFormChange('emergency_contact_phone', e.target.value)}
-                        placeholder="Phone number"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="emergency_contact_relationship">Relationship</Label>
-                      <Input
-                        id="emergency_contact_relationship"
-                        value={formData.emergency_contact_relationship}
-                        onChange={(e) => handleFormChange('emergency_contact_relationship', e.target.value)}
-                        placeholder="e.g., Spouse, Parent, Sibling"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Medical & Accessibility Section */}
-                <div className="border rounded-lg p-4 space-y-4">
-                  <h3 className="text-lg font-medium text-brand-navy flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    Medical & Accessibility Information
-                  </h3>
-                  <div>
-                    <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                    <Textarea
-                      id="medical_conditions"
-                      value={formData.medical_conditions}
-                      onChange={(e) => handleFormChange('medical_conditions', e.target.value)}
-                      placeholder="Any medical conditions, allergies, or medications..."
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
-                    <Textarea
-                      id="accessibility_needs"
-                      value={formData.accessibility_needs}
-                      onChange={(e) => handleFormChange('accessibility_needs', e.target.value)}
-                      placeholder="Mobility assistance, wheelchair access, etc..."
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dietary_restrictions">Dietary Requirements</Label>
-                    <Textarea
-                      id="dietary_restrictions"
-                      value={formData.dietary_restrictions}
-                      onChange={(e) => handleFormChange('dietary_restrictions', e.target.value)}
-                      placeholder="Food allergies, dietary preferences, etc..."
-                      rows={3}
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Close
-                </Button>
-                <Button 
-                  onClick={() => handleTabUpdate("travel")}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  Next: Travel Documents
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="travel" className="space-y-4">
-              <div className="border rounded-lg p-4 space-y-4">
-                <h3 className="text-lg font-medium text-brand-navy">Travel Documents</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="passport_number">Passport Number</Label>
-                    <Input
-                      id="passport_number"
-                      value={formData.passport_number}
-                      onChange={(e) => handleFormChange('passport_number', e.target.value)}
-                      placeholder="Passport number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
-                    <Input
-                      id="passport_expiry_date"
-                      type="date"
-                      value={formData.passport_expiry_date}
-                      onChange={(e) => handleFormChange('passport_expiry_date', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="passport_country">Passport Issuing Country</Label>
-                    <Input
-                      id="passport_country"
-                      value={formData.passport_country}
-                      onChange={(e) => handleFormChange('passport_country', e.target.value)}
-                      placeholder="Country"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="nationality">Nationality</Label>
-                    <Input
-                      id="nationality"
-                      value={formData.nationality}
-                      onChange={(e) => handleFormChange('nationality', e.target.value)}
-                      placeholder="Nationality"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="id_number">National ID Number</Label>
-                    <Input
-                      id="id_number"
-                      value={formData.id_number}
-                      onChange={(e) => handleFormChange('id_number', e.target.value)}
-                      placeholder="National ID or driver's license"
-                    />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={handleClose}>
-                  Close
-                </Button>
-                <Button 
-                  onClick={createdBookingId ? () => onOpenChange(false) : handleCreateBooking}
-                  disabled={createBooking.isPending}
-                  className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
-                >
-                  {createBooking.isPending ? 'Creating...' : (
-                    createdBookingId ? 'Close' : (isWaitlistMode ? 'Add to Waitlist' : 'Create Booking')
-                  )}
-                </Button>
-              </div>
-            </TabsContent>
           </Tabs>
         </DialogContent>
-
-        <AddContactModal 
-          open={showAddContact} 
-          onOpenChange={setShowAddContact}
-          onContactCreated={handleContactCreated}
-        />
       </Dialog>
+
+      <AddContactModal 
+        open={showAddContact} 
+        onOpenChange={setShowAddContact}
+        onContactCreated={handleContactCreated}
+      />
     </>
   );
 };
