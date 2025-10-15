@@ -14,6 +14,7 @@ interface Booking {
   id: string;
   tour_id: string;
   lead_passenger_id: string | null;
+  secondary_contact_id: string | null;
   passenger_count: number;
   passenger_2_name: string | null;
   passenger_3_name: string | null;

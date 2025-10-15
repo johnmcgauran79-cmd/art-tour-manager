@@ -8,6 +8,7 @@ export interface Booking {
   id: string;
   tour_id: string;
   lead_passenger_id: string | null;
+  secondary_contact_id: string | null;
   passenger_count: number;
   passenger_2_name: string | null;
   passenger_3_name: string | null;
@@ -24,19 +25,16 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   
-  // Emergency contact information
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relationship: string | null;
   
-  // Passport/ID details
   passport_number: string | null;
   passport_expiry_date: string | null;
   passport_country: string | null;
   id_number: string | null;
   nationality: string | null;
   
-  // Medical and dietary
   medical_conditions: string | null;
   accessibility_needs: string | null;
   dietary_restrictions: string | null;

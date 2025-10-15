@@ -79,7 +79,6 @@ interface EditBookingModalProps {
 
 export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "details" }: EditBookingModalProps) => {
   const [formData, setFormData] = useState({
-    // Basic booking info
     lead_passenger_first_name: '',
     lead_passenger_last_name: '',
     lead_passenger_email: '',
@@ -96,20 +95,18 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
     accommodation_required: true,
     check_in_date: '',
     check_out_date: '',
+    secondary_contact_id: '',
     
-    // Emergency contact
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
     
-    // Travel documents
     passport_number: '',
     passport_expiry_date: '',
     passport_country: '',
     id_number: '',
     nationality: '',
     
-    // Medical info
     medical_conditions: '',
     accessibility_needs: '',
     dietary_restrictions: '',
@@ -129,7 +126,6 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
   useEffect(() => {
     if (booking) {
       setFormData({
-        // Basic info
         lead_passenger_first_name: booking.customers?.first_name || '',
         lead_passenger_last_name: booking.customers?.last_name || '',
         lead_passenger_email: booking.customers?.email || '',
@@ -146,20 +142,18 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
         accommodation_required: booking.accommodation_required || false,
         check_in_date: booking.check_in_date || '',
         check_out_date: booking.check_out_date || '',
+        secondary_contact_id: booking.secondary_contact_id || '',
         
-        // Emergency contact
         emergency_contact_name: booking.emergency_contact_name || '',
         emergency_contact_phone: booking.emergency_contact_phone || '',
         emergency_contact_relationship: booking.emergency_contact_relationship || '',
         
-        // Travel documents
         passport_number: booking.passport_number || '',
         passport_expiry_date: booking.passport_expiry_date || '',
         passport_country: booking.passport_country || '',
         id_number: booking.id_number || '',
         nationality: booking.nationality || '',
         
-        // Medical info
         medical_conditions: booking.medical_conditions || '',
         accessibility_needs: booking.accessibility_needs || '',
         dietary_restrictions: booking.dietary_restrictions || '',
