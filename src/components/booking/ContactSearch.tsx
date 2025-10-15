@@ -10,13 +10,15 @@ interface ContactSearchProps {
   onValueChange: (value: string) => void;
   onContactSelect: (contact: any) => void;
   selectedContactId: string;
+  placeholder?: string;
 }
 
 export const ContactSearch = ({ 
   value, 
   onValueChange, 
   onContactSelect, 
-  selectedContactId 
+  selectedContactId,
+  placeholder = "Start typing name to search existing contacts..."
 }: ContactSearchProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { data: customers } = useAllCustomers();
@@ -52,7 +54,7 @@ export const ContactSearch = ({
           onBlur={() => {
             setTimeout(() => setShowSuggestions(false), 200);
           }}
-          placeholder="Start typing name to search existing contacts..."
+          placeholder={placeholder}
           required
         />
         

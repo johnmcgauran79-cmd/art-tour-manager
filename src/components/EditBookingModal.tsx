@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info } from "lucide-react";
+import { Trash2, Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus } from "lucide-react";
 import { useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -16,10 +16,12 @@ import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { CancelBookingDialog } from "@/components/CancelBookingDialog";
 import { EditContactModal } from "@/components/EditContactModal";
+import { AddContactModal } from "@/components/AddContactModal";
 import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ContactSearch } from "@/components/booking/ContactSearch";
 
 interface Booking {
   id: string;
@@ -116,6 +118,9 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
   const [showEditContact, setShowEditContact] = useState(false);
   const [contactToEdit, setContactToEdit] = useState<any>(null);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
+  const [secondaryContactName, setSecondaryContactName] = useState('');
 
   const updateBooking = useUpdateBooking();
   const deleteBooking = useDeleteBooking();
@@ -158,6 +163,12 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
         accessibility_needs: booking.accessibility_needs || '',
         dietary_restrictions: booking.dietary_restrictions || '',
       });
+
+      // Set secondary contact if it exists
+      if (booking.secondary_contact) {
+        setSelectedSecondaryContact(booking.secondary_contact);
+        setSecondaryContactName(`${booking.secondary_contact.first_name} ${booking.secondary_contact.last_name}`);
+      }
     }
   }, [booking]);
 
@@ -260,6 +271,18 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
       lead_passenger_phone: updatedContact.phone || '',
       lead_passenger_dietary_requirements: updatedContact.dietary_requirements || '',
     }));
+  };
+
+  const handleSecondaryContactSelect = (contact: any) => {
+    setSelectedSecondaryContact(contact);
+    setSecondaryContactName(`${contact.first_name} ${contact.last_name}`);
+    setFormData(prev => ({ ...prev, secondary_contact_id: contact.id }));
+  };
+
+  const handleContactCreated = (newContact: any) => {
+    setSelectedSecondaryContact(newContact);
+    setSecondaryContactName(`${newContact.first_name} ${newContact.last_name}`);
+    setFormData(prev => ({ ...prev, secondary_contact_id: newContact.id }));
   };
 
   if (!booking) return null;
@@ -401,6 +424,44 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                       rows={3}
                     />
                   </div>
+                </div>
+
+                <div className="border rounded-lg p-4 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h3 className="text-lg font-medium">Secondary Contact (Optional)</h3>
+                      <p className="text-sm text-muted-foreground">Add another contact who will receive booking communications</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddContact(true)}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add New Contact
+                    </Button>
+                  </div>
+
+                  <ContactSearch
+                    value={secondaryContactName}
+                    onValueChange={setSecondaryContactName}
+                    onContactSelect={handleSecondaryContactSelect}
+                    selectedContactId={selectedSecondaryContact?.id || ''}
+                    placeholder="Search for secondary contact..."
+                  />
+                  
+                  {selectedSecondaryContact && (
+                    <div className="bg-muted p-3 rounded-md">
+                      <p className="text-sm font-medium">
+                        {selectedSecondaryContact.first_name} {selectedSecondaryContact.last_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{selectedSecondaryContact.email}</p>
+                      {selectedSecondaryContact.phone && (
+                        <p className="text-sm text-muted-foreground">{selectedSecondaryContact.phone}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -759,6 +820,12 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
         open={showEditContact}
         onOpenChange={setShowEditContact}
         onContactUpdated={handleContactUpdated}
+      />
+
+      <AddContactModal
+        open={showAddContact}
+        onOpenChange={setShowAddContact}
+        onContactCreated={handleContactCreated}
       />
 
       <EmailPreviewModal
