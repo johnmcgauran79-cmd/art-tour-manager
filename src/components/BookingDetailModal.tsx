@@ -48,6 +48,13 @@ interface Booking {
     phone: string;
     dietary_requirements?: string;
   };
+  secondary_contact?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 interface BookingDetailModalProps {
@@ -168,6 +175,18 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
                   <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
                 </div>
               </div>
+
+              {booking.secondary_contact && (
+                <div className="border rounded-lg p-4 space-y-4">
+                  <h3 className="text-lg font-semibold">Secondary Contact</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InfoRow label="First Name" value={booking.secondary_contact.first_name} />
+                    <InfoRow label="Last Name" value={booking.secondary_contact.last_name} />
+                    <InfoRow label="Email" value={booking.secondary_contact.email} />
+                    <InfoRow label="Phone" value={booking.secondary_contact.phone} />
+                  </div>
+                </div>
+              )}
 
               <div className="border rounded-lg p-4 space-y-4">
                 <h3 className="text-lg font-semibold">Booking Information</h3>
