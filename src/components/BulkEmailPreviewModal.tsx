@@ -128,20 +128,18 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     enabled: !!tourId && open && !!allBookingsData && allBookingsData.length > 0,
   });
 
-  // Update preview when template changes
+  // Update preview when template changes - show template syntax, not personalized content
   useEffect(() => {
     if (selectedTemplateId && selectedTemplateId !== "blank" && templates && bookingsData?.sampleBooking) {
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
+        // Store the original template with merge fields
         setOriginalSubjectTemplate(template.subject_template);
         setOriginalContentTemplate(template.content_template);
         
-        const mergeData = EmailTemplateEngine.convertBookingToMergeData(bookingsData.sampleBooking);
-        const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
-        const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
-        
-        setEditedSubject(processedSubject);
-        setEditedContent(processedContent);
+        // Show the template syntax in the editor (not personalized)
+        setEditedSubject(template.subject_template);
+        setEditedContent(template.content_template);
         setPreviewBooking(bookingsData.sampleBooking);
       }
     }
@@ -158,12 +156,13 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   useEffect(() => {
     if (bookingsData?.sampleBooking) {
       if (selectedTemplateId === "blank") {
-        const customerName = bookingsData.sampleBooking.customers?.first_name || 'Customer';
+        // Store template with merge fields
         setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
         setOriginalContentTemplate(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
         
-        setEditedSubject(`Email for ${customerName}`);
-        setEditedContent(`<p>Dear ${customerName},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
+        // Show template syntax in editor (not personalized)
+        setEditedSubject(`Email for {{customer.first_name}}`);
+        setEditedContent(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
         setPreviewBooking(bookingsData.sampleBooking);
       }
     }
@@ -376,7 +375,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
             </div>
 
             <div className="flex-1">
-              <Label htmlFor="content">Email Content Preview:</Label>
+              <Label htmlFor="content">Email Content (use merge fields for personalization):</Label>
               <div className="mt-2 border rounded-md">
                 <ReactQuill
                   theme="snow"
@@ -391,7 +390,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 />
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                This preview shows how the email will look for {previewBooking?.customers?.first_name}. Each recipient will receive a personalized version.
+                Use merge fields like {`{{customer.first_name}}`}, {`{{tour.name}}`}, {`{{booking.passenger_count}}`}. Each recipient will receive a personalized version. Preview based on: {previewBooking?.customers?.first_name} {previewBooking?.customers?.last_name}
               </p>
             </div>
 
