@@ -241,7 +241,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
             <span className="ml-2">Loading email preview...</span>
           </div>
         ) : (
-          <div className="flex-1 space-y-4 overflow-hidden">
+          <div className="flex-1 overflow-y-auto">
+            <div className="space-y-4 p-1">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div>
@@ -395,7 +396,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
             </div>
 
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 pt-4 border-t sticky bottom-0 bg-background">
               <Button 
                 type="button" 
                 variant="outline" 
@@ -417,6 +418,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                   `Send ${selectedBookingIds.size} Email${selectedBookingIds.size !== 1 ? 's' : ''}`
                 )}
               </Button>
+            </div>
             </div>
           </div>
         )}
