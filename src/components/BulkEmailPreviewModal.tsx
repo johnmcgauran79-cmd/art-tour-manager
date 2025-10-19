@@ -202,6 +202,17 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     setRecipientType("");
   };
 
+  const handleCancel = () => {
+    setSelectedBookingIds(new Set());
+    setRecipientType("");
+    setEditedSubject("");
+    setEditedContent("");
+    setOriginalSubjectTemplate("");
+    setOriginalContentTemplate("");
+    setSelectedTemplateId("");
+    onOpenChange(false);
+  };
+
   const handleSendEmails = async () => {
     if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
     
@@ -399,7 +410,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => onOpenChange(false)}
+                onClick={handleCancel}
               >
                 Cancel
               </Button>
