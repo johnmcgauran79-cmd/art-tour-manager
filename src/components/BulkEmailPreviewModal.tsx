@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,6 +34,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [recipientType, setRecipientType] = useState<string>("");
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const bulkEmailMutation = useBulkBookingEmail();
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
@@ -213,7 +215,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     onOpenChange(false);
   };
 
-  const handleSendEmails = async () => {
+  const handleSendClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmSend = async () => {
     if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
     
     try {
@@ -228,13 +234,18 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         fromEmail,
         selectedBookingIds: Array.from(selectedBookingIds)
       });
+      setShowConfirmDialog(false);
       onOpenChange(false);
       setSelectedBookingIds(new Set());
       setRecipientType("");
     } catch (error) {
       // Error handling is done in the hook
+      setShowConfirmDialog(false);
     }
   };
+
+  // Get selected recipients' names for confirmation dialog
+  const selectedRecipients = allBookingsData?.filter(b => selectedBookingIds.has(b.id)) || [];
 
   if (!tourId) return null;
 
@@ -415,24 +426,55 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 Cancel
               </Button>
               <Button
-                onClick={handleSendEmails}
+                onClick={handleSendClick}
                 disabled={bulkEmailMutation.isPending || isLoading || selectedBookingIds.size === 0 || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                {bulkEmailMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Sending...
-                  </>
-                ) : (
-                  `Send ${selectedBookingIds.size} Email${selectedBookingIds.size !== 1 ? 's' : ''}`
-                )}
+                Send {selectedBookingIds.size} Email{selectedBookingIds.size !== 1 ? 's' : ''}
               </Button>
             </div>
             </div>
           </div>
         )}
       </DialogContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Send Emails</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to send email to:</p>
+              <ScrollArea className="max-h-[200px] border rounded-md p-3 bg-muted/50">
+                <ul className="space-y-1">
+                  {selectedRecipients.map((booking: any) => (
+                    <li key={booking.id} className="text-sm font-medium">
+                      • {booking.customers?.first_name} {booking.customers?.last_name} ({booking.customers?.email})
+                    </li>
+                  ))}
+                </ul>
+              </ScrollArea>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmSend}
+              disabled={bulkEmailMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {bulkEmailMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Sending...
+                </>
+              ) : (
+                'Confirm Send'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
