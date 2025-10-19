@@ -53,6 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
         *,
         tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions),
         customers:lead_passenger_id (first_name, last_name, email, phone, city, state, country),
+        secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
         hotel_bookings (
           check_in_date,
           check_out_date,
@@ -272,9 +273,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
     const finalFromEmail = fromEmail || template?.from_email || "onboarding@resend.dev";
+    
+    // Prepare recipients - CC secondary contact if they exist and have an email
+    const ccRecipients = [];
+    if (booking.secondary_contact?.email) {
+      ccRecipients.push(booking.secondary_contact.email);
+    }
+    
     const emailResponse = await resend.emails.send({
       from: `Bookings <${finalFromEmail}>`,
       to: [booking.customers.email],
+      cc: ccRecipients.length > 0 ? ccRecipients : undefined,
       subject: emailSubject,
       html: emailHtml,
     });
@@ -298,7 +307,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
-      sentTo: booking.customers.email 
+      sentTo: booking.customers.email,
+      ccTo: ccRecipients.length > 0 ? ccRecipients : undefined
     }), {
       status: 200,
       headers: {

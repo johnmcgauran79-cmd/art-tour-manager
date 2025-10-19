@@ -208,6 +208,21 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
               </div>
             </div>
 
+            {booking?.secondary_contact?.email && (
+              <div>
+                <Label htmlFor="cc">CC:</Label>
+                <Input
+                  id="cc"
+                  value={`${booking.secondary_contact.first_name} ${booking.secondary_contact.last_name} <${booking.secondary_contact.email}>`}
+                  disabled
+                  className="bg-gray-50"
+                />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4">
+            </div>
+
             <div>
               <Label htmlFor="subject">Subject:</Label>
               <Input
