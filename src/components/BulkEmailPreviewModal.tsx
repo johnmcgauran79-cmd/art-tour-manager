@@ -147,12 +147,27 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     }
   }, [selectedTemplateId, templates, bookingsData?.sampleBooking]);
 
+  // Reset all state when modal opens
+  useEffect(() => {
+    if (open) {
+      setSelectedBookingIds(new Set());
+      setRecipientType("");
+      setEditedSubject("");
+      setEditedContent("");
+      setOriginalSubjectTemplate("");
+      setOriginalContentTemplate("");
+      setSelectedTemplateId("blank");
+      setPreviewBooking(null);
+      setFromEmail("bookings@australianracingtours.com.au");
+    }
+  }, [open]);
+
   // Auto-select blank template
   useEffect(() => {
-    if (templates && !selectedTemplateId) {
+    if (templates && !selectedTemplateId && open) {
       setSelectedTemplateId("blank");
     }
-  }, [templates, selectedTemplateId]);
+  }, [templates, selectedTemplateId, open]);
 
   // Generate content when template or booking changes
   useEffect(() => {
