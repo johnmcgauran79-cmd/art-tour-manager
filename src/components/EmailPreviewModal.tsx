@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
@@ -14,6 +12,8 @@ import { Loader2 } from "lucide-react";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface EmailPreviewModalProps {
   open: boolean;
@@ -38,6 +38,18 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
   const { data: userEmails } = useUserEmails();
+
+  // Quill modules configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
 
   // Fetch booking details to generate email preview
   const { data: booking, isLoading } = useQuery({
@@ -110,9 +122,9 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
           setEditedContent(processedContent);
         }
       } else {
-        // Default blank email template
+        // Default blank email template - convert line breaks to HTML
         const defaultSubject = `Email for ${recipientName}`;
-        const defaultContent = `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
+        const defaultContent = `<p>Dear ${booking.customers?.first_name || 'Customer'},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
 
         setEmailData({
           subject: defaultSubject,
@@ -234,13 +246,16 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
 
             <div className="flex-1">
               <Label htmlFor="content">Email Content:</Label>
-              <Textarea
-                id="content"
-                value={editedContent}
-                onChange={(e) => setEditedContent(e.target.value)}
-                className="min-h-[240px] mt-2 resize-none"
-                placeholder="Email content..."
-              />
+              <div className="mt-2 border rounded-md">
+                <ReactQuill
+                  theme="snow"
+                  value={editedContent}
+                  onChange={setEditedContent}
+                  modules={quillModules}
+                  className="bg-white"
+                  style={{ minHeight: '300px' }}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
