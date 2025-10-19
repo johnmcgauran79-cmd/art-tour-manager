@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,6 +14,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { EmailTemplateEngine, type EmailMergeData } from "@/utils/emailTemplateEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface BulkEmailPreviewModalProps {
   open: boolean;
@@ -37,6 +38,18 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
   const { data: userEmails } = useUserEmails();
+
+  // Quill modules configuration
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
 
   // Get all bookings for selection
   const { data: allBookingsData, isLoading: allBookingsLoading } = useQuery({
@@ -147,10 +160,10 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       if (selectedTemplateId === "blank") {
         const customerName = bookingsData.sampleBooking.customers?.first_name || 'Customer';
         setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
-        setOriginalContentTemplate(`Dear {{customer.first_name}},\n\n\n\nBest regards,\nYour Team`);
+        setOriginalContentTemplate(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
         
         setEditedSubject(`Email for ${customerName}`);
-        setEditedContent(`Dear ${customerName},\n\n\n\nBest regards,\nYour Team`);
+        setEditedContent(`<p>Dear ${customerName},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
         setPreviewBooking(bookingsData.sampleBooking);
       }
     }
@@ -362,19 +375,23 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
             </div>
 
             <div className="flex-1">
-              <Label htmlFor="content">Email Content:</Label>
-              <ScrollArea className="h-80 mt-2 border rounded-md">
-                <Textarea
-                  id="content"
+              <Label htmlFor="content">Email Content Preview:</Label>
+              <div className="mt-2 border rounded-md">
+                <ReactQuill
+                  theme="snow"
                   value={editedContent}
-                  onChange={(e) => {
-                    setEditedContent(e.target.value);
-                    setOriginalContentTemplate(e.target.value);
+                  onChange={(content) => {
+                    setEditedContent(content);
+                    setOriginalContentTemplate(content);
                   }}
-                  className="min-h-[300px] border-0 resize-none"
-                  placeholder="Email content..."
+                  modules={quillModules}
+                  className="bg-white"
+                  style={{ minHeight: '300px' }}
                 />
-              </ScrollArea>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                This preview shows how the email will look for {previewBooking?.customers?.first_name}. Each recipient will receive a personalized version.
+              </p>
             </div>
 
 
