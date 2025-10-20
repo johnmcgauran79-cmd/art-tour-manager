@@ -11,6 +11,7 @@ interface ContactSearchProps {
   onContactSelect: (contact: any) => void;
   selectedContactId: string;
   placeholder?: string;
+  required?: boolean;
 }
 
 export const ContactSearch = ({ 
@@ -18,7 +19,8 @@ export const ContactSearch = ({
   onValueChange, 
   onContactSelect, 
   selectedContactId,
-  placeholder = "Start typing name to search existing contacts..."
+  placeholder = "Start typing name to search existing contacts...",
+  required = true
 }: ContactSearchProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { data: customers } = useAllCustomers();
@@ -55,7 +57,7 @@ export const ContactSearch = ({
             setTimeout(() => setShowSuggestions(false), 200);
           }}
           placeholder={placeholder}
-          required
+          required={required}
         />
         
         {shouldShowSuggestions && (

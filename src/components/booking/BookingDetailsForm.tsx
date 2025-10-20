@@ -142,6 +142,7 @@ export const BookingDetailsForm = ({
             onValueChange={(value) => setFormData('secondary_contact_search', value)}
             onContactSelect={(contact) => onSecondaryContactSelect?.(contact)}
             selectedContactId={formData.secondary_contact_id || ''}
+            required={false}
           />
         )}
       </div>
