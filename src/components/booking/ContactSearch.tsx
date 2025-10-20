@@ -61,22 +61,25 @@ export const ContactSearch = ({
         />
         
         {shouldShowSuggestions && (
-          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+          <div className="absolute z-[100] w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
             {filteredContacts.map((customer) => (
               <div
                 key={customer.id}
-                className="px-4 py-2 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                onClick={() => handleContactSelect(customer)}
+                className="px-4 py-2 hover:bg-accent cursor-pointer border-b border-border last:border-b-0 transition-colors"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleContactSelect(customer);
+                }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
-                    <span className="font-medium">
+                    <span className="font-medium text-foreground">
                       {customer.first_name} {customer.last_name}
                       {selectedContactId === customer.id && (
                         <Check className="inline ml-2 h-4 w-4 text-green-600" />
                       )}
                     </span>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-muted-foreground">
                       {customer.email} {customer.phone && `• ${customer.phone}`}
                     </span>
                   </div>
