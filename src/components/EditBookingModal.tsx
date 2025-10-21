@@ -628,6 +628,13 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                       Close
                     </Button>
+                    <Button 
+                      onClick={handleSubmit}
+                      disabled={updateBooking.isPending}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                    </Button>
                   </div>
                 </>
               )}
@@ -644,6 +651,13 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                   <div className="flex justify-end gap-2 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                       Close
+                    </Button>
+                    <Button 
+                      onClick={handleSubmit}
+                      disabled={updateBooking.isPending}
+                      className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                    >
+                      {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
                     </Button>
                   </div>
                 </>
