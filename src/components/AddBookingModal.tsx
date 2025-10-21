@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
-import { useCreateHotelBooking } from "@/hooks/useHotelBookings";
 import { supabase } from "@/integrations/supabase/client";
 
 import { ContactSearch } from "@/components/booking/ContactSearch";
@@ -85,7 +84,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
-  const createHotelBooking = useCreateHotelBooking();
   const { toast } = useToast();
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
@@ -296,8 +294,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       console.log('Booking created:', newBooking);
       
-      // Save hotel allocations
-      const hotelPromises = Object.entries(hotelAllocations)
+      // Save hotel allocations - use direct Supabase insert for better error handling
+      const hotelInserts = Object.entries(hotelAllocations)
         .filter(([_, allocation]) => allocation.allocated)
         .map(([hotelId, allocation]) => {
           const checkIn = allocation.check_in_date || formData.check_in_date;
@@ -311,7 +309,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           }
           
-          return createHotelBooking.mutateAsync({
+          return {
             booking_id: newBooking.id,
             hotel_id: hotelId,
             required: true,
@@ -324,27 +322,43 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             room_upgrade: allocation.room_upgrade || null,
             confirmation_number: allocation.confirmation_number || null,
             room_requests: allocation.room_requests || null,
-          });
+          };
         });
 
-      await Promise.all(hotelPromises);
-      console.log('Hotel bookings created');
+      if (hotelInserts.length > 0) {
+        const { data: hotelData, error: hotelError } = await supabase
+          .from('hotel_bookings')
+          .insert(hotelInserts)
+          .select();
+        
+        if (hotelError) {
+          console.error('Error creating hotel bookings:', hotelError);
+          throw new Error(`Failed to save hotel allocations: ${hotelError.message}`);
+        }
+        console.log('Hotel bookings created:', hotelData);
+      }
 
       // Save activity allocations
-      const activityPromises = Object.entries(activityAllocations)
+      const activityInserts = Object.entries(activityAllocations)
         .filter(([_, count]) => count > 0)
-        .map(([activityId, count]) => 
-          supabase
-            .from('activity_bookings')
-            .insert({
-              booking_id: newBooking.id,
-              activity_id: activityId,
-              passengers_attending: count,
-            })
-        );
+        .map(([activityId, count]) => ({
+          booking_id: newBooking.id,
+          activity_id: activityId,
+          passengers_attending: count,
+        }));
 
-      await Promise.all(activityPromises);
-      console.log('Activity bookings created');
+      if (activityInserts.length > 0) {
+        const { data: activityData, error: activityError } = await supabase
+          .from('activity_bookings')
+          .insert(activityInserts)
+          .select();
+        
+        if (activityError) {
+          console.error('Error creating activity bookings:', activityError);
+          throw new Error(`Failed to save activity allocations: ${activityError.message}`);
+        }
+        console.log('Activity bookings created:', activityData);
+      }
       
       toast({
         title: "Success",
