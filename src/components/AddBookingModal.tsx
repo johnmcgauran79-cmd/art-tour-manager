@@ -4,10 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { FileText, Heart, Plus, User, MapPin, Calendar } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
@@ -16,11 +16,8 @@ import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
 import { UserPlus } from "lucide-react";
-import { HotelAllocationSection } from "@/components/HotelAllocationSection";
-import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
-import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -49,7 +46,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: defaultStatus,
+    status: defaultStatus || 'invoiced',
     extra_requests: '',
     accommodation_required: true,
     check_in_date: '',
@@ -69,17 +66,20 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     medical_conditions: '',
     accessibility_needs: '',
     dietary_restrictions: '',
-    activityAllocations: {} as Record<string, number>,
-    hotelDates: {} as Record<string, { 
-      check_in: string; 
-      check_out: string; 
-      bedding?: string; 
-      room_type?: string; 
-      room_upgrade?: string; 
-      confirmation_number?: string; 
-      room_requests?: string; 
-    }>,
   });
+
+  const [hotelAllocations, setHotelAllocations] = useState<Record<string, {
+    allocated: boolean;
+    check_in_date: string;
+    check_out_date: string;
+    bedding: string;
+    room_type?: string;
+    room_upgrade?: string;
+    confirmation_number?: string;
+    room_requests?: string;
+  }>>({});
+
+  const [activityAllocations, setActivityAllocations] = useState<Record<string, number>>({});
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
@@ -88,30 +88,40 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
   
+  // Initialize hotel allocations when modal opens
   useEffect(() => {
     if (open && hotels && hotels.length > 0) {
-      const initialHotelDates: Record<string, { check_in: string; check_out: string }> = {};
+      const initialAllocations: Record<string, any> = {};
       
       hotels.forEach(hotel => {
-        const hotelData: any = {
-          check_in: hotel.default_check_in || '',
-          check_out: hotel.default_check_out || '',
+        initialAllocations[hotel.id] = {
+          allocated: false,
+          check_in_date: hotel.default_check_in || preSelectedTourStartDate || '',
+          check_out_date: hotel.default_check_out || preSelectedTourEndDate || '',
+          bedding: 'double',
+          room_type: hotel.default_room_type || '',
+          room_upgrade: '',
+          confirmation_number: '',
+          room_requests: '',
         };
-        
-        if (hotel.default_room_type) {
-          hotelData.room_type = hotel.default_room_type;
-        }
-        hotelData.bedding = 'double';
-        
-        initialHotelDates[hotel.id] = hotelData;
       });
       
-      setFormData(prev => ({
-        ...prev,
-        hotelDates: initialHotelDates,
-      }));
+      setHotelAllocations(initialAllocations);
     }
-  }, [open, hotels]);
+  }, [open, hotels, preSelectedTourStartDate, preSelectedTourEndDate]);
+
+  // Initialize activity allocations when modal opens
+  useEffect(() => {
+    if (open && activities && activities.length > 0) {
+      const initialAllocations: Record<string, number> = {};
+      
+      activities.forEach(activity => {
+        initialAllocations[activity.id] = formData.passenger_count;
+      });
+      
+      setActivityAllocations(initialAllocations);
+    }
+  }, [open, activities, formData.passenger_count]);
   
   useEffect(() => {
     if (preSelectedTourId) {
@@ -149,7 +159,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         passenger_3_name: '',
         group_name: '',
         booking_agent: '',
-        status: defaultStatus,
+        status: defaultStatus || 'invoiced',
         extra_requests: '',
         accommodation_required: true,
         check_in_date: initialCheckIn,
@@ -168,12 +178,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         medical_conditions: '',
         accessibility_needs: '',
         dietary_restrictions: '',
-        activityAllocations: {},
-        hotelDates: {},
       });
       setSelectedContact(null);
       setSelectedSecondaryContact(null);
       setLeadPassengerName('');
+      setHotelAllocations({});
+      setActivityAllocations({});
       setActiveTab("details");
     }
   }, [open, preSelectedTourId, defaultStatus, preSelectedTourStartDate, preSelectedTourEndDate]);
@@ -242,6 +252,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       setActiveTab("hotels");
     } else if (activeTab === "hotels") {
       setActiveTab("activities");
+    } else if (activeTab === "activities") {
+      setActiveTab("medical");
+    } else if (activeTab === "medical") {
+      setActiveTab("travel");
     }
   };
 
@@ -276,6 +290,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       };
 
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
+      
       toast({
         title: "Success",
         description: `Booking created successfully!`,
@@ -303,10 +318,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="hotels">Hotels</TabsTrigger>
               <TabsTrigger value="activities">Activities</TabsTrigger>
+              <TabsTrigger value="medical">Medical</TabsTrigger>
+              <TabsTrigger value="travel">Travel Docs</TabsTrigger>
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">
@@ -369,10 +386,113 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </TabsContent>
 
             <TabsContent value="hotels" className="space-y-6">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Hotel allocation will be available after creating the booking. You can allocate hotels from the booking details page.
-                </p>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Hotel Allocations</h3>
+                {!formData.accommodation_required ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Accommodation not required for this booking.</p>
+                  </div>
+                ) : hotels && hotels.length > 0 ? (
+                  hotels.map((hotel) => {
+                    const allocation = hotelAllocations[hotel.id] || {
+                      allocated: false,
+                      check_in_date: hotel.default_check_in || '',
+                      check_out_date: hotel.default_check_out || '',
+                      bedding: 'double',
+                      room_type: hotel.default_room_type || '',
+                    };
+
+                    return (
+                      <Card key={hotel.id}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center justify-between">
+                            {hotel.name}
+                            <Switch
+                              checked={allocation.allocated}
+                              onCheckedChange={(checked) => {
+                                setHotelAllocations(prev => ({
+                                  ...prev,
+                                  [hotel.id]: { ...allocation, allocated: checked }
+                                }));
+                              }}
+                            />
+                          </CardTitle>
+                        </CardHeader>
+                        {allocation.allocated && (
+                          <CardContent className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div>
+                                <Label>Check In Date</Label>
+                                <Input
+                                  type="date"
+                                  value={allocation.check_in_date}
+                                  onChange={(e) => {
+                                    setHotelAllocations(prev => ({
+                                      ...prev,
+                                      [hotel.id]: { ...allocation, check_in_date: e.target.value }
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label>Check Out Date</Label>
+                                <Input
+                                  type="date"
+                                  value={allocation.check_out_date}
+                                  onChange={(e) => {
+                                    setHotelAllocations(prev => ({
+                                      ...prev,
+                                      [hotel.id]: { ...allocation, check_out_date: e.target.value }
+                                    }));
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <Label>Bedding Type</Label>
+                                <Select 
+                                  value={allocation.bedding} 
+                                  onValueChange={(value) => {
+                                    setHotelAllocations(prev => ({
+                                      ...prev,
+                                      [hotel.id]: { ...allocation, bedding: value }
+                                    }));
+                                  }}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="single">Single</SelectItem>
+                                    <SelectItem value="double">Double</SelectItem>
+                                    <SelectItem value="twin">Twin</SelectItem>
+                                    <SelectItem value="triple">Triple</SelectItem>
+                                    <SelectItem value="family">Family</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label>Room Type</Label>
+                                <Input
+                                  value={allocation.room_type || ''}
+                                  onChange={(e) => {
+                                    setHotelAllocations(prev => ({
+                                      ...prev,
+                                      [hotel.id]: { ...allocation, room_type: e.target.value }
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                        )}
+                      </Card>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No hotels available for this tour.</p>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setActiveTab("details")}>
@@ -389,13 +509,207 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </TabsContent>
 
             <TabsContent value="activities" className="space-y-6">
-              <div className="p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">
-                  Activity allocation will be available after creating the booking. You can allocate activities from the booking details page.
-                </p>
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Activity Allocations</h3>
+                {activities && activities.length > 0 ? (
+                  <div className="space-y-3">
+                    {activities.map((activity) => {
+                      const allocation = activityAllocations[activity.id] ?? formData.passenger_count;
+
+                      return (
+                        <Card key={activity.id}>
+                          <CardContent className="pt-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                              <div>
+                                <p className="font-medium">{activity.name}</p>
+                                {activity.activity_date && (
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(activity.activity_date).toLocaleDateString()}
+                                  </p>
+                                )}
+                              </div>
+                              <div>
+                                <Label>Passengers Attending</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max={formData.passenger_count}
+                                  value={allocation}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value) || 0;
+                                    setActivityAllocations(prev => ({
+                                      ...prev,
+                                      [activity.id]: Math.min(value, formData.passenger_count)
+                                    }));
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No activities available for this tour.</p>
+                  </div>
+                )}
               </div>
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setActiveTab("hotels")}>
+                  Back
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleContinueToNextTab}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Continue to Medical Details
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="medical" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Medical Details</h3>
+                
+                <div>
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medical_conditions"
+                    value={formData.medical_conditions}
+                    onChange={(e) => handleFormChange('medical_conditions', e.target.value)}
+                    placeholder="Any medical conditions we should be aware of..."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                  <Textarea
+                    id="accessibility_needs"
+                    value={formData.accessibility_needs}
+                    onChange={(e) => handleFormChange('accessibility_needs', e.target.value)}
+                    placeholder="Any accessibility requirements..."
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="dietary_restrictions">Dietary Restrictions</Label>
+                  <Textarea
+                    id="dietary_restrictions"
+                    value={formData.dietary_restrictions}
+                    onChange={(e) => handleFormChange('dietary_restrictions', e.target.value)}
+                    placeholder="Any dietary restrictions or preferences..."
+                  />
+                </div>
+
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="font-medium">Emergency Contact</h4>
+                  
+                  <div>
+                    <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
+                    <Input
+                      id="emergency_contact_name"
+                      value={formData.emergency_contact_name}
+                      onChange={(e) => handleFormChange('emergency_contact_name', e.target.value)}
+                      placeholder="Full name"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
+                    <Input
+                      id="emergency_contact_phone"
+                      value={formData.emergency_contact_phone}
+                      onChange={(e) => handleFormChange('emergency_contact_phone', e.target.value)}
+                      placeholder="Phone number"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                    <Input
+                      id="emergency_contact_relationship"
+                      value={formData.emergency_contact_relationship}
+                      onChange={(e) => handleFormChange('emergency_contact_relationship', e.target.value)}
+                      placeholder="e.g., Spouse, Parent, Sibling"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setActiveTab("activities")}>
+                  Back
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleContinueToNextTab}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Continue to Travel Documents
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="travel" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Travel Documents</h3>
+                
+                <div>
+                  <Label htmlFor="passport_number">Passport Number</Label>
+                  <Input
+                    id="passport_number"
+                    value={formData.passport_number}
+                    onChange={(e) => handleFormChange('passport_number', e.target.value)}
+                    placeholder="Passport number"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
+                  <Input
+                    id="passport_expiry_date"
+                    type="date"
+                    value={formData.passport_expiry_date}
+                    onChange={(e) => handleFormChange('passport_expiry_date', e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="passport_country">Passport Country</Label>
+                  <Input
+                    id="passport_country"
+                    value={formData.passport_country}
+                    onChange={(e) => handleFormChange('passport_country', e.target.value)}
+                    placeholder="Country of issue"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="nationality">Nationality</Label>
+                  <Input
+                    id="nationality"
+                    value={formData.nationality}
+                    onChange={(e) => handleFormChange('nationality', e.target.value)}
+                    placeholder="Nationality"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="id_number">ID Number</Label>
+                  <Input
+                    id="id_number"
+                    value={formData.id_number}
+                    onChange={(e) => handleFormChange('id_number', e.target.value)}
+                    placeholder="National ID or other identification number"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setActiveTab("medical")}>
                   Back
                 </Button>
                 <Button 
