@@ -9,6 +9,7 @@ import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
+import { EditBookingModal } from "@/components/EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
@@ -327,7 +328,7 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
             open={viewBookingModalOpen}
             onOpenChange={setViewBookingModalOpen}
           />
-          <BookingDetailModal
+          <EditBookingModal
             booking={selectedBooking}
             open={editBookingModalOpen}
             onOpenChange={setEditBookingModalOpen}
