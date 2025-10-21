@@ -5,7 +5,6 @@ import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
 import { useAuth } from "@/hooks/useAuth";
 import { OperationsHeader } from "@/components/operations/OperationsHeader";
-import { OperationsTasksCard } from "@/components/operations/OperationsTasksCard";
 import { OperationsToursOverview } from "@/components/operations/OperationsToursOverview";
 
 interface OperationsDashboardProps {
@@ -69,12 +68,6 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
   return (
     <div className="space-y-6">
       <OperationsHeader />
-
-      <OperationsTasksCard
-        canManageTemplates={canManageTemplates}
-        onManageTemplates={() => setCurrentView('templates')}
-        onViewAllTasks={() => setCurrentView('allTasks')}
-      />
 
       <OperationsToursOverview />
     </div>
