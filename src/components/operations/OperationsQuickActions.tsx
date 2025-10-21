@@ -1,0 +1,151 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet } from "lucide-react";
+
+export const OperationsQuickActions = () => {
+  const reportActions = [
+    {
+      icon: FileText,
+      label: "Passenger Reports",
+      description: "Generate passenger lists and summaries",
+      onClick: () => {
+        // To be implemented
+        console.log("Passenger Reports");
+      },
+    },
+    {
+      icon: Hotel,
+      label: "Hotel Reports",
+      description: "View rooming lists and allocations",
+      onClick: () => {
+        // To be implemented
+        console.log("Hotel Reports");
+      },
+    },
+    {
+      icon: Calendar,
+      label: "Activity Reports",
+      description: "Activity allocation and attendance",
+      onClick: () => {
+        // To be implemented
+        console.log("Activity Reports");
+      },
+    },
+    {
+      icon: Users,
+      label: "Contact Reports",
+      description: "Export and analyze contacts",
+      onClick: () => {
+        // To be implemented
+        console.log("Contact Reports");
+      },
+    },
+  ];
+
+  const checkActions = [
+    {
+      icon: ClipboardCheck,
+      label: "Pre-Tour Checklist",
+      description: "Review all pre-tour requirements",
+      onClick: () => {
+        // To be implemented
+        console.log("Pre-Tour Checklist");
+      },
+    },
+    {
+      icon: AlertCircle,
+      label: "Incomplete Bookings",
+      description: "Review bookings missing information",
+      onClick: () => {
+        // To be implemented
+        console.log("Incomplete Bookings");
+      },
+    },
+    {
+      icon: TrendingUp,
+      label: "Capacity Overview",
+      description: "Review hotel and activity capacity",
+      onClick: () => {
+        // To be implemented
+        console.log("Capacity Overview");
+      },
+    },
+    {
+      icon: FileSpreadsheet,
+      label: "Custom Report",
+      description: "Generate custom reports",
+      onClick: () => {
+        // To be implemented
+        console.log("Custom Report");
+      },
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-brand-navy/20 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-brand-navy flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Reports & Documents
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {reportActions.map((action, index) => {
+              const Icon = action.icon;
+              return (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="h-auto flex flex-col items-start p-4 gap-2 hover:bg-brand-navy/5 hover:border-brand-navy/30 transition-all"
+                  onClick={action.onClick}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Icon className="h-5 w-5 text-brand-navy" />
+                    <span className="font-semibold text-sm">{action.label}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground text-left">
+                    {action.description}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-brand-navy/20 shadow-lg">
+        <CardHeader>
+          <CardTitle className="text-brand-navy flex items-center gap-2">
+            <ClipboardCheck className="h-5 w-5" />
+            Reviews & Checks
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {checkActions.map((action, index) => {
+              const Icon = action.icon;
+              return (
+                <Button
+                  key={index}
+                  variant="outline"
+                  className="h-auto flex flex-col items-start p-4 gap-2 hover:bg-brand-navy/5 hover:border-brand-navy/30 transition-all"
+                  onClick={action.onClick}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Icon className="h-5 w-5 text-brand-navy" />
+                    <span className="font-semibold text-sm">{action.label}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground text-left">
+                    {action.description}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};

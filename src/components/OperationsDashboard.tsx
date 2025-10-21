@@ -5,6 +5,7 @@ import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
 import { useAuth } from "@/hooks/useAuth";
 import { OperationsHeader } from "@/components/operations/OperationsHeader";
+import { OperationsQuickActions } from "@/components/operations/OperationsQuickActions";
 import { OperationsToursOverview } from "@/components/operations/OperationsToursOverview";
 
 interface OperationsDashboardProps {
@@ -68,6 +69,8 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
   return (
     <div className="space-y-6">
       <OperationsHeader />
+
+      <OperationsQuickActions />
 
       <OperationsToursOverview />
     </div>
