@@ -59,7 +59,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         .eq('allocated', true)
         .eq('bookings.tour_id', tourId)
         .neq('bookings.status', 'cancelled')
-        .order('bookings(created_at)', { ascending: true });
+        .order('created_at', { ascending: true });
       
       if (error) {
         console.error('Error fetching hotel bookings for rooming list:', error);
