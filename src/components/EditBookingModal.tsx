@@ -449,6 +449,7 @@ export const EditBookingModal = ({ booking, open, onOpenChange, defaultTab = "de
                     onContactSelect={handleSecondaryContactSelect}
                     selectedContactId={selectedSecondaryContact?.id || ''}
                     placeholder="Search for secondary contact..."
+                    required={false}
                   />
                   
                   {selectedSecondaryContact && (
