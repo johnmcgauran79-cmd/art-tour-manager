@@ -89,14 +89,14 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
   
-  // Initialize hotel allocations when modal opens or when switching to hotels tab
+  // Initialize hotel allocations when modal opens and hotels are loaded
   useEffect(() => {
-    if (open && hotels && hotels.length > 0) {
+    if (open && hotels && hotels.length > 0 && Object.keys(hotelAllocations).length === 0) {
       const initialAllocations: Record<string, any> = {};
       
       hotels.forEach(hotel => {
         initialAllocations[hotel.id] = {
-          allocated: formData.accommodation_required && activeTab === 'hotels',
+          allocated: formData.accommodation_required,
           check_in_date: hotel.default_check_in || preSelectedTourStartDate || '',
           check_out_date: hotel.default_check_out || preSelectedTourEndDate || '',
           bedding: 'double',
@@ -109,7 +109,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       
       setHotelAllocations(initialAllocations);
     }
-  }, [open, hotels, preSelectedTourStartDate, preSelectedTourEndDate, activeTab, formData.accommodation_required]);
+  }, [open, hotels, preSelectedTourStartDate, preSelectedTourEndDate, formData.accommodation_required]);
 
   // Initialize activity allocations when modal opens
   useEffect(() => {
