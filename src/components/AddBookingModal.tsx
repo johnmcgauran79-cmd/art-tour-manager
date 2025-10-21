@@ -533,13 +533,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                 <Input
                                   type="number"
                                   min="0"
-                                  max={formData.passenger_count}
                                   value={allocation}
                                   onChange={(e) => {
                                     const value = parseInt(e.target.value) || 0;
                                     setActivityAllocations(prev => ({
                                       ...prev,
-                                      [activity.id]: Math.min(value, formData.passenger_count)
+                                      [activity.id]: value
                                     }));
                                   }}
                                 />
