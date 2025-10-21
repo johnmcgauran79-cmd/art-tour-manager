@@ -5,12 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail } from "lucide-react";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
-import { HotelAllocationSection } from "@/components/HotelAllocationSection";
-import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { useDeleteBooking } from "@/hooks/useBookings";
+import { useHotelBookings } from "@/hooks/useHotelBookings";
+import { useActivityBookings } from "@/hooks/useActivityBookings";
+import { useActivities } from "@/hooks/useActivities";
+import { useHotels } from "@/hooks/useHotels";
+import { useBookingComments } from "@/hooks/useBookingComments";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { formatDistanceToNow } from "date-fns";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 interface Booking {
   id: string;
@@ -79,6 +84,13 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
   const [currentTab, setCurrentTab] = useState(defaultTab);
   const deleteBooking = useDeleteBooking();
   const isMobile = useIsMobile();
+
+  // Fetch related data for read-only display
+  const { data: hotelBookings = [] } = useHotelBookings(booking?.id || '');
+  const { data: activityBookings = [] } = useActivityBookings(booking?.id || '');
+  const { data: activities = [] } = useActivities(booking?.tour_id || '');
+  const { data: hotels = [] } = useHotels(booking?.tour_id || '');
+  const { data: comments = [] } = useBookingComments(booking?.id || '');
 
   const handleDelete = () => {
     if (!booking) return;
@@ -230,25 +242,73 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
             </TabsContent>
 
             <TabsContent value="hotels" className="space-y-4">
-              {booking && (
-                <HotelAllocationSection
-                  tourId={booking.tour_id}
-                  bookingId={booking.id}
-                  accommodationRequired={booking.accommodation_required}
-                  defaultCheckIn={booking.check_in_date || ''}
-                  defaultCheckOut={booking.check_out_date || ''}
-                  onDatesChange={() => {}}
-                />
+              {hotelBookings.length === 0 ? (
+                <Alert>
+                  <Hotel className="h-4 w-4" />
+                  <AlertDescription>
+                    No hotel allocations for this booking.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-4">
+                  {hotelBookings.map((hotelBooking) => {
+                    const hotel = hotels.find(h => h.id === hotelBooking.hotel_id);
+                    return (
+                      <div key={hotelBooking.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold">{hotel?.name || 'Hotel'}</h3>
+                          {hotelBooking.allocated && (
+                            <Badge className="bg-green-100 text-green-800">Allocated</Badge>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <InfoRow label="Check-in" value={formatDateToDDMMYYYY(hotelBooking.check_in_date)} />
+                          <InfoRow label="Check-out" value={formatDateToDDMMYYYY(hotelBooking.check_out_date)} />
+                          <InfoRow label="Nights" value={hotelBooking.nights?.toString()} />
+                          <InfoRow label="Bedding" value={hotelBooking.bedding} />
+                          <InfoRow label="Room Type" value={hotelBooking.room_type} />
+                          <InfoRow label="Room Upgrade" value={hotelBooking.room_upgrade} />
+                          {hotelBooking.confirmation_number && (
+                            <InfoRow label="Confirmation #" value={hotelBooking.confirmation_number} />
+                          )}
+                          {hotelBooking.room_requests && (
+                            <div className="md:col-span-2">
+                              <InfoRow label="Room Requests" value={hotelBooking.room_requests} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </TabsContent>
 
             <TabsContent value="activities" className="space-y-4">
-              {booking && (
-                <ActivityAllocationSection
-                  tourId={booking.tour_id}
-                  bookingId={booking.id}
-                  passengerCount={booking.passenger_count}
-                />
+              {activityBookings.length === 0 ? (
+                <Alert>
+                  <MapPin className="h-4 w-4" />
+                  <AlertDescription>
+                    No activity allocations for this booking.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-4">
+                  {activityBookings.map((activityBooking) => {
+                    const activity = activities.find(a => a.id === activityBooking.activity_id);
+                    return (
+                      <div key={activityBooking.id} className="border rounded-lg p-4 space-y-3">
+                        <h3 className="text-lg font-semibold">{activity?.name || 'Activity'}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <InfoRow label="Date" value={formatDateToDDMMYYYY(activity?.activity_date)} />
+                          <InfoRow label="Passengers Attending" value={activityBooking.passengers_attending.toString()} />
+                          {activity?.start_time && <InfoRow label="Start Time" value={activity.start_time} />}
+                          {activity?.location && <InfoRow label="Location" value={activity.location} />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </TabsContent>
 
@@ -291,12 +351,42 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
             </TabsContent>
 
             <TabsContent value="communication" className="space-y-4">
-              <Alert>
-                <MessageSquare className="h-4 w-4" />
-                <AlertDescription>
-                  Comments and communication history are managed in edit mode. Click "Edit Booking" to view and add comments.
-                </AlertDescription>
-              </Alert>
+              {comments.length === 0 ? (
+                <Alert>
+                  <MessageSquare className="h-4 w-4" />
+                  <AlertDescription>
+                    No comments for this booking yet.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="space-y-3">
+                  {comments.map((comment: any) => (
+                    <div key={comment.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={comment.is_internal ? "secondary" : "outline"}>
+                            {comment.is_internal ? 'Internal' : 'Public'}
+                          </Badge>
+                          {comment.comment_type && comment.comment_type !== 'general' && (
+                            <Badge variant="outline" className="capitalize">
+                              {comment.comment_type}
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
+                      {comment.profiles && (
+                        <div className="text-xs text-muted-foreground">
+                          By: {comment.profiles.first_name} {comment.profiles.last_name}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </DialogContent>
