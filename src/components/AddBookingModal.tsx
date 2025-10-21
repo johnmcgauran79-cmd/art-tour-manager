@@ -220,6 +220,24 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   };
 
   const handleCreateBooking = async () => {
+    if (!selectedContact) {
+      toast({
+        title: "Error",
+        description: "Please select a lead passenger contact.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.tour_id) {
+      toast({
+        title: "Error",
+        description: "Please select a tour.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const cleanedFormData = {
         ...formData,
