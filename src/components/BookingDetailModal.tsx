@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail } from "lucide-react";
 import { EditBookingModal } from "@/components/EditBookingModal";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
+import { HotelAllocationSection } from "@/components/HotelAllocationSection";
+import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
 import { useDeleteBooking } from "@/hooks/useBookings";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -228,21 +230,26 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
             </TabsContent>
 
             <TabsContent value="hotels" className="space-y-4">
-              <Alert>
-                <Hotel className="h-4 w-4" />
-                <AlertDescription>
-                  Hotel allocation details are managed in edit mode. Click "Edit Booking" to view and modify hotel allocations.
-                </AlertDescription>
-              </Alert>
+              {booking && (
+                <HotelAllocationSection
+                  tourId={booking.tour_id}
+                  bookingId={booking.id}
+                  accommodationRequired={booking.accommodation_required}
+                  defaultCheckIn={booking.check_in_date || ''}
+                  defaultCheckOut={booking.check_out_date || ''}
+                  onDatesChange={() => {}}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="activities" className="space-y-4">
-              <Alert>
-                <MapPin className="h-4 w-4" />
-                <AlertDescription>
-                  Activity allocation details are managed in edit mode. Click "Edit Booking" to view and modify activity allocations.
-                </AlertDescription>
-              </Alert>
+              {booking && (
+                <ActivityAllocationSection
+                  tourId={booking.tour_id}
+                  bookingId={booking.id}
+                  passengerCount={booking.passenger_count}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="medical" className="space-y-4">
