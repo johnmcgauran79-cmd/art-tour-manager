@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { AddContactModal } from "@/components/AddContactModal";
+import { BookingConfirmationDialog } from "@/components/BookingConfirmationDialog";
 import { UserPlus } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -36,6 +37,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [showAddContact, setShowAddContact] = useState(false);
   const [addingContactFor, setAddingContactFor] = useState<'lead' | 'secondary' | null>(null);
   const [activeTab, setActiveTab] = useState("details");
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
@@ -260,7 +262,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   };
 
-  const handleCreateBooking = async (e?: React.FormEvent) => {
+  const handleShowConfirmation = (e?: React.FormEvent) => {
     if (e) {
       e.preventDefault();
     }
@@ -283,6 +285,11 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       return;
     }
 
+    // Show confirmation dialog instead of creating booking directly
+    setShowConfirmation(true);
+  };
+
+  const handleCreateBooking = async () => {
     try {
       const cleanedFormData = {
         ...formData,
@@ -365,6 +372,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         description: `Booking created successfully with hotels and activities!`,
       });
       
+      setShowConfirmation(false);
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -374,6 +382,47 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         variant: "destructive",
       });
     }
+  };
+
+  // Prepare confirmation data
+  const getConfirmationData = () => {
+    const selectedTour = tours?.find(t => t.id === formData.tour_id);
+    
+    const otherPassengers = [];
+    if (formData.passenger_2_name) otherPassengers.push(formData.passenger_2_name);
+    if (formData.passenger_3_name) otherPassengers.push(formData.passenger_3_name);
+    
+    const allocatedHotels = hotels
+      .filter(hotel => hotelAllocations[hotel.id]?.allocated)
+      .map(hotel => ({
+        name: hotel.name,
+        checkIn: hotelAllocations[hotel.id].check_in_date,
+        checkOut: hotelAllocations[hotel.id].check_out_date,
+        bedding: hotelAllocations[hotel.id].bedding,
+      }));
+    
+    const selectedActivities = activities
+      .filter(activity => activityAllocations[activity.id] > 0)
+      .map(activity => ({
+        name: activity.name,
+        paxCount: activityAllocations[activity.id],
+      }));
+
+    return {
+      leadPassenger: {
+        firstName: selectedContact?.first_name || '',
+        lastName: selectedContact?.last_name || '',
+        email: selectedContact?.email || '',
+      },
+      otherPassengers,
+      tourName: selectedTour?.name || '',
+      passengerCount: formData.passenger_count,
+      checkInDate: formData.check_in_date,
+      checkOutDate: formData.check_out_date,
+      bedding: formData.accommodation_required ? 'As per hotel allocations' : 'N/A',
+      hotels: allocatedHotels,
+      activities: selectedActivities,
+    };
   };
 
   return (
@@ -782,10 +831,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                 </Button>
                 <Button 
                   type="button"
-                  onClick={handleCreateBooking}
+                  onClick={handleShowConfirmation}
                   className={defaultStatus === 'waitlisted' ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
                 >
-                  {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Create Booking'}
+                  {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Review & Create Booking'}
                 </Button>
               </div>
             </TabsContent>
@@ -797,6 +846,14 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         open={showAddContact} 
         onOpenChange={setShowAddContact}
         onContactCreated={handleContactCreated}
+      />
+
+      <BookingConfirmationDialog
+        open={showConfirmation}
+        onOpenChange={setShowConfirmation}
+        onConfirm={handleCreateBooking}
+        isCreating={createBooking.isPending}
+        bookingData={getConfirmationData()}
       />
     </>
   );
