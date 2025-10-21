@@ -37,6 +37,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
   const [addingContactFor, setAddingContactFor] = useState<'lead' | 'secondary' | null>(null);
+  const [activeTab, setActiveTab] = useState("details");
   
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
@@ -173,6 +174,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       setSelectedContact(null);
       setSelectedSecondaryContact(null);
       setLeadPassengerName('');
+      setActiveTab("details");
     }
   }, [open, preSelectedTourId, defaultStatus, preSelectedTourStartDate, preSelectedTourEndDate]);
 
@@ -217,6 +219,30 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
     setAddingContactFor(null);
     setShowAddContact(false);
+  };
+
+  const handleContinueToNextTab = () => {
+    if (activeTab === "details") {
+      if (!selectedContact) {
+        toast({
+          title: "Error",
+          description: "Please select a lead passenger contact from the dropdown.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!formData.tour_id) {
+        toast({
+          title: "Error",
+          description: "Please select a tour.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setActiveTab("hotels");
+    } else if (activeTab === "hotels") {
+      setActiveTab("activities");
+    }
   };
 
   const handleCreateBooking = async (e?: React.FormEvent) => {
@@ -276,65 +302,110 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </DialogTitle>
           </DialogHeader>
 
-          <Tabs value="details" onValueChange={() => {}} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="details">Details</TabsTrigger>
+              <TabsTrigger value="hotels">Hotels</TabsTrigger>
+              <TabsTrigger value="activities">Activities</TabsTrigger>
+            </TabsList>
+
             <TabsContent value="details" className="space-y-6">
-              <form onSubmit={handleCreateBooking} className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium text-brand-navy">Lead Passenger</h3>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddContactClick('lead')}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add New Contact
-                    </Button>
-                  </div>
-                  <ContactSearch
-                    value={leadPassengerName}
-                    onValueChange={setLeadPassengerName}
-                    onContactSelect={handleContactSelect}
-                    selectedContactId={selectedContact?.id || ''}
-                  />
-                </div>
-
-                <div className="space-y-4">
-                  <BookingDetailsForm 
-                    formData={formData}
-                    setFormData={handleFormChange}
-                    tours={tours}
-                    preSelectedTourId={preSelectedTourId}
-                    isWaitlistMode={formData.status === 'waitlisted'}
-                    onSecondaryContactSelect={handleSecondaryContactSelect}
-                    selectedSecondaryContact={selectedSecondaryContact}
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddContactClick('secondary')}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add New Contact for Secondary
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4 border-t">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                    Close
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className={defaultStatus === 'waitlisted' ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-brand-navy">Lead Passenger</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddContactClick('lead')}
                   >
-                    {defaultStatus === 'waitlisted' ? 'Continue to Waitlist' : 'Continue'}
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add New Contact
                   </Button>
                 </div>
-              </form>
+                <ContactSearch
+                  value={leadPassengerName}
+                  onValueChange={setLeadPassengerName}
+                  onContactSelect={handleContactSelect}
+                  selectedContactId={selectedContact?.id || ''}
+                />
+              </div>
+
+              <div className="space-y-4">
+                <BookingDetailsForm 
+                  formData={formData}
+                  setFormData={handleFormChange}
+                  tours={tours}
+                  preSelectedTourId={preSelectedTourId}
+                  isWaitlistMode={formData.status === 'waitlisted'}
+                  onSecondaryContactSelect={handleSecondaryContactSelect}
+                  selectedSecondaryContact={selectedSecondaryContact}
+                />
+                <div className="flex justify-end mt-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleAddContactClick('secondary')}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add New Contact for Secondary
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleContinueToNextTab}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Continue to Hotels
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="hotels" className="space-y-6">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Hotel allocation will be available after creating the booking. You can allocate hotels from the booking details page.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setActiveTab("details")}>
+                  Back
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleContinueToNextTab}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  Continue to Activities
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="activities" className="space-y-6">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Activity allocation will be available after creating the booking. You can allocate activities from the booking details page.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setActiveTab("hotels")}>
+                  Back
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleCreateBooking}
+                  className={defaultStatus === 'waitlisted' ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
+                >
+                  {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Create Booking'}
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>
