@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
+import { useCreateHotelBooking } from "@/hooks/useHotelBookings";
+import { supabase } from "@/integrations/supabase/client";
 
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
@@ -83,6 +85,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
+  const createHotelBooking = useCreateHotelBooking();
   const { toast } = useToast();
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
@@ -289,11 +292,63 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         secondary_contact_id: formData.secondary_contact_id || null,
       };
 
+      // Create the booking first
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
+      console.log('Booking created:', newBooking);
+      
+      // Save hotel allocations
+      const hotelPromises = Object.entries(hotelAllocations)
+        .filter(([_, allocation]) => allocation.allocated)
+        .map(([hotelId, allocation]) => {
+          const checkIn = allocation.check_in_date || formData.check_in_date;
+          const checkOut = allocation.check_out_date || formData.check_out_date;
+          
+          let nights = null;
+          if (checkIn && checkOut) {
+            const checkInDate = new Date(checkIn);
+            const checkOutDate = new Date(checkOut);
+            const diffTime = checkOutDate.getTime() - checkInDate.getTime();
+            nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
+          
+          return createHotelBooking.mutateAsync({
+            booking_id: newBooking.id,
+            hotel_id: hotelId,
+            required: true,
+            allocated: true,
+            check_in_date: checkIn,
+            check_out_date: checkOut,
+            nights: nights,
+            bedding: (allocation.bedding || 'double') as 'single' | 'double' | 'twin',
+            room_type: allocation.room_type || null,
+            room_upgrade: allocation.room_upgrade || null,
+            confirmation_number: allocation.confirmation_number || null,
+            room_requests: allocation.room_requests || null,
+          });
+        });
+
+      await Promise.all(hotelPromises);
+      console.log('Hotel bookings created');
+
+      // Save activity allocations
+      const activityPromises = Object.entries(activityAllocations)
+        .filter(([_, count]) => count > 0)
+        .map(([activityId, count]) => 
+          supabase
+            .from('activity_bookings')
+            .insert({
+              booking_id: newBooking.id,
+              activity_id: activityId,
+              passengers_attending: count,
+            })
+        );
+
+      await Promise.all(activityPromises);
+      console.log('Activity bookings created');
       
       toast({
         title: "Success",
-        description: `Booking created successfully!`,
+        description: `Booking created successfully with hotels and activities!`,
       });
       
       onOpenChange(false);
