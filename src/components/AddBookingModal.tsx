@@ -219,11 +219,15 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     setShowAddContact(false);
   };
 
-  const handleCreateBooking = async () => {
+  const handleCreateBooking = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+
     if (!selectedContact) {
       toast({
         title: "Error",
-        description: "Please select a lead passenger contact.",
+        description: "Please select a lead passenger contact from the dropdown.",
         variant: "destructive",
       });
       return;
@@ -248,7 +252,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       toast({
         title: "Success",
-        description: `Booking created successfully with all allocations!`,
+        description: `Booking created successfully!`,
       });
       
       onOpenChange(false);
