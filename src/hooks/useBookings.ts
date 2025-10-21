@@ -246,7 +246,11 @@ export const useCreateBooking = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Booking creation error:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+        throw error;
+      }
 
       // Log the booking creation
       logOperation({
@@ -277,10 +281,12 @@ export const useCreateBooking = () => {
           : "Booking has been successfully created.",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Create booking mutation error:', error);
+      const errorMessage = error?.message || "Failed to create booking. Please try again.";
       toast({
         title: "Error",
-        description: "Failed to create booking. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },
