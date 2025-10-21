@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ interface HotelAllocationSectionProps {
   accommodationRequired: boolean;
   defaultCheckIn?: string;
   defaultCheckOut?: string;
+  autoEnableHotels?: boolean;
   onUpdate?: () => void;
   onDatesChange?: (checkIn: string, checkOut: string) => void;
 }
@@ -27,6 +28,7 @@ export const HotelAllocationSection = ({
   accommodationRequired, 
   defaultCheckIn, 
   defaultCheckOut,
+  autoEnableHotels = false,
   onUpdate,
   onDatesChange
 }: HotelAllocationSectionProps) => {
@@ -40,6 +42,19 @@ export const HotelAllocationSection = ({
 
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{[key: string]: boolean}>({});
+  const [autoEnabledHotels, setAutoEnabledHotels] = useState<Set<string>>(new Set());
+
+  // Auto-enable hotels when the prop is set and hotels are loaded
+  useEffect(() => {
+    if (autoEnableHotels && hotels.length > 0 && hotelBookings.length === 0) {
+      hotels.forEach(hotel => {
+        if (!autoEnabledHotels.has(hotel.id)) {
+          setAutoEnabledHotels(prev => new Set(prev).add(hotel.id));
+          handleHotelAllocation(hotel.id, true);
+        }
+      });
+    }
+  }, [autoEnableHotels, hotels, hotelBookings.length]);
 
   const updateBookingDates = async (bookingsToCheck = hotelBookings) => {
     console.log('Updating booking dates, hotel bookings:', bookingsToCheck);
