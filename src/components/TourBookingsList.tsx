@@ -47,6 +47,7 @@ interface TourBookingsListProps {
 export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) => {
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showAddWaitlist, setShowAddWaitlist] = useState(false);
+  const [viewBookingModalOpen, setViewBookingModalOpen] = useState(false);
   const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -57,7 +58,13 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const deleteBookingMutation = useDeleteBooking();
   const sendBookingConfirmation = useSendBookingConfirmation();
 
-  const handleEditBooking = (booking: any) => {
+  const handleViewBooking = (booking: any) => {
+    setSelectedBooking(booking);
+    setViewBookingModalOpen(true);
+  };
+
+  const handleEditBooking = (e: React.MouseEvent, booking: any) => {
+    e.stopPropagation(); // Prevent row click from triggering
     setSelectedBooking(booking);
     setEditBookingModalOpen(true);
   };
@@ -225,7 +232,11 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                 </thead>
                 <tbody>
                   {filteredBookings.map((booking) => (
-                    <tr key={booking.id} className="border-b hover:bg-gray-50">
+                    <tr 
+                      key={booking.id} 
+                      className="border-b hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => handleViewBooking(booking)}
+                    >
                       <td className="p-3">
                         {booking.customers?.first_name} {booking.customers?.last_name}
                       </td>
@@ -251,11 +262,11 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                         </div>
                       </td>
                       <td className="p-3">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => handleEditBooking(booking)}
+                            onClick={(e) => handleEditBooking(e, booking)}
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -263,7 +274,8 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                             size="sm" 
                             variant="outline"
                             className="text-blue-600 hover:text-blue-700"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setEmailBookingId(booking.id);
                               setEmailPreviewOpen(true);
                             }}
@@ -276,7 +288,10 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
                             size="sm" 
                             variant="outline" 
                             className="text-red-600 hover:text-red-700"
-                            onClick={() => handleDeleteBooking(booking)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteBooking(booking);
+                            }}
                             disabled={deleteBookingMutation.isPending}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -306,11 +321,18 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
       />
 
       {selectedBooking && (
-        <BookingDetailModal
-          booking={selectedBooking}
-          open={editBookingModalOpen}
-          onOpenChange={setEditBookingModalOpen}
-        />
+        <>
+          <BookingDetailModal
+            booking={selectedBooking}
+            open={viewBookingModalOpen}
+            onOpenChange={setViewBookingModalOpen}
+          />
+          <BookingDetailModal
+            booking={selectedBooking}
+            open={editBookingModalOpen}
+            onOpenChange={setEditBookingModalOpen}
+          />
+        </>
       )}
 
       <EmailPreviewModal
