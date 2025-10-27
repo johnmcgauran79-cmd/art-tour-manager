@@ -43,29 +43,37 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get webhook headers for signature verification
-    const svixId = req.headers.get("svix-id");
-    const svixTimestamp = req.headers.get("svix-timestamp");
-    const svixSignature = req.headers.get("svix-signature");
+    // Get webhook headers for signature verification (Resend uses svix headers)
+    const webhookId = req.headers.get("webhook-id") || req.headers.get("svix-id");
+    const webhookTimestamp = req.headers.get("webhook-timestamp") || req.headers.get("svix-timestamp");
+    const webhookSignature = req.headers.get("webhook-signature") || req.headers.get("svix-signature");
 
     const payload = await req.text();
 
-    // Verify webhook signature
-    if (svixId && svixTimestamp && svixSignature && webhookSecret) {
+    // Verify webhook signature if headers are present
+    if (webhookId && webhookTimestamp && webhookSignature && webhookSecret) {
+      // Extract the actual signature (Resend format: "v1,signature" or just "signature")
+      const signature = webhookSignature.includes(',') 
+        ? webhookSignature.split(',')[1] 
+        : webhookSignature;
+        
       const isValid = await verifyWebhookSignature(
         payload,
-        svixSignature,
-        svixTimestamp,
+        signature,
+        webhookTimestamp,
         webhookSecret
       );
       
       if (!isValid) {
         console.error("Invalid webhook signature");
+        console.error("Headers:", { webhookId, webhookTimestamp, webhookSignature });
         return new Response(
           JSON.stringify({ error: "Invalid signature" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+    } else {
+      console.log("Webhook signature headers missing - processing anyway");
     }
 
     const event = JSON.parse(payload);
