@@ -231,7 +231,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 md:grid-cols-6 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <div 
               className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('contacts')}
@@ -292,9 +292,6 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Report</p>
               <p className="text-xs text-gray-600">{bookingsWithDiscrepancies.length} alerts</p>
             </div>
-          </div>
-          
-          <div className="mt-3 border-t pt-3">
             <div 
               className="text-center p-3 border-2 border-cyan-200 rounded-lg cursor-pointer hover:bg-cyan-50 hover:border-cyan-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('emailtracking')}
