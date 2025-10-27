@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ItineraryDay, ItineraryEntry, useUpdateItineraryEntry } from "@/hooks/useItinerary";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 
 interface ItineraryEntryModalProps {
   open: boolean;
@@ -26,6 +27,18 @@ export const ItineraryEntryModal = ({
   const [content, setContent] = useState("");
   
   const updateEntry = useUpdateItineraryEntry();
+
+  // Quill modules configuration for rich text editing
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'color': [] }, { 'background': [] }],
+      ['link'],
+      ['clean']
+    ],
+  };
 
   useEffect(() => {
     if (entry) {
@@ -61,44 +74,53 @@ export const ItineraryEntryModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>
             {entry ? 'Edit Activity' : 'Add New Activity'}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="time-slot">Time (optional)</Label>
-            <Input
-              id="time-slot"
-              type="time"
-              value={timeSlot}
-              onChange={(e) => setTimeSlot(e.target.value)}
-              placeholder="e.g., 09:00"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="subject">Activity Title *</Label>
-            <Input
-              id="subject"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g., Breakfast at Hotel, City Tour, Free Time"
-            />
+        <div className="space-y-4 overflow-y-auto pr-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="time-slot">Time (optional)</Label>
+              <Input
+                id="time-slot"
+                type="time"
+                value={timeSlot}
+                onChange={(e) => setTimeSlot(e.target.value)}
+                placeholder="e.g., 09:00"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="subject">Activity Title *</Label>
+              <Input
+                id="subject"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="e.g., Breakfast at Hotel, City Tour, Free Time"
+              />
+            </div>
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="content">Activity Description</Label>
-            <Textarea
-              id="content"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Detailed description of the activity, including location, duration, what's included, etc."
-              rows={4}
-            />
+            <div className="mt-2 border rounded-md">
+              <ReactQuill
+                theme="snow"
+                value={content}
+                onChange={setContent}
+                modules={quillModules}
+                className="bg-white"
+                style={{ minHeight: '350px' }}
+                placeholder="Add detailed activity information with formatting. Use the toolbar to add headers, lists, bold text, colors, and more..."
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Use the formatting toolbar to style your content. All formatting will be preserved in generated documents.
+            </p>
           </div>
         </div>
         

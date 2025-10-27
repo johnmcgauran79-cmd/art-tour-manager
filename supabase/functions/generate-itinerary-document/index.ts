@@ -269,7 +269,27 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         }
         .activity-content {
           color: #555;
-          white-space: pre-wrap;
+          line-height: 1.8;
+        }
+        .activity-content p {
+          margin: 0.5em 0;
+        }
+        .activity-content ul, .activity-content ol {
+          margin: 0.5em 0;
+          padding-left: 1.5em;
+        }
+        .activity-content li {
+          margin: 0.25em 0;
+        }
+        .activity-content strong {
+          font-weight: 600;
+        }
+        .activity-content em {
+          font-style: italic;
+        }
+        .activity-content a {
+          color: hsl(220, 8%, 15%);
+          text-decoration: underline;
         }
         .section-title {
           color: hsl(220, 8%, 15%);
