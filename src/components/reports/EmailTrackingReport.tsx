@@ -13,6 +13,7 @@ interface EmailTrackingReportProps {
 export const EmailTrackingReport = ({ tourId }: EmailTrackingReportProps) => {
   const { data: emailLogs, isLoading } = useQuery({
     queryKey: ['email-tracking', tourId],
+    refetchInterval: 10000, // Auto-refresh every 10 seconds to pick up new events
     queryFn: async () => {
       const { data, error } = await supabase
         .from('email_logs')
