@@ -573,6 +573,98 @@ export type Database = {
         }
         Relationships: []
       }
+      email_events: {
+        Row: {
+          created_at: string
+          email_log_id: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          message_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_log_id?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          message_id: string
+        }
+        Update: {
+          created_at?: string
+          email_log_id?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          message_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_events_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_logs: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          id: string
+          message_id: string
+          recipient_email: string
+          recipient_name: string | null
+          sent_at: string
+          sent_by: string | null
+          subject: string
+          template_name: string | null
+          tour_id: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          message_id: string
+          recipient_email: string
+          recipient_name?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          subject: string
+          template_name?: string | null
+          tour_id?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string
+          recipient_email?: string
+          recipient_name?: string | null
+          sent_at?: string
+          sent_by?: string | null
+          subject?: string
+          template_name?: string | null
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           content_template: string
@@ -1485,10 +1577,7 @@ export type Database = {
         Args: { check_in: string; check_out: string }
         Returns: number
       }
-      check_pending_bookings: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      check_pending_bookings: { Args: never; Returns: number }
       create_capacity_monitoring_task: {
         Args: {
           p_activity_id?: string
@@ -1515,10 +1604,7 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: undefined
       }
-      generate_temp_password: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_temp_password: { Args: never; Returns: string }
       generate_tour_operation_tasks: {
         Args: { p_tour_id: string }
         Returns: undefined
