@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3 } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -38,7 +38,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
-  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
@@ -115,7 +115,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     return total + booking.passenger_count;
   }, 0);
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix') => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
@@ -291,6 +291,19 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Report</p>
               <p className="text-xs text-gray-600">{bookingsWithDiscrepancies.length} alerts</p>
+            </div>
+          </div>
+          
+          <div className="mt-3 border-t pt-3">
+            <div 
+              className="text-center p-3 border-2 border-cyan-200 rounded-lg cursor-pointer hover:bg-cyan-50 hover:border-cyan-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('emailtracking')}
+            >
+              <div className="bg-cyan-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-cyan-200 transition-colors">
+                <Mail className="h-5 w-5 text-cyan-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-cyan-700 text-xs">Email Tracking</p>
+              <p className="text-xs text-gray-600">Delivery & Opens</p>
             </div>
           </div>
           <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">

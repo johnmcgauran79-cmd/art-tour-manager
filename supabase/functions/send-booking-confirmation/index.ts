@@ -304,6 +304,26 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Log email to database for tracking
+    if (emailResponse.data?.id) {
+      const { error: logError } = await supabaseClient
+        .from('email_logs')
+        .insert({
+          message_id: emailResponse.data.id,
+          booking_id: bookingId,
+          tour_id: booking.tour_id,
+          recipient_email: booking.customers.email,
+          recipient_name: `${booking.customers.first_name} ${booking.customers.last_name}`,
+          subject: emailSubject,
+          template_name: template?.name || 'Custom',
+        });
+
+      if (logError) {
+        console.error('Error logging email:', logError);
+        // Don't fail the request if logging fails
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,

@@ -10,6 +10,7 @@ import { DietaryReport } from "@/components/reports/DietaryReport";
 import { PassengerSummaryReport } from "@/components/reports/PassengerSummaryReport";
 import { PassengerListReport } from "@/components/reports/PassengerListReport";
 import { ActivityMatrixReport } from "@/components/reports/ActivityMatrixReport";
+import { EmailTrackingReport } from "@/components/reports/EmailTrackingReport";
 import { HotelSelectionDialog } from "@/components/reports/HotelSelectionDialog";
 import { useReportData } from "@/components/reports/useReportData";
 import { exportReportToCSV, generateReportHTML } from "@/components/reports/ReportExportUtils";
@@ -20,7 +21,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null;
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
@@ -44,7 +45,7 @@ export const TourOperationsReportsModal = ({
   const [generatedHTML, setGeneratedHTML] = useState('');
 
   // Get the specific report to display
-  const displayReport = reportType && reportType !== 'hotel' 
+  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking'
     ? reports.find(r => r.type === reportType) || null 
     : null;
 
@@ -76,6 +77,28 @@ export const TourOperationsReportsModal = ({
         return null;
     }
   };
+
+  // Handle email tracking report
+  if (reportType === 'emailtracking') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Email Tracking - {tourName}</DialogTitle>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">
+                  Close
+                </Button>
+              </DialogClose>
+            </div>
+          </DialogHeader>
+          
+          <EmailTrackingReport tourId={tourId} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Handle hotel reports
   if (reportType === 'hotel' && hotels) {
