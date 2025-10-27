@@ -6,28 +6,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature",
 };
 
-// Verify webhook signature from Resend
+// Verify webhook signature from Resend (using Svix standard)
 async function verifyWebhookSignature(
   payload: string,
   signature: string,
   timestamp: string,
   secret: string
 ): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(`${timestamp}.${payload}`);
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signatureBytes = await crypto.subtle.sign("HMAC", key, data);
-  const expectedSignature = Array.from(new Uint8Array(signatureBytes))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-  
-  return signature === expectedSignature;
+  try {
+    // Svix/Resend format: whsec_xxxxx needs to be base64 decoded
+    const secretBytes = secret.startsWith('whsec_') 
+      ? Uint8Array.from(atob(secret.slice(6)), c => c.charCodeAt(0))
+      : new TextEncoder().encode(secret);
+    
+    const encoder = new TextEncoder();
+    const data = encoder.encode(`${timestamp}.${payload}`);
+    
+    const key = await crypto.subtle.importKey(
+      "raw",
+      secretBytes,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    
+    const signatureBytes = await crypto.subtle.sign("HMAC", key, data);
+    const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
+    
+    console.log("Expected signature:", expectedSignature);
+    console.log("Received signature:", signature);
+    
+    return signature === expectedSignature;
+  } catch (error) {
+    console.error("Signature verification error:", error);
+    return false;
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
