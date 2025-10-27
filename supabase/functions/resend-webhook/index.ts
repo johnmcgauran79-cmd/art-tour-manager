@@ -1,47 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Webhook } from "https://esm.sh/svix@1.4.9";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, svix-id, svix-timestamp, svix-signature, webhook-id, webhook-timestamp, webhook-signature",
 };
 
-// Verify webhook signature from Resend (using Svix standard)
-async function verifyWebhookSignature(
-  payload: string,
-  signature: string,
-  timestamp: string,
-  secret: string
-): Promise<boolean> {
-  try {
-    // Svix/Resend format: whsec_xxxxx needs to be base64 decoded
-    const secretBytes = secret.startsWith('whsec_') 
-      ? Uint8Array.from(atob(secret.slice(6)), c => c.charCodeAt(0))
-      : new TextEncoder().encode(secret);
-    
-    const encoder = new TextEncoder();
-    const data = encoder.encode(`${timestamp}.${payload}`);
-    
-    const key = await crypto.subtle.importKey(
-      "raw",
-      secretBytes,
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["sign"]
-    );
-    
-    const signatureBytes = await crypto.subtle.sign("HMAC", key, data);
-    const expectedSignature = btoa(String.fromCharCode(...new Uint8Array(signatureBytes)));
-    
-    console.log("Expected signature:", expectedSignature);
-    console.log("Received signature:", signature);
-    
-    return signature === expectedSignature;
-  } catch (error) {
-    console.error("Signature verification error:", error);
-    return false;
-  }
-}
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -56,16 +21,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get webhook headers for signature verification (Resend uses svix headers)
-    const webhookId = req.headers.get("webhook-id") || req.headers.get("svix-id");
-    const webhookTimestamp = req.headers.get("webhook-timestamp") || req.headers.get("svix-timestamp");
-    const webhookSignature = req.headers.get("webhook-signature") || req.headers.get("svix-signature");
-
     const payload = await req.text();
-
-    // TEMPORARY: Skip signature verification to get tracking working
-    // The signing secret format may be different than expected
-    console.log("Processing webhook (signature verification temporarily disabled)");
+    
+    // Verify webhook signature using Svix library
+    const wh = new Webhook(webhookSecret);
+    const headers = {
+      "svix-id": req.headers.get("svix-id") || req.headers.get("webhook-id") || "",
+      "svix-timestamp": req.headers.get("svix-timestamp") || req.headers.get("webhook-timestamp") || "",
+      "svix-signature": req.headers.get("svix-signature") || req.headers.get("webhook-signature") || "",
+    };
+    
+    try {
+      wh.verify(payload, headers);
+      console.log("Webhook signature verified successfully");
+    } catch (err) {
+      console.error("Invalid webhook signature:", err.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid signature" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const event = JSON.parse(payload);
     console.log("Received webhook event:", event.type, "for message:", event.data?.email_id);
