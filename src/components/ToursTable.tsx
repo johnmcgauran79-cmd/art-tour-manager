@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Plus, Eye, Search } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
-import { TourDetailModal } from "@/components/TourDetailModal";
 import { AddTourModal } from "@/components/AddTourModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
@@ -18,10 +18,9 @@ interface ToursTableProps {
 }
 
 export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProps) => {
+  const navigate = useNavigate();
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
-  const [selectedTour, setSelectedTour] = useState<any>(null);
-  const [showTourDetail, setShowTourDetail] = useState(false);
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -60,8 +59,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   };
 
   const handleTourClick = (tour: any) => {
-    setSelectedTour(tour);
-    setShowTourDetail(true);
+    navigate(`/tours/${tour.id}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -193,12 +191,6 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
           )}
         </CardContent>
       </Card>
-
-      <TourDetailModal
-        tour={selectedTour}
-        open={showTourDetail}
-        onOpenChange={setShowTourDetail}
-      />
 
       <AddTourModal
         open={showAddTour}

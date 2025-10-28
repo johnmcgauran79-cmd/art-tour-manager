@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Plus, Search, TrendingUp } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
-import { BookingDetailModal } from "./BookingDetailModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
@@ -29,8 +29,7 @@ interface BookingsTableProps {
 }
 
 export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTableProps) => {
-  const [showEditBooking, setShowEditBooking] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   
   const { data: allBookings, isLoading } = useBookings();
@@ -65,8 +64,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
   });
 
   const handleBookingClick = (booking: any) => {
-    setSelectedBooking(booking);
-    setShowEditBooking(true);
+    navigate(`/bookings/${booking.id}`);
   };
 
   if (isLoading) {
@@ -200,12 +198,6 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
           )}
         </CardContent>
       </Card>
-
-      <BookingDetailModal 
-        booking={selectedBooking} 
-        open={showEditBooking} 
-        onOpenChange={setShowEditBooking} 
-      />
     </>
   );
 };
