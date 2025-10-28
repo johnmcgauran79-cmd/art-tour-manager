@@ -32,7 +32,6 @@ export const GenerateDocumentModal = ({
 }: GenerateDocumentModalProps) => {
   const [includeHotels, setIncludeHotels] = useState(true);
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
-  const [format, setFormat] = useState<'pdf' | 'html'>('pdf');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState('');
@@ -46,7 +45,7 @@ export const GenerateDocumentModal = ({
         body: {
           tourId: tour.id,
           itineraryId: itinerary.id,
-          format,
+          format: 'html',
           options: {
             includeHotels,
             includeTourInfo
@@ -62,7 +61,7 @@ export const GenerateDocumentModal = ({
 
       toast({
         title: "Document Generated",
-        description: `Itinerary ${format.toUpperCase()} has been generated successfully.`,
+        description: "Itinerary document has been generated successfully.",
       });
       
       onOpenChange(false);
@@ -90,34 +89,6 @@ export const GenerateDocumentModal = ({
           </DialogHeader>
           
           <div className="space-y-6">
-            <div className="space-y-4">
-              <Label className="text-base font-medium">Document Format</Label>
-              <div className="flex gap-4">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="pdf"
-                    name="format"
-                    checked={format === 'pdf'}
-                    onChange={() => setFormat('pdf')}
-                    className="w-4 h-4 text-brand-navy"
-                  />
-                  <Label htmlFor="pdf">PDF (Preview)</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="radio"
-                    id="html"
-                    name="format"
-                    checked={format === 'html'}
-                    onChange={() => setFormat('html')}
-                    className="w-4 h-4 text-brand-navy"
-                  />
-                  <Label htmlFor="html">HTML (Preview)</Label>
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-4">
               <Label className="text-base font-medium">Include in Document</Label>
               
@@ -161,8 +132,8 @@ export const GenerateDocumentModal = ({
               disabled={isGenerating}
               className="bg-brand-navy hover:bg-brand-navy/90"
             >
-              <Download className="h-4 w-4 mr-2" />
-              {isGenerating ? 'Generating...' : `Generate Preview`}
+              <FileText className="h-4 w-4 mr-2" />
+              {isGenerating ? 'Generating...' : 'Generate Document'}
             </Button>
           </DialogFooter>
         </DialogContent>
