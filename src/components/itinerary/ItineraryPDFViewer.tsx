@@ -54,8 +54,7 @@ export const ItineraryPDFViewer = ({
           compress: true
         },
         pagebreak: { 
-          mode: ['avoid-all', 'css', 'legacy'],
-          before: '.day-card',
+          mode: ['avoid-all', 'css'],
           avoid: ['.day-card', '.activity', '.day-header']
         }
       };
