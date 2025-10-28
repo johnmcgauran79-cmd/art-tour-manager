@@ -145,39 +145,39 @@ export default function BookingDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditModalOpen(true)}
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Edit
-              </Button>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowEmailPreview(true)}
-              >
-                <Mail className="mr-2 h-4 w-4" />
-                Email
-              </Button>
-              
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleDelete}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditModalOpen(true)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEmailPreview(true)}
+            >
+              <Mail className="mr-2 h-4 w-4" />
+              Email
+            </Button>
+            
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Delete
+            </Button>
           </div>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+      {/* Tabs */}
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList>
             <TabsTrigger value="details">
               <FileText className="h-4 w-4 mr-2" />
@@ -326,24 +326,23 @@ export default function BookingDetail() {
             <BookingCommentsSection bookingId={booking.id} />
           </TabsContent>
         </Tabs>
-      </div>
 
-      {/* Modals */}
-      {editModalOpen && (
-        <EditBookingModal
-          open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          booking={booking}
-        />
-      )}
-      
-      {showEmailPreview && (
-        <EmailPreviewModal
-          open={showEmailPreview}
-          onOpenChange={setShowEmailPreview}
-          bookingId={booking.id}
-        />
-      )}
-    </div>
-  );
-}
+        {/* Modals */}
+        {editModalOpen && (
+          <EditBookingModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            booking={booking}
+          />
+        )}
+        
+        {showEmailPreview && (
+          <EmailPreviewModal
+            open={showEmailPreview}
+            onOpenChange={setShowEmailPreview}
+            bookingId={booking.id}
+          />
+        )}
+      </div>
+    );
+  }

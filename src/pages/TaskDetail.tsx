@@ -218,36 +218,36 @@ export default function TaskDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-              
-              {hasChanges() && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={updateTask.isPending}
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
+            
+            {hasChanges() && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleSave}
+                disabled={updateTask.isPending}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </Button>
+            )}
+            
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
                 </Button>
-              )}
-              
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this task? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete this task? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>
                       Delete
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -379,6 +379,5 @@ export default function TaskDetail() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
-}
+    );
+  }
