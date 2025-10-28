@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToursTable } from "@/components/ToursTable";
 import { BookingsTable } from "@/components/BookingsTable";
@@ -17,7 +18,6 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -28,7 +28,9 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') || 'dashboard';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [selectedTour, setSelectedTour] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -46,8 +48,12 @@ const Index = () => {
 
   const { user, userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
-  const isAdmin = userRole === 'admin';
   const isMobile = useIsMobile();
+
+  // Update tab when URL changes
+  useEffect(() => {
+    setActiveTab(tabFromUrl);
+  }, [tabFromUrl]);
 
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
@@ -120,66 +126,46 @@ const Index = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardHeader 
-        isAdmin={isAdmin}
-      />
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <TabsContent value="dashboard" className="space-y-8 mt-0">
+        <DashboardQuickActions
+          onAddTour={() => setAddTourModalOpen(true)}
+          onAddBooking={() => setAddBookingModalOpen(true)}
+          onAddContact={() => setAddContactModalOpen(true)}
+          onAddTask={() => setAddTaskModalOpen(true)}
+        />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`w-full mb-8 ${isMobile ? 'h-auto grid grid-cols-3 gap-1' : `grid ${isAdminOrManager ? 'grid-cols-6' : 'grid-cols-5'}`}`}>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="operations">Operations</TabsTrigger>
-            <TabsTrigger value="tours">Tours</TabsTrigger>
-            <TabsTrigger value="bookings">Bookings</TabsTrigger>
-            <TabsTrigger value="contacts">Contacts</TabsTrigger>
-            {isAdminOrManager && (
-              <TabsTrigger value="settings">Settings</TabsTrigger>
-            )}
-          </TabsList>
-          
-          <TabsContent value="dashboard" className="space-y-8">
-            <DashboardQuickActions
-              onAddTour={() => setAddTourModalOpen(true)}
-              onAddBooking={() => setAddBookingModalOpen(true)}
-              onAddContact={() => setAddContactModalOpen(true)}
-              onAddTask={() => setAddTaskModalOpen(true)}
-            />
+        <div className="w-full">
+          <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
+        </div>
+      </TabsContent>
+      
+      <TabsContent value="operations" className="space-y-4 mt-0">
+        <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
+      </TabsContent>
+      
+      <TabsContent value="tours" className="space-y-4 mt-0">
+        <ToursTable />
+      </TabsContent>
+      
+      <TabsContent value="bookings" className="space-y-4 mt-0">
+        <BookingsTable 
+          onAddBooking={handleAddBooking} 
+          onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
+        />
+      </TabsContent>
+      
+      <TabsContent value="contacts" className="space-y-4 mt-0">
+        <ContactsTable />
+      </TabsContent>
 
-            <div className="w-full">
-              <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="operations" className="space-y-4">
-            <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
-          </TabsContent>
-          
-          <TabsContent value="tours" className="space-y-4">
-            <ToursTable />
-          </TabsContent>
-          
-          <TabsContent value="bookings" className="space-y-4">
-            <BookingsTable 
-              onAddBooking={handleAddBooking} 
-              onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
-            />
-          </TabsContent>
-          
-          <TabsContent value="contacts" className="space-y-4">
-            <ContactsTable />
-          </TabsContent>
-
-          {isAdminOrManager && (
-            <TabsContent value="settings" className="space-y-4">
-              <Settings 
-                onBack={() => setActiveTab("dashboard")}
-              />
-            </TabsContent>
-          )}
-        </Tabs>
-      </div>
-
+      {isAdminOrManager && (
+        <TabsContent value="settings" className="space-y-4 mt-0">
+          <Settings 
+            onBack={() => setActiveTab("dashboard")}
+          />
+        </TabsContent>
+      )}
       {selectedTour && (
         <TourDetailModalWithHotelsTab
           tour={selectedTour}
@@ -230,7 +216,7 @@ const Index = () => {
         open={customerAnalyticsOpen}
         onOpenChange={setCustomerAnalyticsOpen}
       />
-    </div>
+    </Tabs>
   );
 };
 

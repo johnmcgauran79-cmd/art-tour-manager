@@ -178,47 +178,46 @@ export default function TaskDetail() {
   const tour = tours?.find(t => t.id === task.tour_id);
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-4">
-          <AppBreadcrumbs
-            items={[
-              { label: "Tasks", href: "/" },
-              ...(tour ? [{ label: tour.name, href: `/tours/${tour.id}` }] : []),
-              { label: task.title }
-            ]}
-          />
-          
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <Input
-                value={editedTask.title || ''}
-                onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
-                className="text-3xl font-bold border-0 px-0 focus-visible:ring-0"
-              />
-              <div className="flex gap-2 mt-2">
-                <Badge className={getPriorityColor(task.priority)}>
-                  {task.priority}
-                </Badge>
-                <Badge className={getStatusColor(task.status)}>
-                  {formatStatus(task.status)}
-                </Badge>
-                {task.category && (
-                  <Badge variant="outline">{task.category}</Badge>
-                )}
-              </div>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <AppBreadcrumbs
+          items={[
+            { label: "Tasks", href: "/?tab=operations" },
+            ...(tour ? [{ label: tour.name, href: `/tours/${tour.id}` }] : []),
+            { label: task.title }
+          ]}
+        />
+        
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <Input
+              value={editedTask.title || ''}
+              onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
+              className="text-3xl font-bold border-0 px-0 focus-visible:ring-0"
+            />
+            <div className="flex gap-2 mt-2">
+              <Badge className={getPriorityColor(task.priority)}>
+                {task.priority}
+              </Badge>
+              <Badge className={getStatusColor(task.status)}>
+                {formatStatus(task.status)}
+              </Badge>
+              {task.category && (
+                <Badge variant="outline">{task.category}</Badge>
+              )}
             </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(tour ? `/tours/${tour.id}` : "/")}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(tour ? `/tours/${tour.id}` : "/?tab=operations")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
               
               {hasChanges() && (
                 <Button

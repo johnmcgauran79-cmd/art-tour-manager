@@ -136,186 +136,184 @@ export default function TourDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-4">
-          <AppBreadcrumbs
-            items={[
-              { label: "Tours", href: "/" },
-              { label: tour.name }
-            ]}
-          />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <AppBreadcrumbs
+          items={[
+            { label: "Tours", href: "/?tab=tours" },
+            { label: tour.name }
+          ]}
+        />
+        
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{tour.name}</h1>
+            <p className="text-muted-foreground mt-1">
+              {formatDateRange(tour.start_date, tour.end_date)}
+            </p>
+          </div>
           
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">{tour.name}</h1>
-              <p className="text-muted-foreground mt-1">
-                {formatDateRange(tour.start_date, tour.end_date)}
-              </p>
-            </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/?tab=tours")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
             
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate("/")}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
-              
-              {userRole !== 'operations_team' && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditTourModalOpen(true)}
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setDuplicateDialogOpen(true)}
-                  >
-                    <Copy className="mr-2 h-4 w-4" />
-                    Duplicate
-                  </Button>
-                  
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="mr-2 h-4 w-4" />
+            {userRole !== 'operations_team' && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEditTourModalOpen(true)}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDuplicateDialogOpen(true)}
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  Duplicate
+                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Tour</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this tour? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteTour}>
                         Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Tour</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Are you sure you want to delete this tour? This action cannot be undone.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteTour}>
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </>
-              )}
-            </div>
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
           </div>
         </div>
-
-        {/* Tabs */}
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-7 lg:w-auto">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="bookings" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Bookings</span>
-            </TabsTrigger>
-            <TabsTrigger value="itinerary" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Itinerary</span>
-            </TabsTrigger>
-            <TabsTrigger value="activities" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Activities</span>
-            </TabsTrigger>
-            <TabsTrigger value="hotels" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              <span className="hidden sm:inline">Hotels</span>
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <ClipboardList className="h-4 w-4" />
-              <span className="hidden sm:inline">Tasks</span>
-            </TabsTrigger>
-            <TabsTrigger value="operations" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              <span className="hidden sm:inline">Operations</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4 mt-6">
-            {transformedTour && <TourOverviewTab tour={transformedTour} />}
-          </TabsContent>
-
-          <TabsContent value="bookings" className="space-y-4 mt-6">
-            <TourBookingsTab 
-              tourId={tour.id}
-              tourName={tour.name}
-              onAddBooking={() => setAddBookingModalOpen(true)}
-            />
-          </TabsContent>
-
-          <TabsContent value="itinerary" className="space-y-4 mt-6">
-            <TourItineraryTab tour={{
-              id: tour.id,
-              name: tour.name,
-              startDate: tour.start_date,
-              endDate: tour.end_date,
-              days: tour.days,
-              nights: tour.nights,
-              location: tour.location || ''
-            }} />
-          </TabsContent>
-
-          <TabsContent value="activities" className="space-y-4 mt-6">
-            <TourActivitiesTab
-              tourId={tour.id}
-              onAddActivity={() => setAddActivityModalOpen(true)}
-              onEditActivity={(activity) => {
-                setSelectedActivity(activity);
-                setEditActivityModalOpen(true);
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="hotels" className="space-y-4 mt-6">
-            <TourHotelsTab
-              tourId={tour.id}
-              onAddHotel={() => setAddHotelModalOpen(true)}
-              onEditHotel={(hotel) => {
-                setSelectedHotel(hotel);
-                setEditHotelModalOpen(true);
-              }}
-              onRoomingList={(hotel) => {
-                setSelectedHotel(hotel);
-                setEditRoomingListModalOpen(true);
-              }}
-              onBulkEdit={(hotel) => {
-                setSelectedHotel(hotel);
-                setBulkEditModalOpen(true);
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="tasks" className="space-y-4 mt-6">
-            <TourTasksTab tourId={tour.id} tourName={tour.name} />
-          </TabsContent>
-
-          <TabsContent value="operations" className="space-y-4 mt-6">
-            <TourOperationsTab
-              tourId={tour.id}
-              tourName={tour.name}
-              onNavigate={handleNavigate}
-            />
-            <div className="mt-6">
-              <TourAttachmentsSection tourId={tour.id} />
-            </div>
-          </TabsContent>
-        </Tabs>
       </div>
+
+      {/* Tabs */}
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="hidden sm:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="bookings" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Bookings</span>
+          </TabsTrigger>
+          <TabsTrigger value="itinerary" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Itinerary</span>
+          </TabsTrigger>
+          <TabsTrigger value="activities" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            <span className="hidden sm:inline">Activities</span>
+          </TabsTrigger>
+          <TabsTrigger value="hotels" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            <span className="hidden sm:inline">Hotels</span>
+          </TabsTrigger>
+          <TabsTrigger value="tasks" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            <span className="hidden sm:inline">Tasks</span>
+          </TabsTrigger>
+          <TabsTrigger value="operations" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Operations</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4 mt-6">
+          {transformedTour && <TourOverviewTab tour={transformedTour} />}
+        </TabsContent>
+
+        <TabsContent value="bookings" className="space-y-4 mt-6">
+          <TourBookingsTab 
+            tourId={tour.id}
+            tourName={tour.name}
+            onAddBooking={() => setAddBookingModalOpen(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="itinerary" className="space-y-4 mt-6">
+          <TourItineraryTab tour={{
+            id: tour.id,
+            name: tour.name,
+            startDate: tour.start_date,
+            endDate: tour.end_date,
+            days: tour.days,
+            nights: tour.nights,
+            location: tour.location || ''
+          }} />
+        </TabsContent>
+
+        <TabsContent value="activities" className="space-y-4 mt-6">
+          <TourActivitiesTab
+            tourId={tour.id}
+            onAddActivity={() => setAddActivityModalOpen(true)}
+            onEditActivity={(activity) => {
+              setSelectedActivity(activity);
+              setEditActivityModalOpen(true);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="hotels" className="space-y-4 mt-6">
+          <TourHotelsTab
+            tourId={tour.id}
+            onAddHotel={() => setAddHotelModalOpen(true)}
+            onEditHotel={(hotel) => {
+              setSelectedHotel(hotel);
+              setEditHotelModalOpen(true);
+            }}
+            onRoomingList={(hotel) => {
+              setSelectedHotel(hotel);
+              setEditRoomingListModalOpen(true);
+            }}
+            onBulkEdit={(hotel) => {
+              setSelectedHotel(hotel);
+              setBulkEditModalOpen(true);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="tasks" className="space-y-4 mt-6">
+          <TourTasksTab tourId={tour.id} tourName={tour.name} />
+        </TabsContent>
+
+        <TabsContent value="operations" className="space-y-4 mt-6">
+          <TourOperationsTab
+            tourId={tour.id}
+            tourName={tour.name}
+            onNavigate={handleNavigate}
+          />
+          <div className="mt-6">
+            <TourAttachmentsSection tourId={tour.id} />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Modals */}
       <AddBookingModal

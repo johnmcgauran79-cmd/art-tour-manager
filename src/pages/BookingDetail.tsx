@@ -115,37 +115,36 @@ export default function BookingDetail() {
     : null;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="space-y-4">
-          <AppBreadcrumbs
-            items={[
-              { label: "Bookings", href: "/" },
-              ...(tour ? [{ label: tour.name, href: `/tours/${tour.id}` }] : []),
-              { label: leadPassengerName }
-            ]}
-          />
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="space-y-4">
+        <AppBreadcrumbs
+          items={[
+            { label: "Bookings", href: "/?tab=bookings" },
+            ...(tour ? [{ label: tour.name, href: `/tours/${tour.id}` }] : []),
+            { label: leadPassengerName }
+          ]}
+        />
+        
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">{leadPassengerName}</h1>
+            {tour && (
+              <p className="text-muted-foreground mt-1">
+                {tour.name}
+              </p>
+            )}
+          </div>
           
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold">{leadPassengerName}</h1>
-              {tour && (
-                <p className="text-muted-foreground mt-1">
-                  {tour.name}
-                </p>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(tour ? `/tours/${tour.id}` : "/")}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(tour ? `/tours/${tour.id}` : "/?tab=bookings")}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
               
               <Button
                 variant="outline"

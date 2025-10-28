@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -49,7 +50,9 @@ function App() {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Index />
+                    <AppLayout>
+                      <Index />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
@@ -57,7 +60,9 @@ function App() {
                 path="/tours/:id"
                 element={
                   <ProtectedRoute>
-                    <TourDetail />
+                    <AppLayout>
+                      <TourDetail />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
@@ -65,7 +70,9 @@ function App() {
                 path="/bookings/:id"
                 element={
                   <ProtectedRoute>
-                    <BookingDetail />
+                    <AppLayout>
+                      <BookingDetail />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
@@ -73,7 +80,9 @@ function App() {
                 path="/tasks/:id"
                 element={
                   <ProtectedRoute>
-                    <TaskDetail />
+                    <AppLayout>
+                      <TaskDetail />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
