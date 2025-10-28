@@ -8,6 +8,9 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import TourDetail from "./pages/TourDetail";
+import BookingDetail from "./pages/BookingDetail";
+import TaskDetail from "./pages/TaskDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,11 +45,35 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-                <Route
+              <Route
                 path="/"
                 element={
                   <ProtectedRoute>
                     <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tours/:id"
+                element={
+                  <ProtectedRoute>
+                    <TourDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings/:id"
+                element={
+                  <ProtectedRoute>
+                    <BookingDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks/:id"
+                element={
+                  <ProtectedRoute>
+                    <TaskDetail />
                   </ProtectedRoute>
                 }
               />
