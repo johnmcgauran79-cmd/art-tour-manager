@@ -21,7 +21,7 @@ interface BookingsTableProps {
 export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTableProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
 
   // Calculate bookings this month

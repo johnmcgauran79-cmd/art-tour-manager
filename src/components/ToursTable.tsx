@@ -26,7 +26,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const { data: bookings } = useBookings();
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [view, setView] = useState<'grid' | 'table'>('grid');
+  const [view, setView] = useState<'grid' | 'table'>('table');
 
   // Filter tours based on showOnlyActive prop first
   const filteredByStatus = tours?.filter(tour => {
