@@ -42,6 +42,40 @@ export const useHotelBookings = (bookingId: string) => {
   });
 };
 
+// Helper function to update booking dates based on hotel bookings
+const updateBookingDates = async (bookingId: string) => {
+  const { data: hotelBookings, error } = await supabase
+    .from('hotel_bookings')
+    .select('check_in_date, check_out_date')
+    .eq('booking_id', bookingId)
+    .not('check_in_date', 'is', null)
+    .not('check_out_date', 'is', null);
+
+  if (error || !hotelBookings || hotelBookings.length === 0) {
+    return;
+  }
+
+  // Find earliest check-in and latest check-out
+  const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
+  const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
+  
+  const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
+  const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
+  
+  // Calculate total nights
+  const totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Update the booking
+  await supabase
+    .from('bookings')
+    .update({
+      check_in_date: earliestCheckIn.toISOString().split('T')[0],
+      check_out_date: latestCheckOut.toISOString().split('T')[0],
+      total_nights: totalNights
+    })
+    .eq('id', bookingId);
+};
+
 export const useCreateHotelBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -85,11 +119,18 @@ export const useCreateHotelBooking = () => {
         throw error;
       }
       console.log('Hotel booking created successfully:', data);
+      
+      // Update parent booking dates
+      if (data.booking_id) {
+        await updateBookingDates(data.booking_id);
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       toast({
         title: "Hotel Booking Created",
         description: "Hotel booking allocation has been successfully created.",
@@ -137,11 +178,18 @@ export const useUpdateHotelBooking = () => {
       }
       
       console.log('Hotel booking updated successfully:', data);
+      
+      // Update parent booking dates
+      if (data.booking_id) {
+        await updateBookingDates(data.booking_id);
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       toast({
         title: "Hotel Booking Updated",
         description: "Hotel booking allocation has been successfully updated.",
@@ -242,11 +290,16 @@ export const useRemoveHotelAllocation = () => {
       }
       
       console.log(`Successfully removed ${existingBookings.length} hotel booking record(s)`);
+      
+      // Update parent booking dates after removal
+      await updateBookingDates(bookingId);
+      
       return existingBookings.length;
     },
     onSuccess: (removedCount) => {
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       if (removedCount && removedCount > 1) {
         toast({
           title: "Hotel Allocation Removed",
@@ -277,6 +330,14 @@ export const useDeleteHotelBooking = () => {
   return useMutation({
     mutationFn: async (id: string) => {
       console.log('Deleting hotel booking:', id);
+      
+      // Get booking_id before deletion
+      const { data: hotelBooking } = await supabase
+        .from('hotel_bookings')
+        .select('booking_id')
+        .eq('id', id)
+        .single();
+      
       const { error } = await supabase
         .from('hotel_bookings')
         .delete()
@@ -287,10 +348,16 @@ export const useDeleteHotelBooking = () => {
         throw error;
       }
       console.log('Hotel booking deleted successfully');
+      
+      // Update parent booking dates after deletion
+      if (hotelBooking?.booking_id) {
+        await updateBookingDates(hotelBooking.booking_id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       toast({
         title: "Hotel Booking Deleted",
         description: "Hotel booking allocation has been successfully removed.",
