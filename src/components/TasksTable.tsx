@@ -7,6 +7,7 @@ import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Clipbo
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { formatDistanceToNow, format } from "date-fns";
 import { QuickTaskActions } from "@/components/QuickTaskActions";
+import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/lib/statusColors";
 
 interface TasksTableProps {
   tasks: Task[];
@@ -32,42 +33,6 @@ export const TasksTable = ({
   title = "Tasks" 
 }: TasksTableProps) => {
   const updateTask = useUpdateTask();
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'waiting':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'archived':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const formatStatus = (status: string) => {
-    return status.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-  };
 
   const handleMarkComplete = (e: React.MouseEvent, taskId: string) => {
     e.stopPropagation();
@@ -228,13 +193,13 @@ export const TasksTable = ({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
-                    {formatStatus(task.status)}
+                  <Badge variant="outline" className={`text-xs border ${getTaskStatusColor(task.status)}`}>
+                    {formatStatusText(task.status)}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
-                    {task.priority}
+                  <Badge variant="outline" className={`text-xs border ${getTaskPriorityColor(task.priority)}`}>
+                    {formatStatusText(task.priority)}
                   </Badge>
                 </TableCell>
                 <TableCell>

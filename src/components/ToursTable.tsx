@@ -11,6 +11,7 @@ import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { AddTourModal } from "@/components/AddTourModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 
 interface ToursTableProps {
   showOnlyActive?: boolean;
@@ -60,17 +61,6 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
 
   const handleTourClick = (tour: any) => {
     navigate(`/tours/${tour.id}`);
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return 'bg-green-100 text-green-800';
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'sold_out': return 'bg-red-100 text-red-800';
-      case 'closed': return 'bg-gray-100 text-gray-800';
-      case 'past': return 'bg-blue-100 text-blue-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
   };
 
   if (isLoading) {
@@ -175,8 +165,8 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                     <TableCell>{tour.location || '-'}</TableCell>
                     <TableCell>{getTotalPassengers(tour.id)}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(tour.status)}>
-                        {tour.status.replace('_', ' ').toUpperCase()}
+                      <Badge className={getTourStatusColor(tour.status)}>
+                        {formatStatusText(tour.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
