@@ -298,8 +298,25 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           margin-bottom: 20px;
         }
         @media print {
-          body { font-size: 12px; }
-          .day-card { page-break-inside: avoid; }
+          body { 
+            font-size: 12px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+          .day-card { 
+            page-break-inside: avoid;
+            break-inside: avoid;
+            page-break-after: auto;
+            break-after: auto;
+          }
+          .activity {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          h1, h2, h3 {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
         }
       </style>
     </head>
