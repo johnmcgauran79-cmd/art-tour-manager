@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToursTable } from "@/components/ToursTable";
 import { BookingsTable } from "@/components/BookingsTable";
@@ -10,13 +10,11 @@ import { Settings } from "@/pages/Settings";
 
 import { MyTasksWidget } from "@/components/MyTasksWidget";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
-import { EditBookingModal } from "@/components/EditBookingModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddTourModal } from "@/components/AddTourModal";
 import { AddContactModal } from "@/components/AddContactModal";
 import { SystemLogModal } from "@/components/SystemLogModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
-import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { useBookings } from "@/hooks/useBookings";
@@ -29,14 +27,11 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tabFromUrl = searchParams.get('tab') || 'dashboard';
   const [activeTab, setActiveTab] = useState(tabFromUrl);
   const [selectedTour, setSelectedTour] = useState(null);
-  const [selectedBooking, setSelectedBooking] = useState(null);
-  const [selectedTask, setSelectedTask] = useState(null);
   const [tourModalOpen, setTourModalOpen] = useState(false);
-  const [bookingModalOpen, setBookingModalOpen] = useState(false);
-  const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [addTourModalOpen, setAddTourModalOpen] = useState(false);
   const [addContactModalOpen, setAddContactModalOpen] = useState(false);
@@ -85,11 +80,7 @@ const Index = () => {
         setTourModalOpen(true);
       }
     } else if (type === 'task') {
-      const task = tasks.find(t => t.id === itemId);
-      if (task) {
-        setSelectedTask(task);
-        setTaskModalOpen(true);
-      }
+      navigate(`/tasks/${itemId}`);
     } else if (type === 'system') {
       setActiveTab("contacts");
     }
@@ -98,12 +89,7 @@ const Index = () => {
   useEffect(() => {
     const handleOpenBookingDetail = (event: CustomEvent) => {
       const { bookingId } = event.detail;
-      const booking = bookings.find(b => b.id === bookingId);
-      
-      if (booking) {
-        setSelectedBooking(booking);
-        setBookingModalOpen(true);
-      }
+      navigate(`/bookings/${bookingId}`);
     };
 
     window.addEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
@@ -111,7 +97,7 @@ const Index = () => {
     return () => {
       window.removeEventListener('open-booking-detail', handleOpenBookingDetail as EventListener);
     };
-  }, [bookings]);
+  }, [navigate]);
 
   const handleAddBooking = () => {
     setAddBookingModalOpen(true);
@@ -174,18 +160,6 @@ const Index = () => {
           defaultTab={tourModalDefaultTab}
         />
       )}
-
-      <EditBookingModal
-        booking={selectedBooking}
-        open={bookingModalOpen}
-        onOpenChange={setBookingModalOpen}
-      />
-
-      <TaskDetailModal
-        task={selectedTask}
-        open={taskModalOpen}
-        onOpenChange={setTaskModalOpen}
-      />
 
       <AddBookingModal
         open={addBookingModalOpen}

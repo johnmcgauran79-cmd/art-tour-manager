@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
-import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
@@ -25,6 +25,7 @@ interface TourOperationsTabProps {
 }
 
 export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperationsTabProps) => {
+  const navigate = useNavigate();
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
   const { data: activities } = useActivities(tourId);
@@ -32,11 +33,9 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const { userRole } = useAuth();
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -148,15 +147,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   };
 
   const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setTaskDetailModalOpen(true);
-  };
-
-  const handleTaskDetailModalClose = (open: boolean) => {
-    setTaskDetailModalOpen(open);
-    if (!open) {
-      setSelectedTask(null);
-    }
+    navigate(`/tasks/${task.id}`);
   };
 
   const handleFilteredTasksModalClose = (open: boolean) => {
@@ -454,12 +445,6 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         open={addTaskModalOpen}
         onOpenChange={setAddTaskModalOpen}
         tourId={tourId}
-      />
-
-      <TaskDetailModal
-        task={selectedTask}
-        open={taskDetailModalOpen}
-        onOpenChange={handleTaskDetailModalClose}
       />
 
       <FilteredTasksModal

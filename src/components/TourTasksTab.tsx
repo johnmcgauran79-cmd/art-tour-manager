@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Settings2, ClipboardList } from "lucide-react";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
-import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskTemplateModal } from "@/components/TaskTemplateModal";
 
@@ -15,8 +15,7 @@ interface TourTasksTabProps {
 }
 
 export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskTemplateModalOpen, setTaskTemplateModalOpen] = useState(false);
 
@@ -30,15 +29,7 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   });
 
   const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setTaskDetailModalOpen(true);
-  };
-
-  const handleTaskDetailModalClose = (open: boolean) => {
-    setTaskDetailModalOpen(open);
-    if (!open) {
-      setSelectedTask(null);
-    }
+    navigate(`/tasks/${task.id}`);
   };
 
   const activeTasks = tasks?.filter(task => 
@@ -173,12 +164,6 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
       </div>
 
       {/* Modals */}
-      <TaskDetailModal
-        task={selectedTask}
-        open={taskDetailModalOpen}
-        onOpenChange={handleTaskDetailModalClose}
-      />
-
       <AddTaskModal
         open={addTaskModalOpen}
         onOpenChange={setAddTaskModalOpen}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
-import { EditTourModal } from "@/components/EditTourModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
@@ -40,7 +40,6 @@ export const TourDetailModalWithHotelsTab = ({
   const [addHotelModalOpen, setAddHotelModalOpen] = useState(false);
   const [editActivityModalOpen, setEditActivityModalOpen] = useState(false);
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
-  const [editTourModalOpen, setEditTourModalOpen] = useState(false);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -48,6 +47,7 @@ export const TourDetailModalWithHotelsTab = ({
   const [transformedTour, setTransformedTour] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(defaultTab);
 
+  const navigate = useNavigate();
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
@@ -164,7 +164,10 @@ export const TourDetailModalWithHotelsTab = ({
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={() => setEditTourModalOpen(true)}
+                  onClick={() => {
+                    navigate(`/tours/${currentTour?.id}/edit`);
+                    onOpenChange(false);
+                  }}
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
@@ -289,25 +292,6 @@ export const TourDetailModalWithHotelsTab = ({
           onOpenChange={setRoomingListModalOpen}
           hotel={selectedHotel}
           tourId={currentTour?.id || ""}
-        />
-      )}
-
-      {transformedTour && (
-        <EditTourModal
-          open={editTourModalOpen}
-          onOpenChange={(open) => {
-            setEditTourModalOpen(open);
-            if (!open && tour?.id) {
-              // Force comprehensive refresh when edit modal closes
-              console.log('Hotels tab edit modal closed, forcing comprehensive refresh');
-              queryClient.invalidateQueries({ queryKey: ['tours'] });
-              queryClient.invalidateQueries({ queryKey: ['tasks', tour.id] });
-              queryClient.invalidateQueries({ queryKey: ['activities', tour.id] });
-              queryClient.invalidateQueries({ queryKey: ['hotels', tour.id] });
-              queryClient.invalidateQueries({ queryKey: ['bookings'] });
-            }
-          }}
-          tour={transformedTour}
         />
       )}
 

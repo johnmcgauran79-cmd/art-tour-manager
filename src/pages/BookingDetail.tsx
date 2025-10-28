@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft } from "lucide-react";
-import { EditBookingModal } from "@/components/EditBookingModal";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
@@ -35,7 +34,6 @@ export default function BookingDetail() {
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
   
-  const [editModalOpen, setEditModalOpen] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [currentTab, setCurrentTab] = useState("details");
   const deleteBooking = useDeleteBooking();
@@ -327,15 +325,7 @@ export default function BookingDetail() {
           </TabsContent>
         </Tabs>
 
-        {/* Modals */}
-        {editModalOpen && (
-          <EditBookingModal
-            open={editModalOpen}
-            onOpenChange={setEditModalOpen}
-            booking={booking}
-          />
-        )}
-        
+        {/* Modals */}        
         {showEmailPreview && (
           <EmailPreviewModal
             open={showEmailPreview}

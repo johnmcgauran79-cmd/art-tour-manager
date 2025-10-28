@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail } from "lucide-react";
-import { EditBookingModal } from "@/components/EditBookingModal";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useDeleteBooking } from "@/hooks/useBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
@@ -81,7 +81,7 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 );
 
 export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "details" }: BookingDetailModalProps) => {
-  const [editModalOpen, setEditModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [currentTab, setCurrentTab] = useState(defaultTab);
   const deleteBooking = useDeleteBooking();
@@ -106,7 +106,8 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
   };
 
   const handleEdit = () => {
-    setEditModalOpen(true);
+    navigate(`/bookings/${booking?.id}/edit`);
+    onOpenChange(false);
   };
 
   if (!booking) return null;
@@ -124,7 +125,7 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
 
   return (
     <>
-      <Dialog open={open && !editModalOpen} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="space-y-3">
@@ -405,15 +406,6 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
           </Tabs>
         </DialogContent>
       </Dialog>
-
-      {booking && (
-        <EditBookingModal
-          booking={booking}
-          open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          defaultTab={currentTab}
-        />
-      )}
 
       {booking && (
         <EmailPreviewModal

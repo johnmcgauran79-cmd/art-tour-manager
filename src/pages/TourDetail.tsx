@@ -9,7 +9,6 @@ import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
-import { EditTourModal } from "@/components/EditTourModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
@@ -41,7 +40,6 @@ export default function TourDetail() {
   const [addHotelModalOpen, setAddHotelModalOpen] = useState(false);
   const [editActivityModalOpen, setEditActivityModalOpen] = useState(false);
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
-  const [editTourModalOpen, setEditTourModalOpen] = useState(false);
   const [roomingListModalOpen, setEditRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
@@ -345,13 +343,6 @@ export default function TourDetail() {
           open={editHotelModalOpen}
           onOpenChange={setEditHotelModalOpen}
           hotel={selectedHotel}
-        />
-      )}
-      {editTourModalOpen && transformedTour && (
-        <EditTourModal
-          open={editTourModalOpen}
-          onOpenChange={setEditTourModalOpen}
-          tour={transformedTour}
         />
       )}
       {roomingListModalOpen && selectedHotel && (
