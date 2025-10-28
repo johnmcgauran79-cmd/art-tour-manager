@@ -312,14 +312,24 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
   `;
 
   if (options.includeTourInfo) {
+    // Process inclusions into bullet list
+    const inclusionsList = tour.inclusions 
+      ? tour.inclusions.split('\n').filter((line: string) => line.trim()).map((line: string) => `<li>${line.trim()}</li>`).join('')
+      : '';
+    
+    // Process exclusions into bullet list
+    const exclusionsList = tour.exclusions 
+      ? tour.exclusions.split('\n').filter((line: string) => line.trim()).map((line: string) => `<li>${line.trim()}</li>`).join('')
+      : '';
+    
     html += `
       <div class="tour-info">
         <h2 class="section-title">Tour Information</h2>
         <p><strong>Location:</strong> ${tour.location || 'N/A'}</p>
         <p><strong>Pickup Point:</strong> ${tour.pickup_point || 'N/A'}</p>
         ${tour.notes ? `<p><strong>Notes:</strong> ${tour.notes}</p>` : ''}
-        ${tour.inclusions ? `<p><strong>Inclusions:</strong> ${tour.inclusions}</p>` : ''}
-        ${tour.exclusions ? `<p><strong>Exclusions:</strong> ${tour.exclusions}</p>` : ''}
+        ${inclusionsList ? `<div><strong>Inclusions:</strong><ul style="margin-top: 8px;">${inclusionsList}</ul></div>` : ''}
+        ${exclusionsList ? `<div><strong>Exclusions:</strong><ul style="margin-top: 8px;">${exclusionsList}</ul></div>` : ''}
       </div>
     `;
   }
