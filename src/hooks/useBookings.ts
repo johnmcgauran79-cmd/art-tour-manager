@@ -163,7 +163,7 @@ export const useCreateBooking = () => {
       if (existingCustomer) {
         customerId = existingCustomer.id;
         
-        // Update the existing customer with any new information
+        // Update the existing customer with any new information including dietary requirements
         const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
         const lastName = lastNameParts.join(' ') || '';
 
@@ -173,9 +173,11 @@ export const useCreateBooking = () => {
             first_name: firstName,
             last_name: lastName,
             phone: bookingData.lead_passenger_phone || null,
-            dietary_requirements: bookingData.dietary_restrictions || null,
+            dietary_requirements: bookingData.dietary_restrictions || null, // Store at customer level
           })
           .eq('id', existingCustomer.id);
+        
+        console.log("Updated customer dietary requirements to:", bookingData.dietary_restrictions);
       } else {
         const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
         const lastName = lastNameParts.join(' ') || '';
@@ -187,13 +189,15 @@ export const useCreateBooking = () => {
             last_name: lastName,
             email: bookingData.lead_passenger_email,
             phone: bookingData.lead_passenger_phone || null,
-            dietary_requirements: bookingData.dietary_restrictions || null,
+            dietary_requirements: bookingData.dietary_restrictions || null, // Store at customer level
           }])
           .select()
           .single();
 
         if (customerError) throw customerError;
         customerId = newCustomer.id;
+
+        console.log("Created customer with dietary requirements:", bookingData.dietary_restrictions);
 
         // Log customer creation
         logOperation({
@@ -303,6 +307,24 @@ export const useUpdateBooking = () => {
       
       // Handle accommodation requirement changes
       const finalUpdates = { ...updates };
+      
+      // If dietary restrictions are being updated, also update the customer record
+      if (updates.dietary_restrictions !== undefined) {
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('lead_passenger_id')
+          .eq('id', id)
+          .single();
+        
+        if (booking?.lead_passenger_id) {
+          await supabase
+            .from('customers')
+            .update({ dietary_requirements: updates.dietary_restrictions || null })
+            .eq('id', booking.lead_passenger_id);
+          
+          console.log("Updated customer dietary requirements for booking:", id);
+        }
+      }
       
       // If accommodation is set to false, clear accommodation dates
       if (updates.accommodation_required === false) {

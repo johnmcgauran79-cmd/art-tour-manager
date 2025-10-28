@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
+import { LeadPassengerSection } from "@/components/booking/LeadPassengerSection";
 import { AddContactModal } from "@/components/AddContactModal";
 import { BookingConfirmationDialog } from "@/components/BookingConfirmationDialog";
 import { UserPlus } from "lucide-react";
@@ -31,7 +32,14 @@ interface AddBookingModalProps {
 }
 
 export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "invoiced", preSelectedTourStartDate, preSelectedTourEndDate }: AddBookingModalProps) => {
-  const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [selectedContact, setSelectedContact] = useState<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string | null;
+    phone: string | null;
+    dietary_requirements: string | null;
+  } | null>(null);
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
@@ -445,29 +453,33 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium text-brand-navy">Lead Passenger</h3>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleAddContactClick('lead')}
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add New Contact
-                  </Button>
-                </div>
-                <ContactSearch
-                  value={leadPassengerName}
-                  onValueChange={setLeadPassengerName}
-                  onContactSelect={handleContactSelect}
-                  selectedContactId={selectedContact?.id || ''}
-                />
-              </div>
+              <LeadPassengerSection
+                formData={{
+                  leadPassenger: leadPassengerName,
+                  leadEmail: formData.lead_passenger_email,
+                  leadPhone: formData.lead_passenger_phone,
+                  leadDietary: formData.dietary_restrictions || '',
+                }}
+                onInputChange={(field, value) => {
+                  if (field === 'leadPassenger') setLeadPassengerName(value);
+                  else if (field === 'leadEmail') handleFormChange('lead_passenger_email', value);
+                  else if (field === 'leadPhone') handleFormChange('lead_passenger_phone', value);
+                  else if (field === 'leadDietary') handleFormChange('dietary_restrictions', value);
+                }}
+                onContactSelect={handleContactSelect}
+                onEditContact={() => {
+                  if (selectedContact) {
+                    setShowAddContact(true);
+                    setAddingContactFor('lead');
+                  }
+                }}
+                onAddNewContact={() => handleAddContactClick('lead')}
+                selectedContactId={selectedContact?.id || ''}
+                selectedContact={selectedContact}
+              />
 
               <div className="space-y-4">
-                <BookingDetailsForm 
+                <BookingDetailsForm
                   formData={formData}
                   setFormData={handleFormChange}
                   tours={tours}

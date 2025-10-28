@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Edit, Plus } from "lucide-react";
+import { Edit, Plus, Info } from "lucide-react";
 import { ContactSearch } from "./ContactSearch";
 import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface LeadPassengerSectionProps {
   formData: {
@@ -19,6 +20,13 @@ interface LeadPassengerSectionProps {
   onEditContact: () => void;
   onAddNewContact: () => void;
   selectedContactId: string;
+  selectedContact?: {
+    first_name: string;
+    last_name: string;
+    email: string | null;
+    phone: string | null;
+    dietary_requirements: string | null;
+  } | null;
 }
 
 export const LeadPassengerSection = ({
@@ -27,7 +35,8 @@ export const LeadPassengerSection = ({
   onContactSelect,
   onEditContact,
   onAddNewContact,
-  selectedContactId
+  selectedContactId,
+  selectedContact
 }: LeadPassengerSectionProps) => {
   return (
     <div className="border rounded-lg p-4 space-y-4">
@@ -55,6 +64,22 @@ export const LeadPassengerSection = ({
           </Button>
         </div>
       </div>
+
+      {selectedContact && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-1 text-sm">
+              <p><strong>Name:</strong> {selectedContact.first_name} {selectedContact.last_name}</p>
+              {selectedContact.email && <p><strong>Email:</strong> {selectedContact.email}</p>}
+              {selectedContact.phone && <p><strong>Phone:</strong> {selectedContact.phone}</p>}
+              {selectedContact.dietary_requirements && (
+                <p><strong>Dietary Requirements:</strong> {selectedContact.dietary_requirements}</p>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ContactSearch
@@ -94,7 +119,12 @@ export const LeadPassengerSection = ({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="leadDietary">Dietary Requirements</Label>
+        <Label htmlFor="leadDietary">
+          Dietary Requirements
+          <span className="text-xs text-muted-foreground ml-2">
+            (stored at passenger level, applies to all bookings)
+          </span>
+        </Label>
         <Textarea
           id="leadDietary"
           value={formData.leadDietary}
