@@ -28,7 +28,8 @@ export const useActivityPassengers = (activityId: string) => {
             dietary_restrictions,
             customers!lead_passenger_id!inner(
               first_name,
-              last_name
+              last_name,
+              dietary_requirements
             )
           )
         `)
@@ -41,15 +42,30 @@ export const useActivityPassengers = (activityId: string) => {
         throw error;
       }
 
-      // Transform the data to include lead passenger name
-      const passengers: ActivityPassenger[] = data?.map(item => ({
-        booking_id: item.booking_id,
-        passengers_attending: item.passengers_attending,
-        lead_passenger_name: `${item.bookings.customers.first_name} ${item.bookings.customers.last_name}`,
-        passenger_2_name: item.bookings.passenger_2_name || undefined,
-        passenger_3_name: item.bookings.passenger_3_name || undefined, 
-        dietary_restrictions: item.bookings.dietary_restrictions || undefined
-      })) || [];
+      // Transform the data to include lead passenger name and combine dietary info
+      const passengers: ActivityPassenger[] = data?.map(item => {
+        // Combine booking-specific dietary restrictions with customer dietary requirements
+        const customerDietary = item.bookings.customers.dietary_requirements;
+        const bookingDietary = item.bookings.dietary_restrictions;
+        
+        let combinedDietary = '';
+        if (bookingDietary && customerDietary) {
+          combinedDietary = `${customerDietary}; ${bookingDietary}`;
+        } else if (bookingDietary) {
+          combinedDietary = bookingDietary;
+        } else if (customerDietary) {
+          combinedDietary = customerDietary;
+        }
+        
+        return {
+          booking_id: item.booking_id,
+          passengers_attending: item.passengers_attending,
+          lead_passenger_name: `${item.bookings.customers.first_name} ${item.bookings.customers.last_name}`,
+          passenger_2_name: item.bookings.passenger_2_name || undefined,
+          passenger_3_name: item.bookings.passenger_3_name || undefined, 
+          dietary_restrictions: combinedDietary || undefined
+        };
+      }) || [];
 
       console.log('Activity passengers fetched:', passengers);
       return passengers;
