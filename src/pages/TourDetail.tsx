@@ -169,7 +169,7 @@ export default function TourDetail() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setEditTourModalOpen(true)}
+                  onClick={() => navigate(`/tours/${id}/edit`)}
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit

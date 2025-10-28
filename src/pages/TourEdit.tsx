@@ -1,0 +1,433 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Save } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { formatDateForInput } from "@/lib/utils";
+import { useUpdateTour, useTours } from "@/hooks/useTours";
+import { supabase } from "@/integrations/supabase/client";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+
+export default function TourEdit() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { data: tours, isLoading } = useTours();
+  const tour = tours?.find(t => t.id === id);
+  
+  const [formData, setFormData] = useState({
+    name: "",
+    tour_host: "",
+    start_date: "",
+    end_date: "",
+    location: "",
+    pickup_point: "",
+    status: "pending",
+    notes: "",
+    inclusions: "",
+    exclusions: "",
+    price_single: "",
+    price_double: "",
+    price_twin: "",
+    deposit_required: "",
+    instalment_amount: "",
+    instalment_date: "",
+    final_payment_date: "",
+    capacity: "",
+    minimum_passengers_required: ""
+  });
+
+  const updateTourMutation = useUpdateTour();
+
+  useEffect(() => {
+    const fetchTourData = async () => {
+      if (tour && id) {
+        const { data, error } = await supabase
+          .from('tours')
+          .select('minimum_passengers_required')
+          .eq('id', id)
+          .single();
+        
+        if (!error && data) {
+          setFormData({
+            name: tour.name,
+            tour_host: tour.tour_host || "",
+            start_date: tour.start_date ? formatDateForInput(tour.start_date) : "",
+            end_date: tour.end_date ? formatDateForInput(tour.end_date) : "",
+            location: tour.location,
+            pickup_point: tour.pickup_point,
+            status: tour.status,
+            notes: tour.notes,
+            inclusions: tour.inclusions,
+            exclusions: tour.exclusions,
+            price_single: tour.price_single?.toString() || "",
+            price_double: tour.price_double?.toString() || "",
+            price_twin: tour.price_twin?.toString() || "",
+            deposit_required: tour.deposit_required?.toString() || "",
+            instalment_amount: tour.instalment_amount?.toString() || "",
+            instalment_date: tour.instalment_date ? formatDateForInput(tour.instalment_date) : "",
+            final_payment_date: tour.final_payment_date ? formatDateForInput(tour.final_payment_date) : "",
+            capacity: tour.capacity?.toString() || "",
+            minimum_passengers_required: data.minimum_passengers_required?.toString() || ""
+          });
+        }
+      }
+    };
+    
+    fetchTourData();
+  }, [tour, id]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.name || !formData.start_date || !formData.end_date) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields (Name, Start Date, End Date).",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (new Date(formData.start_date) >= new Date(formData.end_date)) {
+      toast({
+        title: "Validation Error",
+        description: "End date must be after start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const startDate = new Date(formData.start_date);
+    const endDate = new Date(formData.end_date);
+    const timeDiff = endDate.getTime() - startDate.getTime();
+    const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+    const days = daysDiff + 1;
+    const nights = daysDiff;
+
+    const updateData = {
+      name: formData.name,
+      start_date: formData.start_date,
+      end_date: formData.end_date,
+      days: days,
+      nights: nights,
+      location: formData.location || null,
+      pickup_point: formData.pickup_point || null,
+      status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past',
+      notes: formData.notes || null,
+      inclusions: formData.inclusions || null,
+      exclusions: formData.exclusions || null,
+      price_single: formData.price_single ? parseFloat(formData.price_single) : null,
+      price_double: formData.price_double ? parseFloat(formData.price_double) : null,
+      price_twin: formData.price_twin ? parseFloat(formData.price_twin) : null,
+      deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
+      instalment_amount: formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
+      instalment_date: formData.instalment_date || null,
+      final_payment_date: formData.final_payment_date || null,
+      capacity: formData.capacity ? parseInt(formData.capacity) : null,
+      minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
+    };
+
+    updateTourMutation.mutate({
+      tourId: id!,
+      updates: updateData
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Tour Updated",
+          description: "Tour details have been successfully updated.",
+          duration: 6000,
+        });
+        navigate(`/tours/${id}`);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: `Failed to update tour: ${error.message || 'Please try again.'}`,
+          variant: "destructive",
+        });
+      },
+    });
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  if (!tour) {
+    return (
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Tour Not Found</h1>
+        <Button onClick={() => navigate("/")}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 p-6">
+      <AppBreadcrumbs
+        items={[
+          { label: "Tours", href: "/?tab=tours" },
+          { label: tour.name, href: `/tours/${tour.id}` },
+          { label: "Edit" }
+        ]}
+      />
+
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold">Edit Tour: {tour.name}</h1>
+        <Button
+          variant="outline"
+          onClick={() => navigate(`/tours/${id}`)}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Cancel
+        </Button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6 bg-card rounded-lg border p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Tour Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tour_host">Tour Host</Label>
+            <Input
+              id="tour_host"
+              value={formData.tour_host || 'TBD'}
+              readOnly
+              className="bg-muted text-muted-foreground"
+              placeholder="Automatically set from Host booking"
+            />
+            <p className="text-xs text-muted-foreground">
+              Automatically populated from the lead passenger of the booking with "Host" status
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              value={formData.location}
+              onChange={(e) => handleInputChange("location", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="start_date">Start Date *</Label>
+            <Input
+              id="start_date"
+              type="date"
+              value={formData.start_date}
+              onChange={(e) => handleInputChange("start_date", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="end_date">End Date *</Label>
+            <Input
+              id="end_date"
+              type="date"
+              value={formData.end_date}
+              onChange={(e) => handleInputChange("end_date", e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pickup_point">Start Location</Label>
+            <Input
+              id="pickup_point"
+              value={formData.pickup_point}
+              onChange={(e) => handleInputChange("pickup_point", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="capacity">Max Capacity</Label>
+            <Input
+              id="capacity"
+              type="number"
+              value={formData.capacity}
+              onChange={(e) => handleInputChange("capacity", e.target.value)}
+              placeholder="e.g., 50"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="minimum_passengers_required">Minimum Passengers Required</Label>
+            <Input
+              id="minimum_passengers_required"
+              type="number"
+              value={formData.minimum_passengers_required}
+              onChange={(e) => handleInputChange("minimum_passengers_required", e.target.value)}
+              placeholder="e.g., 20"
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="sold_out">Sold Out</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="past">Past</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="price_single">Single Price ($)</Label>
+            <Input
+              id="price_single"
+              type="number"
+              step="0.01"
+              value={formData.price_single}
+              onChange={(e) => handleInputChange("price_single", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="price_double">Double Price ($)</Label>
+            <Input
+              id="price_double"
+              type="number"
+              step="0.01"
+              value={formData.price_double}
+              onChange={(e) => handleInputChange("price_double", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="price_twin">Twin Price ($)</Label>
+            <Input
+              id="price_twin"
+              type="number"
+              step="0.01"
+              value={formData.price_twin}
+              onChange={(e) => handleInputChange("price_twin", e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="deposit_required">Deposit Required ($)</Label>
+            <Input
+              id="deposit_required"
+              type="number"
+              step="0.01"
+              value={formData.deposit_required}
+              onChange={(e) => handleInputChange("deposit_required", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
+            <Input
+              id="instalment_amount"
+              type="number"
+              step="0.01"
+              value={formData.instalment_amount}
+              onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="instalment_date">Instalment Due Date</Label>
+            <Input
+              id="instalment_date"
+              type="date"
+              value={formData.instalment_date}
+              onChange={(e) => handleInputChange("instalment_date", e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="final_payment_date">Final Payment Date</Label>
+            <Input
+              id="final_payment_date"
+              type="date"
+              value={formData.final_payment_date}
+              onChange={(e) => handleInputChange("final_payment_date", e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="inclusions">Inclusions</Label>
+          <Textarea
+            id="inclusions"
+            value={formData.inclusions}
+            onChange={(e) => handleInputChange("inclusions", e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="exclusions">Exclusions</Label>
+          <Textarea
+            id="exclusions"
+            value={formData.exclusions}
+            onChange={(e) => handleInputChange("exclusions", e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => handleInputChange("notes", e.target.value)}
+            rows={3}
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate(`/tours/${id}`)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={updateTourMutation.isPending}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {updateTourMutation.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

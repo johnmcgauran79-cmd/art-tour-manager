@@ -10,6 +10,8 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import TourDetail from "./pages/TourDetail";
+import TourEdit from "./pages/TourEdit";
+import TourItinerary from "./pages/TourItinerary";
 import BookingDetail from "./pages/BookingDetail";
 import TaskDetail from "./pages/TaskDetail";
 import ContactDetail from "./pages/ContactDetail";
@@ -93,6 +95,26 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <ContactDetail />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tours/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <TourEdit />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tours/:id/itinerary"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <TourItinerary />
                     </AppLayout>
                   </ProtectedRoute>
                 }
