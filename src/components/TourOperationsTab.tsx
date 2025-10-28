@@ -35,8 +35,6 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
-  const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<any | null>(null);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
@@ -131,19 +129,8 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     setReportsModalOpen(false);
     setSelectedReportType(null);
     
-    // Find the booking by ID and set it as selected
-    const booking = tourBookings.find(b => b.id === bookingId);
-    if (booking) {
-      setSelectedBooking(booking);
-      setEditBookingModalOpen(true);
-    }
-  };
-
-  const handleEditBookingModalClose = (open: boolean) => {
-    setEditBookingModalOpen(open);
-    if (!open) {
-      setSelectedBooking(null);
-    }
+    // Navigate to booking detail page
+    navigate(`/bookings/${bookingId}`);
   };
 
   const handleTaskClick = (task: Task) => {
@@ -460,13 +447,6 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         tourName={tourName}
         open={cleanupModalOpen}
         onOpenChange={setCleanupModalOpen}
-      />
-
-      <BookingDetailModal
-        booking={selectedBooking}
-        open={editBookingModalOpen}
-        onOpenChange={handleEditBookingModalClose}
-        defaultTab="activities"
       />
     </div>
   );
