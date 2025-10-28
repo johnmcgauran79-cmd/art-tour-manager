@@ -186,13 +186,26 @@ export default function TourEdit() {
 
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Edit Tour: {tour.name}</h1>
-        <Button
-          variant="outline"
-          onClick={() => navigate(`/tours/${id}`)}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Cancel
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/tours/${id}`)}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Tour
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            type="submit"
+            onClick={handleSubmit}
+            disabled={updateTourMutation.isPending}
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {updateTourMutation.isPending ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-card rounded-lg border p-6">

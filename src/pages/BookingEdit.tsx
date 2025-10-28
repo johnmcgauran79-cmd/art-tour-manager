@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft } from "lucide-react";
+import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft, Save } from "lucide-react";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -274,14 +274,25 @@ export default function BookingEdit() {
             )}
           </div>
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/bookings/${booking.id}`)}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Booking
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/bookings/${booking.id}`)}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Booking
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSubmit}
+              disabled={updateBooking.isPending}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -570,7 +581,8 @@ export default function BookingEdit() {
                 type="submit" 
                 disabled={updateBooking.isPending}
               >
-                {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                <Save className="mr-2 h-4 w-4" />
+                {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>
@@ -601,7 +613,8 @@ export default function BookingEdit() {
                   onClick={() => handleSubmit()}
                   disabled={updateBooking.isPending}
                 >
-                  {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                  <Save className="mr-2 h-4 w-4" />
+                  {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>
@@ -624,7 +637,8 @@ export default function BookingEdit() {
                   onClick={() => handleSubmit()}
                   disabled={updateBooking.isPending}
                 >
-                  {updateBooking.isPending ? 'Updating...' : 'Update Booking'}
+                  <Save className="mr-2 h-4 w-4" />
+                  {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>
@@ -704,7 +718,8 @@ export default function BookingEdit() {
               onClick={() => handleSubmit()}
               disabled={updateBooking.isPending}
             >
-              {updateBooking.isPending ? 'Updating...' : 'Update Medical & Emergency Info'}
+              <Save className="mr-2 h-4 w-4" />
+              {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </TabsContent>
@@ -768,7 +783,8 @@ export default function BookingEdit() {
               onClick={() => handleSubmit()}
               disabled={updateBooking.isPending}
             >
-              {updateBooking.isPending ? 'Updating...' : 'Update Travel Documents'}
+              <Save className="mr-2 h-4 w-4" />
+              {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </TabsContent>
