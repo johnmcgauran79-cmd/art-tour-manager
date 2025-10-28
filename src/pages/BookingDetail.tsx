@@ -176,7 +176,7 @@ export default function BookingDetail() {
 
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="details">
               <FileText className="h-4 w-4 mr-2" />
               Details
@@ -188,6 +188,14 @@ export default function BookingDetail() {
             <TabsTrigger value="activities">
               <MapPin className="h-4 w-4 mr-2" />
               Activities
+            </TabsTrigger>
+            <TabsTrigger value="medical">
+              <Heart className="h-4 w-4 mr-2" />
+              Medical & Emergency
+            </TabsTrigger>
+            <TabsTrigger value="travel">
+              <FileText className="h-4 w-4 mr-2" />
+              Travel Docs
             </TabsTrigger>
             <TabsTrigger value="comments">
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -208,6 +216,7 @@ export default function BookingDetail() {
                 <InfoRow label="Lead Passenger" value={leadPassengerName} />
                 <InfoRow label="Email" value={booking.customers?.email} />
                 <InfoRow label="Phone" value={booking.customers?.phone} />
+                <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
                 <InfoRow label="Secondary Contact" value={secondaryContactName} />
                 <InfoRow label="Passenger Count" value={booking.passenger_count?.toString()} />
                 <InfoRow label="Passenger 2" value={booking.passenger_2_name} />
@@ -222,9 +231,9 @@ export default function BookingDetail() {
                 </div>
               )}
 
-              {booking.dietary_restrictions && (
+              {booking.invoice_notes && (
                 <div className="pt-4 border-t">
-                  <InfoRow label="Dietary Restrictions" value={booking.dietary_restrictions} />
+                  <InfoRow label="Invoice Notes" value={booking.invoice_notes} />
                 </div>
               )}
             </div>
@@ -240,34 +249,6 @@ export default function BookingDetail() {
                 </div>
               </div>
             )}
-
-            {/* Emergency & Travel Info */}
-            {(booking.emergency_contact_name || booking.passport_number) && (
-              <div className="bg-card rounded-lg border p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Emergency & Travel Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label="Emergency Contact" value={booking.emergency_contact_name} />
-                  <InfoRow label="Emergency Phone" value={booking.emergency_contact_phone} />
-                  <InfoRow label="Relationship" value={booking.emergency_contact_relationship} />
-                  <InfoRow label="Passport Number" value={booking.passport_number} />
-                  <InfoRow label="Passport Expiry" value={booking.passport_expiry_date ? formatDateToDDMMYYYY(booking.passport_expiry_date) : null} />
-                  <InfoRow label="Passport Country" value={booking.passport_country} />
-                  <InfoRow label="ID Number" value={booking.id_number} />
-                  <InfoRow label="Nationality" value={booking.nationality} />
-                </div>
-              </div>
-            )}
-
-            {/* Medical Info */}
-            {(booking.medical_conditions || booking.accessibility_needs) && (
-              <div className="bg-card rounded-lg border p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Medical & Accessibility</h3>
-                <div className="space-y-2">
-                  <InfoRow label="Medical Conditions" value={booking.medical_conditions} />
-                  <InfoRow label="Accessibility Needs" value={booking.accessibility_needs} />
-                </div>
-              </div>
-            )}
           </TabsContent>
 
           <TabsContent value="hotels" className="space-y-4 mt-6">
@@ -276,17 +257,29 @@ export default function BookingDetail() {
               {hotelBookings.length === 0 ? (
                 <p className="text-muted-foreground">No hotel allocations yet</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {hotelBookings.map((hb: any) => {
                     const hotel = hotels.find(h => h.id === hb.hotel_id);
                     return (
-                      <div key={hb.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                        <div>
-                          <p className="font-medium">{hotel?.name || 'Unknown Hotel'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {hb.room_type} • {hb.nights} night(s)
-                          </p>
+                      <div key={hb.id} className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">{hotel?.name || 'Unknown Hotel'}</h4>
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <InfoRow label="Check-in" value={hb.check_in_date ? formatDateToDDMMYYYY(hb.check_in_date) : null} />
+                          <InfoRow label="Check-out" value={hb.check_out_date ? formatDateToDDMMYYYY(hb.check_out_date) : null} />
+                          <InfoRow label="Nights" value={hb.nights?.toString()} />
+                          <InfoRow label="Room Type" value={hb.room_type} />
+                          <InfoRow label="Bedding" value={hb.bedding} />
+                          <InfoRow label="Room Upgrade" value={hb.room_upgrade} />
+                          <InfoRow label="Confirmation Number" value={hb.confirmation_number} />
+                          <InfoRow label="Allocated" value={hb.allocated ? 'Yes' : 'No'} />
+                        </div>
+                        {hb.room_requests && (
+                          <div className="mt-3 pt-3 border-t">
+                            <InfoRow label="Room Requests" value={hb.room_requests} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -301,22 +294,60 @@ export default function BookingDetail() {
               {activityBookings.length === 0 ? (
                 <p className="text-muted-foreground">No activity allocations yet</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {activityBookings.map((ab: any) => {
                     const activity = activities.find(a => a.id === ab.activity_id);
                     return (
-                      <div key={ab.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                        <div>
-                          <p className="font-medium">{activity?.name || 'Unknown Activity'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {ab.status}
-                          </p>
+                      <div key={ab.id} className="p-4 border rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium">{activity?.name || 'Unknown Activity'}</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <InfoRow label="Passengers Attending" value={ab.passengers_attending?.toString()} />
+                          <InfoRow label="Activity Date" value={activity?.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : null} />
+                          <InfoRow label="Location" value={activity?.location} />
+                          <InfoRow label="Start Time" value={activity?.start_time} />
                         </div>
                       </div>
                     );
                   })}
                 </div>
               )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="medical" className="space-y-4 mt-6">
+            <div className="bg-card rounded-lg border p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-4">Medical Information</h3>
+                <div className="space-y-4">
+                  <InfoRow label="Medical Conditions" value={booking.medical_conditions} />
+                  <InfoRow label="Accessibility Needs" value={booking.accessibility_needs} />
+                  <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
+                </div>
+              </div>
+
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoRow label="Emergency Contact Name" value={booking.emergency_contact_name} />
+                  <InfoRow label="Emergency Contact Phone" value={booking.emergency_contact_phone} />
+                  <InfoRow label="Relationship" value={booking.emergency_contact_relationship} />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="travel" className="space-y-4 mt-6">
+            <div className="bg-card rounded-lg border p-6">
+              <h3 className="text-lg font-semibold mb-4">Travel Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InfoRow label="Passport Number" value={booking.passport_number} />
+                <InfoRow label="Passport Expiry Date" value={booking.passport_expiry_date ? formatDateToDDMMYYYY(booking.passport_expiry_date) : null} />
+                <InfoRow label="Passport Country" value={booking.passport_country} />
+                <InfoRow label="ID Number" value={booking.id_number} />
+                <InfoRow label="Nationality" value={booking.nationality} />
+              </div>
             </div>
           </TabsContent>
 
