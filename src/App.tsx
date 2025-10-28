@@ -13,6 +13,7 @@ import TourDetail from "./pages/TourDetail";
 import TourEdit from "./pages/TourEdit";
 import TourItinerary from "./pages/TourItinerary";
 import BookingDetail from "./pages/BookingDetail";
+import BookingEdit from "./pages/BookingEdit";
 import TaskDetail from "./pages/TaskDetail";
 import ContactDetail from "./pages/ContactDetail";
 
@@ -75,6 +76,16 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <BookingDetail />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <BookingEdit />
                     </AppLayout>
                   </ProtectedRoute>
                 }

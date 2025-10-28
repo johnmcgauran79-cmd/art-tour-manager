@@ -149,7 +149,7 @@ export default function BookingDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setEditModalOpen(true)}
+              onClick={() => navigate(`/bookings/${id}/edit`)}
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit
