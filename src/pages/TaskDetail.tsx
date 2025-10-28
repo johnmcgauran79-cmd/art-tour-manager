@@ -1,13 +1,10 @@
-import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { CheckCircle, Clock, User, Calendar, MapPin, AlertTriangle, Link, Trash2, X, Save, UserPlus, ArrowLeft } from "lucide-react";
-import { Task, useUpdateTask, useDeleteTask, useTasks } from "@/hooks/useTasks";
+import { Clock, AlertTriangle, Trash2, Save, ArrowLeft } from "lucide-react";
+import { useUpdateTask, useDeleteTask, useTasks } from "@/hooks/useTasks";
 import { useAutoUnblockTasks } from "@/hooks/useTaskDependencies";
 import { formatDistanceToNow, format } from "date-fns";
 import { TaskCommentsSection } from "@/components/TaskCommentsSection";
@@ -26,50 +23,10 @@ export default function TaskDetail() {
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find(t => t.id === id);
   
-  const [editedTask, setEditedTask] = useState<Partial<Task>>({});
-  
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const autoUnblock = useAutoUnblockTasks();
   const { data: tours } = useTours();
-
-  useEffect(() => {
-    if (task) {
-      setEditedTask({
-        title: task.title,
-        description: task.description,
-        status: task.status,
-        priority: task.priority,
-        category: task.category,
-        due_date: task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '',
-        url_reference: task.url_reference || '',
-        tour_id: task.tour_id || ''
-      });
-    }
-  }, [task]);
-
-  const handleSave = () => {
-    if (!task || !hasChanges()) return;
-    
-    updateTask.mutate({
-      taskId: task.id,
-      updates: editedTask
-    }, {
-      onSuccess: () => {
-        toast({
-          title: "Success",
-          description: "Task updated successfully",
-        });
-      },
-      onError: (error: any) => {
-        toast({
-          title: "Error",
-          description: error.message || "Failed to update task",
-          variant: "destructive",
-        });
-      },
-    });
-  };
 
   const handleDelete = () => {
     if (!task) return;
@@ -111,20 +68,6 @@ export default function TaskDetail() {
     });
   };
 
-  const hasChanges = () => {
-    if (!task) return false;
-    
-    return (
-      editedTask.title !== task.title ||
-      editedTask.description !== task.description ||
-      editedTask.status !== task.status ||
-      editedTask.priority !== task.priority ||
-      editedTask.category !== task.category ||
-      editedTask.due_date !== (task.due_date ? format(new Date(task.due_date), 'yyyy-MM-dd\'T\'HH:mm') : '') ||
-      editedTask.url_reference !== (task.url_reference || '') ||
-      editedTask.tour_id !== (task.tour_id || '')
-    );
-  };
 
   if (isLoading) {
     return (
@@ -191,11 +134,7 @@ export default function TaskDetail() {
         
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <Input
-              value={editedTask.title || ''}
-              onChange={(e) => setEditedTask({ ...editedTask, title: e.target.value })}
-              className="text-3xl font-bold border-0 px-0 focus-visible:ring-0"
-            />
+            <h1 className="text-3xl font-bold">{task.title}</h1>
             <div className="flex gap-2 mt-2">
               <Badge className={getPriorityColor(task.priority)}>
                 {task.priority}
@@ -219,17 +158,14 @@ export default function TaskDetail() {
               Back
             </Button>
             
-            {hasChanges() && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={handleSave}
-                disabled={updateTask.isPending}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/tasks/${id}/edit`)}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
@@ -309,60 +245,42 @@ export default function TaskDetail() {
             <div className="bg-card rounded-lg border p-6 space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Description</label>
-                <Textarea
-                  value={editedTask.description || ''}
-                  onChange={(e) => setEditedTask({ ...editedTask, description: e.target.value })}
-                  rows={6}
-                />
+                <p className="text-sm whitespace-pre-wrap">{task.description || '—'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium mb-2 block">Priority</label>
-                  <Select
-                    value={editedTask.priority}
-                    onValueChange={(value) => setEditedTask({ ...editedTask, priority: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <p className="text-sm">{task.priority}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Category</label>
-                  <Input
-                    value={editedTask.category || ''}
-                    onChange={(e) => setEditedTask({ ...editedTask, category: e.target.value as any })}
-                  />
+                  <p className="text-sm">{task.category || '—'}</p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Due Date</label>
-                  <Input
-                    type="datetime-local"
-                    value={editedTask.due_date || ''}
-                    onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
-                  />
+                  <p className="text-sm">
+                    {task.due_date ? format(new Date(task.due_date), 'PPp') : '—'}
+                  </p>
                 </div>
 
                 <div>
                   <label className="text-sm font-medium mb-2 block">Reference URL</label>
-                  <Input
-                    value={editedTask.url_reference || ''}
-                    onChange={(e) => setEditedTask({ ...editedTask, url_reference: e.target.value })}
-                    placeholder="https://..."
-                  />
+                  {task.url_reference ? (
+                    <a href={task.url_reference} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                      {task.url_reference}
+                    </a>
+                  ) : (
+                    <p className="text-sm">—</p>
+                  )}
                 </div>
               </div>
 
-              <TaskAssignmentSection taskId={task.id} />
+              <div className="border-t pt-4">
+                <TaskAssignmentSection taskId={task.id} />
+              </div>
             </div>
           </TabsContent>
 

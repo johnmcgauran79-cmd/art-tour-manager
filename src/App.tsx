@@ -15,7 +15,9 @@ import TourItinerary from "./pages/TourItinerary";
 import BookingDetail from "./pages/BookingDetail";
 import BookingEdit from "./pages/BookingEdit";
 import TaskDetail from "./pages/TaskDetail";
+import TaskEdit from "./pages/TaskEdit";
 import ContactDetail from "./pages/ContactDetail";
+import ContactEdit from "./pages/ContactEdit";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,11 +103,31 @@ function App() {
                 }
               />
               <Route
+                path="/tasks/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <TaskEdit />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path="/contacts/:id"
                 element={
                   <ProtectedRoute>
                     <AppLayout>
                       <ContactDetail />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/contacts/:id/edit"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ContactEdit />
                     </AppLayout>
                   </ProtectedRoute>
                 }
