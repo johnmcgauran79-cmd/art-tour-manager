@@ -13,6 +13,7 @@ import { Customer } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 interface EditContactModalProps {
   contact: Partial<Customer> | null;
@@ -152,13 +153,20 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle>Edit Contact</DialogTitle>
-              <DialogDescription>
-                Update contact information and view their bookings.
-              </DialogDescription>
-            </div>
+          <div className="space-y-3">
+            <AppBreadcrumbs
+              items={[
+                { label: "Contacts" },
+                { label: `${contact?.first_name} ${contact?.last_name}` },
+              ]}
+            />
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>Edit Contact</DialogTitle>
+                <DialogDescription>
+                  Update contact information and view their bookings.
+                </DialogDescription>
+              </div>
             <div className="flex items-center gap-2">
               {canDelete && (
                 <AlertDialog>
@@ -210,6 +218,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
               >
                 Close
               </Button>
+            </div>
             </div>
           </div>
         </DialogHeader>

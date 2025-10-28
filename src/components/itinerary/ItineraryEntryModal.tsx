@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { ItineraryDay, ItineraryEntry, useUpdateItineraryEntry } from "@/hooks/useItinerary";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 interface ItineraryEntryModalProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface ItineraryEntryModalProps {
   day: ItineraryDay;
   entry?: ItineraryEntry | null;
   tourId: string;
+  tourName?: string;
 }
 
 export const ItineraryEntryModal = ({ 
@@ -20,7 +22,8 @@ export const ItineraryEntryModal = ({
   onOpenChange, 
   day, 
   entry, 
-  tourId 
+  tourId,
+  tourName 
 }: ItineraryEntryModalProps) => {
   const [timeSlot, setTimeSlot] = useState("");
   const [subject, setSubject] = useState("");
@@ -76,9 +79,21 @@ export const ItineraryEntryModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>
-            {entry ? 'Edit Activity' : 'Add New Activity'}
-          </DialogTitle>
+          <div className="space-y-3">
+            {tourName && (
+              <AppBreadcrumbs
+                items={[
+                  { label: "Tours" },
+                  { label: tourName },
+                  { label: "Itinerary" },
+                  { label: `Day ${day.day_number}` },
+                ]}
+              />
+            )}
+            <DialogTitle>
+              {entry ? 'Edit Activity' : 'Add New Activity'}
+            </DialogTitle>
+          </div>
         </DialogHeader>
         
         <div className="space-y-4 overflow-y-auto pr-2">

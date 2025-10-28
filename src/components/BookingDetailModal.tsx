@@ -16,6 +16,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { useTours } from "@/hooks/useTours";
 
 interface Booking {
   id: string;
@@ -91,6 +93,9 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
   const { data: activities = [] } = useActivities(booking?.tour_id || '');
   const { data: hotels = [] } = useHotels(booking?.tour_id || '');
   const { data: comments = [] } = useBookingComments(booking?.id || '');
+  const { data: tours = [] } = useTours();
+  
+  const tour = tours.find(t => t.id === booking?.tour_id);
 
   const handleDelete = () => {
     if (!booking) return;
@@ -122,8 +127,16 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
       <Dialog open={open && !editModalOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="flex items-center gap-2">
+            <div className="space-y-3">
+              <AppBreadcrumbs
+                items={[
+                  { label: "Bookings" },
+                  ...(tour ? [{ label: tour.name }] : []),
+                  { label: `${booking.customers?.first_name} ${booking.customers?.last_name}` },
+                ]}
+              />
+              <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-2">
                 Booking Details - {booking.customers?.first_name} {booking.customers?.last_name}
                 <Badge className={statusColors[booking.status]}>{booking.status.toUpperCase()}</Badge>
               </DialogTitle>
@@ -150,6 +163,7 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
                   <Button variant="outline" size="sm">Close</Button>
                 </DialogClose>
               </div>
+            </div>
             </div>
           </DialogHeader>
 

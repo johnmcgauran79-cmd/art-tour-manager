@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSecureDeleteTour } from "@/hooks/useSecureTours";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 interface TourDetailModalProps {
   tour: Tour | null;
@@ -218,7 +219,14 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <div className="flex items-center justify-between">
+            <div className="space-y-3">
+              <AppBreadcrumbs
+                items={[
+                  { label: "Tours" },
+                  { label: currentTour?.name || "Tour Details" },
+                ]}
+              />
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-brand-navy/10 rounded-lg flex items-center justify-center">
                   <MapPin className="h-5 w-5 text-brand-navy" />
@@ -284,6 +292,7 @@ export const TourDetailModal = ({ tour, open, onOpenChange }: TourDetailModalPro
                   </Button>
                 </DialogClose>
               </div>
+            </div>
             </div>
           </DialogHeader>
 

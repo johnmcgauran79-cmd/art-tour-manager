@@ -12,9 +12,10 @@ interface ItineraryDayCardProps {
   day: ItineraryDay;
   dayNumber: number;
   tourId: string;
+  tourName?: string;
 }
 
-export const ItineraryDayCard = ({ day, dayNumber, tourId }: ItineraryDayCardProps) => {
+export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: ItineraryDayCardProps) => {
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const deleteEntry = useDeleteItineraryEntry();
@@ -116,6 +117,7 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId }: ItineraryDayCardPro
           day={day}
           entry={editingEntry}
           tourId={tourId}
+          tourName={tourName}
         />
       </CardContent>
     </Card>

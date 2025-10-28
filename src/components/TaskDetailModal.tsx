@@ -16,6 +16,7 @@ import { TaskDependencyChain } from "@/components/TaskDependencyChain";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTours } from "@/hooks/useTours";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -153,15 +154,25 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
 
   const dependentTask = getDependentTaskInfo();
 
+  const tour = tours?.find(t => t.id === task.tour_id);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5" />
-              Task Details
-            </div>
+          <div className="space-y-3">
+            <AppBreadcrumbs
+              items={[
+                { label: "Tasks" },
+                ...(tour ? [{ label: tour.name }] : []),
+                { label: task.title },
+              ]}
+            />
+            <DialogTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                Task Details
+              </div>
             <div className="flex items-center gap-2">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -204,10 +215,11 @@ export const TaskDetailModal = ({ task, open, onOpenChange }: TaskDetailModalPro
                 Close
               </Button>
             </div>
-          </DialogTitle>
-          <DialogDescription>
-            View and edit task details, assignments, comments, and attachments.
-          </DialogDescription>
+            </DialogTitle>
+            <DialogDescription>
+              View and edit task details, assignments, comments, and attachments.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

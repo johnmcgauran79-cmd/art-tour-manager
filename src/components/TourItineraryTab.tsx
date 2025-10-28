@@ -106,6 +106,7 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
             day={day}
             dayNumber={index + 1}
             tourId={tour.id}
+            tourName={tour.name}
           />
         ))}
       </div>
