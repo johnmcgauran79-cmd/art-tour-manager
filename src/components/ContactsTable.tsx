@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,13 +9,12 @@ import { Plus, Search, ChevronLeft, ChevronRight, Upload, Download } from "lucid
 import { useCustomers, useDeleteCustomer } from "@/hooks/useCustomers";
 import { ContactTableRow } from "./ContactTableRow";
 import { AddContactModal } from "./AddContactModal";
-import { EditContactModal } from "./EditContactModal";
 import { ContactExportModal } from "./ContactExportModal";
 import { ContactImportModal } from "./ContactImportModal";
 
 export const ContactsTable = () => {
+  const navigate = useNavigate();
   const [showAddContact, setShowAddContact] = useState(false);
-  const [editingContact, setEditingContact] = useState<any>(null);
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -45,7 +45,7 @@ export const ContactsTable = () => {
   };
 
   const handleContactClick = (customer: any) => {
-    setEditingContact(customer);
+    navigate(`/contacts/${customer.id}`);
   };
 
   if (isLoading) {
@@ -194,14 +194,6 @@ export const ContactsTable = () => {
         open={showImport}
         onOpenChange={setShowImport}
       />
-
-      {editingContact && (
-        <EditContactModal
-          contact={editingContact}
-          open={!!editingContact}
-          onOpenChange={(open) => !open && setEditingContact(null)}
-        />
-      )}
     </>
   );
 };

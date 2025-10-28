@@ -12,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import TourDetail from "./pages/TourDetail";
 import BookingDetail from "./pages/BookingDetail";
 import TaskDetail from "./pages/TaskDetail";
+import ContactDetail from "./pages/ContactDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,16 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <TaskDetail />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/contacts/:id"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ContactDetail />
                     </AppLayout>
                   </ProtectedRoute>
                 }
