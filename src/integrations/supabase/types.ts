@@ -1625,6 +1625,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      migrate_dietary_to_customer_profile: {
+        Args: { p_customer_id: string; p_dietary_value: string }
+        Returns: undefined
+      }
       secure_customer_search: {
         Args: { search_term: string }
         Returns: {
