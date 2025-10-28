@@ -12,6 +12,8 @@ import { useBookings } from "@/hooks/useBookings";
 import { AddTourModal } from "@/components/AddTourModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
+import { TourCard } from "@/components/cards/TourCard";
+import { ViewToggle } from "@/components/ViewToggle";
 
 interface ToursTableProps {
   showOnlyActive?: boolean;
@@ -24,6 +26,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const { data: bookings } = useBookings();
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [view, setView] = useState<'grid' | 'table'>('grid');
 
   // Filter tours based on showOnlyActive prop first
   const filteredByStatus = tours?.filter(tour => {
@@ -100,7 +103,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
               </Button>
             </div>
           </div>
-          <div className="flex items-center space-x-2 mt-4">
+          <div className="flex items-center gap-3 mt-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -110,6 +113,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                 className="pl-10"
               />
             </div>
+            <ViewToggle view={view} onViewChange={setView} />
             {searchQuery && (
               <Button
                 variant="outline"
@@ -138,6 +142,18 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                   Create Your First Tour
                 </Button>
               )}
+            </div>
+          ) : view === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {searchFilteredTours.map((tour) => (
+                <TourCard
+                  key={tour.id}
+                  tour={tour}
+                  totalPassengers={getTotalPassengers(tour.id)}
+                  onView={handleTourClick}
+                  onEdit={() => navigate(`/tours/${tour.id}/edit`)}
+                />
+              ))}
             </div>
           ) : (
             <Table>

@@ -10,6 +10,8 @@ import { Plus, Search, TrendingUp } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
+import { BookingCard } from "@/components/cards/BookingCard";
+import { ViewToggle } from "@/components/ViewToggle";
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -19,8 +21,8 @@ interface BookingsTableProps {
 export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTableProps) => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
-  
-  const { data: allBookings, isLoading } = useBookings();
+  const [view, setView] = useState<'grid' | 'table'>('grid');
+  const { data: allBookings = [], isLoading } = useBookings();
 
   // Calculate bookings this month
   const currentMonth = new Date().getMonth();
@@ -96,7 +98,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
           <CardDescription>
             Search across all bookings in the system
           </CardDescription>
-          <div className="flex items-center space-x-2 mt-4">
+          <div className="flex items-center gap-3 mt-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
@@ -106,6 +108,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                 className="pl-10"
               />
             </div>
+            <ViewToggle view={view} onViewChange={setView} />
             {searchQuery && (
               <Button
                 variant="outline"
@@ -121,6 +124,16 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
           {filteredBookings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               {searchQuery ? "No bookings found matching your search." : "No bookings found."}
+            </div>
+          ) : view === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredBookings.map((booking) => (
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  onView={handleBookingClick}
+                />
+              ))}
             </div>
           ) : (
             <div className="border rounded-lg">
