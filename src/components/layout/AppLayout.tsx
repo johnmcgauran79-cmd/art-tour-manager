@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,14 +13,23 @@ interface AppLayoutProps {
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
   const isAdmin = userRole === 'admin';
   const isMobile = useIsMobile();
 
-  // Determine active tab from current route
+  // Determine active tab from current route and query params
   const getActiveTab = () => {
     const path = location.pathname;
+    const tabParam = searchParams.get('tab');
+    
+    // If we have a tab query param on the index page, use that
+    if (path === '/' && tabParam) {
+      return tabParam;
+    }
+    
+    // Otherwise determine from the route
     if (path === '/') return 'dashboard';
     if (path.startsWith('/tours')) return 'tours';
     if (path.startsWith('/bookings')) return 'bookings';
