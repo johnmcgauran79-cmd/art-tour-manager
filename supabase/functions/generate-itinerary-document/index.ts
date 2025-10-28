@@ -185,6 +185,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           margin: 0 auto;
           padding: 20px;
           color: #333;
+          font-size: 11pt;
         }
         .header {
           text-align: center;
@@ -300,9 +301,10 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         @media print {
           @page {
             margin: 20mm;
+            size: A4;
           }
           body { 
-            font-size: 12px;
+            font-size: 10pt;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
@@ -310,24 +312,21 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
             page-break-before: auto;
             page-break-after: auto;
             page-break-inside: avoid !important;
-            break-inside: avoid !important;
+            break-inside: avoid-page !important;
             margin-bottom: 20px;
-            orphans: 3;
-            widows: 3;
+            min-height: 100px;
           }
           .day-header {
             page-break-after: avoid !important;
-            break-after: avoid !important;
+            break-after: avoid-page !important;
           }
           .activity {
             page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            orphans: 2;
-            widows: 2;
+            break-inside: avoid-page !important;
           }
           h1, h2, h3 {
             page-break-after: avoid !important;
-            break-after: avoid !important;
+            break-after: avoid-page !important;
           }
           .tour-info, .hotels-section {
             page-break-inside: avoid;
