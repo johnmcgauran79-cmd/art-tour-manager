@@ -5,6 +5,7 @@ import { Calendar, User, MapPin, AlertTriangle, Eye, Link } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/lib/statusColors";
 import { Task } from "@/hooks/useTasks";
+import { typography } from "@/lib/typography";
 
 interface TaskCardProps {
   task: Task;
@@ -23,11 +24,11 @@ export const TaskCard = ({ task, onView, showTourName = false }: TaskCardProps) 
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-base text-foreground line-clamp-2 mb-1.5">
+            <h3 className={`${typography.cardTitle} line-clamp-2 mb-1.5`}>
               {task.title}
             </h3>
             {showTourName && task.tours && (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <div className={`flex items-center gap-1.5 ${typography.metadata}`}>
                 <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                 <span className="truncate">{task.tours.name}</span>
               </div>
