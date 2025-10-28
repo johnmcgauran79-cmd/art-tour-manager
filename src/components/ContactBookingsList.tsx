@@ -1,12 +1,10 @@
-
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { format } from "date-fns";
-import { EditBookingModal } from "@/components/EditBookingModal";
 
 interface ContactBookingsListProps {
   contactId: string;
@@ -59,8 +57,7 @@ const getStatusLabel = (status: string) => {
 };
 
 export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => {
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data: bookings, isLoading, error } = useQuery({
     queryKey: ['contact-bookings', contactId],
@@ -88,49 +85,8 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
     },
   });
 
-  // Fetch the full booking details when a booking is selected
-  const { data: selectedBooking } = useQuery({
-    queryKey: ['booking-details', selectedBookingId],
-    queryFn: async () => {
-      if (!selectedBookingId) return null;
-      
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          customers!lead_passenger_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone,
-            dietary_requirements
-          ),
-          secondary_contact:customers!secondary_contact_id (
-            id,
-            first_name,
-            last_name,
-            email,
-            phone
-          )
-        `)
-        .eq('id', selectedBookingId)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!selectedBookingId,
-  });
-
   const handleRowClick = (bookingId: string) => {
-    setSelectedBookingId(bookingId);
-    setIsEditModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsEditModalOpen(false);
-    setSelectedBookingId(null);
+    navigate(`/bookings/${bookingId}`);
   };
 
   if (isLoading) {
@@ -229,14 +185,6 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
           </Table>
         </div>
       </div>
-
-      {selectedBooking && (
-        <EditBookingModal
-          booking={selectedBooking}
-          open={isEditModalOpen}
-          onOpenChange={handleCloseModal}
-        />
-      )}
     </>
   );
 };

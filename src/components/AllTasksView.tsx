@@ -1,12 +1,11 @@
-
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardList, Plus, ArrowLeft } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
-import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 import { TaskSearch } from "@/components/TaskSearch";
@@ -14,9 +13,8 @@ import { TaskSearch } from "@/components/TaskSearch";
 export const AllTasksView = () => {
   console.log('AllTasksView rendering');
   
+  const navigate = useNavigate();
   const { data: tasks, isLoading } = useMyTasks();
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'overdue' | 'critical' | 'high' | 'due_soon' | 'completed' | null>(null);
   const [searchFilters, setSearchFilters] = useState<{
@@ -37,15 +35,7 @@ export const AllTasksView = () => {
   });
 
   const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setTaskDetailModalOpen(true);
-  };
-
-  const handleTaskDetailModalClose = (open: boolean) => {
-    setTaskDetailModalOpen(open);
-    if (!open) {
-      setSelectedTask(null);
-    }
+    navigate(`/tasks/${task.id}`);
   };
 
   const handleCategoryClick = (type: 'overdue' | 'critical' | 'high' | 'due_soon' | 'completed') => {
@@ -269,12 +259,6 @@ export const AllTasksView = () => {
           </div>
         </CardContent>
       </Card>
-
-      <TaskDetailModal
-        task={selectedTask}
-        open={taskDetailModalOpen}
-        onOpenChange={handleTaskDetailModalClose}
-      />
 
       <AddTaskModal
         open={addTaskModalOpen}

@@ -1,12 +1,11 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { usePaginatedBookings } from "@/hooks/useBookings";
-import { EditBookingModal } from "./EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
@@ -29,9 +28,8 @@ interface AllBookingsModalProps {
 }
 
 export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBookingsModalProps) => {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [showEditBooking, setShowEditBooking] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const pageSize = 25;
   
   const { data: paginatedData, isLoading } = usePaginatedBookings(currentPage, pageSize);
@@ -40,8 +38,8 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
   const totalPages = Math.ceil(totalCount / pageSize);
 
   const handleBookingClick = (booking: any) => {
-    setSelectedBooking(booking);
-    setShowEditBooking(true);
+    onOpenChange(false);
+    navigate(`/bookings/${booking.id}`);
   };
 
   if (isLoading && bookings.length === 0) {
@@ -159,12 +157,6 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <EditBookingModal 
-        booking={selectedBooking} 
-        open={showEditBooking} 
-        onOpenChange={setShowEditBooking} 
-      />
     </>
   );
 };

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +9,6 @@ import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
 import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
-import { BookingDetailModal } from "@/components/BookingDetailModal";
-import { EditBookingModal } from "@/components/EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
@@ -46,11 +45,9 @@ interface TourBookingsListProps {
 }
 
 export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) => {
+  const navigate = useNavigate();
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showAddWaitlist, setShowAddWaitlist] = useState(false);
-  const [viewBookingModalOpen, setViewBookingModalOpen] = useState(false);
-  const [editBookingModalOpen, setEditBookingModalOpen] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showWaitlistOnly, setShowWaitlistOnly] = useState(false);
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
@@ -60,14 +57,12 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
   const sendBookingConfirmation = useSendBookingConfirmation();
 
   const handleViewBooking = (booking: any) => {
-    setSelectedBooking(booking);
-    setViewBookingModalOpen(true);
+    navigate(`/bookings/${booking.id}`);
   };
 
   const handleEditBooking = (e: React.MouseEvent, booking: any) => {
-    e.stopPropagation(); // Prevent row click from triggering
-    setSelectedBooking(booking);
-    setEditBookingModalOpen(true);
+    e.stopPropagation();
+    navigate(`/bookings/${booking.id}/edit`);
   };
 
   const handleDeleteBooking = (booking: any) => {
@@ -320,21 +315,6 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
         preSelectedTourId={tourId}
         defaultStatus="waitlisted"
       />
-
-      {selectedBooking && (
-        <>
-          <BookingDetailModal
-            booking={selectedBooking}
-            open={viewBookingModalOpen}
-            onOpenChange={setViewBookingModalOpen}
-          />
-          <EditBookingModal
-            booking={selectedBooking}
-            open={editBookingModalOpen}
-            onOpenChange={setEditBookingModalOpen}
-          />
-        </>
-      )}
 
       <EmailPreviewModal
         open={emailPreviewOpen}

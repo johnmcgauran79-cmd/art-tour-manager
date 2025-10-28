@@ -1,12 +1,10 @@
-
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Eye } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
-import { EditBookingModal } from "./EditBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 
 const getStatusColor = (status: string) => {
@@ -27,13 +25,11 @@ interface RecentBookingsProps {
 }
 
 export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookingsProps) => {
-  const [showEditBooking, setShowEditBooking] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const navigate = useNavigate();
   const { data: bookings, isLoading } = useBookings();
 
   const handleBookingClick = (booking: any) => {
-    setSelectedBooking(booking);
-    setShowEditBooking(true);
+    navigate(`/bookings/${booking.id}`);
   };
 
   const handleViewAll = () => {
@@ -143,12 +139,6 @@ export const RecentBookings = ({ onAddBooking, onViewAllBookings }: RecentBookin
           )}
         </CardContent>
       </Card>
-
-      <EditBookingModal 
-        booking={selectedBooking} 
-        open={showEditBooking} 
-        onOpenChange={setShowEditBooking} 
-      />
     </>
   );
 };

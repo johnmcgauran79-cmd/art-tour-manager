@@ -1,11 +1,10 @@
-
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter } from "lucide-react";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
-import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskFilters } from "@/components/TaskFilters";
 import { BulkTaskOperationsPanel } from "@/components/BulkTaskOperationsPanel";
@@ -22,6 +21,7 @@ export const EnhancedTasksTable = ({
   title = "Tasks",
   showCreateButton = true,
 }: EnhancedTasksTableProps) => {
+  const navigate = useNavigate();
   const [filters, setFilters] = useState<{
     search?: string;
     assigneeId?: string;
@@ -32,22 +32,12 @@ export const EnhancedTasksTable = ({
   }>({});
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-  const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const { data: tasks, isLoading } = useTasks(tourId, filters);
 
   const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setTaskDetailModalOpen(true);
-  };
-
-  const handleTaskDetailModalClose = (open: boolean) => {
-    setTaskDetailModalOpen(open);
-    if (!open) {
-      setSelectedTask(null);
-    }
+    navigate(`/tasks/${task.id}`);
   };
 
   const handleFiltersChange = (newFilters: typeof filters) => {
@@ -134,12 +124,6 @@ export const EnhancedTasksTable = ({
           />
         </CardContent>
       </Card>
-
-      <TaskDetailModal
-        task={selectedTask}
-        open={taskDetailModalOpen}
-        onOpenChange={handleTaskDetailModalClose}
-      />
 
       <AddTaskModal
         open={addTaskModalOpen}

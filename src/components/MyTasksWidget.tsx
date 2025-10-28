@@ -1,13 +1,11 @@
-
-
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, Plus, List, ArrowLeft } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
-import { TaskDetailModal } from "@/components/TaskDetailModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { AllTasksModal } from "@/components/AllTasksModal";
@@ -21,12 +19,11 @@ interface MyTasksWidgetProps {
 }
 
 export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onViewAllTasks }: MyTasksWidgetProps) => {
+  const navigate = useNavigate();
   const { data: tasks, isLoading } = useMyTasks();
-  const [taskDetailModalOpen, setTaskDetailModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [allTasksModalOpen, setAllTasksModalOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activeFilter, setActiveFilter] = useState<'overdue' | 'critical' | 'high' | 'due_soon' | 'completed' | null>(null);
@@ -42,15 +39,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
   }>({});
 
   const handleTaskClick = (task: Task) => {
-    setSelectedTask(task);
-    setTaskDetailModalOpen(true);
-  };
-
-  const handleTaskDetailModalClose = (open: boolean) => {
-    setTaskDetailModalOpen(open);
-    if (!open) {
-      setSelectedTask(null);
-    }
+    navigate(`/tasks/${task.id}`);
   };
 
   const handleFilteredTasksModalClose = (open: boolean) => {
@@ -314,12 +303,6 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
           </CardContent>
         </Card>
 
-        <TaskDetailModal
-          task={selectedTask}
-          open={taskDetailModalOpen}
-          onOpenChange={handleTaskDetailModalClose}
-        />
-
         {!hideAddButton && (
           <AddTaskModal
             open={addTaskModalOpen}
@@ -368,12 +351,6 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
           />
         </div>
       )}
-
-      <TaskDetailModal
-        task={selectedTask}
-        open={taskDetailModalOpen}
-        onOpenChange={handleTaskDetailModalClose}
-      />
     </div>
   );
 };
