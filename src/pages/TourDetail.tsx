@@ -48,45 +48,40 @@ export default function TourDetail() {
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
-  const [tourForEdit, setTourForEdit] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState("overview");
-  const [transformedTour, setTransformedTour] = useState<any>(null);
 
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
 
-  // Transform tour data
-  useEffect(() => {
-    if (tour) {
-      const transformed = {
-        id: tour.id,
-        name: tour.name,
-        dates: formatDateRange(tour.start_date, tour.end_date),
-        duration: `${tour.days} days / ${tour.nights} nights`,
-        location: tour.location || "",
-        pickupPoint: tour.pickup_point || "",
-        status: tour.status,
-        notes: tour.notes || "",
-        inclusions: tour.inclusions || "",
-        exclusions: tour.exclusions || "",
-        pricing: {
-          single: tour.price_single || 0,
-          double: tour.price_double || 0,
-          twin: tour.price_twin || 0,
-        },
-        deposit: tour.deposit_required || 0,
-        instalmentAmount: tour.instalment_amount || 0,
-        instalmentDate: tour.instalment_date || "",
-        finalPaymentDate: tour.final_payment_date || "",
-        totalCapacity: tour.capacity || 0,
-        minimumPassengersRequired: tour.minimum_passengers_required || null
-      };
-      setTransformedTour(transformed);
-      setTourForEdit(tour);
-    }
-  }, [tour]);
+  // Transform tour data immediately - don't wait for useEffect
+  const transformedTour = tour ? {
+    id: tour.id,
+    name: tour.name,
+    dates: formatDateRange(tour.start_date, tour.end_date),
+    duration: `${tour.days} days / ${tour.nights} nights`,
+    location: tour.location || "",
+    pickupPoint: tour.pickup_point || "",
+    status: tour.status,
+    notes: tour.notes || "",
+    inclusions: tour.inclusions || "",
+    exclusions: tour.exclusions || "",
+    pricing: {
+      single: tour.price_single || 0,
+      double: tour.price_double || 0,
+      twin: tour.price_twin || 0,
+    },
+    deposit: tour.deposit_required || 0,
+    instalmentAmount: tour.instalment_amount || 0,
+    instalmentDate: tour.instalment_date || "",
+    finalPaymentDate: tour.final_payment_date || "",
+    totalCapacity: tour.capacity || 0,
+    minimumPassengers: tour.minimum_passengers_required || null,
+    startDate: tour.start_date,
+    endDate: tour.end_date,
+    tourHost: tour.tour_host || ''
+  } : null;
 
   const handleDeleteTour = async () => {
     if (!tour) return;
@@ -252,13 +247,7 @@ export default function TourDetail() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-6">
-            <TourOverviewTab tour={{
-              ...transformedTour,
-              startDate: tour.start_date,
-              endDate: tour.end_date,
-              minimumPassengers: tour.minimum_passengers_required,
-              tourHost: ''
-            }} />
+            {transformedTour && <TourOverviewTab tour={transformedTour} />}
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-4 mt-6">
@@ -360,11 +349,11 @@ export default function TourDetail() {
           hotel={selectedHotel}
         />
       )}
-      {editTourModalOpen && tourForEdit && (
+      {editTourModalOpen && transformedTour && (
         <EditTourModal
           open={editTourModalOpen}
           onOpenChange={setEditTourModalOpen}
-          tour={tourForEdit}
+          tour={transformedTour}
         />
       )}
       {roomingListModalOpen && selectedHotel && (
