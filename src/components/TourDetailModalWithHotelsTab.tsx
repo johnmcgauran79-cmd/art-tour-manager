@@ -11,6 +11,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
+import { ActivityPassengerAllocationModal } from "@/components/ActivityPassengerAllocationModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
@@ -42,8 +43,10 @@ export const TourDetailModalWithHotelsTab = ({
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+  const [allocationModalOpen, setAllocationModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
+  const [newlyCreatedActivity, setNewlyCreatedActivity] = useState<{id: string, name: string} | null>(null);
   const [transformedTour, setTransformedTour] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(defaultTab);
 
@@ -262,7 +265,27 @@ export const TourDetailModalWithHotelsTab = ({
         open={addActivityModalOpen}
         onOpenChange={setAddActivityModalOpen}
         tourId={currentTour?.id}
+        onActivityCreated={(activity) => {
+          // Store the newly created activity and open allocation modal
+          setNewlyCreatedActivity(activity);
+          setAllocationModalOpen(true);
+        }}
       />
+
+      {newlyCreatedActivity && (
+        <ActivityPassengerAllocationModal
+          open={allocationModalOpen}
+          onOpenChange={(open) => {
+            setAllocationModalOpen(open);
+            if (!open) {
+              setNewlyCreatedActivity(null);
+            }
+          }}
+          tourId={currentTour?.id || ""}
+          activityId={newlyCreatedActivity.id}
+          activityName={newlyCreatedActivity.name}
+        />
+      )}
 
       <AddHotelModal
         open={addHotelModalOpen}

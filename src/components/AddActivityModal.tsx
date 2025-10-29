@@ -13,9 +13,10 @@ interface AddActivityModalProps {
   tourId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onActivityCreated?: (activity: { id: string; name: string }) => void;
 }
 
-export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModalProps) => {
+export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated }: AddActivityModalProps) => {
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -55,7 +56,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         throw new Error('Tour ID is required');
       }
       
-      // First create the activity
+      // Create the activity (no automatic allocation)
       const { data: activity, error: activityError } = await supabase
         .from('activities')
         .insert([{
@@ -95,59 +96,21 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
       }
 
       console.log('Activity created successfully:', activity);
-
-      // Now get all existing bookings for this tour that are not cancelled
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('id, passenger_count')
-        .eq('tour_id', tourId)
-        .neq('status', 'cancelled');
-
-      if (bookingsError) {
-        console.error('Error fetching bookings:', bookingsError);
-        throw bookingsError;
-      }
-
-      console.log('Found bookings for activity allocation:', bookings);
-
-      // Create activity bookings for all existing bookings
-      if (bookings && bookings.length > 0) {
-        const activityBookings = bookings.map(booking => ({
-          booking_id: booking.id,
-          activity_id: activity.id,
-          passengers_attending: booking.passenger_count
-        }));
-
-        const { error: activityBookingsError } = await supabase
-          .from('activity_bookings')
-          .insert(activityBookings);
-
-        if (activityBookingsError) {
-          console.error('Error creating activity bookings:', activityBookingsError);
-          throw activityBookingsError;
-        }
-
-        console.log(`Created ${activityBookings.length} activity bookings for new activity`);
-      }
-
       return activity;
     },
     onSuccess: (data) => {
       console.log('Activity creation successful, invalidating queries...');
       
-      // Invalidate multiple query patterns to ensure refresh
+      // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       queryClient.invalidateQueries({ queryKey: ['activities', tourId] });
-      queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
-      
-      // Force a refetch of activities for this tour
-      queryClient.refetchQueries({ queryKey: ['activities', tourId] });
       
       toast({
         title: "Activity Added",
-        description: "Activity has been successfully added to the tour and allocated to all existing bookings.",
+        description: "Activity has been successfully added to the tour.",
       });
-      onOpenChange(false);
+      
+      // Reset form
       setFormData({
         name: "",
         location: "",
@@ -174,6 +137,13 @@ export const AddActivityModal = ({ tourId, open, onOpenChange }: AddActivityModa
         operations_notes: "",
         transport_notes: ""
       });
+      
+      // Notify parent about the created activity for allocation
+      if (onActivityCreated) {
+        onActivityCreated({ id: data.id, name: data.name });
+      }
+      
+      onOpenChange(false);
     },
     onError: (error) => {
       console.error('Full error creating activity:', error);

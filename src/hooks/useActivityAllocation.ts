@@ -25,7 +25,6 @@ export const useActivityAllocation = ({
   const [editingActivity, setEditingActivity] = useState<string | null>(null);
   const [savingActivity, setSavingActivity] = useState<string | null>(null);
   const [tempEditValue, setTempEditValue] = useState<string>('');
-  const [isInitializing, setIsInitializing] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -34,9 +33,8 @@ export const useActivityAllocation = ({
   useEffect(() => {
     console.log('ActivityAllocation effect - Activities:', activities.length, 'Activity Bookings:', activityBookings);
     
-    if (activities.length > 0 && activityBookings !== undefined && !isInitializing && !hasInitialized) {
+    if (activities.length > 0 && activityBookings !== undefined && !hasInitialized) {
       const newAllocations: Record<string, number> = {};
-      const toInitialize: string[] = [];
       
       activities.forEach(activity => {
         const existingBooking = activityBookings.find(ab => ab.activity_id === activity.id);
@@ -45,63 +43,18 @@ export const useActivityAllocation = ({
         if (existingBooking) {
           newAllocations[activity.id] = existingBooking.passengers_attending;
         } else {
-          // Default to passenger count for activities without bookings
-          newAllocations[activity.id] = passengerCount;
-          // Track which activities need initialization
-          toInitialize.push(activity.id);
+          // No booking exists - set to 0 (user must manually allocate)
+          newAllocations[activity.id] = 0;
         }
       });
       
       console.log('New allocations:', newAllocations);
-      console.log('Activities to initialize:', toInitialize);
-      
       setAllocations(newAllocations);
       setHasInitialized(true);
-      
-      // Initialize missing activity bookings (silently, without notifications)
-      if (toInitialize.length > 0) {
-        initializeActivityBookings(toInitialize);
-      }
     }
-  }, [activities, activityBookings, passengerCount, isInitializing, hasInitialized]);
+  }, [activities, activityBookings, hasInitialized]);
 
-  const initializeActivityBookings = async (activityIds: string[]) => {
-    if (isInitializing) {
-      console.log('Already initializing, skipping...');
-      return;
-    }
-    
-    setIsInitializing(true);
-    console.log('Initializing activity bookings for:', activityIds);
-    
-    try {
-      for (const activityId of activityIds) {
-        // Double-check that this activity booking doesn't already exist
-        const existingBooking = activityBookings?.find(ab => ab.activity_id === activityId);
-        if (existingBooking) {
-          console.log(`Activity booking already exists for ${activityId}, skipping`);
-          continue;
-        }
-
-        console.log(`Initializing activity booking for activity ${activityId} with ${passengerCount} passengers`);
-        
-        await createActivityBooking.mutateAsync({
-          booking_id: bookingId,
-          activity_id: activityId,
-          passengers_attending: passengerCount
-        });
-        
-        console.log(`Successfully initialized activity booking for ${activityId}`);
-      }
-    } catch (error) {
-      console.error('Error initializing activity bookings:', error);
-    } finally {
-      setIsInitializing(false);
-    }
-  };
-
-  // Remove manual notification creation - this is now handled by the centralized notification system
-  // The real-time system will detect activity_booking changes and create appropriate notifications
+  // Manual notification creation removed - handled by centralized notification system
 
   const startEditing = (activityId: string) => {
     const currentValue = allocations[activityId] ?? 0;
