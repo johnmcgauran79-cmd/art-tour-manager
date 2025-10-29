@@ -2,17 +2,20 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Printer, Calendar } from "lucide-react";
+import { FileText, Printer, Calendar, Mail } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToAustralian } from "@/lib/utils";
 import { HotelRoomTypeReport } from "./HotelRoomTypeReport";
+import { useSendRoomingList } from "@/hooks/useRoomingListEmail";
+import { useTours } from "@/hooks/useTours";
 
 interface Hotel {
   id: string;
   name: string;
   address: string | null;
+  contact_email: string | null;
 }
 
 interface RoomingListModalProps {
@@ -25,6 +28,10 @@ interface RoomingListModalProps {
 export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingListModalProps) => {
   const [roomTypeReportOpen, setRoomTypeReportOpen] = useState(false);
   const { data: allBookings = [] } = useBookings();
+  const { data: tours = [] } = useTours();
+  const sendRoomingList = useSendRoomingList();
+
+  const currentTour = tours.find(t => t.id === tourId);
   
   // Filter bookings for this tour
   const tourBookings = allBookings.filter(booking => 
@@ -187,6 +194,18 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     window.URL.revokeObjectURL(url);
   };
 
+  const handleSendEmail = () => {
+    if (!hotel || !currentTour) return;
+
+    sendRoomingList.mutate({
+      hotelId: hotel.id,
+      tourId: tourId,
+      tourName: currentTour.name,
+      hotelEmail: hotel.contact_email || undefined,
+      hotelName: hotel.name,
+    });
+  };
+
   if (!hotel) return null;
 
   return (
@@ -195,7 +214,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle>Rooming List - {hotel.name}</DialogTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 onClick={() => setRoomTypeReportOpen(true)} 
                 variant="outline" 
@@ -204,6 +223,16 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
               >
                 <Calendar className="h-4 w-4 mr-2" />
                 View Room Type/Date Report
+              </Button>
+              <Button 
+                onClick={handleSendEmail} 
+                variant="outline" 
+                size="sm"
+                disabled={sendRoomingList.isPending || !hotel?.contact_email}
+                className="bg-green-50 border-green-200 hover:bg-green-100"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                {sendRoomingList.isPending ? 'Sending...' : 'Send Email to Hotel'}
               </Button>
               <Button onClick={handleExportToTable} variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
