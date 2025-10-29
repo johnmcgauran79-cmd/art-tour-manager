@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, X } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface EmailRoomingListModalProps {
   open: boolean;
@@ -31,12 +32,22 @@ export const EmailRoomingListModal = ({
   onSend,
   isSending,
 }: EmailRoomingListModalProps) => {
-  const [from, setFrom] = useState("operations@example.com");
+  const { user } = useAuth();
+  const userEmail = user?.email || "";
+  
+  const [from, setFrom] = useState("");
   const [to, setTo] = useState(defaultToEmail || "");
   const [cc, setCc] = useState("");
   const [message, setMessage] = useState(
     `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`
   );
+
+  // Set default from email when component opens
+  useEffect(() => {
+    if (open && userEmail) {
+      setFrom(userEmail);
+    }
+  }, [open, userEmail]);
 
   const handleSend = () => {
     onSend({ from, to, cc, message });
@@ -57,12 +68,12 @@ export const EmailRoomingListModal = ({
             <Label htmlFor="from">From</Label>
             <Select value={from} onValueChange={setFrom}>
               <SelectTrigger id="from">
-                <SelectValue />
+                <SelectValue placeholder="Select from email" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="operations@example.com">operations@example.com</SelectItem>
-                <SelectItem value="bookings@example.com">bookings@example.com</SelectItem>
-                <SelectItem value="admin@example.com">admin@example.com</SelectItem>
+                {userEmail && <SelectItem value={userEmail}>{userEmail}</SelectItem>}
+                <SelectItem value="info@australianracingtours.com.au">info@australianracingtours.com.au</SelectItem>
+                <SelectItem value="bookings@australianracingtours.com.au">bookings@australianracingtours.com.au</SelectItem>
               </SelectContent>
             </Select>
           </div>
