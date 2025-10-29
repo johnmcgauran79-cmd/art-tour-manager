@@ -24,153 +24,112 @@ interface RoomingListRequest {
   message?: string;
 }
 
-// Function to generate PDF-ready HTML
-function generatePDFReadyHTML(hotelName: string, tourName: string, roomingData: any[], hotel: any): string {
-  const tableRows = roomingData.map(room => `
-    <tr>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.roomNumber}</td>
-      <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${room.leadPassenger}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">
-        ${room.passenger2 ? `<div>${room.passenger2}</div>` : ''}
-        ${room.passenger3 ? `<div>${room.passenger3}</div>` : ''}
-      </td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.groupName || ''}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.checkIn}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.checkOut}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.nights}</td>
-      <td style="border: 1px solid #ddd; padding: 10px; text-transform: capitalize;">${room.bedding}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.roomType}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.roomUpgrade}</td>
-      <td style="border: 1px solid #ddd; padding: 10px;">${room.roomRequests}</td>
-    </tr>
-  `).join('');
+// Function to generate PDF
+function generateRoomingListPDF(hotelName: string, tourName: string, roomingData: any[], hotel: any): Uint8Array {
+  const doc = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4'
+  });
 
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rooming List - ${hotelName}</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
-      color: #333;
-      font-size: 10pt;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #333;
-      padding-bottom: 20px;
-    }
-    .title {
-      color: #333;
-      font-size: 2em;
-      margin-bottom: 10px;
-      font-weight: 700;
-    }
-    .info-section {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 20px 0;
-      border-left: 4px solid #333;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th {
-      background-color: #333;
-      color: white;
-      border: 1px solid #ddd;
-      padding: 12px;
-      text-align: left;
-      font-size: 9pt;
-    }
-    td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      font-size: 9pt;
-    }
-    @media print {
-      @page {
-        margin: 15mm;
-        size: A4 landscape;
-      }
-      body { 
-        font-size: 9pt;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-      }
-      table { 
-        page-break-inside: auto;
-      }
-      tr { 
-        page-break-inside: avoid;
-        page-break-after: auto;
-      }
-      thead { 
-        display: table-header-group;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1 class="title">Rooming List - ${hotelName}</h1>
-    <div style="font-size: 1.2em; color: #666;">${tourName}</div>
-  </div>
+  // Add title
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`Rooming List - ${hotelName}`, 148, 20, { align: 'center' });
   
-  <div class="info-section">
-    <p style="margin: 5px 0;"><strong>Hotel:</strong> ${hotelName}</p>
-    ${hotel.address ? `<p style="margin: 5px 0;"><strong>Address:</strong> ${hotel.address}</p>` : ''}
-    ${hotel.contact_phone ? `<p style="margin: 5px 0;"><strong>Phone:</strong> ${hotel.contact_phone}</p>` : ''}
-    ${hotel.contact_email ? `<p style="margin: 5px 0;"><strong>Email:</strong> ${hotel.contact_email}</p>` : ''}
-    <p style="margin: 5px 0;"><strong>Tour:</strong> ${tourName}</p>
-    <p style="margin: 5px 0;"><strong>Total Rooms:</strong> ${roomingData.length}</p>
-  </div>
-  
-  <table>
-    <thead>
-      <tr>
-        <th>Room #</th>
-        <th>Lead Passenger</th>
-        <th>Other Passengers</th>
-        <th>Group</th>
-        <th>Check In</th>
-        <th>Check Out</th>
-        <th>Nights</th>
-        <th>Bedding</th>
-        <th>Room Type</th>
-        <th>Upgrade</th>
-        <th>Requests</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${tableRows}
-    </tbody>
-  </table>
-  
-  <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 10pt;">
-    <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
-    <p style="margin-top: 10px;"><em>Generated on ${new Date().toLocaleDateString('en-AU', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })}</em></p>
-  </div>
-</body>
-</html>
-  `;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'normal');
+  doc.text(tourName, 148, 28, { align: 'center' });
+
+  // Add hotel information
+  doc.setFontSize(10);
+  let yPos = 40;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Hotel Information:', 14, yPos);
+  doc.setFont('helvetica', 'normal');
+  yPos += 6;
+  doc.text(`Hotel: ${hotelName}`, 14, yPos);
+  if (hotel.address) {
+    yPos += 5;
+    doc.text(`Address: ${hotel.address}`, 14, yPos);
+  }
+  if (hotel.contact_phone) {
+    yPos += 5;
+    doc.text(`Phone: ${hotel.contact_phone}`, 14, yPos);
+  }
+  yPos += 5;
+  doc.text(`Total Rooms: ${roomingData.length}`, 14, yPos);
+
+  // Prepare table data
+  const tableData = roomingData.map(room => [
+    room.roomNumber.toString(),
+    room.leadPassenger,
+    [room.passenger2, room.passenger3].filter(Boolean).join('\n') || '-',
+    room.groupName || '-',
+    room.checkIn || '-',
+    room.checkOut || '-',
+    room.nights.toString(),
+    room.bedding,
+    room.roomType,
+    room.roomUpgrade,
+    room.roomRequests
+  ]);
+
+  // Add table
+  autoTable(doc, {
+    head: [['Room #', 'Lead Passenger', 'Other Passengers', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests']],
+    body: tableData,
+    startY: yPos + 10,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2,
+    },
+    headStyles: {
+      fillColor: [51, 51, 51],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+    columnStyles: {
+      0: { cellWidth: 15 },
+      1: { cellWidth: 35 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 22 },
+      5: { cellWidth: 22 },
+      6: { cellWidth: 15 },
+      7: { cellWidth: 20 },
+      8: { cellWidth: 25 },
+      9: { cellWidth: 20 },
+      10: { cellWidth: 30 },
+    },
+    margin: { left: 14, right: 14 },
+  });
+
+  // Add footer
+  const pageCount = doc.internal.pages.length - 1;
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(
+      `Generated on ${new Date().toLocaleDateString('en-AU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`,
+      14,
+      200
+    );
+    doc.text(`Page ${i} of ${pageCount}`, 282, 200, { align: 'right' });
+  }
+
+  // Return PDF as Uint8Array
+  return doc.output('arraybuffer');
 }
 
 const handler = async (req: Request): Promise<Response> => {
