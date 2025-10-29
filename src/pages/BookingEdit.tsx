@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft, Save } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
@@ -32,6 +33,7 @@ export default function BookingEdit() {
   const booking = allBookings?.find(b => b.id === id);
   const { data: tours = [] } = useTours();
   const tour = tours.find(t => t.id === booking?.tour_id);
+  const isMobile = useIsMobile();
 
   const [formData, setFormData] = useState({
     lead_passenger_first_name: '',
@@ -295,27 +297,27 @@ export default function BookingEdit() {
       </div>
 
       <Tabs defaultValue="details" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="hotels" className="flex items-center gap-1">
-            <Hotel className="h-4 w-4" />
-            Hotels
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1">
+          <TabsTrigger value="details" className="text-xs md:text-sm px-2 py-2">Details</TabsTrigger>
+          <TabsTrigger value="hotels" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+            {!isMobile && <Hotel className="h-4 w-4" />}
+            <span>Hotels</span>
           </TabsTrigger>
-          <TabsTrigger value="activities" className="flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            Activities
+          <TabsTrigger value="activities" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+            {!isMobile && <MapPin className="h-4 w-4" />}
+            <span>Activities</span>
           </TabsTrigger>
-          <TabsTrigger value="medical" className="flex items-center gap-1">
-            <Heart className="h-4 w-4" />
-            Medical & Emergency
+          <TabsTrigger value="medical" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+            {!isMobile && <Heart className="h-4 w-4" />}
+            <span>Medical</span>
           </TabsTrigger>
-          <TabsTrigger value="travel" className="flex items-center gap-1">
-            <FileText className="h-4 w-4" />
-            Travel Docs
+          <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+            {!isMobile && <FileText className="h-4 w-4" />}
+            <span>Travel</span>
           </TabsTrigger>
-          <TabsTrigger value="communication" className="flex items-center gap-1">
-            <MessageSquare className="h-4 w-4" />
-            Comments
+          <TabsTrigger value="communication" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+            {!isMobile && <MessageSquare className="h-4 w-4" />}
+            <span>Comments</span>
           </TabsTrigger>
         </TabsList>
 

@@ -176,30 +176,30 @@ export default function BookingDetail() {
 
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="details">
-              <FileText className="h-4 w-4 mr-2" />
-              Details
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1">
+            <TabsTrigger value="details" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <FileText className="h-4 w-4" />}
+              <span>Details</span>
             </TabsTrigger>
-            <TabsTrigger value="hotels">
-              <Hotel className="h-4 w-4 mr-2" />
-              Hotels
+            <TabsTrigger value="hotels" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <Hotel className="h-4 w-4" />}
+              <span>Hotels</span>
             </TabsTrigger>
-            <TabsTrigger value="activities">
-              <MapPin className="h-4 w-4 mr-2" />
-              Activities
+            <TabsTrigger value="activities" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <MapPin className="h-4 w-4" />}
+              <span>Activities</span>
             </TabsTrigger>
-            <TabsTrigger value="medical">
-              <Heart className="h-4 w-4 mr-2" />
-              Medical & Emergency
+            <TabsTrigger value="medical" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <Heart className="h-4 w-4" />}
+              <span>Medical</span>
             </TabsTrigger>
-            <TabsTrigger value="travel">
-              <FileText className="h-4 w-4 mr-2" />
-              Travel Docs
+            <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <FileText className="h-4 w-4" />}
+              <span>Travel</span>
             </TabsTrigger>
-            <TabsTrigger value="comments">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Comments ({comments.length})
+            <TabsTrigger value="comments" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <MessageSquare className="h-4 w-4" />}
+              <span>Comments ({comments.length})</span>
             </TabsTrigger>
           </TabsList>
 
