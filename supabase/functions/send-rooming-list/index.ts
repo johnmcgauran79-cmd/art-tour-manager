@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { Resend } from "npm:resend@2.0.0";
-// @deno-types="npm:@types/html-pdf-node@1.0.0"
-import pdf from "npm:html-pdf-node@1.0.29";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -127,133 +125,80 @@ const handler = async (req: Request): Promise<Response> => {
       };
     });
 
-    // Generate HTML for PDF
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 20px; 
-            }
-            h1 { 
-              color: #333; 
-              border-bottom: 2px solid #333; 
-              padding-bottom: 10px; 
-            }
-            .hotel-info { 
-              margin-bottom: 20px; 
-            }
-            .hotel-info p { 
-              margin: 5px 0; 
-            }
-            table { 
-              width: 100%; 
-              border-collapse: collapse; 
-              margin-top: 15px; 
-            }
-            th, td { 
-              border: 1px solid #ddd; 
-              padding: 8px; 
-              text-align: left; 
-            }
-            th { 
-              background-color: #f2f2f2; 
-              font-weight: bold; 
-            }
-            tr:nth-child(even) { 
-              background-color: #f9f9f9; 
-            }
-            .capitalize {
-              text-transform: capitalize;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Rooming List - ${hotelName}</h1>
-          <div class="hotel-info">
-            <p><strong>Hotel:</strong> ${hotelName}</p>
-            ${hotel.address ? `<p><strong>Address:</strong> ${hotel.address}</p>` : ''}
-            <p><strong>Tour:</strong> ${tourName}</p>
-            <p><strong>Total Rooms:</strong> ${roomingData.length}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Room #</th>
-                <th>Lead Passenger</th>
-                <th>Other Passengers</th>
-                <th>Group</th>
-                <th>Check In</th>
-                <th>Check Out</th>
-                <th>Nights</th>
-                <th>Bedding</th>
-                <th>Room Type</th>
-                <th>Upgrade</th>
-                <th>Requests</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${roomingData.map(room => `
-                <tr>
-                  <td>${room.roomNumber}</td>
-                  <td><strong>${room.leadPassenger}</strong></td>
-                  <td>
-                    ${room.passenger2 ? `<div>${room.passenger2}</div>` : ''}
-                    ${room.passenger3 ? `<div>${room.passenger3}</div>` : ''}
-                  </td>
-                  <td>${room.groupName || ''}</td>
-                  <td>${room.checkIn}</td>
-                  <td>${room.checkOut}</td>
-                  <td>${room.nights}</td>
-                  <td class="capitalize">${room.bedding}</td>
-                  <td>${room.roomType}</td>
-                  <td>${room.roomUpgrade}</td>
-                  <td>${room.roomRequests}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
+    // Generate HTML table for email
+    const tableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+          <tr style="background-color: #f2f2f2;">
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Room #</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Lead Passenger</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Other Passengers</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Group</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Check In</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Check Out</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Nights</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Bedding</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Room Type</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Upgrade</th>
+            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Requests</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${roomingData.map(room => `
+            <tr>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.roomNumber}</td>
+              <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${room.leadPassenger}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">
+                ${room.passenger2 ? `<div>${room.passenger2}</div>` : ''}
+                ${room.passenger3 ? `<div>${room.passenger3}</div>` : ''}
+              </td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.groupName || ''}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.checkIn}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.checkOut}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.nights}</td>
+              <td style="border: 1px solid #ddd; padding: 10px; text-transform: capitalize;">${room.bedding}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.roomType}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.roomUpgrade}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${room.roomRequests}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
     `;
 
-    // Generate PDF
-    const pdfOptions = { 
-      format: 'A4',
-      landscape: true,
-      printBackground: true
-    };
-
-    console.log('Generating PDF...');
-    const pdfBuffer = await pdf.generatePdf({ content: htmlContent }, pdfOptions);
-    
-    // Convert buffer to base64
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
-
-    // Send email with PDF attachment
-    const defaultMessage = `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`;
+    // Generate email body
+    const defaultMessage = `Dear ${hotelName},\n\nPlease find below the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`;
     const emailBody = message || defaultMessage;
     const htmlBody = emailBody.replace(/\n/g, '<br>');
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px;">Rooming List - ${hotelName}</h1>
+        
+        <div style="margin: 20px 0;">
+          ${htmlBody}
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin: 5px 0;"><strong>Hotel:</strong> ${hotelName}</p>
+          ${hotel.address ? `<p style="margin: 5px 0;"><strong>Address:</strong> ${hotel.address}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Tour:</strong> ${tourName}</p>
+          <p style="margin: 5px 0;"><strong>Total Rooms:</strong> ${roomingData.length}</p>
+        </div>
+        
+        ${tableHTML}
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+          <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
+        </div>
+      </div>
+    `;
 
     const emailData: any = {
       from: `Tour Operations <${fromEmail}>`,
       to: [recipientEmail],
       subject: `Rooming List - ${hotelName} - ${tourName}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          ${htmlBody}
-          <br><br>
-          <p style="color: #666; font-size: 12px;"><strong>Total Rooms:</strong> ${roomingData.length}</p>
-        </div>
-      `,
-      attachments: [
-        {
-          filename: `${hotelName}-rooming-list.pdf`,
-          content: pdfBase64,
-        },
-      ],
+      html: emailHtml,
     };
 
     // Add CC if provided
