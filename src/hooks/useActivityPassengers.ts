@@ -23,6 +23,7 @@ export const useActivityPassengers = (activityId: string) => {
           passengers_attending,
           bookings!inner(
             id,
+            status,
             passenger_2_name,
             passenger_3_name,
             dietary_restrictions,
@@ -34,38 +35,29 @@ export const useActivityPassengers = (activityId: string) => {
           )
         `)
         .eq('activity_id', activityId)
-        .gt('passengers_attending', 0) // Only passengers with positive ticket count
-        .not('bookings.status', 'eq', 'cancelled');
+        .gt('passengers_attending', 0);
       
       if (error) {
         console.error('Error fetching activity passengers:', error);
         throw error;
       }
 
-      // Transform the data to include lead passenger name and combine dietary info
-      const passengers: ActivityPassenger[] = data?.map(item => {
-        // Combine booking-specific dietary restrictions with customer dietary requirements
-        const customerDietary = item.bookings.customers.dietary_requirements;
-        const bookingDietary = item.bookings.dietary_restrictions;
-        
-        let combinedDietary = '';
-        if (bookingDietary && customerDietary) {
-          combinedDietary = `${customerDietary}; ${bookingDietary}`;
-        } else if (bookingDietary) {
-          combinedDietary = bookingDietary;
-        } else if (customerDietary) {
-          combinedDietary = customerDietary;
-        }
-        
-        return {
-          booking_id: item.booking_id,
-          passengers_attending: item.passengers_attending,
-          lead_passenger_name: `${item.bookings.customers.first_name} ${item.bookings.customers.last_name}`,
-          passenger_2_name: item.bookings.passenger_2_name || undefined,
-          passenger_3_name: item.bookings.passenger_3_name || undefined, 
-          dietary_restrictions: combinedDietary || undefined
-        };
-      }) || [];
+      // Filter out cancelled bookings and transform the data
+      const passengers: ActivityPassenger[] = data
+        ?.filter(item => item.bookings.status !== 'cancelled')
+        .map(item => {
+          // Only use customer dietary requirements (booking dietary_restrictions field is deprecated)
+          const customerDietary = item.bookings.customers.dietary_requirements;
+          
+          return {
+            booking_id: item.booking_id,
+            passengers_attending: item.passengers_attending,
+            lead_passenger_name: `${item.bookings.customers.first_name} ${item.bookings.customers.last_name}`,
+            passenger_2_name: item.bookings.passenger_2_name || undefined,
+            passenger_3_name: item.bookings.passenger_3_name || undefined, 
+            dietary_restrictions: customerDietary || undefined
+          };
+        }) || [];
 
       console.log('Activity passengers fetched:', passengers);
       return passengers;
