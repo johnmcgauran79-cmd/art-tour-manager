@@ -18,6 +18,7 @@ interface RoomingListRequest {
   hotelName: string;
   fromEmail?: string;
   ccEmail?: string;
+  subject?: string;
   message?: string;
 }
 
@@ -40,6 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
       hotelName,
       fromEmail = 'onboarding@resend.dev',
       ccEmail = '',
+      subject,
       message 
     }: RoomingListRequest = await req.json();
 
@@ -197,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailData: any = {
       from: `Tour Operations <${fromEmail}>`,
       to: [recipientEmail],
-      subject: `Rooming List - ${hotelName} - ${tourName}`,
+      subject: subject || `Rooming List - ${hotelName} - ${tourName}`,
       html: emailHtml,
     };
 

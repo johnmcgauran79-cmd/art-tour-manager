@@ -18,6 +18,7 @@ interface EmailRoomingListModalProps {
     from: string;
     to: string;
     cc: string;
+    subject: string;
     message: string;
   }) => void;
   isSending: boolean;
@@ -38,6 +39,7 @@ export const EmailRoomingListModal = ({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState(defaultToEmail || "");
   const [cc, setCc] = useState("");
+  const [subject, setSubject] = useState(`Rooming List - ${hotelName} - ${tourName}`);
   const [message, setMessage] = useState(
     `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`
   );
@@ -50,7 +52,7 @@ export const EmailRoomingListModal = ({
   }, [open, userEmail]);
 
   const handleSend = () => {
-    onSend({ from, to, cc, message });
+    onSend({ from, to, cc, subject, message });
   };
 
   return (
@@ -101,6 +103,17 @@ export const EmailRoomingListModal = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="subject">Subject</Label>
+            <Input
+              id="subject"
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Email subject"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="message">Message</Label>
             <Textarea
               id="message"
@@ -112,8 +125,7 @@ export const EmailRoomingListModal = ({
           </div>
 
           <div className="text-sm text-muted-foreground">
-            <p><strong>Subject:</strong> Rooming List - {hotelName} - {tourName}</p>
-            <p className="mt-1"><strong>Attachment:</strong> {hotelName}-rooming-list.pdf</p>
+            <p><strong>Attachment:</strong> Rooming list HTML table</p>
           </div>
         </div>
 
