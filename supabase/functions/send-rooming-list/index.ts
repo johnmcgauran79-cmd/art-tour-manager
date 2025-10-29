@@ -168,56 +168,118 @@ const handler = async (req: Request): Promise<Response> => {
       </table>
     `;
 
-    // Generate Room Type/Date Summary Report
-    const roomTypeSummary: { [key: string]: { count: number; bedding: { [key: string]: number }; dateRanges: Set<string> } } = {};
-    
-    roomingData.forEach((room) => {
-      const roomType = room.roomType || 'Not Specified';
-      const bedding = room.bedding || 'Not Specified';
-      const dateRange = `${room.checkIn} - ${room.checkOut}`;
-      
-      if (!roomTypeSummary[roomType]) {
-        roomTypeSummary[roomType] = { count: 0, bedding: {}, dateRanges: new Set() };
+    // Generate Room Type/Date Matrix Report
+    const generateRoomTypeMatrix = () => {
+      interface RoomTypeData {
+        [roomType: string]: {
+          [date: string]: number;
+        };
       }
       
-      roomTypeSummary[roomType].count++;
-      roomTypeSummary[roomType].bedding[bedding] = (roomTypeSummary[roomType].bedding[bedding] || 0) + 1;
-      roomTypeSummary[roomType].dateRanges.add(dateRange);
-    });
+      const roomTypeData: RoomTypeData = {};
+      const beddingData: RoomTypeData = {};
+      const dateSet = new Set<string>();
 
-    const roomTypeSummaryHTML = `
+      // Process each booking to count room types and bedding per date
+      (hotelBookingsData || []).forEach((hotelBooking: any) => {
+        if (!hotelBooking.check_in_date || !hotelBooking.check_out_date) return;
+
+        const checkIn = new Date(hotelBooking.check_in_date);
+        const checkOut = new Date(hotelBooking.check_out_date);
+        const roomType = hotelBooking.room_type || 'Unspecified';
+        const beddingType = hotelBooking.bedding || 'Unspecified';
+
+        // Initialize if not exists
+        if (!roomTypeData[roomType]) roomTypeData[roomType] = {};
+        if (!beddingData[beddingType]) beddingData[beddingType] = {};
+
+        // Count for each night between check-in and check-out
+        const currentDate = new Date(checkIn);
+        while (currentDate < checkOut) {
+          const dateStr = currentDate.toLocaleDateString('en-AU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+          dateSet.add(dateStr);
+          
+          if (!roomTypeData[roomType][dateStr]) roomTypeData[roomType][dateStr] = 0;
+          if (!beddingData[beddingType][dateStr]) beddingData[beddingType][dateStr] = 0;
+          
+          roomTypeData[roomType][dateStr]++;
+          beddingData[beddingType][dateStr]++;
+          
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      });
+
+      // Sort dates chronologically
+      const allDates = Array.from(dateSet).sort((a, b) => {
+        const dateA = new Date(a.split('/').reverse().join('-'));
+        const dateB = new Date(b.split('/').reverse().join('-'));
+        return dateA.getTime() - dateB.getTime();
+      });
+
+      const roomTypes = Object.keys(roomTypeData).sort();
+      const beddingTypes = Object.keys(beddingData).sort();
+
+      return { roomTypeData, beddingData, allDates, roomTypes, beddingTypes };
+    };
+
+    const { roomTypeData, beddingData, allDates, roomTypes, beddingTypes } = generateRoomTypeMatrix();
+
+    const roomTypeMatrixHTML = `
       <div style="margin-top: 40px;">
-        <h2 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Room Type & Date Summary</h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+        <h2 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Room Type/Date Report - ${hotelName}</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <p style="margin: 5px 0;"><strong>Hotel:</strong> ${hotelName}</p>
+          ${hotel.address ? `<p style="margin: 5px 0;"><strong>Address:</strong> ${hotel.address}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Total Room Types:</strong> ${roomTypes.length}</p>
+          <p style="margin: 5px 0;"><strong>Total Bedding Types:</strong> ${beddingTypes.length}</p>
+        </div>
+
+        <h3 style="color: #555; margin-top: 30px; margin-bottom: 15px;">By Room Type</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
           <thead>
-            <tr style="background-color: #333;">
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Room Type</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Total Rooms</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Bedding Breakdown</th>
-              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Date Ranges</th>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f2f2f2; font-weight: bold;">Room Type</th>
+              ${allDates.map(date => 
+                `<th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #f2f2f2; font-weight: bold;">${date}</th>`
+              ).join('')}
             </tr>
           </thead>
           <tbody>
-            ${Object.entries(roomTypeSummary).map(([roomType, data], idx) => `
-              <tr style="background-color: ${idx % 2 === 0 ? '#fff' : '#f5f5f5'};">
-                <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${roomType}</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">${data.count}</td>
-                <td style="border: 1px solid #ddd; padding: 10px;">
-                  ${Object.entries(data.bedding).map(([bedType, count]) => 
-                    `<div style="text-transform: capitalize;">${bedType}: ${count}</div>`
-                  ).join('')}
-                </td>
-                <td style="border: 1px solid #ddd; padding: 10px; font-size: 10px;">
-                  ${Array.from(data.dateRanges).slice(0, 3).join('<br>')}
-                  ${data.dateRanges.size > 3 ? `<div style="font-style: italic; margin-top: 5px;">+ ${data.dateRanges.size - 3} more</div>` : ''}
-                </td>
+            ${roomTypes.map(roomType => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold;">${roomType}</td>
+                ${allDates.map(date => 
+                  `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${roomTypeData[roomType]?.[date] || 0}</td>`
+                ).join('')}
               </tr>
             `).join('')}
-            <tr style="background-color: #e8e8e8; font-weight: bold;">
-              <td style="border: 1px solid #ddd; padding: 10px;">TOTAL</td>
-              <td style="border: 1px solid #ddd; padding: 10px;">${roomingData.length}</td>
-              <td style="border: 1px solid #ddd; padding: 10px;" colspan="2"></td>
+          </tbody>
+        </table>
+
+        <h3 style="color: #555; margin-top: 30px; margin-bottom: 15px;">By Bedding Type</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #e8f4f8; font-weight: bold;">Bedding Type</th>
+              ${allDates.map(date => 
+                `<th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #e8f4f8; font-weight: bold;">${date}</th>`
+              ).join('')}
             </tr>
+          </thead>
+          <tbody>
+            ${beddingTypes.map(beddingType => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px; font-weight: bold; text-transform: capitalize;">${beddingType}</td>
+                ${allDates.map(date => 
+                  `<td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${beddingData[beddingType]?.[date] || 0}</td>`
+                ).join('')}
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -245,7 +307,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         ${tableHTML}
         
-        ${roomTypeSummaryHTML}
+        ${roomTypeMatrixHTML}
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
           <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
