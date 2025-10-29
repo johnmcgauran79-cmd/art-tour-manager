@@ -125,7 +125,7 @@ export const EmailRoomingListModal = ({
           </div>
 
           <div className="text-sm text-muted-foreground">
-            <p><strong>Attachment:</strong> {hotelName.replace(/[^a-z0-9]/gi, '_')}-rooming-list.pdf</p>
+            <p className="italic">Note: The rooming list will be included in the email body. Recipients can print to PDF using their browser's print function.</p>
           </div>
         </div>
 

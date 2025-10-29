@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { Resend } from "npm:resend@2.0.0";
-import PDFDocument from "npm:pdfkit@0.15.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -21,125 +20,6 @@ interface RoomingListRequest {
   ccEmail?: string;
   subject?: string;
   message?: string;
-}
-
-// Function to generate PDF using PDFKit
-async function generateRoomingListPDF(hotelName: string, tourName: string, roomingData: any[], hotel: any): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ 
-      size: 'A4', 
-      layout: 'landscape',
-      margins: { top: 50, bottom: 50, left: 40, right: 40 }
-    });
-    
-    const chunks: Uint8Array[] = [];
-    
-    doc.on('data', (chunk) => chunks.push(chunk));
-    doc.on('end', () => resolve(Buffer.concat(chunks)));
-    doc.on('error', reject);
-
-    // Add title
-    doc.fontSize(20).font('Helvetica-Bold').text(`Rooming List - ${hotelName}`, { align: 'center' });
-    doc.moveDown(0.5);
-    doc.fontSize(14).font('Helvetica').text(tourName, { align: 'center' });
-    doc.moveDown(1);
-
-    // Add hotel information
-    doc.fontSize(10).font('Helvetica-Bold').text('Hotel Information:');
-    doc.fontSize(9).font('Helvetica');
-    doc.text(`Hotel: ${hotelName}`);
-    if (hotel.address) {
-      doc.text(`Address: ${hotel.address}`);
-    }
-    if (hotel.contact_phone) {
-      doc.text(`Phone: ${hotel.contact_phone}`);
-    }
-    doc.text(`Total Rooms: ${roomingData.length}`);
-    doc.moveDown(1);
-
-    // Table setup
-    const tableTop = doc.y;
-    const colWidths = [35, 80, 70, 60, 55, 55, 35, 50, 60, 50, 70];
-    const headers = ['Room #', 'Lead Passenger', 'Other Passengers', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'];
-    
-    // Draw table header
-    let xPos = 40;
-    doc.fontSize(8).font('Helvetica-Bold');
-    headers.forEach((header, i) => {
-      doc.rect(xPos, tableTop, colWidths[i], 20).fillAndStroke('#333', '#000');
-      doc.fillColor('#fff').text(header, xPos + 2, tableTop + 5, { width: colWidths[i] - 4, align: 'left' });
-      xPos += colWidths[i];
-    });
-
-    // Draw table rows
-    doc.fillColor('#000').font('Helvetica');
-    let yPos = tableTop + 20;
-    
-    roomingData.forEach((room, index) => {
-      const rowHeight = 25;
-      
-      // Alternate row colors
-      if (index % 2 === 1) {
-        doc.rect(40, yPos, colWidths.reduce((a, b) => a + b, 0), rowHeight).fill('#f5f5f5');
-      }
-      
-      xPos = 40;
-      const rowData = [
-        room.roomNumber.toString(),
-        room.leadPassenger,
-        [room.passenger2, room.passenger3].filter(Boolean).join(', ') || '-',
-        room.groupName || '-',
-        room.checkIn || '-',
-        room.checkOut || '-',
-        room.nights.toString(),
-        room.bedding,
-        room.roomType,
-        room.roomUpgrade || '-',
-        room.roomRequests || '-'
-      ];
-      
-      doc.fontSize(7).fillColor('#000');
-      rowData.forEach((text, i) => {
-        doc.text(text, xPos + 2, yPos + 5, { width: colWidths[i] - 4, height: rowHeight - 10, ellipsis: true });
-        xPos += colWidths[i];
-      });
-      
-      yPos += rowHeight;
-      
-      // Check if we need a new page
-      if (yPos > 500) {
-        doc.addPage({ size: 'A4', layout: 'landscape' });
-        yPos = 50;
-      }
-    });
-
-    // Add footer
-    const pages = doc.bufferedPageRange();
-    for (let i = 0; i < pages.count; i++) {
-      doc.switchToPage(i);
-      doc.fontSize(7).font('Helvetica');
-      doc.text(
-        `Generated on ${new Date().toLocaleDateString('en-AU', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })}`,
-        40,
-        doc.page.height - 30,
-        { align: 'left' }
-      );
-      doc.text(
-        `Page ${i + 1} of ${pages.count}`,
-        0,
-        doc.page.height - 30,
-        { align: 'right', width: doc.page.width - 40 }
-      );
-    }
-
-    doc.end();
-  });
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -249,25 +129,25 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate HTML table for email
     const tableHTML = `
-      <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px;">
         <thead>
-          <tr style="background-color: #f2f2f2;">
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Room #</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Lead Passenger</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Other Passengers</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Group</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Check In</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Check Out</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Nights</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Bedding</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Room Type</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Upgrade</th>
-            <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Requests</th>
+          <tr style="background-color: #333;">
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Room #</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Lead Passenger</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Other Passengers</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Group</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Check In</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Check Out</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Nights</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Bedding</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Room Type</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Upgrade</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Requests</th>
           </tr>
         </thead>
         <tbody>
-          ${roomingData.map(room => `
-            <tr>
+          ${roomingData.map((room, idx) => `
+            <tr style="background-color: ${idx % 2 === 0 ? '#fff' : '#f5f5f5'};">
               <td style="border: 1px solid #ddd; padding: 10px;">${room.roomNumber}</td>
               <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${room.leadPassenger}</td>
               <td style="border: 1px solid #ddd; padding: 10px;">
@@ -312,30 +192,16 @@ const handler = async (req: Request): Promise<Response> => {
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
           <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
+          <p style="margin-top: 10px;"><em>Note: You can print this email to PDF using your browser's print function (File > Print > Save as PDF)</em></p>
         </div>
       </div>
     `;
 
-    
-    // Generate PDF
-    const pdfBuffer = await generateRoomingListPDF(hotelName, tourName, roomingData, hotel);
-    
-    // Convert to base64 for email attachment
-    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
-    
     const emailData: any = {
       from: `Tour Operations <${fromEmail}>`,
       to: [recipientEmail],
       subject: subject || `Rooming List - ${hotelName} - ${tourName}`,
       html: emailHtml,
-      attachments: [
-        {
-          filename: `${hotelName.replace(/[^a-z0-9]/gi, '_')}-rooming-list.pdf`,
-          content: pdfBase64,
-          type: 'application/pdf',
-          disposition: 'attachment'
-        }
-      ]
     };
 
     // Add CC if provided
