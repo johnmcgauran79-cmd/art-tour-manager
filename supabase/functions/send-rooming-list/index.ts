@@ -18,6 +18,9 @@ interface RoomingListRequest {
   tourName: string;
   hotelEmail?: string;
   hotelName: string;
+  fromEmail?: string;
+  ccEmail?: string;
+  message?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -31,7 +34,16 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { hotelId, tourId, tourName, hotelEmail, hotelName }: RoomingListRequest = await req.json();
+    const { 
+      hotelId, 
+      tourId, 
+      tourName, 
+      hotelEmail, 
+      hotelName,
+      fromEmail = 'onboarding@resend.dev',
+      ccEmail = '',
+      message 
+    }: RoomingListRequest = await req.json();
 
     // Fetch hotel data
     const { data: hotel, error: hotelError } = await supabaseClient
@@ -221,28 +233,35 @@ const handler = async (req: Request): Promise<Response> => {
     const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
 
     // Send email with PDF attachment
-    const emailResponse = await resend.emails.send({
-      from: "Tour Operations <onboarding@resend.dev>",
+    const defaultMessage = `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`;
+    const emailBody = message || defaultMessage;
+    const htmlBody = emailBody.replace(/\n/g, '<br>');
+
+    const emailData: any = {
+      from: `Tour Operations <${fromEmail}>`,
       to: [recipientEmail],
-      subject: `Rooming List - ${tourName} - ${hotelName}`,
+      subject: `Rooming List - ${hotelName} - ${tourName}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1>Rooming List for ${tourName}</h1>
-          <p>Dear ${hotel.contact_name || 'Team'},</p>
-          <p>Please find attached the rooming list for <strong>${tourName}</strong>.</p>
-          <p><strong>Hotel:</strong> ${hotelName}</p>
-          <p><strong>Total Rooms:</strong> ${roomingData.length}</p>
-          <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
-          <p>Best regards,<br>Operations Team</p>
+          ${htmlBody}
+          <br><br>
+          <p style="color: #666; font-size: 12px;"><strong>Total Rooms:</strong> ${roomingData.length}</p>
         </div>
       `,
       attachments: [
         {
-          filename: `${tourName}-${hotelName}-Rooming-List.pdf`,
+          filename: `${hotelName}-rooming-list.pdf`,
           content: pdfBase64,
         },
       ],
-    });
+    };
+
+    // Add CC if provided
+    if (ccEmail) {
+      emailData.cc = [ccEmail];
+    }
+
+    const emailResponse = await resend.emails.send(emailData);
 
     console.log("Rooming list email sent successfully:", emailResponse);
 

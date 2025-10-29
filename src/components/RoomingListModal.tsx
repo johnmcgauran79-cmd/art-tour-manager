@@ -10,6 +10,7 @@ import { formatDateToAustralian } from "@/lib/utils";
 import { HotelRoomTypeReport } from "./HotelRoomTypeReport";
 import { useSendRoomingList } from "@/hooks/useRoomingListEmail";
 import { useTours } from "@/hooks/useTours";
+import { EmailRoomingListModal } from "./EmailRoomingListModal";
 
 interface Hotel {
   id: string;
@@ -27,6 +28,7 @@ interface RoomingListModalProps {
 
 export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingListModalProps) => {
   const [roomTypeReportOpen, setRoomTypeReportOpen] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
   const { data: allBookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
   const sendRoomingList = useSendRoomingList();
@@ -194,15 +196,22 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     window.URL.revokeObjectURL(url);
   };
 
-  const handleSendEmail = () => {
+  const handleSendEmail = (emailData: { from: string; to: string; cc: string; message: string }) => {
     if (!hotel || !currentTour) return;
 
     sendRoomingList.mutate({
       hotelId: hotel.id,
       tourId: tourId,
       tourName: currentTour.name,
-      hotelEmail: hotel.contact_email || undefined,
+      hotelEmail: emailData.to,
       hotelName: hotel.name,
+      fromEmail: emailData.from,
+      ccEmail: emailData.cc,
+      message: emailData.message,
+    }, {
+      onSuccess: () => {
+        setEmailModalOpen(false);
+      }
     });
   };
 
@@ -225,14 +234,13 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                 View Room Type/Date Report
               </Button>
               <Button 
-                onClick={handleSendEmail} 
+                onClick={() => setEmailModalOpen(true)} 
                 variant="outline" 
                 size="sm"
-                disabled={sendRoomingList.isPending || !hotel?.contact_email}
                 className="bg-green-50 border-green-200 hover:bg-green-100"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                {sendRoomingList.isPending ? 'Sending...' : 'Send Email to Hotel'}
+                Send Email to Hotel
               </Button>
               <Button onClick={handleExportToTable} variant="outline" size="sm">
                 <FileText className="h-4 w-4 mr-2" />
@@ -317,6 +325,16 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         tourId={tourId}
         open={roomTypeReportOpen}
         onOpenChange={setRoomTypeReportOpen}
+      />
+
+      <EmailRoomingListModal
+        open={emailModalOpen}
+        onOpenChange={setEmailModalOpen}
+        hotelName={hotel.name}
+        tourName={currentTour?.name || ''}
+        defaultToEmail={hotel.contact_email || undefined}
+        onSend={handleSendEmail}
+        isSending={sendRoomingList.isPending}
       />
     </Dialog>
   );
