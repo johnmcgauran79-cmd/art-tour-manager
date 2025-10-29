@@ -1,8 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { Resend } from "npm:resend@2.0.0";
-import jsPDF from "npm:jspdf@2.5.1";
-import autoTable from "npm:jspdf-autotable@3.8.2";
+import PDFDocument from "npm:pdfkit@0.15.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -24,112 +23,123 @@ interface RoomingListRequest {
   message?: string;
 }
 
-// Function to generate PDF
-function generateRoomingListPDF(hotelName: string, tourName: string, roomingData: any[], hotel: any): Uint8Array {
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4'
+// Function to generate PDF using PDFKit
+async function generateRoomingListPDF(hotelName: string, tourName: string, roomingData: any[], hotel: any): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ 
+      size: 'A4', 
+      layout: 'landscape',
+      margins: { top: 50, bottom: 50, left: 40, right: 40 }
+    });
+    
+    const chunks: Uint8Array[] = [];
+    
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    // Add title
+    doc.fontSize(20).font('Helvetica-Bold').text(`Rooming List - ${hotelName}`, { align: 'center' });
+    doc.moveDown(0.5);
+    doc.fontSize(14).font('Helvetica').text(tourName, { align: 'center' });
+    doc.moveDown(1);
+
+    // Add hotel information
+    doc.fontSize(10).font('Helvetica-Bold').text('Hotel Information:');
+    doc.fontSize(9).font('Helvetica');
+    doc.text(`Hotel: ${hotelName}`);
+    if (hotel.address) {
+      doc.text(`Address: ${hotel.address}`);
+    }
+    if (hotel.contact_phone) {
+      doc.text(`Phone: ${hotel.contact_phone}`);
+    }
+    doc.text(`Total Rooms: ${roomingData.length}`);
+    doc.moveDown(1);
+
+    // Table setup
+    const tableTop = doc.y;
+    const colWidths = [35, 80, 70, 60, 55, 55, 35, 50, 60, 50, 70];
+    const headers = ['Room #', 'Lead Passenger', 'Other Passengers', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests'];
+    
+    // Draw table header
+    let xPos = 40;
+    doc.fontSize(8).font('Helvetica-Bold');
+    headers.forEach((header, i) => {
+      doc.rect(xPos, tableTop, colWidths[i], 20).fillAndStroke('#333', '#000');
+      doc.fillColor('#fff').text(header, xPos + 2, tableTop + 5, { width: colWidths[i] - 4, align: 'left' });
+      xPos += colWidths[i];
+    });
+
+    // Draw table rows
+    doc.fillColor('#000').font('Helvetica');
+    let yPos = tableTop + 20;
+    
+    roomingData.forEach((room, index) => {
+      const rowHeight = 25;
+      
+      // Alternate row colors
+      if (index % 2 === 1) {
+        doc.rect(40, yPos, colWidths.reduce((a, b) => a + b, 0), rowHeight).fill('#f5f5f5');
+      }
+      
+      xPos = 40;
+      const rowData = [
+        room.roomNumber.toString(),
+        room.leadPassenger,
+        [room.passenger2, room.passenger3].filter(Boolean).join(', ') || '-',
+        room.groupName || '-',
+        room.checkIn || '-',
+        room.checkOut || '-',
+        room.nights.toString(),
+        room.bedding,
+        room.roomType,
+        room.roomUpgrade || '-',
+        room.roomRequests || '-'
+      ];
+      
+      doc.fontSize(7).fillColor('#000');
+      rowData.forEach((text, i) => {
+        doc.text(text, xPos + 2, yPos + 5, { width: colWidths[i] - 4, height: rowHeight - 10, ellipsis: true });
+        xPos += colWidths[i];
+      });
+      
+      yPos += rowHeight;
+      
+      // Check if we need a new page
+      if (yPos > 500) {
+        doc.addPage({ size: 'A4', layout: 'landscape' });
+        yPos = 50;
+      }
+    });
+
+    // Add footer
+    const pages = doc.bufferedPageRange();
+    for (let i = 0; i < pages.count; i++) {
+      doc.switchToPage(i);
+      doc.fontSize(7).font('Helvetica');
+      doc.text(
+        `Generated on ${new Date().toLocaleDateString('en-AU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}`,
+        40,
+        doc.page.height - 30,
+        { align: 'left' }
+      );
+      doc.text(
+        `Page ${i + 1} of ${pages.count}`,
+        0,
+        doc.page.height - 30,
+        { align: 'right', width: doc.page.width - 40 }
+      );
+    }
+
+    doc.end();
   });
-
-  // Add title
-  doc.setFontSize(20);
-  doc.setFont('helvetica', 'bold');
-  doc.text(`Rooming List - ${hotelName}`, 148, 20, { align: 'center' });
-  
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'normal');
-  doc.text(tourName, 148, 28, { align: 'center' });
-
-  // Add hotel information
-  doc.setFontSize(10);
-  let yPos = 40;
-  doc.setFont('helvetica', 'bold');
-  doc.text('Hotel Information:', 14, yPos);
-  doc.setFont('helvetica', 'normal');
-  yPos += 6;
-  doc.text(`Hotel: ${hotelName}`, 14, yPos);
-  if (hotel.address) {
-    yPos += 5;
-    doc.text(`Address: ${hotel.address}`, 14, yPos);
-  }
-  if (hotel.contact_phone) {
-    yPos += 5;
-    doc.text(`Phone: ${hotel.contact_phone}`, 14, yPos);
-  }
-  yPos += 5;
-  doc.text(`Total Rooms: ${roomingData.length}`, 14, yPos);
-
-  // Prepare table data
-  const tableData = roomingData.map(room => [
-    room.roomNumber.toString(),
-    room.leadPassenger,
-    [room.passenger2, room.passenger3].filter(Boolean).join('\n') || '-',
-    room.groupName || '-',
-    room.checkIn || '-',
-    room.checkOut || '-',
-    room.nights.toString(),
-    room.bedding,
-    room.roomType,
-    room.roomUpgrade,
-    room.roomRequests
-  ]);
-
-  // Add table
-  autoTable(doc, {
-    head: [['Room #', 'Lead Passenger', 'Other Passengers', 'Group', 'Check In', 'Check Out', 'Nights', 'Bedding', 'Room Type', 'Upgrade', 'Requests']],
-    body: tableData,
-    startY: yPos + 10,
-    styles: {
-      fontSize: 8,
-      cellPadding: 2,
-    },
-    headStyles: {
-      fillColor: [51, 51, 51],
-      textColor: [255, 255, 255],
-      fontStyle: 'bold',
-    },
-    alternateRowStyles: {
-      fillColor: [245, 245, 245],
-    },
-    columnStyles: {
-      0: { cellWidth: 15 },
-      1: { cellWidth: 35 },
-      2: { cellWidth: 30 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 22 },
-      5: { cellWidth: 22 },
-      6: { cellWidth: 15 },
-      7: { cellWidth: 20 },
-      8: { cellWidth: 25 },
-      9: { cellWidth: 20 },
-      10: { cellWidth: 30 },
-    },
-    margin: { left: 14, right: 14 },
-  });
-
-  // Add footer
-  const pageCount = doc.internal.pages.length - 1;
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i);
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.text(
-      `Generated on ${new Date().toLocaleDateString('en-AU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}`,
-      14,
-      200
-    );
-    doc.text(`Page ${i} of ${pageCount}`, 282, 200, { align: 'right' });
-  }
-
-  // Return PDF as Uint8Array
-  return doc.output('arraybuffer');
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -308,7 +318,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     
     // Generate PDF
-    const pdfBuffer = generateRoomingListPDF(hotelName, tourName, roomingData, hotel);
+    const pdfBuffer = await generateRoomingListPDF(hotelName, tourName, roomingData, hotel);
     
     // Convert to base64 for email attachment
     const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
