@@ -127,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
       };
     });
 
-    // Generate HTML table for email
+    // Generate HTML table for rooming list
     const tableHTML = `
       <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px;">
         <thead>
@@ -168,6 +168,61 @@ const handler = async (req: Request): Promise<Response> => {
       </table>
     `;
 
+    // Generate Room Type/Date Summary Report
+    const roomTypeSummary: { [key: string]: { count: number; bedding: { [key: string]: number }; dateRanges: Set<string> } } = {};
+    
+    roomingData.forEach((room) => {
+      const roomType = room.roomType || 'Not Specified';
+      const bedding = room.bedding || 'Not Specified';
+      const dateRange = `${room.checkIn} - ${room.checkOut}`;
+      
+      if (!roomTypeSummary[roomType]) {
+        roomTypeSummary[roomType] = { count: 0, bedding: {}, dateRanges: new Set() };
+      }
+      
+      roomTypeSummary[roomType].count++;
+      roomTypeSummary[roomType].bedding[bedding] = (roomTypeSummary[roomType].bedding[bedding] || 0) + 1;
+      roomTypeSummary[roomType].dateRanges.add(dateRange);
+    });
+
+    const roomTypeSummaryHTML = `
+      <div style="margin-top: 40px;">
+        <h2 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">Room Type & Date Summary</h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          <thead>
+            <tr style="background-color: #333;">
+              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Room Type</th>
+              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Total Rooms</th>
+              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Bedding Breakdown</th>
+              <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Date Ranges</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${Object.entries(roomTypeSummary).map(([roomType, data], idx) => `
+              <tr style="background-color: ${idx % 2 === 0 ? '#fff' : '#f5f5f5'};">
+                <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${roomType}</td>
+                <td style="border: 1px solid #ddd; padding: 10px;">${data.count}</td>
+                <td style="border: 1px solid #ddd; padding: 10px;">
+                  ${Object.entries(data.bedding).map(([bedType, count]) => 
+                    `<div style="text-transform: capitalize;">${bedType}: ${count}</div>`
+                  ).join('')}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 10px; font-size: 10px;">
+                  ${Array.from(data.dateRanges).slice(0, 3).join('<br>')}
+                  ${data.dateRanges.size > 3 ? `<div style="font-style: italic; margin-top: 5px;">+ ${data.dateRanges.size - 3} more</div>` : ''}
+                </td>
+              </tr>
+            `).join('')}
+            <tr style="background-color: #e8e8e8; font-weight: bold;">
+              <td style="border: 1px solid #ddd; padding: 10px;">TOTAL</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${roomingData.length}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;" colspan="2"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+
     // Generate email body
     const defaultMessage = `Dear ${hotelName},\n\nPlease find below the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`;
     const emailBody = message || defaultMessage;
@@ -189,6 +244,8 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         
         ${tableHTML}
+        
+        ${roomTypeSummaryHTML}
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
           <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
