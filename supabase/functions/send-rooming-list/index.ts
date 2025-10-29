@@ -1,7 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { Resend } from "npm:resend@2.0.0";
-import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import jsPDF from "npm:jspdf@2.5.1";
+import autoTable from "npm:jspdf-autotable@3.8.2";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -347,8 +348,11 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     
-    // Generate PDF-ready HTML for attachment
-    const pdfHTML = generatePDFReadyHTML(hotelName, tourName, roomingData, hotel);
+    // Generate PDF
+    const pdfBuffer = generateRoomingListPDF(hotelName, tourName, roomingData, hotel);
+    
+    // Convert to base64 for email attachment
+    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
     
     const emailData: any = {
       from: `Tour Operations <${fromEmail}>`,
@@ -357,8 +361,10 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
       attachments: [
         {
-          filename: `${hotelName.replace(/[^a-z0-9]/gi, '_')}-rooming-list.html`,
-          content: pdfHTML,
+          filename: `${hotelName.replace(/[^a-z0-9]/gi, '_')}-rooming-list.pdf`,
+          content: pdfBase64,
+          type: 'application/pdf',
+          disposition: 'attachment'
         }
       ]
     };
