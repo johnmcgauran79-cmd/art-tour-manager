@@ -64,7 +64,6 @@ export default function BookingEdit() {
     
     medical_conditions: '',
     accessibility_needs: '',
-    dietary_restrictions: '',
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -111,7 +110,6 @@ export default function BookingEdit() {
         
         medical_conditions: booking.medical_conditions || '',
         accessibility_needs: booking.accessibility_needs || '',
-        dietary_restrictions: booking.dietary_restrictions || '',
       });
 
       if (booking.secondary_contact) {
