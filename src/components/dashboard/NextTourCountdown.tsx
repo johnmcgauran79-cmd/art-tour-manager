@@ -1,5 +1,5 @@
 import { useTours } from "@/hooks/useTours";
-import { differenceInDays, isAfter, isBefore, parseISO, isWithinInterval } from "date-fns";
+import { isAfter, parseISO, isWithinInterval, startOfDay } from "date-fns";
 
 export const NextTourCountdown = () => {
   const { data: tours, isLoading } = useTours();
@@ -37,7 +37,17 @@ export const NextTourCountdown = () => {
         <div>
           <span className="font-medium">{nextTour.name}</span> starts in{" "}
           <span className="font-medium text-brand-yellow">
-            {differenceInDays(parseISO(nextTour.start_date), today)} day{differenceInDays(parseISO(nextTour.start_date), today) !== 1 ? 's' : ''}
+            {(() => {
+              const tourStartDate = startOfDay(parseISO(nextTour.start_date));
+              const todayStart = startOfDay(today);
+              const daysUntil = Math.ceil((tourStartDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+              return daysUntil;
+            })()} day{(() => {
+              const tourStartDate = startOfDay(parseISO(nextTour.start_date));
+              const todayStart = startOfDay(today);
+              const daysUntil = Math.ceil((tourStartDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+              return daysUntil !== 1 ? 's' : '';
+            })()}
           </span>
         </div>
       ) : !activeTour && (
