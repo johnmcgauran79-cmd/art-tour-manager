@@ -3,11 +3,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Printer } from "lucide-react";
+import { Edit, Printer, Mail } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
+import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListModal";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -21,6 +22,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const { data: activities, isLoading, error, refetch } = useActivities(tourId);
   const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
   const [selectedActivityForPrint, setSelectedActivityForPrint] = useState<any>(null);
+  const [selectedActivityForEmail, setSelectedActivityForEmail] = useState<any>(null);
 
   // Log activities data
   console.log('Activities data in tab:', {
@@ -186,6 +188,14 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                       >
                         <Printer className="h-4 w-4" />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedActivityForEmail(activity)}
+                        title="Email Passenger List"
+                      >
+                        <Mail className="h-4 w-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -215,6 +225,20 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
             ? formatDateToDDMMYYYY(selectedActivityForPrint.activity_date) 
             : undefined
           }
+        />
+      )}
+
+      {selectedActivityForEmail && (
+        <EmailActivityPassengerListModal
+          open={!!selectedActivityForEmail}
+          onOpenChange={(open) => !open && setSelectedActivityForEmail(null)}
+          activityId={selectedActivityForEmail.id}
+          activityName={selectedActivityForEmail.name}
+          activityDate={selectedActivityForEmail.activity_date 
+            ? formatDateToDDMMYYYY(selectedActivityForEmail.activity_date) 
+            : undefined
+          }
+          defaultToEmail={selectedActivityForEmail.guide_email || ""}
         />
       )}
     </div>
