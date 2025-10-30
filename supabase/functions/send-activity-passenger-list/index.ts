@@ -40,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Fetching activity passenger data for activity:", activityId);
 
-    // Fetch activity passenger data
+    // Fetch activity passenger data - only those actually attending
     const { data: passengers, error: passengersError } = await supabase
       .from('activity_bookings')
       .select(`
@@ -54,11 +54,13 @@ const handler = async (req: Request): Promise<Response> => {
           status,
           customers!bookings_lead_passenger_id_fkey(
             first_name,
-            last_name
+            last_name,
+            dietary_requirements
           )
         )
       `)
       .eq('activity_id', activityId)
+      .gt('passengers_attending', 0)
       .neq('bookings.status', 'cancelled');
 
     if (passengersError) {
@@ -68,14 +70,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Fetched passengers:", passengers?.length);
 
-    // Transform data
-    const passengerList = passengers?.map((p: any) => ({
-      lead_passenger_name: `${p.bookings.customers.first_name} ${p.bookings.customers.last_name}`,
-      passenger_2_name: p.bookings.passenger_2_name,
-      passenger_3_name: p.bookings.passenger_3_name,
-      passengers_attending: p.passengers_attending,
-      dietary_restrictions: p.bookings.dietary_restrictions,
-    })) || [];
+    // Transform data - combine dietary info from both booking and customer
+    const passengerList = passengers?.map((p: any) => {
+      const bookingDietary = p.bookings.dietary_restrictions;
+      const customerDietary = p.bookings.customers.dietary_requirements;
+      const combinedDietary = [bookingDietary, customerDietary]
+        .filter(Boolean)
+        .join('; ');
+      
+      return {
+        lead_passenger_name: `${p.bookings.customers.first_name} ${p.bookings.customers.last_name}`,
+        passenger_2_name: p.bookings.passenger_2_name,
+        passenger_3_name: p.bookings.passenger_3_name,
+        passengers_attending: p.passengers_attending,
+        dietary_restrictions: combinedDietary || null,
+      };
+    }) || [];
 
     const totalPassengers = passengerList.reduce((sum: number, p: any) => sum + p.passengers_attending, 0);
 
