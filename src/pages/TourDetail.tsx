@@ -11,6 +11,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
+import { ActivityPassengerAllocationModal } from "@/components/ActivityPassengerAllocationModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
 import { TourHotelsTab } from "@/components/TourHotelsTab";
@@ -47,6 +48,8 @@ export default function TourDetail() {
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState("overview");
+  const [allocationModalOpen, setAllocationModalOpen] = useState(false);
+  const [newlyCreatedActivity, setNewlyCreatedActivity] = useState<{id: string, name: string} | null>(null);
 
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
@@ -325,7 +328,28 @@ export default function TourDetail() {
         open={addActivityModalOpen}
         onOpenChange={setAddActivityModalOpen}
         tourId={tour.id}
+        onActivityCreated={(activity) => {
+          console.log('onActivityCreated callback received:', activity);
+          setAddActivityModalOpen(false);
+          setNewlyCreatedActivity(activity);
+          setAllocationModalOpen(true);
+          console.log('Opening allocation modal for activity:', activity);
+        }}
       />
+      {newlyCreatedActivity && (
+        <ActivityPassengerAllocationModal
+          open={allocationModalOpen}
+          onOpenChange={(open) => {
+            setAllocationModalOpen(open);
+            if (!open) {
+              setNewlyCreatedActivity(null);
+            }
+          }}
+          tourId={tour.id}
+          activityId={newlyCreatedActivity.id}
+          activityName={newlyCreatedActivity.name}
+        />
+      )}
       <AddHotelModal
         open={addHotelModalOpen}
         onOpenChange={setAddHotelModalOpen}
