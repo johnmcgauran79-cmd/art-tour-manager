@@ -145,9 +145,14 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
+    // Extract name from email and format sender
+    const emailLocalPart = emailData.from.split('@')[0];
+    const senderName = emailLocalPart.charAt(0).toUpperCase() + emailLocalPart.slice(1);
+    const fromName = `${senderName} - Australian Racing Tours`;
+    
     // Send email with Resend
     const emailPayload: any = {
-      from: `Tour Operations <${emailData.from}>`,
+      from: `${fromName} <${emailData.from}>`,
       to: emailData.to,
       subject: emailData.subject,
       html: emailHtml,
