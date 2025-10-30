@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Mail } from "lucide-react";
+import { Mail, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -74,6 +74,12 @@ export const EmailActivityPassengerListModal = ({
     }
 
     setIsSending(true);
+    
+    // Show immediate feedback
+    toast({
+      title: "Sending Email",
+      description: "Please wait while we send the passenger list...",
+    });
     
     try {
       const { data, error } = await supabase.functions.invoke('send-activity-passenger-list', {
@@ -193,8 +199,17 @@ export const EmailActivityPassengerListModal = ({
             disabled={isSending}
             className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
           >
-            <Mail className="h-4 w-4 mr-2" />
-            {isSending ? "Sending..." : "Send Email"}
+            {isSending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending Email...
+              </>
+            ) : (
+              <>
+                <Mail className="h-4 w-4 mr-2" />
+                Send Email
+              </>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
