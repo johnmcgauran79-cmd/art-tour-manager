@@ -22,6 +22,8 @@ import { formatDateRange } from "@/lib/utils";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TourDetailModalWithHotelsTabProps {
   tour: Tour | null;
@@ -53,6 +55,7 @@ export const TourDetailModalWithHotelsTab = ({
   const navigate = useNavigate();
   const { userRole } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
   
   // Get fresh tour data from the query cache
@@ -265,14 +268,28 @@ export const TourDetailModalWithHotelsTab = ({
         open={addActivityModalOpen}
         onOpenChange={setAddActivityModalOpen}
         tourId={currentTour?.id}
-        onActivityCreated={(activity) => {
+        onActivityCreated={async (activity) => {
           console.log('onActivityCreated callback received:', activity);
-          // Close the add activity modal first
           setAddActivityModalOpen(false);
-          // Store the newly created activity and open allocation modal
-          setNewlyCreatedActivity(activity);
-          setAllocationModalOpen(true);
-          console.log('Opening allocation modal for activity:', activity);
+          
+          // Check if there are any bookings for this tour
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('id')
+            .eq('tour_id', currentTour?.id)
+            .neq('status', 'cancelled')
+            .limit(1);
+          
+          if (bookings && bookings.length > 0) {
+            setNewlyCreatedActivity(activity);
+            setAllocationModalOpen(true);
+            console.log('Opening allocation modal for activity:', activity);
+          } else {
+            toast({
+              title: "Activity Created",
+              description: "Activity added successfully. Add bookings to allocate passengers.",
+            });
+          }
         }}
       />
 

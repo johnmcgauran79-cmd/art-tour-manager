@@ -29,6 +29,7 @@ import { useSecureDeleteTour } from "@/hooks/useSecureTours";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function TourDetail() {
   const { id } = useParams();
@@ -328,12 +329,28 @@ export default function TourDetail() {
         open={addActivityModalOpen}
         onOpenChange={setAddActivityModalOpen}
         tourId={tour.id}
-        onActivityCreated={(activity) => {
+        onActivityCreated={async (activity) => {
           console.log('onActivityCreated callback received:', activity);
           setAddActivityModalOpen(false);
-          setNewlyCreatedActivity(activity);
-          setAllocationModalOpen(true);
-          console.log('Opening allocation modal for activity:', activity);
+          
+          // Check if there are any bookings for this tour
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('id')
+            .eq('tour_id', tour.id)
+            .neq('status', 'cancelled')
+            .limit(1);
+          
+          if (bookings && bookings.length > 0) {
+            setNewlyCreatedActivity(activity);
+            setAllocationModalOpen(true);
+            console.log('Opening allocation modal for activity:', activity);
+          } else {
+            toast({
+              title: "Activity Created",
+              description: "Activity added successfully. Add bookings to allocate passengers.",
+            });
+          }
         }}
       />
       {newlyCreatedActivity && (
