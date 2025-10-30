@@ -146,6 +146,7 @@ export const ActivityPassengerAllocationModal = ({
           <p className="text-sm text-muted-foreground mt-2">
             Review and adjust passenger counts before adding bookings to this activity.
             Bookings with accommodation are pre-filled with their full passenger count.
+            You can increase the number beyond the booking total if guests/friends are joining.
           </p>
         </DialogHeader>
 
@@ -181,7 +182,6 @@ export const ActivityPassengerAllocationModal = ({
                         <Input
                           type="number"
                           min="0"
-                          max={booking.passenger_count}
                           value={allocations[booking.id] || 0}
                           onChange={(e) => handleAllocationChange(booking.id, e.target.value)}
                           className="w-20 mx-auto text-center"
