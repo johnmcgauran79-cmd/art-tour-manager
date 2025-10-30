@@ -79,140 +79,98 @@ const handler = async (req: Request): Promise<Response> => {
 
     const totalPassengers = passengerList.reduce((sum: number, p: any) => sum + p.passengers_attending, 0);
 
-    // Generate HTML for email body
+    // Generate HTML table for passenger list
+    const tableHTML = `
+      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px;">
+        <thead>
+          <tr style="background-color: #333;">
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Lead Passenger</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Additional Passengers</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: center; color: white;">Tickets</th>
+            <th style="border: 1px solid #ddd; padding: 10px; text-align: left; color: white;">Dietary Requirements</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${passengerList.map((p: any, idx: number) => `
+            <tr style="background-color: ${idx % 2 === 0 ? '#fff' : '#f5f5f5'};">
+              <td style="border: 1px solid #ddd; padding: 10px; font-weight: bold;">${p.lead_passenger_name}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">
+                ${p.passenger_2_name ? `<div>${p.passenger_2_name}</div>` : ''}
+                ${p.passenger_3_name ? `<div>${p.passenger_3_name}</div>` : ''}
+                ${!p.passenger_2_name && !p.passenger_3_name ? '-' : ''}
+              </td>
+              <td style="border: 1px solid #ddd; padding: 10px; text-align: center; font-weight: bold;">${p.passengers_attending}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;">${p.dietary_restrictions || '-'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    // Generate email HTML
+    const htmlBody = emailData.message.replace(/\n/g, '<br>');
+    
     const emailHtml = `
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .header { background-color: #1a365d; color: white; padding: 20px; }
-            .content { padding: 20px; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-            th { background-color: #f5f5f5; font-weight: bold; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
-            .summary { background-color: #e6f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
-            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 0.9em; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>${activityName}</h1>
-            ${activityDate ? `<p>Date: ${activityDate}</p>` : ''}
-          </div>
-          <div class="content">
-            <p>${emailData.message.replace(/\n/g, '<br>')}</p>
-            
-            <div class="summary">
-              <strong>Total Passengers: ${totalPassengers}</strong>
-            </div>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Lead Passenger</th>
-                  <th>Additional Passengers</th>
-                  <th>Tickets</th>
-                  <th>Dietary Requirements</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${passengerList.map((p: any) => `
-                  <tr>
-                    <td>${p.lead_passenger_name}</td>
-                    <td>${[p.passenger_2_name, p.passenger_3_name].filter(Boolean).join(', ') || '-'}</td>
-                    <td><strong>${p.passengers_attending}</strong></td>
-                    <td>${p.dietary_restrictions || '-'}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-
-            <div class="summary">
-              <p><strong>Total Bookings:</strong> ${passengerList.length}</p>
-              <p><strong>Total Passengers:</strong> ${totalPassengers}</p>
-            </div>
-
-            <div class="footer">
-              <p>This is an automated message from Australian Racing Tours.</p>
-            </div>
-          </div>
-        </body>
-      </html>
+      <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
+        <h1 style="color: #333; border-bottom: 2px solid #333; padding-bottom: 10px;">${activityName} - Passenger List</h1>
+        ${activityDate ? `<h2 style="color: #555; margin-top: 10px;">Date: ${activityDate}</h2>` : ''}
+        
+        <div style="margin: 20px 0;">
+          ${htmlBody}
+        </div>
+        
+        <div style="background: #e6f3ff; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <p style="margin: 5px 0;"><strong>Activity:</strong> ${activityName}</p>
+          ${activityDate ? `<p style="margin: 5px 0;"><strong>Date:</strong> ${activityDate}</p>` : ''}
+          <p style="margin: 5px 0;"><strong>Total Passengers:</strong> ${totalPassengers}</p>
+          <p style="margin: 5px 0;"><strong>Total Bookings:</strong> ${passengerList.length}</p>
+        </div>
+        
+        ${tableHTML}
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+          <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
+          <p style="margin-top: 10px;"><em>Note: You can print this email to PDF using your browser's print function (File > Print > Save as PDF)</em></p>
+        </div>
+      </div>
     `;
-
-    // Generate PDF HTML
-    const pdfHtml = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 10px; }
-            h2 { color: #2d3748; margin-top: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; font-weight: bold; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
-            .summary { background-color: #e6f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
-          </style>
-        </head>
-        <body>
-          <h1>${activityName}</h1>
-          ${activityDate ? `<h2>Date: ${activityDate}</h2>` : ''}
-          <div class="summary">
-            <strong>Total Passengers: ${totalPassengers}</strong>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Lead Passenger</th>
-                <th>Additional Passengers</th>
-                <th>Tickets</th>
-                <th>Dietary Requirements</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${passengerList.map((p: any) => `
-                <tr>
-                  <td>${p.lead_passenger_name}</td>
-                  <td>${[p.passenger_2_name, p.passenger_3_name].filter(Boolean).join(', ') || '-'}</td>
-                  <td><strong>${p.passengers_attending}</strong></td>
-                  <td>${p.dietary_restrictions || '-'}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="summary">
-            <p><strong>Total Bookings:</strong> ${passengerList.length}</p>
-            <p><strong>Total Passengers:</strong> ${totalPassengers}</p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    // Convert HTML to PDF using Puppeteer
-    const pdfBuffer = await generatePDF(pdfHtml);
 
     // Send email with Resend
-    const emailResponse = await resend.emails.send({
-      from: emailData.from,
+    const emailPayload: any = {
+      from: `Tour Operations <${emailData.from}>`,
       to: emailData.to,
-      cc: emailData.cc.length > 0 ? emailData.cc : undefined,
       subject: emailData.subject,
       html: emailHtml,
-      attachments: [
-        {
-          filename: `${activityName.replace(/[^a-z0-9]/gi, '_')}_Passenger_List.pdf`,
-          content: pdfBuffer,
-        },
-      ],
-    });
+    };
+
+    // Add CC if provided
+    if (emailData.cc.length > 0) {
+      emailPayload.cc = emailData.cc;
+    }
+
+    const emailResponse = await resend.emails.send(emailPayload);
 
     console.log("Email sent successfully:", emailResponse);
 
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ 
+          error: `Email sending failed: ${emailResponse.error.message || emailResponse.error}` 
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     return new Response(
-      JSON.stringify({ success: true, data: emailResponse }),
+      JSON.stringify({ 
+        success: true, 
+        emailId: emailResponse.data?.id,
+        sentTo: emailData.to 
+      }),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -229,32 +187,5 @@ const handler = async (req: Request): Promise<Response> => {
     );
   }
 };
-
-async function generatePDF(html: string): Promise<Uint8Array> {
-  // Use Puppeteer to generate PDF
-  const puppeteer = await import("https://deno.land/x/puppeteer@16.2.0/mod.ts");
-  
-  const browser = await puppeteer.default.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  
-  const page = await browser.newPage();
-  await page.setContent(html);
-  
-  const pdf = await page.pdf({
-    format: 'A4',
-    printBackground: true,
-    margin: {
-      top: '20px',
-      right: '20px',
-      bottom: '20px',
-      left: '20px'
-    }
-  });
-  
-  await browser.close();
-  
-  return pdf;
-}
 
 serve(handler);

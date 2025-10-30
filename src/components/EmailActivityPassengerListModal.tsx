@@ -194,7 +194,7 @@ export const EmailActivityPassengerListModal = ({
             className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
           >
             <Mail className="h-4 w-4 mr-2" />
-            {isSending ? "Sending..." : "Send Email with PDF"}
+            {isSending ? "Sending..." : "Send Email"}
           </Button>
         </DialogFooter>
       </DialogContent>
