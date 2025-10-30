@@ -21,10 +21,17 @@ export const ItineraryPDFViewer = ({
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    if (open && htmlContent && !pdfUrl) {
+    if (open && htmlContent) {
+      // Clear previous PDF URL if exists
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl);
+        setPdfUrl("");
+      }
+      // Generate new PDF
       generatePDF();
     }
     
+    // Cleanup on unmount
     return () => {
       if (pdfUrl) {
         URL.revokeObjectURL(pdfUrl);
