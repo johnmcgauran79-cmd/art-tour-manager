@@ -266,9 +266,13 @@ export const TourDetailModalWithHotelsTab = ({
         onOpenChange={setAddActivityModalOpen}
         tourId={currentTour?.id}
         onActivityCreated={(activity) => {
+          console.log('onActivityCreated callback received:', activity);
+          // Close the add activity modal first
+          setAddActivityModalOpen(false);
           // Store the newly created activity and open allocation modal
           setNewlyCreatedActivity(activity);
           setAllocationModalOpen(true);
+          console.log('Opening allocation modal for activity:', activity);
         }}
       />
 
