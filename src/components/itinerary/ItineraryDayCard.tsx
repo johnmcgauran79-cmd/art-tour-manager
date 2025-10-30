@@ -84,7 +84,10 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
                       <h4 className="font-medium text-gray-900">{entry.subject}</h4>
                     </div>
                     {entry.content && (
-                      <p className="text-gray-700 text-sm whitespace-pre-wrap">{entry.content}</p>
+                      <div 
+                        className="text-gray-700 text-sm prose prose-sm max-w-none"
+                        dangerouslySetInnerHTML={{ __html: entry.content }}
+                      />
                     )}
                   </div>
                   <div className="flex items-center gap-1 ml-3">
