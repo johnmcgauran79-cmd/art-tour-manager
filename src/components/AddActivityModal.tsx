@@ -138,12 +138,16 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
         transport_notes: ""
       });
       
-      // Notify parent about the created activity for allocation
-      if (onActivityCreated) {
-        onActivityCreated({ id: data.id, name: data.name });
-      }
-      
+      // Close the modal first
       onOpenChange(false);
+      
+      // Then notify parent about the created activity for allocation
+      // This needs a small delay to ensure this modal closes before the allocation modal opens
+      setTimeout(() => {
+        if (onActivityCreated) {
+          onActivityCreated({ id: data.id, name: data.name });
+        }
+      }, 100);
     },
     onError: (error) => {
       console.error('Full error creating activity:', error);
