@@ -137,19 +137,19 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
             </div>
           ) : (
             <div className="border rounded-lg">
-              <Table>
+              <Table className="table-fixed">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[140px]">Tour</TableHead>
-                    <TableHead className="w-[120px]">Lead Passenger</TableHead>
-                    <TableHead className="w-[120px]">Other Passengers</TableHead>
-                    <TableHead className="w-[60px]">Pax</TableHead>
-                    <TableHead className="w-[140px]">Check In</TableHead>
-                    <TableHead className="w-[140px]">Check Out</TableHead>
-                    <TableHead className="w-[70px]">Nights</TableHead>
-                    <TableHead className="w-[80px]">Status</TableHead>
-                    <TableHead className="w-[100px]">Created</TableHead>
-                    <TableHead className="w-[60px]">Notes</TableHead>
+                    <TableHead style={{ width: '12%' }}>Tour</TableHead>
+                    <TableHead style={{ width: '10%' }}>Lead Passenger</TableHead>
+                    <TableHead style={{ width: '10%' }}>Other Passengers</TableHead>
+                    <TableHead style={{ width: '5%' }}>Pax</TableHead>
+                    <TableHead style={{ width: '12%' }}>Check In</TableHead>
+                    <TableHead style={{ width: '12%' }}>Check Out</TableHead>
+                    <TableHead style={{ width: '6%' }}>Nights</TableHead>
+                    <TableHead style={{ width: '8%' }}>Status</TableHead>
+                    <TableHead style={{ width: '10%' }}>Created</TableHead>
+                    <TableHead style={{ width: '6%' }}>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -159,34 +159,34 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                       className="cursor-pointer hover:bg-accent/50"
                       onClick={() => handleBookingClick(booking)}
                     >
-                      <TableCell className="w-[140px]">{booking.tours?.name || 'No Tour'}</TableCell>
-                      <TableCell className="w-[120px]">
+                      <TableCell>{booking.tours?.name || 'No Tour'}</TableCell>
+                      <TableCell>
                         {booking.customers?.first_name} {booking.customers?.last_name}
                       </TableCell>
-                      <TableCell className="w-[120px]">
+                      <TableCell>
                         <div className="space-y-1">
                           {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
                           {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
                           {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}
                         </div>
                       </TableCell>
-                      <TableCell className="w-[60px]">{booking.passenger_count}</TableCell>
-                      <TableCell className="w-[140px]">
+                      <TableCell>{booking.passenger_count}</TableCell>
+                      <TableCell>
                         {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : '-'}
                       </TableCell>
-                      <TableCell className="w-[140px]">
+                      <TableCell>
                         {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : '-'}
                       </TableCell>
-                      <TableCell className="w-[70px]">{booking.total_nights || '-'}</TableCell>
-                      <TableCell className="w-[80px]">
+                      <TableCell>{booking.total_nights || '-'}</TableCell>
+                      <TableCell>
                         <Badge className={getBookingStatusColor(booking.status || 'pending')}>
                           {formatStatusText(booking.status || 'pending')}
                         </Badge>
                       </TableCell>
-                      <TableCell className="w-[100px]">
+                      <TableCell>
                         {formatDateToDDMMYYYY(booking.created_at)}
                       </TableCell>
-                      <TableCell className="w-[60px]">
+                      <TableCell>
                         <div className="truncate" title={booking.extra_requests || ''}>
                           {booking.extra_requests || '-'}
                         </div>
