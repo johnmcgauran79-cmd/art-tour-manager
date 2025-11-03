@@ -144,12 +144,12 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                     <TableHead className="w-[120px]">Lead Passenger</TableHead>
                     <TableHead className="w-[120px]">Other Passengers</TableHead>
                     <TableHead className="w-[60px]">Pax</TableHead>
-                    <TableHead className="w-[100px]">Check In</TableHead>
-                    <TableHead className="w-[100px]">Check Out</TableHead>
+                    <TableHead className="w-[140px]">Check In</TableHead>
+                    <TableHead className="w-[140px]">Check Out</TableHead>
                     <TableHead className="w-[70px]">Nights</TableHead>
                     <TableHead className="w-[80px]">Status</TableHead>
                     <TableHead className="w-[100px]">Created</TableHead>
-                    <TableHead className="w-[100px]">Notes</TableHead>
+                    <TableHead className="w-[60px]">Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -171,10 +171,10 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                         </div>
                       </TableCell>
                       <TableCell className="w-[60px]">{booking.passenger_count}</TableCell>
-                      <TableCell className="w-[100px]">
+                      <TableCell className="w-[140px]">
                         {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : '-'}
                       </TableCell>
-                      <TableCell className="w-[100px]">
+                      <TableCell className="w-[140px]">
                         {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : '-'}
                       </TableCell>
                       <TableCell className="w-[70px]">{booking.total_nights || '-'}</TableCell>
@@ -186,7 +186,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                       <TableCell className="w-[100px]">
                         {formatDateToDDMMYYYY(booking.created_at)}
                       </TableCell>
-                      <TableCell className="w-[100px]">
+                      <TableCell className="w-[60px]">
                         <div className="truncate" title={booking.extra_requests || ''}>
                           {booking.extra_requests || '-'}
                         </div>
