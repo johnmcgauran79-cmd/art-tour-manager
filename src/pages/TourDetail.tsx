@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Settings, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -221,29 +221,29 @@ export default function TourDetail() {
             <FileText className="h-4 w-4" />
             <span className="hidden sm:inline">Overview</span>
           </TabsTrigger>
+          <TabsTrigger value="hotels" className="flex items-center gap-2">
+            <Building className="h-4 w-4" />
+            <span className="hidden sm:inline">Hotels</span>
+          </TabsTrigger>
           <TabsTrigger value="bookings" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Bookings</span>
-          </TabsTrigger>
-          <TabsTrigger value="itinerary" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Itinerary</span>
           </TabsTrigger>
           <TabsTrigger value="activities" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             <span className="hidden sm:inline">Activities</span>
           </TabsTrigger>
-          <TabsTrigger value="hotels" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            <span className="hidden sm:inline">Hotels</span>
+          <TabsTrigger value="operations" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="hidden sm:inline">Operations</span>
           </TabsTrigger>
           <TabsTrigger value="tasks" className="flex items-center gap-2">
             <ClipboardList className="h-4 w-4" />
             <span className="hidden sm:inline">Tasks</span>
           </TabsTrigger>
-          <TabsTrigger value="operations" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Operations</span>
+          <TabsTrigger value="itinerary" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <span className="hidden sm:inline">Itinerary</span>
           </TabsTrigger>
         </TabsList>
 
