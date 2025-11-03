@@ -144,12 +144,12 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                     <TableHead style={{ width: '10%' }}>Lead Passenger</TableHead>
                     <TableHead style={{ width: '10%' }}>Other Passengers</TableHead>
                     <TableHead style={{ width: '5%' }}>Pax</TableHead>
-                    <TableHead style={{ width: '12%' }}>Check In</TableHead>
-                    <TableHead style={{ width: '12%' }}>Check Out</TableHead>
+                    <TableHead style={{ width: '10%' }}>Check In</TableHead>
+                    <TableHead style={{ width: '10%' }}>Check Out</TableHead>
                     <TableHead style={{ width: '6%' }}>Nights</TableHead>
                     <TableHead style={{ width: '8%' }}>Status</TableHead>
-                    <TableHead style={{ width: '10%' }}>Created</TableHead>
-                    <TableHead style={{ width: '6%' }}>Notes</TableHead>
+                    <TableHead style={{ width: '12%' }}>Created</TableHead>
+                    <TableHead style={{ width: '10%' }}>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
