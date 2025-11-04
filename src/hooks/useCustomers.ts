@@ -367,9 +367,9 @@ export const useDeleteCustomer = () => {
         throw new Error('Cannot delete contact with existing tour bookings. Please cancel or transfer their bookings first.');
       }
 
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from('customers')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', id);
 
       if (error) {
@@ -380,16 +380,22 @@ export const useDeleteCustomer = () => {
         throw error;
       }
       
-      // Create notification for deletion (not via realtime to avoid duplicates)
-      // Notification will be created automatically by centralized system
+      // Check if deletion actually happened
+      if (count === 0) {
+        console.error('Deletion returned 0 rows - possible RLS policy issue');
+        throw new Error('Failed to delete contact. You may not have permission to delete this contact.');
+      }
       
-      console.log('Customer deleted successfully');
+      console.log('Customer deleted successfully, rows affected:', count);
       return id;
     },
     onSuccess: (deletedId) => {
-      // Remove from all customer queries (paginated, filtered, etc.)
+      console.log('Delete mutation onSuccess called for:', deletedId);
+      // Aggressively clear all customer-related cache
       queryClient.removeQueries({ queryKey: ['customers'] });
       queryClient.removeQueries({ queryKey: ['customer', deletedId] });
+      // Force refetch of customer lists
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Contact Deleted",
