@@ -30,7 +30,7 @@ export default function ContactDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
 
-  const handleDelete = async () => {
+  const handleDeleteClick = async () => {
     if (!contact) return;
 
     try {
@@ -67,6 +67,7 @@ export default function ContactDetail() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      setShowDeleteDialog(false);
       toast({
         title: "Success",
         description: "Contact deleted successfully",
@@ -137,12 +138,14 @@ export default function ContactDetail() {
               Edit
             </Button>
             
-            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+              if (!open) {
+                setDeleteError(null);
+              }
+              setShowDeleteDialog(open);
+            }}>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" onClick={() => {
-                  setDeleteError(null);
-                  setShowDeleteDialog(true);
-                }}>
+                <Button variant="destructive" size="sm">
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
@@ -150,20 +153,22 @@ export default function ContactDetail() {
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {deleteError ? (
-                      <div className="text-destructive font-medium mt-2">
-                        {deleteError}
-                      </div>
-                    ) : (
-                      "Are you sure you want to delete this contact? This action cannot be undone."
-                    )}
+                  <AlertDialogDescription asChild>
+                    <div>
+                      {deleteError ? (
+                        <div className="text-destructive font-semibold text-base">
+                          {deleteError}
+                        </div>
+                      ) : (
+                        <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
+                      )}
+                    </div>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   {!deleteError && (
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                       Delete
                     </AlertDialogAction>
                   )}
