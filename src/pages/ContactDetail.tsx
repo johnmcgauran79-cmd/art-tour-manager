@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Edit, Trash2, Mail, User } from "lucide-react";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomerById } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,8 +23,8 @@ export default function ContactDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: contactsData, isLoading } = useCustomers();
-  const contact = contactsData?.customers.find(c => c.id === id);
+  const { data: contactData, isLoading } = useCustomerById(id || null);
+  const contact = contactData;
   
 
   const handleDelete = async () => {
