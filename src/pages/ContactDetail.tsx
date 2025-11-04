@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -25,30 +26,54 @@ export default function ContactDetail() {
   const queryClient = useQueryClient();
   const { data: contactData, isLoading } = useCustomerById(id || null);
   const contact = contactData;
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
 
   const handleDelete = async () => {
     if (!contact) return;
 
     try {
-      const { error } = await supabase
+      setDeleteError(null);
+      
+      // Check for existing bookings first
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, tours(name)')
+        .eq('lead_passenger_id', contact.id)
+        .limit(1);
+
+      if (bookingsError) {
+        setDeleteError('Unable to verify if contact has bookings. Please try again.');
+        return;
+      }
+
+      if (bookings && bookings.length > 0) {
+        const tourName = bookings[0]?.tours?.name || 'a tour';
+        setDeleteError(`This contact cannot be deleted as they have an existing booking for ${tourName}. Please cancel or remove their bookings first.`);
+        return;
+      }
+
+      const { error, count } = await supabase
         .from('customers')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', contact.id);
 
       if (error) throw error;
+      
+      if (count === 0) {
+        setDeleteError('Failed to delete contact. You may not have permission to delete this contact.');
+        return;
+      }
 
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({
         title: "Success",
         description: "Contact deleted successfully",
       });
       navigate("/?tab=contacts");
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to delete contact",
-        variant: "destructive",
-      });
+      setDeleteError(error.message || "Failed to delete contact. Please try again.");
     }
   };
 
@@ -112,9 +137,12 @@ export default function ContactDetail() {
               Edit
             </Button>
             
-            <AlertDialog>
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" onClick={() => {
+                  setDeleteError(null);
+                  setShowDeleteDialog(true);
+                }}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
@@ -123,14 +151,22 @@ export default function ContactDetail() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Contact</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Are you sure you want to delete this contact? This action cannot be undone.
+                    {deleteError ? (
+                      <div className="text-destructive font-medium mt-2">
+                        {deleteError}
+                      </div>
+                    ) : (
+                      "Are you sure you want to delete this contact? This action cannot be undone."
+                    )}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete}>
-                    Delete
-                  </AlertDialogAction>
+                  {!deleteError && (
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  )}
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
