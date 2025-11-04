@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save } from "lucide-react";
-import { useCustomers } from "@/hooks/useCustomers";
+import { useCustomerById } from "@/hooks/useCustomers";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,8 +17,7 @@ export default function ContactEdit() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: contactsData, isLoading } = useCustomers();
-  const contact = contactsData?.customers.find(c => c.id === id);
+  const { data: contact, isLoading } = useCustomerById(id || null);
   
   const [editedContact, setEditedContact] = useState<any>({});
 
