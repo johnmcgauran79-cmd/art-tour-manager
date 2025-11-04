@@ -354,17 +354,18 @@ export const useDeleteCustomer = () => {
       // First check if the customer has any bookings
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
-        .select('id')
+        .select('id, tours(name)')
         .eq('lead_passenger_id', id)
         .limit(1);
 
       if (bookingsError) {
         console.error('Error checking for bookings:', bookingsError);
-        throw new Error('Failed to check for existing bookings');
+        throw new Error('Unable to verify if contact has bookings. Please try again.');
       }
 
       if (bookings && bookings.length > 0) {
-        throw new Error('Cannot delete contact with existing tour bookings. Please cancel or transfer their bookings first.');
+        const tourName = bookings[0]?.tours?.name || 'a tour';
+        throw new Error(`This contact cannot be deleted as they have an existing booking for ${tourName}. Please cancel or remove their bookings first.`);
       }
 
       const { error, count } = await supabase
