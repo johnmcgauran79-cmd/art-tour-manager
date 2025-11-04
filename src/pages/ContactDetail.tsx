@@ -30,13 +30,10 @@ export default function ContactDetail() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
 
-  const handleDeleteClick = async () => {
-    if (!contact) return;
+  const checkForBookings = async () => {
+    if (!contact) return false;
 
     try {
-      setDeleteError(null);
-      
-      // Check for existing bookings first
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select('id, tours(name)')
@@ -45,15 +42,26 @@ export default function ContactDetail() {
 
       if (bookingsError) {
         setDeleteError('Unable to verify if contact has bookings. Please try again.');
-        return;
+        return true;
       }
 
       if (bookings && bookings.length > 0) {
         const tourName = bookings[0]?.tours?.name || 'a tour';
         setDeleteError(`This contact cannot be deleted as they have an existing booking for ${tourName}. Please cancel or remove their bookings first.`);
-        return;
+        return true;
       }
 
+      return false;
+    } catch (error: any) {
+      setDeleteError(error.message || "Failed to check for bookings.");
+      return true;
+    }
+  };
+
+  const handleDeleteClick = async () => {
+    if (!contact) return;
+
+    try {
       const { error, count } = await supabase
         .from('customers')
         .delete({ count: 'exact' })
@@ -145,7 +153,11 @@ export default function ContactDetail() {
               setShowDeleteDialog(open);
             }}>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm">
+                <Button variant="destructive" size="sm" onClick={async () => {
+                  setDeleteError(null);
+                  const hasBookings = await checkForBookings();
+                  setShowDeleteDialog(true);
+                }}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
