@@ -48,7 +48,6 @@ export const ContactTableRow = ({ customer, onClick }: ContactTableRowProps) => 
         )}
       </TableCell>
       <TableCell>{customer.spouse_name || "-"}</TableCell>
-      <TableCell>{customer.state || "-"}</TableCell>
       <TableCell>
         <div className="max-w-xs truncate" title={customer.dietary_requirements || ""}>
           {customer.dietary_requirements || "-"}
