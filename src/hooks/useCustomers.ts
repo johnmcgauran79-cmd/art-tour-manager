@@ -317,6 +317,7 @@ export const useUpdateCustomer = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', data.id] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Contact Updated",

@@ -50,6 +50,7 @@ export default function ContactEdit() {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', contact.id] });
       toast({
         title: "Success",
         description: "Contact updated successfully",
