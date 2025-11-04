@@ -387,8 +387,9 @@ export const useDeleteCustomer = () => {
       return id;
     },
     onSuccess: (deletedId) => {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-      queryClient.invalidateQueries({ queryKey: ['customer', deletedId] });
+      // Remove from all customer queries (paginated, filtered, etc.)
+      queryClient.removeQueries({ queryKey: ['customers'] });
+      queryClient.removeQueries({ queryKey: ['customer', deletedId] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Contact Deleted",
