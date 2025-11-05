@@ -359,7 +359,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         <h2 class="section-title">Tour Information</h2>
         <p><strong>Location:</strong> ${tour.location || 'N/A'}</p>
         <p><strong>Pickup Point:</strong> ${tour.pickup_point || 'N/A'}</p>
-        ${tour.notes ? `<p><strong>Notes:</strong> ${tour.notes}</p>` : ''}
         ${inclusionsList ? `<div><strong>Inclusions:</strong><ul style="margin-top: 8px;">${inclusionsList}</ul></div>` : ''}
         ${exclusionsList ? `<div><strong>Exclusions:</strong><ul style="margin-top: 8px;">${exclusionsList}</ul></div>` : ''}
       </div>
@@ -390,7 +389,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
   }
 
   html += `
-    <div class="itinerary-section">
+    <div class="itinerary-section" style="page-break-before: always;">
       <h2 class="section-title">Daily Itinerary</h2>
   `;
 
