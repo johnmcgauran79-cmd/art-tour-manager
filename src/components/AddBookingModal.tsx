@@ -121,6 +121,20 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   }, [open, hotels, preSelectedTourStartDate, preSelectedTourEndDate, formData.accommodation_required]);
 
+  // Update hotel allocations when accommodation_required changes
+  useEffect(() => {
+    if (Object.keys(hotelAllocations).length > 0) {
+      const updatedAllocations = { ...hotelAllocations };
+      Object.keys(updatedAllocations).forEach(hotelId => {
+        updatedAllocations[hotelId] = {
+          ...updatedAllocations[hotelId],
+          allocated: formData.accommodation_required,
+        };
+      });
+      setHotelAllocations(updatedAllocations);
+    }
+  }, [formData.accommodation_required]);
+
   // Initialize activity allocations when modal opens
   useEffect(() => {
     if (open && activities && activities.length > 0) {
