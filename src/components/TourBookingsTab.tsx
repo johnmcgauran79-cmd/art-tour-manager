@@ -14,9 +14,10 @@ interface TourBookingsTabProps {
   tourId: string;
   tourName: string;
   onAddBooking: () => void;
+  currentTab?: string;
 }
 
-export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookingsTabProps) => {
+export const TourBookingsTab = ({ tourId, tourName, onAddBooking, currentTab }: TourBookingsTabProps) => {
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
   const [bulkDietaryModalOpen, setBulkDietaryModalOpen] = useState(false);
   const [addWaitlistModalOpen, setAddWaitlistModalOpen] = useState(false);
@@ -79,7 +80,7 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking }: TourBookings
           </div>
         </div>
 
-        <TourBookingsList tourId={tourId} tourName={tourName} />
+        <TourBookingsList tourId={tourId} tourName={tourName} currentTab={currentTab} />
       </div>
 
       <BulkBookingStatusModal

@@ -243,6 +243,7 @@ export const TourDetailModalWithHotelsTab = ({
                 tourId={currentTour?.id || ""}
                 tourName={currentTour?.name || ""}
                 onAddBooking={() => setAddBookingModalOpen(true)}
+                currentTab={currentTab}
               />
             </TabsContent>
 

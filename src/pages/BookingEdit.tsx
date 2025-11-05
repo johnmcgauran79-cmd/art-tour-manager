@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,9 @@ import { useToast } from "@/hooks/use-toast";
 export default function BookingEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTab = searchParams.get('returnTab');
+  const tourId = searchParams.get('tourId');
   const { toast } = useToast();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
@@ -168,7 +171,12 @@ export default function BookingEdit() {
           title: "Success",
           description: "Booking updated successfully",
         });
-        navigate(`/bookings/${booking.id}`);
+        // Navigate back to the tour page with the correct tab
+        if (tour && returnTab) {
+          navigate(`/tours/${tour.id}?tab=${returnTab}`);
+        } else {
+          navigate(`/bookings/${booking.id}`);
+        }
       }
     });
   };
@@ -283,10 +291,16 @@ export default function BookingEdit() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/bookings/${booking.id}`)}
+              onClick={() => {
+                if (tour && returnTab) {
+                  navigate(`/tours/${tour.id}?tab=${returnTab}`);
+                } else {
+                  navigate(`/bookings/${booking.id}`);
+                }
+              }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Booking
+              Back
             </Button>
             <Button
               variant="default"

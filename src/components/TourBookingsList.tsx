@@ -42,9 +42,10 @@ const getStatusOrder = (status: string) => {
 interface TourBookingsListProps {
   tourId: string;
   tourName: string;
+  currentTab?: string;
 }
 
-export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) => {
+export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsListProps) => {
   const navigate = useNavigate();
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showAddWaitlist, setShowAddWaitlist] = useState(false);
@@ -62,7 +63,10 @@ export const TourBookingsList = ({ tourId, tourName }: TourBookingsListProps) =>
 
   const handleEditBooking = (e: React.MouseEvent, booking: any) => {
     e.stopPropagation();
-    navigate(`/bookings/${booking.id}/edit`);
+    const params = new URLSearchParams();
+    if (currentTab) params.set('returnTab', currentTab);
+    params.set('tourId', tourId);
+    navigate(`/bookings/${booking.id}/edit?${params.toString()}`);
   };
 
   const handleDeleteBooking = (booking: any) => {
