@@ -63,3 +63,11 @@ export const taskPriorityConfig = {
   high: { variant: 'warning' as const, icon: null },
   critical: { variant: 'destructive' as const, icon: null },
 }
+
+export const hotelStatusConfig = {
+  pending: { variant: 'warning' as const, icon: null },
+  confirmed: { variant: 'success' as const, icon: null },
+  provisional: { variant: 'secondary' as const, icon: null },
+  cancelled: { variant: 'destructive' as const, icon: null },
+  waitlisted: { variant: 'secondary' as const, icon: null },
+}

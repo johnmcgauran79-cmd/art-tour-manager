@@ -5,6 +5,7 @@ import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator }
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
+import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
 import { useState } from "react";
 
 interface TourHotelsTabProps {
@@ -46,7 +47,13 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
             <Card key={hotel.id}>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="text-base">{hotel.name}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">{hotel.name}</CardTitle>
+                    <StatusBadge 
+                      status={hotel.booking_status}
+                      variant={hotelStatusConfig[hotel.booking_status as keyof typeof hotelStatusConfig]?.variant || 'default'}
+                    />
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
