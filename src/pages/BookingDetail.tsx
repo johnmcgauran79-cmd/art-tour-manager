@@ -30,7 +30,7 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 
 export default function BookingDetail() {
   const { id } = useParams();
-  const { goBack, navigateWithContext } = useNavigationContext();
+  const { goBack, navigateWithContext, getReturnPath, currentState } = useNavigationContext();
   const { toast } = useToast();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
@@ -120,7 +120,12 @@ export default function BookingDetail() {
         <AppBreadcrumbs
           items={[
             { label: "Bookings", href: "/?tab=bookings" },
-            ...(tour ? [{ label: tour.name, href: `/tours/${tour.id}` }] : []),
+            ...(tour && currentState?.from?.includes(`/tours/${tour.id}`) 
+              ? [{ label: tour.name, href: getReturnPath(`/tours/${tour.id}`) }] 
+              : tour 
+                ? [{ label: tour.name, href: `/tours/${tour.id}` }] 
+                : []
+            ),
             { label: leadPassengerName }
           ]}
         />
