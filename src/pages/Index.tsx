@@ -26,7 +26,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const Index = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const tabFromUrl = searchParams.get('tab') || 'dashboard';
   const [activeTab, setActiveTab] = useState(tabFromUrl);
@@ -105,14 +105,19 @@ const Index = () => {
 
 
   const handleViewAllTasks = () => {
+    setSearchParams({ tab: "operations" });
     setActiveTab("operations");
     const event = new CustomEvent('navigate-to-all-tasks');
     window.dispatchEvent(event);
   };
 
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+    setActiveTab(value);
+  };
 
   return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+    <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
       <TabsContent value="dashboard" className="space-y-8 mt-0">
         <DashboardQuickActions
           onAddTour={() => setAddTourModalOpen(true)}
