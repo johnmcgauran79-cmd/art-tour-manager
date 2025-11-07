@@ -45,16 +45,23 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
   const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
 
-  // Select the primary hotel for room statistics (avoid double-counting for back-to-back hotels)
-  // Use hotel matching tour start date, or first hotel with rooms_reserved
-  const primaryHotel = (hotels || []).find(hotel => 
-    hotel.default_check_in === tour.startDate
-  ) || (hotels || []).find(hotel => 
-    (hotel.rooms_reserved || 0) > 0
-  );
+  // Calculate hotel room statistics for the first night only to avoid double-counting back-to-back hotels
+  // But sum together if multiple hotels exist on the same date (like Scone tour)
+  const hotelsList = hotels || [];
+  const earliestCheckIn = hotelsList.length > 0 
+    ? hotelsList.reduce((earliest, hotel) => {
+        if (!hotel.default_check_in) return earliest;
+        if (!earliest) return hotel.default_check_in;
+        return hotel.default_check_in < earliest ? hotel.default_check_in : earliest;
+      }, null as string | null)
+    : null;
   
-  const totalRoomsReserved = primaryHotel?.rooms_reserved || 0;
-  const totalRoomsBooked = primaryHotel?.rooms_booked || 0;
+  const firstNightHotels = earliestCheckIn 
+    ? hotelsList.filter(hotel => hotel.default_check_in === earliestCheckIn)
+    : [];
+  
+  const totalRoomsReserved = firstNightHotels.reduce((sum, hotel) => sum + (hotel.rooms_reserved || 0), 0);
+  const totalRoomsBooked = firstNightHotels.reduce((sum, hotel) => sum + (hotel.rooms_booked || 0), 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
