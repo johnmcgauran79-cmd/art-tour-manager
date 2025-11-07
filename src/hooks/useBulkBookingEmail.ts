@@ -28,7 +28,7 @@ export const useBulkBookingEmail = () => {
               notes, inclusions, exclusions, tour_host, price_single, price_double,
               deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
-            customers:lead_passenger_id (
+            customers!lead_passenger_id (
               first_name, last_name, email, phone, city, state, country,
               spouse_name, dietary_requirements, notes
             ),
@@ -58,7 +58,7 @@ export const useBulkBookingEmail = () => {
               notes, inclusions, exclusions, tour_host, price_single, price_double,
               deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
-            customers:lead_passenger_id (
+            customers!lead_passenger_id (
               first_name, last_name, email, phone, city, state, country,
               spouse_name, dietary_requirements, notes
             ),
@@ -91,9 +91,9 @@ export const useBulkBookingEmail = () => {
             tours:tour_id (
               name, location, start_date, end_date, days, nights, pickup_point,
               notes, inclusions, exclusions, tour_host, price_single, price_double,
-              deposit_required, final_payment_date, instalment_date, instalment_amount
+              deposit_required, final_payment_date, instalment_date, instalment_date, instalment_amount
             ),
-            customers:lead_passenger_id (
+            customers!lead_passenger_id (
               first_name, last_name, email, phone, city, state, country,
               spouse_name, dietary_requirements, notes
             ),
@@ -112,10 +112,27 @@ export const useBulkBookingEmail = () => {
           .not('customers.email', 'is', null);
            
         if (error) throw error;
+        
+        console.log('[Bulk Email] All fetched bookings:', data?.map(b => ({
+          id: b.id,
+          name: `${b.customers?.first_name} ${b.customers?.last_name}`,
+          hotel_bookings_count: b.hotel_bookings?.length || 0,
+          hotel_bookings: b.hotel_bookings
+        })));
+        
         // Only include bookings that have hotel bookings
-        bookings = data?.filter(booking => 
-          booking.hotel_bookings && booking.hotel_bookings.length > 0
-        );
+        bookings = data?.filter(booking => {
+          const hasHotelBookings = booking.hotel_bookings && booking.hotel_bookings.length > 0;
+          console.log(`[Bulk Email] ${booking.customers?.first_name} ${booking.customers?.last_name}:`, {
+            hasHotelBookings,
+            hotel_bookings: booking.hotel_bookings
+          });
+          return hasHotelBookings;
+        });
+        
+        console.log('[Bulk Email] Filtered bookings with hotel:', bookings?.map(b => 
+          `${b.customers?.first_name} ${b.customers?.last_name}`
+        ));
       }
 
       if (!bookings || bookings.length === 0) {
