@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,7 @@ interface TourBookingsListProps {
 }
 
 export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsListProps) => {
-  const navigate = useNavigate();
+  const { navigateWithContext } = useNavigationContext();
   const [showAddBooking, setShowAddBooking] = useState(false);
   const [showAddWaitlist, setShowAddWaitlist] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,18 +58,22 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   const sendBookingConfirmation = useSendBookingConfirmation();
 
   const handleViewBooking = (booking: any) => {
-    const params = new URLSearchParams();
-    if (currentTab) params.set('returnTab', currentTab);
-    params.set('tourId', tourId);
-    navigate(`/bookings/${booking.id}?${params.toString()}`);
+    navigateWithContext(`/bookings/${booking.id}`, {
+      state: {
+        tab: currentTab,
+        from: `/tours/${tourId}`,
+      }
+    });
   };
 
   const handleEditBooking = (e: React.MouseEvent, booking: any) => {
     e.stopPropagation();
-    const params = new URLSearchParams();
-    if (currentTab) params.set('returnTab', currentTab);
-    params.set('tourId', tourId);
-    navigate(`/bookings/${booking.id}/edit?${params.toString()}`);
+    navigateWithContext(`/bookings/${booking.id}/edit`, {
+      state: {
+        tab: currentTab,
+        from: `/tours/${tourId}`,
+      }
+    });
   };
 
   const handleDeleteBooking = (booking: any) => {

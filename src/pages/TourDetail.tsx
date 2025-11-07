@@ -256,6 +256,7 @@ export default function TourDetail() {
             tourId={tour.id}
             tourName={tour.name}
             onAddBooking={() => setAddBookingModalOpen(true)}
+            currentTab={currentTab}
           />
         </TabsContent>
 
