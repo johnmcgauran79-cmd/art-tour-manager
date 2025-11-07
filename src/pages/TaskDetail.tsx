@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,9 +19,13 @@ import { useToast } from "@/hooks/use-toast";
 export default function TaskDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find(t => t.id === id);
+  
+  const tourId = searchParams.get('tourId');
+  const returnTab = searchParams.get('returnTab') || 'tasks';
   
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -152,7 +156,15 @@ export default function TaskDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(tour ? `/tours/${tour.id}` : "/?tab=operations")}
+              onClick={() => {
+                if (tourId && returnTab) {
+                  navigate(`/tours/${tourId}?tab=${returnTab}`);
+                } else if (tour) {
+                  navigate(`/tours/${tour.id}`);
+                } else {
+                  navigate("/?tab=operations");
+                }
+              }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -161,7 +173,7 @@ export default function TaskDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/tasks/${id}/edit`)}
+              onClick={() => navigate(`/tasks/${id}/edit${tourId && returnTab ? `?tourId=${tourId}&returnTab=${returnTab}` : ''}`)}
             >
               <Save className="mr-2 h-4 w-4" />
               Edit

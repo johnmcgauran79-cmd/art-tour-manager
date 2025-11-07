@@ -29,7 +29,7 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   });
 
   const handleTaskClick = (task: Task) => {
-    navigate(`/tasks/${task.id}`);
+    navigate(`/tasks/${task.id}?tourId=${tourId}&returnTab=tasks`);
   };
 
   const activeTasks = tasks?.filter(task => 

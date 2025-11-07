@@ -58,7 +58,10 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   const sendBookingConfirmation = useSendBookingConfirmation();
 
   const handleViewBooking = (booking: any) => {
-    navigate(`/bookings/${booking.id}`);
+    const params = new URLSearchParams();
+    if (currentTab) params.set('returnTab', currentTab);
+    params.set('tourId', tourId);
+    navigate(`/bookings/${booking.id}?${params.toString()}`);
   };
 
   const handleEditBooking = (e: React.MouseEvent, booking: any) => {

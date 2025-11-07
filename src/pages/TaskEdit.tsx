@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,9 +19,13 @@ import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 export default function TaskEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find(t => t.id === id);
+  
+  const tourId = searchParams.get('tourId');
+  const returnTab = searchParams.get('returnTab') || 'tasks';
   
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
   
@@ -55,7 +59,12 @@ export default function TaskEdit() {
           title: "Success",
           description: "Task updated successfully",
         });
-        navigate(`/tasks/${task.id}`);
+        // Navigate back to the tour tab if available
+        if (tourId && returnTab) {
+          navigate(`/tours/${tourId}?tab=${returnTab}`);
+        } else {
+          navigate(`/tasks/${task.id}`);
+        }
       },
       onError: (error: any) => {
         toast({
@@ -149,10 +158,16 @@ export default function TaskEdit() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/tasks/${task.id}`)}
+              onClick={() => {
+                if (tourId && returnTab) {
+                  navigate(`/tours/${tourId}?tab=${returnTab}`);
+                } else {
+                  navigate(`/tasks/${task.id}`);
+                }
+              }}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Task
+              Back
             </Button>
             
             <Button
