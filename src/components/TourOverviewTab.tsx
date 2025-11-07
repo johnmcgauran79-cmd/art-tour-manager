@@ -45,9 +45,16 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
   const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
 
-  // Calculate hotel room statistics for this tour
-  const totalRoomsReserved = (hotels || []).reduce((sum, hotel) => sum + (hotel.rooms_reserved || 0), 0);
-  const totalRoomsBooked = (hotels || []).reduce((sum, hotel) => sum + (hotel.rooms_booked || 0), 0);
+  // Select the primary hotel for room statistics (avoid double-counting for back-to-back hotels)
+  // Use hotel matching tour start date, or first hotel with rooms_reserved
+  const primaryHotel = (hotels || []).find(hotel => 
+    hotel.default_check_in === tour.startDate
+  ) || (hotels || []).find(hotel => 
+    (hotel.rooms_reserved || 0) > 0
+  );
+  
+  const totalRoomsReserved = primaryHotel?.rooms_reserved || 0;
+  const totalRoomsBooked = primaryHotel?.rooms_booked || 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
