@@ -58,6 +58,11 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   const sendBookingConfirmation = useSendBookingConfirmation();
 
   const handleViewBooking = (booking: any) => {
+    console.log('[TourBookingsList] Navigating to booking with context:', {
+      currentTab,
+      tourId,
+      from: `/tours/${tourId}`,
+    });
     navigateWithContext(`/bookings/${booking.id}`, {
       state: {
         tab: currentTab,

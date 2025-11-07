@@ -38,6 +38,15 @@ export const useNavigationContext = () => {
       ...options?.state,
     };
 
+    console.log('[useNavigationContext] navigateWithContext called:', {
+      to,
+      location: location.pathname + location.search,
+      currentTab,
+      currentSearch,
+      customState: options?.state,
+      finalState: navigationState,
+    });
+
     const navigateOptions: NavigateOptions = {
       state: navigationState,
       replace: options?.replace,
@@ -52,6 +61,12 @@ export const useNavigationContext = () => {
    */
   const goBack = useCallback((defaultPath: string = "/") => {
     const state = location.state as NavigationState;
+    
+    console.log('[useNavigationContext] goBack called:', {
+      defaultPath,
+      locationState: state,
+      location: location.pathname + location.search,
+    });
     
     if (state?.from) {
       // Reconstruct the full URL with tab and search params
@@ -70,8 +85,10 @@ export const useNavigationContext = () => {
         returnPath += `?${queryString}`;
       }
       
+      console.log('[useNavigationContext] Navigating back to:', returnPath);
       navigate(returnPath, { replace: true });
     } else {
+      console.log('[useNavigationContext] No state.from, using default:', defaultPath);
       navigate(defaultPath, { replace: true });
     }
   }, [navigate, location.state]);
