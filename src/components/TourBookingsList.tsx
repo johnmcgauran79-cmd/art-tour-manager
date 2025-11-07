@@ -260,8 +260,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                         </div>
                       </td>
                       <td className="p-3">{booking.passenger_count}</td>
-                      <td className="p-3">{formatDateToDDMMYYYY(booking.check_in_date)}</td>
-                      <td className="p-3">{formatDateToDDMMYYYY(booking.check_out_date)}</td>
+                      <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}</td>
+                      <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}</td>
                       <td className="p-3">{booking.total_nights || '-'}</td>
                       <td className="p-3">
                         <Badge className={getStatusColor(booking.status || 'pending')}>

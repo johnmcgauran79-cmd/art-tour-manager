@@ -173,10 +173,10 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                       </TableCell>
                       <TableCell>{booking.passenger_count}</TableCell>
                       <TableCell>
-                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : '-'}
+                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}
                       </TableCell>
                       <TableCell>
-                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : '-'}
+                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}
                       </TableCell>
                       <TableCell>{booking.total_nights || '-'}</TableCell>
                       <TableCell>
