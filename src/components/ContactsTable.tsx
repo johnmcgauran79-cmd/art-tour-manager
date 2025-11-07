@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { AddContactModal } from "./AddContactModal";
 import { ContactExportModal } from "./ContactExportModal";
 import { ContactImportModal } from "./ContactImportModal";
 export const ContactsTable = () => {
-  const navigate = useNavigate();
+  const { navigateWithContext } = useNavigationContext();
   const [showAddContact, setShowAddContact] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -42,7 +42,7 @@ export const ContactsTable = () => {
     }
   };
   const handleContactClick = (customer: any) => {
-    navigate(`/contacts/${customer.id}`);
+    navigateWithContext(`/contacts/${customer.id}`);
   };
   if (isLoading) {
     return <Card>

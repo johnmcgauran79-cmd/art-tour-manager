@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,10 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function BookingEdit() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const returnTab = searchParams.get('returnTab');
-  const tourId = searchParams.get('tourId');
+  const { goBack, navigateWithContext } = useNavigationContext();
   const { toast } = useToast();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
@@ -171,12 +169,7 @@ export default function BookingEdit() {
           title: "Success",
           description: "Booking updated successfully",
         });
-        // Navigate back to the tour page with the correct tab
-        if (tour && returnTab) {
-          navigate(`/tours/${tour.id}?tab=${returnTab}`);
-        } else {
-          navigate(`/bookings/${booking.id}`);
-        }
+        goBack(`/bookings/${booking.id}`);
       }
     });
   };
@@ -198,7 +191,7 @@ export default function BookingEdit() {
     }, {
       onSuccess: () => {
         setShowCancelDialog(false);
-        navigate(`/bookings/${booking.id}`);
+        goBack(`/bookings/${booking.id}`);
       }
     });
   };
@@ -254,7 +247,7 @@ export default function BookingEdit() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Booking Not Found</h1>
-          <Button onClick={() => navigate("/")}>
+          <Button onClick={() => goBack("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -291,13 +284,7 @@ export default function BookingEdit() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (tour && returnTab) {
-                  navigate(`/tours/${tour.id}?tab=${returnTab}`);
-                } else {
-                  navigate(`/bookings/${booking.id}`);
-                }
-              }}
+              onClick={() => goBack(`/bookings/${booking.id}`)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back

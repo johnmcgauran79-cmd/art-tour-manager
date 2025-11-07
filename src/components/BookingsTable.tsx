@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ interface BookingsTableProps {
 }
 
 export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTableProps) => {
-  const navigate = useNavigate();
+  const { navigateWithContext } = useNavigationContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
@@ -54,7 +55,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
   });
 
   const handleBookingClick = (booking: any) => {
-    navigate(`/bookings/${booking.id}`);
+    navigateWithContext(`/bookings/${booking.id}`);
   };
 
   if (isLoading) {

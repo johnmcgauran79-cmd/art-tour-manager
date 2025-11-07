@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft } from "lucide-react";
@@ -29,14 +30,10 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 
 export default function BookingDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { goBack, navigateWithContext } = useNavigationContext();
   const { toast } = useToast();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
-  
-  const tourId = searchParams.get('tourId');
-  const returnTab = searchParams.get('returnTab') || 'bookings';
   
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [currentTab, setCurrentTab] = useState("details");
@@ -60,7 +57,7 @@ export default function BookingDetail() {
           title: "Success",
           description: "Booking deleted successfully",
         });
-        navigate("/");
+        goBack("/?tab=bookings");
       },
       onError: (error: any) => {
         toast({
@@ -85,7 +82,7 @@ export default function BookingDetail() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Booking Not Found</h1>
-          <Button onClick={() => navigate("/")}>
+          <Button onClick={() => goBack("/")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -142,15 +139,7 @@ export default function BookingDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (tourId && returnTab) {
-                  navigate(`/tours/${tourId}?tab=${returnTab}`);
-                } else if (tour) {
-                  navigate(`/tours/${tour.id}`);
-                } else {
-                  navigate("/?tab=bookings");
-                }
-              }}
+              onClick={() => goBack(tour ? `/tours/${tour.id}` : "/?tab=bookings")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -159,7 +148,7 @@ export default function BookingDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/bookings/${id}/edit${tourId && returnTab ? `?tourId=${tourId}&returnTab=${returnTab}` : ''}`)}
+              onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit

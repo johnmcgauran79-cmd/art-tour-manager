@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ interface ToursTableProps {
 }
 
 export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProps) => {
-  const navigate = useNavigate();
+  const { navigateWithContext } = useNavigationContext();
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
   const [showAddTour, setShowAddTour] = useState(false);
@@ -63,7 +63,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   };
 
   const handleTourClick = (tour: any) => {
-    navigate(`/tours/${tour.id}`);
+    navigateWithContext(`/tours/${tour.id}`);
   };
 
   if (isLoading) {
@@ -151,7 +151,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                   tour={tour}
                   totalPassengers={getTotalPassengers(tour.id)}
                   onView={handleTourClick}
-                  onEdit={() => navigate(`/tours/${tour.id}/edit`)}
+                  onEdit={() => navigateWithContext(`/tours/${tour.id}/edit`)}
                 />
               ))}
             </div>
