@@ -47,8 +47,17 @@ export const OperationsToursOverview = () => {
       .reduce((total, booking) => total + booking.passenger_count, 0);
   };
 
-  // Filter tours by search query
+  // Filter tours by search query and exclude tours that have already started
   const filteredTours = tours?.filter(tour => {
+    // Exclude tours that have already started
+    const tourStartDate = new Date(tour.start_date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+    
+    if (tourStartDate < today) {
+      return false;
+    }
+    
     if (!searchQuery.trim()) return true;
     const searchTerm = searchQuery.toLowerCase();
     
