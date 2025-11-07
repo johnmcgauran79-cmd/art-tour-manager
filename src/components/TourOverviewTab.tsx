@@ -127,7 +127,9 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tour.totalCapacity}</div>
+            <div className="text-2xl font-bold">
+              {tour.totalCapacity > 0 ? tour.totalCapacity : "NA"}
+            </div>
             <p className="text-xs text-muted-foreground">
               {tour.minimumPassengers ? `Min: ${tour.minimumPassengers}` : "No minimum"}
             </p>
@@ -141,7 +143,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Math.max(0, tour.totalCapacity - totalConfirmedPassengers)}
+              {tour.totalCapacity > 0 ? Math.max(0, tour.totalCapacity - totalConfirmedPassengers) : "NA"}
             </div>
             <p className="text-xs text-muted-foreground">Spots remaining</p>
           </CardContent>
