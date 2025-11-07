@@ -580,7 +580,7 @@ export default function BookingEdit() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => navigate(`/bookings/${booking.id}`)}>
+              <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
                 Cancel
               </Button>
               <Button 
@@ -612,7 +612,7 @@ export default function BookingEdit() {
                 }}
               />
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => navigate(`/bookings/${booking.id}`)}>
+                <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
                   Cancel
                 </Button>
                 <Button 
@@ -636,7 +636,7 @@ export default function BookingEdit() {
                 passengerCount={formData.passenger_count}
               />
               <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => navigate(`/bookings/${booking.id}`)}>
+                <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
                   Cancel
                 </Button>
                 <Button 
@@ -717,7 +717,7 @@ export default function BookingEdit() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => navigate(`/bookings/${booking.id}`)}>
+            <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
               Cancel
             </Button>
             <Button 
@@ -782,7 +782,7 @@ export default function BookingEdit() {
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => navigate(`/bookings/${booking.id}`)}>
+            <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
               Cancel
             </Button>
             <Button 
