@@ -1,8 +1,9 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle } from "lucide-react";
+import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
+import { useHotels } from "@/hooks/useHotels";
 
 interface TourOverviewTabProps {
   tour: {
@@ -35,6 +36,7 @@ interface TourOverviewTabProps {
 
 export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: allBookings } = useBookings();
+  const { data: hotels } = useHotels(tour.id);
 
   // Calculate booking statistics for this tour
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tour.id);
@@ -42,6 +44,10 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const waitlistedBookings = tourBookings.filter(b => b.status === 'waitlisted');
   const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
   const totalWaitlistedPassengers = waitlistedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
+
+  // Calculate hotel room statistics for this tour
+  const totalRoomsReserved = (hotels || []).reduce((sum, hotel) => sum + (hotel.rooms_reserved || 0), 0);
+  const totalRoomsBooked = (hotels || []).reduce((sum, hotel) => sum + (hotel.rooms_booked || 0), 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -96,7 +102,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
       </div>
 
       {/* Capacity and Waitlist Information */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Confirmed Passengers</CardTitle>
@@ -146,6 +152,19 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
               {tour.totalCapacity > 0 ? Math.max(0, tour.totalCapacity - totalConfirmedPassengers) : "NA"}
             </div>
             <p className="text-xs text-muted-foreground">Spots remaining</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Rooms Booked</CardTitle>
+            <Hotel className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {totalRoomsReserved > 0 ? `${totalRoomsBooked} of ${totalRoomsReserved}` : "NA"}
+            </div>
+            <p className="text-xs text-muted-foreground">rooms booked</p>
           </CardContent>
         </Card>
       </div>
