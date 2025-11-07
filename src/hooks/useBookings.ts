@@ -296,6 +296,40 @@ export const useCreateBooking = () => {
   });
 };
 
+// Helper function to recalculate booking dates from hotel bookings
+const recalculateBookingDates = async (bookingId: string) => {
+  const { data: hotelBookings, error } = await supabase
+    .from('hotel_bookings')
+    .select('check_in_date, check_out_date')
+    .eq('booking_id', bookingId)
+    .not('check_in_date', 'is', null)
+    .not('check_out_date', 'is', null);
+
+  if (error || !hotelBookings || hotelBookings.length === 0) {
+    return;
+  }
+
+  // Find earliest check-in and latest check-out
+  const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
+  const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
+  
+  const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
+  const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
+  
+  // Calculate total nights
+  const totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+
+  // Update the booking
+  await supabase
+    .from('bookings')
+    .update({
+      check_in_date: earliestCheckIn.toISOString().split('T')[0],
+      check_out_date: latestCheckOut.toISOString().split('T')[0],
+      total_nights: totalNights
+    })
+    .eq('id', bookingId);
+};
+
 export const useUpdateBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -348,6 +382,10 @@ export const useUpdateBooking = () => {
         .single();
 
       if (error) throw error;
+
+      // Recalculate dates from hotel bookings if they exist
+      // This ensures hotel bookings are the source of truth for dates
+      await recalculateBookingDates(id);
 
       // Log the booking update
       logOperation({
