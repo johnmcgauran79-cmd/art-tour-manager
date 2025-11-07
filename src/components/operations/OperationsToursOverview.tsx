@@ -5,7 +5,7 @@ import { AlertTriangle, Search } from "lucide-react";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { formatDisplayDate } from "@/lib/utils";
-import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 
 const getDaysUntilTour = (startDate: string) => {
   const start = new Date(startDate);
@@ -32,8 +32,7 @@ export const OperationsToursOverview = () => {
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTour, setSelectedTour] = useState<Tour | null>(null);
-  const [showTourDetail, setShowTourDetail] = useState(false);
+  const { navigateWithContext } = useNavigationContext();
 
   // Function to get confirmed passenger count for a tour
   const getConfirmedPassengerCount = (tourId: string) => {
@@ -68,8 +67,7 @@ export const OperationsToursOverview = () => {
   }) || [];
 
   const handleTourClick = (tour: Tour) => {
-    setSelectedTour(tour);
-    setShowTourDetail(true);
+    navigateWithContext(`/tours/${tour.id}?tab=operations`);
   };
 
   if (isLoading) {
@@ -229,14 +227,6 @@ export const OperationsToursOverview = () => {
           )}
         </div>
       </CardContent>
-
-      {/* Tour Detail Modal */}
-      <TourDetailModalWithHotelsTab
-        tour={selectedTour}
-        open={showTourDetail}
-        onOpenChange={setShowTourDetail}
-        defaultTab="operations"
-      />
     </Card>
   );
 };
