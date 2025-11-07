@@ -1,4 +1,5 @@
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,14 +19,10 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function TaskDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { navigateWithContext, goBack } = useNavigationContext();
   const { toast } = useToast();
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find(t => t.id === id);
-  
-  const tourId = searchParams.get('tourId');
-  const returnTab = searchParams.get('returnTab') || 'tasks';
   
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -41,7 +38,7 @@ export default function TaskDetail() {
           title: "Success",
           description: "Task deleted successfully",
         });
-        navigate("/");
+        goBack("/?tab=operations");
       },
       onError: (error: any) => {
         toast({
@@ -86,7 +83,7 @@ export default function TaskDetail() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Task Not Found</h1>
-          <Button onClick={() => navigate("/")}>
+          <Button onClick={() => goBack("/?tab=operations")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -156,15 +153,7 @@ export default function TaskDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (tourId && returnTab) {
-                  navigate(`/tours/${tourId}?tab=${returnTab}`);
-                } else if (tour) {
-                  navigate(`/tours/${tour.id}`);
-                } else {
-                  navigate("/?tab=operations");
-                }
-              }}
+              onClick={() => goBack("/?tab=operations")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -173,7 +162,7 @@ export default function TaskDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/tasks/${id}/edit${tourId && returnTab ? `?tourId=${tourId}&returnTab=${returnTab}` : ''}`)}
+              onClick={() => navigateWithContext(`/tasks/${id}/edit`)}
             >
               <Save className="mr-2 h-4 w-4" />
               Edit

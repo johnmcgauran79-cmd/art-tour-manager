@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +15,7 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 export default function TourEdit() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { goBack } = useNavigationContext();
   const { toast } = useToast();
   const { data: tours, isLoading } = useTours();
   const tour = tours?.find(t => t.id === id);
@@ -142,7 +143,7 @@ export default function TourEdit() {
           description: "Tour details have been successfully updated.",
           duration: 6000,
         });
-        navigate(`/tours/${id}`);
+        goBack(`/tours/${id}`);
       },
       onError: (error: any) => {
         toast({
@@ -166,7 +167,7 @@ export default function TourEdit() {
     return (
       <div className="p-6">
         <h1 className="text-2xl font-bold mb-4">Tour Not Found</h1>
-        <Button onClick={() => navigate("/")}>
+        <Button onClick={() => goBack("/?tab=tours")}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Dashboard
         </Button>
@@ -190,7 +191,7 @@ export default function TourEdit() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate(`/tours/${id}`)}
+            onClick={() => goBack(`/tours/${id}`)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Tour
@@ -428,7 +429,7 @@ export default function TourEdit() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => navigate(`/tours/${id}`)}
+            onClick={() => goBack(`/tours/${id}`)}
           >
             Cancel
           </Button>

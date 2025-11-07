@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +15,7 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 export default function ContactEdit() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { goBack } = useNavigationContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: contact, isLoading } = useCustomerById(id || null);
@@ -55,7 +56,7 @@ export default function ContactEdit() {
         title: "Success",
         description: "Contact updated successfully",
       });
-      navigate(`/contacts/${contact.id}`);
+      goBack(`/contacts/${contact.id}`);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -78,7 +79,7 @@ export default function ContactEdit() {
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Contact Not Found</h1>
-          <Button onClick={() => navigate("/?tab=contacts")}>
+          <Button onClick={() => goBack("/?tab=contacts")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Contacts
           </Button>
@@ -111,7 +112,7 @@ export default function ContactEdit() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/contacts/${contact.id}`)}
+              onClick={() => goBack(`/contacts/${contact.id}`)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Contact
@@ -234,7 +235,7 @@ export default function ContactEdit() {
       <div className="flex justify-end gap-2 pt-4 border-t">
         <Button
           variant="outline"
-          onClick={() => navigate(`/contacts/${contact.id}`)}
+          onClick={() => goBack(`/contacts/${contact.id}`)}
         >
           Cancel
         </Button>

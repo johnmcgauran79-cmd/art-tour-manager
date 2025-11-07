@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ interface TourTasksTabProps {
 }
 
 export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
-  const navigate = useNavigate();
+  const { navigateWithContext } = useNavigationContext();
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskTemplateModalOpen, setTaskTemplateModalOpen] = useState(false);
 
@@ -29,7 +29,12 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   });
 
   const handleTaskClick = (task: Task) => {
-    navigate(`/tasks/${task.id}?tourId=${tourId}&returnTab=tasks`);
+    navigateWithContext(`/tasks/${task.id}`, {
+      state: {
+        tab: 'tasks',
+        from: `/tours/${tourId}`,
+      }
+    });
   };
 
   const activeTasks = tasks?.filter(task => 

@@ -1,4 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,7 +22,7 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 
 export default function ContactDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const { navigateWithContext, goBack } = useNavigationContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: contactData, isLoading } = useCustomerById(id || null);
@@ -80,7 +81,7 @@ export default function ContactDetail() {
         title: "Success",
         description: "Contact deleted successfully",
       });
-      navigate("/?tab=contacts");
+      goBack("/?tab=contacts");
     } catch (error: any) {
       setDeleteError(error.message || "Failed to delete contact. Please try again.");
     }
@@ -99,7 +100,7 @@ export default function ContactDetail() {
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Contact Not Found</h1>
-          <Button onClick={() => navigate("/?tab=contacts")}>
+          <Button onClick={() => goBack("/?tab=contacts")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Contacts
           </Button>
@@ -131,7 +132,7 @@ export default function ContactDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate("/?tab=contacts")}
+              onClick={() => goBack("/?tab=contacts")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -140,7 +141,7 @@ export default function ContactDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => navigate(`/contacts/${id}/edit`)}
+              onClick={() => navigateWithContext(`/contacts/${id}/edit`)}
             >
               <Edit className="mr-2 h-4 w-4" />
               Edit

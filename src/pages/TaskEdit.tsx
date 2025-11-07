@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,14 +19,10 @@ import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 
 export default function TaskEdit() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { goBack } = useNavigationContext();
   const { toast } = useToast();
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find(t => t.id === id);
-  
-  const tourId = searchParams.get('tourId');
-  const returnTab = searchParams.get('returnTab') || 'tasks';
   
   const [editedTask, setEditedTask] = useState<Partial<Task>>({});
   
@@ -59,12 +56,7 @@ export default function TaskEdit() {
           title: "Success",
           description: "Task updated successfully",
         });
-        // Navigate back to the tour tab if available
-        if (tourId && returnTab) {
-          navigate(`/tours/${tourId}?tab=${returnTab}`);
-        } else {
-          navigate(`/tasks/${task.id}`);
-        }
+        goBack(`/tasks/${task.id}`);
       },
       onError: (error: any) => {
         toast({
@@ -89,7 +81,7 @@ export default function TaskEdit() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Task Not Found</h1>
-          <Button onClick={() => navigate("/")}>
+          <Button onClick={() => goBack("/?tab=operations")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -158,13 +150,7 @@ export default function TaskEdit() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                if (tourId && returnTab) {
-                  navigate(`/tours/${tourId}?tab=${returnTab}`);
-                } else {
-                  navigate(`/tasks/${task.id}`);
-                }
-              }}
+              onClick={() => goBack(`/tasks/${task.id}`)}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -289,7 +275,7 @@ export default function TaskEdit() {
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button
               variant="outline"
-              onClick={() => navigate(`/tasks/${task.id}`)}
+              onClick={() => goBack(`/tasks/${task.id}`)}
             >
               Cancel
             </Button>
