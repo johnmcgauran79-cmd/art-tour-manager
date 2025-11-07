@@ -1,4 +1,5 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,15 +20,25 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function TaskDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { navigateWithContext, goBack } = useNavigationContext();
   const { toast } = useToast();
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find(t => t.id === id);
+  const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
   
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const autoUnblock = useAutoUnblockTasks();
   const { data: tours } = useTours();
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setCurrentTab(tabFromUrl);
+    }
+  }, [searchParams]);
 
   const handleDelete = () => {
     if (!task) return;
@@ -234,7 +245,7 @@ export default function TaskDetail() {
         )}
 
         {/* Main Content */}
-        <Tabs defaultValue="details" className="w-full">
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>

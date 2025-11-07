@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -22,6 +22,7 @@ const InfoRow = ({ label, value }: { label: string; value: string | null | undef
 
 export default function ContactDetail() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const { navigateWithContext, goBack } = useNavigationContext();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -29,6 +30,15 @@ export default function ContactDetail() {
   const contact = contactData;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
+
+  // Update tab when URL changes
+  useEffect(() => {
+    const tabFromUrl = searchParams.get('tab');
+    if (tabFromUrl) {
+      setCurrentTab(tabFromUrl);
+    }
+  }, [searchParams]);
   
 
   const checkForBookings = async () => {
@@ -193,7 +203,7 @@ export default function ContactDetail() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="details" className="w-full">
+      <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <TabsList>
           <TabsTrigger value="details">
             <User className="h-4 w-4 mr-2" />
