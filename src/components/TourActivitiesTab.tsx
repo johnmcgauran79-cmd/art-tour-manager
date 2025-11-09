@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListModal";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -23,6 +24,10 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
   const [selectedActivityForPrint, setSelectedActivityForPrint] = useState<any>(null);
   const [selectedActivityForEmail, setSelectedActivityForEmail] = useState<any>(null);
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   // Log activities data
   console.log('Activities data in tab:', {
@@ -122,12 +127,14 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Activities</h3>
-        <Button 
-          onClick={onAddActivity}
-          className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-        >
-          Add Activity
-        </Button>
+        {!isAgent && (
+          <Button 
+            onClick={onAddActivity}
+            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+          >
+            Add Activity
+          </Button>
+        )}
       </div>
 
       {sortedActivities && sortedActivities.length > 0 ? (
@@ -177,6 +184,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                         size="sm"
                         onClick={() => onEditActivity(activity)}
                         title="Edit Activity"
+                        disabled={isAgent}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -185,6 +193,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                         size="sm"
                         onClick={() => setSelectedActivityForPrint(activity)}
                         title="Print Passenger List"
+                        disabled={isAgent}
                       >
                         <Printer className="h-4 w-4" />
                       </Button>
@@ -193,6 +202,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
                         size="sm"
                         onClick={() => setSelectedActivityForEmail(activity)}
                         title="Email Passenger List"
+                        disabled={isAgent}
                       >
                         <Mail className="h-4 w-4" />
                       </Button>

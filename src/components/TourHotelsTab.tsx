@@ -7,6 +7,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
 import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TourHotelsTabProps {
   tourId: string;
@@ -19,6 +20,10 @@ interface TourHotelsTabProps {
 export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, onBulkEdit }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
   const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const calculateNights = (checkIn: string, checkOut: string) => {
     if (!checkIn || !checkOut) return 0;
@@ -33,12 +38,14 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Hotels</h3>
-        <Button 
-          onClick={onAddHotel}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-        >
-          Add Hotel
-        </Button>
+        {!isAgent && (
+          <Button 
+            onClick={onAddHotel}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+          >
+            Add Hotel
+          </Button>
+        )}
       </div>
 
       {hotels && hotels.length > 0 ? (
@@ -60,6 +67,7 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                       size="sm"
                       onClick={() => onEditHotel(hotel)}
                       className="flex items-center gap-1"
+                      disabled={isAgent}
                     >
                       <Edit className="h-3 w-3" />
                       Edit
@@ -69,6 +77,7 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                       size="sm"
                       onClick={() => onBulkEdit(hotel)}
                       className="flex items-center gap-1"
+                      disabled={isAgent}
                     >
                       <Users className="h-3 w-3" />
                       Bulk Edit
@@ -78,6 +87,7 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
                       size="sm"
                       onClick={() => onRoomingList(hotel)}
                       className="flex items-center gap-1"
+                      disabled={isAgent}
                     >
                       <FileText className="h-3 w-3" />
                       Rooming List

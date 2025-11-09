@@ -18,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Booking {
   id: string;
@@ -86,6 +87,7 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
   const [currentTab, setCurrentTab] = useState(defaultTab);
   const deleteBooking = useDeleteBooking();
   const isMobile = useIsMobile();
+  const { userRole } = useAuth();
 
   // Fetch related data for read-only display
   const { data: hotelBookings = [] } = useHotelBookings(booking?.id || '');
@@ -96,6 +98,9 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const handleDelete = () => {
     if (!booking) return;
@@ -146,17 +151,17 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
                   onClick={() => setShowEmailPreview(true)}
                   variant="outline"
                   size="sm"
-                  disabled={!booking.customers?.email}
+                  disabled={!booking.customers?.email || isAgent}
                   className="border-blue-200 text-blue-700 hover:bg-blue-50"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   Send Email
                 </Button>
-                <Button onClick={handleEdit} variant="outline" size="sm">
+                <Button onClick={handleEdit} variant="outline" size="sm" disabled={isAgent}>
                   <Edit className="h-4 w-4 mr-2" />
                   Edit Booking
                 </Button>
-                <Button onClick={handleDelete} variant="destructive" size="sm">
+                <Button onClick={handleDelete} variant="destructive" size="sm" disabled={isAgent}>
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete
                 </Button>
