@@ -308,7 +308,7 @@ export default function TourEdit() {
                 <SelectItem value="available">Available</SelectItem>
                 <SelectItem value="sold_out">Sold Out</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="past">Past</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
           </div>
