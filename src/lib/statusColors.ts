@@ -27,6 +27,7 @@ export const getTourStatusColor = (status: string): string => {
     'sold_out': 'bg-status-sold-out text-status-sold-out-foreground',
     'closed': 'bg-status-closed text-status-closed-foreground',
     'past': 'bg-status-past text-status-past-foreground',
+    'archived': 'bg-status-archived text-status-archived-foreground',
   };
   
   return statusMap[status] || statusMap['pending'];

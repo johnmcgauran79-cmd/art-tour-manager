@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Plus, Eye, Search } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
@@ -27,17 +29,27 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
+  const [showArchived, setShowArchived] = useState(false);
 
-  // Filter tours based on showOnlyActive prop first
+  // Filter tours based on archived status and showOnlyActive prop
   const filteredByStatus = tours?.filter(tour => {
-    if (!showOnlyActive) return true;
+    // First, filter out archived tours unless showArchived is true
+    if (!showArchived && (tour.status as string) === 'archived') {
+      return false;
+    }
     
-    // Active tours are not past and have end date in the future or today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
-    const endDate = new Date(tour.end_date);
-    endDate.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
-    return tour.status !== 'past' && endDate >= today;
+    // If showing only active tours, apply the active filter
+    if (showOnlyActive) {
+      // Active tours are not past, archived, or cancelled, and have end date in the future or today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endDate = new Date(tour.end_date);
+      endDate.setHours(0, 0, 0, 0);
+      const status = tour.status as string;
+      return status !== 'past' && status !== 'archived' && status !== 'cancelled' && endDate >= today;
+    }
+    
+    return true;
   }) || [];
 
   // Then filter by search query across all matching tours
@@ -112,6 +124,19 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="show-archived" 
+                checked={showArchived}
+                onCheckedChange={(checked) => setShowArchived(checked as boolean)}
+              />
+              <Label 
+                htmlFor="show-archived" 
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Show Archived Tours
+              </Label>
             </div>
             <ViewToggle view={view} onViewChange={setView} />
             {searchQuery && (

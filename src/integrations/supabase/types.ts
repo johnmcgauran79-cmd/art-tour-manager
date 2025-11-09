@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -1573,6 +1573,7 @@ export type Database = {
         Args: { _agent_id: string; _booking_id: string }
         Returns: boolean
       }
+      auto_archive_completed_tours: { Args: never; Returns: number }
       calculate_nights: {
         Args: { check_in: string; check_out: string }
         Returns: number
@@ -1700,7 +1701,13 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "archived"
-      tour_status: "pending" | "available" | "closed" | "sold_out" | "past"
+      tour_status:
+        | "pending"
+        | "available"
+        | "closed"
+        | "sold_out"
+        | "past"
+        | "archived"
       transport_status:
         | "pending"
         | "booked"
@@ -1893,7 +1900,14 @@ export const Constants = {
         "cancelled",
         "archived",
       ],
-      tour_status: ["pending", "available", "closed", "sold_out", "past"],
+      tour_status: [
+        "pending",
+        "available",
+        "closed",
+        "sold_out",
+        "past",
+        "archived",
+      ],
       transport_status: [
         "pending",
         "booked",
