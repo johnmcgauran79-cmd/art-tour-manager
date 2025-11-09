@@ -16,6 +16,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 import { TourCard } from "@/components/cards/TourCard";
 import { ViewToggle } from "@/components/ViewToggle";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ToursTableProps {
   showOnlyActive?: boolean;
@@ -26,10 +27,14 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const { navigateWithContext } = useNavigationContext();
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
+  const { userRole } = useAuth();
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
   const [showArchived, setShowArchived] = useState(false);
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   // Filter tours based on archived status and showOnlyActive prop
   const filteredByStatus = tours?.filter(tour => {
@@ -106,13 +111,15 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                   View All
                 </Button>
               )}
-              <Button 
-                onClick={() => setShowAddTour(true)}
-                className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Tour
-              </Button>
+              {!isAgent && (
+                <Button 
+                  onClick={() => setShowAddTour(true)}
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tour
+                </Button>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-3 mt-4">

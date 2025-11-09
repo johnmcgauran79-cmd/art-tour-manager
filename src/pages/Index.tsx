@@ -50,10 +50,10 @@ const Index = () => {
 
   // Update tab when URL changes
   useEffect(() => {
-    // Redirect agents to bookings if they try to access other tabs
-    if (isAgent && tabFromUrl !== 'bookings') {
-      setSearchParams({ tab: 'bookings' });
-      setActiveTab('bookings');
+    // Redirect agents to tours if they try to access restricted tabs
+    if (isAgent && !['tours', 'bookings'].includes(tabFromUrl)) {
+      setSearchParams({ tab: 'tours' });
+      setActiveTab('tours');
     } else {
       setActiveTab(tabFromUrl);
     }
@@ -148,11 +148,9 @@ const Index = () => {
         </TabsContent>
       )}
       
-      {!isAgent && (
-        <TabsContent value="tours" className="space-y-4 mt-0">
-          <ToursTable />
-        </TabsContent>
-      )}
+      <TabsContent value="tours" className="space-y-4 mt-0">
+        <ToursTable />
+      </TabsContent>
       
       <TabsContent value="bookings" className="space-y-4 mt-0">
         <BookingsTable 

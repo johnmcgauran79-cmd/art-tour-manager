@@ -67,6 +67,9 @@ export default function TourDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   // Transform tour data immediately - don't wait for useEffect
   const transformedTour = tour ? {
@@ -177,7 +180,7 @@ export default function TourDetail() {
               Back
             </Button>
             
-            {userRole !== 'operations_team' && (
+            {!isAgent && userRole !== 'operations_team' && (
               <>
                 <Button
                   variant="outline"
