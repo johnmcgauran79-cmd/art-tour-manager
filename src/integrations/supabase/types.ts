@@ -1579,6 +1579,10 @@ export type Database = {
         Returns: number
       }
       check_pending_bookings: { Args: never; Returns: number }
+      check_user_role: {
+        Args: { required_role: string; user_id: string }
+        Returns: boolean
+      }
       create_capacity_monitoring_task: {
         Args: {
           p_activity_id?: string
