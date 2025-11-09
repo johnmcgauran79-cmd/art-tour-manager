@@ -30,6 +30,7 @@ const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
   { value: "admin", label: "Admin" },
   { value: "manager", label: "Manager" },
   { value: "booking_agent", label: "Booking Agent" },
+  { value: "agent", label: "Agent (View-Only)" },
 ];
 
 const DEPARTMENT_LABELS: Record<Department, string> = {

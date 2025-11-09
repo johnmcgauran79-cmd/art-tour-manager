@@ -20,6 +20,7 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
 import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -32,6 +33,7 @@ export default function BookingDetail() {
   const { id } = useParams();
   const { goBack, navigateWithContext, getReturnPath, currentState } = useNavigationContext();
   const { toast } = useToast();
+  const { userRole } = useAuth();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
   
@@ -39,6 +41,9 @@ export default function BookingDetail() {
   const [currentTab, setCurrentTab] = useState("details");
   const deleteBooking = useDeleteBooking();
   const isMobile = useIsMobile();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const { data: hotelBookings = [] } = useHotelBookings(booking?.id || '');
   const { data: activityBookings = [] } = useActivityBookings(booking?.id || '');
@@ -150,32 +155,36 @@ export default function BookingDetail() {
               Back
             </Button>
             
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowEmailPreview(true)}
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Email
-            </Button>
-            
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
+            {!isAgent && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailPreview(true)}
+                >
+                  <Mail className="mr-2 h-4 w-4" />
+                  Email
+                </Button>
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDelete}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>

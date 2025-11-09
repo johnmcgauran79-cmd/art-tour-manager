@@ -13,6 +13,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { BookingCard } from "@/components/cards/BookingCard";
 import { ViewToggle } from "@/components/ViewToggle";
+import { useAuth } from "@/hooks/useAuth";
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -24,6 +25,10 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   // Calculate bookings this month
   const currentMonth = new Date().getMonth();
@@ -80,7 +85,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
               </Badge>
             </div>
             <div className="flex gap-2">
-              {onViewAnalytics && (
+              {onViewAnalytics && !isAgent && (
                 <Button 
                   onClick={onViewAnalytics} 
                   variant="secondary"
@@ -90,10 +95,12 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                   Analytics
                 </Button>
               )}
-              <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Booking
-              </Button>
+              {!isAgent && (
+                <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Booking
+                </Button>
+              )}
             </div>
           </CardTitle>
           <CardDescription>

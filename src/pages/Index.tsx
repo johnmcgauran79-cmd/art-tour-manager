@@ -44,11 +44,20 @@ const Index = () => {
   const { user, userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
   const isMobile = useIsMobile();
+  
+  // Agent users can only access bookings tab
+  const isAgent = userRole === 'agent';
 
   // Update tab when URL changes
   useEffect(() => {
-    setActiveTab(tabFromUrl);
-  }, [tabFromUrl]);
+    // Redirect agents to bookings if they try to access other tabs
+    if (isAgent && tabFromUrl !== 'bookings') {
+      setSearchParams({ tab: 'bookings' });
+      setActiveTab('bookings');
+    } else {
+      setActiveTab(tabFromUrl);
+    }
+  }, [tabFromUrl, isAgent, setSearchParams]);
 
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
@@ -118,26 +127,32 @@ const Index = () => {
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-      <TabsContent value="dashboard" className="space-y-8 mt-0">
-        <DashboardQuickActions
-          onAddTour={() => setAddTourModalOpen(true)}
-          onAddBooking={() => setAddBookingModalOpen(true)}
-          onAddContact={() => setAddContactModalOpen(true)}
-          onAddTask={() => setAddTaskModalOpen(true)}
-        />
+      {!isAgent && (
+        <TabsContent value="dashboard" className="space-y-8 mt-0">
+          <DashboardQuickActions
+            onAddTour={() => setAddTourModalOpen(true)}
+            onAddBooking={() => setAddBookingModalOpen(true)}
+            onAddContact={() => setAddContactModalOpen(true)}
+            onAddTask={() => setAddTaskModalOpen(true)}
+          />
 
-        <div className="w-full">
-          <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
-        </div>
-      </TabsContent>
+          <div className="w-full">
+            <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
+          </div>
+        </TabsContent>
+      )}
       
-      <TabsContent value="operations" className="space-y-4 mt-0">
-        <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
-      </TabsContent>
+      {!isAgent && (
+        <TabsContent value="operations" className="space-y-4 mt-0">
+          <OperationsDashboard onNavigateToItem={handleNavigateToItem} />
+        </TabsContent>
+      )}
       
-      <TabsContent value="tours" className="space-y-4 mt-0">
-        <ToursTable />
-      </TabsContent>
+      {!isAgent && (
+        <TabsContent value="tours" className="space-y-4 mt-0">
+          <ToursTable />
+        </TabsContent>
+      )}
       
       <TabsContent value="bookings" className="space-y-4 mt-0">
         <BookingsTable 
@@ -146,9 +161,11 @@ const Index = () => {
         />
       </TabsContent>
       
-      <TabsContent value="contacts" className="space-y-4 mt-0">
-        <ContactsTable />
-      </TabsContent>
+      {!isAgent && (
+        <TabsContent value="contacts" className="space-y-4 mt-0">
+          <ContactsTable />
+        </TabsContent>
+      )}
 
       {isAdminOrManager && (
         <TabsContent value="settings" className="space-y-4 mt-0">
