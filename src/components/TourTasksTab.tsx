@@ -8,6 +8,7 @@ import { useTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskTemplateModal } from "@/components/TaskTemplateModal";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TourTasksTabProps {
   tourId: string;
@@ -18,6 +19,10 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   const { navigateWithContext } = useNavigationContext();
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskTemplateModalOpen, setTaskTemplateModalOpen] = useState(false);
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const { data: tasks, isLoading } = useTasks(tourId, {
     search: "",
@@ -62,23 +67,27 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setTaskTemplateModalOpen(true)}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Settings2 className="h-4 w-4" />
-              Task Templates
-            </Button>
-            <Button
-              onClick={() => setAddTaskModalOpen(true)}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Task
-            </Button>
+            {!isAgent && (
+              <>
+                <Button
+                  onClick={() => setTaskTemplateModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Settings2 className="h-4 w-4" />
+                  Task Templates
+                </Button>
+                <Button
+                  onClick={() => setAddTaskModalOpen(true)}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Task
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

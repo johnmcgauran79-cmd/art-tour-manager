@@ -10,6 +10,7 @@ import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -56,6 +57,10 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   const { data: allBookings, isLoading } = useBookings();
   const deleteBookingMutation = useDeleteBooking();
   const sendBookingConfirmation = useSendBookingConfirmation();
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const handleViewBooking = (booking: any) => {
     console.log('[TourBookingsList] Navigating to booking with context:', {
@@ -279,6 +284,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                             size="sm" 
                             variant="outline"
                             onClick={(e) => handleEditBooking(e, booking)}
+                            disabled={isAgent}
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -291,7 +297,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                               setEmailBookingId(booking.id);
                               setEmailPreviewOpen(true);
                             }}
-                            disabled={!booking.customers?.email}
+                            disabled={!booking.customers?.email || isAgent}
                             title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
                           >
                             <Mail className="h-3 w-3" />
@@ -304,7 +310,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                               e.stopPropagation();
                               handleDeleteBooking(booking);
                             }}
-                            disabled={deleteBookingMutation.isPending}
+                            disabled={deleteBookingMutation.isPending || isAgent}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>

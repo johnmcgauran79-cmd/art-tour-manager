@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { useItinerary, useCreateItinerary } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TourItineraryTabProps {
   tour: {
@@ -24,6 +25,10 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const handleCreateItinerary = () => {
     createItinerary.mutate({
@@ -56,14 +61,16 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
           <p className="text-gray-500 mb-6">
             Create an itinerary for this tour to plan daily activities and generate documents.
           </p>
-          <Button 
-            onClick={handleCreateItinerary}
-            disabled={createItinerary.isPending}
-            className="bg-brand-navy hover:bg-brand-navy/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            {createItinerary.isPending ? 'Creating...' : 'Create Itinerary'}
-          </Button>
+          {!isAgent && (
+            <Button 
+              onClick={handleCreateItinerary}
+              disabled={createItinerary.isPending}
+              className="bg-brand-navy hover:bg-brand-navy/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {createItinerary.isPending ? 'Creating...' : 'Create Itinerary'}
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -87,14 +94,16 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowGenerateModal(true)}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Generate Document
-          </Button>
+          {!isAgent && (
+            <Button
+              variant="outline"
+              onClick={() => setShowGenerateModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Generate Document
+            </Button>
+          )}
         </div>
       </div>
 
