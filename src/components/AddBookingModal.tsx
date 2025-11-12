@@ -55,7 +55,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [addingContactFor, setAddingContactFor] = useState<'lead' | 'secondary' | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [beddingError, setBeddingError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
@@ -337,17 +337,26 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       if (formData.passenger_count === 1) {
         const invalidBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding !== 'single');
         if (invalidBedding) {
-          setBeddingError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before creating this booking.");
+          setValidationError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before creating this booking.");
           setActiveTab("hotels");
           return;
         }
       } else if (formData.passenger_count >= 2) {
         const singleBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding === 'single');
         if (singleBedding) {
-          setBeddingError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before creating this booking.`);
+          setValidationError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before creating this booking.`);
           setActiveTab("hotels");
           return;
         }
+      }
+    }
+
+    // Validate second passenger name is filled when passenger count is 2 or more
+    if (formData.passenger_count >= 2) {
+      if (!formData.passenger_2_name || formData.passenger_2_name.trim() === '') {
+        setValidationError("Second passenger name is required when booking for 2 or more passengers. Please add the second passenger's name in the Details tab.");
+        setActiveTab("details");
+        return;
       }
     }
 
@@ -967,17 +976,17 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         bookingData={getConfirmationData()}
       />
 
-      <AlertDialog open={!!beddingError} onOpenChange={() => setBeddingError(null)}>
+      <AlertDialog open={!!validationError} onOpenChange={() => setValidationError(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Invalid Bedding Configuration</AlertDialogTitle>
+            <AlertDialogTitle>Validation Error</AlertDialogTitle>
             <AlertDialogDescription>
-              {beddingError}
+              {validationError}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setBeddingError(null)}>
-              OK
+            <AlertDialogAction onClick={() => setValidationError(null)}>
+              OK, I'll fix it
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
