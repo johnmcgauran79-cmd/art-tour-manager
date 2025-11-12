@@ -334,6 +334,13 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     if (formData.accommodation_required) {
       const allocatedHotels = Object.entries(hotelAllocations).filter(([_, allocation]) => allocation.allocated);
       
+      // Check if tour has hotels but none are allocated
+      if (hotels.length > 0 && allocatedHotels.length === 0) {
+        setValidationError("Hotel must be allocated if accommodation is required for this booking. Please allocate at least one hotel in the Hotels tab.");
+        setActiveTab("hotels");
+        return;
+      }
+      
       if (formData.passenger_count === 1) {
         const invalidBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding !== 'single');
         if (invalidBedding) {

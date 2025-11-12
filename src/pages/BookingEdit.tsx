@@ -161,18 +161,31 @@ export default function BookingEdit() {
 
       if (error) {
         console.error('Error fetching hotel bookings:', error);
-      } else if (hotelBookings && hotelBookings.length > 0) {
-        if (formData.passenger_count === 1) {
-          const invalidBedding = hotelBookings.find(hb => hb.bedding !== 'single');
-          if (invalidBedding) {
-            setValidationError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before saving changes.");
-            return;
-          }
-        } else if (formData.passenger_count >= 2) {
-          const singleBedding = hotelBookings.find(hb => hb.bedding === 'single');
-          if (singleBedding) {
-            setValidationError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before saving changes.`);
-            return;
+      } else {
+        // Check if tour has hotels but none are allocated
+        const { data: tourHotels } = await supabase
+          .from('hotels')
+          .select('id')
+          .eq('tour_id', booking.tour_id);
+
+        if (tourHotels && tourHotels.length > 0 && (!hotelBookings || hotelBookings.length === 0)) {
+          setValidationError("Hotel must be allocated if accommodation is required for this booking. Please allocate at least one hotel in the Hotels tab.");
+          return;
+        }
+
+        if (hotelBookings && hotelBookings.length > 0) {
+          if (formData.passenger_count === 1) {
+            const invalidBedding = hotelBookings.find(hb => hb.bedding !== 'single');
+            if (invalidBedding) {
+              setValidationError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before saving changes.");
+              return;
+            }
+          } else if (formData.passenger_count >= 2) {
+            const singleBedding = hotelBookings.find(hb => hb.bedding === 'single');
+            if (singleBedding) {
+              setValidationError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before saving changes.`);
+              return;
+            }
           }
         }
       }
