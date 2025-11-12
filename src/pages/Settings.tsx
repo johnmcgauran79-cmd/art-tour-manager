@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { EmailTemplatesManagement } from "@/components/EmailTemplatesManagement";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { SystemSettings } from "@/components/SystemSettings";
+import { BookingValidationReport } from "@/components/BookingValidationReport";
 
 interface SettingsProps {
   onBack: () => void;
@@ -13,9 +14,21 @@ interface SettingsProps {
 
 export const Settings = ({ onBack }: SettingsProps) => {
   const [activeTab, setActiveTab] = useState("email-templates");
+  const [showValidationReport, setShowValidationReport] = useState(false);
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end mb-4">
+        <Button
+          variant="outline"
+          onClick={() => setShowValidationReport(true)}
+          className="gap-2"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          View Booking Validation Report
+        </Button>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-8">
           <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
@@ -65,6 +78,11 @@ export const Settings = ({ onBack }: SettingsProps) => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      <BookingValidationReport 
+        open={showValidationReport} 
+        onOpenChange={setShowValidationReport}
+      />
     </div>
   );
 };
