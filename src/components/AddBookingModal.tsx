@@ -350,6 +350,35 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       return;
     }
 
+    // Validate bedding types match passenger count for allocated hotels
+    if (formData.accommodation_required) {
+      const allocatedHotels = Object.entries(hotelAllocations).filter(([_, allocation]) => allocation.allocated);
+      
+      if (formData.passenger_count === 1) {
+        const invalidBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding !== 'single');
+        if (invalidBedding) {
+          toast({
+            title: "Invalid Bedding Configuration",
+            description: "Single passenger bookings can only have Single bedding. Please update the Hotels tab.",
+            variant: "destructive",
+          });
+          setActiveTab("hotels");
+          return;
+        }
+      } else if (formData.passenger_count >= 2) {
+        const singleBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding === 'single');
+        if (singleBedding) {
+          toast({
+            title: "Invalid Bedding Configuration",
+            description: `You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab.`,
+            variant: "destructive",
+          });
+          setActiveTab("hotels");
+          return;
+        }
+      }
+    }
+
     // Show confirmation dialog instead of creating booking directly
     setShowConfirmation(true);
   };
