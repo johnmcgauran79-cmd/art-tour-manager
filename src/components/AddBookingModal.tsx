@@ -95,7 +95,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
   const { toast } = useToast();
-
+  
   // Validate bedding type when passenger count changes
   useEffect(() => {
     if (formData.passenger_count === 1) {
@@ -104,7 +104,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
       Object.keys(updatedAllocations).forEach(hotelId => {
         const bedding = updatedAllocations[hotelId].bedding;
-        if (bedding === 'double' || bedding === 'twin') {
+        if (bedding !== 'single') {
           updatedAllocations[hotelId].bedding = 'single';
           hasInvalidBedding = true;
         }
@@ -621,10 +621,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                 <Select 
                                   value={allocation.bedding} 
                                   onValueChange={(value) => {
-                                    if (formData.passenger_count === 1 && (value === 'double' || value === 'twin')) {
+                                    if (formData.passenger_count === 1 && value !== 'single') {
                                       toast({
                                         title: "Invalid Selection",
-                                        description: "Cannot select Double or Twin bedding for a single passenger booking. Please select Single.",
+                                        description: "Single passenger bookings can only have Single bedding.",
                                         variant: "destructive",
                                       });
                                       return;
@@ -652,8 +652,18 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                     >
                                       Twin
                                     </SelectItem>
-                                    <SelectItem value="triple">Triple</SelectItem>
-                                    <SelectItem value="family">Family</SelectItem>
+                                    <SelectItem 
+                                      value="triple" 
+                                      disabled={formData.passenger_count === 1}
+                                    >
+                                      Triple
+                                    </SelectItem>
+                                    <SelectItem 
+                                      value="family" 
+                                      disabled={formData.passenger_count === 1}
+                                    >
+                                      Family
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
