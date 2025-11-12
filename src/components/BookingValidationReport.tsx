@@ -16,7 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -28,7 +28,7 @@ interface BookingValidationReportProps {
 export const BookingValidationReport = ({ open, onOpenChange }: BookingValidationReportProps) => {
   const navigate = useNavigate();
 
-  const { data: invalidBookings, isLoading } = useQuery({
+  const { data: invalidBookings, isLoading, refetch } = useQuery({
     queryKey: ['booking-validation-report'],
     queryFn: async () => {
       // Fetch all bookings with hotel bookings and tour info
@@ -93,9 +93,28 @@ export const BookingValidationReport = ({ open, onOpenChange }: BookingValidatio
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-destructive" />
-            Booking Validation Report
+          <DialogTitle className="flex items-center gap-2 justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Booking Validation Report
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Bookings with mismatched passenger counts and room types
