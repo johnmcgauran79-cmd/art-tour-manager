@@ -15,6 +15,8 @@ interface BookingConfirmationRequest {
   customSubject?: string;
   customContent?: string;
   fromEmail?: string;
+  ccEmails?: string[];
+  bccEmails?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -30,7 +32,7 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { bookingId, customSubject, customContent, fromEmail }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails }: BookingConfirmationRequest = await req.json();
 
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
@@ -274,16 +276,20 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email - use provided fromEmail, fallback to template from_email, then default
     const finalFromEmail = fromEmail || template?.from_email || "onboarding@resend.dev";
     
-    // Prepare recipients - CC secondary contact if they exist and have an email
-    const ccRecipients = [];
-    if (booking.secondary_contact?.email) {
+    // Prepare recipients - merge provided CC emails with secondary contact if they exist
+    const ccRecipients = [...(ccEmails || [])];
+    if (booking.secondary_contact?.email && !ccRecipients.includes(booking.secondary_contact.email)) {
       ccRecipients.push(booking.secondary_contact.email);
     }
+    
+    // Prepare BCC recipients
+    const bccRecipients = bccEmails || [];
     
     const emailResponse = await resend.emails.send({
       from: `Bookings <${finalFromEmail}>`,
       to: [booking.customers.email],
       cc: ccRecipients.length > 0 ? ccRecipients : undefined,
+      bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
       subject: emailSubject,
       html: emailHtml,
     });

@@ -14,6 +14,7 @@ interface EmailData {
   from: string;
   to: string[];
   cc: string[];
+  bcc: string[];
   subject: string;
   message: string;
 }
@@ -161,6 +162,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Add CC if provided
     if (emailData.cc.length > 0) {
       emailPayload.cc = emailData.cc;
+    }
+
+    // Add BCC if provided
+    if (emailData.bcc.length > 0) {
+      emailPayload.bcc = emailData.bcc;
     }
 
     const emailResponse = await resend.emails.send(emailPayload);

@@ -196,7 +196,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     window.URL.revokeObjectURL(url);
   };
 
-  const handleSendEmail = (emailData: { from: string; to: string; cc: string; message: string }) => {
+  const handleSendEmail = (emailData: { from: string; to: string; cc: string; bcc: string; subject: string; message: string }) => {
     if (!hotel || !currentTour) return;
 
     sendRoomingList.mutate({
@@ -207,6 +207,8 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
       hotelName: hotel.name,
       fromEmail: emailData.from,
       ccEmail: emailData.cc,
+      bccEmail: emailData.bcc,
+      subject: emailData.subject,
       message: emailData.message,
     }, {
       onSuccess: () => {

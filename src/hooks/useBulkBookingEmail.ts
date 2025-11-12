@@ -7,13 +7,15 @@ export const useBulkBookingEmail = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails }: { 
       tourId: string; 
       recipientType?: string;
       subjectTemplate?: string; 
       contentTemplate?: string; 
       fromEmail?: string;
       selectedBookingIds?: string[];
+      ccEmails?: string[];
+      bccEmails?: string[];
     }) => {
       let bookings;
       
@@ -158,7 +160,9 @@ export const useBulkBookingEmail = () => {
             bookingId: booking.id,
             customSubject: personalizedSubject,
             customContent: personalizedContent,
-            fromEmail
+            fromEmail,
+            ccEmails,
+            bccEmails
           }
         });
         if (error) throw error;

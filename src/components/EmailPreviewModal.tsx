@@ -34,6 +34,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const [editedContent, setEditedContent] = useState("");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
+  const [ccEmails, setCcEmails] = useState<string>("");
+  const [bccEmails, setBccEmails] = useState<string>("");
   const sendEmail = useSendBookingConfirmation();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
@@ -146,7 +148,9 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
         bookingId,
         customSubject: editedSubject,
         customContent: editedContent,
-        fromEmail
+        fromEmail,
+        ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
+        bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
       });
       onOpenChange(false);
     } catch (error) {
@@ -220,19 +224,26 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
               </div>
             </div>
 
-            {booking?.secondary_contact?.email && (
-              <div>
-                <Label htmlFor="cc">CC:</Label>
-                <Input
-                  id="cc"
-                  value={`${booking.secondary_contact.first_name} ${booking.secondary_contact.last_name} <${booking.secondary_contact.email}>`}
-                  disabled
-                  className="bg-gray-50"
-                />
-              </div>
-            )}
+            <div>
+              <Label htmlFor="cc">CC (comma-separated for multiple):</Label>
+              <Input
+                id="cc"
+                type="text"
+                value={ccEmails}
+                onChange={(e) => setCcEmails(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+              />
+            </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="bcc">BCC (comma-separated for multiple):</Label>
+              <Input
+                id="bcc"
+                type="text"
+                value={bccEmails}
+                onChange={(e) => setBccEmails(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+              />
             </div>
 
             <div>

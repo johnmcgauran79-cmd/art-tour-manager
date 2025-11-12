@@ -18,6 +18,7 @@ interface EmailRoomingListModalProps {
     from: string;
     to: string;
     cc: string;
+    bcc: string;
     subject: string;
     message: string;
   }) => void;
@@ -39,6 +40,7 @@ export const EmailRoomingListModal = ({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState(defaultToEmail || "");
   const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
   const [subject, setSubject] = useState(`Rooming List - ${hotelName} - ${tourName}`);
   const [message, setMessage] = useState(
     `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`
@@ -52,7 +54,7 @@ export const EmailRoomingListModal = ({
   }, [open, userEmail]);
 
   const handleSend = () => {
-    onSend({ from, to, cc, subject, message });
+    onSend({ from, to, cc, bcc, subject, message });
   };
 
   return (
@@ -92,13 +94,24 @@ export const EmailRoomingListModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cc">CC (optional)</Label>
+            <Label htmlFor="cc">CC (comma-separated for multiple, optional)</Label>
             <Input
               id="cc"
-              type="email"
+              type="text"
               value={cc}
               onChange={(e) => setCc(e.target.value)}
-              placeholder="cc@example.com"
+              placeholder="email1@example.com, email2@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bcc">BCC (comma-separated for multiple, optional)</Label>
+            <Input
+              id="bcc"
+              type="text"
+              value={bcc}
+              onChange={(e) => setBcc(e.target.value)}
+              placeholder="email1@example.com, email2@example.com"
             />
           </div>
 

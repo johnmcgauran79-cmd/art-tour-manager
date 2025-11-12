@@ -34,6 +34,7 @@ export const EmailActivityPassengerListModal = ({
   const [from, setFrom] = useState("");
   const [to, setTo] = useState(defaultToEmail || "");
   const [cc, setCc] = useState("");
+  const [bcc, setBcc] = useState("");
   const [subject, setSubject] = useState(`Passenger List - ${activityName}`);
   const [message, setMessage] = useState(
     `Dear Team,\n\nPlease find attached the passenger list for ${activityName}${activityDate ? ` on ${activityDate}` : ''}.\n\nKind regards,\nOperations Team`
@@ -91,6 +92,7 @@ export const EmailActivityPassengerListModal = ({
             from,
             to: to.split(',').map(e => e.trim()).filter(Boolean),
             cc: cc.split(',').map(e => e.trim()).filter(Boolean),
+            bcc: bcc.split(',').map(e => e.trim()).filter(Boolean),
             subject,
             message,
           }
@@ -154,13 +156,24 @@ export const EmailActivityPassengerListModal = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="cc">CC (comma-separated, optional)</Label>
+            <Label htmlFor="cc">CC (comma-separated for multiple, optional)</Label>
             <Input
               id="cc"
               type="text"
               value={cc}
               onChange={(e) => setCc(e.target.value)}
-              placeholder="team@example.com, manager@example.com"
+              placeholder="email1@example.com, email2@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="bcc">BCC (comma-separated for multiple, optional)</Label>
+            <Input
+              id="bcc"
+              type="text"
+              value={bcc}
+              onChange={(e) => setBcc(e.target.value)}
+              placeholder="email1@example.com, email2@example.com"
             />
           </div>
 

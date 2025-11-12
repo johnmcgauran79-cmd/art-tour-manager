@@ -33,6 +33,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [previewBooking, setPreviewBooking] = useState<any>(null);
   const [recipientType, setRecipientType] = useState<string>("");
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
+  const [ccEmails, setCcEmails] = useState<string>("");
+  const [bccEmails, setBccEmails] = useState<string>("");
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
@@ -247,6 +249,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         subjectTemplate,
         contentTemplate,
         fromEmail,
+        ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
+        bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         selectedBookingIds: Array.from(selectedBookingIds)
       });
       setShowConfirmDialog(false);
@@ -395,6 +399,30 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     </div>
                   )}
                 </ScrollArea>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="cc">CC (comma-separated for multiple):</Label>
+                <Input
+                  id="cc"
+                  type="text"
+                  value={ccEmails}
+                  onChange={(e) => setCcEmails(e.target.value)}
+                  placeholder="email1@example.com, email2@example.com"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="bcc">BCC (comma-separated for multiple):</Label>
+                <Input
+                  id="bcc"
+                  type="text"
+                  value={bccEmails}
+                  onChange={(e) => setBccEmails(e.target.value)}
+                  placeholder="email1@example.com, email2@example.com"
+                />
               </div>
             </div>
 

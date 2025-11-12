@@ -18,6 +18,7 @@ interface RoomingListRequest {
   hotelName: string;
   fromEmail?: string;
   ccEmail?: string;
+  bccEmail?: string;
   subject?: string;
   message?: string;
 }
@@ -41,6 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
       hotelName,
       fromEmail = 'onboarding@resend.dev',
       ccEmail = '',
+      bccEmail = '',
       subject,
       message 
     }: RoomingListRequest = await req.json();
@@ -323,9 +325,20 @@ const handler = async (req: Request): Promise<Response> => {
       html: emailHtml,
     };
 
-    // Add CC if provided
+    // Add CC if provided - parse comma-separated emails
     if (ccEmail) {
-      emailData.cc = [ccEmail];
+      const ccEmails = ccEmail.split(',').map(e => e.trim()).filter(Boolean);
+      if (ccEmails.length > 0) {
+        emailData.cc = ccEmails;
+      }
+    }
+
+    // Add BCC if provided - parse comma-separated emails
+    if (bccEmail) {
+      const bccEmails = bccEmail.split(',').map(e => e.trim()).filter(Boolean);
+      if (bccEmails.length > 0) {
+        emailData.bcc = bccEmails;
+      }
     }
 
     const emailResponse = await resend.emails.send(emailData);
