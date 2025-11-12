@@ -56,6 +56,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [activeTab, setActiveTab] = useState("details");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
   
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
@@ -338,6 +339,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       if (hotels.length > 0 && allocatedHotels.length === 0) {
         setValidationError("Hotel must be allocated if accommodation is required for this booking. Please allocate at least one hotel in the Hotels tab.");
         setActiveTab("hotels");
+        return;
+      }
+      
+      // Check if tour has no hotels loaded at all
+      if (hotels.length === 0) {
+        setShowNoHotelsWarning(true);
         return;
       }
       
@@ -994,6 +1001,25 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setValidationError(null)}>
               OK, I'll fix it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showNoHotelsWarning} onOpenChange={() => setShowNoHotelsWarning(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No Hotels Loaded</AlertDialogTitle>
+            <AlertDialogDescription>
+              This tour does not have any hotels loaded in the system yet. Please load hotels when ready.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowNoHotelsWarning(false);
+              setShowConfirmation(true);
+            }}>
+              OK, Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

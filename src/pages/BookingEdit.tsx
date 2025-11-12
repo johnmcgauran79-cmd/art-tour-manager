@@ -86,6 +86,7 @@ export default function BookingEdit() {
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [secondaryContactName, setSecondaryContactName] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
 
   const updateBooking = useUpdateBooking();
   const cancelBooking = useCancelBooking();
@@ -173,6 +174,12 @@ export default function BookingEdit() {
           return;
         }
 
+        // Check if tour has no hotels loaded at all
+        if (tourHotels && tourHotels.length === 0) {
+          setShowNoHotelsWarning(true);
+          return;
+        }
+
         if (hotelBookings && hotelBookings.length > 0) {
           if (formData.passenger_count === 1) {
             const invalidBedding = hotelBookings.find(hb => hb.bedding !== 'single');
@@ -190,6 +197,13 @@ export default function BookingEdit() {
         }
       }
     }
+
+    // Proceed with the actual update
+    performUpdate();
+  };
+
+  const performUpdate = () => {
+    if (!booking) return;
 
     const currentDietary = booking.customers?.dietary_requirements || '';
     if (formData.lead_passenger_dietary_requirements !== currentDietary && booking.customers?.id) {
@@ -896,6 +910,25 @@ export default function BookingEdit() {
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setValidationError(null)}>
               OK, I'll fix it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showNoHotelsWarning} onOpenChange={() => setShowNoHotelsWarning(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>No Hotels Loaded</AlertDialogTitle>
+            <AlertDialogDescription>
+              This tour does not have any hotels loaded in the system yet. Please load hotels when ready.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setShowNoHotelsWarning(false);
+              performUpdate();
+            }}>
+              OK, Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
