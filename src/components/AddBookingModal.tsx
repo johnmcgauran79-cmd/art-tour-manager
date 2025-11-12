@@ -118,8 +118,26 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           variant: "default",
         });
       }
+    } else if (formData.passenger_count >= 2) {
+      // Check if any hotels have single bedding for 2+ passengers
+      const updatedAllocations = { ...hotelAllocations };
+      let hasSingleBedding = false;
+
+      Object.keys(updatedAllocations).forEach(hotelId => {
+        if (updatedAllocations[hotelId].bedding === 'single') {
+          hasSingleBedding = true;
+        }
+      });
+
+      if (hasSingleBedding) {
+        toast({
+          title: "Invalid Bedding Configuration",
+          description: `You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family.`,
+          variant: "destructive",
+        });
+      }
     }
-  }, [formData.passenger_count]);
+  }, [formData.passenger_count, hotelAllocations]);
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
@@ -629,6 +647,14 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                       });
                                       return;
                                     }
+                                    if (formData.passenger_count >= 2 && value === 'single') {
+                                      toast({
+                                        title: "Invalid Selection",
+                                        description: `You have ${formData.passenger_count} passengers. Single bedding is not appropriate. Please select Double, Twin, Triple, or Family.`,
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
                                     setHotelAllocations(prev => ({
                                       ...prev,
                                       [hotel.id]: { ...allocation, bedding: value }
@@ -639,7 +665,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="single">Single</SelectItem>
+                                    <SelectItem 
+                                      value="single"
+                                      disabled={formData.passenger_count >= 2}
+                                    >
+                                      Single
+                                    </SelectItem>
                                     <SelectItem 
                                       value="double" 
                                       disabled={formData.passenger_count === 1}
