@@ -95,6 +95,31 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
   const { toast } = useToast();
+
+  // Validate bedding type when passenger count changes
+  useEffect(() => {
+    if (formData.passenger_count === 1) {
+      const updatedAllocations = { ...hotelAllocations };
+      let hasInvalidBedding = false;
+
+      Object.keys(updatedAllocations).forEach(hotelId => {
+        const bedding = updatedAllocations[hotelId].bedding;
+        if (bedding === 'double' || bedding === 'twin') {
+          updatedAllocations[hotelId].bedding = 'single';
+          hasInvalidBedding = true;
+        }
+      });
+
+      if (hasInvalidBedding) {
+        setHotelAllocations(updatedAllocations);
+        toast({
+          title: "Bedding Updated",
+          description: "Bedding type changed to Single for 1 passenger booking.",
+          variant: "default",
+        });
+      }
+    }
+  }, [formData.passenger_count]);
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
@@ -596,6 +621,14 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                 <Select 
                                   value={allocation.bedding} 
                                   onValueChange={(value) => {
+                                    if (formData.passenger_count === 1 && (value === 'double' || value === 'twin')) {
+                                      toast({
+                                        title: "Invalid Selection",
+                                        description: "Cannot select Double or Twin bedding for a single passenger booking. Please select Single.",
+                                        variant: "destructive",
+                                      });
+                                      return;
+                                    }
                                     setHotelAllocations(prev => ({
                                       ...prev,
                                       [hotel.id]: { ...allocation, bedding: value }
@@ -607,8 +640,18 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="single">Single</SelectItem>
-                                    <SelectItem value="double">Double</SelectItem>
-                                    <SelectItem value="twin">Twin</SelectItem>
+                                    <SelectItem 
+                                      value="double" 
+                                      disabled={formData.passenger_count === 1}
+                                    >
+                                      Double
+                                    </SelectItem>
+                                    <SelectItem 
+                                      value="twin" 
+                                      disabled={formData.passenger_count === 1}
+                                    >
+                                      Twin
+                                    </SelectItem>
                                     <SelectItem value="triple">Triple</SelectItem>
                                     <SelectItem value="family">Family</SelectItem>
                                   </SelectContent>
