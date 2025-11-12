@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { BookingValidationReport } from "@/components/BookingValidationReport";
+import { useState } from "react";
 
 export const OperationsQuickActions = () => {
+  const [showValidationReport, setShowValidationReport] = useState(false);
   const reportActions = [
     {
       icon: FileText,
@@ -54,11 +57,10 @@ export const OperationsQuickActions = () => {
     },
     {
       icon: AlertCircle,
-      label: "Incomplete Bookings",
-      description: "Review bookings missing information",
+      label: "Booking Validation",
+      description: "Review pax/bedding mismatches",
       onClick: () => {
-        // To be implemented
-        console.log("Incomplete Bookings");
+        setShowValidationReport(true);
       },
     },
     {
@@ -146,6 +148,11 @@ export const OperationsQuickActions = () => {
           </div>
         </CardContent>
       </Card>
+
+      <BookingValidationReport 
+        open={showValidationReport} 
+        onOpenChange={setShowValidationReport} 
+      />
     </div>
   );
 };
