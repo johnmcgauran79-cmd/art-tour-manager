@@ -134,7 +134,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           allocated: formData.accommodation_required,
           check_in_date: hotel.default_check_in || preSelectedTourStartDate || '',
           check_out_date: hotel.default_check_out || preSelectedTourEndDate || '',
-          bedding: 'double',
+          bedding: 'single',
           room_type: hotel.default_room_type || '',
           room_upgrade: '',
           confirmation_number: '',
