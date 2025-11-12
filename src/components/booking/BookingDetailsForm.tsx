@@ -189,6 +189,7 @@ export const BookingDetailsForm = ({
                 <SelectItem value="fully_paid">Fully Paid</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="waitlisted">Waitlisted</SelectItem>
+                <SelectItem value="host">Host</SelectItem>
               </SelectContent>
             </Select>
           </div>
