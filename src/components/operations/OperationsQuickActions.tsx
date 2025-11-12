@@ -11,6 +11,7 @@ export const OperationsQuickActions = () => {
       icon: FileText,
       label: "Passenger Reports",
       description: "Generate passenger lists and summaries",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Passenger Reports");
@@ -20,6 +21,7 @@ export const OperationsQuickActions = () => {
       icon: Hotel,
       label: "Hotel Reports",
       description: "View rooming lists and allocations",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Hotel Reports");
@@ -29,6 +31,7 @@ export const OperationsQuickActions = () => {
       icon: Calendar,
       label: "Activity Reports",
       description: "Activity allocation and attendance",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Activity Reports");
@@ -38,6 +41,7 @@ export const OperationsQuickActions = () => {
       icon: Users,
       label: "Contact Reports",
       description: "Export and analyze contacts",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Contact Reports");
@@ -50,6 +54,7 @@ export const OperationsQuickActions = () => {
       icon: ClipboardCheck,
       label: "Pre-Tour Checklist",
       description: "Review all pre-tour requirements",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Pre-Tour Checklist");
@@ -59,6 +64,7 @@ export const OperationsQuickActions = () => {
       icon: AlertCircle,
       label: "Booking Validation",
       description: "Review pax/bedding mismatches",
+      active: true,
       onClick: () => {
         setShowValidationReport(true);
       },
@@ -67,6 +73,7 @@ export const OperationsQuickActions = () => {
       icon: TrendingUp,
       label: "Capacity Overview",
       description: "Review hotel and activity capacity",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Capacity Overview");
@@ -76,6 +83,7 @@ export const OperationsQuickActions = () => {
       icon: FileSpreadsheet,
       label: "Custom Report",
       description: "Generate custom reports",
+      active: false,
       onClick: () => {
         // To be implemented
         console.log("Custom Report");
@@ -100,11 +108,16 @@ export const OperationsQuickActions = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-auto flex flex-col items-start p-4 gap-2 hover:bg-brand-navy/5 hover:border-brand-navy/30 transition-all"
+                  disabled={!action.active}
+                  className={`h-auto flex flex-col items-start p-4 gap-2 transition-all ${
+                    action.active 
+                      ? 'hover:bg-brand-navy/5 hover:border-brand-navy/30 cursor-pointer' 
+                      : 'opacity-50 cursor-not-allowed'
+                  }`}
                   onClick={action.onClick}
                 >
                   <div className="flex items-center gap-2 w-full">
-                    <Icon className="h-5 w-5 text-brand-navy" />
+                    <Icon className={`h-5 w-5 ${action.active ? 'text-brand-navy' : 'text-muted-foreground'}`} />
                     <span className="font-semibold text-sm">{action.label}</span>
                   </div>
                   <span className="text-xs text-muted-foreground text-left">
@@ -132,11 +145,16 @@ export const OperationsQuickActions = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-auto flex flex-col items-start p-4 gap-2 hover:bg-brand-navy/5 hover:border-brand-navy/30 transition-all"
+                  disabled={!action.active}
+                  className={`h-auto flex flex-col items-start p-4 gap-2 transition-all ${
+                    action.active 
+                      ? 'hover:bg-brand-navy/5 hover:border-brand-navy/30 cursor-pointer' 
+                      : 'opacity-50 cursor-not-allowed'
+                  }`}
                   onClick={action.onClick}
                 >
                   <div className="flex items-center gap-2 w-full">
-                    <Icon className="h-5 w-5 text-brand-navy" />
+                    <Icon className={`h-5 w-5 ${action.active ? 'text-brand-navy' : 'text-muted-foreground'}`} />
                     <span className="font-semibold text-sm">{action.label}</span>
                   </div>
                   <span className="text-xs text-muted-foreground text-left">
