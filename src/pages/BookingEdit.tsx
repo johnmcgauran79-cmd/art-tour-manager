@@ -25,6 +25,16 @@ import { ContactSearch } from "@/components/booking/ContactSearch";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function BookingEdit() {
   const { id } = useParams();
@@ -75,6 +85,7 @@ export default function BookingEdit() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [secondaryContactName, setSecondaryContactName] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const updateBooking = useUpdateBooking();
   const cancelBooking = useCancelBooking();
@@ -127,9 +138,45 @@ export default function BookingEdit() {
     }
   }, [booking]);
 
-  const handleSubmit = (e?: React.FormEvent) => {
+  const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!booking) return;
+
+    // Validate second passenger name when passenger count is 2 or more
+    if (formData.passenger_count >= 2) {
+      if (!formData.passenger_2_name || formData.passenger_2_name.trim() === '') {
+        setValidationError("Second passenger name is required when booking for 2 or more passengers. Please add the second passenger's name in the Details tab.");
+        return;
+      }
+    }
+
+    // Validate bedding types match passenger count for allocated hotels
+    if (formData.accommodation_required) {
+      // Fetch current hotel bookings for this booking
+      const { data: hotelBookings, error } = await supabase
+        .from('hotel_bookings')
+        .select('*')
+        .eq('booking_id', booking.id)
+        .eq('allocated', true);
+
+      if (error) {
+        console.error('Error fetching hotel bookings:', error);
+      } else if (hotelBookings && hotelBookings.length > 0) {
+        if (formData.passenger_count === 1) {
+          const invalidBedding = hotelBookings.find(hb => hb.bedding !== 'single');
+          if (invalidBedding) {
+            setValidationError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before saving changes.");
+            return;
+          }
+        } else if (formData.passenger_count >= 2) {
+          const singleBedding = hotelBookings.find(hb => hb.bedding === 'single');
+          if (singleBedding) {
+            setValidationError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before saving changes.`);
+            return;
+          }
+        }
+      }
+    }
 
     const currentDietary = booking.customers?.dietary_requirements || '';
     if (formData.lead_passenger_dietary_requirements !== currentDietary && booking.customers?.id) {
@@ -824,6 +871,22 @@ export default function BookingEdit() {
           onContactCreated={handleContactCreated}
         />
       )}
+
+      <AlertDialog open={!!validationError} onOpenChange={() => setValidationError(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Validation Error</AlertDialogTitle>
+            <AlertDialogDescription>
+              {validationError}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setValidationError(null)}>
+              OK, I'll fix it
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
