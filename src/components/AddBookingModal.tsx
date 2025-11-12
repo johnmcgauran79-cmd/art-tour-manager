@@ -21,6 +21,15 @@ import { BookingConfirmationDialog } from "@/components/BookingConfirmationDialo
 import { UserPlus } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AddBookingModalProps {
   open: boolean;
@@ -46,6 +55,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [addingContactFor, setAddingContactFor] = useState<'lead' | 'secondary' | null>(null);
   const [activeTab, setActiveTab] = useState("details");
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [beddingError, setBeddingError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     tour_id: preSelectedTourId || '',
@@ -357,22 +367,14 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       if (formData.passenger_count === 1) {
         const invalidBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding !== 'single');
         if (invalidBedding) {
-          toast({
-            title: "Invalid Bedding Configuration",
-            description: "Single passenger bookings can only have Single bedding. Please update the Hotels tab.",
-            variant: "destructive",
-          });
+          setBeddingError("Single passenger bookings can only have Single bedding. Please update the Hotels tab before creating this booking.");
           setActiveTab("hotels");
           return;
         }
       } else if (formData.passenger_count >= 2) {
         const singleBedding = allocatedHotels.find(([_, allocation]) => allocation.bedding === 'single');
         if (singleBedding) {
-          toast({
-            title: "Invalid Bedding Configuration",
-            description: `You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab.`,
-            variant: "destructive",
-          });
+          setBeddingError(`You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family in the Hotels tab before creating this booking.`);
           setActiveTab("hotels");
           return;
         }
@@ -994,6 +996,22 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         isCreating={createBooking.isPending}
         bookingData={getConfirmationData()}
       />
+
+      <AlertDialog open={!!beddingError} onOpenChange={() => setBeddingError(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Invalid Bedding Configuration</AlertDialogTitle>
+            <AlertDialogDescription>
+              {beddingError}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setBeddingError(null)}>
+              OK
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
