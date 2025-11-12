@@ -106,48 +106,18 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const createBooking = useCreateBooking();
   const { toast } = useToast();
   
-  // Validate bedding type when passenger count changes
+  // Auto-update bedding to single for 1 passenger (silently, no validation alerts)
   useEffect(() => {
     if (formData.passenger_count === 1) {
       const updatedAllocations = { ...hotelAllocations };
-      let hasInvalidBedding = false;
-
       Object.keys(updatedAllocations).forEach(hotelId => {
-        const bedding = updatedAllocations[hotelId].bedding;
-        if (bedding !== 'single') {
+        if (updatedAllocations[hotelId].bedding !== 'single') {
           updatedAllocations[hotelId].bedding = 'single';
-          hasInvalidBedding = true;
         }
       });
-
-      if (hasInvalidBedding) {
-        setHotelAllocations(updatedAllocations);
-        toast({
-          title: "Bedding Updated",
-          description: "Bedding type changed to Single for 1 passenger booking.",
-          variant: "default",
-        });
-      }
-    } else if (formData.passenger_count >= 2) {
-      // Check if any hotels have single bedding for 2+ passengers
-      const updatedAllocations = { ...hotelAllocations };
-      let hasSingleBedding = false;
-
-      Object.keys(updatedAllocations).forEach(hotelId => {
-        if (updatedAllocations[hotelId].bedding === 'single') {
-          hasSingleBedding = true;
-        }
-      });
-
-      if (hasSingleBedding) {
-        toast({
-          title: "Invalid Bedding Configuration",
-          description: `You have ${formData.passenger_count} passengers but Single bedding selected. Please update to Double, Twin, Triple, or Family.`,
-          variant: "destructive",
-        });
-      }
+      setHotelAllocations(updatedAllocations);
     }
-  }, [formData.passenger_count, hotelAllocations]);
+  }, [formData.passenger_count]);
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
