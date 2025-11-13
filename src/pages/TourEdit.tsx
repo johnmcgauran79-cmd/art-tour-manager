@@ -306,8 +306,9 @@ export default function TourEdit() {
               <SelectContent>
                 <SelectItem value="pending">Pending</SelectItem>
                 <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="sold_out">Sold Out</SelectItem>
+                <SelectItem value="limited_availability">Limited Availability</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
+                <SelectItem value="sold_out">Sold Out</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
