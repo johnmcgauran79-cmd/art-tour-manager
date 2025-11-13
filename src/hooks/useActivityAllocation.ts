@@ -43,8 +43,8 @@ export const useActivityAllocation = ({
         if (existingBooking) {
           newAllocations[activity.id] = existingBooking.passengers_attending;
         } else {
-          // No booking exists - set to 0 (user must manually allocate)
-          newAllocations[activity.id] = 0;
+          // No booking exists - default to passenger count
+          newAllocations[activity.id] = passengerCount;
         }
       });
       
