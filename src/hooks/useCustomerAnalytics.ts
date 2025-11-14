@@ -41,7 +41,7 @@ export const useCustomerAnalytics = () => {
           status,
           created_at,
           tours!inner(start_date, name),
-          customers!inner(first_name, last_name, email, phone)
+          customers!bookings_lead_passenger_id_fkey(first_name, last_name, email, phone)
         `)
         .not("lead_passenger_id", "is", null);
 
@@ -144,7 +144,7 @@ export const useCustomerLifetimeStats = () => {
           status,
           created_at,
           tours!inner(start_date, name),
-          customers!inner(first_name, last_name, email, phone)
+          customers!bookings_lead_passenger_id_fkey(first_name, last_name, email, phone)
         `)
         .not("lead_passenger_id", "is", null);
 
