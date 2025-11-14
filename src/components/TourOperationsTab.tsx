@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
@@ -35,6 +37,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
@@ -152,6 +155,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     task.due_date && new Date(task.due_date) < new Date()
   );
   const automatedTasks = tasks?.filter(task => task.is_automated) || [];
+
+  // Filter tasks based on showCompletedTasks state
+  const displayedTasks = showCompletedTasks 
+    ? tasks 
+    : tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
 
   // Check for duplicates in automated tasks
   const automatedTaskTitles = automatedTasks.map(task => task.title);
@@ -411,13 +419,37 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
       </Card>
 
       {/* Tour Tasks Table */}
-      <StreamlinedTasksTable
-        tasks={tasks || []}
-        loading={tasksLoading}
-        title={`${tourName} - Tasks`}
-        onCreateTask={() => setAddTaskModalOpen(true)}
-        onTaskClick={handleTaskClick}
-      />
+      <Card className="border-brand-navy/20">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-brand-navy">Tour Tasks</CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  id="show-completed-ops" 
+                  checked={showCompletedTasks}
+                  onCheckedChange={(checked) => setShowCompletedTasks(checked as boolean)}
+                />
+                <Label htmlFor="show-completed-ops" className="text-sm font-normal cursor-pointer">
+                  Show Completed Tasks
+                </Label>
+              </div>
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                {displayedTasks?.length || 0} displayed
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <StreamlinedTasksTable
+            tasks={displayedTasks || []}
+            loading={tasksLoading}
+            title=""
+            onCreateTask={() => setAddTaskModalOpen(true)}
+            onTaskClick={handleTaskClick}
+          />
+        </CardContent>
+      </Card>
 
       <TourOperationsReportsModal
         tourId={tourId}
