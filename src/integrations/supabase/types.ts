@@ -1165,6 +1165,86 @@ export type Database = {
           },
         ]
       }
+      tour_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          activity_id: string | null
+          alert_type: string
+          booking_id: string | null
+          created_at: string
+          details: Json | null
+          hotel_id: string | null
+          id: string
+          is_acknowledged: boolean
+          message: string
+          severity: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          activity_id?: string | null
+          alert_type: string
+          booking_id?: string | null
+          created_at?: string
+          details?: Json | null
+          hotel_id?: string | null
+          id?: string
+          is_acknowledged?: boolean
+          message: string
+          severity?: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          activity_id?: string | null
+          alert_type?: string
+          booking_id?: string | null
+          created_at?: string
+          details?: Json | null
+          hotel_id?: string | null
+          id?: string
+          is_acknowledged?: boolean
+          message?: string
+          severity?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_alerts_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_alerts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_alerts_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_alerts_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_attachments: {
         Row: {
           file_name: string
