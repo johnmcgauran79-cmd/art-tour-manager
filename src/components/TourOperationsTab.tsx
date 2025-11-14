@@ -432,7 +432,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         </CardHeader>
         <CardContent>
           <StreamlinedTasksTable
-            tasks={tasks || []}
+            tasks={activeTasks}
             loading={tasksLoading}
             title=""
             onCreateTask={() => setAddTaskModalOpen(true)}
