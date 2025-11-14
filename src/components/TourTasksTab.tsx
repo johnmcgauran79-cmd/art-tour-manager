@@ -3,6 +3,8 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Plus, Settings2, ClipboardList } from "lucide-react";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
@@ -19,6 +21,7 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   const { navigateWithContext } = useNavigationContext();
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskTemplateModalOpen, setTaskTemplateModalOpen] = useState(false);
+  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const { userRole } = useAuth();
   
   // Agent users have view-only access
@@ -49,6 +52,11 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   const completedTasks = tasks?.filter(task => 
     task.status === 'completed' || task.status === 'cancelled'
   ) || [];
+
+  // Filter tasks based on showCompletedTasks state
+  const displayedTasks = showCompletedTasks 
+    ? tasks 
+    : tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
 
   return (
     <>
@@ -139,9 +147,21 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-brand-navy">All Tasks</CardTitle>
-              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                {tasks?.length || 0} total
-              </Badge>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="show-completed" 
+                    checked={showCompletedTasks}
+                    onCheckedChange={(checked) => setShowCompletedTasks(checked as boolean)}
+                  />
+                  <Label htmlFor="show-completed" className="text-sm font-normal cursor-pointer">
+                    Show Completed Tasks
+                  </Label>
+                </div>
+                <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+                  {displayedTasks?.length || 0} displayed
+                </Badge>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -150,9 +170,9 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-navy mx-auto"></div>
                 <p className="text-muted-foreground mt-2">Loading tasks...</p>
               </div>
-            ) : tasks && tasks.length > 0 ? (
+            ) : displayedTasks && displayedTasks.length > 0 ? (
               <StreamlinedTasksTable
-                tasks={tasks}
+                tasks={displayedTasks}
                 loading={isLoading}
                 onTaskClick={handleTaskClick}
                 title=""
