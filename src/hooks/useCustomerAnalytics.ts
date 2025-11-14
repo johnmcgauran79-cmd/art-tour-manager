@@ -90,7 +90,14 @@ export const useCustomerAnalytics = () => {
           customerData.total_revenue += booking.revenue || 0;
         }
         
-        customerData.status_breakdown[booking.status as keyof typeof customerData.status_breakdown]++;
+        // Update status breakdown
+        if (booking.status === 'cancelled') {
+          customerData.status_breakdown.cancelled++;
+        } else if (booking.status === 'pending' || booking.status === 'invoiced' || booking.status === 'deposited' || booking.status === 'instalment_paid') {
+          customerData.status_breakdown.pending++;
+        } else if (booking.status === 'fully_paid' || booking.status === 'waitlisted') {
+          customerData.status_breakdown.completed++;
+        }
       });
 
       // Calculate final analytics for each customer
