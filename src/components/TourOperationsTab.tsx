@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
@@ -37,7 +35,6 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
-  const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
@@ -150,16 +147,12 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
 
   // Task statistics
   const activeTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
+  const completedTasks = tasks?.filter(task => task.status === 'completed' || task.status === 'cancelled') || [];
   const criticalTasks = activeTasks.filter(task => task.priority === 'critical');
   const overdueTasks = activeTasks.filter(task => 
     task.due_date && new Date(task.due_date) < new Date()
   );
   const automatedTasks = tasks?.filter(task => task.is_automated) || [];
-
-  // Filter tasks based on showCompletedTasks state
-  const displayedTasks = showCompletedTasks 
-    ? tasks 
-    : tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
 
   // Check for duplicates in automated tasks
   const automatedTaskTitles = automatedTasks.map(task => task.title);
@@ -171,7 +164,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const isAdmin = userRole === 'admin';
   const shouldShowCleanupButton = hasAutomatedTasks && isAdmin;
 
-  const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated') => {
+  const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated' | 'completed') => {
     let filtered: Task[] = [];
     let title = "";
 
@@ -195,6 +188,10 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
       case 'automated':
         filtered = automatedTasks;
         title = "Automated Tasks";
+        break;
+      case 'completed':
+        filtered = completedTasks;
+        title = "Completed Tasks";
         break;
     }
 
@@ -351,7 +348,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         </CardHeader>
         <CardContent>
           {/* Task Statistics Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
             <div 
               className="text-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleTaskStatsClick('total')}
@@ -393,6 +390,16 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               <p className="text-xs text-gray-600">{overdueTasks.length} overdue</p>
             </div>
             <div 
+              className="text-center p-3 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleTaskStatsClick('completed')}
+            >
+              <div className="bg-green-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-green-200 transition-colors">
+                <ClipboardList className="h-5 w-5 text-green-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-green-700 text-xs">Completed Tasks</p>
+              <p className="text-xs text-gray-600">{completedTasks.length} done</p>
+            </div>
+            <div 
               className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleTaskStatsClick('automated')}
             >
@@ -421,28 +428,11 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
       {/* Tour Tasks Table */}
       <Card className="border-brand-navy/20">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-brand-navy">Tour Tasks</CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Checkbox 
-                  id="show-completed-ops" 
-                  checked={showCompletedTasks}
-                  onCheckedChange={(checked) => setShowCompletedTasks(checked as boolean)}
-                />
-                <Label htmlFor="show-completed-ops" className="text-sm font-normal cursor-pointer">
-                  Show Completed Tasks
-                </Label>
-              </div>
-              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                {displayedTasks?.length || 0} displayed
-              </Badge>
-            </div>
-          </div>
+          <CardTitle className="text-brand-navy">Tour Tasks</CardTitle>
         </CardHeader>
         <CardContent>
           <StreamlinedTasksTable
-            tasks={displayedTasks || []}
+            tasks={tasks || []}
             loading={tasksLoading}
             title=""
             onCreateTask={() => setAddTaskModalOpen(true)}
