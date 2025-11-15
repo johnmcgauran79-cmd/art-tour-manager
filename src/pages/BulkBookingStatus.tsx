@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { usePaginatedBookings, useFilteredBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,7 @@ export default function BulkBookingStatus() {
     currentPage,
     pageSize
   );
+  const { data: filterCounts } = useFilterCounts();
   
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
@@ -224,14 +225,14 @@ export default function BulkBookingStatus() {
                 size="sm"
                 onClick={() => handleFilterChange('deposits_owing')}
               >
-                Deposits Owing {activeFilter === 'deposits_owing' && `(${totalCount})`}
+                Deposits Owing ({filterCounts?.depositsOwing || 0})
               </Button>
               <Button
                 variant={activeFilter === 'payment_due' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleFilterChange('payment_due')}
               >
-                Final Payment Due {activeFilter === 'payment_due' && `(${totalCount})`}
+                Final Payment Due ({filterCounts?.paymentDue || 0})
               </Button>
             </div>
 

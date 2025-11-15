@@ -169,6 +169,42 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
   });
 };
 
+export const useFilterCounts = () => {
+  return useQuery({
+    queryKey: ['bookings', 'filter-counts'],
+    queryFn: async () => {
+      // Get deposits owing count
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      
+      const { count: depositsOwingCount } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'invoiced')
+        .lt('created_at', fourteenDaysAgo.toISOString());
+
+      // Get payment due count
+      const eightyDaysFromNow = new Date();
+      eightyDaysFromNow.setDate(eightyDaysFromNow.getDate() + 80);
+      
+      const { count: paymentDueCount } = await supabase
+        .from('bookings')
+        .select('*, tours!inner(start_date)', { count: 'exact', head: true })
+        .neq('status', 'fully_paid')
+        .neq('status', 'host')
+        .neq('status', 'cancelled')
+        .neq('status', 'waitlisted')
+        .lt('tours.start_date', eightyDaysFromNow.toISOString())
+        .gte('tours.start_date', new Date().toISOString().split('T')[0]);
+
+      return {
+        depositsOwing: depositsOwingCount || 0,
+        paymentDue: paymentDueCount || 0,
+      };
+    },
+  });
+};
+
 export const useCreateBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
