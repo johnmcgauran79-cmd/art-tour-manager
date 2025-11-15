@@ -43,11 +43,20 @@ export default function BulkBookingStatus() {
 
   // Calculate counts for each filter
   const depositsOwingCount = useMemo(() => {
-    return bookings.filter(booking => {
+    const filtered = bookings.filter(booking => {
       if (booking.status !== 'invoiced') return false;
       const daysSinceCreated = differenceInDays(new Date(), parseISO(booking.created_at));
+      console.log('Deposits check:', {
+        id: booking.id,
+        status: booking.status,
+        created_at: booking.created_at,
+        daysSinceCreated,
+        matches: daysSinceCreated > 14
+      });
       return daysSinceCreated > 14;
-    }).length;
+    });
+    console.log('Deposits Owing Count:', filtered.length, 'out of', bookings.length, 'bookings on this page');
+    return filtered.length;
   }, [bookings]);
 
   const paymentDueCount = useMemo(() => {
