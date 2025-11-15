@@ -94,7 +94,7 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) =>
         .from('bookings')
         .select(`
           *,
-          tours (name),
+          tours (name, start_date),
           customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
           secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
         `, { count: 'exact' })
