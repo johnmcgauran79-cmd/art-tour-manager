@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Search, Save } from "lucide-react";
-import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { usePaginatedBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useToast } from "@/hooks/use-toast";
@@ -26,28 +26,36 @@ const BOOKING_STATUSES = [
 export default function BulkBookingStatus() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
-  const { data: allBookings = [], isLoading } = useBookings();
+  const pageSize = 50;
+  const { data: paginatedData, isLoading } = usePaginatedBookings(currentPage, pageSize);
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
 
-  // Filter bookings based on search query
-  const filteredBookings = (allBookings || []).filter(booking => {
-    if (!searchQuery.trim()) return true;
+  const bookings = paginatedData?.data || [];
+  const totalCount = paginatedData?.count || 0;
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  // Filter bookings based on search query with useMemo for performance
+  const filteredBookings = useMemo(() => {
+    if (!searchQuery.trim()) return bookings;
     const searchTerm = searchQuery.toLowerCase();
     
-    const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
-    const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
-    const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
-    const groupName = (booking.group_name || '').toLowerCase();
-    const tourName = (booking.tours?.name || '').toLowerCase();
-    
-    return leadPassengerName.includes(searchTerm) ||
-           passenger2Name.includes(searchTerm) ||
-           passenger3Name.includes(searchTerm) ||
-           groupName.includes(searchTerm) ||
-           tourName.includes(searchTerm);
-  });
+    return bookings.filter(booking => {
+      const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+      const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
+      const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+      const groupName = (booking.group_name || '').toLowerCase();
+      const tourName = (booking.tours?.name || '').toLowerCase();
+      
+      return leadPassengerName.includes(searchTerm) ||
+             passenger2Name.includes(searchTerm) ||
+             passenger3Name.includes(searchTerm) ||
+             groupName.includes(searchTerm) ||
+             tourName.includes(searchTerm);
+    });
+  }, [bookings, searchQuery]);
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
     setStatusUpdates(prev => ({
@@ -88,7 +96,7 @@ export default function BulkBookingStatus() {
 
   const handleUpdateAll = async () => {
     const updates = Object.entries(statusUpdates).filter(([bookingId, newStatus]) => {
-      const booking = allBookings.find(b => b.id === bookingId);
+      const booking = bookings.find(b => b.id === bookingId);
       return booking && booking.status !== newStatus;
     });
 
@@ -157,7 +165,7 @@ export default function BulkBookingStatus() {
             <span>Update Booking Status</span>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
-                {filteredBookings.length} {searchQuery ? 'found' : 'bookings'}
+                Page {currentPage} of {totalPages} • {totalCount} total bookings
               </Badge>
               {Object.keys(statusUpdates).length > 0 && (
                 <Button
@@ -255,6 +263,36 @@ export default function BulkBookingStatus() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount} bookings
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || isLoading}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+              <div className="text-sm">
+                Page {currentPage} of {totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || isLoading}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
