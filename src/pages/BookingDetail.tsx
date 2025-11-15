@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft } from "lucide-react";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
@@ -39,6 +40,7 @@ export default function BookingDetail() {
   
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [currentTab, setCurrentTab] = useState("details");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const deleteBooking = useDeleteBooking();
   const isMobile = useIsMobile();
   
@@ -62,6 +64,7 @@ export default function BookingDetail() {
           title: "Success",
           description: "Booking deleted successfully",
         });
+        setShowDeleteDialog(false);
         goBack("/?tab=bookings");
       },
       onError: (error: any) => {
@@ -70,6 +73,7 @@ export default function BookingDetail() {
           description: error.message || "Failed to delete booking",
           variant: "destructive",
         });
+        setShowDeleteDialog(false);
       },
     });
   };
@@ -178,7 +182,7 @@ export default function BookingDetail() {
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={handleDelete}
+                  onClick={() => setShowDeleteDialog(true)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   Delete
@@ -379,6 +383,23 @@ export default function BookingDetail() {
             bookingId={booking.id}
           />
         )}
+
+        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the booking for {leadPassengerName}. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
