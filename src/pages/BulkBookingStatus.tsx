@@ -86,6 +86,46 @@ export default function BulkBookingStatus() {
     }
   };
 
+  const handleUpdateAll = async () => {
+    const updates = Object.entries(statusUpdates).filter(([bookingId, newStatus]) => {
+      const booking = allBookings.find(b => b.id === bookingId);
+      return booking && booking.status !== newStatus;
+    });
+
+    if (updates.length === 0) {
+      toast({
+        title: "No Changes",
+        description: "No booking statuses have been changed.",
+      });
+      return;
+    }
+
+    try {
+      await Promise.all(
+        updates.map(([bookingId, newStatus]) =>
+          updateBooking.mutateAsync({
+            id: bookingId,
+            status: newStatus as any
+          })
+        )
+      );
+
+      toast({
+        title: "All Statuses Updated",
+        description: `Successfully updated ${updates.length} booking${updates.length > 1 ? 's' : ''}.`,
+      });
+
+      // Clear all updates
+      setStatusUpdates({});
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update some booking statuses. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -115,9 +155,21 @@ export default function BulkBookingStatus() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Update Booking Status</span>
-            <Badge variant="secondary">
-              {filteredBookings.length} {searchQuery ? 'found' : 'bookings'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {filteredBookings.length} {searchQuery ? 'found' : 'bookings'}
+              </Badge>
+              {Object.keys(statusUpdates).length > 0 && (
+                <Button
+                  onClick={handleUpdateAll}
+                  disabled={updateBooking.isPending}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Update All ({Object.keys(statusUpdates).length})
+                </Button>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
