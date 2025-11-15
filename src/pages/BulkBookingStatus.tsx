@@ -3,14 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter, Trash2 } from "lucide-react";
+import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking, useDeleteBooking } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 import { differenceInDays, parseISO } from "date-fns";
 
 const BOOKING_STATUSES = [
@@ -32,6 +33,7 @@ export default function BulkBookingStatus() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [bookingToDelete, setBookingToDelete] = useState<{ id: string; name: string } | null>(null);
   const pageSize = 50;
   
   const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
@@ -43,6 +45,7 @@ export default function BulkBookingStatus() {
   const { data: filterCounts } = useFilterCounts();
   
   const updateBooking = useUpdateBooking();
+  const deleteBooking = useDeleteBooking();
   const { toast } = useToast();
 
   // Use filtered data when filter is active, otherwise use paginated data
@@ -161,6 +164,28 @@ export default function BulkBookingStatus() {
     }
   };
 
+  const handleDeleteBooking = () => {
+    if (!bookingToDelete) return;
+    
+    deleteBooking.mutate(bookingToDelete.id, {
+      onSuccess: () => {
+        toast({
+          title: "Booking Deleted",
+          description: "The booking has been successfully deleted.",
+        });
+        setBookingToDelete(null);
+      },
+      onError: (error: any) => {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to delete booking",
+          variant: "destructive",
+        });
+        setBookingToDelete(null);
+      }
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -257,7 +282,7 @@ export default function BulkBookingStatus() {
                   <TableHead>Booking Date</TableHead>
                   <TableHead>Current Status</TableHead>
                   <TableHead>New Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -303,15 +328,28 @@ export default function BulkBookingStatus() {
                         </Select>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          onClick={() => handleUpdateStatus(booking.id)}
-                          disabled={!statusUpdates[booking.id] || statusUpdates[booking.id] === booking.status || updateBooking.isPending}
-                          className="gap-2"
-                        >
-                          <Save className="h-4 w-4" />
-                          Update
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateStatus(booking.id)}
+                            disabled={!statusUpdates[booking.id] || statusUpdates[booking.id] === booking.status || updateBooking.isPending}
+                            className="gap-2"
+                          >
+                            <Save className="h-4 w-4" />
+                            Update
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setBookingToDelete({
+                              id: booking.id,
+                              name: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim() || 'this booking'
+                            })}
+                            disabled={deleteBooking.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -351,6 +389,23 @@ export default function BulkBookingStatus() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!bookingToDelete} onOpenChange={(open) => !open && setBookingToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the booking for {bookingToDelete?.name}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBooking} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
