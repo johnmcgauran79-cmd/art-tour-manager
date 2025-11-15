@@ -326,7 +326,7 @@ export default function BulkBookingStatus() {
             </div>
           )}
 
-          <div className="mb-4 space-y-4">....
+          <div className="mb-4 space-y-4">
             {/* Filter Buttons */}
             <div className="flex flex-wrap gap-2">
               <Button
