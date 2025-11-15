@@ -35,6 +35,7 @@ export default function BulkBookingStatus() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const pageSize = 50;
   
   const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
@@ -64,9 +65,14 @@ export default function BulkBookingStatus() {
     setBulkStatus("");
   };
 
-  // Filter bookings based on search query with useMemo for performance
+  // Filter bookings based on search query and status filter with useMemo for performance
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(booking => booking.status === statusFilter);
+    }
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -87,7 +93,7 @@ export default function BulkBookingStatus() {
     }
 
     return filtered;
-  }, [bookings, searchQuery]);
+  }, [bookings, searchQuery, statusFilter]);
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
@@ -354,15 +360,30 @@ export default function BulkBookingStatus() {
               </Button>
             </div>
 
-            {/* Search Input */}
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search by passenger name, tour name, or group name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8"
-              />
+            {/* Search and Status Filter */}
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by passenger name, tour name, or group name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {BOOKING_STATUSES.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {formatStatusText(status)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
