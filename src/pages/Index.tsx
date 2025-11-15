@@ -156,6 +156,7 @@ const Index = () => {
         <BookingsTable 
           onAddBooking={handleAddBooking} 
           onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
+          onBulkStatusUpdate={() => navigate('/bookings/bulk-status')}
         />
       </TabsContent>
       

@@ -18,9 +18,10 @@ import { useAuth } from "@/hooks/useAuth";
 interface BookingsTableProps {
   onAddBooking: () => void;
   onViewAnalytics?: () => void;
+  onBulkStatusUpdate?: () => void;
 }
 
-export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTableProps) => {
+export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdate }: BookingsTableProps) => {
   const { navigateWithContext } = useNavigationContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
@@ -93,6 +94,14 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics }: BookingsTablePr
                 >
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Analytics
+                </Button>
+              )}
+              {onBulkStatusUpdate && !isAgent && (
+                <Button 
+                  onClick={onBulkStatusUpdate} 
+                  variant="outline"
+                >
+                  Update Status
                 </Button>
               )}
               {!isAgent && (

@@ -18,6 +18,7 @@ import TaskDetail from "./pages/TaskDetail";
 import TaskEdit from "./pages/TaskEdit";
 import ContactDetail from "./pages/ContactDetail";
 import ContactEdit from "./pages/ContactEdit";
+import BulkBookingStatus from "./pages/BulkBookingStatus";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -128,6 +129,16 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <ContactEdit />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings/bulk-status"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <BulkBookingStatus />
                     </AppLayout>
                   </ProtectedRoute>
                 }
