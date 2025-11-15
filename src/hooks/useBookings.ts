@@ -132,12 +132,14 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
           .lt('created_at', fourteenDaysAgo.toISOString());
       } else if (filterType === 'payment_due') {
         // Bookings not fully paid with tours starting in less than 80 days
-        // Exclude hosts as they don't need to pay
+        // Exclude hosts (don't pay), cancelled, and waitlisted bookings
         const eightyDaysFromNow = new Date();
         eightyDaysFromNow.setDate(eightyDaysFromNow.getDate() + 80);
         query = query
           .neq('status', 'fully_paid')
           .neq('status', 'host')
+          .neq('status', 'cancelled')
+          .neq('status', 'waitlisted')
           .not('tours.start_date', 'is', null)
           .lt('tours.start_date', eightyDaysFromNow.toISOString());
       }
