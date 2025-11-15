@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
-import { usePaginatedBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { usePaginatedBookings, useFilteredBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useToast } from "@/hooks/use-toast";
@@ -33,64 +33,34 @@ export default function BulkBookingStatus() {
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const pageSize = 50;
-  const { data: paginatedData, isLoading } = usePaginatedBookings(currentPage, pageSize);
+  
+  const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
+  const { data: filteredData, isLoading: filteredLoading } = useFilteredBookings(
+    activeFilter === 'all' ? null : activeFilter,
+    currentPage,
+    pageSize
+  );
+  
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
 
-  const bookings = paginatedData?.data || [];
-  const totalCount = paginatedData?.count || 0;
+  // Use filtered data when filter is active, otherwise use paginated data
+  const currentData = activeFilter === 'all' ? paginatedData : filteredData;
+  const isLoading = activeFilter === 'all' ? paginatedLoading : filteredLoading;
+  
+  const bookings = currentData?.data || [];
+  const totalCount = currentData?.count || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // Calculate counts for each filter
-  const depositsOwingCount = useMemo(() => {
-    const filtered = bookings.filter(booking => {
-      if (booking.status !== 'invoiced') return false;
-      const daysSinceCreated = differenceInDays(new Date(), parseISO(booking.created_at));
-      console.log('Deposits check:', {
-        id: booking.id,
-        status: booking.status,
-        created_at: booking.created_at,
-        daysSinceCreated,
-        matches: daysSinceCreated > 14
-      });
-      return daysSinceCreated > 14;
-    });
-    console.log('Deposits Owing Count:', filtered.length, 'out of', bookings.length, 'bookings on this page');
-    return filtered.length;
-  }, [bookings]);
+  // Reset to page 1 when filter changes
+  const handleFilterChange = (filter: FilterType) => {
+    setCurrentPage(1);
+    setActiveFilter(filter);
+  };
 
-  const paymentDueCount = useMemo(() => {
-    return bookings.filter(booking => {
-      if (booking.status === 'fully_paid') return false;
-      if (!booking.tours) return false;
-      const tour = booking.tours as any;
-      if (!tour.start_date) return false;
-      const daysUntilTour = differenceInDays(parseISO(tour.start_date), new Date());
-      return daysUntilTour < 80;
-    }).length;
-  }, [bookings]);
-
-  // Filter bookings based on search query and active filter with useMemo for performance
+  // Filter bookings based on search query with useMemo for performance
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
-
-    // Apply auto-filter
-    if (activeFilter === 'deposits_owing') {
-      filtered = filtered.filter(booking => {
-        if (booking.status !== 'invoiced') return false;
-        const daysSinceCreated = differenceInDays(new Date(), parseISO(booking.created_at));
-        return daysSinceCreated > 14;
-      });
-    } else if (activeFilter === 'payment_due') {
-      filtered = filtered.filter(booking => {
-        if (booking.status === 'fully_paid') return false;
-        if (!booking.tours) return false;
-        const tour = booking.tours as any;
-        if (!tour.start_date) return false;
-        const daysUntilTour = differenceInDays(parseISO(tour.start_date), new Date());
-        return daysUntilTour < 80;
-      });
-    }
 
     // Apply search filter
     if (searchQuery.trim()) {
@@ -111,7 +81,7 @@ export default function BulkBookingStatus() {
     }
 
     return filtered;
-  }, [bookings, searchQuery, activeFilter]);
+  }, [bookings, searchQuery]);
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
     setStatusUpdates(prev => ({
@@ -243,7 +213,7 @@ export default function BulkBookingStatus() {
               <Button
                 variant={activeFilter === 'all' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveFilter('all')}
+                onClick={() => handleFilterChange('all')}
                 className="gap-2"
               >
                 <Filter className="h-4 w-4" />
@@ -252,16 +222,16 @@ export default function BulkBookingStatus() {
               <Button
                 variant={activeFilter === 'deposits_owing' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveFilter('deposits_owing')}
+                onClick={() => handleFilterChange('deposits_owing')}
               >
-                Deposits Owing ({depositsOwingCount})
+                Deposits Owing {activeFilter === 'deposits_owing' && `(${totalCount})`}
               </Button>
               <Button
                 variant={activeFilter === 'payment_due' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveFilter('payment_due')}
+                onClick={() => handleFilterChange('payment_due')}
               >
-                Final Payment Due ({paymentDueCount})
+                Final Payment Due {activeFilter === 'payment_due' && `(${totalCount})`}
               </Button>
             </div>
 

@@ -107,6 +107,49 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) =>
   });
 };
 
+export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due' | null, page: number = 1, pageSize: number = 50) => {
+  return useQuery({
+    queryKey: ['bookings', 'filtered', filterType, page, pageSize],
+    queryFn: async () => {
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize - 1;
+
+      let query = supabase
+        .from('bookings')
+        .select(`
+          *,
+          tours (name, start_date),
+          customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
+          secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
+        `, { count: 'exact' });
+
+      if (filterType === 'deposits_owing') {
+        // Bookings with status 'invoiced' created more than 14 days ago
+        const fourteenDaysAgo = new Date();
+        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        query = query
+          .eq('status', 'invoiced')
+          .lt('created_at', fourteenDaysAgo.toISOString());
+      } else if (filterType === 'payment_due') {
+        // Bookings not fully paid with tours starting in less than 80 days
+        const eightyDaysFromNow = new Date();
+        eightyDaysFromNow.setDate(eightyDaysFromNow.getDate() + 80);
+        query = query
+          .neq('status', 'fully_paid')
+          .not('tours.start_date', 'is', null)
+          .lt('tours.start_date', eightyDaysFromNow.toISOString());
+      }
+
+      query = query.order('created_at', { ascending: false }).range(start, end);
+
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { data: data || [], count: count || 0 };
+    },
+    enabled: filterType !== null,
+  });
+};
+
 export const useCreateBooking = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
