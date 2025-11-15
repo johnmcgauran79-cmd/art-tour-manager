@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { usePaginatedBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { differenceInDays, parseISO } from "date-fns";
 
 const BOOKING_STATUSES = [
   'pending',
@@ -23,11 +24,14 @@ const BOOKING_STATUSES = [
   'host'
 ];
 
+type FilterType = 'all' | 'deposits_owing' | 'payment_due';
+
 export default function BulkBookingStatus() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
+  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const pageSize = 50;
   const { data: paginatedData, isLoading } = usePaginatedBookings(currentPage, pageSize);
   const updateBooking = useUpdateBooking();
@@ -37,25 +41,48 @@ export default function BulkBookingStatus() {
   const totalCount = paginatedData?.count || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // Filter bookings based on search query with useMemo for performance
+  // Filter bookings based on search query and active filter with useMemo for performance
   const filteredBookings = useMemo(() => {
-    if (!searchQuery.trim()) return bookings;
-    const searchTerm = searchQuery.toLowerCase();
-    
-    return bookings.filter(booking => {
-      const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
-      const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
-      const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
-      const groupName = (booking.group_name || '').toLowerCase();
-      const tourName = (booking.tours?.name || '').toLowerCase();
-      
-      return leadPassengerName.includes(searchTerm) ||
-             passenger2Name.includes(searchTerm) ||
-             passenger3Name.includes(searchTerm) ||
-             groupName.includes(searchTerm) ||
-             tourName.includes(searchTerm);
-    });
-  }, [bookings, searchQuery]);
+    let filtered = bookings;
+
+    // Apply auto-filter
+    if (activeFilter === 'deposits_owing') {
+      filtered = filtered.filter(booking => {
+        if (booking.status !== 'invoiced') return false;
+        const daysSinceCreated = differenceInDays(new Date(), parseISO(booking.created_at));
+        return daysSinceCreated > 14;
+      });
+    } else if (activeFilter === 'payment_due') {
+      filtered = filtered.filter(booking => {
+        if (booking.status === 'fully_paid') return false;
+        if (!booking.tours) return false;
+        const tour = booking.tours as any;
+        if (!tour.start_date) return false;
+        const daysUntilTour = differenceInDays(parseISO(tour.start_date), new Date());
+        return daysUntilTour < 80;
+      });
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const searchTerm = searchQuery.toLowerCase();
+      filtered = filtered.filter(booking => {
+        const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+        const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
+        const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+        const groupName = (booking.group_name || '').toLowerCase();
+        const tourName = (booking.tours?.name || '').toLowerCase();
+        
+        return leadPassengerName.includes(searchTerm) ||
+               passenger2Name.includes(searchTerm) ||
+               passenger3Name.includes(searchTerm) ||
+               groupName.includes(searchTerm) ||
+               tourName.includes(searchTerm);
+      });
+    }
+
+    return filtered;
+  }, [bookings, searchQuery, activeFilter]);
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
     setStatusUpdates(prev => ({
@@ -181,7 +208,35 @@ export default function BulkBookingStatus() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
+          <div className="mb-4 space-y-4">
+            {/* Filter Buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={activeFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('all')}
+                className="gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                All Bookings
+              </Button>
+              <Button
+                variant={activeFilter === 'deposits_owing' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('deposits_owing')}
+              >
+                Deposits Owing
+              </Button>
+              <Button
+                variant={activeFilter === 'payment_due' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setActiveFilter('payment_due')}
+              >
+                Payment Due
+              </Button>
+            </div>
+
+            {/* Search Input */}
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
