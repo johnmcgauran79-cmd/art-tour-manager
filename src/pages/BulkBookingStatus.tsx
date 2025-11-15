@@ -252,7 +252,7 @@ export default function BulkBookingStatus() {
                 size="sm"
                 onClick={() => setActiveFilter('payment_due')}
               >
-                Payment Due ({paymentDueCount})
+                Final Payment Due ({paymentDueCount})
               </Button>
             </div>
 
