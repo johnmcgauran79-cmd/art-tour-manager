@@ -114,41 +114,56 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
-      let query = supabase
-        .from('bookings')
-        .select(`
-          *,
-          tours (name, start_date),
-          customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
-          secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
-        `, { count: 'exact' });
-
       if (filterType === 'deposits_owing') {
         // Bookings with status 'invoiced' created more than 14 days ago
         const fourteenDaysAgo = new Date();
         fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-        query = query
+        
+        const { data, error, count } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            tours!inner (name, start_date),
+            customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
+          `, { count: 'exact' })
           .eq('status', 'invoiced')
-          .lt('created_at', fourteenDaysAgo.toISOString());
+          .lt('created_at', fourteenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .range(start, end);
+        
+        if (error) throw error;
+        return { data: data || [], count: count || 0 };
+        
       } else if (filterType === 'payment_due') {
         // Bookings not fully paid with tours starting in less than 80 days
         // Exclude hosts (don't pay), cancelled, and waitlisted bookings
         const eightyDaysFromNow = new Date();
         eightyDaysFromNow.setDate(eightyDaysFromNow.getDate() + 80);
-        query = query
+        
+        const { data, error, count } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            tours!inner (name, start_date),
+            customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
+          `, { count: 'exact' })
           .neq('status', 'fully_paid')
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
-          .not('tours.start_date', 'is', null)
-          .lt('tours.start_date', eightyDaysFromNow.toISOString());
+          .lt('tours.start_date', eightyDaysFromNow.toISOString())
+          .gte('tours.start_date', new Date().toISOString().split('T')[0]) // Tour hasn't started yet
+          .order('created_at', { ascending: false })
+          .range(start, end);
+        
+        if (error) throw error;
+        return { data: data || [], count: count || 0 };
       }
 
-      query = query.order('created_at', { ascending: false }).range(start, end);
-
-      const { data, error, count } = await query;
-      if (error) throw error;
-      return { data: data || [], count: count || 0 };
+      // Default return empty
+      return { data: [], count: 0 };
     },
     enabled: filterType !== null,
   });
