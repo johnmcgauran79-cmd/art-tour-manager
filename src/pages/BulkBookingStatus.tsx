@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -32,6 +33,8 @@ export default function BulkBookingStatus() {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
+  const [bulkStatus, setBulkStatus] = useState<string>("");
   const pageSize = 50;
   
   const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
@@ -57,6 +60,8 @@ export default function BulkBookingStatus() {
   const handleFilterChange = (filter: FilterType) => {
     setCurrentPage(1);
     setActiveFilter(filter);
+    setSelectedBookings(new Set());
+    setBulkStatus("");
   };
 
   // Filter bookings based on search query with useMemo for performance
@@ -83,6 +88,30 @@ export default function BulkBookingStatus() {
 
     return filtered;
   }, [bookings, searchQuery]);
+
+  // Selection handlers
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(filteredBookings.map(b => b.id));
+      setSelectedBookings(allIds);
+    } else {
+      setSelectedBookings(new Set());
+    }
+  };
+
+  const handleSelectBooking = (bookingId: string, checked: boolean) => {
+    const newSelected = new Set(selectedBookings);
+    if (checked) {
+      newSelected.add(bookingId);
+    } else {
+      newSelected.delete(bookingId);
+    }
+    setSelectedBookings(newSelected);
+  };
+
+  const isAllSelected = filteredBookings.length > 0 && 
+    filteredBookings.every(b => selectedBookings.has(b.id));
+  const isSomeSelected = selectedBookings.size > 0 && !isAllSelected;
 
   const handleStatusChange = (bookingId: string, newStatus: string) => {
     setStatusUpdates(prev => ({
@@ -116,6 +145,55 @@ export default function BulkBookingStatus() {
       toast({
         title: "Error",
         description: "Failed to update booking status. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (!bulkStatus || selectedBookings.size === 0) {
+      toast({
+        title: "No Changes",
+        description: "Please select bookings and a status to update.",
+      });
+      return;
+    }
+
+    const bookingsToUpdate = Array.from(selectedBookings).filter(bookingId => {
+      const booking = bookings.find(b => b.id === bookingId);
+      return booking && booking.status !== bulkStatus;
+    });
+
+    if (bookingsToUpdate.length === 0) {
+      toast({
+        title: "No Changes",
+        description: "Selected bookings already have this status.",
+      });
+      return;
+    }
+
+    try {
+      await Promise.all(
+        bookingsToUpdate.map(bookingId =>
+          updateBooking.mutateAsync({
+            id: bookingId,
+            status: bulkStatus as any
+          })
+        )
+      );
+
+      toast({
+        title: "Bulk Update Complete",
+        description: `Successfully updated ${bookingsToUpdate.length} booking${bookingsToUpdate.length > 1 ? 's' : ''}.`,
+      });
+
+      // Clear selections and bulk status
+      setSelectedBookings(new Set());
+      setBulkStatus("");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update some bookings. Please try again.",
         variant: "destructive",
       });
     }
@@ -208,7 +286,47 @@ export default function BulkBookingStatus() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 space-y-4">
+          {/* Bulk Update Section */}
+          {selectedBookings.size > 0 && (
+            <div className="mb-4 p-4 border rounded-lg bg-muted/50">
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium">
+                  {selectedBookings.size} booking{selectedBookings.size > 1 ? 's' : ''} selected
+                </span>
+                <Select value={bulkStatus} onValueChange={setBulkStatus}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BOOKING_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {formatStatusText(status)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  onClick={handleBulkUpdate}
+                  disabled={!bulkStatus || updateBooking.isPending}
+                  className="gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Update Selected
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedBookings(new Set());
+                    setBulkStatus("");
+                  }}
+                >
+                  Clear Selection
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4 space-y-4">....
             {/* Filter Buttons */}
             <div className="flex flex-wrap gap-2">
               <Button
@@ -252,6 +370,14 @@ export default function BulkBookingStatus() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                      aria-label="Select all bookings"
+                      className={isSomeSelected ? "data-[state=checked]:bg-primary/50" : ""}
+                    />
+                  </TableHead>
                   <TableHead>Passenger</TableHead>
                   <TableHead>Tour</TableHead>
                   <TableHead>Booking Date</TableHead>
@@ -263,13 +389,20 @@ export default function BulkBookingStatus() {
               <TableBody>
                 {filteredBookings.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       {searchQuery ? 'No bookings found matching your search.' : 'No bookings available.'}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredBookings.map((booking) => (
                     <TableRow key={booking.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedBookings.has(booking.id)}
+                          onCheckedChange={(checked) => handleSelectBooking(booking.id, checked as boolean)}
+                          aria-label={`Select ${booking.customers?.first_name} ${booking.customers?.last_name}`}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         {booking.customers?.first_name} {booking.customers?.last_name}
                         {booking.group_name && (
