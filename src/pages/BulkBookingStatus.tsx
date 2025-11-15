@@ -41,6 +41,26 @@ export default function BulkBookingStatus() {
   const totalCount = paginatedData?.count || 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  // Calculate counts for each filter
+  const depositsOwingCount = useMemo(() => {
+    return bookings.filter(booking => {
+      if (booking.status !== 'invoiced') return false;
+      const daysSinceCreated = differenceInDays(new Date(), parseISO(booking.created_at));
+      return daysSinceCreated > 14;
+    }).length;
+  }, [bookings]);
+
+  const paymentDueCount = useMemo(() => {
+    return bookings.filter(booking => {
+      if (booking.status === 'fully_paid') return false;
+      if (!booking.tours) return false;
+      const tour = booking.tours as any;
+      if (!tour.start_date) return false;
+      const daysUntilTour = differenceInDays(parseISO(tour.start_date), new Date());
+      return daysUntilTour < 80;
+    }).length;
+  }, [bookings]);
+
   // Filter bookings based on search query and active filter with useMemo for performance
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
@@ -225,14 +245,14 @@ export default function BulkBookingStatus() {
                 size="sm"
                 onClick={() => setActiveFilter('deposits_owing')}
               >
-                Deposits Owing
+                Deposits Owing ({depositsOwingCount})
               </Button>
               <Button
                 variant={activeFilter === 'payment_due' ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setActiveFilter('payment_due')}
               >
-                Payment Due
+                Payment Due ({paymentDueCount})
               </Button>
             </div>
 
