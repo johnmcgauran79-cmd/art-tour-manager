@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, AlertTriangle, Info, Check, X, Bell } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Check, X, Bell, XCircle } from "lucide-react";
 import { useTourAlerts, TourAlert } from "@/hooks/useTourAlerts";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
