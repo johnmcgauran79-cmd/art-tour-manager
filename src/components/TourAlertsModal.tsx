@@ -137,15 +137,25 @@ export const TourAlertsModal = ({ tourId, open, onOpenChange }: TourAlertsModalP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Tour Alerts
-            {unacknowledgedCount > 0 && (
-              <Badge variant="destructive" className="ml-2">
-                {unacknowledgedCount} Active
-              </Badge>
-            )}
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Tour Alerts
+              {unacknowledgedCount > 0 && (
+                <Badge variant="destructive" className="ml-2">
+                  {unacknowledgedCount} Active
+                </Badge>
+              )}
+            </DialogTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => onOpenChange(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
         
         <div className="flex items-center space-x-2 mb-4">
