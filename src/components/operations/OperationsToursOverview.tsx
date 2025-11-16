@@ -7,9 +7,11 @@ import { AlertTriangle, Search, Bell } from "lucide-react";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
+import { useGlobalTourAlerts } from "@/hooks/useGlobalTourAlerts";
 import { formatDisplayDate } from "@/lib/utils";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
+import { GlobalTourAlertsModal } from "@/components/GlobalTourAlertsModal";
 import { TourAlertButton } from "./TourAlertButton";
 
 const getDaysUntilTour = (startDate: string) => {
@@ -38,7 +40,9 @@ export const OperationsToursOverview = () => {
   const { data: bookings } = useBookings();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
+  const [showGlobalAlerts, setShowGlobalAlerts] = useState(false);
   const { navigateWithContext } = useNavigationContext();
+  const { unacknowledgedCount, criticalCount } = useGlobalTourAlerts();
 
   // Function to get confirmed passenger count for a tour
   const getConfirmedPassengerCount = (tourId: string) => {
@@ -94,10 +98,12 @@ export const OperationsToursOverview = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Current Tours Operations Status
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Current Tours Operations Status
+            </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">Loading tours...</div>
@@ -110,10 +116,29 @@ export const OperationsToursOverview = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Current Tours Operations Status
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Current Tours Operations Status
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGlobalAlerts(true)}
+              className="gap-2"
+            >
+              <Bell className="h-4 w-4" />
+              All Alerts
+              {unacknowledgedCount > 0 && (
+                <Badge 
+                  variant={criticalCount > 0 ? "destructive" : "secondary"}
+                  className="ml-1"
+                >
+                  {unacknowledgedCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">No tours available</div>
@@ -123,12 +148,32 @@ export const OperationsToursOverview = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          Current Tours Operations Status
-        </CardTitle>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Current Tours Operations Status
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGlobalAlerts(true)}
+              className="gap-2"
+            >
+              <Bell className="h-4 w-4" />
+              All Alerts
+              {unacknowledgedCount > 0 && (
+                <Badge 
+                  variant={criticalCount > 0 ? "destructive" : "secondary"}
+                  className="ml-1"
+                >
+                  {unacknowledgedCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
         <CardDescription>
           Monitor tour status, capacity issues, and operational requirements
         </CardDescription>
@@ -261,6 +306,12 @@ export const OperationsToursOverview = () => {
           onOpenChange={(open) => !open && setSelectedTourForAlerts(null)}
         />
       )}
+
+      <GlobalTourAlertsModal
+        open={showGlobalAlerts}
+        onOpenChange={setShowGlobalAlerts}
+      />
     </Card>
+    </>
   );
 };
