@@ -11,14 +11,16 @@ import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
+import { TourAlert } from "@/hooks/useTourAlerts";
 
 interface TourActivitiesTabProps {
   tourId: string;
+  alerts: TourAlert[];
   onAddActivity: () => void;
   onEditActivity: (activity: any) => void;
 }
 
-export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: TourActivitiesTabProps) => {
+export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivity }: TourActivitiesTabProps) => {
   console.log('TourActivitiesTab rendered with tourId:', tourId);
   
   const { data: activities, isLoading, error, refetch } = useActivities(tourId);
@@ -26,7 +28,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const [selectedActivityForPrint, setSelectedActivityForPrint] = useState<any>(null);
   const [selectedActivityForEmail, setSelectedActivityForEmail] = useState<any>(null);
   const { userRole } = useAuth();
-  const { count: alertCount, criticalCount } = useTabAlerts(tourId, "activities");
+  const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';

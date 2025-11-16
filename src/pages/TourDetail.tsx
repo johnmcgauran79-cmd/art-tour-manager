@@ -31,6 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { supabase } from "@/integrations/supabase/client";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
 
 export default function TourDetail() {
   const { id } = useParams();
@@ -67,6 +68,7 @@ export default function TourDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
+  const { alerts } = useTourAlerts(id || '', false);
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -269,6 +271,7 @@ export default function TourDetail() {
           <TourBookingsTab 
             tourId={tour.id}
             tourName={tour.name}
+            alerts={alerts}
             onAddBooking={() => setAddBookingModalOpen(true)}
             currentTab={currentTab}
           />
@@ -289,6 +292,7 @@ export default function TourDetail() {
         <TabsContent value="activities" className="space-y-4 mt-6">
           <TourActivitiesTab
             tourId={tour.id}
+            alerts={alerts}
             onAddActivity={() => setAddActivityModalOpen(true)}
             onEditActivity={(activity) => {
               setSelectedActivity(activity);
@@ -300,6 +304,7 @@ export default function TourDetail() {
         <TabsContent value="hotels" className="space-y-4 mt-6">
           <TourHotelsTab
             tourId={tour.id}
+            alerts={alerts}
             onAddHotel={() => setAddHotelModalOpen(true)}
             onEditHotel={(hotel) => {
               setSelectedHotel(hotel);

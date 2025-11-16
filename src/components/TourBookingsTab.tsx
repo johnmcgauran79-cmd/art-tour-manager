@@ -12,15 +12,17 @@ import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
+import { TourAlert } from "@/hooks/useTourAlerts";
 
 interface TourBookingsTabProps {
   tourId: string;
   tourName: string;
+  alerts: TourAlert[];
   onAddBooking: () => void;
   currentTab?: string;
 }
 
-export const TourBookingsTab = ({ tourId, tourName, onAddBooking, currentTab }: TourBookingsTabProps) => {
+export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, currentTab }: TourBookingsTabProps) => {
   const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
   const [bulkDietaryModalOpen, setBulkDietaryModalOpen] = useState(false);
   const [addWaitlistModalOpen, setAddWaitlistModalOpen] = useState(false);
@@ -30,7 +32,7 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking, currentTab }: 
   const { data: tours } = useTours();
   const currentTour = tours?.find(tour => tour.id === tourId);
   const { userRole } = useAuth();
-  const { count: alertCount, criticalCount } = useTabAlerts(tourId, "bookings");
+  const { count: alertCount, criticalCount } = useTabAlerts(alerts, "bookings");
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';

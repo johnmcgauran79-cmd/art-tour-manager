@@ -10,20 +10,22 @@ import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
+import { TourAlert } from "@/hooks/useTourAlerts";
 
 interface TourHotelsTabProps {
   tourId: string;
+  alerts: TourAlert[];
   onAddHotel: () => void;
   onEditHotel: (hotel: any) => void;
   onRoomingList: (hotel: any) => void;
   onBulkEdit: (hotel: any) => void;
 }
 
-export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, onBulkEdit }: TourHotelsTabProps) => {
+export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomingList, onBulkEdit }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
   const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
   const { userRole } = useAuth();
-  const { count: alertCount, criticalCount } = useTabAlerts(tourId, "hotels");
+  const { count: alertCount, criticalCount } = useTabAlerts(alerts, "hotels");
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
