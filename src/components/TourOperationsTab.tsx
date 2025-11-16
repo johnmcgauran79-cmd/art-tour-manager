@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -16,6 +16,8 @@ import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
 import { BookingDetailModal } from "@/components/BookingDetailModal";
+import { TourAlertsModal } from "@/components/TourAlertsModal";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TourOperationsTabProps {
@@ -35,10 +37,12 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
+  const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
+  const { unacknowledgedCount } = useTourAlerts(tourId);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -214,7 +218,22 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            <div 
+              className="text-center p-3 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => setAlertsModalOpen(true)}
+            >
+              <div className="bg-yellow-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-yellow-200 transition-colors relative">
+                <Bell className="h-5 w-5 text-yellow-600" />
+                {unacknowledgedCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                    {unacknowledgedCount}
+                  </Badge>
+                )}
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Alerts</p>
+              <p className="text-xs text-gray-600">{unacknowledgedCount} active</p>
+            </div>
             <div 
               className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('contacts')}
@@ -448,6 +467,12 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
         onOpenChange={handleModalClose}
         reportType={selectedReportType}
         onBookingClick={handleBookingClick}
+      />
+
+      <TourAlertsModal
+        open={alertsModalOpen}
+        onOpenChange={setAlertsModalOpen}
+        tourId={tourId}
       />
 
       <AddTaskModal

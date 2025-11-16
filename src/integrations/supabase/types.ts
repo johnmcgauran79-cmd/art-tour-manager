@@ -1714,6 +1714,7 @@ export type Database = {
         Args: { p_customer_id: string; p_dietary_value: string }
         Returns: undefined
       }
+      refresh_capacity_alerts: { Args: never; Returns: number }
       secure_customer_search: {
         Args: { search_term: string }
         Returns: {

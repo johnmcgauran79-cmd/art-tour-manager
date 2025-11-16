@@ -19,20 +19,27 @@ export interface TourAlert {
   updated_at: string;
 }
 
-export const useTourAlerts = (tourId: string | undefined) => {
+export const useTourAlerts = (tourId: string | undefined, includeResolved: boolean = false) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: alerts = [], isLoading } = useQuery({
-    queryKey: ["tour-alerts", tourId],
+    queryKey: ["tour-alerts", tourId, includeResolved],
     queryFn: async () => {
       if (!tourId) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from("tour_alerts")
         .select("*")
         .eq("tour_id", tourId)
         .order("created_at", { ascending: false });
+
+      // Filter out acknowledged alerts unless includeResolved is true
+      if (!includeResolved) {
+        query = query.eq("is_acknowledged", false);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as TourAlert[];

@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, AlertTriangle, Info, Check, X } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, Check, X, Bell } from "lucide-react";
 import { useTourAlerts, TourAlert } from "@/hooks/useTourAlerts";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -48,7 +49,8 @@ const alertTypeLabels: Record<string, string> = {
 };
 
 export const TourAlertsModal = ({ tourId, open, onOpenChange }: TourAlertsModalProps) => {
-  const { alerts, isLoading, acknowledgeAlert, deleteAlert } = useTourAlerts(tourId);
+  const [showResolved, setShowResolved] = useState(false);
+  const { alerts, isLoading, acknowledgeAlert, deleteAlert, unacknowledgedCount } = useTourAlerts(tourId, showResolved);
 
   const groupedAlerts = {
     critical: alerts.filter(a => a.severity === 'critical'),
@@ -135,8 +137,30 @@ export const TourAlertsModal = ({ tourId, open, onOpenChange }: TourAlertsModalP
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[80vh]">
         <DialogHeader>
-          <DialogTitle>Tour Alerts</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            Tour Alerts
+            {unacknowledgedCount > 0 && (
+              <Badge variant="destructive" className="ml-2">
+                {unacknowledgedCount} Active
+              </Badge>
+            )}
+          </DialogTitle>
         </DialogHeader>
+        
+        <div className="flex items-center space-x-2 mb-4">
+          <Checkbox
+            id="show-resolved"
+            checked={showResolved}
+            onCheckedChange={(checked) => setShowResolved(checked as boolean)}
+          />
+          <label
+            htmlFor="show-resolved"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
+            Show Resolved Alerts
+          </label>
+        </div>
         
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">Loading alerts...</div>
