@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter, AlertTriangle } from "lucide-react";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -322,16 +323,13 @@ export default function BulkBookingStatus() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/?tab=bookings")}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Bookings
-        </Button>
-      </div>
+      <AppBreadcrumbs 
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Bookings", href: "/?tab=bookings" },
+          { label: "Update Status" }
+        ]} 
+      />
 
       <Card>
         <CardHeader>
