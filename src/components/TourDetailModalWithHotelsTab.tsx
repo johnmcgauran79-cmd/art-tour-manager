@@ -227,6 +227,7 @@ export const TourDetailModalWithHotelsTab = ({
                 tourId={currentTour?.id || ""}
                 alerts={alerts}
                 onAddHotel={() => setAddHotelModalOpen(true)}
+                onOpenAlerts={() => {}}
                 onEditHotel={handleEditHotel}
                 onBulkEdit={handleBulkEdit}
                 onRoomingList={handleRoomingList}
@@ -238,6 +239,7 @@ export const TourDetailModalWithHotelsTab = ({
                 tourId={currentTour?.id || ""}
                 alerts={alerts}
                 onAddActivity={() => setAddActivityModalOpen(true)}
+                onOpenAlerts={() => {}}
                 onEditActivity={handleActivityClick}
               />
             </TabsContent>
@@ -248,6 +250,7 @@ export const TourDetailModalWithHotelsTab = ({
                 tourName={currentTour?.name || ""}
                 alerts={alerts}
                 onAddBooking={() => setAddBookingModalOpen(true)}
+                onOpenAlerts={() => {}}
                 currentTab={currentTab}
               />
             </TabsContent>

@@ -21,6 +21,7 @@ import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { TourAttachmentsSection } from "@/components/TourAttachmentsSection";
 import { TourItineraryTab } from "@/components/TourItineraryTab";
 import { TourTasksTab } from "@/components/TourTasksTab";
+import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { DuplicateTourDialog } from "@/components/DuplicateTourDialog";
 import { Tour, useTours } from "@/hooks/useTours";
 import { formatDateRange } from "@/lib/utils";
@@ -49,6 +50,7 @@ export default function TourDetail() {
   const [roomingListModalOpen, setEditRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
@@ -273,6 +275,7 @@ export default function TourDetail() {
             tourName={tour.name}
             alerts={alerts}
             onAddBooking={() => setAddBookingModalOpen(true)}
+            onOpenAlerts={() => setAlertsModalOpen(true)}
             currentTab={currentTab}
           />
         </TabsContent>
@@ -294,6 +297,7 @@ export default function TourDetail() {
             tourId={tour.id}
             alerts={alerts}
             onAddActivity={() => setAddActivityModalOpen(true)}
+            onOpenAlerts={() => setAlertsModalOpen(true)}
             onEditActivity={(activity) => {
               setSelectedActivity(activity);
               setEditActivityModalOpen(true);
@@ -306,6 +310,7 @@ export default function TourDetail() {
             tourId={tour.id}
             alerts={alerts}
             onAddHotel={() => setAddHotelModalOpen(true)}
+            onOpenAlerts={() => setAlertsModalOpen(true)}
             onEditHotel={(hotel) => {
               setSelectedHotel(hotel);
               setEditHotelModalOpen(true);
@@ -433,6 +438,11 @@ export default function TourDetail() {
         tourName={tour.name}
         open={reportsModalOpen}
         onOpenChange={setReportsModalOpen}
+      />
+      <TourAlertsModal
+        tourId={tour.id}
+        open={alertsModalOpen}
+        onOpenChange={setAlertsModalOpen}
       />
     </div>
   );

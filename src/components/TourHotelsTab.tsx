@@ -19,9 +19,10 @@ interface TourHotelsTabProps {
   onEditHotel: (hotel: any) => void;
   onRoomingList: (hotel: any) => void;
   onBulkEdit: (hotel: any) => void;
+  onOpenAlerts?: () => void;
 }
 
-export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomingList, onBulkEdit }: TourHotelsTabProps) => {
+export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomingList, onBulkEdit, onOpenAlerts }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
   const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
   const { userRole } = useAuth();
@@ -45,7 +46,10 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold">Hotels</h3>
           {alertCount > 0 && (
-            <div className="relative">
+            <button 
+              onClick={onOpenAlerts}
+              className="relative cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
               <Badge 
                 variant={criticalCount > 0 ? "destructive" : "secondary"}
@@ -53,7 +57,7 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
               >
                 {alertCount}
               </Badge>
-            </div>
+            </button>
           )}
         </div>
         {!isAgent && (
