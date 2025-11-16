@@ -54,33 +54,34 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
 
     const channelName = `tour-alerts-${tourId}`;
     
-    // Remove any existing channel with this name to prevent duplicate subscriptions
-    const existingChannels = supabase.getChannels();
-    const existingChannel = existingChannels.find(ch => ch.topic === channelName);
-    if (existingChannel) {
-      supabase.removeChannel(existingChannel);
-    }
+    // Create the channel
+    const channel = supabase.channel(channelName);
+    
+    // Set up event listeners
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'tour_alerts',
+        filter: `tour_id=eq.${tourId}`
+      },
+      (payload) => {
+        console.log('Alert change detected:', payload);
+        // Invalidate and refetch alerts when any change occurs
+        queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
+      }
+    );
 
-    // Create and subscribe to the channel
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tour_alerts',
-          filter: `tour_id=eq.${tourId}`
-        },
-        (payload) => {
-          console.log('Alert change detected:', payload);
-          // Invalidate and refetch alerts when any change occurs
-          queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
-        }
-      )
-      .subscribe();
+    // Subscribe with status callback to handle subscription state
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Successfully subscribed to tour alerts:', tourId);
+      }
+    });
 
     return () => {
+      channel.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, [tourId, queryClient]);
