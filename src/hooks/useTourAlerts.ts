@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,6 +23,7 @@ export interface TourAlert {
 export const useTourAlerts = (tourId: string | undefined, includeResolved: boolean = false) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["tour-alerts", tourId, includeResolved],
@@ -52,10 +53,18 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
   useEffect(() => {
     if (!tourId) return;
 
+    // Cleanup any existing channel first
+    if (channelRef.current) {
+      channelRef.current.unsubscribe();
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
+
     const channelName = `tour-alerts-${tourId}`;
     
-    // Create the channel
+    // Create new channel
     const channel = supabase.channel(channelName);
+    channelRef.current = channel;
     
     // Set up event listeners
     channel.on(
@@ -68,12 +77,11 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
       },
       (payload) => {
         console.log('Alert change detected:', payload);
-        // Invalidate and refetch alerts when any change occurs
         queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
       }
     );
 
-    // Subscribe with status callback to handle subscription state
+    // Subscribe
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.log('Successfully subscribed to tour alerts:', tourId);
@@ -81,8 +89,11 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
     });
 
     return () => {
-      channel.unsubscribe();
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        channelRef.current.unsubscribe();
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, [tourId, queryClient]);
 
