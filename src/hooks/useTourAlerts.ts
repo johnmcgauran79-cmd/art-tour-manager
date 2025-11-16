@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,6 +47,33 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
     },
     enabled: !!tourId,
   });
+
+  // Real-time subscription for new alerts
+  useEffect(() => {
+    if (!tourId) return;
+
+    const channel = supabase
+      .channel('tour-alerts-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'tour_alerts',
+          filter: `tour_id=eq.${tourId}`
+        },
+        (payload) => {
+          console.log('Alert change detected:', payload);
+          // Invalidate and refetch alerts when any change occurs
+          queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tourId, queryClient]);
 
   const acknowledgeMutation = useMutation({
     mutationFn: async (alertId: string) => {
