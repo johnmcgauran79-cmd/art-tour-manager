@@ -18,9 +18,10 @@ interface TourActivitiesTabProps {
   alerts: TourAlert[];
   onAddActivity: () => void;
   onEditActivity: (activity: any) => void;
+  onOpenAlerts?: () => void;
 }
 
-export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivity }: TourActivitiesTabProps) => {
+export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivity, onOpenAlerts }: TourActivitiesTabProps) => {
   console.log('TourActivitiesTab rendered with tourId:', tourId);
   
   const { data: activities, isLoading, error, refetch } = useActivities(tourId);
@@ -133,7 +134,10 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold">Activities</h3>
           {alertCount > 0 && (
-            <div className="relative">
+            <button 
+              onClick={onOpenAlerts}
+              className="relative cursor-pointer hover:opacity-80 transition-opacity"
+            >
               <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
               <Badge 
                 variant={criticalCount > 0 ? "destructive" : "secondary"}
@@ -141,7 +145,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
               >
                 {alertCount}
               </Badge>
-            </div>
+            </button>
           )}
         </div>
         {!isAgent && (
