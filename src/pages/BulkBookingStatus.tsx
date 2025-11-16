@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter, AlertTriangle } from "lucide-react";
 import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -28,6 +30,14 @@ const BOOKING_STATUSES = [
 
 type FilterType = 'all' | 'deposits_owing' | 'payment_due';
 
+// Define problematic status transitions
+const PROBLEMATIC_TRANSITIONS: Record<string, string[]> = {
+  'fully_paid': ['pending', 'invoiced', 'deposited', 'instalment_paid'],
+  'deposited': ['pending', 'invoiced'],
+  'instalment_paid': ['pending', 'invoiced', 'deposited'],
+  'cancelled': ['fully_paid', 'deposited', 'instalment_paid'],
+};
+
 export default function BulkBookingStatus() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,6 +48,8 @@ export default function BulkBookingStatus() {
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [tourFilter, setTourFilter] = useState<string>("all");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingUpdates, setPendingUpdates] = useState<Array<{ id: string; oldStatus: string; newStatus: string; passengerName: string }>>([]);
   const pageSize = 50;
   
   const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
@@ -164,53 +176,96 @@ export default function BulkBookingStatus() {
     }
   };
 
-  const handleBulkUpdate = async () => {
-    if (!bulkStatus || selectedBookings.size === 0) {
+  // Handle bulk update with confirmation
+  const handleBulkUpdate = () => {
+    const updates: Array<{ id: string; oldStatus: string; newStatus: string; passengerName: string }> = [];
+    
+    filteredBookings.forEach(booking => {
+      if (selectedBookings.has(booking.id) && bulkStatus) {
+        const passengerName = booking.customers 
+          ? `${booking.customers.first_name} ${booking.customers.last_name}`
+          : booking.group_name || 'Unknown';
+        
+        updates.push({
+          id: booking.id,
+          oldStatus: booking.status || 'pending',
+          newStatus: bulkStatus,
+          passengerName
+        });
+      }
+    });
+
+    if (updates.length === 0) {
       toast({
         title: "No Changes",
         description: "Please select bookings and a status to update.",
+        variant: "destructive",
       });
       return;
     }
 
-    const bookingsToUpdate = Array.from(selectedBookings).filter(bookingId => {
-      const booking = bookings.find(b => b.id === bookingId);
-      return booking && booking.status !== bulkStatus;
+    setPendingUpdates(updates);
+    setShowConfirmDialog(true);
+  };
+
+  // Check if there are problematic transitions
+  const hasProblematicTransitions = useMemo(() => {
+    return pendingUpdates.some(update => {
+      const problematicTargets = PROBLEMATIC_TRANSITIONS[update.oldStatus] || [];
+      return problematicTargets.includes(update.newStatus);
+    });
+  }, [pendingUpdates]);
+
+  // Get warning message for problematic transitions
+  const getWarningMessage = useMemo(() => {
+    const problematic = pendingUpdates.filter(update => {
+      const problematicTargets = PROBLEMATIC_TRANSITIONS[update.oldStatus] || [];
+      return problematicTargets.includes(update.newStatus);
     });
 
-    if (bookingsToUpdate.length === 0) {
-      toast({
-        title: "No Changes",
-        description: "Selected bookings already have this status.",
-      });
-      return;
+    if (problematic.length === 0) return null;
+
+    return `${problematic.length} booking(s) have potentially problematic status changes (e.g., moving from '${formatStatusText(problematic[0].oldStatus)}' to '${formatStatusText(problematic[0].newStatus)}'). Please verify this is intentional.`;
+  }, [pendingUpdates]);
+
+  // Execute bulk update after confirmation
+  const executeBulkUpdate = async () => {
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const update of pendingUpdates) {
+      try {
+        await updateBooking.mutateAsync({
+          id: update.id,
+          status: update.newStatus as any,
+        });
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to update booking ${update.id}:`, error);
+        errorCount++;
+      }
     }
 
-    try {
-      await Promise.all(
-        bookingsToUpdate.map(bookingId =>
-          updateBooking.mutateAsync({
-            id: bookingId,
-            status: bulkStatus as any
-          })
-        )
-      );
-
+    if (successCount > 0) {
       toast({
         title: "Bulk Update Complete",
-        description: `Successfully updated ${bookingsToUpdate.length} booking${bookingsToUpdate.length > 1 ? 's' : ''}.`,
+        description: `Successfully updated ${successCount} booking(s)${errorCount > 0 ? `. ${errorCount} failed.` : '.'}`,
       });
+    }
 
-      // Clear selections and bulk status
-      setSelectedBookings(new Set());
-      setBulkStatus("");
-    } catch (error) {
+    if (errorCount > 0 && successCount === 0) {
       toast({
-        title: "Error",
-        description: "Failed to update some bookings. Please try again.",
+        title: "Update Failed",
+        description: `Failed to update ${errorCount} booking(s). Please try again.`,
         variant: "destructive",
       });
     }
+
+    // Clear selections and close dialog
+    setSelectedBookings(new Set());
+    setBulkStatus("");
+    setShowConfirmDialog(false);
+    setPendingUpdates([]);
   };
 
   const handleUpdateAll = async () => {
@@ -526,6 +581,80 @@ export default function BulkBookingStatus() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Bulk Status Update</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to update {pendingUpdates.length} booking(s) to status: <strong>{formatStatusText(bulkStatus)}</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4">
+            {/* Warning for problematic transitions */}
+            {hasProblematicTransitions && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  {getWarningMessage}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Summary of changes */}
+            <div className="border rounded-lg p-4 max-h-96 overflow-y-auto">
+              <h4 className="font-semibold mb-3">Changes to be applied:</h4>
+              <div className="space-y-2">
+                {pendingUpdates.map((update, index) => {
+                  const isProblematic = PROBLEMATIC_TRANSITIONS[update.oldStatus]?.includes(update.newStatus);
+                  return (
+                    <div 
+                      key={update.id} 
+                      className={`flex items-center justify-between p-2 rounded ${isProblematic ? 'bg-destructive/10' : 'bg-muted'}`}
+                    >
+                      <div className="flex items-center gap-2 flex-1">
+                        {isProblematic && <AlertTriangle className="h-4 w-4 text-destructive" />}
+                        <span className="text-sm">{index + 1}. {update.passengerName}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={getBookingStatusColor(update.oldStatus)}>
+                          {formatStatusText(update.oldStatus)}
+                        </Badge>
+                        <span className="text-muted-foreground">→</span>
+                        <Badge variant="outline" className={getBookingStatusColor(update.newStatus)}>
+                          {formatStatusText(update.newStatus)}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Status transition summary */}
+            <div className="text-sm text-muted-foreground">
+              <p>Summary: {pendingUpdates.length} booking(s) will be updated</p>
+              {hasProblematicTransitions && (
+                <p className="text-destructive font-medium mt-1">
+                  ⚠️ Some transitions may require additional verification
+                </p>
+              )}
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={executeBulkUpdate}
+              className={hasProblematicTransitions ? 'bg-destructive hover:bg-destructive/90' : ''}
+            >
+              {hasProblematicTransitions ? 'Update Anyway' : 'Confirm Update'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
