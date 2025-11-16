@@ -1,12 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TourAlert } from "./useTourAlerts";
 
 export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
+  const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  const { data: alerts = [], isLoading, refetch } = useQuery({
+  const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["global-tour-alerts", includeResolved],
     queryFn: async () => {
       let query = supabase
@@ -55,7 +56,7 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
       },
       (payload) => {
         console.log('Global alert change detected:', payload);
-        refetch();
+        queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
       }
     );
 
@@ -73,7 +74,7 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
         channelRef.current = null;
       }
     };
-  }, [refetch]);
+  }, [queryClient, includeResolved]);
 
   const unacknowledgedCount = alerts.filter(a => !a.is_acknowledged).length;
   const criticalCount = alerts.filter(a => a.severity === 'critical' && !a.is_acknowledged).length;
