@@ -163,19 +163,27 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
                 <Badge variant="destructive">{unacknowledgedCount}</Badge>
               )}
             </DialogTitle>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="show-resolved"
-                checked={showResolved}
-                onCheckedChange={(checked) => setShowResolved(checked as boolean)}
-              />
-              <label
-                htmlFor="show-resolved"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Show resolved
-              </label>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <Checkbox
+              id="show-resolved"
+              checked={showResolved}
+              onCheckedChange={(checked) => setShowResolved(checked as boolean)}
+            />
+            <label
+              htmlFor="show-resolved"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Show resolved
+            </label>
           </div>
         </DialogHeader>
 
