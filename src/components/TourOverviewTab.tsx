@@ -1,9 +1,12 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
+import { TourAlertButton } from "@/components/operations/TourAlertButton";
+import { TourAlertsModal } from "@/components/TourAlertsModal";
 
 interface TourOverviewTabProps {
   tour: {
@@ -37,6 +40,7 @@ interface TourOverviewTabProps {
 export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tour.id);
+  const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
 
   // Calculate booking statistics for this tour
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tour.id);
@@ -172,7 +176,13 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Rooms Booked</CardTitle>
-            <Hotel className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              <Hotel className="h-4 w-4 text-muted-foreground" />
+              <TourAlertButton 
+                tourId={tour.id} 
+                onClick={() => setSelectedTourForAlerts(tour.id)}
+              />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -276,6 +286,14 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             <div className="whitespace-pre-wrap text-sm">{tour.notes}</div>
           </CardContent>
         </Card>
+      )}
+
+      {selectedTourForAlerts && (
+        <TourAlertsModal
+          tourId={selectedTourForAlerts}
+          open={!!selectedTourForAlerts}
+          onOpenChange={(open) => !open && setSelectedTourForAlerts(null)}
+        />
       )}
     </div>
   );
