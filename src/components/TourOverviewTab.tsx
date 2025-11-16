@@ -2,11 +2,11 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel } from "lucide-react";
+import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
-import { TourAlertButton } from "@/components/operations/TourAlertButton";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
 
 interface TourOverviewTabProps {
   tour: {
@@ -41,6 +41,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tour.id);
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
+  const { unacknowledgedCount } = useTourAlerts(tour.id);
 
   // Calculate booking statistics for this tour
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tour.id);
@@ -120,7 +121,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
       </div>
 
       {/* Capacity and Waitlist Information */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-6 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Confirmed Passengers</CardTitle>
@@ -176,19 +177,36 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Rooms Booked</CardTitle>
-            <div className="flex items-center gap-2">
-              <Hotel className="h-4 w-4 text-muted-foreground" />
-              <TourAlertButton 
-                tourId={tour.id} 
-                onClick={() => setSelectedTourForAlerts(tour.id)}
-              />
-            </div>
+            <Hotel className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {totalRoomsReserved > 0 ? `${totalRoomsBooked} of ${totalRoomsReserved}` : "NA"}
             </div>
             <p className="text-xs text-muted-foreground">rooms booked</p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="border-2 border-yellow-200 cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200"
+          onClick={() => setSelectedTourForAlerts(tour.id)}
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Tour Alerts</CardTitle>
+            <div className="relative">
+              <Bell className="h-4 w-4 text-yellow-600" />
+              {unacknowledgedCount > 0 && (
+                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                  {unacknowledgedCount}
+                </Badge>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-yellow-600">
+              {unacknowledgedCount}
+            </div>
+            <p className="text-xs text-muted-foreground">pending alerts</p>
           </CardContent>
         </Card>
       </div>
