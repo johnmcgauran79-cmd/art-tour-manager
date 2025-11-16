@@ -52,8 +52,18 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
   useEffect(() => {
     if (!tourId) return;
 
+    const channelName = `tour-alerts-${tourId}`;
+    
+    // Remove any existing channel with this name to prevent duplicate subscriptions
+    const existingChannels = supabase.getChannels();
+    const existingChannel = existingChannels.find(ch => ch.topic === channelName);
+    if (existingChannel) {
+      supabase.removeChannel(existingChannel);
+    }
+
+    // Create and subscribe to the channel
     const channel = supabase
-      .channel(`tour-alerts-${tourId}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
