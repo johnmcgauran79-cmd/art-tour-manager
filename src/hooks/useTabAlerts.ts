@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useTourAlerts } from "./useTourAlerts";
+import { TourAlert } from "./useTourAlerts";
 
 export type TabType = "hotels" | "bookings" | "activities" | "overview";
 
@@ -12,9 +12,7 @@ const alertTypeToTabs: Record<string, TabType[]> = {
   missing_info: ["overview"],
 };
 
-export const useTabAlerts = (tourId: string, tabType: TabType) => {
-  const { alerts, isLoading } = useTourAlerts(tourId, false);
-  
+export const useTabAlerts = (alerts: TourAlert[], tabType: TabType) => {
   const tabAlerts = useMemo(() => {
     return alerts.filter(alert => {
       const tabs = alertTypeToTabs[alert.alert_type] || [];
@@ -25,6 +23,5 @@ export const useTabAlerts = (tourId: string, tabType: TabType) => {
   return {
     count: tabAlerts.length,
     criticalCount: tabAlerts.filter(a => a.severity === 'critical').length,
-    isLoading,
   };
 };

@@ -24,6 +24,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
 
 interface TourDetailModalWithHotelsTabProps {
   tour: Tour | null;
@@ -57,6 +58,7 @@ export const TourDetailModalWithHotelsTab = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const canViewOperations = userRole === 'admin' || userRole === 'manager';
+  const { alerts } = useTourAlerts(tour?.id || '', false);
   
   // Get fresh tour data from the query cache
   const { data: tours } = useTours();
@@ -223,6 +225,7 @@ export const TourDetailModalWithHotelsTab = ({
             <TabsContent value="hotels" className="space-y-4">
               <TourHotelsTab
                 tourId={currentTour?.id || ""}
+                alerts={alerts}
                 onAddHotel={() => setAddHotelModalOpen(true)}
                 onEditHotel={handleEditHotel}
                 onBulkEdit={handleBulkEdit}
@@ -233,6 +236,7 @@ export const TourDetailModalWithHotelsTab = ({
             <TabsContent value="activities" className="space-y-4">
               <TourActivitiesTab
                 tourId={currentTour?.id || ""}
+                alerts={alerts}
                 onAddActivity={() => setAddActivityModalOpen(true)}
                 onEditActivity={handleActivityClick}
               />
@@ -242,6 +246,7 @@ export const TourDetailModalWithHotelsTab = ({
               <TourBookingsTab
                 tourId={currentTour?.id || ""}
                 tourName={currentTour?.name || ""}
+                alerts={alerts}
                 onAddBooking={() => setAddBookingModalOpen(true)}
                 currentTab={currentTab}
               />
