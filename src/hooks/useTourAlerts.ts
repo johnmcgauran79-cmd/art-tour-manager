@@ -60,7 +60,8 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
       channelRef.current = null;
     }
 
-    const channelName = `tour-alerts-${tourId}`;
+    // Create unique channel name to avoid instance reuse
+    const channelName = `tour-alerts-${tourId}-${Date.now()}`;
     
     // Create new channel
     const channel = supabase.channel(channelName);
