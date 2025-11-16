@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Search, Bell } from "lucide-react";
 import { useTours, Tour } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { formatDisplayDate } from "@/lib/utils";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
+import { TourAlertsModal } from "@/components/TourAlertsModal";
+import { TourAlertButton } from "./TourAlertButton";
 
 const getDaysUntilTour = (startDate: string) => {
   const start = new Date(startDate);
@@ -32,6 +37,7 @@ export const OperationsToursOverview = () => {
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
   const { navigateWithContext } = useNavigationContext();
 
   // Function to get confirmed passenger count for a tour
@@ -77,6 +83,11 @@ export const OperationsToursOverview = () => {
 
   const handleTourClick = (tour: Tour) => {
     navigateWithContext(`/tours/${tour.id}?tab=operations`);
+  };
+
+  const handleAlertsClick = (e: React.MouseEvent, tourId: string) => {
+    e.stopPropagation(); // Prevent tour card click
+    setSelectedTourForAlerts(tourId);
   };
 
   if (isLoading) {
@@ -150,9 +161,15 @@ export const OperationsToursOverview = () => {
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="font-semibold text-lg">{tour.name}</h3>
                   <div className="flex items-center gap-4">
-                    <span className="text-sm font-medium text-muted-foreground bg-accent/50 px-2 py-1 rounded mr-6">
-                      Pax: {confirmedPax}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-muted-foreground bg-accent/50 px-2 py-1 rounded">
+                        Pax: {confirmedPax}
+                      </span>
+                      <TourAlertButton 
+                        tourId={tour.id} 
+                        onClick={(e) => handleAlertsClick(e, tour.id)}
+                      />
+                    </div>
                       <div className="flex gap-4 text-xs">
                         <div className="text-center">
                           <div className="font-medium">6mths out:</div>
@@ -236,6 +253,14 @@ export const OperationsToursOverview = () => {
           )}
         </div>
       </CardContent>
+
+      {selectedTourForAlerts && (
+        <TourAlertsModal
+          tourId={selectedTourForAlerts}
+          open={!!selectedTourForAlerts}
+          onOpenChange={(open) => !open && setSelectedTourForAlerts(null)}
+        />
+      )}
     </Card>
   );
 };
