@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Printer, Mail, Bell } from "lucide-react";
+import { Edit, Printer, Mail, Bell, Check } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -12,6 +12,9 @@ import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListMod
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -30,6 +33,11 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   const [selectedActivityForEmail, setSelectedActivityForEmail] = useState<any>(null);
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
+  const { toast } = useToast();
+  
+  // Quick Update state
+  const [quickUpdateMode, setQuickUpdateMode] = useState(false);
+  const [editingData, setEditingData] = useState<Record<string, { spots_available: number; activity_status: string }>>({});
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -105,6 +113,63 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
     return `${hour12}:${minutes}${ampm}`;
   };
 
+  const handleQuickUpdateToggle = () => {
+    if (quickUpdateMode) {
+      // Cancel mode - clear editing data
+      setEditingData({});
+    } else {
+      // Enter mode - initialize editing data with current values
+      const initialData: Record<string, { spots_available: number; activity_status: string }> = {};
+      sortedActivities?.forEach(activity => {
+        initialData[activity.id] = {
+          spots_available: activity.spots_available || 0,
+          activity_status: activity.activity_status || 'pending'
+        };
+      });
+      setEditingData(initialData);
+    }
+    setQuickUpdateMode(!quickUpdateMode);
+  };
+
+  const handleUpdateActivity = async (activityId: string) => {
+    const data = editingData[activityId];
+    if (!data) return;
+
+    const { error } = await supabase
+      .from('activities')
+      .update({
+        spots_available: data.spots_available,
+        activity_status: data.activity_status as any
+      })
+      .eq('id', activityId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update activity",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Activity updated successfully"
+    });
+
+    refetch();
+  };
+
+  const updateEditingData = (activityId: string, field: 'spots_available' | 'activity_status', value: number | string) => {
+    setEditingData(prev => ({
+      ...prev,
+      [activityId]: {
+        ...prev[activityId],
+        [field]: value
+      }
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -149,12 +214,20 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
           )}
         </div>
         {!isAgent && (
-          <Button 
-            onClick={onAddActivity}
-            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-          >
-            Add Activity
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleQuickUpdateToggle}
+              variant={quickUpdateMode ? "secondary" : "outline"}
+            >
+              {quickUpdateMode ? "Cancel Quick Update" : "Quick Update"}
+            </Button>
+            <Button 
+              onClick={onAddActivity}
+              className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            >
+              Add Activity
+            </Button>
+          </div>
         )}
       </div>
 
@@ -187,46 +260,93 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                   <TableCell>
                     {activity.start_time ? formatTime(activity.start_time) : '-'}
                   </TableCell>
-                  <TableCell>{activity.spots_available || 0}</TableCell>
+                  <TableCell>
+                    {quickUpdateMode ? (
+                      <Input
+                        type="number"
+                        value={editingData[activity.id]?.spots_available ?? activity.spots_available ?? 0}
+                        onChange={(e) => updateEditingData(activity.id, 'spots_available', parseInt(e.target.value) || 0)}
+                        className="w-20"
+                      />
+                    ) : (
+                      activity.spots_available || 0
+                    )}
+                  </TableCell>
                   <TableCell>
                     <span className="text-muted-foreground">
                       {paxAttendingData[activity.id] || 0}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
-                      {activity.activity_status.toUpperCase()}
-                    </Badge>
+                    {quickUpdateMode ? (
+                      <Select
+                        value={editingData[activity.id]?.activity_status ?? activity.activity_status ?? 'pending'}
+                        onValueChange={(value) => updateEditingData(activity.id, 'activity_status', value)}
+                      >
+                        <SelectTrigger className="w-40">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="booked">Booked</SelectItem>
+                          <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
+                          <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="on_hold">On Hold</SelectItem>
+                          <SelectItem value="contacted_enquiry_sent">Contacted/Enquiry Sent</SelectItem>
+                          <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
+                          <SelectItem value="finalised">Finalised</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
+                        {activity.activity_status.toUpperCase()}
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEditActivity(activity)}
-                        title="Edit Activity"
-                        disabled={isAgent}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedActivityForPrint(activity)}
-                        title="Print Passenger List"
-                        disabled={isAgent}
-                      >
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedActivityForEmail(activity)}
-                        title="Email Passenger List"
-                        disabled={isAgent}
-                      >
-                        <Mail className="h-4 w-4" />
-                      </Button>
+                      {quickUpdateMode ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleUpdateActivity(activity.id)}
+                          title="Save Changes"
+                        >
+                          <Check className="h-4 w-4 text-green-600" />
+                        </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onEditActivity(activity)}
+                            title="Edit Activity"
+                            disabled={isAgent}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedActivityForPrint(activity)}
+                            title="Print Passenger List"
+                            disabled={isAgent}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedActivityForEmail(activity)}
+                            title="Email Passenger List"
+                            disabled={isAgent}
+                          >
+                            <Mail className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>
