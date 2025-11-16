@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Search, Save, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { usePaginatedBookings, useFilteredBookings, useFilterCounts, useUpdateBooking } from "@/hooks/useBookings";
+import { useTours } from "@/hooks/useTours";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +37,7 @@ export default function BulkBookingStatus() {
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [tourFilter, setTourFilter] = useState<string>("all");
   const pageSize = 50;
   
   const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
@@ -45,6 +47,7 @@ export default function BulkBookingStatus() {
     pageSize
   );
   const { data: filterCounts } = useFilterCounts();
+  const { data: tours } = useTours();
   
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
@@ -65,9 +68,14 @@ export default function BulkBookingStatus() {
     setBulkStatus("");
   };
 
-  // Filter bookings based on search query and status filter with useMemo for performance
+  // Filter bookings based on search query, status filter, and tour filter with useMemo for performance
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
+
+    // Apply tour filter
+    if (tourFilter !== "all") {
+      filtered = filtered.filter(booking => booking.tour_id === tourFilter);
+    }
 
     // Apply status filter
     if (statusFilter !== "all") {
@@ -93,7 +101,7 @@ export default function BulkBookingStatus() {
     }
 
     return filtered;
-  }, [bookings, searchQuery, statusFilter]);
+  }, [bookings, searchQuery, statusFilter, tourFilter]);
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
@@ -360,7 +368,7 @@ export default function BulkBookingStatus() {
               </Button>
             </div>
 
-            {/* Search and Status Filter */}
+            {/* Search, Tour Filter, and Status Filter */}
             <div className="flex gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -371,6 +379,19 @@ export default function BulkBookingStatus() {
                   className="pl-8"
                 />
               </div>
+              <Select value={tourFilter} onValueChange={setTourFilter}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Filter by tour" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Tours</SelectItem>
+                  {tours?.map((tour) => (
+                    <SelectItem key={tour.id} value={tour.id}>
+                      {tour.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filter by status" />
