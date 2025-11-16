@@ -6,8 +6,8 @@ export type TabType = "hotels" | "bookings" | "activities" | "overview";
 const alertTypeToTabs: Record<string, TabType[]> = {
   hotel_oversold: ["hotels"],
   extra_nights: ["hotels", "bookings"],
-  new_booking: ["bookings"],
-  booking_cancelled: ["bookings"],
+  new_booking: ["hotels", "bookings"],
+  booking_cancelled: ["hotels", "bookings"],
   activity_oversold: ["activities"],
   missing_info: ["overview"],
 };
