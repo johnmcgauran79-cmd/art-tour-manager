@@ -53,7 +53,7 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
     if (!tourId) return;
 
     const channel = supabase
-      .channel('tour-alerts-changes')
+      .channel(`tour-alerts-${tourId}`)
       .on(
         'postgres_changes',
         {
