@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -50,10 +51,20 @@ const alertTypeLabels: Record<string, string> = {
   missing_info: "Missing Information",
 };
 
+const alertTypeToTab: Record<string, string> = {
+  activity_oversold: "activities",
+  hotel_oversold: "hotels",
+  new_booking: "bookings",
+  booking_cancelled: "bookings",
+  extra_nights: "hotels",
+  missing_info: "overview",
+};
+
 export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsModalProps) => {
   const [showResolved, setShowResolved] = useState(false);
   const { alerts, isLoading, unacknowledgedCount } = useGlobalTourAlerts(showResolved);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // We'll need to acknowledge alerts individually through their tour's hook
   const handleAcknowledge = async (alert: any) => {
@@ -66,6 +77,12 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
     deleteAlert(alert.id);
   };
 
+  const handleAlertClick = (alert: any) => {
+    const tab = alertTypeToTab[alert.alert_type] || "overview";
+    navigate(`/tours/${alert.tour_id}?tab=${tab}`);
+    onOpenChange(false);
+  };
+
   const renderAlert = (alert: any) => {
     const config = severityConfig[alert.severity as keyof typeof severityConfig];
     const Icon = config.icon;
@@ -74,11 +91,12 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
       <div
         key={alert.id}
         className={cn(
-          "p-4 rounded-lg border-l-4 space-y-3",
+          "p-4 rounded-lg border-l-4 space-y-3 cursor-pointer hover:bg-accent/5 transition-colors",
           config.bgColor,
           config.borderColor,
           alert.is_acknowledged && "opacity-60"
         )}
+        onClick={() => handleAlertClick(alert)}
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3 flex-1">
@@ -110,14 +128,20 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleAcknowledge(alert)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAcknowledge(alert);
+                }}
               >
                 <Check className="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleDelete(alert)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(alert);
+                }}
               >
                 <X className="h-4 w-4" />
               </Button>
