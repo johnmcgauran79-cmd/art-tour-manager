@@ -44,6 +44,7 @@ const alertTypeLabels: Record<string, string> = {
   activity_oversold: "Activity Oversold",
   hotel_oversold: "Hotel Oversold",
   new_booking: "New Booking",
+  booking_cancelled: "Booking Cancelled",
   extra_nights: "Extra Nights",
   missing_info: "Missing Information",
 };
