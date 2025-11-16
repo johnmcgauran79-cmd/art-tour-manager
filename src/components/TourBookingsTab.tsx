@@ -1,7 +1,8 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Utensils, UserPlus, Mail } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Users, Utensils, UserPlus, Mail, Bell } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { BulkBookingStatusModal } from "@/components/BulkBookingStatusModal";
 import { BulkDietaryModal } from "@/components/BulkDietaryModal";
@@ -10,6 +11,7 @@ import { useTours } from "@/hooks/useTours";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { useAuth } from "@/hooks/useAuth";
+import { useTabAlerts } from "@/hooks/useTabAlerts";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -28,6 +30,7 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking, currentTab }: 
   const { data: tours } = useTours();
   const currentTour = tours?.find(tour => tour.id === tourId);
   const { userRole } = useAuth();
+  const { count: alertCount, criticalCount } = useTabAlerts(tourId, "bookings");
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -36,7 +39,20 @@ export const TourBookingsTab = ({ tourId, tourName, onAddBooking, currentTab }: 
     <>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
+            {alertCount > 0 && (
+              <div className="relative">
+                <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
+                <Badge 
+                  variant={criticalCount > 0 ? "destructive" : "secondary"}
+                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {alertCount}
+                </Badge>
+              </div>
+            )}
+          </div>
           {!isAgent && (
             <div className="flex items-center gap-2">
               <Button

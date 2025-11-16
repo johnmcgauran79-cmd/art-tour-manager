@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Printer, Mail } from "lucide-react";
+import { Edit, Printer, Mail, Bell } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListModal";
 import { useAuth } from "@/hooks/useAuth";
+import { useTabAlerts } from "@/hooks/useTabAlerts";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -25,6 +26,7 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   const [selectedActivityForPrint, setSelectedActivityForPrint] = useState<any>(null);
   const [selectedActivityForEmail, setSelectedActivityForEmail] = useState<any>(null);
   const { userRole } = useAuth();
+  const { count: alertCount, criticalCount } = useTabAlerts(tourId, "activities");
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -126,7 +128,20 @@ export const TourActivitiesTab = ({ tourId, onAddActivity, onEditActivity }: Tou
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Activities</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold">Activities</h3>
+          {alertCount > 0 && (
+            <div className="relative">
+              <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
+              <Badge 
+                variant={criticalCount > 0 ? "destructive" : "secondary"}
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {alertCount}
+              </Badge>
+            </div>
+          )}
+        </div>
         {!isAgent && (
           <Button 
             onClick={onAddActivity}

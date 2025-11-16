@@ -1,13 +1,15 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, Bell } from "lucide-react";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
 import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useTabAlerts } from "@/hooks/useTabAlerts";
 
 interface TourHotelsTabProps {
   tourId: string;
@@ -21,6 +23,7 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
   const { data: hotels } = useHotels(tourId);
   const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
   const { userRole } = useAuth();
+  const { count: alertCount, criticalCount } = useTabAlerts(tourId, "hotels");
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -37,7 +40,20 @@ export const TourHotelsTab = ({ tourId, onAddHotel, onEditHotel, onRoomingList, 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Hotels</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold">Hotels</h3>
+          {alertCount > 0 && (
+            <div className="relative">
+              <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
+              <Badge 
+                variant={criticalCount > 0 ? "destructive" : "secondary"}
+                className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+              >
+                {alertCount}
+              </Badge>
+            </div>
+          )}
+        </div>
         {!isAgent && (
           <Button 
             onClick={onAddHotel}
