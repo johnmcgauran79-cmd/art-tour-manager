@@ -180,7 +180,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         Current:
                       </div>
                       <Badge className={getStatusColor(booking.status || 'pending')}>
-                        {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
+                        {booking.status === 'racing_breaks_invoice' ? 'RB INVOICE' : (booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
                       </Badge>
                       
                       <div className="text-sm text-muted-foreground">
@@ -201,6 +201,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
                         <option value="instalment_paid">Instalment Paid</option>
                         <option value="fully_paid">Fully Paid</option>
                         <option value="host">Host</option>
+                        <option value="racing_breaks_invoice">RB Invoice</option>
                         <option value="cancelled">Cancelled</option>
                       </select>
                     </div>

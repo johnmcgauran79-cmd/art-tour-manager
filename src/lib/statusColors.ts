@@ -63,6 +63,9 @@ export const getTaskPriorityColor = (priority: string): string => {
 
 // Format status text for display
 export const formatStatusText = (status: string): string => {
+  if (status === 'racing_breaks_invoice') {
+    return 'RB Invoice';
+  }
   return status
     .replace(/_/g, ' ')
     .replace(/\b\w/g, l => l.toUpperCase());
