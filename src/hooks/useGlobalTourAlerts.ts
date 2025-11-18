@@ -6,6 +6,7 @@ import { TourAlert } from "./useTourAlerts";
 export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isSubscribingRef = useRef(false);
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["global-tour-alerts", includeResolved],
@@ -32,12 +33,19 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
 
   // Real-time subscription for new alerts across all tours
   useEffect(() => {
+    // Prevent duplicate subscriptions
+    if (isSubscribingRef.current) {
+      return;
+    }
+
     // Cleanup any existing channel first
     if (channelRef.current) {
       channelRef.current.unsubscribe();
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+
+    isSubscribingRef.current = true;
 
     // Create unique channel name
     const channelName = `global-tour-alerts-${Date.now()}`;
@@ -55,26 +63,22 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
         table: 'tour_alerts',
       },
       (payload) => {
-        console.log('Global alert change detected:', payload);
         queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
       }
     );
 
     // Subscribe
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('Successfully subscribed to global tour alerts');
-      }
-    });
+    channel.subscribe();
 
     return () => {
+      isSubscribingRef.current = false;
       if (channelRef.current) {
         channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [queryClient, includeResolved]);
+  }, [queryClient]);
 
   const unacknowledgedCount = alerts.filter(a => !a.is_acknowledged).length;
   const criticalCount = alerts.filter(a => a.severity === 'critical' && !a.is_acknowledged).length;
