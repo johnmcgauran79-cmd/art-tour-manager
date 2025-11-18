@@ -554,7 +554,7 @@ export default function BookingEdit() {
                       <SelectItem value="waitlisted">Waitlisted</SelectItem>
                       <SelectItem value="host">Host</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="racing_breaks_invoice">Racing Breaks Invoice</SelectItem>
+                      <SelectItem value="racing_breaks_invoice">RB Invoice</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
