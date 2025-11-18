@@ -33,19 +33,11 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
 
   // Real-time subscription for new alerts across all tours
   useEffect(() => {
-    // Cleanup any existing channel first
-    if (channelRef.current) {
-      channelRef.current.unsubscribe();
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    // Create unique channel name
-    const channelName = `global-tour-alerts-${Date.now()}`;
+    // Create unique channel name using timestamp and random value
+    const channelName = `global-tour-alerts-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Create new channel
     const channel = supabase.channel(channelName);
-    channelRef.current = channel;
     
     // Set up event listeners for all tour alerts
     channel.on(
@@ -68,10 +60,16 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
     // Subscribe
     channel.subscribe();
 
+    // Store reference for cleanup
+    channelRef.current = channel;
+
     return () => {
-      if (channelRef.current) {
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
+      // Clean up this specific channel using closure
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
+      
+      // Clear ref only if it's still pointing to this channel
+      if (channelRef.current === channel) {
         channelRef.current = null;
       }
     };
