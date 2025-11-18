@@ -6,6 +6,7 @@ import { TourAlert } from "./useTourAlerts";
 export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastInvalidationRef = useRef<number>(0);
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["global-tour-alerts", includeResolved],
@@ -55,7 +56,12 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
         table: 'tour_alerts',
       },
       (payload) => {
-        queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
+        // Debounce invalidations to prevent multiple rapid refetches
+        const now = Date.now();
+        if (now - lastInvalidationRef.current > 300) {
+          lastInvalidationRef.current = now;
+          queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
+        }
       }
     );
 

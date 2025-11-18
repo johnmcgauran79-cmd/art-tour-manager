@@ -24,6 +24,7 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isMutatingRef = useRef(false);
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["tour-alerts", tourId, includeResolved],
@@ -77,7 +78,10 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
         filter: `tour_id=eq.${tourId}`
       },
       (payload) => {
-        queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
+        // Skip refetch if we're in the middle of a mutation (mutation handles its own refetch)
+        if (!isMutatingRef.current) {
+          queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
+        }
       }
     );
 
@@ -95,6 +99,7 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
 
   const acknowledgeMutation = useMutation({
     mutationFn: async (alertId: string) => {
+      isMutatingRef.current = true;
       const { data: { user } } = await supabase.auth.getUser();
       
       const { error } = await supabase
@@ -110,12 +115,18 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
+      queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
       toast({
         title: "Alert acknowledged",
         description: "The alert has been marked as reviewed.",
       });
+      // Reset mutation flag after a brief delay to allow refetch to complete
+      setTimeout(() => {
+        isMutatingRef.current = false;
+      }, 100);
     },
     onError: (error) => {
+      isMutatingRef.current = false;
       toast({
         title: "Error",
         description: "Failed to acknowledge alert: " + error.message,
@@ -126,6 +137,7 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
 
   const deleteAlertMutation = useMutation({
     mutationFn: async (alertId: string) => {
+      isMutatingRef.current = true;
       const { error } = await supabase
         .from("tour_alerts")
         .delete()
@@ -135,12 +147,17 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
+      queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
       toast({
         title: "Alert deleted",
         description: "The alert has been removed.",
       });
+      setTimeout(() => {
+        isMutatingRef.current = false;
+      }, 100);
     },
     onError: (error) => {
+      isMutatingRef.current = false;
       toast({
         title: "Error",
         description: "Failed to delete alert: " + error.message,
