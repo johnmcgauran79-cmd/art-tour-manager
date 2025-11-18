@@ -54,19 +54,11 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
   useEffect(() => {
     if (!tourId) return;
 
-    // Cleanup any existing channel first
-    if (channelRef.current) {
-      channelRef.current.unsubscribe();
-      supabase.removeChannel(channelRef.current);
-      channelRef.current = null;
-    }
-
-    // Create unique channel name to avoid instance reuse
-    const channelName = `tour-alerts-${tourId}-${Date.now()}`;
+    // Create unique channel name using tourId, timestamp, and random value
+    const channelName = `tour-alerts-${tourId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
     // Create new channel
     const channel = supabase.channel(channelName);
-    channelRef.current = channel;
     
     // Set up event listeners
     channel.on(
@@ -88,10 +80,16 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
     // Subscribe
     channel.subscribe();
 
+    // Store reference for cleanup
+    channelRef.current = channel;
+
     return () => {
-      if (channelRef.current) {
-        channelRef.current.unsubscribe();
-        supabase.removeChannel(channelRef.current);
+      // Clean up this specific channel using closure
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
+      
+      // Clear ref only if it's still pointing to this channel
+      if (channelRef.current === channel) {
         channelRef.current = null;
       }
     };
