@@ -30,7 +30,7 @@ interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;

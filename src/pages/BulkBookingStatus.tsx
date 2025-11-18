@@ -26,7 +26,8 @@ const BOOKING_STATUSES = [
   'fully_paid',
   'cancelled',
   'waitlisted',
-  'host'
+  'host',
+  'racing_breaks_invoice'
 ];
 
 type FilterType = 'all' | 'deposits_owing' | 'payment_due';

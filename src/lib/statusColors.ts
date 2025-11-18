@@ -14,6 +14,7 @@ export const getBookingStatusColor = (status: string): string => {
     'cancelled': 'bg-status-cancelled text-status-cancelled-foreground',
     'waitlisted': 'bg-status-waitlisted text-status-waitlisted-foreground',
     'host': 'bg-status-pending text-status-pending-foreground',
+    'racing_breaks_invoice': 'bg-blue-900 text-white',
   };
   
   return statusMap[status] || statusMap['pending'];
