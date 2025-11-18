@@ -24,6 +24,7 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isSubscribingRef = useRef(false);
 
   const { data: alerts = [], isLoading } = useQuery({
     queryKey: ["tour-alerts", tourId, includeResolved],
@@ -53,12 +54,19 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
   useEffect(() => {
     if (!tourId) return;
 
+    // Prevent duplicate subscriptions
+    if (isSubscribingRef.current) {
+      return;
+    }
+
     // Cleanup any existing channel first
     if (channelRef.current) {
       channelRef.current.unsubscribe();
       supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
+
+    isSubscribingRef.current = true;
 
     // Create unique channel name to avoid instance reuse
     const channelName = `tour-alerts-${tourId}-${Date.now()}`;
@@ -77,19 +85,15 @@ export const useTourAlerts = (tourId: string | undefined, includeResolved: boole
         filter: `tour_id=eq.${tourId}`
       },
       (payload) => {
-        console.log('Alert change detected:', payload);
         queryClient.invalidateQueries({ queryKey: ["tour-alerts", tourId] });
       }
     );
 
     // Subscribe
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        console.log('Successfully subscribed to tour alerts:', tourId);
-      }
-    });
+    channel.subscribe();
 
     return () => {
+      isSubscribingRef.current = false;
       if (channelRef.current) {
         channelRef.current.unsubscribe();
         supabase.removeChannel(channelRef.current);
