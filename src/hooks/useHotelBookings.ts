@@ -46,32 +46,38 @@ export const useHotelBookings = (bookingId: string) => {
 const updateBookingDates = async (bookingId: string) => {
   const { data: hotelBookings, error } = await supabase
     .from('hotel_bookings')
-    .select('check_in_date, check_out_date')
-    .eq('booking_id', bookingId)
-    .not('check_in_date', 'is', null)
-    .not('check_out_date', 'is', null);
+    .select('check_in_date, check_out_date, allocated')
+    .eq('booking_id', bookingId);
 
-  if (error || !hotelBookings || hotelBookings.length === 0) {
+  if (error || !hotelBookings) {
+    console.error('Error fetching hotel bookings for date update:', error);
     return;
   }
 
-  // Find earliest check-in and latest check-out
-  const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
-  const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
+  const allocatedBookings = hotelBookings.filter(hb => hb.allocated);
   
+  if (allocatedBookings.length === 0) return;
+
+  const checkInDates = allocatedBookings
+    .map(hb => hb.check_in_date)
+    .filter(date => date !== null)
+    .map(date => new Date(date!));
+  
+  const checkOutDates = allocatedBookings
+    .map(hb => hb.check_out_date)
+    .filter(date => date !== null)
+    .map(date => new Date(date!));
+
+  if (checkInDates.length === 0 || checkOutDates.length === 0) return;
+
   const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
   const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
-  
-  // Calculate total nights
-  const totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
 
-  // Update the booking
   await supabase
     .from('bookings')
     .update({
       check_in_date: earliestCheckIn.toISOString().split('T')[0],
       check_out_date: latestCheckOut.toISOString().split('T')[0],
-      total_nights: totalNights
     })
     .eq('id', bookingId);
 };
@@ -120,17 +126,20 @@ export const useCreateHotelBooking = () => {
       }
       console.log('Hotel booking created successfully:', data);
       
-      // Update parent booking dates
-      if (data.booking_id) {
+      return data;
+    },
+    onSuccess: async (data) => {
+      // Update parent booking dates after creation
+      if (data?.booking_id) {
         await updateBookingDates(data.booking_id);
       }
       
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['hotels'] });
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      // Batch invalidate queries to prevent cascade
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] }),
+        queryClient.invalidateQueries({ queryKey: ['hotels'] }),
+        queryClient.invalidateQueries({ queryKey: ['bookings'] })
+      ]);
       toast({
         title: "Hotel Booking Created",
         description: "Hotel booking allocation has been successfully created.",
@@ -179,17 +188,21 @@ export const useUpdateHotelBooking = () => {
       
       console.log('Hotel booking updated successfully:', data);
       
-      // Update parent booking dates
-      if (data.booking_id) {
+      return data;
+    },
+    onSuccess: async (data) => {
+      // Update parent booking dates after update
+      if (data?.booking_id) {
         await updateBookingDates(data.booking_id);
       }
       
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['hotels'] });
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      // Batch invalidate queries to prevent cascade
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] }),
+        queryClient.invalidateQueries({ queryKey: ['hotels'] }),
+        queryClient.invalidateQueries({ queryKey: ['bookings'] })
+      ]);
+      
       toast({
         title: "Hotel Booking Updated",
         description: "Hotel booking allocation has been successfully updated.",

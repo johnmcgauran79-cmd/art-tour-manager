@@ -57,11 +57,8 @@ export const HotelAllocationSection = ({
   }, [autoEnableHotels, hotels, hotelBookings.length]);
 
   const updateBookingDates = async (bookingsToCheck = hotelBookings) => {
-    console.log('Updating booking dates, hotel bookings:', bookingsToCheck);
-    
     // Get all allocated hotel bookings
     const allocatedHotelBookings = bookingsToCheck.filter(hb => hb.allocated);
-    console.log('Allocated hotel bookings:', allocatedHotelBookings);
     
     if (allocatedHotelBookings.length === 0) return;
 
@@ -83,17 +80,9 @@ export const HotelAllocationSection = ({
     const earliestCheckIn = validCheckInDates[0].toISOString().split('T')[0];
     const latestCheckOut = validCheckOutDates[0].toISOString().split('T')[0];
 
-    console.log('Calculated dates - earliest check-in:', earliestCheckIn, 'latest check-out:', latestCheckOut);
-
-    // Notify parent component about date changes (for form updates during creation)
+    // Only notify parent component about date changes
+    // Don't update the booking here to prevent cascading updates
     onDatesChange?.(earliestCheckIn, latestCheckOut);
-
-    // Update the booking with new dates (for existing bookings)
-    updateBooking.mutate({
-      id: bookingId,
-      check_in_date: earliestCheckIn,
-      check_out_date: latestCheckOut,
-    });
   };
 
   const handleHotelAllocation = (hotelId: string, allocated: boolean) => {
