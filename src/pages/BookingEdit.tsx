@@ -57,7 +57,7 @@ export default function BookingEdit() {
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host',
+    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice',
     extra_requests: '',
     invoice_notes: '',
     accommodation_required: true,
@@ -248,7 +248,7 @@ export default function BookingEdit() {
     });
   };
 
-  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host') => {
+  const handleStatusChange = (newStatus: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice') => {
     if (newStatus === 'cancelled' && booking?.status !== 'cancelled') {
       setShowCancelDialog(true);
     } else {
@@ -554,6 +554,7 @@ export default function BookingEdit() {
                       <SelectItem value="waitlisted">Waitlisted</SelectItem>
                       <SelectItem value="host">Host</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="racing_breaks_invoice">Racing Breaks Invoice</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

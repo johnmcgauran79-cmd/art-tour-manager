@@ -12,7 +12,7 @@ interface ContactBookingsListProps {
 
 interface ContactBooking {
   id: string;
-  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice';
   passenger_count: number;
   created_at: string;
   tours: {

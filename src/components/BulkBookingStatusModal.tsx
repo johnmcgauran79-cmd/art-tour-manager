@@ -15,6 +15,7 @@ const getStatusColor = (status: string) => {
     case "pending": return "bg-gray-100 text-gray-800";
     case "cancelled": return "bg-red-100 text-red-800";
     case "host": return "bg-emerald-100 text-emerald-800";
+    case "racing_breaks_invoice": return "bg-blue-900 text-white";
     default: return "bg-gray-100 text-gray-800";
   }
 };
@@ -78,7 +79,7 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
             bookingId: booking.id,
             updatePromise: updateBooking.mutateAsync({
               id: booking.id,
-              status: newStatus as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled'
+              status: newStatus as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice'
             })
           });
         }
