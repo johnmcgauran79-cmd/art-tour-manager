@@ -94,7 +94,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
           <div className="flex justify-between items-center">
             <div>
               <CardTitle>
-                {showOnlyActive ? 'Active Tours' : 'All Tours'} 
+                {showOnlyActive ? 'Active Tours' : 'All Tours'}{' '}
                 ({searchFilteredTours.length} {searchQuery ? 'found' : showOnlyActive ? 'active' : 'total'})
               </CardTitle>
               <CardDescription>
