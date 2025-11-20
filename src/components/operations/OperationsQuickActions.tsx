@@ -46,14 +46,6 @@ export const OperationsQuickActions = () => {
         setShowHotelCheck(true);
       },
     },
-    {
-      icon: Grid3X3,
-      label: "Non-standard Activity Bookings",
-      description: "Review all activity allocations",
-      onClick: () => {
-        setShowActivityMatrix(true);
-      },
-    },
   ];
 
   return (
