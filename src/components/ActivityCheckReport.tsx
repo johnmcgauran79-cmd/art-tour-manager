@@ -23,7 +23,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
 
-      // Get tours (recent/future only)
+      // Get all tours (recent/future)
       const { data: tours, error: toursError } = await supabase
         .from('tours')
         .select('id, name, start_date')
@@ -32,7 +32,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       if (toursError) throw toursError;
       const tourIds = tours.map(t => t.id);
 
-      // Get activities per tour
+      // Get all activities
       const { data: activities, error: activitiesError } = await supabase
         .from('activities')
         .select('id, tour_id')
@@ -40,22 +40,25 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       if (activitiesError) throw activitiesError;
 
-      // Build map of tour activities
-      const tourActivitiesMap = new Map<string, Set<string>>();
+      // Build activity to tour mapping
+      const activityToTour = new Map<string, string>();
+      const tourActivities = new Map<string, string[]>();
+      
       activities.forEach(a => {
-        if (!tourActivitiesMap.has(a.tour_id)) {
-          tourActivitiesMap.set(a.tour_id, new Set());
+        activityToTour.set(a.id, a.tour_id);
+        if (!tourActivities.has(a.tour_id)) {
+          tourActivities.set(a.tour_id, []);
         }
-        tourActivitiesMap.get(a.tour_id)!.add(a.id);
+        tourActivities.get(a.tour_id)!.push(a.id);
       });
 
-      // Only tours with activities
-      const toursWithActivities = tours.filter(t => tourActivitiesMap.has(t.id));
+      // Only keep tours that have activities
+      const toursWithActivities = tours.filter(t => tourActivities.has(t.id));
       const tourIdsWithActivities = toursWithActivities.map(t => t.id);
 
       if (tourIdsWithActivities.length === 0) return [];
 
-      // Get bookings for tours with activities (exclude cancelled/waitlisted)
+      // Get bookings for tours with activities
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -73,45 +76,40 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
         .not('status', 'in', '(cancelled,waitlisted)');
 
       if (bookingsError) throw bookingsError;
-
       const bookingIds = bookings.map(b => b.id);
-      const allActivityIds = activities.map(a => a.id);
 
-      // Get activity allocations - ONLY for activities on these tours
+      // Get ALL activity_bookings for these bookings
       const { data: activityBookings, error: activityBookingsError } = await supabase
         .from('activity_bookings')
         .select('booking_id, activity_id')
-        .in('booking_id', bookingIds)
-        .in('activity_id', allActivityIds);
+        .in('booking_id', bookingIds);
 
       if (activityBookingsError) throw activityBookingsError;
 
-      // Map booking to its allocated activities (only from their tour)
-      const bookingAllocationsMap = new Map<string, Set<string>>();
+      // For each booking, check if it has activities from ITS OWN tour
+      const bookingsWithOwnTourActivities = new Set<string>();
+      
       activityBookings.forEach(ab => {
         const booking = bookings.find(b => b.id === ab.booking_id);
         if (!booking) return;
         
-        // Check if this activity belongs to the booking's tour
-        const tourActivities = tourActivitiesMap.get(booking.tour_id);
-        if (tourActivities && tourActivities.has(ab.activity_id)) {
-          if (!bookingAllocationsMap.has(ab.booking_id)) {
-            bookingAllocationsMap.set(ab.booking_id, new Set());
-          }
-          bookingAllocationsMap.get(ab.booking_id)!.add(ab.activity_id);
+        const activityTourId = activityToTour.get(ab.activity_id);
+        
+        // Only count if this activity belongs to the booking's tour
+        if (activityTourId === booking.tour_id) {
+          bookingsWithOwnTourActivities.add(ab.booking_id);
         }
       });
 
+      // Find bookings WITHOUT activities from their own tour
       const tourMap = new Map(toursWithActivities.map(t => [t.id, t]));
-
-      // Find bookings with ZERO activity allocations
+      
       const issues = bookings
-        .filter(booking => {
-          const allocatedActivities = bookingAllocationsMap.get(booking.id);
-          return !allocatedActivities || allocatedActivities.size === 0;
-        })
+        .filter(booking => !bookingsWithOwnTourActivities.has(booking.id))
         .map(booking => {
           const tour = tourMap.get(booking.tour_id);
+          const tourActivityList = tourActivities.get(booking.tour_id) || [];
+          
           return {
             bookingId: booking.id,
             tourId: booking.tour_id,
@@ -119,7 +117,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
             tourDate: tour?.start_date || '',
             passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
             passengerCount: booking.passenger_count,
-            tourActivitiesCount: tourActivitiesMap.get(booking.tour_id)?.size || 0,
+            tourActivitiesCount: tourActivityList.length,
             status: booking.status
           };
         });
