@@ -1658,6 +1658,20 @@ export type Database = {
         Args: { check_in: string; check_out: string }
         Returns: number
       }
+      check_missing_activity_allocations: {
+        Args: never
+        Returns: {
+          booking_id: string
+          first_name: string
+          last_name: string
+          passenger_count: number
+          start_date: string
+          status: string
+          tour_activities: number
+          tour_id: string
+          tour_name: string
+        }[]
+      }
       check_pending_bookings: { Args: never; Returns: number }
       check_user_role: {
         Args: { required_role: string; user_id: string }
