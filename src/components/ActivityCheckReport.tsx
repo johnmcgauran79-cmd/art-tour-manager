@@ -42,7 +42,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       if (activitiesError) throw activitiesError;
 
-      // Get all bookings for these tours (exclude cancelled and waitlisted)
+      // Get all bookings for these tours (exclude cancelled)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -57,8 +57,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
           )
         `)
         .in('tour_id', tourIds)
-        .neq('status', 'cancelled')
-        .neq('status', 'waitlisted');
+        .neq('status', 'cancelled');
 
       if (bookingsError) throw bookingsError;
 
