@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet, Activity } from "lucide-react";
 import { BookingValidationReport } from "@/components/BookingValidationReport";
 import { ActivityCheckReport } from "@/components/ActivityCheckReport";
+import { HotelAllocationCheckReport } from "@/components/HotelAllocationCheckReport";
 import { useState } from "react";
 
 export const OperationsQuickActions = () => {
   const [showValidationReport, setShowValidationReport] = useState(false);
   const [showActivityCheck, setShowActivityCheck] = useState(false);
+  const [showHotelCheck, setShowHotelCheck] = useState(false);
   const reportActions = [
     {
       icon: FileText,
@@ -78,6 +80,15 @@ export const OperationsQuickActions = () => {
       active: true,
       onClick: () => {
         setShowActivityCheck(true);
+      },
+    },
+    {
+      icon: Hotel,
+      label: "Hotel Check",
+      description: "Find missing hotel allocations",
+      active: true,
+      onClick: () => {
+        setShowHotelCheck(true);
       },
     },
     {
@@ -186,6 +197,11 @@ export const OperationsQuickActions = () => {
       <ActivityCheckReport 
         open={showActivityCheck} 
         onOpenChange={setShowActivityCheck}
+      />
+
+      <HotelAllocationCheckReport 
+        open={showHotelCheck} 
+        onOpenChange={setShowHotelCheck}
       />
     </div>
   );
