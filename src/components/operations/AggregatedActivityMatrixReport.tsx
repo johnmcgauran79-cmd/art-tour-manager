@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { AlertTriangle, Grid3X3, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { AlertTriangle, Grid3X3, Loader2, ChevronDown, ChevronRight, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AggregatedActivityMatrixReportProps {
@@ -226,6 +226,14 @@ export const AggregatedActivityMatrixReport = ({
             <Grid3X3 className="h-6 w-6 text-brand-navy" />
             Activity Allocation Matrix - All Tours
           </DialogTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-4"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
 
         {loading ? (
@@ -286,7 +294,6 @@ export const AggregatedActivityMatrixReport = ({
                       <TableRow>
                         <TableHead className="w-12"></TableHead>
                         <TableHead>Lead Passenger</TableHead>
-                        <TableHead>Group</TableHead>
                         <TableHead className="text-center">Booking Pax</TableHead>
                         <TableHead className="text-center">Issues</TableHead>
                         <TableHead></TableHead>
@@ -312,9 +319,6 @@ export const AggregatedActivityMatrixReport = ({
                               <TableCell className="font-medium" onClick={() => toggleBooking(bookingId)}>
                                 {bookingData.leadPassenger}
                               </TableCell>
-                              <TableCell className="text-sm text-muted-foreground" onClick={() => toggleBooking(bookingId)}>
-                                {bookingData.groupName || '-'}
-                              </TableCell>
                               <TableCell className="text-center font-semibold" onClick={() => toggleBooking(bookingId)}>
                                 {bookingData.passengerCount}
                               </TableCell>
@@ -336,7 +340,7 @@ export const AggregatedActivityMatrixReport = ({
                             {isExpanded && bookingData.discrepancies.map((disc, idx) => (
                               <TableRow key={`${bookingId}-${disc.activityId}-${idx}`} className="bg-muted/30">
                                 <TableCell></TableCell>
-                                <TableCell colSpan={2} className="pl-8">
+                                <TableCell className="pl-8">
                                   <div className="flex items-center gap-2">
                                     <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                                     <span className="font-medium">{disc.activityName}</span>
@@ -366,6 +370,18 @@ export const AggregatedActivityMatrixReport = ({
                 </div>
               );
             })}
+          </div>
+        )}
+        
+        {!loading && discrepancies.length > 0 && (
+          <div className="flex justify-end pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4 mr-2" />
+              Close
+            </Button>
           </div>
         )}
       </DialogContent>
