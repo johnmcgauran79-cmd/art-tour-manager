@@ -23,7 +23,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
 
-      // Get tours with activities (recent/future only)
+      // Get tours (recent/future only)
       const { data: tours, error: toursError } = await supabase
         .from('tours')
         .select('id, name, start_date')
@@ -32,27 +32,30 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       if (toursError) throw toursError;
       const tourIds = tours.map(t => t.id);
 
-      // Get count of activities per tour
+      // Get activities per tour
       const { data: activities, error: activitiesError } = await supabase
         .from('activities')
-        .select('tour_id')
+        .select('id, tour_id')
         .in('tour_id', tourIds);
 
       if (activitiesError) throw activitiesError;
 
-      // Count activities per tour
-      const tourActivityCounts = new Map<string, number>();
+      // Build map of tour activities
+      const tourActivitiesMap = new Map<string, Set<string>>();
       activities.forEach(a => {
-        tourActivityCounts.set(a.tour_id, (tourActivityCounts.get(a.tour_id) || 0) + 1);
+        if (!tourActivitiesMap.has(a.tour_id)) {
+          tourActivitiesMap.set(a.tour_id, new Set());
+        }
+        tourActivitiesMap.get(a.tour_id)!.add(a.id);
       });
 
-      // Filter to only tours that have activities
-      const toursWithActivities = tours.filter(t => tourActivityCounts.has(t.id));
+      // Only tours with activities
+      const toursWithActivities = tours.filter(t => tourActivitiesMap.has(t.id));
       const tourIdsWithActivities = toursWithActivities.map(t => t.id);
 
       if (tourIdsWithActivities.length === 0) return [];
 
-      // Get all bookings for these tours (exclude cancelled)
+      // Get bookings for tours with activities (exclude cancelled/waitlisted)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -67,34 +70,45 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
           )
         `)
         .in('tour_id', tourIdsWithActivities)
-        .neq('status', 'cancelled')
-        .neq('status', 'waitlisted');
+        .not('status', 'in', '(cancelled,waitlisted)');
 
       if (bookingsError) throw bookingsError;
 
       const bookingIds = bookings.map(b => b.id);
+      const allActivityIds = activities.map(a => a.id);
 
-      // Get count of activity allocations per booking
+      // Get activity allocations - ONLY for activities on these tours
       const { data: activityBookings, error: activityBookingsError } = await supabase
         .from('activity_bookings')
-        .select('booking_id')
-        .in('booking_id', bookingIds);
+        .select('booking_id, activity_id')
+        .in('booking_id', bookingIds)
+        .in('activity_id', allActivityIds);
 
       if (activityBookingsError) throw activityBookingsError;
 
-      // Count activity allocations per booking
-      const bookingActivityCounts = new Map<string, number>();
+      // Map booking to its allocated activities (only from their tour)
+      const bookingAllocationsMap = new Map<string, Set<string>>();
       activityBookings.forEach(ab => {
-        bookingActivityCounts.set(ab.booking_id, (bookingActivityCounts.get(ab.booking_id) || 0) + 1);
+        const booking = bookings.find(b => b.id === ab.booking_id);
+        if (!booking) return;
+        
+        // Check if this activity belongs to the booking's tour
+        const tourActivities = tourActivitiesMap.get(booking.tour_id);
+        if (tourActivities && tourActivities.has(ab.activity_id)) {
+          if (!bookingAllocationsMap.has(ab.booking_id)) {
+            bookingAllocationsMap.set(ab.booking_id, new Set());
+          }
+          bookingAllocationsMap.get(ab.booking_id)!.add(ab.activity_id);
+        }
       });
 
-      // Find bookings with NO activity allocations
       const tourMap = new Map(toursWithActivities.map(t => [t.id, t]));
-      
+
+      // Find bookings with ZERO activity allocations
       const issues = bookings
         .filter(booking => {
-          const allocatedCount = bookingActivityCounts.get(booking.id) || 0;
-          return allocatedCount === 0; // No activities allocated
+          const allocatedActivities = bookingAllocationsMap.get(booking.id);
+          return !allocatedActivities || allocatedActivities.size === 0;
         })
         .map(booking => {
           const tour = tourMap.get(booking.tour_id);
@@ -105,16 +119,10 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
             tourDate: tour?.start_date || '',
             passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
             passengerCount: booking.passenger_count,
-            tourActivitiesCount: tourActivityCounts.get(booking.tour_id) || 0,
+            tourActivitiesCount: tourActivitiesMap.get(booking.tour_id)?.size || 0,
             status: booking.status
           };
         });
-
-      console.log('Activity Check Report:', {
-        toursWithActivities: toursWithActivities.length,
-        totalBookings: bookings.length,
-        bookingsWithNoActivities: issues.length
-      });
 
       return issues;
     },
