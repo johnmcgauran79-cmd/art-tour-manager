@@ -16,7 +16,7 @@ export const OperationsQuickActions = () => {
   const checkActions = [
     {
       icon: AlertCircle,
-      label: "Booking Validation",
+      label: "Bedding Type Review",
       description: "Review pax/bedding mismatches",
       onClick: () => {
         setShowValidationReport(true);
