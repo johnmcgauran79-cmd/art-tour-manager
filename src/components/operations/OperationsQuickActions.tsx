@@ -40,7 +40,7 @@ export const OperationsQuickActions = () => {
     },
     {
       icon: Grid3X3,
-      label: "Activity Matrix",
+      label: "Non-standard Activity Bookings",
       description: "Review all activity allocations",
       onClick: () => {
         setShowActivityMatrix(true);
