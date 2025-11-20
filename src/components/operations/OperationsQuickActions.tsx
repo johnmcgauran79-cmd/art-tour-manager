@@ -32,7 +32,7 @@ export const OperationsQuickActions = () => {
     },
     {
       icon: Hotel,
-      label: "Hotel Check",
+      label: "Hotel Allocation Check",
       description: "Find missing hotel allocations",
       onClick: () => {
         setShowHotelCheck(true);
