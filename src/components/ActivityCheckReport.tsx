@@ -89,17 +89,31 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       // For each booking, check if it has activities from ITS OWN tour
       const bookingsWithOwnTourActivities = new Set<string>();
       
+      console.log('Debug: Total activity_bookings fetched:', activityBookings.length);
+      console.log('Debug: Sample activity_bookings:', activityBookings.slice(0, 5));
+      console.log('Debug: activityToTour map size:', activityToTour.size);
+      
       activityBookings.forEach(ab => {
         const booking = bookings.find(b => b.id === ab.booking_id);
-        if (!booking) return;
+        if (!booking) {
+          console.log('Debug: No booking found for activity_booking:', ab.booking_id);
+          return;
+        }
         
         const activityTourId = activityToTour.get(ab.activity_id);
+        
+        if (!activityTourId) {
+          console.log('Debug: Activity not in map:', ab.activity_id, 'for booking:', booking.id);
+        }
         
         // Only count if this activity belongs to the booking's tour
         if (activityTourId === booking.tour_id) {
           bookingsWithOwnTourActivities.add(ab.booking_id);
         }
       });
+
+      console.log('Debug: Bookings with own tour activities:', bookingsWithOwnTourActivities.size);
+      console.log('Debug: Total bookings:', bookings.length);
 
       // Find bookings WITHOUT activities from their own tour
       const tourMap = new Map(toursWithActivities.map(t => [t.id, t]));
@@ -121,6 +135,9 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
             status: booking.status
           };
         });
+
+      console.log('Debug: Issues found:', issues.length);
+      console.log('Debug: First 3 issues:', issues.slice(0, 3));
 
       return issues;
     },
