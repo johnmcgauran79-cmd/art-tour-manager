@@ -11,7 +11,6 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
-import { BulkHotelAllocation } from "@/components/BulkHotelAllocation";
 
 interface TourHotelsTabProps {
   tourId: string;
@@ -70,18 +69,6 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
           </Button>
         )}
       </div>
-
-      {/* Bulk Hotel Allocation Tool */}
-      {!isAgent && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Fix Missing Hotel Allocations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BulkHotelAllocation tourId={tourId} onComplete={() => window.location.reload()} />
-          </CardContent>
-        </Card>
-      )}
 
       {hotels && hotels.length > 0 ? (
         <div className="grid gap-4">
