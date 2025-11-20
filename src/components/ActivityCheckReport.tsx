@@ -19,150 +19,20 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
   const { data: missingAllocations, isLoading } = useQuery({
     queryKey: ['activity-check-report'],
     queryFn: async () => {
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
-
-      // Get all tours (recent/future)
-      const { data: tours, error: toursError } = await supabase
-        .from('tours')
-        .select('id, name, start_date')
-        .gte('start_date', cutoffDate);
-
-      if (toursError) throw toursError;
-      const tourIds = tours.map(t => t.id);
-
-      // Get all activities
-      const { data: activities, error: activitiesError } = await supabase
-        .from('activities')
-        .select('id, tour_id')
-        .in('tour_id', tourIds);
-
-      if (activitiesError) throw activitiesError;
-
-      // Build activity to tour mapping
-      const activityToTour = new Map<string, string>();
-      const tourActivities = new Map<string, string[]>();
+      const { data, error } = await supabase.rpc('check_missing_activity_allocations');
       
-      activities.forEach(a => {
-        activityToTour.set(a.id, a.tour_id);
-        if (!tourActivities.has(a.tour_id)) {
-          tourActivities.set(a.tour_id, []);
-        }
-        tourActivities.get(a.tour_id)!.push(a.id);
-      });
-
-      // Only keep tours that have activities
-      const toursWithActivities = tours.filter(t => tourActivities.has(t.id));
-      const tourIdsWithActivities = toursWithActivities.map(t => t.id);
-
-      if (tourIdsWithActivities.length === 0) return [];
-
-      // Get bookings for tours with activities
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          passenger_count,
-          status,
-          tour_id,
-          lead_passenger_id,
-          customers!bookings_lead_passenger_id_fkey (
-            first_name,
-            last_name
-          )
-        `)
-        .in('tour_id', tourIdsWithActivities)
-        .not('status', 'in', '(cancelled,waitlisted)');
-
-      if (bookingsError) throw bookingsError;
-      const bookingIds = bookings.map(b => b.id);
-
-      // Get ALL activity_bookings without filtering by booking_id first
-      // to avoid hitting the 1000 row limit on filtered queries
-      const { data: allActivityBookings, error: activityBookingsError } = await supabase
-        .from('activity_bookings')
-        .select('booking_id, activity_id');
-
-      if (activityBookingsError) throw activityBookingsError;
-
-      // Filter to only the bookings we care about
-      const activityBookings = allActivityBookings.filter(ab => 
-        bookingIds.includes(ab.booking_id)
-      );
-
-      // For each booking, check if it has activities from ITS OWN tour
-      const bookingsWithOwnTourActivities = new Set<string>();
+      if (error) throw error;
       
-      console.log('Debug: Total activity_bookings fetched:', activityBookings.length);
-      console.log('Debug: Sample activity_bookings:', activityBookings.slice(0, 5));
-      console.log('Debug: activityToTour map size:', activityToTour.size);
-      
-      activityBookings.forEach(ab => {
-        const booking = bookings.find(b => b.id === ab.booking_id);
-        if (!booking) {
-          console.log('Debug: No booking found for activity_booking:', ab.booking_id);
-          return;
-        }
-        
-        const activityTourId = activityToTour.get(ab.activity_id);
-        
-        if (!activityTourId) {
-          console.log('Debug: Activity not in map:', ab.activity_id, 'for booking:', booking.id);
-        }
-        
-        // Only count if this activity belongs to the booking's tour
-        if (activityTourId === booking.tour_id) {
-          bookingsWithOwnTourActivities.add(ab.booking_id);
-        }
-      });
-
-      console.log('Debug: Bookings with own tour activities:', bookingsWithOwnTourActivities.size);
-      console.log('Debug: Total bookings:', bookings.length);
-
-      // Find bookings WITHOUT activities from their own tour
-      const tourMap = new Map(toursWithActivities.map(t => [t.id, t]));
-      
-      const issues = bookings
-        .filter(booking => !bookingsWithOwnTourActivities.has(booking.id))
-        .map(booking => {
-          const tour = tourMap.get(booking.tour_id);
-          const tourActivityList = tourActivities.get(booking.tour_id) || [];
-          
-          return {
-            bookingId: booking.id,
-            tourId: booking.tour_id,
-            tourName: tour?.name || 'Unknown Tour',
-            tourDate: tour?.start_date || '',
-            passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
-            passengerCount: booking.passenger_count,
-            tourActivitiesCount: tourActivityList.length,
-            status: booking.status
-          };
-        });
-
-      console.log('Debug: Issues found:', issues.length);
-      console.log('Debug: First 3 issues:', issues.slice(0, 3));
-      
-      // Deep dive on first issue
-      if (issues.length > 0) {
-        const firstIssue = issues[0];
-        console.log('Debug: First issue booking ID:', firstIssue.bookingId);
-        console.log('Debug: First issue tour ID:', firstIssue.tourId);
-        console.log('Debug: Activity bookings for this booking:', 
-          activityBookings.filter(ab => ab.booking_id === firstIssue.bookingId)
-        );
-        console.log('Debug: All activities for this tour:', 
-          activities.filter(a => a.tour_id === firstIssue.tourId).map(a => a.id)
-        );
-      }
-      
-      // Also log tours being checked
-      console.log('Debug: Tours with activities being checked:', 
-        toursWithActivities.map(t => ({ id: t.id, name: t.name, start_date: t.start_date }))
-      );
-
-      return issues;
+      return (data || []).map((row: any) => ({
+        bookingId: row.booking_id,
+        tourId: row.tour_id,
+        tourName: row.tour_name,
+        tourDate: row.start_date,
+        passengerName: `${row.first_name || ''} ${row.last_name || ''}`.trim(),
+        passengerCount: row.passenger_count,
+        tourActivitiesCount: row.tour_activities,
+        status: row.status
+      }));
     },
     enabled: open
   });
