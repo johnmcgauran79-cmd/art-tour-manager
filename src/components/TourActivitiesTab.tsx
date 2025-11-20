@@ -295,6 +295,14 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
         {!isAgent && (
           <div className="flex gap-2">
             <Button 
+              onClick={() => setResetDialogOpen(true)}
+              variant="outline"
+              disabled={!activities || activities.length === 0}
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset Activities
+            </Button>
+            <Button
               onClick={handleQuickUpdateToggle}
               variant={quickUpdateMode ? "secondary" : "outline"}
             >
