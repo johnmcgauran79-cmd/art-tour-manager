@@ -63,27 +63,53 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       // Get all activity bookings for these bookings
       const bookingIds = bookings.map(b => b.id);
+      const activityIds = activities.map(a => a.id);
+      
       const { data: activityBookings, error: activityBookingsError } = await supabase
         .from('activity_bookings')
-        .select('booking_id')
-        .in('booking_id', bookingIds);
+        .select('booking_id, activity_id')
+        .in('booking_id', bookingIds)
+        .in('activity_id', activityIds);
 
       if (activityBookingsError) throw activityBookingsError;
 
       // Create lookup maps
       const tourMap = new Map(tours.map(t => [t.id, t]));
-      const tourActivitiesMap = new Map<string, number>();
+      
+      // Map of tour_id to activity IDs
+      const tourActivitiesMap = new Map<string, Set<string>>();
       activities.forEach(a => {
-        tourActivitiesMap.set(a.tour_id, (tourActivitiesMap.get(a.tour_id) || 0) + 1);
+        if (!tourActivitiesMap.has(a.tour_id)) {
+          tourActivitiesMap.set(a.tour_id, new Set());
+        }
+        tourActivitiesMap.get(a.tour_id)!.add(a.id);
       });
-      const bookingActivitiesSet = new Set(activityBookings.map(ab => ab.booking_id));
+      
+      // Map of booking_id to set of activity IDs they're allocated to
+      const bookingActivitiesMap = new Map<string, Set<string>>();
+      activityBookings.forEach(ab => {
+        if (!bookingActivitiesMap.has(ab.booking_id)) {
+          bookingActivitiesMap.set(ab.booking_id, new Set());
+        }
+        bookingActivitiesMap.get(ab.booking_id)!.add(ab.activity_id);
+      });
 
       // Find bookings missing activity allocations
       const issues = bookings
         .filter(booking => {
-          const tourActivityCount = tourActivitiesMap.get(booking.tour_id) || 0;
-          const hasActivityBookings = bookingActivitiesSet.has(booking.id);
-          return tourActivityCount > 0 && !hasActivityBookings;
+          const tourActivityIds = tourActivitiesMap.get(booking.tour_id);
+          if (!tourActivityIds || tourActivityIds.size === 0) return false;
+          
+          const bookingActivityIds = bookingActivitiesMap.get(booking.id);
+          if (!bookingActivityIds || bookingActivityIds.size === 0) return true;
+          
+          // Check if booking has all tour activities allocated
+          for (const activityId of tourActivityIds) {
+            if (!bookingActivityIds.has(activityId)) {
+              return true; // Missing at least one activity
+            }
+          }
+          return false; // Has all activities
         })
         .map(booking => {
           const tour = tourMap.get(booking.tour_id);
@@ -94,7 +120,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
             tourDate: tour?.start_date || '',
             passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
             passengerCount: booking.passenger_count,
-            tourActivitiesCount: tourActivitiesMap.get(booking.tour_id) || 0,
+            tourActivitiesCount: tourActivitiesMap.get(booking.tour_id)?.size || 0,
             status: booking.status
           };
         });
