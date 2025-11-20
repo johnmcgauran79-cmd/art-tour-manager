@@ -78,11 +78,12 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       if (bookingsError) throw bookingsError;
       const bookingIds = bookings.map(b => b.id);
 
-      // Get ALL activity_bookings for these bookings
+      // Get ALL activity_bookings for these bookings (with higher limit to avoid truncation)
       const { data: activityBookings, error: activityBookingsError } = await supabase
         .from('activity_bookings')
         .select('booking_id, activity_id')
-        .in('booking_id', bookingIds);
+        .in('booking_id', bookingIds)
+        .limit(10000);
 
       if (activityBookingsError) throw activityBookingsError;
 
