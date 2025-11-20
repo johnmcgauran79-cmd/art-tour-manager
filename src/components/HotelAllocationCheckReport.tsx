@@ -19,7 +19,7 @@ export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocati
   const { data: missingAllocations, isLoading } = useQuery({
     queryKey: ['hotel-allocation-check-report'],
     queryFn: async () => {
-      // Get all bookings with accommodation required
+      // Get all bookings with accommodation required (exclude cancelled and waitlisted)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -41,6 +41,7 @@ export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocati
         `)
         .eq('accommodation_required', true)
         .neq('status', 'cancelled')
+        .neq('status', 'waitlisted')
         .order('tours(start_date)', { ascending: true });
 
       if (bookingsError) throw bookingsError;
