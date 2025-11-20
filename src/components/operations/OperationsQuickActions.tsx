@@ -23,6 +23,14 @@ export const OperationsQuickActions = () => {
       },
     },
     {
+      icon: Grid3X3,
+      label: "Non-standard Activity Bookings",
+      description: "Review all activity allocations",
+      onClick: () => {
+        setShowActivityMatrix(true);
+      },
+    },
+    {
       icon: Activity,
       label: "Activity Allocation Check",
       description: "Find missing activity allocations",
