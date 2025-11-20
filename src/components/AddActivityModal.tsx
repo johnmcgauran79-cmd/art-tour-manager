@@ -56,7 +56,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
         throw new Error('Tour ID is required');
       }
       
-      // Create the activity (no automatic allocation)
+      // Create the activity
       const { data: activity, error: activityError } = await supabase
         .from('activities')
         .insert([{
@@ -96,6 +96,39 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
       }
 
       console.log('Activity created successfully:', activity);
+
+      // Fetch all bookings for this tour (excluding cancelled)
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, passenger_count')
+        .eq('tour_id', tourId)
+        .neq('status', 'cancelled');
+
+      if (bookingsError) {
+        console.error('Error fetching bookings:', bookingsError);
+        // Don't throw - activity was created successfully, just log the error
+      }
+
+      // Create activity_bookings for all existing bookings
+      if (bookings && bookings.length > 0) {
+        const activityBookings = bookings.map(booking => ({
+          booking_id: booking.id,
+          activity_id: activity.id,
+          passengers_attending: booking.passenger_count
+        }));
+
+        const { error: allocError } = await supabase
+          .from('activity_bookings')
+          .insert(activityBookings);
+
+        if (allocError) {
+          console.error('Error creating activity allocations:', allocError);
+          // Don't throw - activity was created successfully
+        } else {
+          console.log(`Created ${bookings.length} activity allocations`);
+        }
+      }
+
       return activity;
     },
     onSuccess: (data) => {

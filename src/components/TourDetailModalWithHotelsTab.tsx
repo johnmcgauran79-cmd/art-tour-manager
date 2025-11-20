@@ -281,24 +281,10 @@ export const TourDetailModalWithHotelsTab = ({
           console.log('onActivityCreated callback received:', activity);
           setAddActivityModalOpen(false);
           
-          // Check if there are any bookings for this tour
-          const { data: bookings } = await supabase
-            .from('bookings')
-            .select('id')
-            .eq('tour_id', currentTour?.id)
-            .neq('status', 'cancelled')
-            .limit(1);
-          
-          if (bookings && bookings.length > 0) {
-            setNewlyCreatedActivity(activity);
-            setAllocationModalOpen(true);
-            console.log('Opening allocation modal for activity:', activity);
-          } else {
-            toast({
-              title: "Activity Created",
-              description: "Activity added successfully. Add bookings to allocate passengers.",
-            });
-          }
+          // Always open allocation modal - bookings were auto-allocated
+          setNewlyCreatedActivity(activity);
+          setAllocationModalOpen(true);
+          console.log('Opening allocation modal for activity:', activity);
         }}
       />
 
