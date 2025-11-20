@@ -78,14 +78,18 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
       if (bookingsError) throw bookingsError;
       const bookingIds = bookings.map(b => b.id);
 
-      // Get ALL activity_bookings for these bookings (with higher limit to avoid truncation)
-      const { data: activityBookings, error: activityBookingsError } = await supabase
+      // Get ALL activity_bookings without filtering by booking_id first
+      // to avoid hitting the 1000 row limit on filtered queries
+      const { data: allActivityBookings, error: activityBookingsError } = await supabase
         .from('activity_bookings')
-        .select('booking_id, activity_id')
-        .in('booking_id', bookingIds)
-        .limit(10000);
+        .select('booking_id, activity_id');
 
       if (activityBookingsError) throw activityBookingsError;
+
+      // Filter to only the bookings we care about
+      const activityBookings = allActivityBookings.filter(ab => 
+        bookingIds.includes(ab.booking_id)
+      );
 
       // For each booking, check if it has activities from ITS OWN tour
       const bookingsWithOwnTourActivities = new Set<string>();
