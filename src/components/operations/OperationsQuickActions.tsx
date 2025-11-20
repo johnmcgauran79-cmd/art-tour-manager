@@ -24,7 +24,7 @@ export const OperationsQuickActions = () => {
     },
     {
       icon: Activity,
-      label: "Activity Check",
+      label: "Activity Allocation Check",
       description: "Find missing activity allocations",
       onClick: () => {
         setShowActivityCheck(true);
