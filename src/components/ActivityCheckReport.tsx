@@ -19,7 +19,11 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
   const { data: missingAllocations, isLoading } = useQuery({
     queryKey: ['activity-check-report'],
     queryFn: async () => {
-      // Get all bookings with their tour info
+      // Get all bookings with their tour info (only future or recent tours - within last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
+
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -39,6 +43,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
           )
         `)
         .neq('status', 'cancelled')
+        .gte('tours.start_date', cutoffDate)
         .order('tours(start_date)', { ascending: true });
 
       if (bookingsError) throw bookingsError;
