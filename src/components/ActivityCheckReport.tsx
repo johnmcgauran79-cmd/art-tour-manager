@@ -63,13 +63,11 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       // Get all activity bookings for these bookings
       const bookingIds = bookings.map(b => b.id);
-      const activityIds = activities.map(a => a.id);
       
       const { data: activityBookings, error: activityBookingsError } = await supabase
         .from('activity_bookings')
         .select('booking_id, activity_id')
-        .in('booking_id', bookingIds)
-        .in('activity_id', activityIds);
+        .in('booking_id', bookingIds);
 
       if (activityBookingsError) throw activityBookingsError;
 
