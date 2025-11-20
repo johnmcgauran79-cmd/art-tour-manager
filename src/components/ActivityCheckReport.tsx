@@ -138,6 +138,24 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       console.log('Debug: Issues found:', issues.length);
       console.log('Debug: First 3 issues:', issues.slice(0, 3));
+      
+      // Deep dive on first issue
+      if (issues.length > 0) {
+        const firstIssue = issues[0];
+        console.log('Debug: First issue booking ID:', firstIssue.bookingId);
+        console.log('Debug: First issue tour ID:', firstIssue.tourId);
+        console.log('Debug: Activity bookings for this booking:', 
+          activityBookings.filter(ab => ab.booking_id === firstIssue.bookingId)
+        );
+        console.log('Debug: All activities for this tour:', 
+          activities.filter(a => a.tour_id === firstIssue.tourId).map(a => a.id)
+        );
+      }
+      
+      // Also log tours being checked
+      console.log('Debug: Tours with activities being checked:', 
+        toursWithActivities.map(t => ({ id: t.id, name: t.name, start_date: t.start_date }))
+      );
 
       return issues;
     },
