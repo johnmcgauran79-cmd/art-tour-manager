@@ -19,11 +19,30 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
   const { data: missingAllocations, isLoading } = useQuery({
     queryKey: ['activity-check-report'],
     queryFn: async () => {
-      // Get all bookings with their tour info (only future or recent tours - within last 30 days)
+      // Fetch all data upfront in bulk for better performance
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
 
+      // Get all tours with activities (only recent/future)
+      const { data: tours, error: toursError } = await supabase
+        .from('tours')
+        .select('id, name, start_date')
+        .gte('start_date', cutoffDate);
+
+      if (toursError) throw toursError;
+
+      const tourIds = tours.map(t => t.id);
+
+      // Get all activities for these tours
+      const { data: activities, error: activitiesError } = await supabase
+        .from('activities')
+        .select('id, tour_id')
+        .in('tour_id', tourIds);
+
+      if (activitiesError) throw activitiesError;
+
+      // Get all bookings for these tours (exclude cancelled)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -35,56 +54,50 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
           customers!bookings_lead_passenger_id_fkey (
             first_name,
             last_name
-          ),
-          tours!bookings_tour_id_fkey (
-            id,
-            name,
-            start_date
           )
         `)
-        .neq('status', 'cancelled')
-        .gte('tours.start_date', cutoffDate)
-        .order('tours(start_date)', { ascending: true });
+        .in('tour_id', tourIds)
+        .neq('status', 'cancelled');
 
       if (bookingsError) throw bookingsError;
 
-      // For each booking, check if it has activity allocations
-      const issues = [];
-      
-      for (const booking of bookings) {
-        // Get activities for this tour
-        const { data: tourActivities, error: tourActivitiesError } = await supabase
-          .from('activities')
-          .select('id')
-          .eq('tour_id', booking.tour_id);
+      // Get all activity bookings for these bookings
+      const bookingIds = bookings.map(b => b.id);
+      const { data: activityBookings, error: activityBookingsError } = await supabase
+        .from('activity_bookings')
+        .select('booking_id')
+        .in('booking_id', bookingIds);
 
-        if (tourActivitiesError) throw tourActivitiesError;
+      if (activityBookingsError) throw activityBookingsError;
 
-        // If tour has no activities, skip this booking
-        if (!tourActivities || tourActivities.length === 0) continue;
+      // Create lookup maps
+      const tourMap = new Map(tours.map(t => [t.id, t]));
+      const tourActivitiesMap = new Map<string, number>();
+      activities.forEach(a => {
+        tourActivitiesMap.set(a.tour_id, (tourActivitiesMap.get(a.tour_id) || 0) + 1);
+      });
+      const bookingActivitiesSet = new Set(activityBookings.map(ab => ab.booking_id));
 
-        // Check if booking has any activity allocations
-        const { data: bookingActivities, error: bookingActivitiesError } = await supabase
-          .from('activity_bookings')
-          .select('id')
-          .eq('booking_id', booking.id);
-
-        if (bookingActivitiesError) throw bookingActivitiesError;
-
-        // If booking has NO activity allocations, add to issues
-        if (!bookingActivities || bookingActivities.length === 0) {
-          issues.push({
+      // Find bookings missing activity allocations
+      const issues = bookings
+        .filter(booking => {
+          const tourActivityCount = tourActivitiesMap.get(booking.tour_id) || 0;
+          const hasActivityBookings = bookingActivitiesSet.has(booking.id);
+          return tourActivityCount > 0 && !hasActivityBookings;
+        })
+        .map(booking => {
+          const tour = tourMap.get(booking.tour_id);
+          return {
             bookingId: booking.id,
             tourId: booking.tour_id,
-            tourName: booking.tours?.name || 'Unknown Tour',
-            tourDate: booking.tours?.start_date || '',
+            tourName: tour?.name || 'Unknown Tour',
+            tourDate: tour?.start_date || '',
             passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
             passengerCount: booking.passenger_count,
-            tourActivitiesCount: tourActivities.length,
+            tourActivitiesCount: tourActivitiesMap.get(booking.tour_id) || 0,
             status: booking.status
-          });
-        }
-      }
+          };
+        });
 
       return issues;
     },
