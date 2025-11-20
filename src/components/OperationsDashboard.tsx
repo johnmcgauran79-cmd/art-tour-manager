@@ -70,9 +70,9 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
     <div className="space-y-6">
       <OperationsHeader />
 
-      <OperationsToursOverview />
-
       <OperationsQuickActions />
+
+      <OperationsToursOverview />
     </div>
   );
 };
