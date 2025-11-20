@@ -95,31 +95,6 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
     }
   };
 
-  const handleDelete = async (alert: any) => {
-    try {
-      const { error } = await supabase
-        .from('tour_alerts')
-        .delete()
-        .eq('id', alert.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Alert deleted",
-        description: "The alert has been removed.",
-      });
-      
-      refetch();
-    } catch (error) {
-      console.error('Error deleting alert:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete alert.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleAlertClick = (alert: any) => {
     const tab = alertTypeToTab[alert.alert_type] || "overview";
     navigate(`/tours/${alert.tour_id}?tab=${tab}`);
@@ -167,28 +142,16 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
           </div>
           
           {!alert.is_acknowledged && (
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAcknowledge(alert);
-                }}
-              >
-                <Check className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(alert);
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAcknowledge(alert);
+              }}
+            >
+              <Check className="h-4 w-4" />
+            </Button>
           )}
         </div>
       </div>
