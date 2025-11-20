@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet, Activity } from "lucide-react";
 import { BookingValidationReport } from "@/components/BookingValidationReport";
+import { ActivityCheckReport } from "@/components/ActivityCheckReport";
 import { useState } from "react";
 
 export const OperationsQuickActions = () => {
   const [showValidationReport, setShowValidationReport] = useState(false);
+  const [showActivityCheck, setShowActivityCheck] = useState(false);
   const reportActions = [
     {
       icon: FileText,
@@ -67,6 +69,15 @@ export const OperationsQuickActions = () => {
       active: true,
       onClick: () => {
         setShowValidationReport(true);
+      },
+    },
+    {
+      icon: Activity,
+      label: "Activity Check",
+      description: "Find missing activity allocations",
+      active: true,
+      onClick: () => {
+        setShowActivityCheck(true);
       },
     },
     {
@@ -170,6 +181,11 @@ export const OperationsQuickActions = () => {
       <BookingValidationReport 
         open={showValidationReport} 
         onOpenChange={setShowValidationReport} 
+      />
+
+      <ActivityCheckReport 
+        open={showActivityCheck} 
+        onOpenChange={setShowActivityCheck}
       />
     </div>
   );
