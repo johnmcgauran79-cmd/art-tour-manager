@@ -8,10 +8,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { AlertCircle, AlertTriangle, Info, Check, X } from "lucide-react";
 import { useGlobalTourAlerts } from "@/hooks/useGlobalTourAlerts";
-import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GlobalTourAlertsModalProps {
   open: boolean;
@@ -62,19 +62,62 @@ const alertTypeToTab: Record<string, string> = {
 
 export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsModalProps) => {
   const [showResolved, setShowResolved] = useState(false);
-  const { alerts, isLoading, unacknowledgedCount } = useGlobalTourAlerts(showResolved);
+  const { alerts, isLoading, unacknowledgedCount, refetch } = useGlobalTourAlerts(showResolved);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // We'll need to acknowledge alerts individually through their tour's hook
   const handleAcknowledge = async (alert: any) => {
-    const { acknowledgeAlert } = useTourAlerts(alert.tour_id);
-    acknowledgeAlert(alert.id);
+    try {
+      const { error } = await supabase
+        .from('tour_alerts')
+        .update({ 
+          is_acknowledged: true, 
+          acknowledged_by: (await supabase.auth.getUser()).data.user?.id,
+          acknowledged_at: new Date().toISOString()
+        })
+        .eq('id', alert.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Alert acknowledged",
+        description: "The alert has been marked as acknowledged.",
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error('Error acknowledging alert:', error);
+      toast({
+        title: "Error",
+        description: "Failed to acknowledge alert.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDelete = async (alert: any) => {
-    const { deleteAlert } = useTourAlerts(alert.tour_id);
-    deleteAlert(alert.id);
+    try {
+      const { error } = await supabase
+        .from('tour_alerts')
+        .delete()
+        .eq('id', alert.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Alert deleted",
+        description: "The alert has been removed.",
+      });
+      
+      refetch();
+    } catch (error) {
+      console.error('Error deleting alert:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete alert.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAlertClick = (alert: any) => {

@@ -8,7 +8,7 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const lastInvalidationRef = useRef<number>(0);
 
-  const { data: alerts = [], isLoading } = useQuery({
+  const { data: alerts = [], isLoading, refetch } = useQuery({
     queryKey: ["global-tour-alerts", includeResolved],
     queryFn: async () => {
       let query = supabase
@@ -83,5 +83,6 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
     isLoading,
     unacknowledgedCount,
     criticalCount,
+    refetch,
   };
 };
