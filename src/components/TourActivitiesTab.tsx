@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Printer, Mail, Bell, Check } from "lucide-react";
+import { Edit, Printer, Mail, Bell, Check, RefreshCw } from "lucide-react";
 import { useActivities } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -15,6 +15,8 @@ import { TourAlert } from "@/hooks/useTourAlerts";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -34,10 +36,14 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   // Quick Update state
   const [quickUpdateMode, setQuickUpdateMode] = useState(false);
   const [editingData, setEditingData] = useState<Record<string, { spots_available: number; activity_status: string }>>({});
+  
+  // Reset Activities state
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -169,6 +175,79 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
       }
     }));
   };
+
+  // Reset all activity allocations mutation
+  const resetActivitiesMutation = useMutation({
+    mutationFn: async () => {
+      // Fetch all bookings for this tour (excluding cancelled)
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, passenger_count')
+        .eq('tour_id', tourId)
+        .neq('status', 'cancelled');
+
+      if (bookingsError) throw bookingsError;
+      if (!bookings || bookings.length === 0) {
+        throw new Error('No bookings found for this tour');
+      }
+
+      // Fetch all activities for this tour
+      const { data: tourActivities, error: activitiesError } = await supabase
+        .from('activities')
+        .select('id')
+        .eq('tour_id', tourId);
+
+      if (activitiesError) throw activitiesError;
+      if (!tourActivities || tourActivities.length === 0) {
+        throw new Error('No activities found for this tour');
+      }
+
+      // Delete all existing activity_bookings for this tour's activities
+      const activityIds = tourActivities.map(a => a.id);
+      const { error: deleteError } = await supabase
+        .from('activity_bookings')
+        .delete()
+        .in('activity_id', activityIds);
+
+      if (deleteError) throw deleteError;
+
+      // Create new activity_bookings for all booking-activity combinations
+      const activityBookings = [];
+      for (const booking of bookings) {
+        for (const activity of tourActivities) {
+          activityBookings.push({
+            booking_id: booking.id,
+            activity_id: activity.id,
+            passengers_attending: booking.passenger_count
+          });
+        }
+      }
+
+      const { error: insertError } = await supabase
+        .from('activity_bookings')
+        .insert(activityBookings);
+
+      if (insertError) throw insertError;
+
+      return { bookingsCount: bookings.length, activitiesCount: tourActivities.length };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
+      setResetDialogOpen(false);
+      toast({
+        title: "Activities Reset",
+        description: `All ${data.bookingsCount} bookings have been allocated to all ${data.activitiesCount} activities with their passenger counts.`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset activities",
+        variant: "destructive",
+      });
+    },
+  });
 
   if (isLoading) {
     return (
@@ -392,6 +471,28 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
           defaultToEmail={selectedActivityForEmail.guide_email || ""}
         />
       )}
+
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Reset Activity Attendance</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will refresh all bookings so they have all activities allocated to them, with the passenger count set as the amount attending each activity. 
+              <br /><br />
+              <strong>Warning:</strong> This will delete all existing activity allocations and recreate them based on current bookings.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => resetActivitiesMutation.mutate()}
+              disabled={resetActivitiesMutation.isPending}
+            >
+              {resetActivitiesMutation.isPending ? "Resetting..." : "Reset Activities"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
