@@ -49,8 +49,8 @@ export const AggregatedActivityMatrixReport = ({
       // Fetch all active tours with their activities
       const { data: tours, error: toursError } = await supabase
         .from('tours')
-        .select('id, name, start_date, end_date')
-        .not('status', 'in', '(archived,cancelled)')
+        .select('id, name, start_date, end_date, status')
+        .neq('status', 'archived')
         .order('start_date', { ascending: true });
 
       if (toursError) throw toursError;
@@ -81,7 +81,8 @@ export const AggregatedActivityMatrixReport = ({
             customers!bookings_lead_passenger_id_fkey(first_name, last_name)
           `)
           .eq('tour_id', tour.id)
-          .not('status', 'in', '(cancelled,waitlisted)');
+          .neq('status', 'cancelled')
+          .neq('status', 'waitlisted');
 
         if (bookingsError) throw bookingsError;
 
