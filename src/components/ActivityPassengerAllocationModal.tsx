@@ -109,7 +109,9 @@ export const ActivityPassengerAllocationModal = ({
       if (activityBookings.length > 0) {
         const { error } = await supabase
           .from('activity_bookings')
-          .insert(activityBookings);
+          .upsert(activityBookings, {
+            onConflict: 'booking_id,activity_id'
+          });
 
         if (error) throw error;
       }
