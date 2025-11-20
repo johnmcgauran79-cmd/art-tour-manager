@@ -48,49 +48,43 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       if (bookingsError) throw bookingsError;
 
-      // Get activity counts for each tour
-      const { data: tourActivities, error: tourActivitiesError } = await supabase
-        .from('activities')
-        .select('tour_id, id');
+      // For each booking, check if it has activity allocations
+      const issues = [];
+      
+      for (const booking of bookings) {
+        // Get activities for this tour
+        const { data: tourActivities, error: tourActivitiesError } = await supabase
+          .from('activities')
+          .select('id')
+          .eq('tour_id', booking.tour_id);
 
-      if (tourActivitiesError) throw tourActivitiesError;
+        if (tourActivitiesError) throw tourActivitiesError;
 
-      // Get activity booking counts
-      const { data: activityBookings, error: activityBookingsError } = await supabase
-        .from('activity_bookings')
-        .select('booking_id');
+        // If tour has no activities, skip this booking
+        if (!tourActivities || tourActivities.length === 0) continue;
 
-      if (activityBookingsError) throw activityBookingsError;
+        // Check if booking has any activity allocations
+        const { data: bookingActivities, error: bookingActivitiesError } = await supabase
+          .from('activity_bookings')
+          .select('id')
+          .eq('booking_id', booking.id);
 
-      // Group activities by tour
-      const tourActivityCounts = tourActivities.reduce((acc, activity) => {
-        acc[activity.tour_id] = (acc[activity.tour_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+        if (bookingActivitiesError) throw bookingActivitiesError;
 
-      // Group activity bookings by booking
-      const bookingActivityCounts = activityBookings.reduce((acc, ab) => {
-        acc[ab.booking_id] = (acc[ab.booking_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // Find bookings with missing allocations
-      const issues = bookings
-        .filter(booking => {
-          const tourActivityCount = tourActivityCounts[booking.tour_id] || 0;
-          const bookingActivityCount = bookingActivityCounts[booking.id] || 0;
-          return tourActivityCount > 0 && bookingActivityCount === 0;
-        })
-        .map(booking => ({
-          bookingId: booking.id,
-          tourId: booking.tour_id,
-          tourName: booking.tours?.name || 'Unknown Tour',
-          tourDate: booking.tours?.start_date || '',
-          passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
-          passengerCount: booking.passenger_count,
-          tourActivitiesCount: tourActivityCounts[booking.tour_id] || 0,
-          status: booking.status
-        }));
+        // If booking has NO activity allocations, add to issues
+        if (!bookingActivities || bookingActivities.length === 0) {
+          issues.push({
+            bookingId: booking.id,
+            tourId: booking.tour_id,
+            tourName: booking.tours?.name || 'Unknown Tour',
+            tourDate: booking.tours?.start_date || '',
+            passengerName: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
+            passengerCount: booking.passenger_count,
+            tourActivitiesCount: tourActivities.length,
+            status: booking.status
+          });
+        }
+      }
 
       return issues;
     },
