@@ -95,7 +95,7 @@ export const OperationsQuickActions = () => {
 
       if (toursError) throw toursError;
 
-      let totalDiscrepancies = 0;
+      const bookingsWithIssues = new Set<string>();
 
       for (const tour of tours || []) {
         const { data: activities } = await supabase
@@ -130,13 +130,14 @@ export const OperationsQuickActions = () => {
             );
 
             if (!allocation || allocation.passengers_attending !== booking.passenger_count) {
-              totalDiscrepancies++;
+              bookingsWithIssues.add(booking.id);
+              break; // Stop checking activities for this booking once we found an issue
             }
           }
         }
       }
 
-      return totalDiscrepancies;
+      return bookingsWithIssues.size;
     },
   });
 
