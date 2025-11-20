@@ -313,23 +313,26 @@ export default function BookingDetail() {
               {activityBookings.length === 0 ? (
                 <p className="text-muted-foreground">No activity allocations yet</p>
               ) : (
-                <div className="space-y-4">
-                  {activityBookings.map((ab: any) => {
-                    const activity = activities.find(a => a.id === ab.activity_id);
-                    return (
-                      <div key={ab.id} className="p-4 border rounded-lg">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-medium">{activity?.name || 'Unknown Activity'}</h4>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <InfoRow label="Passengers Attending" value={ab.passengers_attending?.toString()} />
-                          <InfoRow label="Activity Date" value={activity?.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : null} />
-                          <InfoRow label="Location" value={activity?.location} />
-                          <InfoRow label="Start Time" value={activity?.start_time} />
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-sm">Activity</th>
+                        <th className="text-left py-3 px-4 font-medium text-sm">Passengers Attending</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {activityBookings.map((ab: any) => {
+                        const activity = activities.find(a => a.id === ab.activity_id);
+                        return (
+                          <tr key={ab.id} className="border-b last:border-b-0">
+                            <td className="py-3 px-4 text-sm">{activity?.name || 'Unknown Activity'}</td>
+                            <td className="py-3 px-4 text-sm">{ab.passengers_attending}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
