@@ -1,15 +1,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet, Activity } from "lucide-react";
+import { FileText, ClipboardCheck, Users, Hotel, Calendar, TrendingUp, AlertCircle, FileSpreadsheet, Activity, Grid3X3 } from "lucide-react";
 import { BookingValidationReport } from "@/components/BookingValidationReport";
 import { ActivityCheckReport } from "@/components/ActivityCheckReport";
 import { HotelAllocationCheckReport } from "@/components/HotelAllocationCheckReport";
+import { AggregatedActivityMatrixReport } from "@/components/operations/AggregatedActivityMatrixReport";
 import { useState } from "react";
 
 export const OperationsQuickActions = () => {
   const [showValidationReport, setShowValidationReport] = useState(false);
   const [showActivityCheck, setShowActivityCheck] = useState(false);
   const [showHotelCheck, setShowHotelCheck] = useState(false);
+  const [showActivityMatrix, setShowActivityMatrix] = useState(false);
   const reportActions = [
     {
       icon: FileText,
@@ -89,6 +91,15 @@ export const OperationsQuickActions = () => {
       active: true,
       onClick: () => {
         setShowHotelCheck(true);
+      },
+    },
+    {
+      icon: Grid3X3,
+      label: "Activity Matrix",
+      description: "Review all activity allocations",
+      active: true,
+      onClick: () => {
+        setShowActivityMatrix(true);
       },
     },
     {
@@ -196,12 +207,17 @@ export const OperationsQuickActions = () => {
 
       <ActivityCheckReport 
         open={showActivityCheck} 
-        onOpenChange={setShowActivityCheck}
+        onOpenChange={setShowActivityCheck} 
       />
-
+      
       <HotelAllocationCheckReport 
         open={showHotelCheck} 
-        onOpenChange={setShowHotelCheck}
+        onOpenChange={setShowHotelCheck} 
+      />
+
+      <AggregatedActivityMatrixReport 
+        open={showActivityMatrix} 
+        onOpenChange={setShowActivityMatrix} 
       />
     </div>
   );
