@@ -20,15 +20,13 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
     queryKey: ['activity-check-report'],
     queryFn: async () => {
       // Fetch all data upfront in bulk for better performance
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const cutoffDate = thirtyDaysAgo.toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
 
-      // Get all tours with activities (only recent/future)
+      // Get all tours with activities (only future tours)
       const { data: tours, error: toursError } = await supabase
         .from('tours')
         .select('id, name, start_date')
-        .gte('start_date', cutoffDate);
+        .gte('start_date', today);
 
       if (toursError) throw toursError;
 
@@ -42,7 +40,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
 
       if (activitiesError) throw activitiesError;
 
-      // Get all bookings for these tours (exclude cancelled)
+      // Get all bookings for these tours (exclude cancelled and waitlisted)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
@@ -57,7 +55,8 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
           )
         `)
         .in('tour_id', tourIds)
-        .neq('status', 'cancelled');
+        .neq('status', 'cancelled')
+        .neq('status', 'waitlisted');
 
       if (bookingsError) throw bookingsError;
 
