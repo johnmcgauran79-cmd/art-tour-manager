@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ interface EditActivityModalProps {
 }
 
 export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivityModalProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -201,9 +203,12 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
   };
 
   const handleDelete = () => {
-    if (confirm("Are you sure you want to delete this activity?")) {
-      deleteActivity.mutate();
-    }
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    deleteActivity.mutate();
+    setDeleteDialogOpen(false);
   };
 
   if (!activity) return null;
@@ -517,6 +522,26 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           </div>
         </form>
       </DialogContent>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{activity?.name}"? This will also remove all booking allocations for this activity. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Activity
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
