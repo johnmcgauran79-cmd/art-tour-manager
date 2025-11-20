@@ -172,6 +172,20 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   }, [open, activities, formData.passenger_count]);
   
+  // Set default dates to tour start/end when tour is selected and no hotels exist
+  useEffect(() => {
+    if (formData.tour_id) {
+      const selectedTour = tours?.find(t => t.id === formData.tour_id);
+      if (selectedTour && hotels.length === 0 && formData.accommodation_required) {
+        setFormData(prev => ({
+          ...prev,
+          checkInDate: selectedTour.start_date,
+          checkOutDate: selectedTour.end_date,
+        }));
+      }
+    }
+  }, [formData.tour_id, hotels, formData.accommodation_required, tours]);
+
   useEffect(() => {
     if (preSelectedTourId) {
       if (preSelectedTourStartDate && preSelectedTourEndDate) {
