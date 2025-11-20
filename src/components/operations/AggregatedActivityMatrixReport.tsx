@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { AlertTriangle, Grid3X3, Loader2 } from "lucide-react";
+import { AlertTriangle, Grid3X3, Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface AggregatedActivityMatrixReportProps {
@@ -35,6 +35,7 @@ export const AggregatedActivityMatrixReport = ({
 }: AggregatedActivityMatrixReportProps) => {
   const [discrepancies, setDiscrepancies] = useState<DiscrepancyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -175,17 +176,47 @@ export const AggregatedActivityMatrixReport = ({
     onOpenChange(false);
   };
 
-  const groupedByTour = discrepancies.reduce((acc, item) => {
+  const toggleBooking = (bookingId: string) => {
+    const newExpanded = new Set(expandedBookings);
+    if (newExpanded.has(bookingId)) {
+      newExpanded.delete(bookingId);
+    } else {
+      newExpanded.add(bookingId);
+    }
+    setExpandedBookings(newExpanded);
+  };
+
+  // Group discrepancies by tour and then by booking
+  const groupedByTourAndBooking = discrepancies.reduce((acc, item) => {
     if (!acc[item.tourId]) {
       acc[item.tourId] = {
         tourName: item.tourName,
         tourStartDate: item.tourStartDate,
+        bookings: {}
+      };
+    }
+    if (!acc[item.tourId].bookings[item.bookingId]) {
+      acc[item.tourId].bookings[item.bookingId] = {
+        leadPassenger: item.leadPassenger,
+        passengerCount: item.passengerCount,
+        groupName: item.groupName,
+        status: item.status,
         discrepancies: []
       };
     }
-    acc[item.tourId].discrepancies.push(item);
+    acc[item.tourId].bookings[item.bookingId].discrepancies.push(item);
     return acc;
-  }, {} as Record<string, { tourName: string; tourStartDate: string; discrepancies: DiscrepancyData[] }>);
+  }, {} as Record<string, { 
+    tourName: string; 
+    tourStartDate: string; 
+    bookings: Record<string, {
+      leadPassenger: string;
+      passengerCount: number;
+      groupName: string;
+      status: string;
+      discrepancies: DiscrepancyData[];
+    }> 
+  }>);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -218,7 +249,7 @@ export const AggregatedActivityMatrixReport = ({
                     {discrepancies.length} Discrepancies Found
                   </p>
                   <p className="text-sm text-amber-700 mt-1">
-                    Activity allocations don't match booking passenger counts across {Object.keys(groupedByTour).length} tour(s).
+                    Activity allocations don't match booking passenger counts across {Object.keys(groupedByTourAndBooking).length} tour(s).
                   </p>
                 </div>
               </div>
@@ -235,66 +266,106 @@ export const AggregatedActivityMatrixReport = ({
               </div>
             </div>
 
-            {Object.entries(groupedByTour).map(([tourId, tourData]) => (
-              <div key={tourId} className="border rounded-lg overflow-hidden">
-                <div className="bg-muted p-4">
-                  <h3 className="font-semibold text-lg">{tourData.tourName}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateToDDMMYYYY(tourData.tourStartDate)} • {tourData.discrepancies.length} discrepancies
-                  </p>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Lead Passenger</TableHead>
-                      <TableHead>Group</TableHead>
-                      <TableHead className="text-center">Booking Pax</TableHead>
-                      <TableHead>Activity</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead className="text-center">Allocated</TableHead>
-                      <TableHead>Issue</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {tourData.discrepancies.map((disc, idx) => (
-                      <TableRow key={`${disc.bookingId}-${disc.activityId}-${idx}`}>
-                        <TableCell className="font-medium">{disc.leadPassenger}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {disc.groupName || '-'}
-                        </TableCell>
-                        <TableCell className="text-center font-semibold">
-                          {disc.passengerCount}
-                        </TableCell>
-                        <TableCell>{disc.activityName}</TableCell>
-                        <TableCell className="text-sm">
-                          {disc.activityDate ? formatDateToDDMMYYYY(disc.activityDate) : '-'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
-                            {disc.allocatedCount}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
-                            {disc.discrepancyType === 'missing' ? 'Missing' : 'Mismatch'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewBooking(disc.tourId, disc.bookingId)}
-                          >
-                            View
-                          </Button>
-                        </TableCell>
+            {Object.entries(groupedByTourAndBooking).map(([tourId, tourData]) => {
+              const totalBookings = Object.keys(tourData.bookings).length;
+              const totalDiscrepancies = Object.values(tourData.bookings).reduce(
+                (sum, booking) => sum + booking.discrepancies.length, 
+                0
+              );
+              
+              return (
+                <div key={tourId} className="border rounded-lg overflow-hidden">
+                  <div className="bg-muted p-4">
+                    <h3 className="font-semibold text-lg">{tourData.tourName}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDateToDDMMYYYY(tourData.tourStartDate)} • {totalBookings} booking{totalBookings !== 1 ? 's' : ''} with {totalDiscrepancies} discrepanc{totalDiscrepancies !== 1 ? 'ies' : 'y'}
+                    </p>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12"></TableHead>
+                        <TableHead>Lead Passenger</TableHead>
+                        <TableHead>Group</TableHead>
+                        <TableHead className="text-center">Booking Pax</TableHead>
+                        <TableHead className="text-center">Issues</TableHead>
+                        <TableHead></TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ))}
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(tourData.bookings).map(([bookingId, bookingData]) => {
+                        const isExpanded = expandedBookings.has(bookingId);
+                        const issueCount = bookingData.discrepancies.length;
+                        
+                        return (
+                          <>
+                            <TableRow key={bookingId} className="cursor-pointer hover:bg-muted/50">
+                              <TableCell onClick={() => toggleBooking(bookingId)}>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                  {isExpanded ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </TableCell>
+                              <TableCell className="font-medium" onClick={() => toggleBooking(bookingId)}>
+                                {bookingData.leadPassenger}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground" onClick={() => toggleBooking(bookingId)}>
+                                {bookingData.groupName || '-'}
+                              </TableCell>
+                              <TableCell className="text-center font-semibold" onClick={() => toggleBooking(bookingId)}>
+                                {bookingData.passengerCount}
+                              </TableCell>
+                              <TableCell className="text-center" onClick={() => toggleBooking(bookingId)}>
+                                <Badge variant="outline" className="bg-destructive/10 text-destructive">
+                                  {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleViewBooking(tourId, bookingId)}
+                                >
+                                  View
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                            {isExpanded && bookingData.discrepancies.map((disc, idx) => (
+                              <TableRow key={`${bookingId}-${disc.activityId}-${idx}`} className="bg-muted/30">
+                                <TableCell></TableCell>
+                                <TableCell colSpan={2} className="pl-8">
+                                  <div className="flex items-center gap-2">
+                                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">{disc.activityName}</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {disc.activityDate ? formatDateToDDMMYYYY(disc.activityDate) : '-'}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
+                                    {disc.allocatedCount} allocated
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
+                                    {disc.discrepancyType === 'missing' ? 'Missing' : 'Mismatch'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell></TableCell>
+                              </TableRow>
+                            ))}
+                          </>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })}
           </div>
         )}
       </DialogContent>
