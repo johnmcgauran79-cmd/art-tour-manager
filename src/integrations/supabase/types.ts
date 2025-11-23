@@ -209,6 +209,102 @@ export type Database = {
         }
         Relationships: []
       }
+      automated_email_log: {
+        Row: {
+          booking_id: string
+          days_before_send: number
+          email_log_id: string | null
+          id: string
+          rule_id: string
+          sent_at: string | null
+          tour_start_date: string
+        }
+        Insert: {
+          booking_id: string
+          days_before_send: number
+          email_log_id?: string | null
+          id?: string
+          rule_id: string
+          sent_at?: string | null
+          tour_start_date: string
+        }
+        Update: {
+          booking_id?: string
+          days_before_send?: number
+          email_log_id?: string | null
+          id?: string
+          rule_id?: string
+          sent_at?: string | null
+          tour_start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_email_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_email_log_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_email_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automated_email_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automated_email_rules: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          days_before_tour: number
+          email_template_id: string | null
+          id: string
+          is_active: boolean
+          rule_name: string
+          rule_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          days_before_tour: number
+          email_template_id?: string | null
+          id?: string
+          is_active?: boolean
+          rule_name: string
+          rule_type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          days_before_tour?: number
+          email_template_id?: string | null
+          id?: string
+          is_active?: boolean
+          rule_name?: string
+          rule_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_email_rules_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_assignments: {
         Row: {
           agent_id: string
