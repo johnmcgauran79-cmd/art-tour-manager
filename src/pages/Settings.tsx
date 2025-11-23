@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
 import { EmailTemplatesManagement } from "@/components/EmailTemplatesManagement";
+import { AutomatedEmailRulesManagement } from "@/components/AutomatedEmailRulesManagement";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { SystemSettings } from "@/components/SystemSettings";
 import { BookingValidationReport } from "@/components/BookingValidationReport";
@@ -30,8 +31,9 @@ export const Settings = ({ onBack }: SettingsProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-8">
+        <TabsList className="grid w-full grid-cols-4 mb-8">
           <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
+          <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="system">System Settings</TabsTrigger>
         </TabsList>
@@ -46,6 +48,20 @@ export const Settings = ({ onBack }: SettingsProps) => {
             </CardHeader>
             <CardContent>
               <EmailTemplatesManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="automated-emails" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Automated Email Rules</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure automated emails to be sent at specific intervals before tours start.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AutomatedEmailRulesManagement />
             </CardContent>
           </Card>
         </TabsContent>
