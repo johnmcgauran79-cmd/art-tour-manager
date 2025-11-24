@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { useAuth } from "@/hooks/useAuth";
+import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 
 export interface Booking {
   id: string;
@@ -108,16 +109,22 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) =>
 };
 
 export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due' | null, page: number = 1, pageSize: number = 50) => {
+  const { data: settings } = useGeneralSettings();
+  
   return useQuery({
-    queryKey: ['bookings', 'filtered', filterType, page, pageSize],
+    queryKey: ['bookings', 'filtered', filterType, page, pageSize, settings],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
+      // Get settings or use defaults
+      const depositsOwingDays = settings?.find(s => s.setting_key === 'deposits_owing_days')?.setting_value || 14;
+      const paymentDueDays = settings?.find(s => s.setting_key === 'payment_due_days')?.setting_value || 80;
+
       if (filterType === 'deposits_owing') {
-        // Bookings with status 'invoiced' created more than 14 days ago
-        const fourteenDaysAgo = new Date();
-        fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+        // Bookings with status 'invoiced' created more than X days ago (configurable)
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - depositsOwingDays);
         
         const { data, error, count } = await supabase
           .from('bookings')
@@ -128,7 +135,7 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
           .eq('status', 'invoiced')
-          .lt('created_at', fourteenDaysAgo.toISOString())
+          .lt('created_at', cutoffDate.toISOString())
           .order('created_at', { ascending: false })
           .range(start, end);
         
@@ -136,10 +143,10 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
         return { data: data || [], count: count || 0 };
         
       } else if (filterType === 'payment_due') {
-        // Bookings not fully paid with tours starting in less than 80 days
+        // Bookings not fully paid with tours starting in less than X days (configurable)
         // Exclude hosts (don't pay), cancelled, and waitlisted bookings
-        const eightyDaysFromNow = new Date();
-        eightyDaysFromNow.setDate(eightyDaysFromNow.getDate() + 80);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() + paymentDueDays);
         
         const { data, error, count } = await supabase
           .from('bookings')
@@ -153,7 +160,7 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
-          .lt('tours.start_date', eightyDaysFromNow.toISOString())
+          .lt('tours.start_date', cutoffDate.toISOString())
           .gte('tours.start_date', new Date().toISOString().split('T')[0]) // Tour hasn't started yet
           .order('created_at', { ascending: false })
           .range(start, end);
@@ -165,27 +172,33 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
       // Default return empty
       return { data: [], count: 0 };
     },
-    enabled: filterType !== null,
+    enabled: filterType !== null && settings !== undefined,
   });
 };
 
 export const useFilterCounts = () => {
+  const { data: settings } = useGeneralSettings();
+  
   return useQuery({
-    queryKey: ['bookings', 'filter-counts'],
+    queryKey: ['bookings', 'filter-counts', settings],
     queryFn: async () => {
-      // Get deposits owing count
-      const fourteenDaysAgo = new Date();
-      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+      // Get settings or use defaults
+      const depositsOwingDays = settings?.find(s => s.setting_key === 'deposits_owing_days')?.setting_value || 14;
+      const paymentDueDays = settings?.find(s => s.setting_key === 'payment_due_days')?.setting_value || 80;
+
+      // Count deposits owing
+      const cutoffDateDeposits = new Date();
+      cutoffDateDeposits.setDate(cutoffDateDeposits.getDate() - depositsOwingDays);
       
       const { count: depositsOwingCount } = await supabase
         .from('bookings')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'invoiced')
-        .lt('created_at', fourteenDaysAgo.toISOString());
+        .lt('created_at', cutoffDateDeposits.toISOString());
 
-      // Get payment due count
-      const eightyDaysFromNow = new Date();
-      eightyDaysFromNow.setDate(eightyDaysFromNow.getDate() + 80);
+      // Count final payments due
+      const cutoffDatePayments = new Date();
+      cutoffDatePayments.setDate(cutoffDatePayments.getDate() + paymentDueDays);
       
       const { count: paymentDueCount } = await supabase
         .from('bookings')
@@ -194,7 +207,7 @@ export const useFilterCounts = () => {
         .neq('status', 'host')
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted')
-        .lt('tours.start_date', eightyDaysFromNow.toISOString())
+        .lt('tours.start_date', cutoffDatePayments.toISOString())
         .gte('tours.start_date', new Date().toISOString().split('T')[0]);
 
       return {
@@ -202,6 +215,7 @@ export const useFilterCounts = () => {
         paymentDue: paymentDueCount || 0,
       };
     },
+    enabled: settings !== undefined,
   });
 };
 
