@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, TrendingUp } from "lucide-react";
-import { useBookings } from "@/hooks/useBookings";
+import { useBookings, useFilterCounts } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { BookingCard } from "@/components/cards/BookingCard";
@@ -27,9 +27,13 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
   const { userRole } = useAuth();
+  const { data: filterCounts } = useFilterCounts();
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
+  
+  // Calculate combined count for deposits owing and final payments due
+  const statusUpdateCount = (filterCounts?.depositsOwing || 0) + (filterCounts?.paymentDue || 0);
 
   // Calculate bookings this month
   const currentMonth = new Date().getMonth();
@@ -100,8 +104,17 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                 <Button 
                   onClick={onBulkStatusUpdate} 
                   variant="outline"
+                  className="relative"
                 >
                   Update Status
+                  {statusUpdateCount > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="ml-2 px-2 py-0.5 text-xs"
+                    >
+                      {statusUpdateCount}
+                    </Badge>
+                  )}
                 </Button>
               )}
               {!isAgent && (
