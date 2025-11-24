@@ -211,28 +211,40 @@ export type Database = {
       }
       automated_email_log: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           booking_id: string
           days_before_send: number
           email_log_id: string | null
           id: string
+          rejection_reason: string | null
           rule_id: string
           sent_at: string | null
           tour_start_date: string
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           booking_id: string
           days_before_send: number
           email_log_id?: string | null
           id?: string
+          rejection_reason?: string | null
           rule_id: string
           sent_at?: string | null
           tour_start_date: string
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           booking_id?: string
           days_before_send?: number
           email_log_id?: string | null
           id?: string
+          rejection_reason?: string | null
           rule_id?: string
           sent_at?: string | null
           tour_start_date?: string
