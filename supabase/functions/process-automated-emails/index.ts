@@ -70,46 +70,61 @@ serve(async (req) => {
         // Process each booking
         for (const booking of bookings || []) {
           try {
-            // Check if email already sent for this booking/rule combination
+            // Check if email already logged for this booking/rule combination
             const { data: existingLog } = await supabase
               .from('automated_email_log')
-              .select('id')
+              .select('id, approval_status')
               .eq('booking_id', booking.id)
               .eq('rule_id', rule.id)
               .single();
 
             if (existingLog) {
-              console.log(`Email already sent for booking ${booking.id}, rule ${rule.rule_name}`);
-              continue;
-            }
+              console.log(`Email already logged for booking ${booking.id}, rule ${rule.rule_name}, status: ${existingLog.approval_status}`);
+              
+              // If approved, send the email
+              if (existingLog.approval_status === 'approved') {
+                console.log(`Sending approved email for booking ${booking.id}`);
+                
+                const { data: emailResult, error: emailError } = await supabase.functions.invoke(
+                  'send-booking-confirmation',
+                  {
+                    body: {
+                      bookingId: booking.id,
+                      customSubject: rule.email_templates?.subject_template,
+                      customContent: rule.email_templates?.content_template,
+                      fromEmail: rule.email_templates?.from_email,
+                      isAutomated: true
+                    }
+                  }
+                );
 
-            // Send the email via send-booking-confirmation edge function
-            const { data: emailResult, error: emailError } = await supabase.functions.invoke(
-              'send-booking-confirmation',
-              {
-                body: {
-                  bookingId: booking.id,
-                  customSubject: rule.email_templates?.subject_template,
-                  customContent: rule.email_templates?.content_template,
-                  fromEmail: rule.email_templates?.from_email,
-                  isAutomated: true
+                if (emailError) {
+                  console.error(`Error sending approved email for booking ${booking.id}:`, emailError);
+                  errors.push({ 
+                    booking: booking.id, 
+                    rule: rule.rule_name, 
+                    error: emailError 
+                  });
+                  continue;
                 }
-              }
-            );
 
-            if (emailError) {
-              console.error(`Error sending email for booking ${booking.id}:`, emailError);
-              errors.push({ 
-                booking: booking.id, 
-                rule: rule.rule_name, 
-                error: emailError 
-              });
+                // Update status to sent
+                await supabase
+                  .from('automated_email_log')
+                  .update({ 
+                    approval_status: 'sent',
+                    email_log_id: emailResult?.emailLogId 
+                  })
+                  .eq('id', existingLog.id);
+
+                console.log(`Email sent successfully for booking ${booking.id}`);
+                totalEmailsSent++;
+              }
+              
               continue;
             }
 
-            console.log(`Email sent successfully for booking ${booking.id}`);
-
-            // Log the sent email
+            // Create pending approval record
             const { error: logError } = await supabase
               .from('automated_email_log')
               .insert({
@@ -117,14 +132,20 @@ serve(async (req) => {
                 rule_id: rule.id,
                 tour_start_date: booking.tour.start_date,
                 days_before_send: rule.days_before_tour,
-                email_log_id: emailResult?.emailLogId
+                approval_status: 'pending_approval'
               });
 
             if (logError) {
-              console.error('Error logging sent email:', logError);
+              console.error('Error creating approval record:', logError);
+              errors.push({ 
+                booking: booking.id, 
+                rule: rule.rule_name, 
+                error: logError 
+              });
+            } else {
+              console.log(`Created pending approval for booking ${booking.id}`);
             }
 
-            totalEmailsSent++;
           } catch (bookingError) {
             console.error(`Error processing booking ${booking.id}:`, bookingError);
             errors.push({ 

@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { OperationsHeader } from "@/components/operations/OperationsHeader";
 import { OperationsQuickActions } from "@/components/operations/OperationsQuickActions";
 import { OperationsToursOverview } from "@/components/operations/OperationsToursOverview";
+import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
 
 interface OperationsDashboardProps {
   onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
@@ -69,6 +70,8 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
   return (
     <div className="space-y-6">
       <OperationsHeader />
+
+      <PendingEmailApprovals />
 
       <OperationsQuickActions />
 
