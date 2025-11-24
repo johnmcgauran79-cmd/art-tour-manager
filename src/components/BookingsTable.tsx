@@ -93,8 +93,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
               {onViewAnalytics && !isAgent && (
                 <Button 
                   onClick={onViewAnalytics} 
-                  variant="secondary"
-                  className="bg-secondary hover:bg-secondary/80"
+                  variant="outline"
                 >
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Analytics
@@ -103,8 +102,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
               {onBulkStatusUpdate && !isAgent && (
                 <Button 
                   onClick={onBulkStatusUpdate} 
-                  variant="outline"
-                  className="relative"
+                  className="bg-brand-yellow hover:bg-brand-yellow/90 text-brand-navy relative"
                 >
                   Update Status
                   {statusUpdateCount > 0 && (
