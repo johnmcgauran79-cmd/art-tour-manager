@@ -22,6 +22,9 @@ import { useTours } from "@/hooks/useTours";
 import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useBookingAuditLog } from "@/hooks/useBookingAuditLog";
+import { BookingAuditTrail } from "@/components/BookingAuditTrail";
+import { Separator } from "@/components/ui/separator";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -52,6 +55,7 @@ export default function BookingDetail() {
   const { data: activities = [] } = useActivities(booking?.tour_id || '');
   const { data: hotels = [] } = useHotels(booking?.tour_id || '');
   const { data: comments = [] } = useBookingComments(booking?.id || '');
+  const { data: auditLog = [] } = useBookingAuditLog(booking?.id);
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
@@ -218,7 +222,7 @@ export default function BookingDetail() {
             </TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
               {!isMobile && <MessageSquare className="h-4 w-4" />}
-              <span>Comments ({comments.length})</span>
+              <span>History ({comments.length + auditLog.length})</span>
             </TabsTrigger>
           </TabsList>
 
@@ -373,8 +377,18 @@ export default function BookingDetail() {
             </div>
           </TabsContent>
 
-          <TabsContent value="comments" className="space-y-4 mt-6">
-            <BookingCommentsSection bookingId={booking.id} />
+          <TabsContent value="comments" className="space-y-6 mt-6">
+            <div className="bg-card rounded-lg border p-6">
+              <h3 className="text-lg font-semibold mb-4">Audit Trail</h3>
+              <BookingAuditTrail entries={auditLog} />
+            </div>
+            
+            <Separator />
+            
+            <div className="bg-card rounded-lg border p-6">
+              <h3 className="text-lg font-semibold mb-4">Comments</h3>
+              <BookingCommentsSection bookingId={booking.id} />
+            </div>
           </TabsContent>
         </Tabs>
 
