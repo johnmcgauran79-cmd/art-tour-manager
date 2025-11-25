@@ -85,7 +85,10 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
     return changes;
   };
 
-  if (entries.length === 0) {
+  // Filter out generic UPDATE_BOOKING entries since specific changes are tracked separately
+  const filteredEntries = entries.filter(entry => entry.operation_type !== 'UPDATE_BOOKING');
+
+  if (filteredEntries.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <FileText className="mx-auto h-12 w-12 mb-2 opacity-50" />
@@ -106,7 +109,7 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entries.map((entry) => {
+          {filteredEntries.map((entry) => {
             const userName = entry.profiles
               ? `${entry.profiles.first_name || ''} ${entry.profiles.last_name || ''}`.trim() || entry.profiles.email || 'Unknown User'
               : 'System';
