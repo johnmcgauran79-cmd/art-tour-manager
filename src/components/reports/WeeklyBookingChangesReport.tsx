@@ -125,6 +125,7 @@ export const WeeklyBookingChangesReport = () => {
 
   const formatOperationType = (type: string): string => {
     const typeMap: Record<string, string> = {
+      'CREATE': 'New Booking',
       'CREATE_BOOKING': 'New Booking',
       'ADD_HOTEL_TO_BOOKING': 'Hotel Added',
       'UPDATE_HOTEL_BOOKING': 'Hotel Updated',
