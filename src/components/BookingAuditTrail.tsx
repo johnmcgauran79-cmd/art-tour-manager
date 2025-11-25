@@ -1,6 +1,7 @@
 import { AuditLogEntry } from "@/hooks/useBookingAuditLog";
-import { formatDistanceToNow } from "date-fns";
-import { User, Clock, FileText } from "lucide-react";
+import { format } from "date-fns";
+import { FileText } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface BookingAuditTrailProps {
   entries: AuditLogEntry[];
@@ -59,9 +60,7 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
     }
 
     if (operation === 'ADD_HOTEL_TO_BOOKING') {
-      changes.push(`Check-in: ${details.check_in || 'TBD'}`);
-      changes.push(`Check-out: ${details.check_out || 'TBD'}`);
-      changes.push(`Bedding: ${details.bedding || 'TBD'}`);
+      changes.push(`Check-in: ${details.check_in || 'TBD'}, Check-out: ${details.check_out || 'TBD'}, Bedding: ${details.bedding || 'TBD'}`);
     }
 
     if (operation === 'UPDATE_HOTEL_BOOKING') {
@@ -96,43 +95,47 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
   }
 
   return (
-    <div className="space-y-4">
-      {entries.map((entry) => {
-        const userName = entry.profiles
-          ? `${entry.profiles.first_name || ''} ${entry.profiles.last_name || ''}`.trim() || entry.profiles.email || 'Unknown User'
-          : 'System';
-        
-        const changes = formatChangeDetails(entry.operation_type, entry.details);
-
-        return (
-          <div key={entry.id} className="border rounded-lg p-4 space-y-2">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-medium">{formatOperationType(entry.operation_type)}</span>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>{formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}</span>
-              </div>
-            </div>
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-[180px]">Date & Time</TableHead>
+            <TableHead className="w-[150px]">User</TableHead>
+            <TableHead className="w-[180px]">Action</TableHead>
+            <TableHead>Changes</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {entries.map((entry) => {
+            const userName = entry.profiles
+              ? `${entry.profiles.first_name || ''} ${entry.profiles.last_name || ''}`.trim() || entry.profiles.email || 'Unknown User'
+              : 'System';
             
-            <div className="text-sm text-muted-foreground">
-              by {userName}
-            </div>
+            const changes = formatChangeDetails(entry.operation_type, entry.details);
 
-            {changes.length > 0 && (
-              <div className="mt-2 pl-6 border-l-2 border-border space-y-1">
-                {changes.map((change, idx) => (
-                  <div key={idx} className="text-sm text-foreground">
-                    {change}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+            return (
+              <TableRow key={entry.id}>
+                <TableCell className="font-medium text-sm">
+                  {format(new Date(entry.timestamp), 'dd/MM/yyyy HH:mm')}
+                </TableCell>
+                <TableCell className="text-sm">{userName}</TableCell>
+                <TableCell className="text-sm">{formatOperationType(entry.operation_type)}</TableCell>
+                <TableCell className="text-sm">
+                  {changes.length > 0 ? (
+                    <ul className="list-disc list-inside space-y-1">
+                      {changes.map((change, idx) => (
+                        <li key={idx}>{change}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
     </div>
   );
 };
