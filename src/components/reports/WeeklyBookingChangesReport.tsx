@@ -68,6 +68,10 @@ export const WeeklyBookingChangesReport = () => {
       // Process each booking's operations
       bookingGroups.forEach((entries, bookingId) => {
         const booking = bookings?.find(b => b.id === bookingId);
+        
+        // Skip if booking no longer exists (was deleted)
+        if (!booking) return;
+        
         const customerName = booking?.customers 
           ? `${booking.customers.first_name} ${booking.customers.last_name}`
           : 'Unknown';
