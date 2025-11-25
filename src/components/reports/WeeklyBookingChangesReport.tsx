@@ -51,28 +51,71 @@ export const WeeklyBookingChangesReport = () => {
         .select('id, first_name, last_name, email')
         .in('id', userIds);
 
-      // Map data together
-      const mappedChanges: WeeklyChange[] = auditData?.map(entry => {
-        const booking = bookings?.find(b => b.id === entry.record_id);
-        const profile = profiles?.find(p => p.id === entry.user_id);
+      // Group operations by booking_id to consolidate new bookings
+      const bookingGroups = new Map<string, typeof auditData>();
+      auditData?.forEach(entry => {
+        const bookingId = entry.record_id;
+        if (!bookingId) return;
         
-        return {
-          id: entry.id,
-          timestamp: entry.timestamp,
-          operation_type: entry.operation_type,
-          booking_id: entry.record_id || '',
-          customer_name: booking?.customers 
-            ? `${booking.customers.first_name} ${booking.customers.last_name}`
-            : 'Unknown',
-          tour_name: booking?.tours?.name || 'Unknown Tour',
-          user_name: profile 
-            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-            : 'System'
-        };
-      }) || [];
+        if (!bookingGroups.has(bookingId)) {
+          bookingGroups.set(bookingId, []);
+        }
+        bookingGroups.get(bookingId)!.push(entry);
+      });
 
-      // Filter out generic UPDATE_BOOKING entries
-      return mappedChanges.filter(change => change.operation_type !== 'UPDATE_BOOKING');
+      const consolidatedChanges: WeeklyChange[] = [];
+
+      // Process each booking's operations
+      bookingGroups.forEach((entries, bookingId) => {
+        const booking = bookings?.find(b => b.id === bookingId);
+        const customerName = booking?.customers 
+          ? `${booking.customers.first_name} ${booking.customers.last_name}`
+          : 'Unknown';
+        const tourName = booking?.tours?.name || 'Unknown Tour';
+
+        // Check if this booking was created in this period
+        const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING');
+        
+        if (createEntry) {
+          // This is a new booking - show only one line
+          const profile = profiles?.find(p => p.id === createEntry.user_id);
+          consolidatedChanges.push({
+            id: createEntry.id,
+            timestamp: createEntry.timestamp,
+            operation_type: 'CREATE_BOOKING',
+            booking_id: bookingId,
+            customer_name: customerName,
+            tour_name: tourName,
+            user_name: profile 
+              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+              : 'System'
+          });
+        } else {
+          // This is an update to an existing booking - show individual changes
+          entries.forEach(entry => {
+            // Skip generic UPDATE_BOOKING entries
+            if (entry.operation_type === 'UPDATE_BOOKING') return;
+            
+            const profile = profiles?.find(p => p.id === entry.user_id);
+            consolidatedChanges.push({
+              id: entry.id,
+              timestamp: entry.timestamp,
+              operation_type: entry.operation_type,
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System'
+            });
+          });
+        }
+      });
+
+      // Sort by timestamp descending
+      return consolidatedChanges.sort((a, b) => 
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
     },
   });
 
