@@ -19,6 +19,9 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
 import { useAuth } from "@/hooks/useAuth";
+import { useBookingAuditLog } from "@/hooks/useBookingAuditLog";
+import { BookingAuditTrail } from "./BookingAuditTrail";
+import { Separator } from "./ui/separator";
 
 interface Booking {
   id: string;
@@ -95,6 +98,7 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
   const { data: activities = [] } = useActivities(booking?.tour_id || '');
   const { data: hotels = [] } = useHotels(booking?.tour_id || '');
   const { data: comments = [] } = useBookingComments(booking?.id || '');
+  const { data: auditLog = [] } = useBookingAuditLog(booking?.id);
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
@@ -194,7 +198,7 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
               </TabsTrigger>
               <TabsTrigger value="communication" className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
-                Comments
+                History
               </TabsTrigger>
             </TabsList>
 
@@ -371,42 +375,51 @@ export const BookingDetailModal = ({ booking, open, onOpenChange, defaultTab = "
             </TabsContent>
 
             <TabsContent value="communication" className="space-y-4">
-              {comments.length === 0 ? (
-                <Alert>
-                  <MessageSquare className="h-4 w-4" />
-                  <AlertDescription>
-                    No comments for this booking yet.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <div className="space-y-3">
-                  {comments.map((comment: any) => (
-                    <div key={comment.id} className="border rounded-lg p-4 space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={comment.is_internal ? "secondary" : "outline"}>
-                            {comment.is_internal ? 'Internal' : 'Public'}
-                          </Badge>
-                          {comment.comment_type && comment.comment_type !== 'general' && (
-                            <Badge variant="outline" className="capitalize">
-                              {comment.comment_type}
-                            </Badge>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                      <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
-                      {comment.profiles && (
-                        <div className="text-xs text-muted-foreground">
-                          By: {comment.profiles.first_name} {comment.profiles.last_name}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Audit Trail</h3>
+                  <BookingAuditTrail entries={auditLog} />
                 </div>
-              )}
+                
+                <Separator />
+                
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Comments</h3>
+                  {comments.length === 0 ? (
+                    <Alert>
+                      <MessageSquare className="h-4 w-4" />
+                      <AlertDescription>
+                        No comments for this booking yet.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-3">
+                      {comments.map((comment) => (
+                        <div key={comment.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm">
+                                  {comment.profiles?.first_name} {comment.profiles?.last_name}
+                                </span>
+                                {comment.comment_type && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {comment.comment_type}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground ml-4 whitespace-nowrap">
+                              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>
