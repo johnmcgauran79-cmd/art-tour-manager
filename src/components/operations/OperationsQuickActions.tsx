@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, AlertCircle, Activity, Grid3X3 } from "lucide-react";
+import { ClipboardCheck, Hotel, AlertCircle, Activity, Grid3X3, FileText } from "lucide-react";
 import { BookingValidationReport } from "@/components/BookingValidationReport";
 import { ActivityCheckReport } from "@/components/ActivityCheckReport";
 import { HotelAllocationCheckReport } from "@/components/HotelAllocationCheckReport";
 import { AggregatedActivityMatrixReport } from "@/components/operations/AggregatedActivityMatrixReport";
+import { WeeklyBookingChangesReport } from "@/components/reports/WeeklyBookingChangesReport";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +17,7 @@ export const OperationsQuickActions = () => {
   const [showActivityCheck, setShowActivityCheck] = useState(false);
   const [showHotelCheck, setShowHotelCheck] = useState(false);
   const [showActivityMatrix, setShowActivityMatrix] = useState(false);
+  const [showWeeklyChanges, setShowWeeklyChanges] = useState(false);
 
   // Bedding Type Review count
   const { data: beddingIssuesCount = 0 } = useQuery({
@@ -141,6 +144,27 @@ export const OperationsQuickActions = () => {
     },
   });
 
+  // Weekly Booking Changes count
+  const { data: weeklyChangesCount = 0 } = useQuery({
+    queryKey: ['weekly-changes-count'],
+    queryFn: async () => {
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      const { data, error } = await supabase
+        .from('audit_log')
+        .select('id, operation_type')
+        .eq('table_name', 'bookings')
+        .gte('timestamp', sevenDaysAgo.toISOString());
+
+      if (error) throw error;
+
+      // Filter out generic UPDATE_BOOKING entries
+      const filteredData = data?.filter(entry => entry.operation_type !== 'UPDATE_BOOKING') || [];
+      return filteredData.length;
+    },
+  });
+
   const checkActions = [
     {
       icon: AlertCircle,
@@ -176,6 +200,15 @@ export const OperationsQuickActions = () => {
       count: hotelIssuesCount,
       onClick: () => {
         setShowHotelCheck(true);
+      },
+    },
+    {
+      icon: FileText,
+      label: "Weekly Booking Changes",
+      description: "Review new bookings & changes (7 days)",
+      count: weeklyChangesCount,
+      onClick: () => {
+        setShowWeeklyChanges(true);
       },
     },
   ];
@@ -241,6 +274,12 @@ export const OperationsQuickActions = () => {
         open={showActivityMatrix} 
         onOpenChange={setShowActivityMatrix} 
       />
+
+      <Dialog open={showWeeklyChanges} onOpenChange={setShowWeeklyChanges}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <WeeklyBookingChangesReport />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
