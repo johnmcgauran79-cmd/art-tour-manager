@@ -39,8 +39,7 @@ function generatePassengerListHTML(passengers: any[], tourName: string): string 
     return '<p>No passenger data available for this tour.</p>';
   }
 
-  let html = `<h2>Passenger List - ${tourName}</h2>`;
-  html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
+  let html = '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
   html += '<thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Passengers</th><th>Dietary Requirements</th><th>Status</th></tr></thead>';
   html += '<tbody>';
 

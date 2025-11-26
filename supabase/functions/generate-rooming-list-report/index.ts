@@ -36,7 +36,7 @@ function generateRoomingListHTML(hotels: any[], tourName: string): string {
     return '<p>No hotel data available for this tour.</p>';
   }
 
-  let html = `<h2>Rooming List - ${tourName}</h2>`;
+  let html = '';
   
   for (const hotel of hotels) {
     html += `<h3>${hotel.name}</h3>`;
