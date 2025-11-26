@@ -153,15 +153,51 @@ export const OperationsQuickActions = () => {
 
       const { data, error } = await supabase
         .from('audit_log')
-        .select('id, operation_type')
+        .select('id, operation_type, record_id')
         .eq('table_name', 'bookings')
         .gte('timestamp', sevenDaysAgo.toISOString());
 
       if (error) throw error;
 
-      // Filter out generic UPDATE_BOOKING entries
-      const filteredData = data?.filter(entry => entry.operation_type !== 'UPDATE_BOOKING') || [];
-      return filteredData.length;
+      // Group operations by booking_id (same logic as report)
+      const bookingGroups = new Map<string, typeof data>();
+      data?.forEach(entry => {
+        const bookingId = entry.record_id;
+        if (!bookingId) return;
+        
+        if (!bookingGroups.has(bookingId)) {
+          bookingGroups.set(bookingId, []);
+        }
+        bookingGroups.get(bookingId)!.push(entry);
+      });
+
+      let count = 0;
+      
+      // Count entries using same consolidation logic as report
+      bookingGroups.forEach((entries) => {
+        const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
+        
+        if (createEntry) {
+          // Count the new booking
+          count++;
+          
+          // Also count any UPDATE operations
+          entries.forEach(entry => {
+            if (entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') {
+              count++;
+            }
+          });
+        } else {
+          // Count individual changes (excluding generic updates)
+          entries.forEach(entry => {
+            if (entry.operation_type !== 'UPDATE_BOOKING' && entry.operation_type !== 'UPDATE') {
+              count++;
+            }
+          });
+        }
+      });
+
+      return count;
     },
   });
 
