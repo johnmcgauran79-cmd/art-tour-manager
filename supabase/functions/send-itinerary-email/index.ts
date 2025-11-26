@@ -22,6 +22,7 @@ interface RequestBody {
   includeTourInfo?: boolean;
   ccEmails?: string[];
   bccEmails?: string[];
+  pdfBase64?: string;
 }
 
 serve(async (req) => {
@@ -43,6 +44,7 @@ serve(async (req) => {
       includeTourInfo = true,
       ccEmails,
       bccEmails,
+      pdfBase64,
     }: RequestBody = await req.json();
 
     console.log("Sending itinerary email:", {
@@ -141,15 +143,24 @@ serve(async (req) => {
     }
     emailBody += htmlContent;
 
-    // Prepare email with HTML body
-    // Note: PDF generation in edge functions requires external services
-    // The HTML email is print-friendly and can be saved as PDF by recipient
+    // Prepare email with HTML body and optional PDF attachment
     const emailOptions: any = {
       from: fromAddress,
       to: recipientEmail,
       subject: emailSubject,
       html: emailBody,
     };
+
+    // Add PDF attachment if provided
+    if (pdfBase64) {
+      const attachmentFilename = `${tour.name.replace(/[^a-z0-9]/gi, '_')}_Itinerary.pdf`;
+      emailOptions.attachments = [
+        {
+          filename: attachmentFilename,
+          content: pdfBase64,
+        },
+      ];
+    }
 
     // Add CC and BCC if provided
     if (ccEmails && ccEmails.length > 0) {
@@ -160,7 +171,7 @@ serve(async (req) => {
     }
 
     // Send email via Resend
-    console.log("Sending itinerary email...");
+    console.log("Sending itinerary email with PDF attachment...");
     const emailResponse = await resend.emails.send(emailOptions);
 
     console.log("Email sent successfully:", emailResponse);
