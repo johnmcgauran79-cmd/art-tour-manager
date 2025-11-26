@@ -72,12 +72,6 @@ serve(async (req) => {
 
     console.log('Test reports generated and sent:', processResult);
 
-    console.log('Email sent successfully:', emailResponse);
-
-    if (emailResponse.error) {
-      throw new Error(`Resend API Error: ${emailResponse.error.message}`);
-    }
-
     return new Response(
       JSON.stringify({
         success: true,
