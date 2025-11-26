@@ -152,115 +152,116 @@ export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocati
   const fixableCount = missingAllocations?.filter(b => b.hasHotelsConfigured).length || 0;
   const unfixableCount = missingAllocations?.filter(b => !b.hasHotelsConfigured).length || 0;
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Hotel className="h-5 w-5 text-brand-navy" />
-            Hotel Allocation Check
-          </DialogTitle>
-        </DialogHeader>
+  const content = (
+    <>
+      <div className="flex items-center gap-2 mb-6">
+        <Hotel className="h-5 w-5 text-brand-navy" />
+        <h2 className="text-xl font-semibold">Hotel Allocation Check</h2>
+      </div>
 
-        {isLoading ? (
-          <div className="py-8 text-center text-muted-foreground">
-            Loading hotel allocations...
-          </div>
-        ) : missingAllocations && missingAllocations.length > 0 ? (
-          <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-900">
-                Found <strong>{missingAllocations.length}</strong> booking(s) requiring accommodation but missing hotel allocations
+      {isLoading ? (
+        <div className="py-8 text-center text-muted-foreground">
+          Loading hotel allocations...
+        </div>
+      ) : missingAllocations && missingAllocations.length > 0 ? (
+        <div className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm text-amber-900">
+              Found <strong>{missingAllocations.length}</strong> booking(s) requiring accommodation but missing hotel allocations
+            </p>
+            {fixableCount > 0 && unfixableCount > 0 && (
+              <p className="text-xs text-amber-700 mt-2">
+                • {fixableCount} can be auto-fixed • {unfixableCount} need hotels configured first
               </p>
-              {fixableCount > 0 && unfixableCount > 0 && (
-                <p className="text-xs text-amber-700 mt-2">
-                  • {fixableCount} can be auto-fixed • {unfixableCount} need hotels configured first
-                </p>
-              )}
-            </div>
+            )}
+          </div>
 
-            <div className="space-y-3">
-              {missingAllocations.map((issue) => (
-                <Card key={issue.bookingId} className={`p-4 ${issue.hasHotelsConfigured ? 'border-amber-200' : 'border-red-200 bg-red-50'}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="font-semibold text-brand-navy">
-                        {issue.tourName}
+          <div className="space-y-3">
+            {missingAllocations.map((issue) => (
+              <Card key={issue.bookingId} className={`p-4 ${issue.hasHotelsConfigured ? 'border-amber-200' : 'border-red-200 bg-red-50'}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="font-semibold text-brand-navy">
+                      {issue.tourName}
+                    </div>
+                    <div className="text-sm space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Passenger:</span>
+                        <span className="font-medium">{issue.passengerName}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+                          {issue.passengerCount} pax
+                        </span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                          {issue.status}
+                        </span>
                       </div>
-                      <div className="text-sm space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Passenger:</span>
-                          <span className="font-medium">{issue.passengerName}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
-                            {issue.passengerCount} pax
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">Issue:</span>
+                        {issue.hasHotelsConfigured ? (
+                          <span className="text-amber-700">
+                            No hotel allocated (tour has {issue.tourHotels.length} hotel{issue.tourHotels.length !== 1 ? 's' : ''})
                           </span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                            {issue.status}
+                        ) : (
+                          <span className="text-red-700 font-medium">
+                            Tour has no hotels configured yet
                           </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">Issue:</span>
-                          {issue.hasHotelsConfigured ? (
-                            <span className="text-amber-700">
-                              No hotel allocated (tour has {issue.tourHotels.length} hotel{issue.tourHotels.length !== 1 ? 's' : ''})
-                            </span>
-                          ) : (
-                            <span className="text-red-700 font-medium">
-                              Tour has no hotels configured yet
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          Tour Date: {new Date(issue.tourDate).toLocaleDateString()}
-                        </div>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Tour Date: {new Date(issue.tourDate).toLocaleDateString()}
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleViewBooking(issue.tourId, issue.bookingId)}
-                      className="shrink-0"
-                    >
-                      <ExternalLink className="h-4 w-4 mr-1" />
-                      View
-                    </Button>
                   </div>
-                </Card>
-              ))}
-            </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleViewBooking(issue.tourId, issue.bookingId)}
+                    className="shrink-0"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    View
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
 
-            <div className="flex gap-2 pt-4 border-t">
-              {fixableCount > 0 && (
-                <Button 
-                  onClick={handleFixAllocations}
-                  className="flex-1"
-                >
-                  Fix {fixableCount} Allocation{fixableCount !== 1 ? 's' : ''}
-                </Button>
-              )}
+          <div className="flex gap-2 pt-4 border-t">
+            {fixableCount > 0 && (
               <Button 
-                variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={handleFixAllocations}
+                className="flex-1"
               >
-                Close
+                Fix {fixableCount} Allocation{fixableCount !== 1 ? 's' : ''}
               </Button>
-            </div>
+            )}
           </div>
-        ) : (
-          <div className="py-8 text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-            <div>
-              <h3 className="font-semibold text-lg mb-2">All Clear!</h3>
-              <p className="text-muted-foreground">
-                All bookings requiring accommodation have hotel allocations.
-              </p>
-            </div>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Close
-            </Button>
+        </div>
+      ) : (
+        <div className="py-8 text-center space-y-4">
+          <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+          <div>
+            <h3 className="font-semibold text-lg mb-2">All Clear!</h3>
+            <p className="text-muted-foreground">
+              All bookings requiring accommodation have hotel allocations.
+            </p>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </div>
+      )}
+    </>
   );
+
+  // If open/onOpenChange are provided, render as dialog
+  if (open !== undefined && onOpenChange !== undefined) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          {content}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Otherwise render as page content
+  return content;
 };
