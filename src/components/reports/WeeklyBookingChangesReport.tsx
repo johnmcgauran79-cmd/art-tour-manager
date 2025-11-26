@@ -53,53 +53,6 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
         `)
         .in('id', bookingIds);
 
-      // Create a map to store booking data (including from audit log for deleted bookings)
-      const bookingDataMap = new Map<string, any>();
-      
-      // First, add all existing bookings to the map
-      bookings?.forEach(booking => {
-        bookingDataMap.set(booking.id, {
-          id: booking.id,
-          status: booking.status,
-          customer_name: booking.customers 
-            ? `${booking.customers.first_name} ${booking.customers.last_name}`
-            : 'Unknown',
-          tour_name: booking.tours?.name || 'Unknown Tour',
-          exists: true
-        });
-      });
-      
-      // Then, for bookings not found (deleted), extract data from audit log details
-      auditData?.forEach(entry => {
-        if (entry.record_id && !bookingDataMap.has(entry.record_id)) {
-          const details = entry.details as any;
-          
-          // Try to extract customer and tour info from audit details
-          let customerName = 'Unknown Customer';
-          let tourName = 'Unknown Tour';
-          
-          if (details?.customer_name) {
-            customerName = details.customer_name;
-          } else if (details?.lead_passenger) {
-            customerName = `${details.lead_passenger.first_name || ''} ${details.lead_passenger.last_name || ''}`.trim();
-          }
-          
-          if (details?.tour_name) {
-            tourName = details.tour_name;
-          } else if (details?.tour) {
-            tourName = details.tour.name || 'Unknown Tour';
-          }
-          
-          bookingDataMap.set(entry.record_id, {
-            id: entry.record_id,
-            status: details?.new_status || details?.status || 'unknown',
-            customer_name: customerName,
-            tour_name: tourName,
-            exists: false
-          });
-        }
-      });
-
       // Fetch user profiles
       const userIds = [...new Set(auditData?.map(entry => entry.user_id) || [])];
       const { data: profiles } = await supabase
@@ -123,19 +76,22 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
 
       // Process each booking's operations
       bookingGroups.forEach((entries, bookingId) => {
-        const bookingData = bookingDataMap.get(bookingId);
+        const booking = bookings?.find(b => b.id === bookingId);
         
-        // Skip only if we couldn't find any data at all
-        if (!bookingData) return;
+        // Skip if booking no longer exists (was deleted)
+        if (!booking) return;
         
-        const customerName = bookingData.customer_name;
-        const tourName = bookingData.tour_name;
+        // Handle missing customer or tour data gracefully
+        const customerName = booking.customers 
+          ? `${booking.customers.first_name} ${booking.customers.last_name}`
+          : 'Unknown Customer';
+        const tourName = booking.tours?.name || 'Unknown Tour';
 
         // Check if this booking was created in this period
         const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
         
         // Check if booking was cancelled in this period
-        const wasCancelled = bookingData.status === 'cancelled';
+        const wasCancelled = booking.status === 'cancelled';
         const cancelEntry = wasCancelled ? entries.find(e => {
           const details = e.details as any;
           return details?.old_status && details?.new_status === 'cancelled';
