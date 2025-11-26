@@ -19,6 +19,11 @@ import TaskEdit from "./pages/TaskEdit";
 import ContactDetail from "./pages/ContactDetail";
 import ContactEdit from "./pages/ContactEdit";
 import BulkBookingStatus from "./pages/BulkBookingStatus";
+import BeddingReview from "./pages/operations/BeddingReview";
+import ActivityBookings from "./pages/operations/ActivityBookings";
+import ActivityAllocations from "./pages/operations/ActivityAllocations";
+import HotelAllocations from "./pages/operations/HotelAllocations";
+import BookingChanges from "./pages/operations/BookingChanges";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -159,6 +164,56 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <TourItinerary />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/bedding-review"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <BeddingReview />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/activity-bookings"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ActivityBookings />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/activity-allocations"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <ActivityAllocations />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/hotel-allocations"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <HotelAllocations />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/booking-changes"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <BookingChanges />
                     </AppLayout>
                   </ProtectedRoute>
                 }

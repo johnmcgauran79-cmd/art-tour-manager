@@ -2,22 +2,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ClipboardCheck, Hotel, AlertCircle, Activity, Grid3X3, FileText } from "lucide-react";
-import { BookingValidationReport } from "@/components/BookingValidationReport";
-import { ActivityCheckReport } from "@/components/ActivityCheckReport";
-import { HotelAllocationCheckReport } from "@/components/HotelAllocationCheckReport";
-import { AggregatedActivityMatrixReport } from "@/components/operations/AggregatedActivityMatrixReport";
-import { WeeklyBookingChangesReport } from "@/components/reports/WeeklyBookingChangesReport";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const OperationsQuickActions = () => {
-  const [showValidationReport, setShowValidationReport] = useState(false);
-  const [showActivityCheck, setShowActivityCheck] = useState(false);
-  const [showHotelCheck, setShowHotelCheck] = useState(false);
-  const [showActivityMatrix, setShowActivityMatrix] = useState(false);
-  const [showWeeklyChanges, setShowWeeklyChanges] = useState(false);
+  const navigate = useNavigate();
 
   // Bedding Type Review count
   const { data: beddingIssuesCount = 0 } = useQuery({
@@ -221,45 +211,35 @@ export const OperationsQuickActions = () => {
       label: "Bedding Type Review",
       description: "Review pax/bedding mismatches",
       count: beddingIssuesCount,
-      onClick: () => {
-        setShowValidationReport(true);
-      },
+      onClick: () => navigate("/operations/bedding-review"),
     },
     {
       icon: Grid3X3,
       label: "Non-standard Activity Bookings",
       description: "Review all activity allocations",
       count: activityMatrixIssuesCount,
-      onClick: () => {
-        setShowActivityMatrix(true);
-      },
+      onClick: () => navigate("/operations/activity-bookings"),
     },
     {
       icon: Activity,
       label: "Activity Allocation Check",
       description: "Find missing activity allocations",
       count: activityIssuesCount,
-      onClick: () => {
-        setShowActivityCheck(true);
-      },
+      onClick: () => navigate("/operations/activity-allocations"),
     },
     {
       icon: Hotel,
       label: "Hotel Allocation Check",
       description: "Find missing hotel allocations",
       count: hotelIssuesCount,
-      onClick: () => {
-        setShowHotelCheck(true);
-      },
+      onClick: () => navigate("/operations/hotel-allocations"),
     },
     {
       icon: FileText,
       label: "Booking Changes Report",
       description: "Review new bookings & changes (7 days)",
       count: weeklyChangesCount,
-      onClick: () => {
-        setShowWeeklyChanges(true);
-      },
+      onClick: () => navigate("/operations/booking-changes"),
     },
   ];
 
@@ -304,32 +284,6 @@ export const OperationsQuickActions = () => {
           </div>
         </CardContent>
       </Card>
-
-      <BookingValidationReport 
-        open={showValidationReport} 
-        onOpenChange={setShowValidationReport} 
-      />
-
-      <ActivityCheckReport 
-        open={showActivityCheck} 
-        onOpenChange={setShowActivityCheck} 
-      />
-      
-      <HotelAllocationCheckReport 
-        open={showHotelCheck} 
-        onOpenChange={setShowHotelCheck} 
-      />
-
-      <AggregatedActivityMatrixReport 
-        open={showActivityMatrix} 
-        onOpenChange={setShowActivityMatrix} 
-      />
-
-      <Dialog open={showWeeklyChanges} onOpenChange={setShowWeeklyChanges}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <WeeklyBookingChangesReport onClose={() => setShowWeeklyChanges(false)} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
