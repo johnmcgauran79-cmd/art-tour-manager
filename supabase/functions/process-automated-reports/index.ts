@@ -235,7 +235,7 @@ serve(async (req) => {
     console.log('Sending email to:', recipient_emails);
 
     const emailResponse = await resend.emails.send({
-      from: 'Australian Racing Tours <reports@australianracingtours.com.au>',
+      from: 'Australian Racing Tours <info@australianracingtours.com.au>',
       to: recipient_emails,
       subject: isOnlyBookingChanges ? `${reportTitle}: Booking Changes` : `${reportTitle}: ${tour.name}`,
       html: emailHtml,

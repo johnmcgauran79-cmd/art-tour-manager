@@ -147,13 +147,14 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     // Extract name from email and format sender
-    const emailLocalPart = emailData.from.split('@')[0];
+    const fromEmailAddress = emailData.from || 'info@australianracingtours.com.au';
+    const emailLocalPart = fromEmailAddress.split('@')[0];
     const senderName = emailLocalPart.charAt(0).toUpperCase() + emailLocalPart.slice(1);
     const fromName = `${senderName} - Australian Racing Tours`;
     
     // Send email with Resend
     const emailPayload: any = {
-      from: `${fromName} <${emailData.from}>`,
+      from: `${fromName} <${fromEmailAddress}>`,
       to: emailData.to,
       subject: emailData.subject,
       html: emailHtml,
