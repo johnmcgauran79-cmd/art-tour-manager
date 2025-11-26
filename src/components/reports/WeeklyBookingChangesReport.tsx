@@ -2,9 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 
@@ -19,11 +16,7 @@ interface WeeklyChange {
   details?: any;
 }
 
-interface WeeklyBookingChangesReportProps {
-  onClose?: () => void;
-}
-
-export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesReportProps) => {
+export const WeeklyBookingChangesReport = () => {
   const [period, setPeriod] = useState<string>("7");
 
   const { data: changes, isLoading } = useQuery({
@@ -309,16 +302,6 @@ export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesRepo
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold">Booking Changes (Last {period} Days)</h3>
-        {onClose && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="h-8 w-8"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        )}
       </div>
       
       <div className="mb-4">

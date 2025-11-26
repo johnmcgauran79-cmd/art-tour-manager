@@ -21,11 +21,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface BookingValidationReportProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const BookingValidationReport = ({ open, onOpenChange }: BookingValidationReportProps) => {
+export const BookingValidationReport = ({ open, onOpenChange }: BookingValidationReportProps = {}) => {
   const navigate = useNavigate();
 
   const { data: invalidBookings, isLoading, refetch } = useQuery({
@@ -72,7 +72,7 @@ export const BookingValidationReport = ({ open, onOpenChange }: BookingValidatio
 
       return mismatches || [];
     },
-    enabled: open,
+    enabled: open !== false,
   });
 
   const getBeddingBadgeVariant = (bedding: string, passengerCount: number) => {

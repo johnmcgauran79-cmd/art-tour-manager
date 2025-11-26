@@ -9,8 +9,8 @@ import { AlertTriangle, Grid3X3, Loader2, ChevronDown, ChevronRight, X } from "l
 import { useNavigate } from "react-router-dom";
 
 interface AggregatedActivityMatrixReportProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface DiscrepancyData {
@@ -30,9 +30,9 @@ interface DiscrepancyData {
 }
 
 export const AggregatedActivityMatrixReport = ({ 
-  open, 
+  open = true, 
   onOpenChange 
-}: AggregatedActivityMatrixReportProps) => {
+}: AggregatedActivityMatrixReportProps = {}) => {
   const [discrepancies, setDiscrepancies] = useState<DiscrepancyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedBookings, setExpandedBookings] = useState<Set<string>>(new Set());
