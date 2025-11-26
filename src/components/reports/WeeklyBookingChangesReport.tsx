@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface WeeklyChange {
   id: string;
@@ -237,18 +237,18 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
       });
 
       // Sort by timestamp descending
-      const sortedChanges = consolidatedChanges.sort((a, b) => 
+      return consolidatedChanges.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
-      
-      // Call onDataChange if provided
-      if (onDataChange) {
-        onDataChange(sortedChanges, period);
-      }
-      
-      return sortedChanges;
     },
   });
+
+  // Call onDataChange whenever changes or period updates
+  useEffect(() => {
+    if (onDataChange && changes) {
+      onDataChange(changes, period);
+    }
+  }, [changes, period, onDataChange]);
 
   const formatOperationType = (type: string, details?: any): string => {
     const typeMap: Record<string, string> = {
