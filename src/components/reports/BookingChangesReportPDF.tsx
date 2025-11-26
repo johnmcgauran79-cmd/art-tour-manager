@@ -73,39 +73,47 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
           }
           @page {
             size: A4 landscape;
-            margin: 15mm;
+            margin: 12mm;
           }
           body {
             font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             color: #1a1a1a;
             background: white;
           }
           .header {
             text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
             border-bottom: 3px solid #2c3e50;
+            page-break-after: avoid;
+            break-after: avoid;
           }
           .header h1 {
-            margin: 0 0 8px 0;
-            font-size: 28px;
+            margin: 0 0 6px 0;
+            font-size: 24px;
             font-weight: 700;
             color: #2c3e50;
           }
           .header p {
-            margin: 4px 0;
+            margin: 2px 0;
             color: #555;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 0;
             background: white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            page-break-before: avoid;
+            break-before: avoid;
+          }
+          thead {
+            page-break-after: avoid;
+            break-after: avoid;
           }
           th {
             background-color: #34495e;
@@ -224,8 +232,7 @@ export const BookingChangesReportPDF = ({ changes, period }: BookingChangesRepor
           format: 'a4', 
           orientation: 'landscape' as const,
           compress: false
-        },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        }
       };
       
       await html2pdf().set(opt).from(htmlContent).save();
