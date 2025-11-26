@@ -62,7 +62,7 @@ serve(async (req) => {
     console.log('Sending test email to:', recipient_email);
 
     const emailResponse = await resend.emails.send({
-      from: 'Australian Racing Tours <onboarding@resend.dev>',
+      from: 'Australian Racing Tours <reports@australianracingtours.com.au>',
       to: [recipient_email],
       subject: 'Test: Automated Report Preview',
       html: emailHtml,
