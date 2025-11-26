@@ -8,6 +8,7 @@ import { AutomatedEmailRulesManagement } from "@/components/AutomatedEmailRulesM
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { SystemSettings } from "@/components/SystemSettings";
 import { BookingValidationReport } from "@/components/BookingValidationReport";
+import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRulesManagement";
 
 interface SettingsProps {
   onBack: () => void;
@@ -31,9 +32,10 @@ export const Settings = ({ onBack }: SettingsProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 mb-8">
+        <TabsList className="grid w-full grid-cols-5 mb-8">
           <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
           <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
+          <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="system">System Settings</TabsTrigger>
         </TabsList>
@@ -62,6 +64,20 @@ export const Settings = ({ onBack }: SettingsProps) => {
             </CardHeader>
             <CardContent>
               <AutomatedEmailRulesManagement />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="automated-reports" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Automated Report Distribution</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure automated reports to be emailed on a schedule - weekly, monthly, or days before tours.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AutomatedReportRulesManagement />
             </CardContent>
           </Card>
         </TabsContent>
