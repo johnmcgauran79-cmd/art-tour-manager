@@ -8,3 +8,12 @@ verify_jwt = false
 
 [functions.generate-booking-changes-report]
 verify_jwt = false
+
+[functions.generate-rooming-list-report]
+verify_jwt = false
+
+[functions.generate-passenger-list-report]
+verify_jwt = false
+
+[functions.generate-activity-matrix-report]
+verify_jwt = false
