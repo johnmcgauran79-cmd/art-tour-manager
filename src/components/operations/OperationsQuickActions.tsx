@@ -153,7 +153,7 @@ export const OperationsQuickActions = () => {
 
       const { data, error } = await supabase
         .from('audit_log')
-        .select('id, operation_type, record_id')
+        .select('id, operation_type, record_id, details')
         .eq('table_name', 'bookings')
         .gte('timestamp', sevenDaysAgo.toISOString());
 
@@ -181,6 +181,13 @@ export const OperationsQuickActions = () => {
           // Count the new booking
           count++;
           
+          // Check if cancelled
+          const wasCancelled = entries.some(e => {
+            const details = e.details as any;
+            return details?.new_status === 'cancelled';
+          });
+          if (wasCancelled) count++;
+          
           // Also count any UPDATE operations
           entries.forEach(entry => {
             if (entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') {
@@ -188,6 +195,13 @@ export const OperationsQuickActions = () => {
             }
           });
         } else {
+          // Check if cancelled
+          const wasCancelled = entries.some(e => {
+            const details = e.details as any;
+            return details?.new_status === 'cancelled';
+          });
+          if (wasCancelled) count++;
+          
           // Count individual changes (excluding generic updates)
           entries.forEach(entry => {
             if (entry.operation_type !== 'UPDATE_BOOKING' && entry.operation_type !== 'UPDATE') {

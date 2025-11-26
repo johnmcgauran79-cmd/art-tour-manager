@@ -34,12 +34,13 @@ export const WeeklyBookingChangesReport = () => {
       // Get unique booking IDs
       const bookingIds = [...new Set(auditData?.map(entry => entry.record_id).filter(Boolean) || [])];
       
-      // Fetch booking and customer details
+      // Fetch booking and customer details (include cancelled bookings)
       const { data: bookings } = await supabase
         .from('bookings')
         .select(`
           id,
           tour_id,
+          status,
           tours (name),
           customers!lead_passenger_id (first_name, last_name)
         `)
@@ -81,6 +82,13 @@ export const WeeklyBookingChangesReport = () => {
         // Check if this booking was created in this period
         const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
         
+        // Check if booking was cancelled in this period
+        const wasCancelled = booking.status === 'cancelled';
+        const cancelEntry = wasCancelled ? entries.find(e => {
+          const details = e.details as any;
+          return details?.old_status && details?.new_status === 'cancelled';
+        }) : null;
+        
         if (createEntry) {
           // Show the new booking entry
           const profile = profiles?.find(p => p.id === createEntry.user_id);
@@ -97,9 +105,27 @@ export const WeeklyBookingChangesReport = () => {
             details: createEntry.details
           });
           
-          // Also show any UPDATE operations (actual changes after creation)
+          // If cancelled, show cancellation
+          if (cancelEntry) {
+            const profile = profiles?.find(p => p.id === cancelEntry.user_id);
+            consolidatedChanges.push({
+              id: cancelEntry.id,
+              timestamp: cancelEntry.timestamp,
+              operation_type: 'CANCEL_BOOKING',
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System',
+              details: cancelEntry.details
+            });
+          }
+          
+          // Also show any UPDATE operations (actual changes after creation, excluding cancellation)
           entries.forEach(entry => {
-            if (entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') {
+            if ((entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') 
+                && entry.id !== cancelEntry?.id) {
               const profile = profiles?.find(p => p.id === entry.user_id);
               consolidatedChanges.push({
                 id: entry.id,
@@ -116,10 +142,29 @@ export const WeeklyBookingChangesReport = () => {
             }
           });
         } else {
-          // This is an update to an existing booking - show individual changes
+          // This is an update to an existing booking
+          
+          // If cancelled, show cancellation
+          if (cancelEntry) {
+            const profile = profiles?.find(p => p.id === cancelEntry.user_id);
+            consolidatedChanges.push({
+              id: cancelEntry.id,
+              timestamp: cancelEntry.timestamp,
+              operation_type: 'CANCEL_BOOKING',
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System',
+              details: cancelEntry.details
+            });
+          }
+          
+          // Show individual changes (excluding generic updates and cancellation)
           entries.forEach(entry => {
-            // Skip generic UPDATE_BOOKING and UPDATE entries
-            if (entry.operation_type === 'UPDATE_BOOKING' || entry.operation_type === 'UPDATE') return;
+            // Skip generic UPDATE_BOOKING, UPDATE, and the cancellation entry
+            if (entry.operation_type === 'UPDATE_BOOKING' || entry.operation_type === 'UPDATE' || entry.id === cancelEntry?.id) return;
             
             const profile = profiles?.find(p => p.id === entry.user_id);
             consolidatedChanges.push({
@@ -154,6 +199,7 @@ export const WeeklyBookingChangesReport = () => {
       'ADD_ACTIVITY_TO_BOOKING': 'Activity Added',
       'REMOVE_ACTIVITY_FROM_BOOKING': 'Activity Removed',
       'DELETE_BOOKING': 'Booking Deleted',
+      'CANCEL_BOOKING': 'Booking Cancelled',
     };
     
     // Handle hotel updates with details
