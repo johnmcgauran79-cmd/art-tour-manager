@@ -99,8 +99,8 @@ export const WeeklyBookingChangesReport = () => {
         } else {
           // This is an update to an existing booking - show individual changes
           entries.forEach(entry => {
-            // Skip generic UPDATE_BOOKING entries
-            if (entry.operation_type === 'UPDATE_BOOKING') return;
+            // Skip generic UPDATE_BOOKING and UPDATE entries
+            if (entry.operation_type === 'UPDATE_BOOKING' || entry.operation_type === 'UPDATE') return;
             
             const profile = profiles?.find(p => p.id === entry.user_id);
             consolidatedChanges.push({
