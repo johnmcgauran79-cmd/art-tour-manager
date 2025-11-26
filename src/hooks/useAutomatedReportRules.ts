@@ -151,3 +151,32 @@ export const useAutomatedReportLog = () => {
     },
   });
 };
+
+export const useSendTestAutomatedReport = () => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ report_types, recipient_email }: { report_types: string[], recipient_email: string }) => {
+      const { data, error } = await supabase.functions.invoke('send-test-automated-report', {
+        body: { report_types, recipient_email },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Test Sent",
+        description: "Test report email sent successfully. Check your inbox.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to send test report. Please try again.",
+        variant: "destructive",
+      });
+      console.error('Error sending test report:', error);
+    },
+  });
+};
