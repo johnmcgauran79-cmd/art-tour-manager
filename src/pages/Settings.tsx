@@ -40,17 +40,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
         </TabsContent>
 
         <TabsContent value="automated-emails" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Automated Email Rules</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Configure automated emails to be sent at specific intervals before tours start.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <AutomatedEmailRulesManagement />
-            </CardContent>
-          </Card>
+          <AutomatedEmailRulesManagement />
         </TabsContent>
 
         <TabsContent value="automated-reports" className="space-y-6">
