@@ -19,9 +19,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { report_types, recipient_email } = await req.json();
+    const { report_types, recipient_email, tour_id } = await req.json();
 
-    console.log('Sending test automated report:', { report_types, recipient_email });
+    console.log('Sending test automated report:', { report_types, recipient_email, tour_id });
 
     if (!report_types || !Array.isArray(report_types) || report_types.length === 0) {
       throw new Error('report_types must be a non-empty array');
@@ -31,42 +31,46 @@ serve(async (req) => {
       throw new Error('recipient_email is required');
     }
 
-    // For now, just send a test email showing what reports would be included
-    // In the future, this would actually generate and attach the reports
-    const reportLabels: Record<string, string> = {
-      'rooming_list': 'Rooming List',
-      'booking_changes': 'Booking Changes Report',
-      'passenger_list': 'Passenger List',
-      'activity_matrix': 'Activity Allocation Matrix',
-      'bedding_review': 'Bedding Type Review',
-      'hotel_check': 'Hotel Allocation Check',
-      'activity_check': 'Activity Allocation Check'
-    };
+    // Get a sample tour if not provided
+    let selectedTourId = tour_id;
+    if (!selectedTourId) {
+      const { data: tours } = await supabase
+        .from('tours')
+        .select('id')
+        .eq('status', 'available')
+        .order('start_date', { ascending: true })
+        .limit(1);
+      
+      if (tours && tours.length > 0) {
+        selectedTourId = tours[0].id;
+      } else {
+        throw new Error('No available tours found for testing');
+      }
+    }
 
-    const reportListHtml = report_types.map((type: string) => 
-      `<li>${reportLabels[type] || type}</li>`
-    ).join('');
-
-    const emailHtml = `
-      <h2>Test Automated Report</h2>
-      <p>This is a test email for your automated report rule.</p>
-      <h3>Reports that will be included:</h3>
-      <ul>
-        ${reportListHtml}
-      </ul>
-      <p>When this rule runs, these reports will be generated and sent to the configured recipients.</p>
-      <hr>
-      <p style="color: #666; font-size: 12px;">This is a test email from Australian Racing Tours automated report system.</p>
-    `;
-
-    console.log('Sending test email to:', recipient_email);
-
-    const emailResponse = await resend.emails.send({
-      from: 'Australian Racing Tours <reports@australianracingtours.com.au>',
-      to: [recipient_email],
-      subject: 'Test: Automated Report Preview',
-      html: emailHtml,
+    // Call the main report processing function to generate real reports
+    const processReportsUrl = `${supabaseUrl}/functions/v1/process-automated-reports`;
+    const processResponse = await fetch(processReportsUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tour_id: selectedTourId,
+        report_types: report_types,
+        recipient_emails: [recipient_email],
+        rule_id: null, // This is a test, not from an actual rule
+      }),
     });
+
+    const processResult = await processResponse.json();
+
+    if (!processResponse.ok) {
+      throw new Error(processResult.error || 'Failed to generate test reports');
+    }
+
+    console.log('Test reports generated and sent:', processResult);
 
     console.log('Email sent successfully:', emailResponse);
 
@@ -77,8 +81,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Test email sent to ${recipient_email}`,
-        email_id: emailResponse.data?.id,
+        message: `Test reports sent to ${recipient_email}`,
+        tour_id: selectedTourId,
+        ...processResult,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
