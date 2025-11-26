@@ -1,21 +1,28 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Printer, X } from "lucide-react";
+import { Download, Printer, X, Mail } from "lucide-react";
 import html2pdf from "html2pdf.js";
+import { useState } from "react";
+import { EmailItineraryModal } from "./EmailItineraryModal";
 
 interface ItineraryPDFViewerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   htmlContent: string;
   tourName: string;
+  tourId: string;
+  itineraryId: string;
 }
 
 export const ItineraryPDFViewer = ({ 
   open, 
   onOpenChange, 
   htmlContent, 
-  tourName 
+  tourName,
+  tourId,
+  itineraryId
 }: ItineraryPDFViewerProps) => {
+  const [showEmailModal, setShowEmailModal] = useState(false);
   
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -45,51 +52,69 @@ export const ItineraryPDFViewer = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle className="flex items-center justify-between">
-            <span>Itinerary Preview</span>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handlePrint}
-                className="flex items-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                Print
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Download PDF
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="flex items-center gap-2"
-              >
-                <X className="h-4 w-4" />
-                Close
-              </Button>
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="flex-1 overflow-hidden border rounded-lg bg-white">
-          <iframe
-            srcDoc={htmlContent}
-            className="w-full h-full border-0"
-            title="Itinerary Preview"
-          />
-        </div>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between">
+              <span>Itinerary Preview</span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailModal(true)}
+                  className="flex items-center gap-2"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Itinerary
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDownload}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="flex items-center gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Close
+                </Button>
+              </div>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-hidden border rounded-lg bg-white">
+            <iframe
+              srcDoc={htmlContent}
+              className="w-full h-full border-0"
+              title="Itinerary Preview"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <EmailItineraryModal
+        open={showEmailModal}
+        onOpenChange={setShowEmailModal}
+        tour={{ id: tourId, name: tourName }}
+        itineraryId={itineraryId}
+      />
+    </>
   );
 };
