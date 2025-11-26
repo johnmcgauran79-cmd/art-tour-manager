@@ -70,11 +70,15 @@ serve(async (req) => {
 
     console.log('Email sent successfully:', emailResponse);
 
+    if (emailResponse.error) {
+      throw new Error(`Resend API Error: ${emailResponse.error.message}`);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         message: `Test email sent to ${recipient_email}`,
-        email_id: emailResponse.id,
+        email_id: emailResponse.data?.id,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
