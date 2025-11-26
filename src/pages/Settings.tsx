@@ -48,17 +48,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
         </TabsContent>
 
         <TabsContent value="task-templates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Template Management</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Manage automated task templates that are created for tours based on dates and milestones.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <TaskTemplatesManagement />
-            </CardContent>
-          </Card>
+          <TaskTemplatesManagement />
         </TabsContent>
 
         <TabsContent value="system" className="space-y-6">
