@@ -156,9 +156,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { tour_id, report_types, recipient_emails, rule_id } = await req.json();
+    const { tour_id, report_types, recipient_emails, rule_id, schedule_type, schedule_value } = await req.json();
 
-    console.log('Processing automated reports:', { tour_id, report_types, recipient_emails, rule_id });
+    console.log('Processing automated reports:', { tour_id, report_types, recipient_emails, rule_id, schedule_type, schedule_value });
 
     if (!tour_id || !report_types || !Array.isArray(report_types) || report_types.length === 0) {
       throw new Error('tour_id and report_types are required');
@@ -193,9 +193,19 @@ serve(async (req) => {
     // Check if booking_changes is the only report type
     const isOnlyBookingChanges = report_types.length === 1 && report_types[0] === 'booking_changes';
     
+    // Generate report title based on schedule type
+    let reportTitle = 'Automated Report';
+    if (schedule_type === 'weekly') {
+      reportTitle = 'Weekly Report';
+    } else if (schedule_type === 'monthly') {
+      reportTitle = 'Monthly Report';
+    } else if (schedule_type === 'days_before_tour' && schedule_value) {
+      reportTitle = `${schedule_value} Days Before Report`;
+    }
+    
     let emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-        <h1 style="color: #333;">Automated Report${isOnlyBookingChanges ? '' : ': ' + tour.name}</h1>
+        <h1 style="color: #333;">${reportTitle}${isOnlyBookingChanges ? '' : ': ' + tour.name}</h1>
         ${!isOnlyBookingChanges ? `<p style="color: #666;">Tour Start Date: ${new Date(tour.start_date).toLocaleDateString()}</p>` : ''}
         <hr style="border: 1px solid #eee; margin: 20px 0;">
     `;
@@ -227,7 +237,7 @@ serve(async (req) => {
     const emailResponse = await resend.emails.send({
       from: 'Australian Racing Tours <reports@australianracingtours.com.au>',
       to: recipient_emails,
-      subject: isOnlyBookingChanges ? 'Automated Report: Booking Changes' : `Automated Report: ${tour.name}`,
+      subject: isOnlyBookingChanges ? `${reportTitle}: Booking Changes` : `${reportTitle}: ${tour.name}`,
       html: emailHtml,
     });
 

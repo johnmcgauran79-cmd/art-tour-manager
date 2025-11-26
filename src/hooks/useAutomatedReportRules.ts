@@ -156,9 +156,14 @@ export const useSendTestAutomatedReport = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ report_types, recipient_email }: { report_types: string[], recipient_email: string }) => {
+    mutationFn: async ({ report_types, recipient_email, schedule_type, schedule_value }: { 
+      report_types: string[], 
+      recipient_email: string,
+      schedule_type: string,
+      schedule_value: number
+    }) => {
       const { data, error } = await supabase.functions.invoke('send-test-automated-report', {
-        body: { report_types, recipient_email },
+        body: { report_types, recipient_email, schedule_type, schedule_value },
       });
 
       if (error) throw error;
