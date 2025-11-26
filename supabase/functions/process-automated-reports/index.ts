@@ -96,43 +96,266 @@ async function generatePassengerListReport(supabase: any, tourId: string, tourNa
   return html;
 }
 
-// Generate Booking Changes Report HTML
-async function generateBookingChangesReport(supabase: any, tourId: string, tourName: string): Promise<string> {
+// Generate Booking Changes Report HTML (system-wide, last 7 days)
+async function generateBookingChangesReport(supabase: any): Promise<string> {
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-  const { data: auditLogs } = await supabase
+  // Get all audit log entries for bookings in the past 7 days
+  const { data: auditData } = await supabase
     .from('audit_log')
-    .select('*, bookings!inner(tour_id, customers!bookings_lead_passenger_id_fkey(first_name, last_name))')
+    .select('id, timestamp, operation_type, record_id, user_id, details')
     .eq('table_name', 'bookings')
-    .eq('bookings.tour_id', tourId)
     .gte('timestamp', sevenDaysAgo.toISOString())
     .order('timestamp', { ascending: false });
 
-  if (!auditLogs || auditLogs.length === 0) {
-    return '<p>No booking changes in the past 7 days for this tour.</p>';
+  if (!auditData || auditData.length === 0) {
+    return '<p>No booking changes in the past 7 days.</p>';
   }
 
-  let html = `<h2>Booking Changes Report - ${tourName}</h2>`;
-  html += '<p style="color: #666;">Changes from the past 7 days</p>';
+  // Get unique booking IDs
+  const bookingIds = [...new Set(auditData.map(entry => entry.record_id).filter(Boolean))];
+  
+  // Fetch booking and customer details (include cancelled bookings)
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      tour_id,
+      status,
+      tours (name),
+      customers!lead_passenger_id (first_name, last_name)
+    `)
+    .in('id', bookingIds);
+
+  // Fetch user profiles
+  const userIds = [...new Set(auditData.map(entry => entry.user_id))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name, email')
+    .in('id', userIds);
+
+  // Group operations by booking_id to consolidate new bookings
+  const bookingGroups = new Map();
+  auditData.forEach(entry => {
+    const bookingId = entry.record_id;
+    if (!bookingId) return;
+    
+    if (!bookingGroups.has(bookingId)) {
+      bookingGroups.set(bookingId, []);
+    }
+    bookingGroups.get(bookingId).push(entry);
+  });
+
+  const consolidatedChanges = [];
+
+  // Process each booking's operations
+  bookingGroups.forEach((entries, bookingId) => {
+    const booking = bookings?.find(b => b.id === bookingId);
+    
+    // Skip if booking no longer exists (was deleted)
+    if (!booking) return;
+    
+    const customerName = booking.customers 
+      ? `${booking.customers.first_name} ${booking.customers.last_name}`
+      : 'Unknown Customer';
+    const tourName = booking.tours?.name || 'Unknown Tour';
+
+    // Check if this booking was created in this period
+    const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
+    
+    // Check if booking was cancelled in this period
+    const wasCancelled = booking.status === 'cancelled';
+    const cancelEntry = wasCancelled ? entries.find(e => {
+      const details = e.details;
+      return details?.status?.old && details?.status?.new === 'cancelled';
+    }) : null;
+    
+    if (createEntry) {
+      // Show the new booking entry
+      const profile = profiles?.find(p => p.id === createEntry.user_id);
+      consolidatedChanges.push({
+        timestamp: createEntry.timestamp,
+        customer_name: customerName,
+        tour_name: tourName,
+        operation_type: 'CREATE_BOOKING',
+        user_name: profile 
+          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+          : 'System',
+      });
+      
+      // If cancelled, show cancellation
+      if (cancelEntry) {
+        const profile = profiles?.find(p => p.id === cancelEntry.user_id);
+        consolidatedChanges.push({
+          timestamp: cancelEntry.timestamp,
+          customer_name: customerName,
+          tour_name: tourName,
+          operation_type: 'CANCEL_BOOKING',
+          user_name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+            : 'System',
+        });
+      }
+      
+      // Consolidate activity updates
+      const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+      if (activityUpdates.length > 0) {
+        const latestActivityUpdate = activityUpdates[0];
+        const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
+        consolidatedChanges.push({
+          timestamp: latestActivityUpdate.timestamp,
+          customer_name: customerName,
+          tour_name: tourName,
+          operation_type: 'UPDATE_ACTIVITIES_CONSOLIDATED',
+          user_name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+            : 'System',
+        });
+      }
+      
+      // Show hotel updates separately
+      const hotelUpdates = entries.filter(e => e.operation_type === 'UPDATE_HOTEL_BOOKING' && e.id !== cancelEntry?.id);
+      hotelUpdates.forEach(entry => {
+        const profile = profiles?.find(p => p.id === entry.user_id);
+        consolidatedChanges.push({
+          timestamp: entry.timestamp,
+          customer_name: customerName,
+          tour_name: tourName,
+          operation_type: entry.operation_type,
+          user_name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+            : 'System',
+          details: entry.details,
+        });
+      });
+    } else {
+      // This is an update to an existing booking
+      
+      // If cancelled, show cancellation
+      if (cancelEntry) {
+        const profile = profiles?.find(p => p.id === cancelEntry.user_id);
+        consolidatedChanges.push({
+          timestamp: cancelEntry.timestamp,
+          customer_name: customerName,
+          tour_name: tourName,
+          operation_type: 'CANCEL_BOOKING',
+          user_name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+            : 'System',
+        });
+      }
+      
+      // Consolidate activity updates
+      const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+      if (activityUpdates.length > 0) {
+        const latestActivityUpdate = activityUpdates[0];
+        const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
+        consolidatedChanges.push({
+          timestamp: latestActivityUpdate.timestamp,
+          customer_name: customerName,
+          tour_name: tourName,
+          operation_type: 'UPDATE_ACTIVITIES_CONSOLIDATED',
+          user_name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+            : 'System',
+        });
+      }
+      
+      // Show other updates separately
+      const otherUpdates = entries.filter(e => 
+        e.operation_type !== 'UPDATE_BOOKING' && 
+        e.operation_type !== 'UPDATE' && 
+        e.operation_type !== 'UPDATE_ACTIVITY_BOOKING' &&
+        e.id !== cancelEntry?.id
+      );
+      
+      otherUpdates.forEach(entry => {
+        const profile = profiles?.find(p => p.id === entry.user_id);
+        consolidatedChanges.push({
+          timestamp: entry.timestamp,
+          customer_name: customerName,
+          tour_name: tourName,
+          operation_type: entry.operation_type,
+          user_name: profile 
+            ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+            : 'System',
+          details: entry.details,
+        });
+      });
+    }
+  });
+
+  // Sort by timestamp descending
+  consolidatedChanges.sort((a, b) => 
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
+  // Helper function to format operation type
+  const formatOperationType = (type: string, details?: any): string => {
+    const typeMap: Record<string, string> = {
+      'CREATE': 'New Booking',
+      'CREATE_BOOKING': 'New Booking',
+      'ADD_HOTEL_TO_BOOKING': 'Hotel Added',
+      'REMOVE_HOTEL_FROM_BOOKING': 'Hotel Removed',
+      'ADD_ACTIVITY_TO_BOOKING': 'Activity Added',
+      'REMOVE_ACTIVITY_FROM_BOOKING': 'Activity Removed',
+      'DELETE_BOOKING': 'Booking Deleted',
+      'CANCEL_BOOKING': 'Booking Cancelled',
+    };
+    
+    if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
+      const changes = [];
+      if (details.hotel_dates.old?.check_in !== details.hotel_dates.new?.check_in) {
+        changes.push(`check-in changed`);
+      }
+      if (details.hotel_dates.old?.check_out !== details.hotel_dates.new?.check_out) {
+        changes.push(`check-out changed`);
+      }
+      if (changes.length > 0) {
+        return `Hotel Updated: ${changes.join(', ')}`;
+      }
+      return 'Hotel Updated';
+    }
+    
+    if (type === 'UPDATE_ACTIVITY_BOOKING') {
+      return 'Activity Updated';
+    }
+    
+    if (type === 'UPDATE_ACTIVITIES_CONSOLIDATED') {
+      return 'Activities Updated';
+    }
+    
+    return typeMap[type] || type;
+  };
+
+  // Generate HTML
+  let html = '<h2>Booking Changes Report</h2>';
+  html += '<p style="color: #666;">Changes from the past 7 days across all tours</p>';
   html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
-  html += '<thead><tr><th>Date</th><th>Guest</th><th>Action</th><th>Details</th></tr></thead>';
+  html += '<thead><tr><th>Date & Time</th><th>Customer</th><th>Tour</th><th>Action</th><th>Changed By</th></tr></thead>';
   html += '<tbody>';
 
-  for (const log of auditLogs) {
-    const customer = log.bookings?.customers || {};
-    const guestName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown';
-    const date = new Date(log.timestamp).toLocaleDateString();
+  for (const change of consolidatedChanges) {
+    const date = new Date(change.timestamp).toLocaleDateString('en-AU', { 
+      day: '2-digit', 
+      month: '2-digit', 
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
     
     html += '<tr>';
     html += `<td>${date}</td>`;
-    html += `<td>${guestName}</td>`;
-    html += `<td>${log.operation_type}</td>`;
-    html += `<td>${JSON.stringify(log.details || {})}</td>`;
+    html += `<td>${change.customer_name}</td>`;
+    html += `<td>${change.tour_name}</td>`;
+    html += `<td>${formatOperationType(change.operation_type, change.details)}</td>`;
+    html += `<td>${change.user_name}</td>`;
     html += '</tr>';
   }
 
   html += '</tbody></table>';
+  html += `<p style="color: #666; font-size: 14px;">Total changes: ${consolidatedChanges.length}</p>`;
   return html;
 }
 
@@ -169,7 +392,7 @@ async function generateActivityMatrixReport(supabase: any, tourId: string, tourN
 
 // Main report generation function
 async function generateReport(supabase: any, reportType: string, tourId: string, tourName: string): Promise<string> {
-  console.log(`Generating ${reportType} report for tour ${tourName}`);
+  console.log(`Generating ${reportType} report`);
   
   switch (reportType) {
     case 'rooming_list':
@@ -177,7 +400,8 @@ async function generateReport(supabase: any, reportType: string, tourId: string,
     case 'passenger_list':
       return await generatePassengerListReport(supabase, tourId, tourName);
     case 'booking_changes':
-      return await generateBookingChangesReport(supabase, tourId, tourName);
+      // Booking Changes Report is system-wide, not tour-specific
+      return await generateBookingChangesReport(supabase);
     case 'activity_matrix':
       return await generateActivityMatrixReport(supabase, tourId, tourName);
     case 'bedding_review':
@@ -235,10 +459,13 @@ serve(async (req) => {
       'activity_check': 'Activity Allocation Check'
     };
 
+    // Check if booking_changes is the only report type
+    const isOnlyBookingChanges = report_types.length === 1 && report_types[0] === 'booking_changes';
+    
     let emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-        <h1 style="color: #333;">Automated Report: ${tour.name}</h1>
-        <p style="color: #666;">Tour Start Date: ${new Date(tour.start_date).toLocaleDateString()}</p>
+        <h1 style="color: #333;">Automated Report${isOnlyBookingChanges ? '' : ': ' + tour.name}</h1>
+        ${!isOnlyBookingChanges ? `<p style="color: #666;">Tour Start Date: ${new Date(tour.start_date).toLocaleDateString()}</p>` : ''}
         <hr style="border: 1px solid #eee; margin: 20px 0;">
     `;
 
@@ -269,7 +496,7 @@ serve(async (req) => {
     const emailResponse = await resend.emails.send({
       from: 'Australian Racing Tours <reports@australianracingtours.com.au>',
       to: recipient_emails,
-      subject: `Automated Report: ${tour.name}`,
+      subject: isOnlyBookingChanges ? 'Automated Report: Booking Changes' : `Automated Report: ${tour.name}`,
       html: emailHtml,
     });
 
