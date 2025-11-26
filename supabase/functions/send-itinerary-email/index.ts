@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -141,8 +142,32 @@ serve(async (req) => {
     }
     emailBody += htmlContent;
 
+    // Generate PDF from HTML
+    console.log("Generating PDF from HTML...");
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '20mm',
+        right: '15mm',
+        bottom: '20mm',
+        left: '15mm',
+      },
+    });
+    
+    await browser.close();
+    console.log("PDF generated successfully");
+
     // Prepare attachment filename
-    const attachmentFilename = `${tour.name.replace(/[^a-z0-9]/gi, '_')}_Itinerary.html`;
+    const attachmentFilename = `${tour.name.replace(/[^a-z0-9]/gi, '_')}_Itinerary.pdf`;
 
     const emailOptions: any = {
       from: fromAddress,
@@ -152,7 +177,7 @@ serve(async (req) => {
       attachments: [
         {
           filename: attachmentFilename,
-          content: htmlContent,
+          content: Buffer.from(pdfBuffer).toString('base64'),
         },
       ],
     };
