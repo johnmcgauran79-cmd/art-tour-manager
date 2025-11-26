@@ -141,11 +141,20 @@ serve(async (req) => {
     }
     emailBody += htmlContent;
 
+    // Prepare attachment filename
+    const attachmentFilename = `${tour.name.replace(/[^a-z0-9]/gi, '_')}_Itinerary.html`;
+
     const emailOptions: any = {
       from: fromAddress,
       to: recipientEmail,
       subject: emailSubject,
       html: emailBody,
+      attachments: [
+        {
+          filename: attachmentFilename,
+          content: htmlContent,
+        },
+      ],
     };
 
     // Add CC and BCC if provided
