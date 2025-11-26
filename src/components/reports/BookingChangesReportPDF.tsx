@@ -67,63 +67,93 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
         <meta charset="utf-8">
         <title>Booking Changes Report</title>
         <style>
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          @page {
+            size: A4 landscape;
+            margin: 15mm;
+          }
           body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            color: #333;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #1a1a1a;
+            background: white;
           }
           .header {
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #333;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #2c3e50;
           }
           .header h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
           }
           .header p {
-            margin: 5px 0;
-            color: #666;
+            margin: 4px 0;
+            color: #555;
             font-size: 14px;
+            font-weight: 500;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
           }
           th {
-            background-color: #f5f5f5;
-            padding: 12px;
+            background-color: #34495e;
+            color: white;
+            padding: 14px 12px;
             text-align: left;
             font-weight: 600;
-            border-bottom: 2px solid #ddd;
-            font-size: 12px;
+            font-size: 13px;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
           td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #eee;
-            font-size: 11px;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #333;
+            line-height: 1.5;
           }
-          tr:hover {
-            background-color: #f9f9f9;
+          tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+          }
+          tbody tr:hover {
+            background-color: #e9ecef;
+          }
+          tbody tr:last-child td {
+            border-bottom: 2px solid #34495e;
           }
           .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
+            margin-top: 25px;
+            padding-top: 15px;
+            border-top: 2px solid #dee2e6;
+            font-size: 11px;
+            color: #6c757d;
+            text-align: center;
           }
           .summary {
             margin-top: 20px;
-            padding: 15px;
-            background-color: #f9f9f9;
-            border-left: 4px solid #333;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
           }
           .summary strong {
             display: block;
-            margin-bottom: 5px;
+            font-size: 16px;
+            font-weight: 600;
           }
         </style>
       </head>
@@ -137,17 +167,17 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
         <table>
           <thead>
             <tr>
-              <th style="width: 18%">Date & Time</th>
-              <th style="width: 22%">Customer</th>
-              <th style="width: 25%">Tour</th>
+              <th style="width: 16%">Date & Time</th>
+              <th style="width: 24%">Customer</th>
+              <th style="width: 26%">Tour</th>
               <th style="width: 20%">Action</th>
-              <th style="width: 15%">Changed By</th>
+              <th style="width: 14%">Changed By</th>
             </tr>
           </thead>
           <tbody>
             ${changes.map(change => `
               <tr>
-                <td>${format(new Date(change.timestamp), 'dd/MM/yyyy HH:mm')}</td>
+                <td><strong>${format(new Date(change.timestamp), 'dd/MM/yyyy HH:mm')}</strong></td>
                 <td>${change.customer_name}</td>
                 <td>${change.tour_name}</td>
                 <td>${formatOperationType(change.operation_type, change.details)}</td>
@@ -162,7 +192,8 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
         </div>
         
         <div class="footer">
-          <p>This report was automatically generated by the Tour Operations Management System.</p>
+          <p>This report was automatically generated by the Tour Operations Management System</p>
+          <p>Australian Racing Tours • Confidential</p>
         </div>
       </body>
     </html>
@@ -179,11 +210,22 @@ export const BookingChangesReportPDF = ({ changes, period }: BookingChangesRepor
       const filename = `booking-changes-report-${period}-days-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
       
       const opt = {
-        margin: 10,
+        margin: [10, 10, 10, 10] as [number, number, number, number],
         filename: filename,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' as const }
+        image: { type: 'jpeg' as const, quality: 1.0 },
+        html2canvas: { 
+          scale: 3,
+          useCORS: true,
+          letterRendering: true,
+          logging: false
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'landscape' as const,
+          compress: false
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
       
       await html2pdf().set(opt).from(htmlContent).save();
