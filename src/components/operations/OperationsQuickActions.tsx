@@ -254,7 +254,7 @@ export const OperationsQuickActions = () => {
     },
     {
       icon: FileText,
-      label: "Weekly Booking Changes",
+      label: "Booking Changes Report",
       description: "Review new bookings & changes (7 days)",
       count: weeklyChangesCount,
       onClick: () => {
