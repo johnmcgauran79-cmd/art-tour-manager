@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
 import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 const REPORT_TYPES = [{
   value: 'rooming_list',
   label: 'Rooming List'
@@ -66,6 +67,7 @@ const WEEKDAYS = [{
   label: 'Saturday'
 }];
 export const AutomatedReportRulesManagement = () => {
+  const { toast } = useToast();
   const {
     data: rules,
     isLoading
@@ -88,9 +90,33 @@ export const AutomatedReportRulesManagement = () => {
   });
   const [emailInput, setEmailInput] = useState('');
   const handleSubmit = async () => {
-    if (!formData.rule_name || !formData.report_types?.length || !formData.recipient_emails?.length) {
+    if (!formData.rule_name) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a rule name.",
+        variant: "destructive",
+      });
       return;
     }
+    
+    if (!formData.report_types?.length) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one report to include.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!formData.recipient_emails?.length) {
+      toast({
+        title: "Validation Error",
+        description: "Please add at least one recipient email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (editingRule) {
       await updateRule.mutateAsync({
         id: editingRule.id,
