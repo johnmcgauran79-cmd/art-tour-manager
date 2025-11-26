@@ -39,7 +39,7 @@ export const AggregatedActivityMatrixReport = ({
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (open) {
+    if (open !== false) {
       fetchDiscrepancies();
     }
   }, [open]);
@@ -173,7 +173,7 @@ export const AggregatedActivityMatrixReport = ({
 
   const handleViewBooking = (tourId: string, bookingId: string) => {
     navigate(`/tours/${tourId}?tab=bookings&booking=${bookingId}`);
-    onOpenChange(false);
+    if (onOpenChange) onOpenChange(false);
   };
 
   const toggleBooking = (bookingId: string) => {
@@ -218,173 +218,174 @@ export const AggregatedActivityMatrixReport = ({
     }> 
   }>);
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Grid3X3 className="h-6 w-6 text-brand-navy" />
-            Activity Allocation Matrix - All Tours
-          </DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-4 top-4"
-            onClick={() => onOpenChange(false)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
+  const content = (
+    <>
+      <div className="flex items-center gap-2 mb-6">
+        <Grid3X3 className="h-6 w-6 text-brand-navy" />
+        <h2 className="text-xl font-semibold">Activity Allocation Matrix - All Tours</h2>
+      </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-brand-navy" />
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-brand-navy" />
+        </div>
+      ) : discrepancies.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-lg font-semibold text-green-600">All Clear! ✓</p>
+          <p className="text-muted-foreground mt-2">
+            No activity allocation discrepancies found across all active tours.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-900">
+                  {discrepancies.length} Discrepancies Found
+                </p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Activity allocations don't match booking passenger counts across {Object.keys(groupedByTourAndBooking).length} tour(s).
+                </p>
+              </div>
+            </div>
           </div>
-        ) : discrepancies.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-lg font-semibold text-green-600">All Clear! ✓</p>
-            <p className="text-muted-foreground mt-2">
-              No activity allocation discrepancies found across all active tours.
-            </p>
+
+          <div className="flex items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-destructive"></div>
+              <span>Missing Allocation (0 pax)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded bg-amber-500"></div>
+              <span>Mismatch (incorrect pax count)</span>
+            </div>
           </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-amber-900">
-                    {discrepancies.length} Discrepancies Found
-                  </p>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Activity allocations don't match booking passenger counts across {Object.keys(groupedByTourAndBooking).length} tour(s).
+
+          {Object.entries(groupedByTourAndBooking).map(([tourId, tourData]) => {
+            const totalBookings = Object.keys(tourData.bookings).length;
+            const totalDiscrepancies = Object.values(tourData.bookings).reduce(
+              (sum, booking) => sum + booking.discrepancies.length, 
+              0
+            );
+            
+            return (
+              <div key={tourId} className="border rounded-lg overflow-hidden">
+                <div className="bg-muted p-4">
+                  <h3 className="font-semibold text-lg">{tourData.tourName}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {formatDateToDDMMYYYY(tourData.tourStartDate)} • {totalBookings} booking{totalBookings !== 1 ? 's' : ''} with {totalDiscrepancies} discrepanc{totalDiscrepancies !== 1 ? 'ies' : 'y'}
                   </p>
                 </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-destructive"></div>
-                <span>Missing Allocation (0 pax)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded bg-amber-500"></div>
-                <span>Mismatch (incorrect pax count)</span>
-              </div>
-            </div>
-
-            {Object.entries(groupedByTourAndBooking).map(([tourId, tourData]) => {
-              const totalBookings = Object.keys(tourData.bookings).length;
-              const totalDiscrepancies = Object.values(tourData.bookings).reduce(
-                (sum, booking) => sum + booking.discrepancies.length, 
-                0
-              );
-              
-              return (
-                <div key={tourId} className="border rounded-lg overflow-hidden">
-                  <div className="bg-muted p-4">
-                    <h3 className="font-semibold text-lg">{tourData.tourName}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDateToDDMMYYYY(tourData.tourStartDate)} • {totalBookings} booking{totalBookings !== 1 ? 's' : ''} with {totalDiscrepancies} discrepanc{totalDiscrepancies !== 1 ? 'ies' : 'y'}
-                    </p>
-                  </div>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12"></TableHead>
-                        <TableHead>Lead Passenger</TableHead>
-                        <TableHead className="text-center">Booking Pax</TableHead>
-                        <TableHead className="text-center">Issues</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {Object.entries(tourData.bookings).map(([bookingId, bookingData]) => {
-                        const isExpanded = expandedBookings.has(bookingId);
-                        const issueCount = bookingData.discrepancies.length;
-                        
-                        return (
-                          <>
-                            <TableRow key={bookingId} className="cursor-pointer hover:bg-muted/50">
-                              <TableCell onClick={() => toggleBooking(bookingId)}>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                </Button>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Lead Passenger</TableHead>
+                      <TableHead className="text-center">Booking Pax</TableHead>
+                      <TableHead className="text-center">Issues</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(tourData.bookings).map(([bookingId, bookingData]) => {
+                      const isExpanded = expandedBookings.has(bookingId);
+                      const issueCount = bookingData.discrepancies.length;
+                      
+                      return (
+                        <>
+                          <TableRow key={bookingId} className="cursor-pointer hover:bg-muted/50">
+                            <TableCell onClick={() => toggleBooking(bookingId)}>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TableCell>
+                            <TableCell className="font-medium" onClick={() => toggleBooking(bookingId)}>
+                              {bookingData.leadPassenger}
+                            </TableCell>
+                            <TableCell className="text-center font-semibold" onClick={() => toggleBooking(bookingId)}>
+                              {bookingData.passengerCount}
+                            </TableCell>
+                            <TableCell className="text-center" onClick={() => toggleBooking(bookingId)}>
+                              <Badge variant="outline" className="bg-destructive/10 text-destructive">
+                                {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleViewBooking(tourId, bookingId)}
+                              >
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                          {isExpanded && bookingData.discrepancies.map((disc, idx) => (
+                            <TableRow key={`${bookingId}-${disc.activityId}-${idx}`} className="bg-muted/30">
+                              <TableCell></TableCell>
+                              <TableCell className="pl-8">
+                                <div className="flex items-center gap-2">
+                                  <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-medium">{disc.activityName}</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    {disc.activityDate ? formatDateToDDMMYYYY(disc.activityDate) : '-'}
+                                  </span>
+                                </div>
                               </TableCell>
-                              <TableCell className="font-medium" onClick={() => toggleBooking(bookingId)}>
-                                {bookingData.leadPassenger}
-                              </TableCell>
-                              <TableCell className="text-center font-semibold" onClick={() => toggleBooking(bookingId)}>
-                                {bookingData.passengerCount}
-                              </TableCell>
-                              <TableCell className="text-center" onClick={() => toggleBooking(bookingId)}>
-                                <Badge variant="outline" className="bg-destructive/10 text-destructive">
-                                  {issueCount} {issueCount === 1 ? 'issue' : 'issues'}
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
+                                  {disc.allocatedCount} allocated
                                 </Badge>
                               </TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleViewBooking(tourId, bookingId)}
-                                >
-                                  View
-                                </Button>
+                              <TableCell className="text-center">
+                                <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
+                                  {disc.discrepancyType === 'missing' ? 'Missing' : 'Mismatch'}
+                                </Badge>
                               </TableCell>
+                              <TableCell></TableCell>
                             </TableRow>
-                            {isExpanded && bookingData.discrepancies.map((disc, idx) => (
-                              <TableRow key={`${bookingId}-${disc.activityId}-${idx}`} className="bg-muted/30">
-                                <TableCell></TableCell>
-                                <TableCell className="pl-8">
-                                  <div className="flex items-center gap-2">
-                                    <AlertTriangle className="h-4 w-4 text-muted-foreground" />
-                                    <span className="font-medium">{disc.activityName}</span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {disc.activityDate ? formatDateToDDMMYYYY(disc.activityDate) : '-'}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
-                                    {disc.allocatedCount} allocated
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <Badge variant="outline" className={getStatusColor(disc.discrepancyType)}>
-                                    {disc.discrepancyType === 'missing' ? 'Missing' : 'Mismatch'}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell></TableCell>
-                              </TableRow>
-                            ))}
-                          </>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              );
-            })}
-          </div>
-        )}
-        
-        {!loading && discrepancies.length > 0 && (
-          <div className="flex justify-end pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              <X className="h-4 w-4 mr-2" />
-              Close
-            </Button>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+                          ))}
+                        </>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
+
+  // If open/onOpenChange are provided, render as dialog
+  if (open !== undefined && onOpenChange !== undefined) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+          {content}
+          {!loading && discrepancies.length > 0 && (
+            <div className="flex justify-end pt-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Close
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Otherwise render as page content
+  return content;
 };
