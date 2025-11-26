@@ -18,24 +18,25 @@ serve(async (req) => {
 
     console.log('Processing scheduled automated reports...');
 
-    // Get all active weekly rules (schedule_type = 'weekly')
-    const currentDay = new Date().getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
-    const { data: weeklyRules, error: rulesError } = await supabase
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const currentDate = now.getDate(); // 1-31
+    const results = [];
+
+    // Get all active rules
+    const { data: allRules, error: rulesError } = await supabase
       .from('automated_report_rules')
       .select('*')
-      .eq('is_active', true)
-      .eq('schedule_type', 'weekly')
-      .eq('schedule_value', currentDay);
+      .eq('is_active', true);
 
     if (rulesError) {
       throw rulesError;
     }
 
-    if (!weeklyRules || weeklyRules.length === 0) {
-      console.log('No active weekly rules found for today');
+    if (!allRules || allRules.length === 0) {
+      console.log('No active rules found');
       return new Response(
-        JSON.stringify({ message: 'No active weekly rules for today' }),
+        JSON.stringify({ message: 'No active rules to process' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
@@ -43,9 +44,24 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Found ${weeklyRules.length} weekly rules to process`);
+    console.log(`Found ${allRules.length} active rules to evaluate`);
 
-    // Get all upcoming tours to send reports for
+    // Filter rules that should run today
+    const rulesToProcess = allRules.filter(rule => {
+      if (rule.schedule_type === 'weekly') {
+        // Weekly: check if today matches the day of week
+        return rule.schedule_value === currentDay;
+      } else if (rule.schedule_type === 'monthly') {
+        // Monthly: check if today matches the day of month
+        return rule.schedule_value === currentDate;
+      }
+      // 'days_before_tour' rules are handled differently below
+      return false;
+    });
+
+    console.log(`${rulesToProcess.length} rules match today's schedule (weekly/monthly)`);
+
+    // Get all upcoming tours
     const { data: upcomingTours, error: toursError } = await supabase
       .from('tours')
       .select('id, name, start_date')
@@ -69,9 +85,8 @@ serve(async (req) => {
 
     console.log(`Found ${upcomingTours.length} upcoming tours`);
 
-    // Process each rule for each tour
-    const results = [];
-    for (const rule of weeklyRules) {
+    // Process weekly and monthly rules for all tours
+    for (const rule of rulesToProcess) {
       for (const tour of upcomingTours) {
         try {
           console.log(`Processing rule "${rule.rule_name}" for tour "${tour.name}"`);
@@ -120,6 +135,70 @@ serve(async (req) => {
             error: error.message
           });
           console.error(`Error processing rule "${rule.rule_name}" for tour "${tour.name}":`, error);
+        }
+      }
+    }
+
+    // Process "days before tour" rules
+    const daysBeforeRules = allRules.filter(rule => rule.schedule_type === 'days_before_tour');
+    console.log(`Processing ${daysBeforeRules.length} days-before-tour rules`);
+
+    for (const rule of daysBeforeRules) {
+      for (const tour of upcomingTours) {
+        try {
+          const tourStartDate = new Date(tour.start_date);
+          const daysUntilTour = Math.floor((tourStartDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          
+          // Check if today matches the "X days before" threshold
+          if (daysUntilTour === rule.schedule_value) {
+            console.log(`Processing days-before rule "${rule.rule_name}" for tour "${tour.name}" (${daysUntilTour} days before)`);
+            
+            const response = await fetch(`${supabaseUrl}/functions/v1/process-automated-reports`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                tour_id: tour.id,
+                report_types: rule.report_types,
+                recipient_emails: rule.recipient_emails,
+                rule_id: rule.id,
+                schedule_type: rule.schedule_type,
+                schedule_value: rule.schedule_value,
+              }),
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              results.push({
+                rule: rule.rule_name,
+                tour: tour.name,
+                status: 'success',
+                days_until_tour: daysUntilTour,
+                ...result
+              });
+              console.log(`Successfully processed days-before rule "${rule.rule_name}" for tour "${tour.name}"`);
+            } else {
+              const errorText = await response.text();
+              results.push({
+                rule: rule.rule_name,
+                tour: tour.name,
+                status: 'error',
+                days_until_tour: daysUntilTour,
+                error: errorText
+              });
+              console.error(`Failed to process days-before rule "${rule.rule_name}" for tour "${tour.name}":`, errorText);
+            }
+          }
+        } catch (error) {
+          results.push({
+            rule: rule.rule_name,
+            tour: tour.name,
+            status: 'error',
+            error: error.message
+          });
+          console.error(`Error processing days-before rule "${rule.rule_name}" for tour "${tour.name}":`, error);
         }
       }
     }
