@@ -317,6 +317,93 @@ export type Database = {
           },
         ]
       }
+      automated_report_log: {
+        Row: {
+          error_message: string | null
+          id: string
+          recipient_emails: string[] | null
+          report_types: string[] | null
+          rule_id: string | null
+          sent_at: string | null
+          status: string | null
+          tour_id: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          recipient_emails?: string[] | null
+          report_types?: string[] | null
+          rule_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          tour_id?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          recipient_emails?: string[] | null
+          report_types?: string[] | null
+          rule_id?: string | null
+          sent_at?: string | null
+          status?: string | null
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_report_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automated_report_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_report_log_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      automated_report_rules: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          recipient_emails: string[]
+          report_types: string[]
+          rule_name: string
+          schedule_type: string
+          schedule_value: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          recipient_emails: string[]
+          report_types: string[]
+          rule_name: string
+          schedule_type: string
+          schedule_value: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          recipient_emails?: string[]
+          report_types?: string[]
+          rule_name?: string
+          schedule_type?: string
+          schedule_value?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       booking_assignments: {
         Row: {
           agent_id: string
