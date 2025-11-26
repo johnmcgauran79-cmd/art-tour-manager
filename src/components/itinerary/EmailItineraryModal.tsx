@@ -24,8 +24,9 @@ interface EmailItineraryModalProps {
 }
 
 export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: EmailItineraryModalProps) => {
-  const [recipientType, setRecipientType] = useState<"user" | "custom">("user");
+  const [recipientType, setRecipientType] = useState<"user" | "client" | "custom">("user");
   const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [customEmail, setCustomEmail] = useState("");
   const [customName, setCustomName] = useState("");
   const [subject, setSubject] = useState(`${tour.name} - Tour Itinerary`);
@@ -54,6 +55,31 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
     },
   });
 
+  const { data: clients } = useQuery({
+    queryKey: ['tour-clients', tour.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          lead_passenger_id,
+          customers!bookings_lead_passenger_id_fkey (
+            id,
+            email,
+            first_name,
+            last_name
+          )
+        `)
+        .eq('tour_id', tour.id)
+        .not('status', 'eq', 'cancelled')
+        .not('customers.email', 'is', null)
+        .order('customers(first_name)');
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const handleSend = async () => {
     let recipientEmail = "";
     let recipientName = "";
@@ -63,6 +89,12 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
       if (user) {
         recipientEmail = user.email || "";
         recipientName = `${user.first_name} ${user.last_name}`.trim();
+      }
+    } else if (recipientType === "client" && selectedClientId) {
+      const booking = clients?.find(b => b.customers?.id === selectedClientId);
+      if (booking?.customers) {
+        recipientEmail = booking.customers.email || "";
+        recipientName = `${booking.customers.first_name} ${booking.customers.last_name}`.trim();
       }
     } else if (recipientType === "custom") {
       recipientEmail = customEmail;
@@ -150,6 +182,7 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
   const resetForm = () => {
     setRecipientType("user");
     setSelectedUserId("");
+    setSelectedClientId("");
     setCustomEmail("");
     setCustomName("");
     setSubject(`${tour.name} - Tour Itinerary`);
@@ -211,6 +244,14 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
               <label className="flex items-center gap-2">
                 <input
                   type="radio"
+                  checked={recipientType === "client"}
+                  onChange={() => setRecipientType("client")}
+                />
+                <span>Select Client</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="radio"
                   checked={recipientType === "custom"}
                   onChange={() => setRecipientType("custom")}
                 />
@@ -232,6 +273,27 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
                     <SelectItem key={user.id} value={user.id}>
                       {user.first_name} {user.last_name} ({user.email})
                     </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Client Selection */}
+          {recipientType === "client" && (
+            <div className="space-y-2">
+              <Label htmlFor="client-select">Select Client</Label>
+              <Select value={selectedClientId} onValueChange={setSelectedClientId}>
+                <SelectTrigger id="client-select">
+                  <SelectValue placeholder="Choose a client..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients?.map((booking) => (
+                    booking.customers && (
+                      <SelectItem key={booking.customers.id} value={booking.customers.id}>
+                        {booking.customers.first_name} {booking.customers.last_name} ({booking.customers.email})
+                      </SelectItem>
+                    )
                   ))}
                 </SelectContent>
               </Select>
@@ -387,7 +449,7 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
             </Button>
             <Button 
               onClick={handleSend} 
-              disabled={sendItinerary.isPending || (!selectedUserId && !customEmail)}
+              disabled={sendItinerary.isPending || (!selectedUserId && !selectedClientId && !customEmail)}
             >
               <Mail className="h-4 w-4 mr-2" />
               {sendItinerary.isPending ? 'Sending...' : 'Send Itinerary'}
