@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 interface WeeklyChange {
   id: string;
@@ -26,220 +27,23 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
   const { data: changes, isLoading } = useQuery({
     queryKey: ['weekly-booking-changes', period],
     queryFn: async () => {
-      const daysAgo = new Date();
-      daysAgo.setDate(daysAgo.getDate() - parseInt(period));
-
-      const { data: auditData, error } = await supabase
-        .from('audit_log')
-        .select('id, timestamp, operation_type, record_id, user_id, details')
-        .eq('table_name', 'bookings')
-        .gte('timestamp', daysAgo.toISOString())
-        .order('timestamp', { ascending: false });
-
-      if (error) throw error;
-
-      // Get unique booking IDs
-      const bookingIds = [...new Set(auditData?.map(entry => entry.record_id).filter(Boolean) || [])];
+      console.log('Fetching booking changes from edge function...');
       
-      // Fetch booking and customer details (include cancelled bookings)
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          tour_id,
-          status,
-          tours (name),
-          customers!lead_passenger_id (first_name, last_name)
-        `)
-        .in('id', bookingIds);
-
-      // Fetch user profiles
-      const userIds = [...new Set(auditData?.map(entry => entry.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email')
-        .in('id', userIds);
-
-      // Group operations by booking_id to consolidate new bookings
-      const bookingGroups = new Map<string, typeof auditData>();
-      auditData?.forEach(entry => {
-        const bookingId = entry.record_id;
-        if (!bookingId) return;
-        
-        if (!bookingGroups.has(bookingId)) {
-          bookingGroups.set(bookingId, []);
-        }
-        bookingGroups.get(bookingId)!.push(entry);
-      });
-
-      const consolidatedChanges: WeeklyChange[] = [];
-
-      // Process each booking's operations
-      bookingGroups.forEach((entries, bookingId) => {
-        const booking = bookings?.find(b => b.id === bookingId);
-        
-        // Skip if booking no longer exists (was deleted)
-        if (!booking) return;
-        
-        // Handle missing customer or tour data gracefully
-        const customerName = booking.customers 
-          ? `${booking.customers.first_name} ${booking.customers.last_name}`
-          : 'Unknown Customer';
-        const tourName = booking.tours?.name || 'Unknown Tour';
-
-        // Check if this booking was created in this period
-        const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
-        
-        // Check if booking was cancelled in this period
-        const wasCancelled = booking.status === 'cancelled';
-        const cancelEntry = wasCancelled ? entries.find(e => {
-          const details = e.details as any;
-          return details?.old_status && details?.new_status === 'cancelled';
-        }) : null;
-        
-        if (createEntry) {
-          // Show the new booking entry
-          const profile = profiles?.find(p => p.id === createEntry.user_id);
-          consolidatedChanges.push({
-            id: createEntry.id,
-            timestamp: createEntry.timestamp,
-            operation_type: 'CREATE_BOOKING',
-            booking_id: bookingId,
-            customer_name: customerName,
-            tour_name: tourName,
-            user_name: profile 
-              ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-              : 'System',
-            details: createEntry.details
-          });
-          
-          // If cancelled, show cancellation
-          if (cancelEntry) {
-            const profile = profiles?.find(p => p.id === cancelEntry.user_id);
-            consolidatedChanges.push({
-              id: cancelEntry.id,
-              timestamp: cancelEntry.timestamp,
-              operation_type: 'CANCEL_BOOKING',
-              booking_id: bookingId,
-              customer_name: customerName,
-              tour_name: tourName,
-              user_name: profile 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System',
-              details: cancelEntry.details
-            });
-          }
-          
-          // Also show any UPDATE operations (actual changes after creation, excluding cancellation)
-          // Consolidate activity updates into a single entry
-          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
-          const hotelUpdates = entries.filter(e => e.operation_type === 'UPDATE_HOTEL_BOOKING' && e.id !== cancelEntry?.id);
-          
-          // If there are activity updates, add one consolidated entry
-          if (activityUpdates.length > 0) {
-            const latestActivityUpdate = activityUpdates[0]; // Use the most recent one for timestamp and user
-            const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
-            consolidatedChanges.push({
-              id: latestActivityUpdate.id,
-              timestamp: latestActivityUpdate.timestamp,
-              operation_type: 'UPDATE_ACTIVITIES_CONSOLIDATED',
-              booking_id: bookingId,
-              customer_name: customerName,
-              tour_name: tourName,
-              user_name: profile 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System',
-              details: latestActivityUpdate.details
-            });
-          }
-          
-          // Show hotel updates separately
-          hotelUpdates.forEach(entry => {
-            const profile = profiles?.find(p => p.id === entry.user_id);
-            consolidatedChanges.push({
-              id: entry.id,
-              timestamp: entry.timestamp,
-              operation_type: entry.operation_type,
-              booking_id: bookingId,
-              customer_name: customerName,
-              tour_name: tourName,
-              user_name: profile 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System',
-              details: entry.details
-            });
-          });
-        } else {
-          // This is an update to an existing booking
-          
-          // If cancelled, show cancellation
-          if (cancelEntry) {
-            const profile = profiles?.find(p => p.id === cancelEntry.user_id);
-            consolidatedChanges.push({
-              id: cancelEntry.id,
-              timestamp: cancelEntry.timestamp,
-              operation_type: 'CANCEL_BOOKING',
-              booking_id: bookingId,
-              customer_name: customerName,
-              tour_name: tourName,
-              user_name: profile 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System',
-              details: cancelEntry.details
-            });
-          }
-          
-          // Show individual changes (excluding generic updates and cancellation)
-          // Consolidate activity updates into a single entry
-          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
-          const otherUpdates = entries.filter(e => 
-            e.operation_type !== 'UPDATE_BOOKING' && 
-            e.operation_type !== 'UPDATE' && 
-            e.operation_type !== 'UPDATE_ACTIVITY_BOOKING' &&
-            e.id !== cancelEntry?.id
-          );
-          
-          // If there are activity updates, add one consolidated entry
-          if (activityUpdates.length > 0) {
-            const latestActivityUpdate = activityUpdates[0]; // Use the most recent one for timestamp and user
-            const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
-            consolidatedChanges.push({
-              id: latestActivityUpdate.id,
-              timestamp: latestActivityUpdate.timestamp,
-              operation_type: 'UPDATE_ACTIVITIES_CONSOLIDATED',
-              booking_id: bookingId,
-              customer_name: customerName,
-              tour_name: tourName,
-              user_name: profile 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System',
-              details: latestActivityUpdate.details
-            });
-          }
-          
-          // Show other updates separately
-          otherUpdates.forEach(entry => {
-            const profile = profiles?.find(p => p.id === entry.user_id);
-            consolidatedChanges.push({
-              id: entry.id,
-              timestamp: entry.timestamp,
-              operation_type: entry.operation_type,
-              booking_id: bookingId,
-              customer_name: customerName,
-              tour_name: tourName,
-              user_name: profile 
-                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System',
-              details: entry.details
-            });
-          });
+      const { data, error } = await supabase.functions.invoke('generate-booking-changes-report', {
+        body: { 
+          days_back: parseInt(period),
+          format: 'json'
         }
       });
 
-      // Sort by timestamp descending
-      return consolidatedChanges.sort((a, b) => 
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
+      if (error) {
+        console.error('Error fetching booking changes:', error);
+        toast.error('Failed to load booking changes report');
+        throw error;
+      }
+
+      console.log('Received booking changes data:', data);
+      return data.changes as WeeklyChange[];
     },
   });
 
