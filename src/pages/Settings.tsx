@@ -44,7 +44,17 @@ export const Settings = ({ onBack }: SettingsProps) => {
         </TabsContent>
 
         <TabsContent value="automated-reports" className="space-y-6">
-          <AutomatedReportRulesManagement />
+          <Card>
+            <CardHeader>
+              <CardTitle>Automated Report Distribution</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure automated reports to be emailed on a schedule - weekly, monthly, or days before tours.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <AutomatedReportRulesManagement />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="task-templates" className="space-y-6">
