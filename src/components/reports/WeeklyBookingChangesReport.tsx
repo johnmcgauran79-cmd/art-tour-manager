@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface WeeklyChange {
   id: string;
@@ -15,7 +17,11 @@ interface WeeklyChange {
   details?: any;
 }
 
-export const WeeklyBookingChangesReport = () => {
+interface WeeklyBookingChangesReportProps {
+  onClose?: () => void;
+}
+
+export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesReportProps) => {
   const { data: changes, isLoading } = useQuery({
     queryKey: ['weekly-booking-changes'],
     queryFn: async () => {
@@ -247,7 +253,19 @@ export const WeeklyBookingChangesReport = () => {
 
   return (
     <div className="p-6">
-      <h3 className="text-lg font-semibold mb-4">Weekly Booking Changes (Last 7 Days)</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold">Weekly Booking Changes (Last 7 Days)</h3>
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>

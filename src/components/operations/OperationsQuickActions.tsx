@@ -327,7 +327,7 @@ export const OperationsQuickActions = () => {
 
       <Dialog open={showWeeklyChanges} onOpenChange={setShowWeeklyChanges}>
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <WeeklyBookingChangesReport />
+          <WeeklyBookingChangesReport onClose={() => setShowWeeklyChanges(false)} />
         </DialogContent>
       </Dialog>
     </div>
