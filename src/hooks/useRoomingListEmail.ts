@@ -39,6 +39,12 @@ export const useSendRoomingList = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: () => {
+      toast({
+        title: "Processing...",
+        description: "Generating rooming list and preparing email. This may take a moment.",
+      });
+    },
     onSuccess: (data) => {
       toast({
         title: "Email Sent",

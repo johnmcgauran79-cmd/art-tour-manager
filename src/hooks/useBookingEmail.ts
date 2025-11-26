@@ -24,6 +24,12 @@ export const useSendBookingConfirmation = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: () => {
+      toast({
+        title: "Processing...",
+        description: "Preparing and sending your email. This may take a moment.",
+      });
+    },
     onSuccess: (data) => {
       toast({
         title: "Email Sent",

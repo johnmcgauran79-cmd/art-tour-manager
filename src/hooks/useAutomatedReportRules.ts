@@ -169,6 +169,12 @@ export const useSendTestAutomatedReport = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: () => {
+      toast({
+        title: "Processing...",
+        description: "Generating and preparing your test report email. This may take a moment.",
+      });
+    },
     onSuccess: () => {
       toast({
         title: "Test Sent",

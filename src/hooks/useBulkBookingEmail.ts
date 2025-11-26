@@ -175,6 +175,12 @@ export const useBulkBookingEmail = () => {
 
       return { successful, failed, total: bookings.length };
     },
+    onMutate: () => {
+      toast({
+        title: "Processing...",
+        description: "Preparing and sending bulk emails. This may take a few moments.",
+      });
+    },
     onSuccess: (data) => {
       toast({
         title: "Bulk Emails Sent",
