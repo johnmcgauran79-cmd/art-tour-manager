@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
-import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
+import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, useSendTestAutomatedReport, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 const REPORT_TYPES = [{
   value: 'rooming_list',
   label: 'Rooming List'
@@ -78,6 +79,7 @@ export const AutomatedReportRulesManagement = () => {
   const createRule = useCreateAutomatedReportRule();
   const updateRule = useUpdateAutomatedReportRule();
   const deleteRule = useDeleteAutomatedReportRule();
+  const sendTest = useSendTestAutomatedReport();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AutomatedReportRule | null>(null);
   const [formData, setFormData] = useState<Partial<AutomatedReportRule>>({
@@ -89,6 +91,34 @@ export const AutomatedReportRulesManagement = () => {
     is_active: true
   });
   const [emailInput, setEmailInput] = useState('');
+  
+  const handleSendTest = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user?.email) {
+      toast({
+        title: "Error",
+        description: "Could not determine your email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!formData.report_types?.length) {
+      toast({
+        title: "Validation Error",
+        description: "Please select at least one report to test.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    await sendTest.mutateAsync({
+      report_types: formData.report_types,
+      recipient_email: user.email,
+    });
+  };
+  
   const handleSubmit = async () => {
     if (!formData.rule_name) {
       toast({
@@ -287,6 +317,13 @@ export const AutomatedReportRulesManagement = () => {
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button 
+                  variant="secondary" 
+                  onClick={handleSendTest}
+                  disabled={sendTest.isPending}
+                >
+                  {sendTest.isPending ? 'Sending...' : 'Send Test'}
+                </Button>
                 <Button onClick={handleSubmit}>
                   {editingRule ? 'Update' : 'Create'} Rule
                 </Button>
