@@ -23,8 +23,7 @@ function generateActivityMatrixHTML(discrepancies: any[], tourName: string): str
     return '<p>No activity allocation discrepancies found for this tour.</p>';
   }
 
-  let html = `<h2>Activity Allocation Discrepancies - ${tourName}</h2>`;
-  html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
+  let html = '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
   html += '<thead><tr><th>Guest Name</th><th>Activity</th><th>Passenger Count</th><th>Allocated</th><th>Issue Type</th></tr></thead>';
   html += '<tbody>';
 

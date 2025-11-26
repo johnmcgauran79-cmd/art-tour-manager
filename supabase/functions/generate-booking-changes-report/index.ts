@@ -273,8 +273,7 @@ function generateBookingChangesHTML(changes: WeeklyChange[], daysBack: number = 
     return '<p>No booking changes in the past ' + daysBack + ' days.</p>';
   }
 
-  let html = '<h2>Booking Changes Report</h2>';
-  html += `<p style="color: #666;">Changes from the past ${daysBack} days across all tours</p>`;
+  let html = `<p style="color: #666;">Changes from the past ${daysBack} days across all tours</p>`;
   html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
   html += '<thead><tr><th>Date & Time</th><th>Customer</th><th>Tour</th><th>Action</th><th>Changed By</th></tr></thead>';
   html += '<tbody>';
