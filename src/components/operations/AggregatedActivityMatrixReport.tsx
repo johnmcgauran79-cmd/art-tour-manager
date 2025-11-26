@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,112 +47,27 @@ export const AggregatedActivityMatrixReport = ({
   const fetchDiscrepancies = async () => {
     setLoading(true);
     try {
-      // Fetch all active tours with their activities
-      const { data: tours, error: toursError } = await supabase
-        .from('tours')
-        .select('id, name, start_date, end_date, status')
-        .neq('status', 'archived')
-        .order('start_date', { ascending: true });
-
-      if (toursError) throw toursError;
-
-      const allDiscrepancies: DiscrepancyData[] = [];
-
-      for (const tour of tours || []) {
-        // Fetch activities for this tour
-        const { data: activities, error: activitiesError } = await supabase
-          .from('activities')
-          .select('id, name, activity_date')
-          .eq('tour_id', tour.id)
-          .order('activity_date', { ascending: true });
-
-        if (activitiesError) throw activitiesError;
-
-        if (!activities || activities.length === 0) continue;
-
-        // Fetch bookings for this tour (excluding cancelled and waitlisted)
-        const { data: bookings, error: bookingsError } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            passenger_count,
-            group_name,
-            status,
-            lead_passenger_id,
-            customers!bookings_lead_passenger_id_fkey(first_name, last_name)
-          `)
-          .eq('tour_id', tour.id)
-          .neq('status', 'cancelled')
-          .neq('status', 'waitlisted');
-
-        if (bookingsError) throw bookingsError;
-
-        if (!bookings || bookings.length === 0) continue;
-
-        // Fetch activity allocations for these bookings
-        const bookingIds = bookings.map(b => b.id);
-        const activityIds = activities.map(a => a.id);
-
-        const { data: activityBookings, error: abError } = await supabase
-          .from('activity_bookings')
-          .select('booking_id, activity_id, passengers_attending')
-          .in('booking_id', bookingIds)
-          .in('activity_id', activityIds);
-
-        if (abError) throw abError;
-
-        // Check for discrepancies
-        for (const booking of bookings) {
-          const customer = booking.customers as any;
-          const leadPassenger = customer 
-            ? `${customer.first_name} ${customer.last_name}`
-            : 'Unknown';
-
-          for (const activity of activities) {
-            const allocation = activityBookings?.find(
-              ab => ab.booking_id === booking.id && ab.activity_id === activity.id
-            );
-
-            const allocatedCount = allocation?.passengers_attending || 0;
-
-            if (allocatedCount === 0) {
-              // Missing allocation
-              allDiscrepancies.push({
-                tourId: tour.id,
-                tourName: tour.name,
-                tourStartDate: tour.start_date,
-                bookingId: booking.id,
-                leadPassenger,
-                passengerCount: booking.passenger_count,
-                groupName: booking.group_name || '',
-                status: booking.status,
-                activityId: activity.id,
-                activityName: activity.name,
-                activityDate: activity.activity_date || '',
-                allocatedCount: 0,
-                discrepancyType: 'missing'
-              });
-            } else if (allocatedCount !== booking.passenger_count) {
-              // Mismatch
-              allDiscrepancies.push({
-                tourId: tour.id,
-                tourName: tour.name,
-                tourStartDate: tour.start_date,
-                bookingId: booking.id,
-                leadPassenger,
-                passengerCount: booking.passenger_count,
-                groupName: booking.group_name || '',
-                status: booking.status,
-                activityId: activity.id,
-                activityName: activity.name,
-                activityDate: activity.activity_date || '',
-                allocatedCount,
-                discrepancyType: 'mismatch'
-              });
-            }
-          }
-        }
-      }
+      // Use the new optimized database function
+      const { data, error } = await supabase.rpc('get_activity_allocation_discrepancies');
+      
+      if (error) throw error;
+      
+      // Map the data to our frontend structure
+      const allDiscrepancies: DiscrepancyData[] = (data || []).map((row: any) => ({
+        tourId: row.tour_id,
+        tourName: row.tour_name,
+        tourStartDate: row.tour_start_date,
+        bookingId: row.booking_id,
+        leadPassenger: `${row.lead_passenger_first_name || ''} ${row.lead_passenger_last_name || ''}`.trim(),
+        passengerCount: row.passenger_count,
+        groupName: row.group_name || '',
+        status: row.status,
+        activityId: row.activity_id,
+        activityName: row.activity_name,
+        activityDate: row.activity_date || '',
+        allocatedCount: row.allocated_count,
+        discrepancyType: row.discrepancy_type as 'missing' | 'mismatch'
+      }));
 
       setDiscrepancies(allDiscrepancies);
     } catch (error) {
