@@ -41,6 +41,7 @@ export const GenerateDocumentModal = ({
     setIsGenerating(true);
     
     try {
+      console.log('Generating itinerary document for tour:', tour.name);
       const { data, error } = await supabase.functions.invoke('generate-itinerary-document', {
         body: {
           tourId: tour.id,
@@ -55,16 +56,22 @@ export const GenerateDocumentModal = ({
 
       if (error) throw error;
 
-      // Show the PDF viewer with the generated HTML content
+      console.log('Document generated, HTML length:', data?.html?.length || 0);
+      
+      // Set the generated HTML and show viewer first
       setGeneratedHTML(data.html);
-      setShowViewer(true);
+      
+      // Use a small delay to ensure state is set before opening viewer
+      setTimeout(() => {
+        setShowViewer(true);
+        onOpenChange(false); // Close the options modal after viewer opens
+      }, 100);
 
       toast({
         title: "Document Generated",
         description: "Itinerary document has been generated successfully.",
       });
       
-      onOpenChange(false);
     } catch (error: any) {
       console.error('Error generating document:', error);
       toast({

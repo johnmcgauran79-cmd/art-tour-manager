@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Download, Printer, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import html2pdf from "html2pdf.js";
+import { useToast } from "@/hooks/use-toast";
 
 interface ItineraryPDFViewerProps {
   open: boolean;
@@ -19,6 +20,7 @@ export const ItineraryPDFViewer = ({
 }: ItineraryPDFViewerProps) => {
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (open && htmlContent) {
@@ -41,9 +43,17 @@ export const ItineraryPDFViewer = ({
 
   const generatePDF = async () => {
     setIsGenerating(true);
+    console.log('Starting PDF generation for:', tourName);
+    console.log('HTML content length:', htmlContent?.length || 0);
+    
     try {
+      if (!htmlContent) {
+        throw new Error('No HTML content provided');
+      }
+
       const element = document.createElement('div');
       element.innerHTML = htmlContent;
+      console.log('HTML element created, child count:', element.children.length);
       
       const opt = {
         margin: [10, 10, 10, 10] as [number, number, number, number],
@@ -66,11 +76,25 @@ export const ItineraryPDFViewer = ({
         }
       };
       
+      console.log('Starting html2pdf conversion...');
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+      console.log('PDF blob created, size:', pdfBlob.size);
+      
       const url = URL.createObjectURL(pdfBlob);
+      console.log('PDF URL created:', url);
       setPdfUrl(url);
-    } catch (error) {
+      
+      toast({
+        title: "PDF Generated",
+        description: "The itinerary PDF has been generated successfully.",
+      });
+    } catch (error: any) {
       console.error('Error generating PDF:', error);
+      toast({
+        title: "PDF Generation Error",
+        description: error.message || "Failed to generate PDF. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsGenerating(false);
     }
