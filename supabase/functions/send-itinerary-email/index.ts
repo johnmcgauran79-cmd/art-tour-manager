@@ -133,7 +133,7 @@ serve(async (req) => {
 
     // Prepare email options
     const emailSubject = subject || `${tour.name} - Tour Itinerary`;
-    const fromAddress = fromEmail || "tours@australianracingtours.com.au";
+    const fromAddress = fromEmail || "bookings@australianracingtours.com.au";
 
     let emailBody = "";
     if (message) {

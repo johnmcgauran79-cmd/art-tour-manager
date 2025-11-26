@@ -274,7 +274,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
-    const finalFromEmail = fromEmail || template?.from_email || "onboarding@resend.dev";
+    const finalFromEmail = fromEmail || template?.from_email || "bookings@australianracingtours.com.au";
     
     // Prepare recipients - merge provided CC emails with secondary contact if they exist
     const ccRecipients = [...(ccEmails || [])];

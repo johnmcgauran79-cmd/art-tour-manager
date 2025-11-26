@@ -40,7 +40,7 @@ const handler = async (req: Request): Promise<Response> => {
       tourName, 
       hotelEmail, 
       hotelName,
-      fromEmail = 'onboarding@resend.dev',
+      fromEmail = 'info@australianracingtours.com.au',
       ccEmail = '',
       bccEmail = '',
       subject,
