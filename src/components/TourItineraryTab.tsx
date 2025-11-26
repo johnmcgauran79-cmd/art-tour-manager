@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, FileText, Download } from "lucide-react";
+import { Calendar, Clock, Plus, FileText, Download, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { useItinerary, useCreateItinerary } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
+import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
 import { useAuth } from "@/hooks/useAuth";
 
 interface TourItineraryTabProps {
@@ -23,6 +24,7 @@ interface TourItineraryTabProps {
 
 export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
   const { userRole } = useAuth();
@@ -95,14 +97,23 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         
         <div className="flex items-center gap-2">
           {!isAgent && (
-            <Button
-              variant="outline"
-              onClick={() => setShowGenerateModal(true)}
-              className="flex items-center gap-2"
-            >
-              <Download className="h-4 w-4" />
-              Generate Document
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setShowGenerateModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Generate Document
+              </Button>
+              <Button
+                onClick={() => setShowEmailModal(true)}
+                className="flex items-center gap-2"
+              >
+                <Mail className="h-4 w-4" />
+                Send Itinerary
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -127,6 +138,16 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         tour={tour}
         itinerary={itinerary}
       />
+
+      {/* Email Itinerary Modal */}
+      {itinerary && (
+        <EmailItineraryModal
+          open={showEmailModal}
+          onOpenChange={setShowEmailModal}
+          tour={tour}
+          itineraryId={itinerary.id}
+        />
+      )}
     </div>
   );
 };
