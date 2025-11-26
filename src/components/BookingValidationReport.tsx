@@ -89,126 +89,128 @@ export const BookingValidationReport = ({ open, onOpenChange }: BookingValidatio
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
-              Booking Validation Report
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogTitle>
-          <DialogDescription>
-            Bookings with mismatched passenger counts and room types
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="overflow-auto max-h-[60vh]">
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
-          ) : invalidBookings && invalidBookings.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tour</TableHead>
-                  <TableHead>Lead Passenger</TableHead>
-                  <TableHead>Group Name</TableHead>
-                  <TableHead>Pax</TableHead>
-                  <TableHead>Hotel</TableHead>
-                  <TableHead>Bedding</TableHead>
-                  <TableHead>Issue</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {invalidBookings.map((booking: any) => {
-                  const allocatedHotels = booking.hotel_bookings?.filter((hb: any) => hb.allocated) || [];
-                  const leadPassenger = booking.customers;
-                  
-                  return allocatedHotels.map((hb: any, index: number) => (
-                    <TableRow key={`${booking.id}-${hb.id}`}>
-                      {index === 0 && (
-                        <>
-                          <TableCell rowSpan={allocatedHotels.length}>
-                            {booking.tours?.name || 'N/A'}
-                          </TableCell>
-                          <TableCell rowSpan={allocatedHotels.length}>
-                            {leadPassenger ? `${leadPassenger.first_name} ${leadPassenger.last_name}` : 'N/A'}
-                          </TableCell>
-                          <TableCell rowSpan={allocatedHotels.length}>
-                            {booking.group_name || '-'}
-                          </TableCell>
-                          <TableCell rowSpan={allocatedHotels.length}>
-                            <Badge variant="outline">{booking.passenger_count}</Badge>
-                          </TableCell>
-                        </>
-                      )}
-                      <TableCell>{hb.hotels?.name || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge variant={getBeddingBadgeVariant(hb.bedding, booking.passenger_count)}>
-                          {hb.bedding}
-                        </Badge>
-                      </TableCell>
-                      {index === 0 && (
-                        <>
-                          <TableCell rowSpan={allocatedHotels.length} className="text-destructive text-sm">
-                            {getIssueDescription(booking)}
-                          </TableCell>
-                          <TableCell rowSpan={allocatedHotels.length}>
-                            <Badge variant="secondary">{booking.status}</Badge>
-                          </TableCell>
-                          <TableCell rowSpan={allocatedHotels.length}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                navigate(`/bookings/${booking.id}/edit`);
-                                onOpenChange(false);
-                              }}
-                            >
-                              Fix
-                            </Button>
-                          </TableCell>
-                        </>
-                      )}
-                    </TableRow>
-                  ));
-                })}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-lg font-medium">No validation issues found</p>
-              <p className="text-sm">All bookings have matching passenger counts and room types</p>
-            </div>
-          )}
+  const content = (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-5 w-5 text-destructive" />
+          <h2 className="text-xl font-semibold">Bedding Type Review</h2>
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
 
-        {invalidBookings && invalidBookings.length > 0 && (
-          <div className="border-t pt-4 text-sm text-muted-foreground">
-            Found {invalidBookings.length} booking{invalidBookings.length !== 1 ? 's' : ''} with validation issues
+      <p className="text-sm text-muted-foreground mb-6">
+        Bookings with mismatched passenger counts and room types
+      </p>
+
+      <div className="overflow-auto">
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">Loading...</div>
+        ) : invalidBookings && invalidBookings.length > 0 ? (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tour</TableHead>
+                <TableHead>Lead Passenger</TableHead>
+                <TableHead>Group Name</TableHead>
+                <TableHead>Pax</TableHead>
+                <TableHead>Hotel</TableHead>
+                <TableHead>Bedding</TableHead>
+                <TableHead>Issue</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {invalidBookings.map((booking: any) => {
+                const allocatedHotels = booking.hotel_bookings?.filter((hb: any) => hb.allocated) || [];
+                const leadPassenger = booking.customers;
+                
+                return allocatedHotels.map((hb: any, index: number) => (
+                  <TableRow key={`${booking.id}-${hb.id}`}>
+                    {index === 0 && (
+                      <>
+                        <TableCell rowSpan={allocatedHotels.length}>
+                          {booking.tours?.name || 'N/A'}
+                        </TableCell>
+                        <TableCell rowSpan={allocatedHotels.length}>
+                          {leadPassenger ? `${leadPassenger.first_name} ${leadPassenger.last_name}` : 'N/A'}
+                        </TableCell>
+                        <TableCell rowSpan={allocatedHotels.length}>
+                          {booking.group_name || '-'}
+                        </TableCell>
+                        <TableCell rowSpan={allocatedHotels.length}>
+                          <Badge variant="outline">{booking.passenger_count}</Badge>
+                        </TableCell>
+                      </>
+                    )}
+                    <TableCell>{hb.hotels?.name || 'N/A'}</TableCell>
+                    <TableCell>
+                      <Badge variant={getBeddingBadgeVariant(hb.bedding, booking.passenger_count)}>
+                        {hb.bedding}
+                      </Badge>
+                    </TableCell>
+                    {index === 0 && (
+                      <>
+                        <TableCell rowSpan={allocatedHotels.length} className="text-destructive text-sm">
+                          {getIssueDescription(booking)}
+                        </TableCell>
+                        <TableCell rowSpan={allocatedHotels.length}>
+                          <Badge variant="secondary">{booking.status}</Badge>
+                        </TableCell>
+                        <TableCell rowSpan={allocatedHotels.length}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigate(`/bookings/${booking.id}/edit`);
+                              if (onOpenChange) onOpenChange(false);
+                            }}
+                          >
+                            Fix
+                          </Button>
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                ));
+              })}
+            </TableBody>
+          </Table>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-lg font-medium">No validation issues found</p>
+            <p className="text-sm">All bookings have matching passenger counts and room types</p>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </div>
+
+      {invalidBookings && invalidBookings.length > 0 && (
+        <div className="border-t pt-4 mt-6 text-sm text-muted-foreground">
+          Found {invalidBookings.length} booking{invalidBookings.length !== 1 ? 's' : ''} with validation issues
+        </div>
+      )}
+    </>
   );
+
+  // If open/onOpenChange are provided, render as dialog
+  if (open !== undefined && onOpenChange !== undefined) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-6xl max-h-[80vh]">
+          {content}
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Otherwise render as page content
+  return content;
 };
