@@ -133,23 +133,43 @@ export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesRepo
           }
           
           // Also show any UPDATE operations (actual changes after creation, excluding cancellation)
-          entries.forEach(entry => {
-            if ((entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') 
-                && entry.id !== cancelEntry?.id) {
-              const profile = profiles?.find(p => p.id === entry.user_id);
-              consolidatedChanges.push({
-                id: entry.id,
-                timestamp: entry.timestamp,
-                operation_type: entry.operation_type,
-                booking_id: bookingId,
-                customer_name: customerName,
-                tour_name: tourName,
-                user_name: profile 
-                  ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                  : 'System',
-                details: entry.details
-              });
-            }
+          // Consolidate activity updates into a single entry
+          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+          const hotelUpdates = entries.filter(e => e.operation_type === 'UPDATE_HOTEL_BOOKING' && e.id !== cancelEntry?.id);
+          
+          // If there are activity updates, add one consolidated entry
+          if (activityUpdates.length > 0) {
+            const latestActivityUpdate = activityUpdates[0]; // Use the most recent one for timestamp and user
+            const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
+            consolidatedChanges.push({
+              id: latestActivityUpdate.id,
+              timestamp: latestActivityUpdate.timestamp,
+              operation_type: 'UPDATE_ACTIVITIES_CONSOLIDATED',
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System',
+              details: latestActivityUpdate.details
+            });
+          }
+          
+          // Show hotel updates separately
+          hotelUpdates.forEach(entry => {
+            const profile = profiles?.find(p => p.id === entry.user_id);
+            consolidatedChanges.push({
+              id: entry.id,
+              timestamp: entry.timestamp,
+              operation_type: entry.operation_type,
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System',
+              details: entry.details
+            });
           });
         } else {
           // This is an update to an existing booking
@@ -172,10 +192,35 @@ export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesRepo
           }
           
           // Show individual changes (excluding generic updates and cancellation)
-          entries.forEach(entry => {
-            // Skip generic UPDATE_BOOKING, UPDATE, and the cancellation entry
-            if (entry.operation_type === 'UPDATE_BOOKING' || entry.operation_type === 'UPDATE' || entry.id === cancelEntry?.id) return;
-            
+          // Consolidate activity updates into a single entry
+          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+          const otherUpdates = entries.filter(e => 
+            e.operation_type !== 'UPDATE_BOOKING' && 
+            e.operation_type !== 'UPDATE' && 
+            e.operation_type !== 'UPDATE_ACTIVITY_BOOKING' &&
+            e.id !== cancelEntry?.id
+          );
+          
+          // If there are activity updates, add one consolidated entry
+          if (activityUpdates.length > 0) {
+            const latestActivityUpdate = activityUpdates[0]; // Use the most recent one for timestamp and user
+            const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
+            consolidatedChanges.push({
+              id: latestActivityUpdate.id,
+              timestamp: latestActivityUpdate.timestamp,
+              operation_type: 'UPDATE_ACTIVITIES_CONSOLIDATED',
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System',
+              details: latestActivityUpdate.details
+            });
+          }
+          
+          // Show other updates separately
+          otherUpdates.forEach(entry => {
             const profile = profiles?.find(p => p.id === entry.user_id);
             consolidatedChanges.push({
               id: entry.id,
@@ -230,6 +275,11 @@ export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesRepo
     // Handle activity updates
     if (type === 'UPDATE_ACTIVITY_BOOKING') {
       return 'Activity Updated';
+    }
+    
+    // Handle consolidated activity updates
+    if (type === 'UPDATE_ACTIVITIES_CONSOLIDATED') {
+      return 'Activities Updated';
     }
     
     return typeMap[type] || type;
