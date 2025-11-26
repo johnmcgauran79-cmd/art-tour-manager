@@ -16,7 +16,11 @@ interface WeeklyChange {
   details?: any;
 }
 
-export const WeeklyBookingChangesReport = () => {
+interface WeeklyBookingChangesReportProps {
+  onDataChange?: (changes: WeeklyChange[], period: string) => void;
+}
+
+export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChangesReportProps = {}) => {
   const [period, setPeriod] = useState<string>("7");
 
   const { data: changes, isLoading } = useQuery({
@@ -232,9 +236,16 @@ export const WeeklyBookingChangesReport = () => {
       });
 
       // Sort by timestamp descending
-      return consolidatedChanges.sort((a, b) => 
+      const sortedChanges = consolidatedChanges.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
+      
+      // Call onDataChange if provided
+      if (onDataChange) {
+        onDataChange(sortedChanges, period);
+      }
+      
+      return sortedChanges;
     },
   });
 
