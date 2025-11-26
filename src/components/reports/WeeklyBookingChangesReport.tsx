@@ -12,6 +12,7 @@ interface WeeklyChange {
   customer_name: string;
   tour_name: string;
   user_name: string;
+  details?: any;
 }
 
 export const WeeklyBookingChangesReport = () => {
@@ -92,7 +93,8 @@ export const WeeklyBookingChangesReport = () => {
             tour_name: tourName,
             user_name: profile 
               ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-              : 'System'
+              : 'System',
+            details: createEntry.details
           });
         } else {
           // This is an update to an existing booking - show individual changes
@@ -110,7 +112,8 @@ export const WeeklyBookingChangesReport = () => {
               tour_name: tourName,
               user_name: profile 
                 ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
-                : 'System'
+                : 'System',
+              details: entry.details
             });
           });
         }
@@ -123,18 +126,37 @@ export const WeeklyBookingChangesReport = () => {
     },
   });
 
-  const formatOperationType = (type: string): string => {
+  const formatOperationType = (type: string, details?: any): string => {
     const typeMap: Record<string, string> = {
       'CREATE': 'New Booking',
       'CREATE_BOOKING': 'New Booking',
       'ADD_HOTEL_TO_BOOKING': 'Hotel Added',
-      'UPDATE_HOTEL_BOOKING': 'Hotel Updated',
       'REMOVE_HOTEL_FROM_BOOKING': 'Hotel Removed',
       'ADD_ACTIVITY_TO_BOOKING': 'Activity Added',
-      'UPDATE_ACTIVITY_BOOKING': 'Activity Updated',
       'REMOVE_ACTIVITY_FROM_BOOKING': 'Activity Removed',
       'DELETE_BOOKING': 'Booking Deleted',
     };
+    
+    // Handle hotel updates with details
+    if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
+      const changes = [];
+      if (details.hotel_dates.old?.check_in !== details.hotel_dates.new?.check_in) {
+        changes.push(`check-in changed`);
+      }
+      if (details.hotel_dates.old?.check_out !== details.hotel_dates.new?.check_out) {
+        changes.push(`check-out changed`);
+      }
+      if (changes.length > 0) {
+        return `Hotel Updated: ${changes.join(', ')}`;
+      }
+      return 'Hotel Updated';
+    }
+    
+    // Handle activity updates
+    if (type === 'UPDATE_ACTIVITY_BOOKING') {
+      return 'Activity Updated';
+    }
+    
     return typeMap[type] || type;
   };
 
@@ -180,7 +202,7 @@ export const WeeklyBookingChangesReport = () => {
                 </TableCell>
                 <TableCell className="text-sm">{change.customer_name}</TableCell>
                 <TableCell className="text-sm">{change.tour_name}</TableCell>
-                <TableCell className="text-sm">{formatOperationType(change.operation_type)}</TableCell>
+                <TableCell className="text-sm">{formatOperationType(change.operation_type, change.details)}</TableCell>
                 <TableCell className="text-sm">{change.user_name}</TableCell>
               </TableRow>
             ))}
