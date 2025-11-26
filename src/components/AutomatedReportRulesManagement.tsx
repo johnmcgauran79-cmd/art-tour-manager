@@ -9,49 +9,73 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
-import { 
-  useAutomatedReportRules, 
-  useCreateAutomatedReportRule, 
-  useUpdateAutomatedReportRule,
-  useDeleteAutomatedReportRule,
-  useAutomatedReportLog,
-  type AutomatedReportRule 
-} from "@/hooks/useAutomatedReportRules";
+import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
 import { format } from "date-fns";
-
-const REPORT_TYPES = [
-  { value: 'rooming_list', label: 'Rooming List' },
-  { value: 'booking_changes', label: 'Booking Changes Report' },
-  { value: 'passenger_list', label: 'Passenger List' },
-  { value: 'activity_matrix', label: 'Activity Allocation Matrix' },
-  { value: 'bedding_review', label: 'Bedding Type Review' },
-  { value: 'hotel_check', label: 'Hotel Allocation Check' },
-  { value: 'activity_check', label: 'Activity Allocation Check' },
-];
-
-const SCHEDULE_TYPES = [
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'days_before_tour', label: 'Days Before Tour' },
-];
-
-const WEEKDAYS = [
-  { value: 0, label: 'Sunday' },
-  { value: 1, label: 'Monday' },
-  { value: 2, label: 'Tuesday' },
-  { value: 3, label: 'Wednesday' },
-  { value: 4, label: 'Thursday' },
-  { value: 5, label: 'Friday' },
-  { value: 6, label: 'Saturday' },
-];
-
+const REPORT_TYPES = [{
+  value: 'rooming_list',
+  label: 'Rooming List'
+}, {
+  value: 'booking_changes',
+  label: 'Booking Changes Report'
+}, {
+  value: 'passenger_list',
+  label: 'Passenger List'
+}, {
+  value: 'activity_matrix',
+  label: 'Activity Allocation Matrix'
+}, {
+  value: 'bedding_review',
+  label: 'Bedding Type Review'
+}, {
+  value: 'hotel_check',
+  label: 'Hotel Allocation Check'
+}, {
+  value: 'activity_check',
+  label: 'Activity Allocation Check'
+}];
+const SCHEDULE_TYPES = [{
+  value: 'weekly',
+  label: 'Weekly'
+}, {
+  value: 'monthly',
+  label: 'Monthly'
+}, {
+  value: 'days_before_tour',
+  label: 'Days Before Tour'
+}];
+const WEEKDAYS = [{
+  value: 0,
+  label: 'Sunday'
+}, {
+  value: 1,
+  label: 'Monday'
+}, {
+  value: 2,
+  label: 'Tuesday'
+}, {
+  value: 3,
+  label: 'Wednesday'
+}, {
+  value: 4,
+  label: 'Thursday'
+}, {
+  value: 5,
+  label: 'Friday'
+}, {
+  value: 6,
+  label: 'Saturday'
+}];
 export const AutomatedReportRulesManagement = () => {
-  const { data: rules, isLoading } = useAutomatedReportRules();
-  const { data: logs } = useAutomatedReportLog();
+  const {
+    data: rules,
+    isLoading
+  } = useAutomatedReportRules();
+  const {
+    data: logs
+  } = useAutomatedReportLog();
   const createRule = useCreateAutomatedReportRule();
   const updateRule = useUpdateAutomatedReportRule();
   const deleteRule = useDeleteAutomatedReportRule();
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AutomatedReportRule | null>(null);
   const [formData, setFormData] = useState<Partial<AutomatedReportRule>>({
@@ -60,25 +84,24 @@ export const AutomatedReportRulesManagement = () => {
     schedule_value: 1,
     report_types: [],
     recipient_emails: [],
-    is_active: true,
+    is_active: true
   });
   const [emailInput, setEmailInput] = useState('');
-
   const handleSubmit = async () => {
     if (!formData.rule_name || !formData.report_types?.length || !formData.recipient_emails?.length) {
       return;
     }
-
     if (editingRule) {
-      await updateRule.mutateAsync({ id: editingRule.id, ...formData });
+      await updateRule.mutateAsync({
+        id: editingRule.id,
+        ...formData
+      });
     } else {
       await createRule.mutateAsync(formData as Omit<AutomatedReportRule, 'id' | 'created_at' | 'created_by' | 'updated_at'>);
     }
-
     setDialogOpen(false);
     resetForm();
   };
-
   const resetForm = () => {
     setFormData({
       rule_name: '',
@@ -86,56 +109,50 @@ export const AutomatedReportRulesManagement = () => {
       schedule_value: 1,
       report_types: [],
       recipient_emails: [],
-      is_active: true,
+      is_active: true
     });
     setEditingRule(null);
     setEmailInput('');
   };
-
   const handleEdit = (rule: AutomatedReportRule) => {
     setEditingRule(rule);
     setFormData(rule);
     setDialogOpen(true);
   };
-
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this automated report rule?')) {
       await deleteRule.mutateAsync(id);
     }
   };
-
   const addEmail = () => {
     if (emailInput && emailInput.includes('@')) {
       setFormData({
         ...formData,
-        recipient_emails: [...(formData.recipient_emails || []), emailInput],
+        recipient_emails: [...(formData.recipient_emails || []), emailInput]
       });
       setEmailInput('');
     }
   };
-
   const removeEmail = (email: string) => {
     setFormData({
       ...formData,
-      recipient_emails: formData.recipient_emails?.filter(e => e !== email) || [],
+      recipient_emails: formData.recipient_emails?.filter(e => e !== email) || []
     });
   };
-
   const toggleReportType = (reportType: string) => {
     const currentTypes = formData.report_types || [];
     if (currentTypes.includes(reportType)) {
       setFormData({
         ...formData,
-        report_types: currentTypes.filter(t => t !== reportType),
+        report_types: currentTypes.filter(t => t !== reportType)
       });
     } else {
       setFormData({
         ...formData,
-        report_types: [...currentTypes, reportType],
+        report_types: [...currentTypes, reportType]
       });
     }
   };
-
   const getScheduleDescription = (rule: AutomatedReportRule) => {
     if (rule.schedule_type === 'weekly') {
       const day = WEEKDAYS.find(d => d.value === rule.schedule_value);
@@ -146,15 +163,11 @@ export const AutomatedReportRulesManagement = () => {
       return `${rule.schedule_value} days before tour`;
     }
   };
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold">Automated Report Distribution</h3>
-          <p className="text-sm text-muted-foreground">
-            Configure automated reports to be sent on a schedule
-          </p>
+          <p className="text-sm text-muted-foreground">Configure automated reports to be sent on a schedule - weekly, monthly, or days before tours.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -170,105 +183,79 @@ export const AutomatedReportRulesManagement = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Rule Name</Label>
-                <Input
-                  value={formData.rule_name}
-                  onChange={(e) => setFormData({ ...formData, rule_name: e.target.value })}
-                  placeholder="e.g., Weekly Operations Report"
-                />
+                <Input value={formData.rule_name} onChange={e => setFormData({
+                ...formData,
+                rule_name: e.target.value
+              })} placeholder="e.g., Weekly Operations Report" />
               </div>
 
               <div className="space-y-2">
                 <Label>Schedule Type</Label>
-                <Select
-                  value={formData.schedule_type}
-                  onValueChange={(value: any) => setFormData({ ...formData, schedule_type: value, schedule_value: 1 })}
-                >
+                <Select value={formData.schedule_type} onValueChange={(value: any) => setFormData({
+                ...formData,
+                schedule_type: value,
+                schedule_value: 1
+              })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {SCHEDULE_TYPES.map(type => (
-                      <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
-                    ))}
+                    {SCHEDULE_TYPES.map(type => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label>
-                  {formData.schedule_type === 'weekly' ? 'Day of Week' : 
-                   formData.schedule_type === 'monthly' ? 'Day of Month' : 
-                   'Days Before Tour'}
+                  {formData.schedule_type === 'weekly' ? 'Day of Week' : formData.schedule_type === 'monthly' ? 'Day of Month' : 'Days Before Tour'}
                 </Label>
-                {formData.schedule_type === 'weekly' ? (
-                  <Select
-                    value={formData.schedule_value?.toString()}
-                    onValueChange={(value) => setFormData({ ...formData, schedule_value: parseInt(value) })}
-                  >
+                {formData.schedule_type === 'weekly' ? <Select value={formData.schedule_value?.toString()} onValueChange={value => setFormData({
+                ...formData,
+                schedule_value: parseInt(value)
+              })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {WEEKDAYS.map(day => (
-                        <SelectItem key={day.value} value={day.value.toString()}>{day.label}</SelectItem>
-                      ))}
+                      {WEEKDAYS.map(day => <SelectItem key={day.value} value={day.value.toString()}>{day.label}</SelectItem>)}
                     </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    type="number"
-                    min={1}
-                    max={formData.schedule_type === 'monthly' ? 31 : 365}
-                    value={formData.schedule_value}
-                    onChange={(e) => setFormData({ ...formData, schedule_value: parseInt(e.target.value) || 1 })}
-                  />
-                )}
+                  </Select> : <Input type="number" min={1} max={formData.schedule_type === 'monthly' ? 31 : 365} value={formData.schedule_value} onChange={e => setFormData({
+                ...formData,
+                schedule_value: parseInt(e.target.value) || 1
+              })} />}
               </div>
 
               <div className="space-y-2">
                 <Label>Reports to Include</Label>
                 <div className="grid grid-cols-2 gap-2">
-                  {REPORT_TYPES.map(type => (
-                    <div key={type.value} className="flex items-center space-x-2">
-                      <Switch
-                        checked={formData.report_types?.includes(type.value)}
-                        onCheckedChange={() => toggleReportType(type.value)}
-                      />
+                  {REPORT_TYPES.map(type => <div key={type.value} className="flex items-center space-x-2">
+                      <Switch checked={formData.report_types?.includes(type.value)} onCheckedChange={() => toggleReportType(type.value)} />
                       <Label className="cursor-pointer" onClick={() => toggleReportType(type.value)}>
                         {type.label}
                       </Label>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Recipients</Label>
                 <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    value={emailInput}
-                    onChange={(e) => setEmailInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addEmail())}
-                    placeholder="email@example.com"
-                  />
+                  <Input type="email" value={emailInput} onChange={e => setEmailInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addEmail())} placeholder="email@example.com" />
                   <Button type="button" onClick={addEmail}>Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.recipient_emails?.map(email => (
-                    <Badge key={email} variant="secondary" className="gap-1">
+                  {formData.recipient_emails?.map(email => <Badge key={email} variant="secondary" className="gap-1">
                       {email}
                       <button onClick={() => removeEmail(email)} className="ml-1 hover:text-destructive">×</button>
-                    </Badge>
-                  ))}
+                    </Badge>)}
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
-                <Switch
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
+                <Switch checked={formData.is_active} onCheckedChange={checked => setFormData({
+                ...formData,
+                is_active: checked
+              })} />
                 <Label>Active</Label>
               </div>
 
@@ -290,14 +277,9 @@ export const AutomatedReportRulesManagement = () => {
         </TabsList>
 
         <TabsContent value="rules" className="space-y-4">
-          {isLoading ? (
-            <div>Loading...</div>
-          ) : !rules?.length ? (
-            <div className="text-center py-8 text-muted-foreground">
+          {isLoading ? <div>Loading...</div> : !rules?.length ? <div className="text-center py-8 text-muted-foreground">
               No automated report rules configured yet
-            </div>
-          ) : (
-            <Table>
+            </div> : <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Rule Name</TableHead>
@@ -309,8 +291,7 @@ export const AutomatedReportRulesManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rules.map(rule => (
-                  <TableRow key={rule.id}>
+                {rules.map(rule => <TableRow key={rule.id}>
                     <TableCell className="font-medium">{rule.rule_name}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -339,20 +320,15 @@ export const AutomatedReportRulesManagement = () => {
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
-            </Table>
-          )}
+            </Table>}
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          {!logs?.length ? (
-            <div className="text-center py-8 text-muted-foreground">
+          {!logs?.length ? <div className="text-center py-8 text-muted-foreground">
               No reports sent yet
-            </div>
-          ) : (
-            <Table>
+            </div> : <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Rule</TableHead>
@@ -364,8 +340,7 @@ export const AutomatedReportRulesManagement = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {logs.map(log => (
-                  <TableRow key={log.id}>
+                {logs.map(log => <TableRow key={log.id}>
                     <TableCell>{log.automated_report_rules?.rule_name}</TableCell>
                     <TableCell>{log.tour_id || 'N/A'}</TableCell>
                     <TableCell>
@@ -380,13 +355,10 @@ export const AutomatedReportRulesManagement = () => {
                         {log.status}
                       </Badge>
                     </TableCell>
-                  </TableRow>
-                ))}
+                  </TableRow>)}
               </TableBody>
-            </Table>
-          )}
+            </Table>}
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
