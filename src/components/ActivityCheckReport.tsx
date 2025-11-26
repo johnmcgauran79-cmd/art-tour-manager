@@ -9,11 +9,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface ActivityCheckReportProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportProps) => {
+export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportProps = {}) => {
   const navigate = useNavigate();
 
   const { data: missingAllocations, isLoading } = useQuery({
@@ -34,7 +34,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
         status: row.status
       }));
     },
-    enabled: open
+    enabled: open !== false
   });
 
   const handleFixAllocations = async () => {

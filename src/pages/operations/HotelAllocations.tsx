@@ -2,12 +2,21 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { HotelAllocationCheckReport } from "@/components/HotelAllocationCheckReport";
+import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 export default function HotelAllocations() {
   const navigate = useNavigate();
 
   return (
     <div className="space-y-6">
+      <AppBreadcrumbs
+        items={[
+          { label: "Home", href: "/" },
+          { label: "Operations", href: "/?tab=operations" },
+          { label: "Hotel Allocation Check" }
+        ]}
+      />
+      
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -22,7 +31,7 @@ export default function HotelAllocations() {
         </div>
       </div>
       
-      <HotelAllocationCheckReport open={true} onOpenChange={() => navigate("/?tab=operations")} />
+      <HotelAllocationCheckReport />
     </div>
   );
 }

@@ -9,11 +9,11 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 interface HotelAllocationCheckReportProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocationCheckReportProps) => {
+export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocationCheckReportProps = {}) => {
   const navigate = useNavigate();
 
   const { data: missingAllocations, isLoading } = useQuery({
@@ -88,7 +88,7 @@ export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocati
 
       return issues;
     },
-    enabled: open
+    enabled: open !== false
   });
 
   const handleFixAllocations = async () => {
