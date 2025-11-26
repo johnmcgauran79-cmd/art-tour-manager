@@ -3,8 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
-import { X } from "lucide-react";
+import { X, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface WeeklyChange {
   id: string;
@@ -22,17 +27,31 @@ interface WeeklyBookingChangesReportProps {
 }
 
 export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesReportProps) => {
+  const [period, setPeriod] = useState<string>("7");
+  const [customStartDate, setCustomStartDate] = useState<Date>();
+  const [customEndDate, setCustomEndDate] = useState<Date>();
+
   const { data: changes, isLoading } = useQuery({
-    queryKey: ['weekly-booking-changes'],
+    queryKey: ['weekly-booking-changes', period, customStartDate, customEndDate],
     queryFn: async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      let startDate: Date;
+      
+      if (period === "custom") {
+        if (!customStartDate || !customEndDate) return [];
+        startDate = customStartDate;
+      } else {
+        startDate = new Date();
+        startDate.setDate(startDate.getDate() - parseInt(period));
+      }
+
+      const endDate = period === "custom" && customEndDate ? customEndDate : new Date();
 
       const { data: auditData, error } = await supabase
         .from('audit_log')
         .select('id, timestamp, operation_type, record_id, user_id, details')
         .eq('table_name', 'bookings')
-        .gte('timestamp', sevenDaysAgo.toISOString())
+        .gte('timestamp', startDate.toISOString())
+        .lte('timestamp', endDate.toISOString())
         .order('timestamp', { ascending: false });
 
       if (error) throw error;
@@ -251,10 +270,20 @@ export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesRepo
     );
   }
 
+  const getPeriodLabel = () => {
+    if (period === "custom") {
+      if (customStartDate && customEndDate) {
+        return `${format(customStartDate, "dd/MM/yyyy")} - ${format(customEndDate, "dd/MM/yyyy")}`;
+      }
+      return "Custom Period";
+    }
+    return `Last ${period} Days`;
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Weekly Booking Changes (Last 7 Days)</h3>
+        <h3 className="text-lg font-semibold">Booking Changes ({getPeriodLabel()})</h3>
         {onClose && (
           <Button
             variant="ghost"
@@ -264,6 +293,72 @@ export const WeeklyBookingChangesReport = ({ onClose }: WeeklyBookingChangesRepo
           >
             <X className="h-4 w-4" />
           </Button>
+        )}
+      </div>
+      
+      <div className="flex gap-2 mb-4">
+        <Select value={period} onValueChange={setPeriod}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7">Last 7 Days</SelectItem>
+            <SelectItem value="14">Last 14 Days</SelectItem>
+            <SelectItem value="30">Last 30 Days</SelectItem>
+            <SelectItem value="custom">Custom Period</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {period === "custom" && (
+          <>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal",
+                    !customStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {customStartDate ? format(customStartDate, "dd/MM/yyyy") : "Start date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={customStartDate}
+                  onSelect={setCustomStartDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal",
+                    !customEndDate && "text-muted-foreground"
+                  )}
+                >
+                  <Calendar className="mr-2 h-4 w-4" />
+                  {customEndDate ? format(customEndDate, "dd/MM/yyyy") : "End date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <CalendarComponent
+                  mode="single"
+                  selected={customEndDate}
+                  onSelect={setCustomEndDate}
+                  initialFocus
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </>
         )}
       </div>
       <div className="rounded-md border">
