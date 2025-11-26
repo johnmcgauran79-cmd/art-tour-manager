@@ -10,6 +10,8 @@ import { useSendItinerary } from "@/hooks/useItineraryEmail";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Plus, X } from "lucide-react";
+import html2pdf from "html2pdf.js";
+import { useToast } from "@/hooks/use-toast";
 
 interface EmailItineraryModalProps {
   open: boolean;
@@ -37,6 +39,7 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
   const [bccInput, setBccInput] = useState("");
 
   const sendItinerary = useSendItinerary();
+  const { toast } = useToast();
 
   const { data: users } = useQuery({
     queryKey: ['users-for-email'],
@@ -70,22 +73,78 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
       return;
     }
 
-    await sendItinerary.mutateAsync({
-      tourId: tour.id,
-      itineraryId,
-      recipientEmail,
-      recipientName,
-      subject,
-      message,
-      fromEmail: fromEmail || undefined,
-      includeHotels,
-      includeTourInfo,
-      ccEmails: ccEmails.length > 0 ? ccEmails : undefined,
-      bccEmails: bccEmails.length > 0 ? bccEmails : undefined,
-    });
+    try {
+      // Generate HTML content from the itinerary
+      toast({
+        title: "Generating PDF...",
+        description: "Creating PDF attachment for email",
+      });
 
-    onOpenChange(false);
-    resetForm();
+      const { data: htmlData, error: htmlError } = await supabase.functions.invoke('generate-itinerary-document', {
+        body: {
+          tourId: tour.id,
+          itineraryId,
+          format: 'html',
+          options: {
+            includeHotels,
+            includeTourInfo
+          }
+        }
+      });
+
+      if (htmlError) throw htmlError;
+
+      // Generate PDF from HTML using html2pdf
+      const element = document.createElement('div');
+      element.innerHTML = htmlData.html;
+      
+      const opt = {
+        margin: 1,
+        filename: `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
+      };
+
+      const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+      
+      // Convert blob to base64
+      const reader = new FileReader();
+      const pdfBase64 = await new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const base64 = (reader.result as string).split(',')[1];
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(pdfBlob);
+      });
+
+      // Send email with PDF attachment
+      await sendItinerary.mutateAsync({
+        tourId: tour.id,
+        itineraryId,
+        recipientEmail,
+        recipientName,
+        subject,
+        message,
+        fromEmail: fromEmail || undefined,
+        includeHotels,
+        includeTourInfo,
+        ccEmails: ccEmails.length > 0 ? ccEmails : undefined,
+        bccEmails: bccEmails.length > 0 ? bccEmails : undefined,
+        pdfBase64,
+      });
+
+      onOpenChange(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error sending itinerary:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF and send email",
+        variant: "destructive",
+      });
+    }
   };
 
   const resetForm = () => {

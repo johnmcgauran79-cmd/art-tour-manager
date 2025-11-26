@@ -17,7 +17,8 @@ export const useSendItinerary = () => {
       includeHotels,
       includeTourInfo,
       ccEmails,
-      bccEmails
+      bccEmails,
+      pdfBase64
     }: { 
       tourId: string;
       itineraryId: string;
@@ -30,6 +31,7 @@ export const useSendItinerary = () => {
       includeTourInfo?: boolean;
       ccEmails?: string[];
       bccEmails?: string[];
+      pdfBase64?: string;
     }) => {
       console.log('Sending itinerary email:', { 
         tourId, 
@@ -56,7 +58,8 @@ export const useSendItinerary = () => {
           includeHotels,
           includeTourInfo,
           ccEmails,
-          bccEmails
+          bccEmails,
+          pdfBase64
         }
       });
 
