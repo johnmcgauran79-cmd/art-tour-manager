@@ -28,12 +28,6 @@ const REPORT_TYPES = [{
 }, {
   value: 'bedding_review',
   label: 'Bedding Type Review'
-}, {
-  value: 'hotel_check',
-  label: 'Hotel Allocation Check'
-}, {
-  value: 'activity_check',
-  label: 'Activity Allocation Check'
 }];
 const SCHEDULE_TYPES = [{
   value: 'weekly',
