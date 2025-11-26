@@ -110,6 +110,8 @@ export const AutomatedReportRulesManagement = () => {
     await sendTest.mutateAsync({
       report_types: formData.report_types,
       recipient_email: user.email,
+      schedule_type: formData.schedule_type || 'weekly',
+      schedule_value: formData.schedule_value || 1,
     });
   };
   

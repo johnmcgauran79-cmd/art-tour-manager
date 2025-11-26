@@ -19,9 +19,9 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { report_types, recipient_email, tour_id } = await req.json();
+    const { report_types, recipient_email, tour_id, schedule_type, schedule_value } = await req.json();
 
-    console.log('Sending test automated report:', { report_types, recipient_email, tour_id });
+    console.log('Sending test automated report:', { report_types, recipient_email, tour_id, schedule_type, schedule_value });
 
     if (!report_types || !Array.isArray(report_types) || report_types.length === 0) {
       throw new Error('report_types must be a non-empty array');
@@ -61,6 +61,8 @@ serve(async (req) => {
         report_types: report_types,
         recipient_emails: [recipient_email],
         rule_id: null, // This is a test, not from an actual rule
+        schedule_type: schedule_type || 'weekly',
+        schedule_value: schedule_value || 7,
       }),
     });
 
