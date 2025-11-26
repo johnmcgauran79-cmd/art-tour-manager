@@ -149,6 +149,15 @@ export const OperationsQuickActions = () => {
 
       if (error) throw error;
 
+      // Get unique booking IDs
+      const bookingIds = [...new Set(data?.map(entry => entry.record_id).filter(Boolean) || [])];
+      
+      // Fetch booking details to check if they still exist
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('id, status')
+        .in('id', bookingIds);
+
       // Group operations by booking_id (same logic as report)
       const bookingGroups = new Map<string, typeof data>();
       data?.forEach(entry => {
@@ -164,40 +173,50 @@ export const OperationsQuickActions = () => {
       let count = 0;
       
       // Count entries using same consolidation logic as report
-      bookingGroups.forEach((entries) => {
+      bookingGroups.forEach((entries, bookingId) => {
+        const booking = bookings?.find(b => b.id === bookingId);
+        
+        // Skip if booking no longer exists (was deleted)
+        if (!booking) return;
+        
         const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
+        const cancelEntry = entries.find(e => {
+          const details = e.details as any;
+          return details?.old_status && details?.new_status === 'cancelled';
+        });
         
         if (createEntry) {
           // Count the new booking
           count++;
           
-          // Check if cancelled
-          const wasCancelled = entries.some(e => {
-            const details = e.details as any;
-            return details?.new_status === 'cancelled';
-          });
-          if (wasCancelled) count++;
+          // If cancelled, count it
+          if (cancelEntry) count++;
           
-          // Also count any UPDATE operations
-          entries.forEach(entry => {
-            if (entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') {
-              count++;
-            }
-          });
+          // Count consolidated activity updates (all activity updates = 1 line)
+          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+          if (activityUpdates.length > 0) count++;
+          
+          // Count hotel updates separately
+          const hotelUpdates = entries.filter(e => e.operation_type === 'UPDATE_HOTEL_BOOKING' && e.id !== cancelEntry?.id);
+          count += hotelUpdates.length;
         } else {
-          // Check if cancelled
-          const wasCancelled = entries.some(e => {
-            const details = e.details as any;
-            return details?.new_status === 'cancelled';
-          });
-          if (wasCancelled) count++;
+          // This is an update to an existing booking
           
-          // Count individual changes (excluding generic updates)
-          entries.forEach(entry => {
-            if (entry.operation_type !== 'UPDATE_BOOKING' && entry.operation_type !== 'UPDATE') {
-              count++;
-            }
-          });
+          // If cancelled, count it
+          if (cancelEntry) count++;
+          
+          // Count consolidated activity updates (all activity updates = 1 line)
+          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+          if (activityUpdates.length > 0) count++;
+          
+          // Count other updates (excluding generic updates and activity updates)
+          const otherUpdates = entries.filter(e => 
+            e.operation_type !== 'UPDATE_BOOKING' && 
+            e.operation_type !== 'UPDATE' && 
+            e.operation_type !== 'UPDATE_ACTIVITY_BOOKING' &&
+            e.id !== cancelEntry?.id
+          );
+          count += otherUpdates.length;
         }
       });
 
