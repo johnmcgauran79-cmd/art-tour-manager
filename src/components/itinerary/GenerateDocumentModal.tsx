@@ -151,6 +151,8 @@ export const GenerateDocumentModal = ({
         onOpenChange={setShowViewer}
         htmlContent={generatedHTML}
         tourName={tour.name}
+        tourId={tour.id}
+        itineraryId={itinerary.id}
       />
     </>
   );
