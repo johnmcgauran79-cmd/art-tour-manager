@@ -78,25 +78,64 @@ export const WeeklyBookingChangesReport = () => {
           : 'Unknown';
         const tourName = booking?.tours?.name || 'Unknown Tour';
 
-        // Process all entries for this booking
-        entries.forEach(entry => {
-          // Skip generic UPDATE_BOOKING and UPDATE entries
-          if (entry.operation_type === 'UPDATE_BOOKING' || entry.operation_type === 'UPDATE') return;
-          
-          const profile = profiles?.find(p => p.id === entry.user_id);
+        // Check if this booking was created in this period
+        const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
+        
+        if (createEntry) {
+          // Show the new booking entry
+          const profile = profiles?.find(p => p.id === createEntry.user_id);
           consolidatedChanges.push({
-            id: entry.id,
-            timestamp: entry.timestamp,
-            operation_type: entry.operation_type,
+            id: createEntry.id,
+            timestamp: createEntry.timestamp,
+            operation_type: 'CREATE_BOOKING',
             booking_id: bookingId,
             customer_name: customerName,
             tour_name: tourName,
             user_name: profile 
               ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
               : 'System',
-            details: entry.details
+            details: createEntry.details
           });
-        });
+          
+          // Also show any UPDATE operations (actual changes after creation)
+          entries.forEach(entry => {
+            if (entry.operation_type === 'UPDATE_HOTEL_BOOKING' || entry.operation_type === 'UPDATE_ACTIVITY_BOOKING') {
+              const profile = profiles?.find(p => p.id === entry.user_id);
+              consolidatedChanges.push({
+                id: entry.id,
+                timestamp: entry.timestamp,
+                operation_type: entry.operation_type,
+                booking_id: bookingId,
+                customer_name: customerName,
+                tour_name: tourName,
+                user_name: profile 
+                  ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                  : 'System',
+                details: entry.details
+              });
+            }
+          });
+        } else {
+          // This is an update to an existing booking - show individual changes
+          entries.forEach(entry => {
+            // Skip generic UPDATE_BOOKING and UPDATE entries
+            if (entry.operation_type === 'UPDATE_BOOKING' || entry.operation_type === 'UPDATE') return;
+            
+            const profile = profiles?.find(p => p.id === entry.user_id);
+            consolidatedChanges.push({
+              id: entry.id,
+              timestamp: entry.timestamp,
+              operation_type: entry.operation_type,
+              booking_id: bookingId,
+              customer_name: customerName,
+              tour_name: tourName,
+              user_name: profile 
+                ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+                : 'System',
+              details: entry.details
+            });
+          });
+        }
       });
 
       // Sort by timestamp descending
