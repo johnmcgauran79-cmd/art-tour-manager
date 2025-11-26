@@ -1843,6 +1843,25 @@ export type Database = {
         Args: { p_tour_id: string }
         Returns: undefined
       }
+      get_activity_allocation_discrepancies: {
+        Args: never
+        Returns: {
+          activity_date: string
+          activity_id: string
+          activity_name: string
+          allocated_count: number
+          booking_id: string
+          discrepancy_type: string
+          group_name: string
+          lead_passenger_first_name: string
+          lead_passenger_last_name: string
+          passenger_count: number
+          status: string
+          tour_id: string
+          tour_name: string
+          tour_start_date: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
