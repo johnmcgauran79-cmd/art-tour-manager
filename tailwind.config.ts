@@ -101,6 +101,8 @@ export default {
 					'waitlisted-foreground': 'hsl(var(--status-waitlisted-foreground))',
 					available: 'hsl(var(--status-available))',
 					'available-foreground': 'hsl(var(--status-available-foreground))',
+					'limited-availability': 'hsl(var(--status-limited-availability))',
+					'limited-availability-foreground': 'hsl(var(--status-limited-availability-foreground))',
 					'sold-out': 'hsl(var(--status-sold-out))',
 					'sold-out-foreground': 'hsl(var(--status-sold-out-foreground))',
 					closed: 'hsl(var(--status-closed))',
