@@ -211,6 +211,18 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
         </Card>
       </div>
 
+      {/* Additional Notes */}
+      {tour.notes && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Additional Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="whitespace-pre-wrap text-sm">{tour.notes}</div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pricing Information */}
       <Card>
         <CardHeader>
@@ -294,17 +306,6 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </Card>
         )}
       </div>
-
-      {tour.notes && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Additional Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="whitespace-pre-wrap text-sm">{tour.notes}</div>
-          </CardContent>
-        </Card>
-      )}
 
       {selectedTourForAlerts && (
         <TourAlertsModal
