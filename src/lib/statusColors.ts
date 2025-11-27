@@ -25,7 +25,7 @@ export const getTourStatusColor = (status: string): string => {
   const statusMap: Record<string, string> = {
     'pending': 'bg-status-pending text-status-pending-foreground',
     'available': 'bg-status-available text-status-available-foreground',
-    'limited_availability': 'bg-amber-500 text-white',
+    'limited_availability': 'bg-status-limited-availability text-status-limited-availability-foreground',
     'closed': 'bg-status-closed text-status-closed-foreground',
     'sold_out': 'bg-status-sold-out text-status-sold-out-foreground',
     'past': 'bg-status-past text-status-past-foreground',
