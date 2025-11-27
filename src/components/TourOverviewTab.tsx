@@ -79,8 +79,8 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tour.dates}</div>
-            <p className="text-xs text-muted-foreground">{tour.duration}</p>
+            <div className="text-lg font-semibold">{tour.dates}</div>
+            <p className="text-sm text-muted-foreground mt-1">{tour.duration}</p>
           </CardContent>
         </Card>
 
@@ -90,8 +90,8 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             <MapPin className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tour.location || "TBD"}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-lg font-semibold">{tour.location || "TBD"}</div>
+            <p className="text-sm text-muted-foreground mt-1">
               Pickup: {tour.pickupPoint || "TBD"}
             </p>
           </CardContent>
@@ -105,8 +105,8 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             </Badge>
           </CardHeader>
           <CardContent>
-            <div className="text-sm font-medium">Tour Host</div>
-            <p className="text-xs text-muted-foreground">{tour.tourHost}</p>
+            <div className="text-sm font-medium text-muted-foreground">Tour Host</div>
+            <p className="text-base font-semibold mt-1">{tour.tourHost}</p>
           </CardContent>
         </Card>
       </div>
