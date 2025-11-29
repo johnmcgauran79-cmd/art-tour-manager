@@ -183,7 +183,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           line-height: 1.5;
           max-width: 800px;
           margin: 0 auto;
-          padding: 20px;
+          padding: 10px;
           color: #333;
           font-size: 10pt;
         }
@@ -320,7 +320,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
         }
         @media print {
           @page {
-            margin: 15mm;
+            margin: 10mm;
             size: A4;
           }
           body { 
