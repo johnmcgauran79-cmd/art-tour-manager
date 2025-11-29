@@ -251,7 +251,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           border-radius: 6px;
           padding: 15px;
           margin-bottom: 15px;
-          page-break-before: always;
           page-break-inside: avoid;
         }
         .day-header {
@@ -341,16 +340,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
             break-inside: avoid !important;
           }
           .day-card { 
-            page-break-before: always !important;
+            page-break-before: auto;
             page-break-after: auto;
             page-break-inside: avoid !important;
-            break-before: page !important;
             break-inside: avoid-page !important;
-            margin-bottom: 0;
+            margin-bottom: 15px;
             min-height: 100px;
-          }
-          .day-card:first-of-type {
-            page-break-before: always !important;
           }
           .day-header {
             page-break-after: avoid !important;
