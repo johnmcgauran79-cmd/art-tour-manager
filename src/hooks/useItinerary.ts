@@ -1,6 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+
+// Helper to detect permission errors
+const isPermissionError = (error: any): boolean => {
+  return error?.code === '42501' || 
+         error?.code === 'PGRST301' || 
+         error?.message?.toLowerCase().includes('permission') ||
+         error?.message?.toLowerCase().includes('policy') ||
+         error?.message?.toLowerCase().includes('row-level security');
+};
 
 export interface ItineraryEntry {
   id: string;
@@ -84,8 +94,10 @@ export const useItinerary = (tourId: string) => {
 export const useCreateItinerary = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [permissionError, setPermissionError] = useState(false);
 
-  return useMutation({
+  return {
+    ...useMutation({
     mutationFn: async ({ tourId, startDate, endDate }: { 
       tourId: string; 
       startDate: string; 
@@ -135,21 +147,30 @@ export const useCreateItinerary = () => {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: "Failed to create itinerary. Please try again.",
-        variant: "destructive",
-      });
+      if (isPermissionError(error)) {
+        setPermissionError(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create itinerary. Please try again.",
+          variant: "destructive",
+        });
+      }
       console.error('Error creating itinerary:', error);
     },
-  });
+  }),
+    permissionError,
+    setPermissionError
+  };
 };
 
 export const useUpdateItineraryEntry = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [permissionError, setPermissionError] = useState(false);
 
-  return useMutation({
+  return {
+    ...useMutation({
     mutationFn: async ({ 
       entryId, 
       dayId, 
@@ -200,21 +221,30 @@ export const useUpdateItineraryEntry = () => {
       queryClient.invalidateQueries({ queryKey: ['itinerary', variables.tourId] });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: "Failed to save entry. Please try again.",
-        variant: "destructive",
-      });
+      if (isPermissionError(error)) {
+        setPermissionError(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save entry. Please try again.",
+          variant: "destructive",
+        });
+      }
       console.error('Error saving entry:', error);
     },
-  });
+  }),
+    permissionError,
+    setPermissionError
+  };
 };
 
 export const useDeleteItineraryEntry = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [permissionError, setPermissionError] = useState(false);
 
-  return useMutation({
+  return {
+    ...useMutation({
     mutationFn: async ({ entryId, tourId }: { entryId: string; tourId: string }) => {
       const { error } = await supabase
         .from('tour_itinerary_entries')
@@ -231,12 +261,19 @@ export const useDeleteItineraryEntry = () => {
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: "Failed to delete entry. Please try again.",
-        variant: "destructive",
-      });
+      if (isPermissionError(error)) {
+        setPermissionError(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete entry. Please try again.",
+          variant: "destructive",
+        });
+      }
       console.error('Error deleting entry:', error);
     },
-  });
+  }),
+    permissionError,
+    setPermissionError
+  };
 };

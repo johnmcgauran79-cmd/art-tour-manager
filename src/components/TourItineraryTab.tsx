@@ -9,6 +9,7 @@ import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
 import { useAuth } from "@/hooks/useAuth";
+import { PermissionErrorDialog } from "./PermissionErrorDialog";
 
 interface TourItineraryTabProps {
   tour: {
@@ -38,6 +39,10 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
       startDate: tour.startDate,
       endDate: tour.endDate
     });
+  };
+
+  const handleClosePermissionError = () => {
+    createItinerary.setPermissionError(false);
   };
 
   if (isLoading) {
@@ -148,6 +153,13 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
           itineraryId={itinerary.id}
         />
       )}
+
+      {/* Permission Error Dialog */}
+      <PermissionErrorDialog
+        open={createItinerary.permissionError}
+        onOpenChange={handleClosePermissionError}
+        action="create or edit itineraries"
+      />
     </div>
   );
 };

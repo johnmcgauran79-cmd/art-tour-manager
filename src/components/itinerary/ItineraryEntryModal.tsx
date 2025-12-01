@@ -7,6 +7,7 @@ import { ItineraryDay, ItineraryEntry, useUpdateItineraryEntry } from "@/hooks/u
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { PermissionErrorDialog } from "../PermissionErrorDialog";
 
 interface ItineraryEntryModalProps {
   open: boolean;
@@ -76,8 +77,9 @@ export const ItineraryEntryModal = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
         <DialogHeader>
           <div className="space-y-3">
             {tourName && (
@@ -156,5 +158,12 @@ export const ItineraryEntryModal = ({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    
+    <PermissionErrorDialog
+      open={updateEntry.permissionError}
+      onOpenChange={(open) => updateEntry.setPermissionError(open)}
+      action={entry ? "edit itinerary entries" : "add itinerary entries"}
+    />
+    </>
   );
 };

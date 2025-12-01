@@ -7,6 +7,8 @@ import { format } from "date-fns";
 import { ItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryEntryModal } from "./ItineraryEntryModal";
 import { useDeleteItineraryEntry } from "@/hooks/useItinerary";
+import { useAuth } from "@/hooks/useAuth";
+import { PermissionErrorDialog } from "../PermissionErrorDialog";
 
 interface ItineraryDayCardProps {
   day: ItineraryDay;
@@ -19,6 +21,10 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const deleteEntry = useDeleteItineraryEntry();
+  const { userRole } = useAuth();
+  
+  // Agent users have view-only access
+  const isAgent = userRole === 'agent';
 
   const handleAddEntry = () => {
     setEditingEntry(null);
@@ -49,15 +55,17 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
               {format(new Date(day.activity_date), 'EEEE, MMMM d, yyyy')}
             </div>
           </div>
-          <Button
-            onClick={handleAddEntry}
-            size="sm"
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add Activity
-          </Button>
+          {!isAgent && (
+            <Button
+              onClick={handleAddEntry}
+              size="sm"
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Activity
+            </Button>
+          )}
         </div>
       </CardHeader>
       
@@ -90,24 +98,26 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
                       />
                     )}
                   </div>
-                  <div className="flex items-center gap-1 ml-3">
-                    <Button
-                      onClick={() => handleEditEntry(entry)}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      onClick={() => handleDeleteEntry(entry.id)}
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
+                  {!isAgent && (
+                    <div className="flex items-center gap-1 ml-3">
+                      <Button
+                        onClick={() => handleEditEntry(entry)}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        onClick={() => handleDeleteEntry(entry.id)}
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -121,6 +131,12 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
           entry={editingEntry}
           tourId={tourId}
           tourName={tourName}
+        />
+        
+        <PermissionErrorDialog
+          open={deleteEntry.permissionError}
+          onOpenChange={(open) => deleteEntry.setPermissionError(open)}
+          action="delete itinerary entries"
         />
       </CardContent>
     </Card>
