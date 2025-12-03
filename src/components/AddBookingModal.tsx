@@ -312,6 +312,41 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         });
         return;
       }
+      
+      // Ensure hotel allocations are initialized/updated when moving to hotels tab
+      if (hotels.length > 0) {
+        const currentAllocations = { ...hotelAllocations };
+        let needsUpdate = false;
+        
+        hotels.forEach(hotel => {
+          if (!currentAllocations[hotel.id]) {
+            // Initialize new hotel allocation
+            currentAllocations[hotel.id] = {
+              allocated: formData.accommodation_required,
+              check_in_date: hotel.default_check_in || preSelectedTourStartDate || '',
+              check_out_date: hotel.default_check_out || preSelectedTourEndDate || '',
+              bedding: formData.passenger_count === 1 ? 'single' : 'double',
+              room_type: hotel.default_room_type || '',
+              room_upgrade: '',
+              confirmation_number: '',
+              room_requests: '',
+            };
+            needsUpdate = true;
+          } else if (formData.accommodation_required && !currentAllocations[hotel.id].allocated) {
+            // Update existing allocation to be allocated if accommodation is required
+            currentAllocations[hotel.id] = {
+              ...currentAllocations[hotel.id],
+              allocated: true,
+            };
+            needsUpdate = true;
+          }
+        });
+        
+        if (needsUpdate) {
+          setHotelAllocations(currentAllocations);
+        }
+      }
+      
       setActiveTab("hotels");
     } else if (activeTab === "hotels") {
       setActiveTab("activities");
