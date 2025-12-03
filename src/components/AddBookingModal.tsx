@@ -107,69 +107,83 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const createBooking = useCreateBooking();
   const { toast } = useToast();
   
-  // Auto-update bedding to single for 1 passenger (silently, no validation alerts)
+  const { data: hotels = [] } = useHotels(formData.tour_id);
+  const { data: activities = [] } = useActivities(formData.tour_id);
+  
+  // Helper function to build hotel allocations - single source of truth
+  const buildHotelAllocations = (
+    hotelsList: typeof hotels,
+    accommodationRequired: boolean,
+    passengerCount: number,
+    existingAllocations: typeof hotelAllocations = {}
+  ) => {
+    const allocations: Record<string, any> = {};
+    
+    hotelsList.forEach(hotel => {
+      const existing = existingAllocations[hotel.id];
+      allocations[hotel.id] = {
+        allocated: accommodationRequired,
+        check_in_date: existing?.check_in_date || hotel.default_check_in || preSelectedTourStartDate || '',
+        check_out_date: existing?.check_out_date || hotel.default_check_out || preSelectedTourEndDate || '',
+        bedding: passengerCount === 1 ? 'single' : (existing?.bedding || 'double'),
+        room_type: existing?.room_type || hotel.default_room_type || '',
+        room_upgrade: existing?.room_upgrade || '',
+        confirmation_number: existing?.confirmation_number || '',
+        room_requests: existing?.room_requests || '',
+      };
+    });
+    
+    return allocations;
+  };
+  
+  // Single effect to manage hotel allocations - runs when hotels load or accommodation changes
   useEffect(() => {
-    if (formData.passenger_count === 1) {
+    if (!open || hotels.length === 0) return;
+    
+    const newAllocations = buildHotelAllocations(
+      hotels,
+      formData.accommodation_required,
+      formData.passenger_count,
+      hotelAllocations
+    );
+    
+    // Only update if there's an actual change to prevent infinite loops
+    const hasChanges = hotels.some(hotel => {
+      const existing = hotelAllocations[hotel.id];
+      const newAlloc = newAllocations[hotel.id];
+      return !existing || existing.allocated !== newAlloc.allocated;
+    });
+    
+    if (hasChanges || Object.keys(hotelAllocations).length === 0) {
+      setHotelAllocations(newAllocations);
+    }
+  }, [open, hotels, formData.accommodation_required]);
+  
+  // Update bedding when passenger count changes
+  useEffect(() => {
+    if (Object.keys(hotelAllocations).length === 0) return;
+    
+    const needsBeddingUpdate = formData.passenger_count === 1 && 
+      Object.values(hotelAllocations).some(a => a.bedding !== 'single');
+    
+    if (needsBeddingUpdate) {
       const updatedAllocations = { ...hotelAllocations };
       Object.keys(updatedAllocations).forEach(hotelId => {
-        if (updatedAllocations[hotelId].bedding !== 'single') {
-          updatedAllocations[hotelId].bedding = 'single';
-        }
+        updatedAllocations[hotelId] = { ...updatedAllocations[hotelId], bedding: 'single' };
       });
       setHotelAllocations(updatedAllocations);
     }
   }, [formData.passenger_count]);
-  
-  const { data: hotels = [] } = useHotels(formData.tour_id);
-  const { data: activities = [] } = useActivities(formData.tour_id);
-  
-  // Initialize hotel allocations when modal opens and hotels are loaded
-  useEffect(() => {
-    if (open && hotels && hotels.length > 0 && Object.keys(hotelAllocations).length === 0) {
-      const initialAllocations: Record<string, any> = {};
-      
-      hotels.forEach(hotel => {
-        initialAllocations[hotel.id] = {
-          allocated: formData.accommodation_required,
-          check_in_date: hotel.default_check_in || preSelectedTourStartDate || '',
-          check_out_date: hotel.default_check_out || preSelectedTourEndDate || '',
-          bedding: 'single',
-          room_type: hotel.default_room_type || '',
-          room_upgrade: '',
-          confirmation_number: '',
-          room_requests: '',
-        };
-      });
-      
-      setHotelAllocations(initialAllocations);
-    }
-  }, [open, hotels, preSelectedTourStartDate, preSelectedTourEndDate, formData.accommodation_required]);
 
-  // Update hotel allocations when accommodation_required changes
+  // Initialize activity allocations when activities load
   useEffect(() => {
-    if (Object.keys(hotelAllocations).length > 0) {
-      const updatedAllocations = { ...hotelAllocations };
-      Object.keys(updatedAllocations).forEach(hotelId => {
-        updatedAllocations[hotelId] = {
-          ...updatedAllocations[hotelId],
-          allocated: formData.accommodation_required,
-        };
-      });
-      setHotelAllocations(updatedAllocations);
-    }
-  }, [formData.accommodation_required]);
-
-  // Initialize activity allocations when modal opens
-  useEffect(() => {
-    if (open && activities && activities.length > 0) {
-      const initialAllocations: Record<string, number> = {};
-      
-      activities.forEach(activity => {
-        initialAllocations[activity.id] = formData.passenger_count;
-      });
-      
-      setActivityAllocations(initialAllocations);
-    }
+    if (!open || activities.length === 0) return;
+    
+    const initialAllocations: Record<string, number> = {};
+    activities.forEach(activity => {
+      initialAllocations[activity.id] = formData.passenger_count;
+    });
+    setActivityAllocations(initialAllocations);
   }, [open, activities, formData.passenger_count]);
   
   // Set default dates to tour start/end when tour is selected and no hotels exist
@@ -313,37 +327,16 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         return;
       }
       
-      // Ensure hotel allocations are initialized/updated when moving to hotels tab
-      if (hotels.length > 0) {
-        const currentAllocations = { ...hotelAllocations };
-        let needsUpdate = false;
-        
-        hotels.forEach(hotel => {
-          if (!currentAllocations[hotel.id]) {
-            // Initialize new hotel allocation
-            currentAllocations[hotel.id] = {
-              allocated: formData.accommodation_required,
-              check_in_date: hotel.default_check_in || preSelectedTourStartDate || '',
-              check_out_date: hotel.default_check_out || preSelectedTourEndDate || '',
-              bedding: formData.passenger_count === 1 ? 'single' : 'double',
-              room_type: hotel.default_room_type || '',
-              room_upgrade: '',
-              confirmation_number: '',
-              room_requests: '',
-            };
-            needsUpdate = true;
-          } else if (formData.accommodation_required && !currentAllocations[hotel.id].allocated) {
-            // Update existing allocation to be allocated if accommodation is required
-            currentAllocations[hotel.id] = {
-              ...currentAllocations[hotel.id],
-              allocated: true,
-            };
-            needsUpdate = true;
-          }
-        });
-        
-        if (needsUpdate) {
-          setHotelAllocations(currentAllocations);
+      // Safety check: ensure hotel allocations are properly set before showing hotels tab
+      if (hotels.length > 0 && formData.accommodation_required) {
+        const hasUnallocated = hotels.some(h => !hotelAllocations[h.id]?.allocated);
+        if (hasUnallocated) {
+          setHotelAllocations(buildHotelAllocations(
+            hotels, 
+            formData.accommodation_required, 
+            formData.passenger_count, 
+            hotelAllocations
+          ));
         }
       }
       
