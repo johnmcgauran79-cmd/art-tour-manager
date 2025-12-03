@@ -163,19 +163,48 @@ export default function BookingEdit() {
       if (error) {
         console.error('Error fetching hotel bookings:', error);
       } else {
-        // Check if tour has hotels but none are allocated
+        // Check if tour has hotels
         const { data: tourHotels } = await supabase
           .from('hotels')
-          .select('id')
+          .select('*')
           .eq('tour_id', booking.tour_id);
 
-        if (tourHotels && tourHotels.length > 0 && (!hotelBookings || hotelBookings.length === 0)) {
-          setValidationError("Hotel must be allocated if accommodation is required for this booking. Please allocate at least one hotel in the Hotels tab.");
-          return;
+        // Check if we're activating a waitlisted booking without allocated hotels
+        const isActivatingBooking = booking.status === 'waitlisted' && formData.status !== 'waitlisted' && formData.status !== 'cancelled';
+        const needsHotelAllocation = tourHotels && tourHotels.length > 0 && (!hotelBookings || hotelBookings.length === 0);
+
+        if (needsHotelAllocation) {
+          if (isActivatingBooking) {
+            // Auto-allocate hotels for activating waitlisted bookings
+            console.log('Auto-allocating hotels for activated waitlisted booking');
+            for (const hotel of tourHotels) {
+              const { error: insertError } = await supabase
+                .from('hotel_bookings')
+                .insert({
+                  booking_id: booking.id,
+                  hotel_id: hotel.id,
+                  allocated: true,
+                  check_in_date: hotel.default_check_in || tour?.start_date,
+                  check_out_date: hotel.default_check_out || tour?.end_date,
+                  bedding: formData.passenger_count === 1 ? 'single' : 'double',
+                  room_type: hotel.default_room_type,
+                  required: true,
+                });
+              if (insertError) {
+                console.error('Error auto-allocating hotel:', insertError);
+              }
+            }
+            // Proceed with update after auto-allocation
+            performUpdate();
+            return;
+          } else {
+            setValidationError("Hotel must be allocated if accommodation is required for this booking. Please allocate at least one hotel in the Hotels tab.");
+            return;
+          }
         }
 
         // Check if tour has no hotels loaded at all
-        if (tourHotels && tourHotels.length === 0) {
+        if (!tourHotels || tourHotels.length === 0) {
           setShowNoHotelsWarning(true);
           return;
         }
