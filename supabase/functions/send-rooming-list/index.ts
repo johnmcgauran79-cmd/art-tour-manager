@@ -110,9 +110,32 @@ const handler = async (req: Request): Promise<Response> => {
       });
     };
 
-    // Generate rooming data
+    // Calculate expected nights from hotel defaults
+    const calculateDefaultNights = () => {
+      if (!hotel.default_check_in || !hotel.default_check_out) return null;
+      const checkIn = new Date(hotel.default_check_in);
+      const checkOut = new Date(hotel.default_check_out);
+      const diffTime = checkOut.getTime() - checkIn.getTime();
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const defaultNights = calculateDefaultNights();
+
+    // Generate rooming data with highlighting flags
     const roomingData = (hotelBookingsData || []).map((hotelBooking: any, index: number) => {
       const booking = hotelBooking.bookings;
+      
+      // Check if dates differ from hotel defaults
+      const isEarlyCheckIn = hotel.default_check_in && hotelBooking.check_in_date 
+        ? hotelBooking.check_in_date < hotel.default_check_in 
+        : false;
+      const isLateCheckOut = hotel.default_check_out && hotelBooking.check_out_date 
+        ? hotelBooking.check_out_date > hotel.default_check_out 
+        : false;
+      const hasExtraNights = defaultNights !== null && hotelBooking.nights 
+        ? hotelBooking.nights !== defaultNights 
+        : false;
+
       return {
         roomNumber: index + 1,
         leadPassenger: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
@@ -126,6 +149,9 @@ const handler = async (req: Request): Promise<Response> => {
         roomType: hotelBooking.room_type || '-',
         roomUpgrade: hotelBooking.room_upgrade || '-',
         roomRequests: hotelBooking.room_requests || '-',
+        isEarlyCheckIn,
+        isLateCheckOut,
+        hasExtraNights,
       };
     });
 
@@ -157,9 +183,9 @@ const handler = async (req: Request): Promise<Response> => {
                 ${room.passenger3 ? `<div>${room.passenger3}</div>` : ''}
               </td>
               <td style="border: 1px solid #ddd; padding: 10px;">${room.groupName || ''}</td>
-              <td style="border: 1px solid #ddd; padding: 10px;">${room.checkIn}</td>
-              <td style="border: 1px solid #ddd; padding: 10px;">${room.checkOut}</td>
-              <td style="border: 1px solid #ddd; padding: 10px;">${room.nights}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;${room.isEarlyCheckIn ? ' background-color: #FEF3C7;' : ''}">${room.checkIn}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;${room.isLateCheckOut ? ' background-color: #FEF3C7;' : ''}">${room.checkOut}</td>
+              <td style="border: 1px solid #ddd; padding: 10px;${room.hasExtraNights ? ' background-color: #FEF3C7;' : ''}">${room.nights}</td>
               <td style="border: 1px solid #ddd; padding: 10px; text-transform: capitalize;">${room.bedding}</td>
               <td style="border: 1px solid #ddd; padding: 10px;">${room.roomType}</td>
               <td style="border: 1px solid #ddd; padding: 10px;">${room.roomUpgrade}</td>
