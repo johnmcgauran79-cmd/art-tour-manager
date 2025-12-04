@@ -17,6 +17,8 @@ interface Hotel {
   name: string;
   address: string | null;
   contact_email: string | null;
+  default_check_in: string | null;
+  default_check_out: string | null;
 }
 
 interface RoomingListModalProps {
@@ -80,9 +82,32 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     enabled: !!hotel?.id && !!tourId && open,
   });
 
+  // Calculate expected nights from hotel defaults
+  const calculateDefaultNights = () => {
+    if (!hotel?.default_check_in || !hotel?.default_check_out) return null;
+    const checkIn = new Date(hotel.default_check_in);
+    const checkOut = new Date(hotel.default_check_out);
+    const diffTime = checkOut.getTime() - checkIn.getTime();
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const defaultNights = calculateDefaultNights();
+
   const getRoomingData = () => {
     return hotelBookingsData.map((hotelBooking, index) => {
       const booking = hotelBooking.bookings;
+      
+      // Check if dates differ from hotel defaults
+      const isEarlyCheckIn = hotel?.default_check_in && hotelBooking.check_in_date 
+        ? hotelBooking.check_in_date < hotel.default_check_in 
+        : false;
+      const isLateCheckOut = hotel?.default_check_out && hotelBooking.check_out_date 
+        ? hotelBooking.check_out_date > hotel.default_check_out 
+        : false;
+      const hasExtraNights = defaultNights !== null && hotelBooking.nights 
+        ? hotelBooking.nights !== defaultNights 
+        : false;
+
       return {
         roomNumber: index + 1,
         leadPassenger: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
@@ -96,6 +121,9 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
         roomType: hotelBooking.room_type || '-',
         roomUpgrade: hotelBooking.room_upgrade || '-',
         roomRequests: hotelBooking.room_requests || '-',
+        isEarlyCheckIn,
+        isLateCheckOut,
+        hasExtraNights,
       };
     });
   };
@@ -122,9 +150,9 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                 ${room.passenger3 ? `<div>${room.passenger3}</div>` : ''}
               </td>
               <td style="border: 1px solid #ddd; padding: 8px;">${room.groupName || ''}</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">${room.checkIn}</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">${room.checkOut}</td>
-              <td style="border: 1px solid #ddd; padding: 8px;">${room.nights}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;${room.isEarlyCheckIn ? ' background-color: #FEF3C7;' : ''}">${room.checkIn}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;${room.isLateCheckOut ? ' background-color: #FEF3C7;' : ''}">${room.checkOut}</td>
+              <td style="border: 1px solid #ddd; padding: 8px;${room.hasExtraNights ? ' background-color: #FEF3C7;' : ''}">${room.nights}</td>
               <td style="border: 1px solid #ddd; padding: 8px; text-transform: capitalize;">${room.bedding}</td>
               <td style="border: 1px solid #ddd; padding: 8px;">${room.roomType}</td>
               <td style="border: 1px solid #ddd; padding: 8px;">${room.roomUpgrade}</td>
@@ -291,7 +319,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {roomingData.map((room, index) => (
+                {roomingData.map((room, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{room.roomNumber}</TableCell>
                       <TableCell className="font-medium">{room.leadPassenger}</TableCell>
@@ -302,9 +330,9 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
                         </div>
                       </TableCell>
                       <TableCell>{room.groupName}</TableCell>
-                      <TableCell>{room.checkIn}</TableCell>
-                      <TableCell>{room.checkOut}</TableCell>
-                      <TableCell>{room.nights}</TableCell>
+                      <TableCell className={room.isEarlyCheckIn ? "bg-yellow-100" : ""}>{room.checkIn}</TableCell>
+                      <TableCell className={room.isLateCheckOut ? "bg-yellow-100" : ""}>{room.checkOut}</TableCell>
+                      <TableCell className={room.hasExtraNights ? "bg-yellow-100" : ""}>{room.nights}</TableCell>
                       <TableCell className="capitalize">{room.bedding}</TableCell>
                       <TableCell>{room.roomType}</TableCell>
                       <TableCell>{room.roomUpgrade}</TableCell>
