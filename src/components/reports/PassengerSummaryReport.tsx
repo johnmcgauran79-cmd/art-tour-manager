@@ -7,6 +7,7 @@ interface PassengerSummaryReportProps {
     leadPassenger: string;
     additionalPassengers: string[];
     passengerCount: number;
+    bedding: string;
     checkIn: string;
     checkOut: string;
     nights: number;
@@ -23,10 +24,11 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
         <TableRow>
           <TableHead className="w-[140px]">Lead Passenger</TableHead>
           <TableHead className="w-[120px]">Additional Passengers</TableHead>
-          <TableHead className="w-[60px]">Pax</TableHead>
-          <TableHead className="w-[100px]">Check In</TableHead>
-          <TableHead className="w-[100px]">Check Out</TableHead>
-          <TableHead className="w-[70px]">Nights</TableHead>
+          <TableHead className="w-[50px]">Pax</TableHead>
+          <TableHead className="w-[80px]">Bedding</TableHead>
+          <TableHead className="w-[90px]">Check In</TableHead>
+          <TableHead className="w-[90px]">Check Out</TableHead>
+          <TableHead className="w-[60px]">Nights</TableHead>
           <TableHead className="w-[80px]">Status</TableHead>
           <TableHead className="w-[100px]">Group</TableHead>
           <TableHead className="w-[100px]">Notes</TableHead>
@@ -37,10 +39,11 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
           <TableRow key={index}>
             <TableCell className="font-medium w-[140px]">{item.leadPassenger}</TableCell>
             <TableCell className="w-[120px]">{item.additionalPassengers.join(', ') || '-'}</TableCell>
-            <TableCell className="w-[60px]">{item.passengerCount}</TableCell>
-            <TableCell className="w-[100px]">{item.checkIn}</TableCell>
-            <TableCell className="w-[100px]">{item.checkOut}</TableCell>
-            <TableCell className="w-[70px]">{item.nights}</TableCell>
+            <TableCell className="w-[50px]">{item.passengerCount}</TableCell>
+            <TableCell className="w-[80px] capitalize">{item.bedding || '-'}</TableCell>
+            <TableCell className="w-[90px]">{item.checkIn}</TableCell>
+            <TableCell className="w-[90px]">{item.checkOut}</TableCell>
+            <TableCell className="w-[60px]">{item.nights}</TableCell>
             <TableCell className="w-[80px]">
               <Badge className={`
                 ${item.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
