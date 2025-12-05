@@ -1,8 +1,9 @@
 
+import { useQuery } from "@tanstack/react-query";
 import { useBookings } from "@/hooks/useBookings";
 import { useActivities } from "@/hooks/useActivities";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
-import { useHotelBookings } from "@/hooks/useHotelBookings";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Phone, Utensils, Users, ClipboardList, Grid3X3 } from "lucide-react";
 import React from "react";
@@ -20,7 +21,25 @@ interface ReportItem {
 export const useReportData = (tourId: string): ReportItem[] => {
   const { data: allBookings } = useBookings();
   const { data: activities } = useActivities(tourId);
-  const { data: hotelBookings } = useHotelBookings(tourId);
+  
+  // Fetch all hotel bookings for bookings on this tour
+  const { data: hotelBookings } = useQuery({
+    queryKey: ['tour-hotel-bookings', tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('hotel_bookings')
+        .select(`
+          booking_id,
+          bedding,
+          hotels!inner (tour_id)
+        `)
+        .eq('hotels.tour_id', tourId);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tourId,
+  });
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
