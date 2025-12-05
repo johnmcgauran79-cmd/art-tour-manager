@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Download, FileText } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { RoomingListModal } from "@/components/RoomingListModal";
@@ -36,7 +38,8 @@ export const TourOperationsReportsModal = ({
   onBookingClick
 }: TourOperationsReportsModalProps) => {
   const { data: hotels } = useHotels(tourId);
-  const reports = useReportData(tourId);
+  const [accommodationOnly, setAccommodationOnly] = useState(false);
+  const reports = useReportData(tourId, { accommodationOnly });
   
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
@@ -193,8 +196,18 @@ export const TourOperationsReportsModal = ({
             </DialogHeader>
             
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">{displayReport.description}</span>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{displayReport.description}</span>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="accommodation-filter" 
+                    checked={accommodationOnly}
+                    onCheckedChange={(checked) => setAccommodationOnly(checked === true)}
+                  />
+                  <Label htmlFor="accommodation-filter" className="text-sm cursor-pointer">
+                    Accommodation only
+                  </Label>
+                </div>
               </div>
               
               <div className="border rounded-lg">

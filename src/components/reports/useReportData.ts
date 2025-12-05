@@ -18,7 +18,12 @@ interface ReportItem {
   data: any[];
 }
 
-export const useReportData = (tourId: string): ReportItem[] => {
+interface UseReportDataOptions {
+  accommodationOnly?: boolean;
+}
+
+export const useReportData = (tourId: string, options: UseReportDataOptions = {}): ReportItem[] => {
+  const { accommodationOnly = false } = options;
   const { data: allBookings } = useBookings();
   const { data: activities } = useActivities(tourId);
   
@@ -41,11 +46,16 @@ export const useReportData = (tourId: string): ReportItem[] => {
     enabled: !!tourId,
   });
 
-  const tourBookings = (allBookings || []).filter(booking => 
-    booking.tour_id === tourId && 
-    booking.status !== 'cancelled' && 
-    booking.status !== 'waitlisted'
-  );
+  const tourBookings = (allBookings || []).filter(booking => {
+    const baseFilter = booking.tour_id === tourId && 
+      booking.status !== 'cancelled' && 
+      booking.status !== 'waitlisted';
+    
+    if (accommodationOnly) {
+      return baseFilter && booking.accommodation_required === true;
+    }
+    return baseFilter;
+  });
 
   // Contact List Report
   const contactList = tourBookings.map(booking => ({
