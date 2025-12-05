@@ -36,9 +36,13 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
         .select(`
           booking_id,
           bedding,
+          check_in_date,
+          check_out_date,
+          nights,
           hotels!inner (tour_id)
         `)
-        .eq('hotels.tour_id', tourId);
+        .eq('hotels.tour_id', tourId)
+        .order('check_in_date', { ascending: true });
       
       if (error) throw error;
       return data;
@@ -75,17 +79,26 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
 
   // Passenger Summary Report
   const passengerSummary = tourBookings.map(booking => {
-    // Get bedding from first hotel booking for this booking
-    const bookingHotelBooking = (hotelBookings || []).find(hb => hb.booking_id === booking.id);
-    const bedding = bookingHotelBooking?.bedding || '';
+    // Get hotel bookings for this booking, sorted by check_in_date (first hotel)
+    const bookingHotelBookings = (hotelBookings || []).filter(hb => hb.booking_id === booking.id);
+    const firstHotelBooking = bookingHotelBookings[0];
+    const lastHotelBooking = bookingHotelBookings[bookingHotelBookings.length - 1];
+    
+    const bedding = firstHotelBooking?.bedding || '';
+    // Use first hotel's check-in and last hotel's check-out for overall dates
+    const checkIn = firstHotelBooking?.check_in_date || booking.check_in_date;
+    const checkOut = lastHotelBooking?.check_out_date || booking.check_out_date;
+    // Calculate total nights from hotel bookings
+    const totalNights = bookingHotelBookings.reduce((sum, hb) => sum + (hb.nights || 0), 0) || booking.total_nights || 0;
+    
     return {
       leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
       additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean),
       passengerCount: booking.passenger_count,
       bedding: bedding,
-      checkIn: formatDateToDDMMYYYY(booking.check_in_date),
-      checkOut: formatDateToDDMMYYYY(booking.check_out_date),
-      nights: booking.total_nights || 0,
+      checkIn: formatDateToDDMMYYYY(checkIn),
+      checkOut: formatDateToDDMMYYYY(checkOut),
+      nights: totalNights,
       status: booking.status,
       notes: booking.extra_requests || '',
       groupName: booking.group_name || ''
