@@ -1,6 +1,4 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 
 interface PassengerSummaryReportProps {
   data: Array<{
@@ -29,9 +27,6 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
           <TableHead className="w-[90px]">Check In</TableHead>
           <TableHead className="w-[90px]">Check Out</TableHead>
           <TableHead className="w-[60px]">Nights</TableHead>
-          <TableHead className="w-[80px]">Status</TableHead>
-          <TableHead className="w-[100px]">Group</TableHead>
-          <TableHead className="w-[100px]">Notes</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -44,22 +39,6 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
             <TableCell className="w-[90px]">{item.checkIn}</TableCell>
             <TableCell className="w-[90px]">{item.checkOut}</TableCell>
             <TableCell className="w-[60px]">{item.nights}</TableCell>
-            <TableCell className="w-[80px]">
-              <Badge className={`
-                ${item.status === 'paid' ? 'bg-green-100 text-green-800' : ''}
-                ${item.status === 'deposited' ? 'bg-blue-100 text-blue-800' : ''}
-                ${item.status === 'invoiced' ? 'bg-yellow-100 text-yellow-800' : ''}
-                ${item.status === 'pending' ? 'bg-gray-100 text-gray-800' : ''}
-              `}>
-                {item.status.toUpperCase()}
-              </Badge>
-            </TableCell>
-            <TableCell className="w-[100px]">{item.groupName || '-'}</TableCell>
-            <TableCell className="w-[100px]">
-              <div className="truncate" title={item.notes}>
-                {item.notes || '-'}
-              </div>
-            </TableCell>
           </TableRow>
         ))}
       </TableBody>
