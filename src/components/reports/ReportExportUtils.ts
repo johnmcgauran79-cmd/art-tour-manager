@@ -29,11 +29,12 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'summary':
-      headers = ['Lead Passenger', 'Additional Passengers', 'Passenger Count', 'Check In', 'Check Out', 'Nights'];
+      headers = ['Lead Passenger', 'Additional Passengers', 'Pax', 'Bedding', 'Check In', 'Check Out', 'Nights'];
       csvData = report.data.map(item => ({
         leadpassenger: item.leadPassenger,
         additionalpassengers: item.additionalPassengers.join(', '),
-        passengercount: item.passengerCount,
+        pax: item.passengerCount,
+        bedding: item.bedding || '-',
         checkin: item.checkIn,
         checkout: item.checkOut,
         nights: item.nights
@@ -103,13 +104,14 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'summary':
       tableHTML = `
         <table>
-          <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Pax</th><th>Check In</th><th>Check Out</th><th>Nights</th></tr></thead>
+          <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Pax</th><th>Bedding</th><th>Check In</th><th>Check Out</th><th>Nights</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr>
                 <td>${item.leadPassenger}</td>
                 <td>${item.additionalPassengers.join(', ')}</td>
                 <td>${item.passengerCount}</td>
+                <td style="text-transform: capitalize;">${item.bedding || '-'}</td>
                 <td>${item.checkIn}</td>
                 <td>${item.checkOut}</td>
                 <td>${item.nights}</td>
@@ -233,6 +235,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Lead Passenger</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Additional Passengers</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Pax</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Bedding</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Check In</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Check Out</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Nights</th>
@@ -244,6 +247,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.leadPassenger}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.additionalPassengers.join(', ')}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerCount}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; text-transform: capitalize;">${item.bedding || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.checkIn}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.checkOut}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.nights}</td>
