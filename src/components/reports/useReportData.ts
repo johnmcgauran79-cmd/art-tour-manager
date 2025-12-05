@@ -2,6 +2,7 @@
 import { useBookings } from "@/hooks/useBookings";
 import { useActivities } from "@/hooks/useActivities";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
+import { useHotelBookings } from "@/hooks/useHotelBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Phone, Utensils, Users, ClipboardList, Grid3X3 } from "lucide-react";
 import React from "react";
@@ -19,6 +20,7 @@ interface ReportItem {
 export const useReportData = (tourId: string): ReportItem[] => {
   const { data: allBookings } = useBookings();
   const { data: activities } = useActivities(tourId);
+  const { data: hotelBookings } = useHotelBookings(tourId);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -43,17 +45,23 @@ export const useReportData = (tourId: string): ReportItem[] => {
     .filter(item => item.dietaryRequirements && item.dietaryRequirements.trim() !== '');
 
   // Passenger Summary Report
-  const passengerSummary = tourBookings.map(booking => ({
-    leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-    additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean),
-    passengerCount: booking.passenger_count,
-    checkIn: formatDateToDDMMYYYY(booking.check_in_date),
-    checkOut: formatDateToDDMMYYYY(booking.check_out_date),
-    nights: booking.total_nights || 0,
-    status: booking.status,
-    notes: booking.extra_requests || '',
-    groupName: booking.group_name || ''
-  }));
+  const passengerSummary = tourBookings.map(booking => {
+    // Get bedding from first hotel booking for this booking
+    const bookingHotelBooking = (hotelBookings || []).find(hb => hb.booking_id === booking.id);
+    const bedding = bookingHotelBooking?.bedding || '';
+    return {
+      leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+      additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean),
+      passengerCount: booking.passenger_count,
+      bedding: bedding,
+      checkIn: formatDateToDDMMYYYY(booking.check_in_date),
+      checkOut: formatDateToDDMMYYYY(booking.check_out_date),
+      nights: booking.total_nights || 0,
+      status: booking.status,
+      notes: booking.extra_requests || '',
+      groupName: booking.group_name || ''
+    };
+  });
 
   // Individual Passenger List Report
   const passengerList = tourBookings.flatMap(booking => {
