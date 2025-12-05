@@ -29,17 +29,14 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'summary':
-      headers = ['Lead Passenger', 'Additional Passengers', 'Passenger Count', 'Check In', 'Check Out', 'Nights', 'Status', 'Group Name', 'Notes'];
+      headers = ['Lead Passenger', 'Additional Passengers', 'Passenger Count', 'Check In', 'Check Out', 'Nights'];
       csvData = report.data.map(item => ({
         leadpassenger: item.leadPassenger,
         additionalpassengers: item.additionalPassengers.join(', '),
         passengercount: item.passengerCount,
         checkin: item.checkIn,
         checkout: item.checkOut,
-        nights: item.nights,
-        status: item.status,
-        groupname: item.groupName,
-        notes: item.notes
+        nights: item.nights
       }));
       break;
     case 'passengerlist':
@@ -106,7 +103,7 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'summary':
       tableHTML = `
         <table>
-          <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Pax</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Status</th><th>Group</th><th>Notes</th></tr></thead>
+          <thead><tr><th>Lead Passenger</th><th>Additional Passengers</th><th>Pax</th><th>Check In</th><th>Check Out</th><th>Nights</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr>
@@ -116,9 +113,6 @@ export const printReport = (report: ReportItem, tourName: string) => {
                 <td>${item.checkIn}</td>
                 <td>${item.checkOut}</td>
                 <td>${item.nights}</td>
-                <td><span class="status ${item.status}">${item.status.toUpperCase()}</span></td>
-                <td>${item.groupName}</td>
-                <td>${item.notes}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -242,9 +236,6 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Check In</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Check Out</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Nights</th>
-              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Status</th>
-              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Group</th>
-              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Notes</th>
             </tr>
           </thead>
           <tbody>
@@ -256,9 +247,6 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.checkIn}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.checkOut}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.nights}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;"><span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; background-color: #f3f4f6; color: #374151;">${item.status.toUpperCase()}</span></td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.groupName}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.notes}</td>
               </tr>
             `).join('')}
           </tbody>
