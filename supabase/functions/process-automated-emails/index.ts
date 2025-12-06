@@ -98,8 +98,20 @@ serve(async (req) => {
             
             const sentCount = await processBatchEmails(supabase, tour, applicableRule, existingBatch.id, errors);
             totalEmailsSent += sentCount;
+            continue;
           }
-          continue;
+          
+          // If rejected, delete and allow recreation
+          if (existingBatch.approval_status === 'rejected') {
+            console.log(`Deleting rejected batch for tour "${tour.name}" to allow recreation`);
+            await supabase
+              .from('automated_email_log')
+              .delete()
+              .eq('id', existingBatch.id);
+          } else {
+            // Pending or sent - skip
+            continue;
+          }
         }
 
         // Get count of eligible bookings for this tour with recipient filter
