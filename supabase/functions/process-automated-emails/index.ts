@@ -307,9 +307,13 @@ async function processBatchEmails(
     console.log(`  - Booking ${booking.id}: ${booking.lead_passenger?.first_name} ${booking.lead_passenger?.last_name} (${booking.lead_passenger?.email}), ${booking.passenger_count} pax, accommodation: ${booking.accommodation_required}`);
   }
 
-  for (const booking of eligibleBookings) {
+  // Helper function for rate limiting delay
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  for (let i = 0; i < eligibleBookings.length; i++) {
+    const booking = eligibleBookings[i];
     try {
-      console.log(`Sending email for booking ${booking.id} to ${booking.lead_passenger?.email}...`);
+      console.log(`[${i + 1}/${eligibleBookings.length}] Sending email for booking ${booking.id} to ${booking.lead_passenger?.email}...`);
       
       const { data: emailResult, error: emailError } = await supabase.functions.invoke(
         'send-booking-confirmation',
@@ -332,11 +336,10 @@ async function processBatchEmails(
           error: emailError 
         });
         failedCount++;
-        continue;
+      } else {
+        console.log(`✓ Email sent successfully for booking ${booking.id} (${booking.lead_passenger?.email})`);
+        sentCount++;
       }
-
-      console.log(`✓ Email sent successfully for booking ${booking.id} (${booking.lead_passenger?.email})`);
-      sentCount++;
     } catch (sendError) {
       console.error(`Exception sending email for booking ${booking.id}:`, sendError);
       errors.push({ 
@@ -345,6 +348,11 @@ async function processBatchEmails(
         error: sendError 
       });
       failedCount++;
+    }
+
+    // Rate limiting: wait 600ms between emails to stay under Resend's 2 req/sec limit
+    if (i < eligibleBookings.length - 1) {
+      await delay(600);
     }
   }
 
