@@ -92,6 +92,12 @@ serve(async (req) => {
         if (existingBatch) {
           console.log(`Batch already exists for tour "${tour.name}", rule "${applicableRule.rule_name}", status: ${existingBatch.approval_status}`);
           
+          // If already sent, never regenerate - this is final
+          if (existingBatch.approval_status === 'sent') {
+            console.log(`Emails already sent for tour "${tour.name}", rule "${applicableRule.rule_name}" - skipping`);
+            continue;
+          }
+          
           // If approved, process the batch and send emails
           if (existingBatch.approval_status === 'approved') {
             console.log(`Processing approved batch for tour "${tour.name}"`);
@@ -101,16 +107,19 @@ serve(async (req) => {
             continue;
           }
           
-          // If rejected, delete and allow recreation
+          // If pending approval, skip - wait for user action
+          if (existingBatch.approval_status === 'pending_approval') {
+            console.log(`Batch pending approval for tour "${tour.name}" - skipping`);
+            continue;
+          }
+          
+          // If rejected, delete and allow recreation with updated filters
           if (existingBatch.approval_status === 'rejected') {
             console.log(`Deleting rejected batch for tour "${tour.name}" to allow recreation`);
             await supabase
               .from('automated_email_log')
               .delete()
               .eq('id', existingBatch.id);
-          } else {
-            // Pending or sent - skip
-            continue;
           }
         }
 
