@@ -46,6 +46,7 @@ export const useApproveEmails = () => {
 
   return useMutation({
     mutationFn: async (approvalIds: string[]) => {
+      // Update approval status
       const { error } = await supabase
         .from('automated_email_log')
         .update({ 
@@ -56,13 +57,27 @@ export const useApproveEmails = () => {
         .in('id', approvalIds);
 
       if (error) throw error;
+
+      // Trigger the email processing function to send approved emails immediately
+      const { error: invokeError } = await supabase.functions.invoke('process-automated-emails');
+      
+      if (invokeError) {
+        console.error('Error triggering email processing:', invokeError);
+        // Don't throw - approval succeeded, just log the error
+      }
+    },
+    onMutate: () => {
+      toast({
+        title: "Processing...",
+        description: "Approving and sending emails...",
+      });
     },
     onSuccess: (_, approvalIds) => {
       queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
       queryClient.invalidateQueries({ queryKey: ['automated-email-log'] });
       toast({
-        title: "Batch Approved",
-        description: `${approvalIds.length} tour email batch(es) approved. Emails will be sent on the next processing run.`,
+        title: "Batch Approved & Sent",
+        description: `${approvalIds.length} tour email batch(es) approved. Emails are being sent.`,
       });
     },
     onError: (error: any) => {
