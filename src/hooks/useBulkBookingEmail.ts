@@ -141,35 +141,49 @@ export const useBulkBookingEmail = () => {
         throw new Error('No bookings with email addresses found for this tour');
       }
 
-      // Process each booking individually with mail merge
-      const emailPromises = bookings.map(async (booking) => {
-        // Convert booking to merge data format
-        const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
+      // Process each booking sequentially with delay to avoid Resend rate limit (2 req/sec)
+      const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+      const results: PromiseSettledResult<any>[] = [];
+      
+      for (let i = 0; i < bookings.length; i++) {
+        const booking = bookings[i];
         
-        // Process templates with individual booking data
-        const personalizedSubject = subjectTemplate ? 
-          EmailTemplateEngine.processTemplate(subjectTemplate, mergeData) : 
-          `Email for ${booking.customers?.first_name || 'Customer'}`;
+        try {
+          // Convert booking to merge data format
+          const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
           
-        const personalizedContent = contentTemplate ? 
-          EmailTemplateEngine.processTemplate(contentTemplate, mergeData) : 
-          `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
+          // Process templates with individual booking data
+          const personalizedSubject = subjectTemplate ? 
+            EmailTemplateEngine.processTemplate(subjectTemplate, mergeData) : 
+            `Email for ${booking.customers?.first_name || 'Customer'}`;
+            
+          const personalizedContent = contentTemplate ? 
+            EmailTemplateEngine.processTemplate(contentTemplate, mergeData) : 
+            `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
+          
+          const { error } = await supabase.functions.invoke('send-booking-confirmation', {
+            body: { 
+              bookingId: booking.id,
+              customSubject: personalizedSubject,
+              customContent: personalizedContent,
+              fromEmail,
+              ccEmails,
+              bccEmails
+            }
+          });
+          
+          if (error) throw error;
+          results.push({ status: 'fulfilled', value: booking });
+        } catch (error) {
+          results.push({ status: 'rejected', reason: error });
+        }
         
-        const { error } = await supabase.functions.invoke('send-booking-confirmation', {
-          body: { 
-            bookingId: booking.id,
-            customSubject: personalizedSubject,
-            customContent: personalizedContent,
-            fromEmail,
-            ccEmails,
-            bccEmails
-          }
-        });
-        if (error) throw error;
-        return booking;
-      });
+        // Wait 600ms between requests to stay under 2 req/sec limit
+        if (i < bookings.length - 1) {
+          await delay(600);
+        }
+      }
 
-      const results = await Promise.allSettled(emailPromises);
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
 
