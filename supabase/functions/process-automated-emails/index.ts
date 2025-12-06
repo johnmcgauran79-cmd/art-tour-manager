@@ -83,7 +83,7 @@ serve(async (req) => {
         // Check if we already have a batch approval for this tour/rule
         const { data: existingBatch } = await supabase
           .from('automated_email_log')
-          .select('id, approval_status')
+          .select('id, approval_status, sent_at')
           .eq('tour_id', tour.id)
           .eq('rule_id', applicableRule.id)
           .is('booking_id', null) // Batch records have null booking_id
@@ -94,13 +94,25 @@ serve(async (req) => {
           
           // If already sent, never regenerate - this is final
           if (existingBatch.approval_status === 'sent') {
-            console.log(`Emails already sent for tour "${tour.name}", rule "${applicableRule.rule_name}" - skipping`);
+            console.log(`Emails already sent for tour "${tour.name}", rule "${applicableRule.rule_name}" on ${existingBatch.sent_at} - skipping`);
+            continue;
+          }
+          
+          // If currently being processed (approved but not yet sent), skip to avoid duplicates
+          if (existingBatch.approval_status === 'processing') {
+            console.log(`Emails currently being processed for tour "${tour.name}" - skipping to avoid duplicates`);
             continue;
           }
           
           // If approved, process the batch and send emails
           if (existingBatch.approval_status === 'approved') {
             console.log(`Processing approved batch for tour "${tour.name}"`);
+            
+            // Mark as processing to prevent race conditions
+            await supabase
+              .from('automated_email_log')
+              .update({ approval_status: 'processing' })
+              .eq('id', existingBatch.id);
             
             const sentCount = await processBatchEmails(supabase, tour, applicableRule, existingBatch.id, errors);
             totalEmailsSent += sentCount;
@@ -231,12 +243,17 @@ async function processBatchEmails(
   errors: any[]
 ): Promise<number> {
   let sentCount = 0;
+  let failedCount = 0;
+
+  console.log(`=== Starting batch email processing for tour "${tour.name}" ===`);
+  console.log(`Rule: ${rule.rule_name}, Recipient filter: ${rule.recipient_filter || 'all'}`);
 
   // Get all eligible bookings for this tour with recipient filter
   let bookingsQuery = supabase
     .from('bookings')
     .select(`
       id,
+      passenger_count,
       accommodation_required,
       lead_passenger:customers!bookings_lead_passenger_id_fkey(first_name, last_name, email)
     `)
@@ -247,8 +264,12 @@ async function processBatchEmails(
   // Apply recipient filter
   if (rule.recipient_filter === 'with_accommodation') {
     bookingsQuery = bookingsQuery.eq('accommodation_required', true);
+    console.log('Filtering for bookings WITH accommodation');
   } else if (rule.recipient_filter === 'without_accommodation') {
     bookingsQuery = bookingsQuery.eq('accommodation_required', false);
+    console.log('Filtering for bookings WITHOUT accommodation');
+  } else {
+    console.log('No accommodation filter applied - sending to ALL bookings');
   }
 
   const { data: bookings, error: bookingsError } = await bookingsQuery;
@@ -256,15 +277,39 @@ async function processBatchEmails(
   if (bookingsError) {
     console.error(`Error fetching bookings for batch processing:`, bookingsError);
     errors.push({ tour: tour.name, error: bookingsError });
+    
+    // Revert to approved status so it can be retried
+    await supabase
+      .from('automated_email_log')
+      .update({ approval_status: 'approved' })
+      .eq('id', batchId);
+    
     return 0;
   }
 
   const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email) || [];
-  console.log(`Sending emails to ${eligibleBookings.length} bookings for tour "${tour.name}"`);
+  console.log(`Found ${eligibleBookings.length} eligible bookings with valid email addresses`);
+  
+  if (eligibleBookings.length === 0) {
+    console.log('No eligible bookings found - marking batch as sent (empty)');
+    await supabase
+      .from('automated_email_log')
+      .update({ 
+        approval_status: 'sent',
+        sent_at: new Date().toISOString()
+      })
+      .eq('id', batchId);
+    return 0;
+  }
+
+  // Log each booking being processed
+  for (const booking of eligibleBookings) {
+    console.log(`  - Booking ${booking.id}: ${booking.lead_passenger?.first_name} ${booking.lead_passenger?.last_name} (${booking.lead_passenger?.email}), ${booking.passenger_count} pax, accommodation: ${booking.accommodation_required}`);
+  }
 
   for (const booking of eligibleBookings) {
     try {
-      console.log(`Sending email for booking ${booking.id} (${booking.lead_passenger?.email})`);
+      console.log(`Sending email for booking ${booking.id} to ${booking.lead_passenger?.email}...`);
       
       const { data: emailResult, error: emailError } = await supabase.functions.invoke(
         'send-booking-confirmation',
@@ -281,15 +326,25 @@ async function processBatchEmails(
 
       if (emailError) {
         console.error(`Error sending email for booking ${booking.id}:`, emailError);
-        errors.push({ booking: booking.id, error: emailError });
+        errors.push({ 
+          booking: booking.id, 
+          email: booking.lead_passenger?.email,
+          error: emailError 
+        });
+        failedCount++;
         continue;
       }
 
-      console.log(`Email sent successfully for booking ${booking.id}`);
+      console.log(`✓ Email sent successfully for booking ${booking.id} (${booking.lead_passenger?.email})`);
       sentCount++;
     } catch (sendError) {
-      console.error(`Error sending email for booking ${booking.id}:`, sendError);
-      errors.push({ booking: booking.id, error: sendError });
+      console.error(`Exception sending email for booking ${booking.id}:`, sendError);
+      errors.push({ 
+        booking: booking.id, 
+        email: booking.lead_passenger?.email,
+        error: sendError 
+      });
+      failedCount++;
     }
   }
 
@@ -302,6 +357,8 @@ async function processBatchEmails(
     })
     .eq('id', batchId);
 
-  console.log(`Batch complete: sent ${sentCount} emails for tour "${tour.name}"`);
+  console.log(`=== Batch complete for tour "${tour.name}" ===`);
+  console.log(`  Sent: ${sentCount}, Failed: ${failedCount}, Total: ${eligibleBookings.length}`);
+  
   return sentCount;
 }
