@@ -134,93 +134,23 @@ export const OperationsQuickActions = () => {
     },
   });
 
-  // Weekly Booking Changes count
+  // Weekly Booking Changes count - use the same edge function as the report for consistency
   const { data: weeklyChangesCount = 0 } = useQuery({
     queryKey: ['weekly-changes-count'],
     queryFn: async () => {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-      const { data, error } = await supabase
-        .from('audit_log')
-        .select('id, operation_type, record_id, details')
-        .eq('table_name', 'bookings')
-        .gte('timestamp', sevenDaysAgo.toISOString());
-
-      if (error) throw error;
-
-      // Get unique booking IDs
-      const bookingIds = [...new Set(data?.map(entry => entry.record_id).filter(Boolean) || [])];
-      
-      // Fetch booking details to check if they still exist
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('id, status')
-        .in('id', bookingIds);
-
-      // Group operations by booking_id (same logic as report)
-      const bookingGroups = new Map<string, typeof data>();
-      data?.forEach(entry => {
-        const bookingId = entry.record_id;
-        if (!bookingId) return;
-        
-        if (!bookingGroups.has(bookingId)) {
-          bookingGroups.set(bookingId, []);
-        }
-        bookingGroups.get(bookingId)!.push(entry);
-      });
-
-      let count = 0;
-      
-      // Count entries using same consolidation logic as report
-      bookingGroups.forEach((entries, bookingId) => {
-        const booking = bookings?.find(b => b.id === bookingId);
-        
-        // Skip if booking no longer exists (was deleted)
-        if (!booking) return;
-        
-        const createEntry = entries.find(e => e.operation_type === 'CREATE_BOOKING' || e.operation_type === 'CREATE');
-        const cancelEntry = entries.find(e => {
-          const details = e.details as any;
-          return details?.old_status && details?.new_status === 'cancelled';
-        });
-        
-        if (createEntry) {
-          // Count the new booking
-          count++;
-          
-          // If cancelled, count it
-          if (cancelEntry) count++;
-          
-          // Count consolidated activity updates (all activity updates = 1 line)
-          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
-          if (activityUpdates.length > 0) count++;
-          
-          // Count hotel updates separately
-          const hotelUpdates = entries.filter(e => e.operation_type === 'UPDATE_HOTEL_BOOKING' && e.id !== cancelEntry?.id);
-          count += hotelUpdates.length;
-        } else {
-          // This is an update to an existing booking
-          
-          // If cancelled, count it
-          if (cancelEntry) count++;
-          
-          // Count consolidated activity updates (all activity updates = 1 line)
-          const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
-          if (activityUpdates.length > 0) count++;
-          
-          // Count other updates (excluding generic updates and activity updates)
-          const otherUpdates = entries.filter(e => 
-            e.operation_type !== 'UPDATE_BOOKING' && 
-            e.operation_type !== 'UPDATE' && 
-            e.operation_type !== 'UPDATE_ACTIVITY_BOOKING' &&
-            e.id !== cancelEntry?.id
-          );
-          count += otherUpdates.length;
+      const { data, error } = await supabase.functions.invoke('generate-booking-changes-report', {
+        body: { 
+          days_back: 7,
+          format: 'json'
         }
       });
 
-      return count;
+      if (error) {
+        console.error('Error fetching booking changes count:', error);
+        return 0;
+      }
+
+      return data.count || 0;
     },
   });
 
