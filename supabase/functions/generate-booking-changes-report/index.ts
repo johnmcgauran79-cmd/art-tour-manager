@@ -106,10 +106,16 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
   const activityIds = [...new Set(
     auditData
       ?.filter(e => 
-        (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' || e.operation_type === 'UPDATE_ACTIVITY_BOOKING') 
-        && e.details?.activity_id
+        (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && e.details?.activity_id) ||
+        (e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.details?.passengers_attending?.activity_id)
       )
-      .map(e => e.details.activity_id) || []
+      .map(e => {
+        if (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING') {
+          return e.details.activity_id;
+        }
+        return e.details?.passengers_attending?.activity_id;
+      })
+      .filter(Boolean) || []
   )];
   
   const { data: activities } = activityIds.length > 0 ? await supabase
@@ -247,7 +253,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
         // Collect all activity names for the consolidated entry
         const activityNames = [...new Set(activityUpdates
           .map(e => {
-            const activityId = e.details?.activity_id;
+            const activityId = e.details?.passengers_attending?.activity_id || e.details?.activity_id;
             const activity = activities?.find(a => a.id === activityId);
             return activity?.name;
           })
@@ -312,7 +318,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
         // Collect all activity names for the consolidated entry
         const activityNames = [...new Set(activityUpdates
           .map(e => {
-            const activityId = e.details?.activity_id;
+            const activityId = e.details?.passengers_attending?.activity_id || e.details?.activity_id;
             const activity = activities?.find(a => a.id === activityId);
             return activity?.name;
           })
