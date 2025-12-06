@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Check, X, Calendar, Users } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Mail, Check, X, Calendar, Users, Loader2 } from "lucide-react";
 import { usePendingEmailApprovals, useApproveEmails, useRejectEmails } from "@/hooks/usePendingEmailApprovals";
 import { format } from "date-fns";
 import {
@@ -25,6 +26,7 @@ export const PendingEmailApprovals = () => {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -46,8 +48,19 @@ export const PendingEmailApprovals = () => {
 
   const handleApprove = () => {
     if (selectedIds.length === 0) return;
-    approveEmails.mutate(selectedIds);
-    setSelectedIds([]);
+    setShowApproveDialog(true);
+  };
+
+  const confirmApprove = () => {
+    approveEmails.mutate(selectedIds, {
+      onSuccess: () => {
+        setSelectedIds([]);
+        setShowApproveDialog(false);
+      },
+      onError: () => {
+        setShowApproveDialog(false);
+      }
+    });
   };
 
   const handleReject = () => {
@@ -195,6 +208,62 @@ export const PendingEmailApprovals = () => {
         </CardContent>
       </Card>
 
+      {/* Approve Confirmation Dialog */}
+      <AlertDialog open={showApproveDialog} onOpenChange={(open) => {
+        if (!approveEmails.isPending) {
+          setShowApproveDialog(open);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {approveEmails.isPending ? 'Sending Emails...' : 'Approve & Send Emails'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              {approveEmails.isPending ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <span className="font-medium">Processing email batches...</span>
+                  </div>
+                  <Progress value={undefined} className="h-3 animate-pulse" />
+                  <p className="text-xs text-center text-muted-foreground">
+                    Emails are being sent. This may take a moment to avoid rate limits.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p>
+                    Are you sure you want to approve and send {selectedIds.length} email batch(es)?
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Emails will be sent immediately to all eligible bookings in the selected batches.
+                  </p>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveEmails.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmApprove}
+              disabled={approveEmails.isPending}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {approveEmails.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Sending...
+                </>
+              ) : (
+                'Approve & Send'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Dialog */}
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
