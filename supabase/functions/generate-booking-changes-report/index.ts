@@ -51,10 +51,15 @@ function formatOperationType(type: string, details?: any): string {
   }
   
   if (type === 'UPDATE_ACTIVITY_BOOKING') {
-    return 'Activity Updated';
+    const activityName = details?.activity_name;
+    return activityName ? `Activity Updated: ${activityName}` : 'Activity Updated';
   }
   
   if (type === 'UPDATE_ACTIVITIES_CONSOLIDATED') {
+    const activityNames = details?.activity_names;
+    if (activityNames && activityNames.length > 0) {
+      return `Activities Updated: ${activityNames.join(', ')}`;
+    }
     return 'Activities Updated';
   }
   
@@ -97,10 +102,13 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     .select('id, first_name, last_name, email')
     .in('id', userIds);
 
-  // Fetch activity names for activity-related entries
+  // Fetch activity names for activity-related entries (both adds and updates)
   const activityIds = [...new Set(
     auditData
-      ?.filter(e => e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && e.details?.activity_id)
+      ?.filter(e => 
+        (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' || e.operation_type === 'UPDATE_ACTIVITY_BOOKING') 
+        && e.details?.activity_id
+      )
       .map(e => e.details.activity_id) || []
   )];
   
@@ -236,6 +244,15 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
       if (activityUpdates.length > 0) {
         const latestActivityUpdate = activityUpdates[0];
         const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
+        // Collect all activity names for the consolidated entry
+        const activityNames = [...new Set(activityUpdates
+          .map(e => {
+            const activityId = e.details?.activity_id;
+            const activity = activities?.find(a => a.id === activityId);
+            return activity?.name;
+          })
+          .filter(Boolean)
+        )];
         consolidatedChanges.push({
           id: latestActivityUpdate.id,
           timestamp: latestActivityUpdate.timestamp,
@@ -246,7 +263,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
           user_name: profile 
             ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
             : 'System',
-          details: latestActivityUpdate.details
+          details: { ...latestActivityUpdate.details, activity_names: activityNames }
         });
       }
       
@@ -292,6 +309,15 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
       if (activityUpdates.length > 0) {
         const latestActivityUpdate = activityUpdates[0];
         const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
+        // Collect all activity names for the consolidated entry
+        const activityNames = [...new Set(activityUpdates
+          .map(e => {
+            const activityId = e.details?.activity_id;
+            const activity = activities?.find(a => a.id === activityId);
+            return activity?.name;
+          })
+          .filter(Boolean)
+        )];
         consolidatedChanges.push({
           id: latestActivityUpdate.id,
           timestamp: latestActivityUpdate.timestamp,
@@ -302,7 +328,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
           user_name: profile 
             ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
             : 'System',
-          details: latestActivityUpdate.details
+          details: { ...latestActivityUpdate.details, activity_names: activityNames }
         });
       }
       
