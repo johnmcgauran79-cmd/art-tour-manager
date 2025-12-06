@@ -294,6 +294,7 @@ export type Database = {
           email_template_id: string | null
           id: string
           is_active: boolean
+          recipient_filter: string
           rule_name: string
           rule_type: string
           updated_at: string | null
@@ -305,6 +306,7 @@ export type Database = {
           email_template_id?: string | null
           id?: string
           is_active?: boolean
+          recipient_filter?: string
           rule_name: string
           rule_type?: string
           updated_at?: string | null
@@ -316,6 +318,7 @@ export type Database = {
           email_template_id?: string | null
           id?: string
           is_active?: boolean
+          recipient_filter?: string
           rule_name?: string
           rule_type?: string
           updated_at?: string | null

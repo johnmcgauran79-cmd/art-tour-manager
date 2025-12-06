@@ -31,6 +31,7 @@ export const AutomatedEmailRulesManagement = () => {
     days_before_tour: 100,
     email_template_id: "",
     is_active: true,
+    recipient_filter: "all" as "all" | "with_accommodation" | "without_accommodation",
   });
 
   const resetForm = () => {
@@ -40,6 +41,7 @@ export const AutomatedEmailRulesManagement = () => {
       days_before_tour: 100,
       email_template_id: "",
       is_active: true,
+      recipient_filter: "all",
     });
     setEditingRule(null);
   };
@@ -57,6 +59,7 @@ export const AutomatedEmailRulesManagement = () => {
       days_before_tour: rule.days_before_tour,
       email_template_id: rule.email_template_id,
       is_active: rule.is_active,
+      recipient_filter: rule.recipient_filter || "all",
     });
     setIsDialogOpen(true);
   };
@@ -149,6 +152,10 @@ export const AutomatedEmailRulesManagement = () => {
                         <Mail className="h-4 w-4" />
                         <span>Type: {rule.rule_type}</span>
                       </div>
+                      <Badge variant="outline">
+                        {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
+                         rule.recipient_filter === 'without_accommodation' ? 'Activities Only' : 'All Bookings'}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -265,6 +272,26 @@ export const AutomatedEmailRulesManagement = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="recipient_filter">Send To</Label>
+              <Select
+                value={formData.recipient_filter}
+                onValueChange={(value) => setFormData({ ...formData, recipient_filter: value as any })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Bookings</SelectItem>
+                  <SelectItem value="with_accommodation">With Accommodation Only</SelectItem>
+                  <SelectItem value="without_accommodation">Activities Only (No Accommodation)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Filter which bookings receive this automated email
+              </p>
             </div>
 
             <div className="flex items-center justify-between">
