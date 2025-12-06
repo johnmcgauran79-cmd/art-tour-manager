@@ -239,24 +239,17 @@ const handler = async (req: Request): Promise<Response> => {
         console.log('First merge hotel:', JSON.stringify(mergeData.hotel_bookings[0]));
       }
 
-      // Process subject template (use custom if provided)
-      if (customSubject) {
-        emailSubject = customSubject;
-        console.log('Using custom subject (already processed)');
-      } else {
-        emailSubject = processTemplate(template.subject_template, mergeData);
-        console.log('Processed subject from template');
-      }
+      // Process subject template (use custom if provided, otherwise use default template)
+      // Always process the template to replace merge fields
+      const subjectToProcess = customSubject || template.subject_template;
+      emailSubject = processTemplate(subjectToProcess, mergeData);
+      console.log('Processed subject template');
 
-      // Process content template (use custom if provided)
-      if (customContent) {
-        emailHtml = customContent;
-        console.log('Using custom content (already processed)');
-        console.log('Custom content preview (first 200 chars):', customContent.substring(0, 200));
-      } else {
-        emailHtml = processTemplate(template.content_template, mergeData);
-        console.log('Processed content from template');
-      }
+      // Process content template (use custom if provided, otherwise use default template)
+      // Always process the template to replace merge fields
+      const contentToProcess = customContent || template.content_template;
+      emailHtml = processTemplate(contentToProcess, mergeData);
+      console.log('Processed content template');
 
       // Convert line breaks to HTML breaks
       emailHtml = emailHtml.replace(/\n/g, '<br>');
