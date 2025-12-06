@@ -2,11 +2,28 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
+
+interface ActivityBookingInfo {
+  id: string;
+  passengers_attending: number;
+  booking: {
+    id: string;
+    passenger_count: number;
+    passenger_2_name: string | null;
+    passenger_3_name: string | null;
+    status: string;
+    lead_passenger: {
+      first_name: string;
+      last_name: string;
+    } | null;
+  };
+}
 
 interface ViewActivityModalProps {
   activity: Activity | null;
@@ -17,31 +34,57 @@ interface ViewActivityModalProps {
 
 export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: ViewActivityModalProps) => {
   const [paxAttending, setPaxAttending] = useState(0);
+  const [activityBookings, setActivityBookings] = useState<ActivityBookingInfo[]>([]);
   const { userRole } = useAuth();
   const isAgent = userRole === 'agent';
 
   useEffect(() => {
     if (activity) {
-      fetchPaxAttending(activity.id);
+      fetchActivityData(activity.id);
     }
   }, [activity]);
 
-  const fetchPaxAttending = async (activityId: string) => {
+  const fetchActivityData = async (activityId: string) => {
     const { data, error } = await supabase
       .from('activity_bookings')
       .select(`
+        id,
         passengers_attending,
-        bookings!inner(status)
+        bookings!inner(
+          id,
+          passenger_count,
+          passenger_2_name,
+          passenger_3_name,
+          status,
+          customers!bookings_lead_passenger_id_fkey(first_name, last_name)
+        )
       `)
       .eq('activity_id', activityId)
       .neq('bookings.status', 'cancelled');
 
     if (error) {
-      console.error('Error fetching pax attending:', error);
+      console.error('Error fetching activity bookings:', error);
       setPaxAttending(0);
+      setActivityBookings([]);
     } else {
       const total = data.reduce((sum, booking) => sum + (booking.passengers_attending || 0), 0);
       setPaxAttending(total);
+      
+      // Transform the data
+      const transformed = data.map((item: any) => ({
+        id: item.id,
+        passengers_attending: item.passengers_attending,
+        booking: {
+          id: item.bookings.id,
+          passenger_count: item.bookings.passenger_count,
+          passenger_2_name: item.bookings.passenger_2_name,
+          passenger_3_name: item.bookings.passenger_3_name,
+          status: item.bookings.status,
+          lead_passenger: item.bookings.customers
+        }
+      }));
+      
+      setActivityBookings(transformed);
     }
   };
 
@@ -183,6 +226,49 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
               </div>
             </div>
           )}
+
+          {/* Bookings List */}
+          <div className="space-y-1">
+            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+              Bookings ({activityBookings.length})
+            </h4>
+            {activityBookings.length > 0 ? (
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Lead Passenger</TableHead>
+                      <TableHead>Other Passengers</TableHead>
+                      <TableHead className="text-right">Pax Attending</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activityBookings.map((ab) => (
+                      <TableRow key={ab.id}>
+                        <TableCell className="font-medium">
+                          {ab.booking.lead_passenger 
+                            ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}`
+                            : '-'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {[ab.booking.passenger_2_name, ab.booking.passenger_3_name]
+                            .filter(Boolean)
+                            .join(', ') || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {ab.passengers_attending}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="bg-muted/30 rounded-lg p-4 text-center text-muted-foreground text-sm">
+                No bookings allocated to this activity
+              </div>
+            )}
+          </div>
         </div>
 
         <DialogFooter className="flex gap-2 sm:gap-0">
