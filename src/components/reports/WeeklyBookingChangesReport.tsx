@@ -66,6 +66,13 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
       'CANCEL_BOOKING': 'Booking Cancelled',
     };
     
+    // Handle new activity added to tour (bulk allocation)
+    if (type === 'NEW_ACTIVITY_ADDED_TO_TOUR') {
+      const activityName = details?.activity_name || 'Activity';
+      const count = details?.bookings_affected || 0;
+      return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
+    }
+    
     // Handle hotel updates with details
     if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
       const changes = [];
