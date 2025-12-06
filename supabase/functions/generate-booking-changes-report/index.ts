@@ -173,6 +173,14 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     }
   });
 
+  // Identify new bookings created in this period
+  const newBookingIds = new Set<string>();
+  auditData?.forEach(entry => {
+    if (entry.operation_type === 'CREATE_BOOKING' || entry.operation_type === 'CREATE') {
+      newBookingIds.add(entry.record_id);
+    }
+  });
+
   // Group operations by booking_id to consolidate new bookings
   const bookingGroups = new Map<string, typeof auditData>();
   auditData?.forEach(entry => {
@@ -181,6 +189,12 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     
     // Skip bulk activity additions - they're handled separately
     if (bulkActivityEntryIds.has(entry.id)) return;
+    
+    // Skip activity additions for new bookings - they're part of booking creation
+    if (entry.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && newBookingIds.has(bookingId)) return;
+    
+    // Skip hotel additions for new bookings - they're part of booking creation
+    if (entry.operation_type === 'ADD_HOTEL_TO_BOOKING' && newBookingIds.has(bookingId)) return;
     
     if (!bookingGroups.has(bookingId)) {
       bookingGroups.set(bookingId, []);
