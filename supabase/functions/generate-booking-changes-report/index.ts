@@ -24,7 +24,7 @@ function formatOperationType(type: string, details?: any): string {
     'CREATE_BOOKING': 'New Booking',
     'ADD_HOTEL_TO_BOOKING': 'Hotel Added',
     'REMOVE_HOTEL_FROM_BOOKING': 'Hotel Removed',
-    'ADD_ACTIVITY_TO_BOOKING': 'Activity Added',
+    'ADD_ACTIVITY_TO_BOOKING': 'Activity Added', // Will be overridden below if activity_name is present
     'REMOVE_ACTIVITY_FROM_BOOKING': 'Activity Removed',
     'DELETE_BOOKING': 'Booking Deleted',
     'CANCEL_BOOKING': 'Booking Cancelled',
@@ -53,6 +53,11 @@ function formatOperationType(type: string, details?: any): string {
   if (type === 'UPDATE_ACTIVITY_BOOKING') {
     const activityName = details?.activity_name;
     return activityName ? `Activity Updated: ${activityName}` : 'Activity Updated';
+  }
+  
+  if (type === 'ADD_ACTIVITY_TO_BOOKING') {
+    const activityName = details?.activity_name;
+    return activityName ? `Activity Added: ${activityName}` : 'Activity Added';
   }
   
   if (type === 'UPDATE_ACTIVITIES_CONSOLIDATED') {
@@ -364,6 +369,16 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
       
       otherUpdates.forEach(entry => {
         const profile = profiles?.find(p => p.id === entry.user_id);
+        
+        // Enrich ADD_ACTIVITY_TO_BOOKING with activity name
+        let enrichedDetails = entry.details;
+        if (entry.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && entry.details?.activity_id) {
+          const activity = activities?.find(a => a.id === entry.details.activity_id);
+          if (activity) {
+            enrichedDetails = { ...entry.details, activity_name: activity.name };
+          }
+        }
+        
         consolidatedChanges.push({
           id: entry.id,
           timestamp: entry.timestamp,
@@ -374,7 +389,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
           user_name: profile 
             ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
             : 'System',
-          details: entry.details
+          details: enrichedDetails
         });
       });
     }
