@@ -123,9 +123,19 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     .select('id, name, tour_id')
     .in('id', activityIds) : { data: [] };
 
-  // First, detect bulk activity additions (when a new activity is added to a tour with existing bookings)
-  // These happen when multiple ADD_ACTIVITY_TO_BOOKING entries occur for the same activity within a short time window
-  const activityAdditions = auditData?.filter(e => e.operation_type === 'ADD_ACTIVITY_TO_BOOKING') || [];
+  // First, identify new bookings created in this period - we need this BEFORE bulk activity detection
+  const newBookingIds = new Set<string>();
+  auditData?.forEach(entry => {
+    if (entry.operation_type === 'CREATE_BOOKING' || entry.operation_type === 'CREATE') {
+      newBookingIds.add(entry.record_id);
+    }
+  });
+
+  // Detect bulk activity additions (when a new activity is added to a tour with existing bookings)
+  // EXCLUDE activity additions for new bookings - those are part of booking creation, not bulk activity adds
+  const activityAdditions = auditData?.filter(e => 
+    e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && !newBookingIds.has(e.record_id)
+  ) || [];
   const bulkActivityAdditions = new Map<string, { activityId: string; tourId: string; activityName: string; tourName: string; entries: any[]; firstEntry: any }>();
   
   activityAdditions.forEach(entry => {
@@ -170,14 +180,6 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
           : 'System',
         details: { activity_name: data.activityName, bookings_affected: data.entries.length }
       });
-    }
-  });
-
-  // Identify new bookings created in this period
-  const newBookingIds = new Set<string>();
-  auditData?.forEach(entry => {
-    if (entry.operation_type === 'CREATE_BOOKING' || entry.operation_type === 'CREATE') {
-      newBookingIds.add(entry.record_id);
     }
   });
 
