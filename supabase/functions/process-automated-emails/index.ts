@@ -102,16 +102,26 @@ serve(async (req) => {
           continue;
         }
 
-        // Get count of eligible bookings for this tour
-        const { data: bookings, error: bookingsError } = await supabase
+        // Get count of eligible bookings for this tour with recipient filter
+        let bookingsQuery = supabase
           .from('bookings')
           .select(`
             id,
+            accommodation_required,
             lead_passenger:customers!bookings_lead_passenger_id_fkey(email)
           `)
           .eq('tour_id', tour.id)
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted');
+
+        // Apply recipient filter
+        if (applicableRule.recipient_filter === 'with_accommodation') {
+          bookingsQuery = bookingsQuery.eq('accommodation_required', true);
+        } else if (applicableRule.recipient_filter === 'without_accommodation') {
+          bookingsQuery = bookingsQuery.eq('accommodation_required', false);
+        }
+
+        const { data: bookings, error: bookingsError } = await bookingsQuery;
 
         if (bookingsError) {
           console.error(`Error fetching bookings for tour ${tour.id}:`, bookingsError);
@@ -201,16 +211,26 @@ async function processBatchEmails(
 ): Promise<number> {
   let sentCount = 0;
 
-  // Get all eligible bookings for this tour
-  const { data: bookings, error: bookingsError } = await supabase
+  // Get all eligible bookings for this tour with recipient filter
+  let bookingsQuery = supabase
     .from('bookings')
     .select(`
       id,
+      accommodation_required,
       lead_passenger:customers!bookings_lead_passenger_id_fkey(first_name, last_name, email)
     `)
     .eq('tour_id', tour.id)
     .neq('status', 'cancelled')
     .neq('status', 'waitlisted');
+
+  // Apply recipient filter
+  if (rule.recipient_filter === 'with_accommodation') {
+    bookingsQuery = bookingsQuery.eq('accommodation_required', true);
+  } else if (rule.recipient_filter === 'without_accommodation') {
+    bookingsQuery = bookingsQuery.eq('accommodation_required', false);
+  }
+
+  const { data: bookings, error: bookingsError } = await bookingsQuery;
 
   if (bookingsError) {
     console.error(`Error fetching bookings for batch processing:`, bookingsError);
