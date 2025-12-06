@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 
-export const useBulkBookingEmail = () => {
+export const useBulkBookingEmail = (onProgress?: (current: number, total: number) => void) => {
   const { toast } = useToast();
 
   return useMutation({
@@ -145,8 +145,14 @@ export const useBulkBookingEmail = () => {
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       const results: PromiseSettledResult<any>[] = [];
       
+      // Report initial progress
+      onProgress?.(0, bookings.length);
+      
       for (let i = 0; i < bookings.length; i++) {
         const booking = bookings[i];
+        
+        // Report progress before sending each email
+        onProgress?.(i + 1, bookings.length);
         
         try {
           // Convert booking to merge data format

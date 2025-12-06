@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import { Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
@@ -37,8 +38,11 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [bccEmails, setBccEmails] = useState<string>("");
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   
-  const bulkEmailMutation = useBulkBookingEmail();
+  const bulkEmailMutation = useBulkBookingEmail((current, total) => {
+    setSendProgress({ current, total });
+  });
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { profile } = useAuth();
   const { data: userEmails } = useUserEmails();
@@ -239,6 +243,9 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const handleConfirmSend = async () => {
     if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
     
+    // Reset progress
+    setSendProgress(null);
+    
     try {
       const subjectTemplate = originalSubjectTemplate || editedSubject;
       const contentTemplate = originalContentTemplate || editedContent;
@@ -254,12 +261,14 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         selectedBookingIds: Array.from(selectedBookingIds)
       });
       setShowConfirmDialog(false);
+      setSendProgress(null);
       onOpenChange(false);
       setSelectedBookingIds(new Set());
       setRecipientType("");
     } catch (error) {
       // Error handling is done in the hook
       setShowConfirmDialog(false);
+      setSendProgress(null);
     }
   };
 
@@ -482,25 +491,48 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       </DialogContent>
 
       {/* Confirmation Dialog */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+      <AlertDialog open={showConfirmDialog} onOpenChange={(open) => {
+        if (!bulkEmailMutation.isPending) {
+          setShowConfirmDialog(open);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Send Emails</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>Are you sure you want to send email to:</p>
-              <ScrollArea className="max-h-[200px] border rounded-md p-3 bg-muted/50">
-                <ul className="space-y-1">
-                  {selectedRecipients.map((booking: any) => (
-                    <li key={booking.id} className="text-sm font-medium">
-                      • {booking.customers?.first_name} {booking.customers?.last_name} ({booking.customers?.email})
-                    </li>
-                  ))}
-                </ul>
-              </ScrollArea>
+            <AlertDialogTitle>
+              {bulkEmailMutation.isPending ? 'Sending Emails...' : 'Confirm Send Emails'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              {bulkEmailMutation.isPending && sendProgress ? (
+                <div className="space-y-3">
+                  <p className="text-center font-medium">
+                    Sending email {sendProgress.current} of {sendProgress.total}...
+                  </p>
+                  <Progress 
+                    value={(sendProgress.current / sendProgress.total) * 100} 
+                    className="h-3"
+                  />
+                  <p className="text-xs text-center text-muted-foreground">
+                    Please wait, this may take a moment to avoid rate limits.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p>Are you sure you want to send email to:</p>
+                  <ScrollArea className="max-h-[200px] border rounded-md p-3 bg-muted/50">
+                    <ul className="space-y-1">
+                      {selectedRecipients.map((booking: any) => (
+                        <li key={booking.id} className="text-sm font-medium">
+                          • {booking.customers?.first_name} {booking.customers?.last_name} ({booking.customers?.email})
+                        </li>
+                      ))}
+                    </ul>
+                  </ScrollArea>
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={bulkEmailMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleConfirmSend}
               disabled={bulkEmailMutation.isPending}
