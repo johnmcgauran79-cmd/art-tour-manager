@@ -90,11 +90,16 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
     
     // Handle activity updates
     if (type === 'UPDATE_ACTIVITY_BOOKING') {
-      return 'Activity Updated';
+      const activityName = details?.activity_name;
+      return activityName ? `Activity Updated: ${activityName}` : 'Activity Updated';
     }
     
     // Handle consolidated activity updates
     if (type === 'UPDATE_ACTIVITIES_CONSOLIDATED') {
+      const activityNames = details?.activity_names;
+      if (activityNames && activityNames.length > 0) {
+        return `Activities Updated: ${activityNames.join(', ')}`;
+      }
       return 'Activities Updated';
     }
     
