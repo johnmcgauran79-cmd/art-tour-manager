@@ -30,6 +30,12 @@ function formatOperationType(type: string, details?: any): string {
     'CANCEL_BOOKING': 'Booking Cancelled',
   };
   
+  if (type === 'NEW_ACTIVITY_ADDED_TO_TOUR') {
+    const activityName = details?.activity_name || 'Activity';
+    const count = details?.bookings_affected || 0;
+    return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
+  }
+  
   if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
     const changes = [];
     if (details.hotel_dates.old?.check_in !== details.hotel_dates.new?.check_in) {
@@ -91,11 +97,76 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     .select('id, first_name, last_name, email')
     .in('id', userIds);
 
+  // Fetch activity names for activity-related entries
+  const activityIds = [...new Set(
+    auditData
+      ?.filter(e => e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && e.details?.activity_id)
+      .map(e => e.details.activity_id) || []
+  )];
+  
+  const { data: activities } = activityIds.length > 0 ? await supabase
+    .from('activities')
+    .select('id, name, tour_id')
+    .in('id', activityIds) : { data: [] };
+
+  // First, detect bulk activity additions (when a new activity is added to a tour with existing bookings)
+  // These happen when multiple ADD_ACTIVITY_TO_BOOKING entries occur for the same activity within a short time window
+  const activityAdditions = auditData?.filter(e => e.operation_type === 'ADD_ACTIVITY_TO_BOOKING') || [];
+  const bulkActivityAdditions = new Map<string, { activityId: string; tourId: string; activityName: string; tourName: string; entries: any[]; firstEntry: any }>();
+  
+  activityAdditions.forEach(entry => {
+    const activityId = entry.details?.activity_id;
+    if (!activityId) return;
+    
+    if (!bulkActivityAdditions.has(activityId)) {
+      const activity = activities?.find(a => a.id === activityId);
+      const booking = bookings?.find(b => b.id === entry.record_id);
+      bulkActivityAdditions.set(activityId, {
+        activityId,
+        tourId: activity?.tour_id || booking?.tour_id,
+        activityName: activity?.name || 'Unknown Activity',
+        tourName: booking?.tours?.name || 'Unknown Tour',
+        entries: [],
+        firstEntry: entry
+      });
+    }
+    bulkActivityAdditions.get(activityId)!.entries.push(entry);
+  });
+
+  // Identify which activity additions are bulk (more than 1 booking allocated at once = new activity added to tour)
+  const bulkActivityEntryIds = new Set<string>();
+  const consolidatedActivityChanges: WeeklyChange[] = [];
+  
+  bulkActivityAdditions.forEach((data) => {
+    if (data.entries.length > 1) {
+      // This is a bulk addition - mark all entries to skip individual processing
+      data.entries.forEach(e => bulkActivityEntryIds.add(e.id));
+      
+      // Add one consolidated entry
+      const profile = profiles?.find(p => p.id === data.firstEntry.user_id);
+      consolidatedActivityChanges.push({
+        id: data.firstEntry.id,
+        timestamp: data.firstEntry.timestamp,
+        operation_type: 'NEW_ACTIVITY_ADDED_TO_TOUR',
+        booking_id: data.firstEntry.record_id,
+        customer_name: `${data.entries.length} bookings`,
+        tour_name: data.tourName,
+        user_name: profile 
+          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+          : 'System',
+        details: { activity_name: data.activityName, bookings_affected: data.entries.length }
+      });
+    }
+  });
+
   // Group operations by booking_id to consolidate new bookings
   const bookingGroups = new Map<string, typeof auditData>();
   auditData?.forEach(entry => {
     const bookingId = entry.record_id;
     if (!bookingId) return;
+    
+    // Skip bulk activity additions - they're handled separately
+    if (bulkActivityEntryIds.has(entry.id)) return;
     
     if (!bookingGroups.has(bookingId)) {
       bookingGroups.set(bookingId, []);
@@ -103,7 +174,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     bookingGroups.get(bookingId)!.push(entry);
   });
 
-  const consolidatedChanges: WeeklyChange[] = [];
+  const consolidatedChanges: WeeklyChange[] = [...consolidatedActivityChanges];
 
   // Process each booking's operations
   bookingGroups.forEach((entries, bookingId) => {
@@ -235,7 +306,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
         });
       }
       
-      // Show other updates separately
+      // Show other updates separately (but not individual ADD_ACTIVITY entries for single adds - they go through)
       const otherUpdates = entries.filter(e => 
         e.operation_type !== 'UPDATE_BOOKING' && 
         e.operation_type !== 'UPDATE' && 
