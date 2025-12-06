@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Check, X, Calendar, User } from "lucide-react";
+import { Mail, Check, X, Calendar, Users } from "lucide-react";
 import { usePendingEmailApprovals, useApproveEmails, useRejectEmails } from "@/hooks/usePendingEmailApprovals";
 import { format } from "date-fns";
 import {
@@ -74,7 +74,7 @@ export const PendingEmailApprovals = () => {
             <Mail className="h-5 w-5" />
             Pending Email Approvals
           </CardTitle>
-          <CardDescription>No emails pending approval</CardDescription>
+          <CardDescription>No email batches pending approval</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -92,7 +92,7 @@ export const PendingEmailApprovals = () => {
                 <Badge variant="secondary">{pendingApprovals.length}</Badge>
               </CardTitle>
               <CardDescription>
-                Review and approve automated booking confirmation emails
+                Review and approve automated booking confirmation email batches per tour
               </CardDescription>
             </div>
             <div className="flex gap-2">
@@ -137,7 +137,7 @@ export const PendingEmailApprovals = () => {
                   <div className="flex-1 space-y-2">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h4 className="font-medium">{approval.booking?.tour?.name}</h4>
+                        <h4 className="font-medium">{approval.tour?.name}</h4>
                         <p className="text-sm text-muted-foreground">
                           {approval.rule?.rule_name} • {approval.rule?.days_before_tour} days before tour
                         </p>
@@ -153,24 +153,16 @@ export const PendingEmailApprovals = () => {
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span>
-                          {approval.booking?.lead_passenger?.first_name}{' '}
-                          {approval.booking?.lead_passenger?.last_name}
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium">
+                          {approval.booking_count} booking{approval.booking_count !== 1 ? 's' : ''} will receive email
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span className="truncate">{approval.booking?.lead_passenger?.email}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          Tour: {format(new Date(approval.booking?.tour?.start_date), 'MMM d, yyyy')}
+                          Tour: {approval.tour?.start_date ? format(new Date(approval.tour.start_date), 'MMM d, yyyy') : 'N/A'}
                         </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline">{approval.booking?.passenger_count} passengers</Badge>
                       </div>
                     </div>
 
@@ -188,6 +180,11 @@ export const PendingEmailApprovals = () => {
                           <p className="text-xs font-medium text-muted-foreground mb-1">From:</p>
                           <p className="text-sm">{approval.rule?.email_templates?.from_email}</p>
                         </div>
+                        <div className="pt-2 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            Approving this will send emails to all {approval.booking_count} eligible bookings for this tour.
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -201,9 +198,10 @@ export const PendingEmailApprovals = () => {
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reject Emails</AlertDialogTitle>
+            <AlertDialogTitle>Reject Email Batch</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to reject {selectedIds.length} email(s)? 
+              Are you sure you want to reject {selectedIds.length} email batch(es)? 
+              No emails will be sent for the rejected batches.
               Optionally provide a reason for the rejection.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -214,39 +214,45 @@ export type Database = {
           approval_status: string | null
           approved_at: string | null
           approved_by: string | null
-          booking_id: string
+          booking_count: number | null
+          booking_id: string | null
           days_before_send: number
           email_log_id: string | null
           id: string
           rejection_reason: string | null
           rule_id: string
           sent_at: string | null
+          tour_id: string | null
           tour_start_date: string
         }
         Insert: {
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
-          booking_id: string
+          booking_count?: number | null
+          booking_id?: string | null
           days_before_send: number
           email_log_id?: string | null
           id?: string
           rejection_reason?: string | null
           rule_id: string
           sent_at?: string | null
+          tour_id?: string | null
           tour_start_date: string
         }
         Update: {
           approval_status?: string | null
           approved_at?: string | null
           approved_by?: string | null
-          booking_id?: string
+          booking_count?: number | null
+          booking_id?: string | null
           days_before_send?: number
           email_log_id?: string | null
           id?: string
           rejection_reason?: string | null
           rule_id?: string
           sent_at?: string | null
+          tour_id?: string | null
           tour_start_date?: string
         }
         Relationships: [
@@ -269,6 +275,13 @@ export type Database = {
             columns: ["rule_id"]
             isOneToOne: false
             referencedRelation: "automated_email_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_email_log_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
             referencedColumns: ["id"]
           },
         ]

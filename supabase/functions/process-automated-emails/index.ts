@@ -19,12 +19,13 @@ serve(async (req) => {
 
     console.log('Starting automated email processing...');
 
-    // Get all active automated email rules
+    // Get all active automated email rules, ordered by days_before_tour ascending
+    // so we can easily find the most recent applicable rule
     const { data: rules, error: rulesError } = await supabase
       .from('automated_email_rules')
       .select('*, email_templates(*)')
       .eq('is_active', true)
-      .order('days_before_tour', { ascending: false });
+      .order('days_before_tour', { ascending: true });
 
     if (rulesError) {
       console.error('Error fetching rules:', rulesError);
@@ -33,7 +34,7 @@ serve(async (req) => {
 
     console.log(`Found ${rules?.length || 0} active rules`);
 
-    let totalPendingCreated = 0;
+    let totalBatchesCreated = 0;
     let totalEmailsSent = 0;
     const errors: any[] = [];
 
@@ -54,143 +55,111 @@ serve(async (req) => {
 
     console.log(`Found ${upcomingTours?.length || 0} upcoming tours`);
 
-    // Process each rule
-    for (const rule of rules || []) {
+    // Process each tour - find the MOST RECENT applicable rule only
+    for (const tour of upcomingTours || []) {
       try {
-        console.log(`Processing rule: ${rule.rule_name} (${rule.days_before_tour} days before)`);
+        const tourStartDate = new Date(tour.start_date);
+        const daysUntilTour = Math.floor((tourStartDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-        // Find tours that are within the rule's days_before_tour threshold
-        for (const tour of upcomingTours || []) {
-          const tourStartDate = new Date(tour.start_date);
-          const daysUntilTour = Math.floor((tourStartDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        console.log(`Tour "${tour.name}" is ${daysUntilTour} days away`);
 
-          // Check if tour is within this rule's threshold (at or past the trigger point)
-          if (daysUntilTour <= rule.days_before_tour && daysUntilTour >= 0) {
-            console.log(`Tour "${tour.name}" is ${daysUntilTour} days away - eligible for ${rule.days_before_tour}-day rule`);
-
-            // Get all non-cancelled bookings for this tour with valid email
-            const { data: bookings, error: bookingsError } = await supabase
-              .from('bookings')
-              .select(`
-                id,
-                status,
-                lead_passenger:customers!bookings_lead_passenger_id_fkey(first_name, last_name, email)
-              `)
-              .eq('tour_id', tour.id)
-              .neq('status', 'cancelled')
-              .neq('status', 'waitlisted');
-
-            if (bookingsError) {
-              console.error(`Error fetching bookings for tour ${tour.id}:`, bookingsError);
-              errors.push({ tour: tour.name, rule: rule.rule_name, error: bookingsError });
-              continue;
-            }
-
-            // Filter bookings with valid email
-            const eligibleBookings = bookings?.filter(b => b.lead_passenger?.email) || [];
-            console.log(`Found ${eligibleBookings.length} eligible bookings for tour "${tour.name}"`);
-
-            // Process each booking
-            for (const booking of eligibleBookings) {
-              try {
-                // Check if email already logged for this booking/rule combination
-                const { data: existingLog } = await supabase
-                  .from('automated_email_log')
-                  .select('id, approval_status')
-                  .eq('booking_id', booking.id)
-                  .eq('rule_id', rule.id)
-                  .maybeSingle();
-
-                if (existingLog) {
-                  console.log(`Email already logged for booking ${booking.id}, status: ${existingLog.approval_status}`);
-                  
-                  // If approved, send the email
-                  if (existingLog.approval_status === 'approved') {
-                    console.log(`Sending approved email for booking ${booking.id}`);
-                    
-                    const { data: emailResult, error: emailError } = await supabase.functions.invoke(
-                      'send-booking-confirmation',
-                      {
-                        body: {
-                          bookingId: booking.id,
-                          customSubject: rule.email_templates?.subject_template,
-                          customContent: rule.email_templates?.content_template,
-                          fromEmail: rule.email_templates?.from_email,
-                          isAutomated: true
-                        }
-                      }
-                    );
-
-                    if (emailError) {
-                      console.error(`Error sending approved email for booking ${booking.id}:`, emailError);
-                      errors.push({ 
-                        booking: booking.id, 
-                        rule: rule.rule_name, 
-                        error: emailError 
-                      });
-                      continue;
-                    }
-
-                    // Update status to sent
-                    await supabase
-                      .from('automated_email_log')
-                      .update({ 
-                        approval_status: 'sent',
-                        sent_at: new Date().toISOString(),
-                        email_log_id: emailResult?.emailLogId 
-                      })
-                      .eq('id', existingLog.id);
-
-                    console.log(`Email sent successfully for booking ${booking.id}`);
-                    totalEmailsSent++;
-                  }
-                  
-                  continue;
-                }
-
-                // Create pending approval record
-                const { error: logError } = await supabase
-                  .from('automated_email_log')
-                  .insert({
-                    booking_id: booking.id,
-                    rule_id: rule.id,
-                    tour_start_date: tour.start_date,
-                    days_before_send: rule.days_before_tour,
-                    approval_status: 'pending_approval'
-                  });
-
-                if (logError) {
-                  console.error('Error creating approval record:', logError);
-                  errors.push({ 
-                    booking: booking.id, 
-                    rule: rule.rule_name, 
-                    error: logError 
-                  });
-                } else {
-                  console.log(`Created pending approval for booking ${booking.id}, rule: ${rule.rule_name}`);
-                  totalPendingCreated++;
-                }
-
-              } catch (bookingError) {
-                console.error(`Error processing booking ${booking.id}:`, bookingError);
-                errors.push({ 
-                  booking: booking.id, 
-                  rule: rule.rule_name, 
-                  error: bookingError 
-                });
-              }
-            }
+        // Find the most recent applicable rule (smallest days_before_tour that we've passed)
+        // Rules are sorted ascending by days_before_tour
+        let applicableRule = null;
+        for (const rule of rules || []) {
+          if (daysUntilTour <= rule.days_before_tour) {
+            applicableRule = rule;
+            break; // Take the first (smallest) applicable rule
           }
         }
-      } catch (ruleError) {
-        console.error(`Error processing rule ${rule.rule_name}:`, ruleError);
-        errors.push({ rule: rule.rule_name, error: ruleError });
+
+        if (!applicableRule) {
+          console.log(`No applicable rule for tour "${tour.name}" (${daysUntilTour} days away)`);
+          continue;
+        }
+
+        console.log(`Most recent applicable rule for "${tour.name}": ${applicableRule.rule_name} (${applicableRule.days_before_tour} days)`);
+
+        // Check if we already have a batch approval for this tour/rule
+        const { data: existingBatch } = await supabase
+          .from('automated_email_log')
+          .select('id, approval_status')
+          .eq('tour_id', tour.id)
+          .eq('rule_id', applicableRule.id)
+          .is('booking_id', null) // Batch records have null booking_id
+          .maybeSingle();
+
+        if (existingBatch) {
+          console.log(`Batch already exists for tour "${tour.name}", rule "${applicableRule.rule_name}", status: ${existingBatch.approval_status}`);
+          
+          // If approved, process the batch and send emails
+          if (existingBatch.approval_status === 'approved') {
+            console.log(`Processing approved batch for tour "${tour.name}"`);
+            
+            const sentCount = await processBatchEmails(supabase, tour, applicableRule, existingBatch.id, errors);
+            totalEmailsSent += sentCount;
+          }
+          continue;
+        }
+
+        // Get count of eligible bookings for this tour
+        const { data: bookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            lead_passenger:customers!bookings_lead_passenger_id_fkey(email)
+          `)
+          .eq('tour_id', tour.id)
+          .neq('status', 'cancelled')
+          .neq('status', 'waitlisted');
+
+        if (bookingsError) {
+          console.error(`Error fetching bookings for tour ${tour.id}:`, bookingsError);
+          errors.push({ tour: tour.name, error: bookingsError });
+          continue;
+        }
+
+        // Filter bookings with valid email
+        const eligibleBookings = bookings?.filter(b => b.lead_passenger?.email) || [];
+        const bookingCount = eligibleBookings.length;
+
+        if (bookingCount === 0) {
+          console.log(`No eligible bookings for tour "${tour.name}"`);
+          continue;
+        }
+
+        console.log(`Creating batch approval for tour "${tour.name}" with ${bookingCount} bookings`);
+
+        // Create a single batch approval record
+        const { error: logError } = await supabase
+          .from('automated_email_log')
+          .insert({
+            tour_id: tour.id,
+            booking_id: null, // Null indicates this is a batch record
+            rule_id: applicableRule.id,
+            tour_start_date: tour.start_date,
+            days_before_send: applicableRule.days_before_tour,
+            booking_count: bookingCount,
+            approval_status: 'pending_approval'
+          });
+
+        if (logError) {
+          console.error('Error creating batch approval record:', logError);
+          errors.push({ tour: tour.name, rule: applicableRule.rule_name, error: logError });
+        } else {
+          console.log(`Created batch pending approval for tour "${tour.name}", rule: ${applicableRule.rule_name}, ${bookingCount} bookings`);
+          totalBatchesCreated++;
+        }
+
+      } catch (tourError) {
+        console.error(`Error processing tour ${tour.name}:`, tourError);
+        errors.push({ tour: tour.name, error: tourError });
       }
     }
 
     const result = {
       success: true,
-      totalPendingCreated,
+      totalBatchesCreated,
       totalEmailsSent,
       rulesProcessed: rules?.length || 0,
       toursChecked: upcomingTours?.length || 0,
@@ -221,3 +190,77 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to process a batch and send emails to all bookings
+async function processBatchEmails(
+  supabase: any, 
+  tour: any, 
+  rule: any, 
+  batchId: string,
+  errors: any[]
+): Promise<number> {
+  let sentCount = 0;
+
+  // Get all eligible bookings for this tour
+  const { data: bookings, error: bookingsError } = await supabase
+    .from('bookings')
+    .select(`
+      id,
+      lead_passenger:customers!bookings_lead_passenger_id_fkey(first_name, last_name, email)
+    `)
+    .eq('tour_id', tour.id)
+    .neq('status', 'cancelled')
+    .neq('status', 'waitlisted');
+
+  if (bookingsError) {
+    console.error(`Error fetching bookings for batch processing:`, bookingsError);
+    errors.push({ tour: tour.name, error: bookingsError });
+    return 0;
+  }
+
+  const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email) || [];
+  console.log(`Sending emails to ${eligibleBookings.length} bookings for tour "${tour.name}"`);
+
+  for (const booking of eligibleBookings) {
+    try {
+      console.log(`Sending email for booking ${booking.id} (${booking.lead_passenger?.email})`);
+      
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke(
+        'send-booking-confirmation',
+        {
+          body: {
+            bookingId: booking.id,
+            customSubject: rule.email_templates?.subject_template,
+            customContent: rule.email_templates?.content_template,
+            fromEmail: rule.email_templates?.from_email,
+            isAutomated: true
+          }
+        }
+      );
+
+      if (emailError) {
+        console.error(`Error sending email for booking ${booking.id}:`, emailError);
+        errors.push({ booking: booking.id, error: emailError });
+        continue;
+      }
+
+      console.log(`Email sent successfully for booking ${booking.id}`);
+      sentCount++;
+    } catch (sendError) {
+      console.error(`Error sending email for booking ${booking.id}:`, sendError);
+      errors.push({ booking: booking.id, error: sendError });
+    }
+  }
+
+  // Update batch status to sent
+  await supabase
+    .from('automated_email_log')
+    .update({ 
+      approval_status: 'sent',
+      sent_at: new Date().toISOString()
+    })
+    .eq('id', batchId);
+
+  console.log(`Batch complete: sent ${sentCount} emails for tour "${tour.name}"`);
+  return sentCount;
+}
