@@ -314,7 +314,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     } else {
       // This is an update to an existing booking
       
-      // If cancelled, show cancellation
+      // If cancelled, show ONLY the cancellation - skip all other entries (hotel removals, activity updates, etc.)
       if (cancelEntry) {
         const profile = profiles?.find(p => p.id === cancelEntry.user_id);
         consolidatedChanges.push({
@@ -329,10 +329,12 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
             : 'System',
           details: cancelEntry.details
         });
+        // Skip all other entries for cancelled bookings
+        return;
       }
       
       // Consolidate activity updates into a single entry
-      const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.id !== cancelEntry?.id);
+      const activityUpdates = entries.filter(e => e.operation_type === 'UPDATE_ACTIVITY_BOOKING');
       if (activityUpdates.length > 0) {
         const latestActivityUpdate = activityUpdates[0];
         const profile = profiles?.find(p => p.id === latestActivityUpdate.user_id);
