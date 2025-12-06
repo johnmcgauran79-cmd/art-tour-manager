@@ -6,24 +6,16 @@ export const usePendingEmailApprovals = () => {
   return useQuery({
     queryKey: ['pending-email-approvals'],
     queryFn: async () => {
+      // Fetch batch approvals (where booking_id is null and tour_id is set)
       const { data, error } = await supabase
         .from('automated_email_log')
         .select(`
           *,
-          booking:bookings(
+          tour:tours(
             id,
-            passenger_count,
-            lead_passenger:customers!bookings_lead_passenger_id_fkey(
-              first_name,
-              last_name,
-              email
-            ),
-            tour:tours(
-              id,
-              name,
-              start_date,
-              end_date
-            )
+            name,
+            start_date,
+            end_date
           ),
           rule:automated_email_rules(
             rule_name,
@@ -37,6 +29,8 @@ export const usePendingEmailApprovals = () => {
           )
         `)
         .eq('approval_status', 'pending_approval')
+        .is('booking_id', null) // Only batch records
+        .not('tour_id', 'is', null) // Must have tour_id
         .order('tour_start_date', { ascending: true });
 
       if (error) throw error;
@@ -67,8 +61,8 @@ export const useApproveEmails = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
       queryClient.invalidateQueries({ queryKey: ['automated-email-log'] });
       toast({
-        title: "Emails Approved",
-        description: `${approvalIds.length} email(s) approved and will be sent on the next processing run.`,
+        title: "Batch Approved",
+        description: `${approvalIds.length} tour email batch(es) approved. Emails will be sent on the next processing run.`,
       });
     },
     onError: (error: any) => {
@@ -103,8 +97,8 @@ export const useRejectEmails = () => {
       queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
       queryClient.invalidateQueries({ queryKey: ['automated-email-log'] });
       toast({
-        title: "Emails Rejected",
-        description: `${approvalIds.length} email(s) rejected.`,
+        title: "Batch Rejected",
+        description: `${approvalIds.length} tour email batch(es) rejected.`,
       });
     },
     onError: (error: any) => {
