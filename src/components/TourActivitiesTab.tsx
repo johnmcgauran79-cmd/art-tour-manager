@@ -1,14 +1,14 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit, Printer, Mail, Bell, Check, RefreshCw } from "lucide-react";
-import { useActivities } from "@/hooks/useActivities";
+import { useActivities, Activity } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListModal";
+import { ViewActivityModal } from "./ViewActivityModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
@@ -33,6 +33,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   const [paxAttendingData, setPaxAttendingData] = useState<Record<string, number>>({});
   const [selectedActivityForPrint, setSelectedActivityForPrint] = useState<any>(null);
   const [selectedActivityForEmail, setSelectedActivityForEmail] = useState<any>(null);
+  const [selectedActivityForView, setSelectedActivityForView] = useState<Activity | null>(null);
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
   const { toast } = useToast();
@@ -335,7 +336,11 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
             </TableHeader>
             <TableBody>
               {sortedActivities.map((activity) => (
-                <TableRow key={activity.id} className="cursor-pointer hover:bg-muted/50">
+                <TableRow 
+                  key={activity.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => setSelectedActivityForView(activity)}
+                >
                   <TableCell className="font-medium">{activity.name}</TableCell>
                   <TableCell>{activity.location || '-'}</TableCell>
                   <TableCell>
@@ -347,7 +352,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                   <TableCell>
                     {activity.start_time ? formatTime(activity.start_time) : '-'}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {quickUpdateMode ? (
                       <Input
                         type="number"
@@ -364,7 +369,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                       {paxAttendingData[activity.id] || 0}
                     </span>
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     {quickUpdateMode ? (
                       <Select
                         value={editingData[activity.id]?.activity_status ?? activity.activity_status ?? 'pending'}
@@ -392,7 +397,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-1">
                       {quickUpdateMode ? (
                         <Button
@@ -501,6 +506,13 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ViewActivityModal
+        activity={selectedActivityForView}
+        open={!!selectedActivityForView}
+        onOpenChange={(open) => !open && setSelectedActivityForView(null)}
+        onEdit={onEditActivity}
+      />
     </div>
   );
 };
