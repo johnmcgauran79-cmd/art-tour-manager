@@ -876,6 +876,42 @@ export type Database = {
           },
         ]
       }
+      email_suppressions: {
+        Row: {
+          bounce_count: number
+          created_at: string
+          email_address: string
+          first_bounced_at: string
+          id: string
+          is_active: boolean
+          last_bounced_at: string
+          reason: string | null
+          suppression_type: string
+        }
+        Insert: {
+          bounce_count?: number
+          created_at?: string
+          email_address: string
+          first_bounced_at?: string
+          id?: string
+          is_active?: boolean
+          last_bounced_at?: string
+          reason?: string | null
+          suppression_type?: string
+        }
+        Update: {
+          bounce_count?: number
+          created_at?: string
+          email_address?: string
+          first_bounced_at?: string
+          id?: string
+          is_active?: boolean
+          last_bounced_at?: string
+          reason?: string | null
+          suppression_type?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           content_template: string

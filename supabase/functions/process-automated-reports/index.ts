@@ -168,6 +168,48 @@ serve(async (req) => {
       throw new Error('recipient_emails is required');
     }
 
+    // Check for suppressed email addresses
+    const { data: suppressedEmails } = await supabase
+      .from('email_suppressions')
+      .select('email_address, suppression_type, reason')
+      .eq('is_active', true)
+      .in('email_address', recipient_emails.map((e: string) => e.toLowerCase()));
+
+    const suppressedSet = new Set((suppressedEmails || []).map(s => s.email_address.toLowerCase()));
+    const validRecipients = recipient_emails.filter((email: string) => !suppressedSet.has(email.toLowerCase()));
+    const blockedRecipients = recipient_emails.filter((email: string) => suppressedSet.has(email.toLowerCase()));
+
+    if (blockedRecipients.length > 0) {
+      console.warn(`Blocked sending to suppressed emails: ${blockedRecipients.join(', ')}`);
+      
+      // Log the blocked attempt
+      await supabase
+        .from('automated_report_log')
+        .insert({
+          rule_id: rule_id || null,
+          tour_id: tour_id,
+          report_types: report_types,
+          recipient_emails: blockedRecipients,
+          status: 'blocked_suppressed',
+          error_message: `Email addresses are on suppression list: ${blockedRecipients.join(', ')}`,
+          sent_at: new Date().toISOString(),
+        });
+    }
+
+    if (validRecipients.length === 0) {
+      console.error('All recipient emails are suppressed');
+      return new Response(
+        JSON.stringify({
+          error: 'All recipient emails are suppressed due to bounces',
+          blocked_emails: blockedRecipients,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        },
+      );
+    }
+
     // Get tour details
     const { data: tour, error: tourError } = await supabase
       .from('tours')
@@ -231,12 +273,12 @@ serve(async (req) => {
       </div>
     `;
 
-    // Send email
-    console.log('Sending email to:', recipient_emails);
+    // Send email to valid recipients only
+    console.log('Sending email to:', validRecipients);
 
     const emailResponse = await resend.emails.send({
       from: 'Australian Racing Tours <info@australianracingtours.com.au>',
-      to: recipient_emails,
+      to: validRecipients,
       subject: isOnlyBookingChanges ? `${reportTitle}: Booking Changes` : `${reportTitle}: ${tour.name}`,
       html: emailHtml,
     });
@@ -254,7 +296,7 @@ serve(async (req) => {
         rule_id: rule_id || null,
         tour_id: tour_id,
         report_types: report_types,
-        recipient_emails: recipient_emails,
+        recipient_emails: validRecipients,
         status: 'sent',
         sent_at: new Date().toISOString(),
       });
@@ -266,8 +308,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Reports sent to ${recipient_emails.join(', ')}`,
+        message: `Reports sent to ${validRecipients.join(', ')}`,
         email_id: emailResponse.data?.id,
+        blocked_emails: blockedRecipients.length > 0 ? blockedRecipients : undefined,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
