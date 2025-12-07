@@ -43,7 +43,16 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Processing scheduled automated reports...');
+    // Check for force parameter to bypass day check (for manual triggers)
+    let forceRun = false;
+    try {
+      const body = await req.json();
+      forceRun = body?.force === true;
+    } catch {
+      // No body or invalid JSON, continue with normal processing
+    }
+
+    console.log(`Processing scheduled automated reports... (force=${forceRun})`);
 
     const now = new Date();
     // Use AEST/AEDT timezone for day calculations
@@ -73,8 +82,17 @@ serve(async (req) => {
 
     console.log(`Found ${allRules.length} active rules to evaluate`);
 
-    // Filter rules that should run today
+    // Filter rules that should run today (or all rules if force=true)
     const rulesToProcess = allRules.filter(rule => {
+      if (forceRun) {
+        // When forced, include all weekly and monthly rules
+        if (rule.schedule_type === 'weekly' || rule.schedule_type === 'monthly') {
+          console.log(`Force run: including rule "${rule.rule_name}"`);
+          return true;
+        }
+        return false;
+      }
+      
       if (rule.schedule_type === 'weekly') {
         // Weekly: check if today matches the day of week (in AEST)
         console.log(`Weekly rule "${rule.rule_name}": schedule_value=${rule.schedule_value}, currentDay=${currentDay}, match=${rule.schedule_value === currentDay}`);
