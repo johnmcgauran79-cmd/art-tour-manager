@@ -104,6 +104,39 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // If bounced or complained, add to suppression list
+    if (eventType === "bounced" || eventType === "complained") {
+      const recipientEmail = data?.to?.[0] || data?.recipient;
+      const bounceReason = data?.bounce?.message || data?.complaint?.message || "Unknown reason";
+      
+      if (recipientEmail) {
+        console.log(`Adding ${recipientEmail} to suppression list due to ${eventType}`);
+        
+        // Upsert to suppression list
+        const { error: suppressionError } = await supabase
+          .from("email_suppressions")
+          .upsert({
+            email_address: recipientEmail.toLowerCase(),
+            suppression_type: eventType,
+            reason: bounceReason,
+            last_bounced_at: new Date().toISOString(),
+          }, {
+            onConflict: 'email_address',
+          });
+        
+        if (suppressionError) {
+          console.error("Error adding to suppression list:", suppressionError);
+        } else {
+          // Update bounce count
+          await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() }).catch(() => {
+            // If RPC doesn't exist, just log - the initial insert is enough
+            console.log("Bounce count increment not available, skipping");
+          });
+          console.log(`Added ${recipientEmail} to suppression list`);
+        }
+      }
+    }
+
     console.log(`Successfully recorded ${eventType} event for message ${messageId}`);
 
     return new Response(

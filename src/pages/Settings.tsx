@@ -6,6 +6,7 @@ import { AutomatedEmailRulesManagement } from "@/components/AutomatedEmailRulesM
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { SystemSettings } from "@/components/SystemSettings";
 import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRulesManagement";
+import { EmailSuppressionsManagement } from "@/components/EmailSuppressionsManagement";
 
 interface SettingsProps {
   onBack: () => void;
@@ -52,6 +53,8 @@ export const Settings = ({ onBack }: SettingsProps) => {
         </TabsContent>
 
         <TabsContent value="system" className="space-y-6">
+          <EmailSuppressionsManagement />
+          
           <Card>
             <CardHeader>
               <CardTitle>System Settings</CardTitle>
