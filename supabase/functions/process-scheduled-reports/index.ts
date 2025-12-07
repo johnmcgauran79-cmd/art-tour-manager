@@ -6,6 +6,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Get the current day/date in AEST/AEDT timezone
+function getAESTDate(): { dayOfWeek: number; dayOfMonth: number } {
+  const now = new Date();
+  // Format the date in Melbourne timezone to get the correct local day
+  const formatter = new Intl.DateTimeFormat('en-AU', {
+    timeZone: 'Australia/Melbourne',
+    weekday: 'short',
+    day: 'numeric'
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const weekdayPart = parts.find(p => p.type === 'weekday');
+  const dayPart = parts.find(p => p.type === 'day');
+  
+  // Convert weekday name to number (0 = Sunday, 1 = Monday, etc.)
+  const weekdayMap: Record<string, number> = {
+    'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6
+  };
+  
+  const dayOfWeek = weekdayMap[weekdayPart?.value || 'Sun'] || 0;
+  const dayOfMonth = parseInt(dayPart?.value || '1', 10);
+  
+  console.log(`AEST/AEDT time check: weekday=${weekdayPart?.value} (${dayOfWeek}), day of month=${dayOfMonth}`);
+  
+  return { dayOfWeek, dayOfMonth };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -19,8 +46,8 @@ serve(async (req) => {
     console.log('Processing scheduled automated reports...');
 
     const now = new Date();
-    const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    const currentDate = now.getDate(); // 1-31
+    // Use AEST/AEDT timezone for day calculations
+    const { dayOfWeek: currentDay, dayOfMonth: currentDate } = getAESTDate();
     const results = [];
 
     // Get all active rules
@@ -49,10 +76,12 @@ serve(async (req) => {
     // Filter rules that should run today
     const rulesToProcess = allRules.filter(rule => {
       if (rule.schedule_type === 'weekly') {
-        // Weekly: check if today matches the day of week
+        // Weekly: check if today matches the day of week (in AEST)
+        console.log(`Weekly rule "${rule.rule_name}": schedule_value=${rule.schedule_value}, currentDay=${currentDay}, match=${rule.schedule_value === currentDay}`);
         return rule.schedule_value === currentDay;
       } else if (rule.schedule_type === 'monthly') {
-        // Monthly: check if today matches the day of month
+        // Monthly: check if today matches the day of month (in AEST)
+        console.log(`Monthly rule "${rule.rule_name}": schedule_value=${rule.schedule_value}, currentDate=${currentDate}, match=${rule.schedule_value === currentDate}`);
         return rule.schedule_value === currentDate;
       }
       // 'days_before_tour' rules are handled differently below
