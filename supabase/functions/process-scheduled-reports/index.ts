@@ -190,8 +190,17 @@ serve(async (req) => {
           console.error(`Error processing system-wide rule "${rule.rule_name}":`, error);
         }
       } else {
-        // Tour-specific reports - send for each tour
-        for (const tour of upcomingTours) {
+        // Tour-specific reports - filter tours based on rule configuration
+        const toursToProcess = rule.tour_ids && rule.tour_ids.length > 0
+          ? upcomingTours.filter((t: any) => rule.tour_ids.includes(t.id))
+          : upcomingTours;
+        
+        if (toursToProcess.length === 0) {
+          console.log(`Rule "${rule.rule_name}" has no matching tours, skipping`);
+          continue;
+        }
+        
+        for (const tour of toursToProcess) {
           try {
             console.log(`Processing rule "${rule.rule_name}" for tour "${tour.name}"`);
             

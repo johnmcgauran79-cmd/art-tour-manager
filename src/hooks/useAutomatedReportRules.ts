@@ -9,6 +9,7 @@ export interface AutomatedReportRule {
   schedule_value: number;
   report_types: string[];
   recipient_emails: string[];
+  tour_ids: string[] | null;
   is_active: boolean;
   created_at: string;
   created_by: string | null;
