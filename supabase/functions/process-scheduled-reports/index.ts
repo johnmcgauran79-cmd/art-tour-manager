@@ -132,13 +132,19 @@ serve(async (req) => {
 
     console.log(`Found ${upcomingTours.length} upcoming tours`);
 
-    // Process weekly and monthly rules for all tours
+    // System-wide report types that should only be sent once (not per tour)
+    const systemWideReportTypes = ['booking_changes'];
+
+    // Process weekly and monthly rules
     for (const rule of rulesToProcess) {
-      for (const tour of upcomingTours) {
+      // Check if this rule contains ONLY system-wide reports
+      const hasOnlySystemWideReports = rule.report_types.every((rt: string) => systemWideReportTypes.includes(rt));
+      
+      if (hasOnlySystemWideReports) {
+        // Send system-wide reports only once (use first tour just for context)
         try {
-          console.log(`Processing rule "${rule.rule_name}" for tour "${tour.name}"`);
+          console.log(`Processing system-wide rule "${rule.rule_name}" (sending once)`);
           
-          // Call the process-automated-reports function
           const response = await fetch(`${supabaseUrl}/functions/v1/process-automated-reports`, {
             method: 'POST',
             headers: {
@@ -146,7 +152,7 @@ serve(async (req) => {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              tour_id: tour.id,
+              tour_id: upcomingTours[0].id, // Just for context, booking_changes is system-wide
               report_types: rule.report_types,
               recipient_emails: rule.recipient_emails,
               rule_id: rule.id,
@@ -159,29 +165,80 @@ serve(async (req) => {
             const result = await response.json();
             results.push({
               rule: rule.rule_name,
-              tour: tour.name,
+              tour: 'System-wide',
               status: 'success',
               ...result
             });
-            console.log(`Successfully processed rule "${rule.rule_name}" for tour "${tour.name}"`);
+            console.log(`Successfully processed system-wide rule "${rule.rule_name}"`);
           } else {
             const errorText = await response.text();
             results.push({
               rule: rule.rule_name,
-              tour: tour.name,
+              tour: 'System-wide',
               status: 'error',
               error: errorText
             });
-            console.error(`Failed to process rule "${rule.rule_name}" for tour "${tour.name}":`, errorText);
+            console.error(`Failed to process system-wide rule "${rule.rule_name}":`, errorText);
           }
         } catch (error) {
           results.push({
             rule: rule.rule_name,
-            tour: tour.name,
+            tour: 'System-wide',
             status: 'error',
             error: error.message
           });
-          console.error(`Error processing rule "${rule.rule_name}" for tour "${tour.name}":`, error);
+          console.error(`Error processing system-wide rule "${rule.rule_name}":`, error);
+        }
+      } else {
+        // Tour-specific reports - send for each tour
+        for (const tour of upcomingTours) {
+          try {
+            console.log(`Processing rule "${rule.rule_name}" for tour "${tour.name}"`);
+            
+            const response = await fetch(`${supabaseUrl}/functions/v1/process-automated-reports`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseServiceKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                tour_id: tour.id,
+                report_types: rule.report_types,
+                recipient_emails: rule.recipient_emails,
+                rule_id: rule.id,
+                schedule_type: rule.schedule_type,
+                schedule_value: rule.schedule_value,
+              }),
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              results.push({
+                rule: rule.rule_name,
+                tour: tour.name,
+                status: 'success',
+                ...result
+              });
+              console.log(`Successfully processed rule "${rule.rule_name}" for tour "${tour.name}"`);
+            } else {
+              const errorText = await response.text();
+              results.push({
+                rule: rule.rule_name,
+                tour: tour.name,
+                status: 'error',
+                error: errorText
+              });
+              console.error(`Failed to process rule "${rule.rule_name}" for tour "${tour.name}":`, errorText);
+            }
+          } catch (error) {
+            results.push({
+              rule: rule.rule_name,
+              tour: tour.name,
+              status: 'error',
+              error: error.message
+            });
+            console.error(`Error processing rule "${rule.rule_name}" for tour "${tour.name}":`, error);
+          }
         }
       }
     }
