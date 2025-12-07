@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, X } from "lucide-react";
 import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, useSendTestAutomatedReport, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -82,9 +83,25 @@ export const AutomatedReportRulesManagement = () => {
     schedule_value: 1,
     report_types: [],
     recipient_emails: [],
+    tour_ids: null,
     is_active: true
   });
   const [emailInput, setEmailInput] = useState('');
+
+  // Fetch upcoming tours for selection
+  const { data: upcomingTours } = useQuery({
+    queryKey: ['upcoming-tours-for-reports'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tours')
+        .select('id, name, start_date')
+        .gte('start_date', new Date().toISOString())
+        .neq('status', 'archived')
+        .order('start_date', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
   
   const handleSendTest = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -161,10 +178,34 @@ export const AutomatedReportRulesManagement = () => {
       schedule_value: 1,
       report_types: [],
       recipient_emails: [],
+      tour_ids: null,
       is_active: true
     });
     setEditingRule(null);
     setEmailInput('');
+  };
+
+  const toggleTour = (tourId: string) => {
+    const currentTourIds = formData.tour_ids || [];
+    if (currentTourIds.includes(tourId)) {
+      const newTourIds = currentTourIds.filter(id => id !== tourId);
+      setFormData({
+        ...formData,
+        tour_ids: newTourIds.length > 0 ? newTourIds : null
+      });
+    } else {
+      setFormData({
+        ...formData,
+        tour_ids: [...currentTourIds, tourId]
+      });
+    }
+  };
+
+  const clearTourSelection = () => {
+    setFormData({
+      ...formData,
+      tour_ids: null
+    });
   };
   const handleEdit = (rule: AutomatedReportRule) => {
     setEditingRule(rule);
@@ -290,6 +331,47 @@ export const AutomatedReportRulesManagement = () => {
               </div>
 
               <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Specific Tours (Optional)</Label>
+                  {formData.tour_ids && formData.tour_ids.length > 0 && (
+                    <Button variant="ghost" size="sm" onClick={clearTourSelection} className="h-6 text-xs">
+                      <X className="h-3 w-3 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to send for all upcoming tours, or select specific tours.
+                </p>
+                <div className="max-h-40 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {upcomingTours?.map(tour => (
+                    <div key={tour.id} className="flex items-center space-x-2">
+                      <Switch 
+                        checked={formData.tour_ids?.includes(tour.id) || false} 
+                        onCheckedChange={() => toggleTour(tour.id)} 
+                      />
+                      <Label className="cursor-pointer text-sm" onClick={() => toggleTour(tour.id)}>
+                        {tour.name} ({format(new Date(tour.start_date), 'dd MMM yyyy')})
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                {formData.tour_ids && formData.tour_ids.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {formData.tour_ids.map(tourId => {
+                      const tour = upcomingTours?.find(t => t.id === tourId);
+                      return tour ? (
+                        <Badge key={tourId} variant="secondary" className="gap-1">
+                          {tour.name}
+                          <button onClick={() => toggleTour(tourId)} className="ml-1 hover:text-destructive">×</button>
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
                 <Label>Recipients</Label>
                 <div className="flex gap-2">
                   <Input type="email" value={emailInput} onChange={e => setEmailInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addEmail())} placeholder="email@example.com" />
@@ -343,6 +425,7 @@ export const AutomatedReportRulesManagement = () => {
                 <TableRow>
                   <TableHead>Rule Name</TableHead>
                   <TableHead>Schedule</TableHead>
+                  <TableHead>Tours</TableHead>
                   <TableHead>Reports</TableHead>
                   <TableHead>Recipients</TableHead>
                   <TableHead>Status</TableHead>
@@ -357,6 +440,13 @@ export const AutomatedReportRulesManagement = () => {
                         <Calendar className="h-4 w-4" />
                         {getScheduleDescription(rule)}
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={rule.tour_ids && rule.tour_ids.length > 0 ? "secondary" : "outline"}>
+                        {rule.tour_ids && rule.tour_ids.length > 0 
+                          ? `${rule.tour_ids.length} tour${rule.tour_ids.length > 1 ? 's' : ''}` 
+                          : 'All tours'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">{rule.report_types.length} reports</Badge>

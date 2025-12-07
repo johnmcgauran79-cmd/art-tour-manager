@@ -392,6 +392,7 @@ export type Database = {
           rule_name: string
           schedule_type: string
           schedule_value: number
+          tour_ids: string[] | null
           updated_at: string | null
         }
         Insert: {
@@ -404,6 +405,7 @@ export type Database = {
           rule_name: string
           schedule_type: string
           schedule_value: number
+          tour_ids?: string[] | null
           updated_at?: string | null
         }
         Update: {
@@ -416,6 +418,7 @@ export type Database = {
           rule_name?: string
           schedule_type?: string
           schedule_value?: number
+          tour_ids?: string[] | null
           updated_at?: string | null
         }
         Relationships: []
