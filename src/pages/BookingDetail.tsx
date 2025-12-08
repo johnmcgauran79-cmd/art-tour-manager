@@ -345,19 +345,21 @@ export default function BookingDetail() {
           <TabsContent value="medical" className="space-y-4 mt-6">
             <div className="bg-card rounded-lg border p-6 space-y-6">
               <div>
-                <h3 className="text-lg font-semibold mb-4">Medical Information</h3>
+                <h3 className="text-lg font-semibold mb-4">Medical & Dietary Information</h3>
+                <p className="text-sm text-muted-foreground mb-4">This information is linked to the contact profile and applies to all bookings.</p>
                 <div className="space-y-4">
-                  <InfoRow label="Medical Conditions" value={booking.medical_conditions} />
-                  <InfoRow label="Accessibility Needs" value={booking.accessibility_needs} />
+                  <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
+                  <InfoRow label="Medical Conditions" value={booking.customers?.medical_conditions} />
+                  <InfoRow label="Accessibility Needs" value={booking.customers?.accessibility_needs} />
                 </div>
               </div>
 
               <div className="border-t pt-6">
                 <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label="Emergency Contact Name" value={booking.emergency_contact_name} />
-                  <InfoRow label="Emergency Contact Phone" value={booking.emergency_contact_phone} />
-                  <InfoRow label="Relationship" value={booking.emergency_contact_relationship} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <InfoRow label="Name" value={booking.customers?.emergency_contact_name} />
+                  <InfoRow label="Phone" value={booking.customers?.emergency_contact_phone} />
+                  <InfoRow label="Relationship" value={booking.customers?.emergency_contact_relationship} />
                 </div>
               </div>
             </div>

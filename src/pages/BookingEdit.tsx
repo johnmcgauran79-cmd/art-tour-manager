@@ -65,18 +65,11 @@ export default function BookingEdit() {
     check_out_date: '',
     secondary_contact_id: '',
     
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    emergency_contact_relationship: '',
-    
     passport_number: '',
     passport_expiry_date: '',
     passport_country: '',
     id_number: '',
     nationality: '',
-    
-    medical_conditions: '',
-    accessibility_needs: '',
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -118,18 +111,11 @@ export default function BookingEdit() {
         check_out_date: booking.check_out_date || '',
         secondary_contact_id: booking.secondary_contact_id || '',
         
-        emergency_contact_name: booking.emergency_contact_name || '',
-        emergency_contact_phone: booking.emergency_contact_phone || '',
-        emergency_contact_relationship: booking.emergency_contact_relationship || '',
-        
         passport_number: booking.passport_number || '',
         passport_expiry_date: booking.passport_expiry_date || '',
         passport_country: booking.passport_country || '',
         id_number: booking.id_number || '',
         nationality: booking.nationality || '',
-        
-        medical_conditions: booking.medical_conditions || '',
-        accessibility_needs: booking.accessibility_needs || '',
       });
 
       if (booking.secondary_contact) {
@@ -256,16 +242,11 @@ export default function BookingEdit() {
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
       secondary_contact_id: formData.secondary_contact_id || null,
-      emergency_contact_name: formData.emergency_contact_name || null,
-      emergency_contact_phone: formData.emergency_contact_phone || null,
-      emergency_contact_relationship: formData.emergency_contact_relationship || null,
       passport_number: formData.passport_number || null,
       passport_expiry_date: formData.passport_expiry_date || null,
       passport_country: formData.passport_country || null,
       id_number: formData.id_number || null,
       nationality: formData.nationality || null,
-      medical_conditions: formData.medical_conditions || null,
-      accessibility_needs: formData.accessibility_needs || null,
     }, {
       onSuccess: () => {
         toast({
@@ -757,66 +738,52 @@ export default function BookingEdit() {
 
         <TabsContent value="medical" className="space-y-4 mt-6">
           <div className="grid grid-cols-1 gap-6">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Emergency contact and medical information is linked to the contact profile. To edit this information, <Button variant="link" className="px-1 h-auto" onClick={() => navigateWithContext(`/contacts/${booking.lead_passenger_id}/edit`)}>edit the contact</Button>.
+              </AlertDescription>
+            </Alert>
+
             <div className="bg-card border rounded-lg p-6 space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Emergency Contact Information
+                <Heart className="h-5 w-5" />
+                Medical & Dietary Information
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
-                  <Input
-                    id="emergency_contact_name"
-                    value={formData.emergency_contact_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                    placeholder="Full name"
-                  />
+                  <span className="text-sm font-medium text-muted-foreground">Dietary Requirements</span>
+                  <p className="text-sm mt-1">{booking.customers?.dietary_requirements || "—"}</p>
                 </div>
                 <div>
-                  <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
-                  <Input
-                    id="emergency_contact_phone"
-                    value={formData.emergency_contact_phone}
-                    onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                    placeholder="Phone number"
-                  />
+                  <span className="text-sm font-medium text-muted-foreground">Medical Conditions</span>
+                  <p className="text-sm mt-1">{booking.customers?.medical_conditions || "—"}</p>
                 </div>
                 <div>
-                  <Label htmlFor="emergency_contact_relationship">Relationship</Label>
-                  <Input
-                    id="emergency_contact_relationship"
-                    value={formData.emergency_contact_relationship}
-                    onChange={(e) => setFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
-                    placeholder="e.g., Spouse, Parent, Sibling"
-                  />
+                  <span className="text-sm font-medium text-muted-foreground">Accessibility Needs</span>
+                  <p className="text-sm mt-1">{booking.customers?.accessibility_needs || "—"}</p>
                 </div>
               </div>
             </div>
 
             <div className="bg-card border rounded-lg p-6 space-y-4">
               <h3 className="text-lg font-medium flex items-center gap-2">
-                <Heart className="h-5 w-5" />
-                Medical & Accessibility Information
+                <Shield className="h-5 w-5" />
+                Emergency Contact
               </h3>
-              <div>
-                <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                <Textarea
-                  id="medical_conditions"
-                  value={formData.medical_conditions}
-                  onChange={(e) => setFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
-                  placeholder="Any medical conditions, allergies, or medications..."
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
-                <Textarea
-                  id="accessibility_needs"
-                  value={formData.accessibility_needs}
-                  onChange={(e) => setFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
-                  placeholder="Mobility assistance, wheelchair access, etc..."
-                  rows={3}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Name</span>
+                  <p className="text-sm mt-1">{booking.customers?.emergency_contact_name || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Phone</span>
+                  <p className="text-sm mt-1">{booking.customers?.emergency_contact_phone || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Relationship</span>
+                  <p className="text-sm mt-1">{booking.customers?.emergency_contact_relationship || "—"}</p>
+                </div>
               </div>
             </div>
           </div>

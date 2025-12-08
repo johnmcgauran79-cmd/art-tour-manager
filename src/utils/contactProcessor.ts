@@ -36,6 +36,11 @@ export const prepareCustomerData = (contact: CSVContact) => {
     notes: contact.notes || null,
     crm_id: null,
     last_synced_at: null,
+    emergency_contact_name: null,
+    emergency_contact_phone: null,
+    emergency_contact_relationship: null,
+    medical_conditions: null,
+    accessibility_needs: null,
   };
 };
 
