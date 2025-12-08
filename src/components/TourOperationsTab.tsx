@@ -15,7 +15,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
-import { BookingDetailModal } from "@/components/BookingDetailModal";
+
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { supabase } from "@/integrations/supabase/client";
