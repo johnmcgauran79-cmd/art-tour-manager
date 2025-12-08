@@ -349,7 +349,6 @@ export default function BookingDetail() {
                 <div className="space-y-4">
                   <InfoRow label="Medical Conditions" value={booking.medical_conditions} />
                   <InfoRow label="Accessibility Needs" value={booking.accessibility_needs} />
-                  <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
                 </div>
               </div>
 
