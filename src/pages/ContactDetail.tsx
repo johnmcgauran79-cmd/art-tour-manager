@@ -232,18 +232,35 @@ export default function ContactDetail() {
             </CardContent>
           </Card>
 
-          {(contact.dietary_requirements || contact.notes) && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Emergency Contact</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <InfoRow label="Name" value={contact.emergency_contact_name} />
+              <InfoRow label="Phone" value={contact.emergency_contact_phone} />
+              <InfoRow label="Relationship" value={contact.emergency_contact_relationship} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Medical & Dietary Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InfoRow label="Dietary Requirements" value={contact.dietary_requirements} />
+              <InfoRow label="Medical Conditions" value={contact.medical_conditions} />
+              <InfoRow label="Accessibility Needs" value={contact.accessibility_needs} />
+            </CardContent>
+          </Card>
+
+          {contact.notes && (
             <Card>
               <CardHeader>
-                <CardTitle>Additional Information</CardTitle>
+                <CardTitle>Notes</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {contact.dietary_requirements && (
-                  <InfoRow label="Dietary Requirements" value={contact.dietary_requirements} />
-                )}
-                {contact.notes && (
-                  <InfoRow label="Notes" value={contact.notes} />
-                )}
+              <CardContent>
+                <InfoRow label="Notes" value={contact.notes} />
               </CardContent>
             </Card>
           )}

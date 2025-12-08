@@ -34,6 +34,11 @@ export default function ContactEdit() {
         country: contact.country || '',
         spouse_name: contact.spouse_name || '',
         dietary_requirements: contact.dietary_requirements || '',
+        emergency_contact_name: contact.emergency_contact_name || '',
+        emergency_contact_phone: contact.emergency_contact_phone || '',
+        emergency_contact_relationship: contact.emergency_contact_relationship || '',
+        medical_conditions: contact.medical_conditions || '',
+        accessibility_needs: contact.accessibility_needs || '',
         notes: contact.notes || ''
       });
     }
@@ -210,14 +215,72 @@ export default function ContactEdit() {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
-            <Textarea
-              id="dietary_requirements"
-              value={editedContact.dietary_requirements || ''}
-              onChange={(e) => setEditedContact({ ...editedContact, dietary_requirements: e.target.value })}
-              rows={3}
-            />
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-medium mb-4">Emergency Contact</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_name">Name</Label>
+                <Input
+                  id="emergency_contact_name"
+                  value={editedContact.emergency_contact_name || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, emergency_contact_name: e.target.value })}
+                  placeholder="Emergency contact name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_phone">Phone</Label>
+                <Input
+                  id="emergency_contact_phone"
+                  value={editedContact.emergency_contact_phone || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, emergency_contact_phone: e.target.value })}
+                  placeholder="Emergency contact phone"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                <Input
+                  id="emergency_contact_relationship"
+                  value={editedContact.emergency_contact_relationship || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, emergency_contact_relationship: e.target.value })}
+                  placeholder="e.g., Spouse, Parent"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <h3 className="text-lg font-medium mb-4">Medical & Dietary Information</h3>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
+                <Textarea
+                  id="dietary_requirements"
+                  value={editedContact.dietary_requirements || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, dietary_requirements: e.target.value })}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                <Textarea
+                  id="medical_conditions"
+                  value={editedContact.medical_conditions || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, medical_conditions: e.target.value })}
+                  rows={2}
+                  placeholder="Any medical conditions, allergies, or medications..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                <Textarea
+                  id="accessibility_needs"
+                  value={editedContact.accessibility_needs || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, accessibility_needs: e.target.value })}
+                  rows={2}
+                  placeholder="Mobility assistance, wheelchair access, etc..."
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

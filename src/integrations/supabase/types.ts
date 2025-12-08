@@ -735,16 +735,21 @@ export type Database = {
       }
       customers: {
         Row: {
+          accessibility_needs: string | null
           city: string | null
           country: string | null
           created_at: string | null
           crm_id: string | null
           dietary_requirements: string | null
           email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
           first_name: string
           id: string
           last_name: string
           last_synced_at: string | null
+          medical_conditions: string | null
           notes: string | null
           phone: string | null
           spouse_name: string | null
@@ -752,16 +757,21 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          accessibility_needs?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name: string
           id?: string
           last_name: string
           last_synced_at?: string | null
+          medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
           spouse_name?: string | null
@@ -769,16 +779,21 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          accessibility_needs?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
           first_name?: string
           id?: string
           last_name?: string
           last_synced_at?: string | null
+          medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
           spouse_name?: string | null

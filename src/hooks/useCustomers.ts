@@ -18,6 +18,11 @@ export interface Customer {
   notes: string | null;
   crm_id: string | null;
   last_synced_at: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+  medical_conditions: string | null;
+  accessibility_needs: string | null;
   created_at: string;
   updated_at: string;
 }
