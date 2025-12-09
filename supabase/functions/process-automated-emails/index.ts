@@ -125,13 +125,10 @@ serve(async (req) => {
             continue;
           }
           
-          // If rejected, delete and allow recreation with updated filters
+          // If rejected, skip permanently - user explicitly declined this email
           if (existingBatch.approval_status === 'rejected') {
-            console.log(`Deleting rejected batch for tour "${tour.name}" to allow recreation`);
-            await supabase
-              .from('automated_email_log')
-              .delete()
-              .eq('id', existingBatch.id);
+            console.log(`Batch was rejected for tour "${tour.name}", rule "${applicableRule.rule_name}" - skipping permanently`);
+            continue;
           }
         }
 
