@@ -264,15 +264,15 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           border-left: 3px solid hsl(220, 8%, 15%);
           border-radius: 4px;
           padding: 8px;
-          margin-bottom: 8px;
+          margin-bottom: 10px;
           page-break-inside: avoid;
           break-inside: avoid;
         }
         .day-header {
           background: hsl(220, 8%, 15%);
           color: white;
-          padding: 4px 8px;
-          margin: -8px -8px 8px -8px;
+          padding: 10px 12px;
+          margin: -8px -8px 12px -8px;
           border-radius: 3px 3px 0 0;
           font-size: 9pt;
         }
@@ -448,7 +448,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
 
   html += `
     <div class="itinerary-section">
-      <h2 class="section-title">Daily Itinerary</h2>
   `;
 
   days.forEach(day => {
