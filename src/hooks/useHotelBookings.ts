@@ -164,11 +164,16 @@ export const useUpdateHotelBooking = () => {
     mutationFn: async ({ id, ...updates }: HotelBookingUpdate & { id: string }) => {
       console.log('Updating hotel booking:', id, 'with updates:', updates);
       
-      // Clean the updates object - remove undefined values and ensure proper types
+      // Clean the updates object - remove undefined values, convert empty strings to null for dates
       const cleanUpdates: any = {};
       Object.entries(updates).forEach(([key, value]) => {
         if (value !== undefined) {
-          cleanUpdates[key] = value;
+          // Convert empty strings to null for date fields
+          if ((key === 'check_in_date' || key === 'check_out_date') && value === '') {
+            cleanUpdates[key] = null;
+          } else {
+            cleanUpdates[key] = value;
+          }
         }
       });
 

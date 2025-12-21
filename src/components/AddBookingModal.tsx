@@ -438,8 +438,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       const hotelInserts = Object.entries(hotelAllocations)
         .filter(([_, allocation]) => allocation.allocated)
         .map(([hotelId, allocation]) => {
-          const checkIn = allocation.check_in_date || formData.check_in_date;
-          const checkOut = allocation.check_out_date || formData.check_out_date;
+          // Convert empty strings to null for date fields
+          const checkIn = (allocation.check_in_date || formData.check_in_date) || null;
+          const checkOut = (allocation.check_out_date || formData.check_out_date) || null;
           
           let nights = null;
           if (checkIn && checkOut) {
@@ -454,8 +455,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             hotel_id: hotelId,
             required: true,
             allocated: true,
-            check_in_date: checkIn,
-            check_out_date: checkOut,
+            check_in_date: checkIn || null, // Ensure empty string becomes null
+            check_out_date: checkOut || null, // Ensure empty string becomes null
             nights: nights,
             bedding: (allocation.bedding || 'double') as 'single' | 'double' | 'twin',
             room_type: allocation.room_type || null,
