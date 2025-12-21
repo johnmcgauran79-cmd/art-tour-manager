@@ -12,6 +12,7 @@ import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useRecalculateBookingDates } from "@/hooks/useRecalculateBookingDates";
 
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
@@ -105,6 +106,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
+  const recalculateBookingDates = useRecalculateBookingDates();
   const { toast } = useToast();
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
@@ -474,6 +476,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           throw new Error(`Failed to save hotel allocations: ${hotelError.message}`);
         }
         console.log('Hotel bookings created:', hotelData);
+        
+        // Recalculate booking dates immediately after hotel bookings are created
+        await recalculateBookingDates.mutateAsync(newBooking.id);
       }
 
       // Save activity allocations
