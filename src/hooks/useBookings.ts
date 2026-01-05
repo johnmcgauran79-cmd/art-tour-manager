@@ -26,19 +26,12 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   
-  emergency_contact_name: string | null;
-  emergency_contact_phone: string | null;
-  emergency_contact_relationship: string | null;
-  
+  // Travel documents
   passport_number: string | null;
   passport_expiry_date: string | null;
   passport_country: string | null;
   id_number: string | null;
   nationality: string | null;
-  
-  medical_conditions: string | null;
-  accessibility_needs: string | null;
-  dietary_restrictions: string | null;
 }
 
 // Helper function to calculate nights
