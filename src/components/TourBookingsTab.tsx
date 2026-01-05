@@ -12,9 +12,7 @@ import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
-import { useBookings } from "@/hooks/useBookings";
-import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
-import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
+
 interface TourBookingsTabProps {
   tourId: string;
   tourName: string;
@@ -32,12 +30,9 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
   
   const { data: tours } = useTours();
-  const { data: allBookings } = useBookings();
   const currentTour = tours?.find(tour => tour.id === tourId);
-  const tourBookings = allBookings?.filter(b => b.tour_id === tourId);
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "bookings");
-  const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, currentTour);
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -63,12 +58,6 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
                   </Badge>
                 </button>
               )}
-              <PaymentStatusTracker
-                activeLevel={activeLevel}
-                level1Count={level1Count}
-                level2Count={level2Count}
-                level3Count={level3Count}
-              />
             </div>
           </div>
           {!isAgent && (

@@ -7,6 +7,8 @@ import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
+import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
+import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 
 interface TourOverviewTabProps {
@@ -47,6 +49,13 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
 
   // Calculate booking statistics for this tour
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tour.id);
+  
+  // Payment alerts - need to build tour object for the hook
+  const tourForPaymentAlerts = {
+    start_date: tour.startDate,
+    instalment_required: tour.instalmentRequired,
+  };
+  const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, tourForPaymentAlerts as any);
   const confirmedBookings = tourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
   const waitlistedBookings = tourBookings.filter(b => b.status === 'waitlisted');
   const totalConfirmedPassengers = confirmedBookings.reduce((sum, b) => sum + b.passenger_count, 0);
@@ -199,6 +208,24 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
               {unacknowledgedCount}
             </div>
             <p className="text-xs text-muted-foreground">pending alerts</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-2 border-blue-200">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
+            <PaymentStatusTracker 
+              activeLevel={activeLevel}
+              level1Count={level1Count}
+              level2Count={level2Count}
+              level3Count={level3Count}
+            />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {activeLevel?.count ?? 0}
+            </div>
+            <p className="text-xs text-muted-foreground">{activeLevel?.label ?? "Deposits Due"}</p>
           </CardContent>
         </Card>
       </div>
