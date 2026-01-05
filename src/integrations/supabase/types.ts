@@ -498,23 +498,17 @@ export type Database = {
       }
       bookings: {
         Row: {
-          accessibility_needs: string | null
           accommodation_required: boolean | null
           booking_agent: string | null
           check_in_date: string | null
           check_out_date: string | null
           created_at: string | null
-          dietary_restrictions: string | null
-          emergency_contact_name: string | null
-          emergency_contact_phone: string | null
-          emergency_contact_relationship: string | null
           extra_requests: string | null
           group_name: string | null
           id: string
           id_number: string | null
           invoice_notes: string | null
           lead_passenger_id: string | null
-          medical_conditions: string | null
           nationality: string | null
           passenger_2_name: string | null
           passenger_3_name: string | null
@@ -530,23 +524,17 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
-          accessibility_needs?: string | null
           accommodation_required?: boolean | null
           booking_agent?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
-          dietary_restrictions?: string | null
-          emergency_contact_name?: string | null
-          emergency_contact_phone?: string | null
-          emergency_contact_relationship?: string | null
           extra_requests?: string | null
           group_name?: string | null
           id?: string
           id_number?: string | null
           invoice_notes?: string | null
           lead_passenger_id?: string | null
-          medical_conditions?: string | null
           nationality?: string | null
           passenger_2_name?: string | null
           passenger_3_name?: string | null
@@ -562,23 +550,17 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
-          accessibility_needs?: string | null
           accommodation_required?: boolean | null
           booking_agent?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
-          dietary_restrictions?: string | null
-          emergency_contact_name?: string | null
-          emergency_contact_phone?: string | null
-          emergency_contact_relationship?: string | null
           extra_requests?: string | null
           group_name?: string | null
           id?: string
           id_number?: string | null
           invoice_notes?: string | null
           lead_passenger_id?: string | null
-          medical_conditions?: string | null
           nationality?: string | null
           passenger_2_name?: string | null
           passenger_3_name?: string | null
