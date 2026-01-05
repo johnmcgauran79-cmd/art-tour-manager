@@ -264,7 +264,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         lead_passenger_name: fullName,
         lead_passenger_email: selectedContact.email || '',
         lead_passenger_phone: selectedContact.phone || '',
-        dietary_restrictions: selectedContact.dietary_requirements || '',
       }));
       setLeadPassengerName(fullName);
     }

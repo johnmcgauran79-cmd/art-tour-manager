@@ -25,7 +25,7 @@ async function generatePassengerListData(supabase: any, tourId: string) {
       email: customer.email || 'N/A',
       phone: customer.phone || 'N/A',
       passengerCount: booking.passenger_count || 1,
-      dietaryRequirements: booking.dietary_restrictions || customer.dietary_requirements || 'None',
+      dietaryRequirements: customer.dietary_requirements || 'None',
       status: booking.status || 'N/A',
       bookingReference: booking.id
     };
