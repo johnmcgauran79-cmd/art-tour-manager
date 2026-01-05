@@ -93,6 +93,7 @@ export default function TourDetail() {
       twin: tour.price_twin || 0,
     },
     deposit: tour.deposit_required || 0,
+    instalmentRequired: tour.instalment_required || false,
     instalmentAmount: tour.instalment_amount || 0,
     instalmentDate: tour.instalment_date || "",
     finalPaymentDate: tour.final_payment_date || "",

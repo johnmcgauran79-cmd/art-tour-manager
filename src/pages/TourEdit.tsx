@@ -35,6 +35,7 @@ export default function TourEdit() {
     price_double: "",
     price_twin: "",
     deposit_required: "",
+    instalment_required: false,
     instalment_amount: "",
     instalment_date: "",
     final_payment_date: "",
@@ -50,7 +51,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type')
+          .select('minimum_passengers_required, tour_type, instalment_required')
           .eq('id', id)
           .single();
         
@@ -70,6 +71,7 @@ export default function TourEdit() {
             price_double: tour.price_double?.toString() || "",
             price_twin: tour.price_twin?.toString() || "",
             deposit_required: tour.deposit_required?.toString() || "",
+            instalment_required: data.instalment_required || false,
             instalment_amount: tour.instalment_amount?.toString() || "",
             instalment_date: tour.instalment_date ? formatDateForInput(tour.instalment_date) : "",
             final_payment_date: tour.final_payment_date ? formatDateForInput(tour.final_payment_date) : "",
@@ -128,8 +130,9 @@ export default function TourEdit() {
       price_double: formData.price_double ? parseFloat(formData.price_double) : null,
       price_twin: formData.price_twin ? parseFloat(formData.price_twin) : null,
       deposit_required: formData.deposit_required ? parseFloat(formData.deposit_required) : null,
-      instalment_amount: formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
-      instalment_date: formData.instalment_date || null,
+      instalment_required: formData.instalment_required,
+      instalment_amount: formData.instalment_required && formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
+      instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
       final_payment_date: formData.final_payment_date || null,
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
@@ -369,7 +372,7 @@ export default function TourEdit() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="deposit_required">Deposit Required ($)</Label>
             <Input
@@ -382,15 +385,33 @@ export default function TourEdit() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
-            <Input
-              id="instalment_amount"
-              type="number"
-              step="0.01"
-              value={formData.instalment_amount}
-              onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
-            />
+            <Label htmlFor="instalment_required">Instalment Required</Label>
+            <Select 
+              value={formData.instalment_required ? "yes" : "no"} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, instalment_required: value === "yes" }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no">No</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
+
+          {formData.instalment_required && (
+            <div className="space-y-2">
+              <Label htmlFor="instalment_amount">Instalment Amount ($)</Label>
+              <Input
+                id="instalment_amount"
+                type="number"
+                step="0.01"
+                value={formData.instalment_amount}
+                onChange={(e) => handleInputChange("instalment_amount", e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
