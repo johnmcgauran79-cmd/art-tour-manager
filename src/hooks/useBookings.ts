@@ -242,22 +242,12 @@ export const useCreateBooking = () => {
       check_out_date?: string | null;
       invoice_notes?: string;
       
-      // Emergency contact
-      emergency_contact_name?: string;
-      emergency_contact_phone?: string;
-      emergency_contact_relationship?: string;
-      
       // Travel documents
       passport_number?: string;
       passport_expiry_date?: string | null;
       passport_country?: string;
       id_number?: string;
       nationality?: string;
-      
-      // Medical info
-      medical_conditions?: string;
-      accessibility_needs?: string;
-      dietary_restrictions?: string;
     }) => {
       
       // Calculate nights
@@ -285,11 +275,8 @@ export const useCreateBooking = () => {
             first_name: firstName,
             last_name: lastName,
             phone: bookingData.lead_passenger_phone || null,
-            dietary_requirements: bookingData.dietary_restrictions || null, // Store at customer level
           })
           .eq('id', existingCustomer.id);
-        
-        console.log("Updated customer dietary requirements to:", bookingData.dietary_restrictions);
       } else {
         const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
         const lastName = lastNameParts.join(' ') || '';
@@ -301,15 +288,12 @@ export const useCreateBooking = () => {
             last_name: lastName,
             email: bookingData.lead_passenger_email,
             phone: bookingData.lead_passenger_phone || null,
-            dietary_requirements: bookingData.dietary_restrictions || null, // Store at customer level
           }])
           .select()
           .single();
 
         if (customerError) throw customerError;
         customerId = newCustomer.id;
-
-        console.log("Created customer with dietary requirements:", bookingData.dietary_restrictions);
 
         // Log customer creation
         logOperation({
@@ -342,21 +326,12 @@ export const useCreateBooking = () => {
           total_nights: totalNights,
           invoice_notes: bookingData.invoice_notes || null,
           
-          // Emergency contact
-          emergency_contact_name: bookingData.emergency_contact_name || null,
-          emergency_contact_phone: bookingData.emergency_contact_phone || null,
-          emergency_contact_relationship: bookingData.emergency_contact_relationship || null,
-          
           // Travel documents
           passport_number: bookingData.passport_number || null,
           passport_expiry_date: bookingData.passport_expiry_date || null,
           passport_country: bookingData.passport_country || null,
           id_number: bookingData.id_number || null,
           nationality: bookingData.nationality || null,
-          
-          // Medical info
-          medical_conditions: bookingData.medical_conditions || null,
-          accessibility_needs: bookingData.accessibility_needs || null,
         }])
         .select()
         .single();

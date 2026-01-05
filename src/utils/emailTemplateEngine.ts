@@ -42,12 +42,6 @@ export interface EmailMergeData {
   booking_group_name?: string;
   booking_booking_agent?: string;
   booking_extra_requests?: string;
-  booking_dietary_restrictions?: string;
-  booking_medical_conditions?: string;
-  booking_accessibility_needs?: string;
-  booking_emergency_contact_name?: string;
-  booking_emergency_contact_phone?: string;
-  booking_emergency_contact_relationship?: string;
   booking_passport_number?: string;
   booking_passport_country?: string;
   booking_passport_expiry_date?: string;
@@ -236,12 +230,6 @@ export class EmailTemplateEngine {
       booking_group_name: booking.group_name,
       booking_booking_agent: booking.booking_agent,
       booking_extra_requests: booking.extra_requests,
-      booking_dietary_restrictions: booking.dietary_restrictions,
-      booking_medical_conditions: booking.medical_conditions,
-      booking_accessibility_needs: booking.accessibility_needs,
-      booking_emergency_contact_name: booking.emergency_contact_name,
-      booking_emergency_contact_phone: booking.emergency_contact_phone,
-      booking_emergency_contact_relationship: booking.emergency_contact_relationship,
       booking_passport_number: booking.passport_number,
       booking_passport_country: booking.passport_country,
       booking_passport_expiry_date: this.formatDate(booking.passport_expiry_date),

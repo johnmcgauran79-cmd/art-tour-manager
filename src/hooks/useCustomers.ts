@@ -240,6 +240,7 @@ export const useCreateCustomer = () => {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['all-customers'] });
       toast({
         title: "Contact Created",
         description: `${data.first_name} ${data.last_name} has been successfully created.`,

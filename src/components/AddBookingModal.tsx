@@ -78,17 +78,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     secondary_contact_id: '',
     secondary_contact_search: '',
     
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    emergency_contact_relationship: '',
+    // Travel documents
     passport_number: '',
     passport_expiry_date: '',
     passport_country: '',
     id_number: '',
     nationality: '',
-    medical_conditions: '',
-    accessibility_needs: '',
-    dietary_restrictions: '',
   });
 
   const [hotelAllocations, setHotelAllocations] = useState<Record<string, {
@@ -246,17 +241,11 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         invoice_notes: '',
         secondary_contact_id: '',
         secondary_contact_search: '',
-        emergency_contact_name: '',
-        emergency_contact_phone: '',
-        emergency_contact_relationship: '',
         passport_number: '',
         passport_expiry_date: '',
         passport_country: '',
         id_number: '',
         nationality: '',
-        medical_conditions: '',
-        accessibility_needs: '',
-        dietary_restrictions: '',
       });
       setSelectedContact(null);
       setSelectedSecondaryContact(null);
@@ -587,13 +576,13 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                   leadPassenger: leadPassengerName,
                   leadEmail: formData.lead_passenger_email,
                   leadPhone: formData.lead_passenger_phone,
-                  leadDietary: formData.dietary_restrictions || '',
+                  leadDietary: selectedContact?.dietary_requirements || '',
                 }}
                 onInputChange={(field, value) => {
                   if (field === 'leadPassenger') setLeadPassengerName(value);
                   else if (field === 'leadEmail') handleFormChange('lead_passenger_email', value);
                   else if (field === 'leadPhone') handleFormChange('lead_passenger_phone', value);
-                  else if (field === 'leadDietary') handleFormChange('dietary_restrictions', value);
+                  // Dietary is now managed on the contact, not the booking
                 }}
                 onContactSelect={handleContactSelect}
                 onEditContact={() => {
@@ -871,71 +860,38 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
             <TabsContent value="medical" className="space-y-6">
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Medical Details</h3>
+                <h3 className="text-lg font-semibold">Medical & Emergency Contact</h3>
                 
-                <div>
-                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                  <Textarea
-                    id="medical_conditions"
-                    value={formData.medical_conditions}
-                    onChange={(e) => handleFormChange('medical_conditions', e.target.value)}
-                    placeholder="Any medical conditions we should be aware of..."
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
-                  <Textarea
-                    id="accessibility_needs"
-                    value={formData.accessibility_needs}
-                    onChange={(e) => handleFormChange('accessibility_needs', e.target.value)}
-                    placeholder="Any accessibility requirements..."
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="dietary_restrictions">Dietary Restrictions</Label>
-                  <Textarea
-                    id="dietary_restrictions"
-                    value={formData.dietary_restrictions}
-                    onChange={(e) => handleFormChange('dietary_restrictions', e.target.value)}
-                    placeholder="Any dietary restrictions or preferences..."
-                  />
-                </div>
-
-                <div className="space-y-4 pt-4 border-t">
-                  <h4 className="font-medium">Emergency Contact</h4>
-                  
-                  <div>
-                    <Label htmlFor="emergency_contact_name">Emergency Contact Name</Label>
-                    <Input
-                      id="emergency_contact_name"
-                      value={formData.emergency_contact_name}
-                      onChange={(e) => handleFormChange('emergency_contact_name', e.target.value)}
-                      placeholder="Full name"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="emergency_contact_phone">Emergency Contact Phone</Label>
-                    <Input
-                      id="emergency_contact_phone"
-                      value={formData.emergency_contact_phone}
-                      onChange={(e) => handleFormChange('emergency_contact_phone', e.target.value)}
-                      placeholder="Phone number"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="emergency_contact_relationship">Relationship</Label>
-                    <Input
-                      id="emergency_contact_relationship"
-                      value={formData.emergency_contact_relationship}
-                      onChange={(e) => handleFormChange('emergency_contact_relationship', e.target.value)}
-                      placeholder="e.g., Spouse, Parent, Sibling"
-                    />
-                  </div>
-                </div>
+                <Card className="bg-muted/50">
+                  <CardContent className="pt-6">
+                    <p className="text-muted-foreground">
+                      Medical details, dietary requirements, and emergency contact information are stored on the contact record. 
+                      {selectedContact ? (
+                        <>
+                          {' '}You can view or edit this information by{' '}
+                          <Button 
+                            variant="link" 
+                            className="px-1 h-auto text-blue-600"
+                            onClick={() => {
+                              setShowAddContact(true);
+                              setAddingContactFor('lead');
+                            }}
+                          >
+                            editing the contact
+                          </Button>.
+                        </>
+                      ) : (
+                        <> Please select or create a contact to manage this information.</>
+                      )}
+                    </p>
+                    
+                    {selectedContact && (
+                      <div className="mt-4 space-y-2 text-sm">
+                        <div><span className="font-medium">Dietary Requirements:</span> {selectedContact.dietary_requirements || '—'}</div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t">
