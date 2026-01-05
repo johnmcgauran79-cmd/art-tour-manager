@@ -9,6 +9,7 @@ import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
 import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
+import { PaymentStatusModal } from "@/components/PaymentStatusModal";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 
 interface TourOverviewTabProps {
@@ -45,6 +46,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tour.id);
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
+  const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);
   const { unacknowledgedCount } = useTourAlerts(tour.id);
 
   // Calculate booking statistics for this tour
@@ -211,7 +213,10 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardContent>
         </Card>
 
-        <Card className="border-2 border-blue-200">
+        <Card 
+          className="border-2 border-blue-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+          onClick={() => setPaymentStatusModalOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
             <PaymentStatusTracker 
@@ -341,6 +346,13 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           onOpenChange={(open) => !open && setSelectedTourForAlerts(null)}
         />
       )}
+
+      <PaymentStatusModal
+        open={paymentStatusModalOpen}
+        onOpenChange={setPaymentStatusModalOpen}
+        bookings={tourBookings as any}
+        activeLevel={activeLevel}
+      />
     </div>
   );
 };
