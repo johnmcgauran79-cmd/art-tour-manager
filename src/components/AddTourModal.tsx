@@ -40,6 +40,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     final_payment_date: "",
     capacity: "",
     minimum_passengers_required: "",
+    tour_type: "domestic" as "domestic" | "international",
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -88,6 +89,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         final_payment_date: formData.final_payment_date || null,
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
+        tour_type: formData.tour_type,
         status: "pending",
       });
 
@@ -118,6 +120,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         final_payment_date: "",
         capacity: "",
         minimum_passengers_required: "",
+        tour_type: "domestic",
       });
 
       queryClient.invalidateQueries({ queryKey: ["tours"] });
@@ -155,6 +158,22 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 placeholder="e.g., Melbourne Cup Carnival 2024"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tour_type">Tour Type *</Label>
+              <Select 
+                value={formData.tour_type} 
+                onValueChange={(value: "domestic" | "international") => handleInputChange("tour_type", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tour type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="domestic">Domestic</SelectItem>
+                  <SelectItem value="international">International</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

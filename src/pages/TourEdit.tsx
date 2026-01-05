@@ -39,7 +39,8 @@ export default function TourEdit() {
     instalment_date: "",
     final_payment_date: "",
     capacity: "",
-    minimum_passengers_required: ""
+    minimum_passengers_required: "",
+    tour_type: "domestic" as "domestic" | "international"
   });
 
   const updateTourMutation = useUpdateTour();
@@ -49,7 +50,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required')
+          .select('minimum_passengers_required, tour_type')
           .eq('id', id)
           .single();
         
@@ -73,7 +74,8 @@ export default function TourEdit() {
             instalment_date: tour.instalment_date ? formatDateForInput(tour.instalment_date) : "",
             final_payment_date: tour.final_payment_date ? formatDateForInput(tour.final_payment_date) : "",
             capacity: tour.capacity?.toString() || "",
-            minimum_passengers_required: data.minimum_passengers_required?.toString() || ""
+            minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
+            tour_type: (data.tour_type as "domestic" | "international") || "domestic"
           });
         }
       }
@@ -131,6 +133,7 @@ export default function TourEdit() {
       final_payment_date: formData.final_payment_date || null,
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
+      tour_type: formData.tour_type,
     };
 
     updateTourMutation.mutate({
@@ -219,6 +222,22 @@ export default function TourEdit() {
               onChange={(e) => handleInputChange("name", e.target.value)}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tour_type">Tour Type *</Label>
+            <Select 
+              value={formData.tour_type} 
+              onValueChange={(value: "domestic" | "international") => handleInputChange("tour_type", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select tour type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="domestic">Domestic</SelectItem>
+                <SelectItem value="international">International</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
