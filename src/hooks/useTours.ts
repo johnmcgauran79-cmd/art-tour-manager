@@ -30,6 +30,7 @@ export interface Tour {
   minimum_passengers_required: number | null;
   tour_host: string;
   url_reference: string | null;
+  tour_type: 'domestic' | 'international' | null;
   ops_notes: string | null;
   ops_accomm_notes: string | null;
   ops_races_notes: string | null;

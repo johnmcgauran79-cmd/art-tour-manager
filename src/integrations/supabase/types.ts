@@ -1719,6 +1719,7 @@ export type Database = {
           start_date: string
           status: Database["public"]["Enums"]["tour_status"] | null
           tour_host: string
+          tour_type: string | null
           updated_at: string | null
           url_reference: string | null
         }
@@ -1754,6 +1755,7 @@ export type Database = {
           start_date: string
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
+          tour_type?: string | null
           updated_at?: string | null
           url_reference?: string | null
         }
@@ -1789,6 +1791,7 @@ export type Database = {
           start_date?: string
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
+          tour_type?: string | null
           updated_at?: string | null
           url_reference?: string | null
         }
