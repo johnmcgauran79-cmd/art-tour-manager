@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +12,9 @@ import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
-
+import { useBookings } from "@/hooks/useBookings";
+import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
+import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 interface TourBookingsTabProps {
   tourId: string;
   tourName: string;
@@ -31,9 +32,12 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
   
   const { data: tours } = useTours();
+  const { data: allBookings } = useBookings();
   const currentTour = tours?.find(tour => tour.id === tourId);
+  const tourBookings = allBookings?.filter(b => b.tour_id === tourId);
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "bookings");
+  const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, currentTour);
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -42,22 +46,30 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
     <>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
-            {alertCount > 0 && (
-              <button 
-                onClick={onOpenAlerts}
-                className="relative cursor-pointer hover:opacity-80 transition-opacity"
-              >
-                <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
-                <Badge 
-                  variant={criticalCount > 0 ? "destructive" : "secondary"}
-                  className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            <div className="flex items-center gap-2">
+              {alertCount > 0 && (
+                <button 
+                  onClick={onOpenAlerts}
+                  className="relative cursor-pointer hover:opacity-80 transition-opacity"
                 >
-                  {alertCount}
-                </Badge>
-              </button>
-            )}
+                  <Bell className={`h-5 w-5 ${criticalCount > 0 ? 'text-destructive' : 'text-yellow-600'}`} />
+                  <Badge 
+                    variant={criticalCount > 0 ? "destructive" : "secondary"}
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                  >
+                    {alertCount}
+                  </Badge>
+                </button>
+              )}
+              <PaymentStatusTracker
+                activeLevel={activeLevel}
+                level1Count={level1Count}
+                level2Count={level2Count}
+                level3Count={level3Count}
+              />
+            </div>
           </div>
           {!isAgent && (
             <div className="flex items-center gap-2">
