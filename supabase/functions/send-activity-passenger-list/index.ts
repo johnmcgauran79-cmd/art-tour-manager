@@ -51,7 +51,6 @@ const handler = async (req: Request): Promise<Response> => {
           lead_passenger_id,
           passenger_2_name,
           passenger_3_name,
-          dietary_restrictions,
           status,
           customers!bookings_lead_passenger_id_fkey(
             first_name,
@@ -71,20 +70,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Fetched passengers:", passengers?.length);
 
-    // Transform data - combine dietary info from both booking and customer
+    // Transform data - use dietary info from customer
     const passengerList = passengers?.map((p: any) => {
-      const bookingDietary = p.bookings.dietary_restrictions;
       const customerDietary = p.bookings.customers.dietary_requirements;
-      const combinedDietary = [bookingDietary, customerDietary]
-        .filter(Boolean)
-        .join('; ');
       
       return {
         lead_passenger_name: `${p.bookings.customers.first_name} ${p.bookings.customers.last_name}`,
         passenger_2_name: p.bookings.passenger_2_name,
         passenger_3_name: p.bookings.passenger_3_name,
         passengers_attending: p.passengers_attending,
-        dietary_restrictions: combinedDietary || null,
+        dietary_restrictions: customerDietary || null,
       };
     }) || [];
 

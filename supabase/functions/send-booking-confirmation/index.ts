@@ -223,12 +223,13 @@ const handler = async (req: Request): Promise<Response> => {
         booking_passenger_2_name: booking.passenger_2_name || '',
         booking_passenger_3_name: booking.passenger_3_name || '',
         booking_group_name: booking.group_name || '',
-        booking_dietary_restrictions: booking.dietary_restrictions || '',
         booking_extra_requests: booking.extra_requests || '',
-        booking_medical_conditions: booking.medical_conditions || '',
-        booking_emergency_contact_name: booking.emergency_contact_name || '',
-        booking_emergency_contact_phone: booking.emergency_contact_phone || '',
         booking_passport_number: booking.passport_number || '',
+        // Medical info from customer record
+        booking_dietary_restrictions: booking.customers?.dietary_requirements || '',
+        booking_medical_conditions: booking.customers?.medical_conditions || '',
+        booking_emergency_contact_name: booking.customers?.emergency_contact_name || '',
+        booking_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
         
         // Hotel bookings array
         hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({

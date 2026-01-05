@@ -45,14 +45,6 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
           changes.push(`Check-out date: ${change.old || 'none'} → ${change.new || 'none'}`);
         } else if (key === 'accommodation_required') {
           changes.push(`Accommodation required: ${change.old ? 'Yes' : 'No'} → ${change.new ? 'Yes' : 'No'}`);
-        } else if (key === 'dietary_restrictions') {
-          changes.push(`Dietary restrictions updated`);
-        } else if (key === 'medical_conditions') {
-          changes.push(`Medical conditions updated`);
-        } else if (key === 'accessibility_needs') {
-          changes.push(`Accessibility needs updated`);
-        } else if (key === 'emergency_contact') {
-          changes.push(`Emergency contact updated`);
         } else if (key === 'passport') {
           changes.push(`Passport information updated`);
         }
