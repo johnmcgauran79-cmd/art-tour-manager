@@ -27,6 +27,7 @@ interface TourOverviewTabProps {
       twin: number;
     };
     deposit: number;
+    instalmentRequired: boolean;
     instalmentAmount: number;
     instalmentDate: string;
     finalPaymentDate: string;
@@ -244,16 +245,24 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
             </div>
           </div>
           
-          {tour.deposit > 0 && (
+          {(tour.deposit > 0 || tour.instalmentRequired) && (
             <div className="mt-4 pt-4 border-t">
               <h4 className="font-medium mb-2">Payment Structure</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="font-medium">Deposit Required:</span> ${tour.deposit}
-                </div>
-                {tour.instalmentAmount > 0 && (
+                {tour.deposit > 0 && (
                   <div>
-                    <span className="font-medium">Instalment:</span> ${tour.instalmentAmount}
+                    <span className="font-medium">Deposit Required:</span> ${tour.deposit}
+                  </div>
+                )}
+                <div>
+                  <span className="font-medium">Instalment Required:</span>{" "}
+                  <span className={tour.instalmentRequired ? "text-green-600" : "text-muted-foreground"}>
+                    {tour.instalmentRequired ? "Yes" : "No"}
+                  </span>
+                </div>
+                {tour.instalmentRequired && tour.instalmentAmount > 0 && (
+                  <div>
+                    <span className="font-medium">Instalment Amount:</span> ${tour.instalmentAmount}
                     {tour.instalmentDate && (
                       <span className="text-muted-foreground ml-1">
                         (Due: {new Date(tour.instalmentDate).toLocaleDateString('en-AU')})

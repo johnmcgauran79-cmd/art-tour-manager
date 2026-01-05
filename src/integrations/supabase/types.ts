@@ -1700,6 +1700,7 @@ export type Database = {
           instalment_amount: number | null
           instalment_date: string | null
           instalment_details: string | null
+          instalment_required: boolean
           location: string | null
           minimum_passengers_required: number | null
           name: string
@@ -1736,6 +1737,7 @@ export type Database = {
           instalment_amount?: number | null
           instalment_date?: string | null
           instalment_details?: string | null
+          instalment_required?: boolean
           location?: string | null
           minimum_passengers_required?: number | null
           name: string
@@ -1772,6 +1774,7 @@ export type Database = {
           instalment_amount?: number | null
           instalment_date?: string | null
           instalment_details?: string | null
+          instalment_required?: boolean
           location?: string | null
           minimum_passengers_required?: number | null
           name?: string

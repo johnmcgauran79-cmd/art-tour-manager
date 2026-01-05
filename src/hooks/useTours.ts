@@ -23,6 +23,7 @@ export interface Tour {
   price_twin: number | null;
   deposit_required: number | null;
   instalment_details: string | null;
+  instalment_required: boolean;
   instalment_amount: number | null;
   instalment_date: string | null;
   final_payment_date: string | null;
