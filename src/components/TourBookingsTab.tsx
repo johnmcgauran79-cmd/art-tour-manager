@@ -12,6 +12,10 @@ import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
+import { useBookings } from "@/hooks/useBookings";
+import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
+import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
+import { PaymentStatusModal } from "@/components/PaymentStatusModal";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -28,11 +32,15 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   const [addWaitlistModalOpen, setAddWaitlistModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
+  const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);
   
   const { data: tours } = useTours();
+  const { data: allBookings } = useBookings();
   const currentTour = tours?.find(tour => tour.id === tourId);
+  const tourBookings = allBookings?.filter(b => b.tour_id === tourId) || [];
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "bookings");
+  const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, currentTour);
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
@@ -58,6 +66,17 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
                   </Badge>
                 </button>
               )}
+              <button 
+                onClick={() => setPaymentStatusModalOpen(true)}
+                className="relative cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <PaymentStatusTracker
+                  activeLevel={activeLevel}
+                  level1Count={level1Count}
+                  level2Count={level2Count}
+                  level3Count={level3Count}
+                />
+              </button>
             </div>
           </div>
           {!isAgent && (
@@ -146,6 +165,13 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
         open={bulkEmailModalOpen}
         onOpenChange={setBulkEmailModalOpen}
         tourId={tourId}
+      />
+
+      <PaymentStatusModal
+        open={paymentStatusModalOpen}
+        onOpenChange={setPaymentStatusModalOpen}
+        bookings={tourBookings as any}
+        activeLevel={activeLevel}
       />
     </>
   );
