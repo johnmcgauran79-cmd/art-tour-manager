@@ -18,27 +18,62 @@ const recalculateBookingDates = async (bookingId: string) => {
     throw new Error(`Failed to fetch hotel bookings: ${error.message}`);
   }
 
-  if (!hotelBookings || hotelBookings.length === 0) {
-    console.log('No hotel bookings found for booking:', bookingId);
-    return { updated: false, reason: 'No hotel bookings' };
-  }
+  let checkInDate: string;
+  let checkOutDate: string;
+  let totalNights: number;
+  let source: 'hotels' | 'tour' = 'hotels';
 
-  // Find earliest check-in and latest check-out
-  const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
-  const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
-  
-  const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
-  const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
-  
-  // Calculate total nights
-  const totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+  if (!hotelBookings || hotelBookings.length === 0) {
+    // No hotel bookings - fallback to tour dates
+    console.log('No hotel bookings found for booking:', bookingId, '- falling back to tour dates');
+    
+    // Get the booking's tour_id first
+    const { data: booking, error: bookingError } = await supabase
+      .from('bookings')
+      .select('tour_id')
+      .eq('id', bookingId)
+      .single();
+    
+    if (bookingError || !booking?.tour_id) {
+      console.log('No tour associated with booking:', bookingId);
+      return { updated: false, reason: 'No tour associated' };
+    }
+    
+    // Get tour dates
+    const { data: tour, error: tourError } = await supabase
+      .from('tours')
+      .select('start_date, end_date, nights')
+      .eq('id', booking.tour_id)
+      .single();
+    
+    if (tourError || !tour) {
+      console.log('Tour not found for booking:', bookingId);
+      return { updated: false, reason: 'Tour not found' };
+    }
+    
+    checkInDate = tour.start_date;
+    checkOutDate = tour.end_date;
+    totalNights = tour.nights;
+    source = 'tour';
+  } else {
+    // Find earliest check-in and latest check-out from hotel bookings
+    const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
+    const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
+    
+    const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
+    const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
+    
+    checkInDate = earliestCheckIn.toISOString().split('T')[0];
+    checkOutDate = latestCheckOut.toISOString().split('T')[0];
+    totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+  }
 
   // Update the booking
   const { error: updateError } = await supabase
     .from('bookings')
     .update({
-      check_in_date: earliestCheckIn.toISOString().split('T')[0],
-      check_out_date: latestCheckOut.toISOString().split('T')[0],
+      check_in_date: checkInDate,
+      check_out_date: checkOutDate,
       total_nights: totalNights
     })
     .eq('id', bookingId);
@@ -49,9 +84,10 @@ const recalculateBookingDates = async (bookingId: string) => {
 
   return {
     updated: true,
-    checkInDate: earliestCheckIn.toISOString().split('T')[0],
-    checkOutDate: latestCheckOut.toISOString().split('T')[0],
-    totalNights
+    checkInDate,
+    checkOutDate,
+    totalNights,
+    source
   };
 };
 
