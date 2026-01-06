@@ -385,26 +385,54 @@ const recalculateBookingDates = async (bookingId: string) => {
     .not('check_in_date', 'is', null)
     .not('check_out_date', 'is', null);
 
-  if (error || !hotelBookings || hotelBookings.length === 0) {
-    return;
-  }
+  let checkInDate: string;
+  let checkOutDate: string;
+  let totalNights: number;
 
-  // Find earliest check-in and latest check-out
-  const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
-  const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
-  
-  const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
-  const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
-  
-  // Calculate total nights
-  const totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+  if (error || !hotelBookings || hotelBookings.length === 0) {
+    // No hotel bookings - fallback to tour dates
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('tour_id, accommodation_required')
+      .eq('id', bookingId)
+      .single();
+    
+    if (!booking?.tour_id || !booking?.accommodation_required) {
+      return;
+    }
+    
+    const { data: tour } = await supabase
+      .from('tours')
+      .select('start_date, end_date, nights')
+      .eq('id', booking.tour_id)
+      .single();
+    
+    if (!tour) {
+      return;
+    }
+    
+    checkInDate = tour.start_date;
+    checkOutDate = tour.end_date;
+    totalNights = tour.nights;
+  } else {
+    // Find earliest check-in and latest check-out from hotel bookings
+    const checkInDates = hotelBookings.map(hb => new Date(hb.check_in_date!));
+    const checkOutDates = hotelBookings.map(hb => new Date(hb.check_out_date!));
+    
+    const earliestCheckIn = new Date(Math.min(...checkInDates.map(d => d.getTime())));
+    const latestCheckOut = new Date(Math.max(...checkOutDates.map(d => d.getTime())));
+    
+    checkInDate = earliestCheckIn.toISOString().split('T')[0];
+    checkOutDate = latestCheckOut.toISOString().split('T')[0];
+    totalNights = Math.ceil((latestCheckOut.getTime() - earliestCheckIn.getTime()) / (1000 * 60 * 60 * 24));
+  }
 
   // Update the booking
   await supabase
     .from('bookings')
     .update({
-      check_in_date: earliestCheckIn.toISOString().split('T')[0],
-      check_out_date: latestCheckOut.toISOString().split('T')[0],
+      check_in_date: checkInDate,
+      check_out_date: checkOutDate,
       total_nights: totalNights
     })
     .eq('id', bookingId);
