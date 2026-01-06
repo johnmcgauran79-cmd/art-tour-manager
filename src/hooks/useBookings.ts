@@ -445,13 +445,14 @@ export const useUpdateBooking = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
-      
       // Handle accommodation requirement changes
-      const finalUpdates = { ...updates };
-      
-      // If dietary requirements are being updated at customer level, sync to customer record
-      // Note: We no longer sync booking.dietary_restrictions - all dietary info is at customer level
-      
+      const finalUpdates: Record<string, any> = { ...updates };
+
+      // Normalize empty date strings coming from forms
+      // (Postgres date columns cannot accept "")
+      if (finalUpdates.check_in_date === '') finalUpdates.check_in_date = null;
+      if (finalUpdates.check_out_date === '') finalUpdates.check_out_date = null;
+
       // If accommodation is set to false, clear accommodation dates
       if (updates.accommodation_required === false) {
         finalUpdates.check_in_date = null;
@@ -466,14 +467,19 @@ export const useUpdateBooking = () => {
           .select('check_in_date, check_out_date, accommodation_required')
           .eq('id', id)
           .single();
-        
+
         // Only calculate nights if accommodation is required
-        const accommodationRequired = updates.accommodation_required !== undefined ? updates.accommodation_required : currentBooking?.accommodation_required;
-        
+        const accommodationRequired =
+          updates.accommodation_required !== undefined
+            ? updates.accommodation_required
+            : currentBooking?.accommodation_required;
+
         if (accommodationRequired) {
-          const checkInDate = updates.check_in_date !== undefined ? updates.check_in_date : currentBooking?.check_in_date;
-          const checkOutDate = updates.check_out_date !== undefined ? updates.check_out_date : currentBooking?.check_out_date;
-          
+          const checkInDate =
+            updates.check_in_date !== undefined ? (updates.check_in_date || null) : currentBooking?.check_in_date;
+          const checkOutDate =
+            updates.check_out_date !== undefined ? (updates.check_out_date || null) : currentBooking?.check_out_date;
+
           finalUpdates.total_nights = calculateNights(checkInDate, checkOutDate);
         } else {
           finalUpdates.check_in_date = null;
@@ -481,7 +487,7 @@ export const useUpdateBooking = () => {
           finalUpdates.total_nights = null;
         }
       }
-      
+
       const { data, error } = await supabase
         .from('bookings')
         .update(finalUpdates)
@@ -502,8 +508,8 @@ export const useUpdateBooking = () => {
         record_id: id,
         details: {
           updated_fields: Object.keys(finalUpdates),
-          status_change: updates.status ? `to ${updates.status}` : undefined
-        }
+          status_change: updates.status ? `to ${updates.status}` : undefined,
+        },
       });
       return data;
     },
@@ -512,17 +518,16 @@ export const useUpdateBooking = () => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       toast({
-        title: "Booking Updated",
-        description: "Booking has been successfully updated.",
+        title: 'Booking Updated',
+        description: 'Booking has been successfully updated.',
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
-        title: "Error",
-        description: "Failed to update booking. Please try again.",
-        variant: "destructive",
+        title: 'Error',
+        description: error?.message || 'Failed to update booking. Please try again.',
+        variant: 'destructive',
       });
-      
     },
   });
 };
