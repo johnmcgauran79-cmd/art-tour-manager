@@ -189,10 +189,10 @@ export default function BookingEdit() {
           }
         }
 
-        // Check if tour has no hotels loaded at all
+        // Check if tour has no hotels loaded at all - still allow saving but show warning
         if (!tourHotels || tourHotels.length === 0) {
-          setShowNoHotelsWarning(true);
-          return;
+          // Allow save to proceed - the recalculateBookingDates function will fall back to tour dates
+          console.log('No hotels on tour - will use tour dates for check-in/check-out');
         }
 
         if (hotelBookings && hotelBookings.length > 0) {
