@@ -185,17 +185,19 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   
   // Set default dates to tour start/end when tour is selected and no hotels exist
   useEffect(() => {
-    if (formData.tour_id) {
-      const selectedTour = tours?.find(t => t.id === formData.tour_id);
-      if (selectedTour && hotels.length === 0 && formData.accommodation_required) {
-        setFormData(prev => ({
-          ...prev,
-          checkInDate: selectedTour.start_date,
-          checkOutDate: selectedTour.end_date,
-        }));
-      }
-    }
-  }, [formData.tour_id, hotels, formData.accommodation_required, tours]);
+    if (!formData.tour_id || !formData.accommodation_required) return;
+    if (hotels.length !== 0) return;
+
+    const selectedTour = tours?.find((t) => t.id === formData.tour_id);
+    if (!selectedTour) return;
+
+    // Only set if empty to avoid overriding pre-filled values
+    setFormData((prev) => ({
+      ...prev,
+      check_in_date: prev.check_in_date || selectedTour.start_date,
+      check_out_date: prev.check_out_date || selectedTour.end_date,
+    }));
+  }, [formData.tour_id, formData.accommodation_required, hotels.length, tours]);
 
   useEffect(() => {
     if (preSelectedTourId) {
@@ -465,8 +467,10 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           throw new Error(`Failed to save hotel allocations: ${hotelError.message}`);
         }
         console.log('Hotel bookings created:', hotelData);
-        
-        // Recalculate booking dates immediately after hotel bookings are created
+      }
+
+      // Recalculate booking dates (hotel bookings are source of truth; falls back to tour dates when none exist)
+      if (cleanedFormData.accommodation_required) {
         await recalculateBookingDates.mutateAsync(newBooking.id);
       }
 
