@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ const PROBLEMATIC_TRANSITIONS: Record<string, string[]> = {
 export default function BulkBookingStatus() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
@@ -54,7 +55,16 @@ export default function BulkBookingStatus() {
   const [pendingUpdates, setPendingUpdates] = useState<Array<{ id: string; oldStatus: string; newStatus: string; passengerName: string }>>([]);
   const pageSize = 50;
   
-  const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize);
+  // Debounce search query to avoid too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1); // Reset to first page when search changes
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  
+  const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize, debouncedSearch);
   const { data: filteredData, isLoading: filteredLoading } = useFilteredBookings(
     activeFilter === 'all' ? null : activeFilter,
     currentPage,
@@ -82,7 +92,7 @@ export default function BulkBookingStatus() {
     setBulkStatus("");
   };
 
-  // Filter bookings based on search query, status filter, and tour filter with useMemo for performance
+  // Filter bookings based on status filter and tour filter (search is now server-side)
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
 
@@ -96,26 +106,8 @@ export default function BulkBookingStatus() {
       filtered = filtered.filter(booking => booking.status === statusFilter);
     }
 
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const searchTerm = searchQuery.toLowerCase();
-      filtered = filtered.filter(booking => {
-        const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
-        const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
-        const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
-        const groupName = (booking.group_name || '').toLowerCase();
-        const tourName = (booking.tours?.name || '').toLowerCase();
-        
-        return leadPassengerName.includes(searchTerm) ||
-               passenger2Name.includes(searchTerm) ||
-               passenger3Name.includes(searchTerm) ||
-               groupName.includes(searchTerm) ||
-               tourName.includes(searchTerm);
-      });
-    }
-
     return filtered;
-  }, [bookings, searchQuery, statusFilter, tourFilter]);
+  }, [bookings, statusFilter, tourFilter]);
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {

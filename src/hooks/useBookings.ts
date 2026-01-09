@@ -77,13 +77,51 @@ export const useBookings = () => {
   });
 };
 
-export const usePaginatedBookings = (page: number = 1, pageSize: number = 25) => {
+export const usePaginatedBookings = (page: number = 1, pageSize: number = 25, searchQuery: string = '') => {
   return useQuery({
-    queryKey: ['bookings', 'paginated', page, pageSize],
+    queryKey: ['bookings', 'paginated', page, pageSize, searchQuery],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
       
+      // If there's a search query, we need to search across all bookings first
+      if (searchQuery.trim()) {
+        // Fetch all bookings that match the search (we need to do client-side filtering since Supabase
+        // doesn't support OR across joined tables easily)
+        const { data: allData, error: allError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            tours (name, start_date),
+            customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
+          `)
+          .order('created_at', { ascending: false });
+        
+        if (allError) throw allError;
+        
+        // Filter client-side
+        const searchTerm = searchQuery.toLowerCase();
+        const filtered = (allData || []).filter(booking => {
+          const leadPassengerName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.toLowerCase();
+          const passenger2Name = (booking.passenger_2_name || '').toLowerCase();
+          const passenger3Name = (booking.passenger_3_name || '').toLowerCase();
+          const groupName = (booking.group_name || '').toLowerCase();
+          const tourName = (booking.tours?.name || '').toLowerCase();
+          
+          return leadPassengerName.includes(searchTerm) ||
+                 passenger2Name.includes(searchTerm) ||
+                 passenger3Name.includes(searchTerm) ||
+                 groupName.includes(searchTerm) ||
+                 tourName.includes(searchTerm);
+        });
+        
+        // Paginate the filtered results
+        const paginatedData = filtered.slice(start, end + 1);
+        return { data: paginatedData, count: filtered.length };
+      }
+      
+      // No search query - use normal pagination
       const { data, error, count } = await supabase
         .from('bookings')
         .select(`
