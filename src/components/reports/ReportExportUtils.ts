@@ -336,7 +336,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
       <div class="header">
         <div class="tour-name">${tourName}</div>
         <div class="report-title">${report.title}</div>
-        <div class="report-date">Generated on ${new Date().toLocaleDateString()}</div>
+        <div class="report-date">Generated on ${new Date().toLocaleDateString('en-AU')}</div>
       </div>
       
       <div class="content">

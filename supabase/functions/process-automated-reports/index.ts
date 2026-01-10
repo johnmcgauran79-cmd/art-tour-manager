@@ -248,7 +248,7 @@ serve(async (req) => {
     let emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
         <h1 style="color: #333;">${reportTitle}${isOnlyBookingChanges ? '' : ': ' + tour.name}</h1>
-        ${!isOnlyBookingChanges ? `<p style="color: #666;">Tour Start Date: ${new Date(tour.start_date).toLocaleDateString()}</p>` : ''}
+        ${!isOnlyBookingChanges ? `<p style="color: #666;">Tour Start Date: ${new Date(tour.start_date).toLocaleDateString('en-AU')}</p>` : ''}
         <hr style="border: 1px solid #eee; margin: 20px 0;">
     `;
 

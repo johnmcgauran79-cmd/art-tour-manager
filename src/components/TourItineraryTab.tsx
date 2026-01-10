@@ -92,7 +92,7 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              {format(new Date(tour.startDate), 'MMM d')} - {format(new Date(tour.endDate), 'MMM d, yyyy')}
+              {format(new Date(tour.startDate), 'd MMM')} - {format(new Date(tour.endDate), 'd MMM yyyy')}
             </div>
             <Badge variant="secondary">
               {tour.days} days, {tour.nights} nights

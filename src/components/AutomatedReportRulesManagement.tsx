@@ -498,7 +498,7 @@ export const AutomatedReportRulesManagement = () => {
                     <TableCell>
                       <Badge variant="outline">{log.recipient_emails?.length || 0} recipients</Badge>
                     </TableCell>
-                    <TableCell>{log.sent_at ? format(new Date(log.sent_at), 'PPp') : '-'}</TableCell>
+                    <TableCell>{log.sent_at ? format(new Date(log.sent_at), 'dd/MM/yyyy HH:mm') : '-'}</TableCell>
                     <TableCell>
                       <Badge variant={log.status === 'sent' ? 'default' : 'destructive'}>
                         {log.status}

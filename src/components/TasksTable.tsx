@@ -224,7 +224,7 @@ export const TasksTable = ({
                     <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-gray-600'}`}>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(task.due_date), 'MMM dd')}
+                        {format(new Date(task.due_date), 'dd/MM/yyyy')}
                       </div>
                       <div className="text-xs">
                         {formatDistanceToNow(new Date(task.due_date), { addSuffix: true })}

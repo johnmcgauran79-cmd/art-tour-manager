@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle, CheckCircle, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { formatDateToAustralian } from "@/lib/utils";
 
 interface ActivityCheckReportProps {
   open?: boolean;
@@ -129,7 +130,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
                         </span>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Tour Date: {new Date(issue.tourDate).toLocaleDateString()}
+                        Tour Date: {formatDateToAustralian(issue.tourDate)}
                       </div>
                     </div>
                   </div>

@@ -75,7 +75,7 @@ export const ContactExportModal = ({ open, onOpenChange, searchQuery, filteredCo
     if (value === null || value === undefined) return '';
     
     if (fieldKey === 'created_at' || fieldKey === 'updated_at') {
-      return new Date(value).toLocaleDateString();
+      return new Date(value).toLocaleDateString('en-AU');
     }
     
     return String(value);

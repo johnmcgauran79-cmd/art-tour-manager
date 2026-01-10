@@ -149,7 +149,7 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
                     {booking.tours?.start_date && booking.tours?.end_date ? (
                       <div className="flex items-center gap-1 text-sm">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(booking.tours.start_date), 'MMM d')} - {format(new Date(booking.tours.end_date), 'MMM d, yyyy')}
+                        {format(new Date(booking.tours.start_date), 'd MMM')} - {format(new Date(booking.tours.end_date), 'd MMM yyyy')}
                       </div>
                     ) : (
                       <span className="text-gray-400">No dates set</span>
@@ -177,7 +177,7 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
-                    {format(new Date(booking.created_at), 'MMM d, yyyy')}
+                    {format(new Date(booking.created_at), 'd MMM yyyy')}
                   </TableCell>
                 </TableRow>
               ))}

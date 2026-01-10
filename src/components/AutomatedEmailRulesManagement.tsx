@@ -196,7 +196,7 @@ export const AutomatedEmailRulesManagement = () => {
                       <div className="text-right text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          <span>{format(new Date(log.sent_at), 'PPp')}</span>
+                          <span>{format(new Date(log.sent_at), 'dd/MM/yyyy HH:mm')}</span>
                         </div>
                         <div>{log.days_before_send} days before tour</div>
                       </div>

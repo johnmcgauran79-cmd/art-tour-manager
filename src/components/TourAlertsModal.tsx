@@ -101,12 +101,12 @@ export const TourAlertsModal = ({ tourId, open, onOpenChange }: TourAlertsModalP
                     <p>Passengers: {alert.details.passenger_count} | Status: {alert.details.status}</p>
                   )}
                   {alert.details.check_in_date && (
-                    <p>Check-in: {format(new Date(alert.details.check_in_date), 'PP')} | Check-out: {format(new Date(alert.details.check_out_date), 'PP')}</p>
+                    <p>Check-in: {format(new Date(alert.details.check_in_date), 'dd/MM/yyyy')} | Check-out: {format(new Date(alert.details.check_out_date), 'dd/MM/yyyy')}</p>
                   )}
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                {format(new Date(alert.created_at), 'PPp')}
+                {format(new Date(alert.created_at), 'dd/MM/yyyy HH:mm')}
               </p>
             </div>
           </div>

@@ -286,7 +286,7 @@ export function UserManagement({ onClose }: UserManagementProps) {
 
   const formatDateTime = (dateString: string | null) => {
     if (!dateString) return "Never";
-    return new Date(dateString).toLocaleString();
+    return new Date(dateString).toLocaleString('en-AU');
   };
 
   if (loading) {

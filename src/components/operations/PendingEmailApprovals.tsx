@@ -174,7 +174,7 @@ export const PendingEmailApprovals = () => {
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>
-                          Tour: {approval.tour?.start_date ? format(new Date(approval.tour.start_date), 'MMM d, yyyy') : 'N/A'}
+                          Tour: {approval.tour?.start_date ? format(new Date(approval.tour.start_date), 'd MMM yyyy') : 'N/A'}
                         </span>
                       </div>
                     </div>

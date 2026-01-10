@@ -153,7 +153,7 @@ serve(async (req) => {
 
 function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], options: any): string {
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',

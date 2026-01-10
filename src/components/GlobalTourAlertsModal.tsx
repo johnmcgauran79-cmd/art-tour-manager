@@ -136,7 +136,7 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
               </div>
               <p className="font-medium">{alert.message}</p>
               <p className="text-xs text-muted-foreground">
-                {format(new Date(alert.created_at), "PPp")}
+                {format(new Date(alert.created_at), "dd/MM/yyyy HH:mm")}
               </p>
             </div>
           </div>
