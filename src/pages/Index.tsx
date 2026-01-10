@@ -8,7 +8,7 @@ import { ContactsTable } from "@/components/ContactsTable";
 import { OperationsDashboard } from "@/components/OperationsDashboard";
 import { Settings } from "@/pages/Settings";
 
-import { MyTasksWidget } from "@/components/MyTasksWidget";
+import { AllTasksView } from "@/components/AllTasksView";
 import { TourDetailModalWithHotelsTab } from "@/components/TourDetailModalWithHotelsTab";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddTourModal } from "@/components/AddTourModal";
@@ -17,6 +17,7 @@ import { SystemLogModal } from "@/components/SystemLogModal";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
+import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -113,14 +114,6 @@ const Index = () => {
     setAddBookingModalOpen(true);
   };
 
-
-  const handleViewAllTasks = () => {
-    setSearchParams({ tab: "operations" });
-    setActiveTab("operations");
-    const event = new CustomEvent('navigate-to-all-tasks');
-    window.dispatchEvent(event);
-  };
-
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
     setActiveTab(value);
@@ -137,9 +130,13 @@ const Index = () => {
             onAddTask={() => setAddTaskModalOpen(true)}
           />
 
-          <div className="w-full">
-            <MyTasksWidget onViewAllTasks={handleViewAllTasks} />
-          </div>
+          <DashboardMetrics />
+        </TabsContent>
+      )}
+
+      {!isAgent && (
+        <TabsContent value="tasks" className="space-y-4 mt-0">
+          <AllTasksView />
         </TabsContent>
       )}
       

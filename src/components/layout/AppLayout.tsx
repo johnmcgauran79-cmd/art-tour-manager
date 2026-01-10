@@ -36,7 +36,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     if (path === '/') return 'dashboard';
     if (path.startsWith('/tours')) return 'tours';
     if (path.startsWith('/bookings')) return 'bookings';
-    if (path.startsWith('/tasks')) return 'operations';
+    if (path.startsWith('/tasks')) return 'tasks';
     if (path.startsWith('/contacts')) return 'contacts';
     if (path.startsWith('/settings')) return 'settings';
     return 'dashboard';
@@ -49,6 +49,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         break;
       case 'operations':
         navigate('/?tab=operations');
+        break;
+      case 'tasks':
+        navigate('/?tab=tasks');
         break;
       case 'tours':
         navigate('/?tab=tours');
@@ -72,9 +75,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <div className="border-b bg-white sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Tabs value={getActiveTab()} className="w-full">
-            <TabsList className={`w-full ${isMobile ? 'h-auto grid grid-cols-3 gap-1' : isAgent ? 'grid grid-cols-2' : `grid ${isAdminOrManager ? 'grid-cols-6' : 'grid-cols-5'}`}`}>
+            <TabsList className={`w-full ${isMobile ? 'h-auto grid grid-cols-4 gap-1' : isAgent ? 'grid grid-cols-2' : `grid ${isAdminOrManager ? 'grid-cols-7' : 'grid-cols-6'}`}`}>
               {!isAgent && <TabsTrigger value="dashboard" onClick={() => handleTabChange('dashboard')}>Dashboard</TabsTrigger>}
               {!isAgent && <TabsTrigger value="operations" onClick={() => handleTabChange('operations')}>Operations</TabsTrigger>}
+              {!isAgent && <TabsTrigger value="tasks" onClick={() => handleTabChange('tasks')}>Tasks</TabsTrigger>}
               <TabsTrigger value="tours" onClick={() => handleTabChange('tours')}>Tours</TabsTrigger>
               <TabsTrigger value="bookings" onClick={() => handleTabChange('bookings')}>Bookings</TabsTrigger>
               {!isAgent && <TabsTrigger value="contacts" onClick={() => handleTabChange('contacts')}>Contacts</TabsTrigger>}
