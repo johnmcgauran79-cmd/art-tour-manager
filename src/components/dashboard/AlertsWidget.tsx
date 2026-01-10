@@ -80,7 +80,7 @@ export const AlertsWidget = () => {
         <CardHeader>
           <CardTitle className="text-brand-navy flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Booking Status Alerts
+            Operations Alerts
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -102,7 +102,7 @@ export const AlertsWidget = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-brand-navy flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Booking Status Alerts
+              Operations Alerts
               {unacknowledgedCount > 0 && (
                 <Badge variant="destructive" className="ml-auto">
                   {unacknowledgedCount}
