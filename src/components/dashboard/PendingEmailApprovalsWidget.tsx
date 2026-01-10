@@ -42,18 +42,16 @@ export const PendingEmailApprovalsWidget = () => {
               {pendingApprovals?.slice(0, 5).map((approval) => (
                 <div 
                   key={approval.id} 
-                  className="flex flex-col p-2 rounded-md bg-muted/50 text-sm"
+                  className="flex flex-col p-2 rounded-md bg-muted/50 text-sm gap-1"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium truncate max-w-[180px]">
-                      {approval.tour?.name || 'Unknown Tour'}
-                    </span>
-                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
-                      {approval.rule?.email_templates?.name || approval.rule?.rule_name || 'Email'}
-                    </Badge>
-                  </div>
+                  <span className="font-medium truncate">
+                    {approval.tour?.name || 'Unknown Tour'}
+                  </span>
+                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300 text-xs w-fit">
+                    {approval.rule?.rule_name || 'Email'}
+                  </Badge>
                   {approval.tour?.start_date && (
-                    <span className="text-xs text-muted-foreground mt-1">
+                    <span className="text-xs text-muted-foreground">
                       Tour: {format(new Date(approval.tour.start_date), 'MMM d, yyyy')}
                     </span>
                   )}
