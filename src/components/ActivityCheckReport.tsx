@@ -81,7 +81,7 @@ export const ActivityCheckReport = ({ open, onOpenChange }: ActivityCheckReportP
   };
 
   const handleViewBooking = (tourId: string, bookingId: string) => {
-    navigate(`/tours/${tourId}?tab=bookings&bookingId=${bookingId}`);
+    navigate(`/bookings/${bookingId}`);
     onOpenChange(false);
   };
 

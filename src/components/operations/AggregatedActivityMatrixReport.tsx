@@ -87,7 +87,7 @@ export const AggregatedActivityMatrixReport = ({
   };
 
   const handleViewBooking = (tourId: string, bookingId: string) => {
-    navigate(`/tours/${tourId}?tab=bookings&booking=${bookingId}`);
+    navigate(`/bookings/${bookingId}`);
     if (onOpenChange) onOpenChange(false);
   };
 
