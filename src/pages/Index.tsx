@@ -20,6 +20,7 @@ import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActi
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { RecentBookingsWidget } from "@/components/dashboard/RecentBookingsWidget";
 import { StatusAlertWidget } from "@/components/dashboard/StatusAlertWidget";
+import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmailApprovalsWidget";
 import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -136,8 +137,9 @@ const Index = () => {
           
           <div className="flex flex-col md:flex-row gap-6">
             <RecentBookingsWidget />
-            <div className="w-full md:w-1/3">
+            <div className="w-full md:w-1/3 space-y-6">
               <StatusAlertWidget />
+              <PendingEmailApprovalsWidget />
             </div>
           </div>
         </TabsContent>
