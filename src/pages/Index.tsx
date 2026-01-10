@@ -138,11 +138,11 @@ const Index = () => {
           
           <div className="flex flex-col md:flex-row gap-6">
             <RecentBookingsWidget />
-            <AlertsWidget />
             <div className="w-full md:w-1/3 space-y-6">
               <StatusAlertWidget />
               <PendingEmailApprovalsWidget />
             </div>
+            <AlertsWidget />
           </div>
         </TabsContent>
       )}
