@@ -2,11 +2,15 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, ArrowRight, AlertTriangle, Info, AlertCircle } from "lucide-react";
+import { Bell, ArrowRight, AlertTriangle, Info, AlertCircle, Check } from "lucide-react";
 import { useGlobalTourAlerts } from "@/hooks/useGlobalTourAlerts";
 import { GlobalTourAlertsModal } from "@/components/GlobalTourAlertsModal";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const severityConfig = {
   info: {
@@ -36,7 +40,39 @@ const alertTypeLabels: Record<string, string> = {
 
 export const AlertsWidget = () => {
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
-  const { alerts, isLoading, unacknowledgedCount } = useGlobalTourAlerts(false);
+  const { alerts, isLoading, unacknowledgedCount, refetch } = useGlobalTourAlerts(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleAcknowledge = async (alertId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("tour_alerts")
+      .update({
+        is_acknowledged: true,
+        acknowledged_by: user.id,
+        acknowledged_at: new Date().toISOString(),
+      })
+      .eq("id", alertId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to acknowledge alert",
+        variant: "destructive",
+      });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["global-tour-alerts"] });
+      toast({
+        title: "Alert acknowledged",
+        description: "The alert has been dismissed",
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -44,7 +80,7 @@ export const AlertsWidget = () => {
         <CardHeader>
           <CardTitle className="text-brand-navy flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Alerts
+            Booking Status Alerts
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -66,7 +102,7 @@ export const AlertsWidget = () => {
           <CardHeader className="pb-3">
             <CardTitle className="text-brand-navy flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Alerts
+              Booking Status Alerts
               {unacknowledgedCount > 0 && (
                 <Badge variant="destructive" className="ml-auto">
                   {unacknowledgedCount}
@@ -103,6 +139,15 @@ export const AlertsWidget = () => {
                             <Badge variant="outline" className="text-xs font-normal">
                               {alertTypeLabels[alert.alert_type] || alert.alert_type}
                             </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 ml-auto flex-shrink-0 hover:bg-green-100"
+                              onClick={(e) => handleAcknowledge(alert.id, e)}
+                              title="Acknowledge alert"
+                            >
+                              <Check className="h-3 w-3 text-green-600" />
+                            </Button>
                           </div>
                           <p className="text-sm font-medium truncate mt-0.5">
                             {alert.message}
