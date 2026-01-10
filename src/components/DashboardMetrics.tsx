@@ -1,10 +1,12 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Users, Building, MapPin, DollarSign, TrendingUp } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Users, DollarSign, TrendingUp } from "lucide-react";
 import { StatsSkeleton } from "@/components/ui/skeleton";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 
 export const DashboardMetrics = () => {
+  const navigate = useNavigate();
   const { data: tours, isLoading: toursLoading } = useTours();
   const { data: bookings, isLoading: bookingsLoading } = useBookings();
 
@@ -46,7 +48,10 @@ export const DashboardMetrics = () => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <Card>
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => navigate('/?tab=bookings')}
+      >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Bookings This Month</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
@@ -68,7 +73,10 @@ export const DashboardMetrics = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => navigate('/?tab=tours')}
+      >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Active Tours</CardTitle>
           <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -78,7 +86,10 @@ export const DashboardMetrics = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => navigate('/?tab=contacts')}
+      >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Passengers</CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
