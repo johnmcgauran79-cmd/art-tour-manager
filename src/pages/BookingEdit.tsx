@@ -52,6 +52,11 @@ export default function BookingEdit() {
     lead_passenger_email: '',
     lead_passenger_phone: '',
     lead_passenger_dietary_requirements: '',
+    lead_passenger_medical_conditions: '',
+    lead_passenger_accessibility_needs: '',
+    lead_passenger_emergency_contact_name: '',
+    lead_passenger_emergency_contact_phone: '',
+    lead_passenger_emergency_contact_relationship: '',
     passenger_count: 1,
     passenger_2_name: '',
     passenger_3_name: '',
@@ -98,6 +103,11 @@ export default function BookingEdit() {
         lead_passenger_email: booking.customers?.email || '',
         lead_passenger_phone: booking.customers?.phone || '',
         lead_passenger_dietary_requirements: booking.customers?.dietary_requirements || '',
+        lead_passenger_medical_conditions: booking.customers?.medical_conditions || '',
+        lead_passenger_accessibility_needs: booking.customers?.accessibility_needs || '',
+        lead_passenger_emergency_contact_name: booking.customers?.emergency_contact_name || '',
+        lead_passenger_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+        lead_passenger_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
         passenger_count: booking.passenger_count,
         passenger_2_name: booking.passenger_2_name || '',
         passenger_3_name: booking.passenger_3_name || '',
@@ -220,12 +230,35 @@ export default function BookingEdit() {
   const performUpdate = () => {
     if (!booking) return;
 
-    const currentDietary = booking.customers?.dietary_requirements || '';
-    if (formData.lead_passenger_dietary_requirements !== currentDietary && booking.customers?.id) {
-      updateCustomer.mutate({
-        id: booking.customers.id,
-        dietary_requirements: formData.lead_passenger_dietary_requirements
-      });
+    // Check if any customer fields have changed
+    if (booking.customers?.id) {
+      const customerUpdates: Record<string, string | null> = {};
+      
+      if (formData.lead_passenger_dietary_requirements !== (booking.customers?.dietary_requirements || '')) {
+        customerUpdates.dietary_requirements = formData.lead_passenger_dietary_requirements || null;
+      }
+      if (formData.lead_passenger_medical_conditions !== (booking.customers?.medical_conditions || '')) {
+        customerUpdates.medical_conditions = formData.lead_passenger_medical_conditions || null;
+      }
+      if (formData.lead_passenger_accessibility_needs !== (booking.customers?.accessibility_needs || '')) {
+        customerUpdates.accessibility_needs = formData.lead_passenger_accessibility_needs || null;
+      }
+      if (formData.lead_passenger_emergency_contact_name !== (booking.customers?.emergency_contact_name || '')) {
+        customerUpdates.emergency_contact_name = formData.lead_passenger_emergency_contact_name || null;
+      }
+      if (formData.lead_passenger_emergency_contact_phone !== (booking.customers?.emergency_contact_phone || '')) {
+        customerUpdates.emergency_contact_phone = formData.lead_passenger_emergency_contact_phone || null;
+      }
+      if (formData.lead_passenger_emergency_contact_relationship !== (booking.customers?.emergency_contact_relationship || '')) {
+        customerUpdates.emergency_contact_relationship = formData.lead_passenger_emergency_contact_relationship || null;
+      }
+
+      if (Object.keys(customerUpdates).length > 0) {
+        updateCustomer.mutate({
+          id: booking.customers.id,
+          ...customerUpdates
+        });
+      }
     }
 
     updateBooking.mutate({
@@ -741,7 +774,7 @@ export default function BookingEdit() {
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Emergency contact and medical information is linked to the contact profile. To edit this information, <Button variant="link" className="px-1 h-auto" onClick={() => navigateWithContext(`/contacts/${booking.lead_passenger_id}/edit`)}>edit the contact</Button>.
+                Medical and emergency contact information is stored on the contact profile and applies to all bookings for this passenger.
               </AlertDescription>
             </Alert>
 
@@ -752,16 +785,34 @@ export default function BookingEdit() {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Dietary Requirements</span>
-                  <p className="text-sm mt-1">{booking.customers?.dietary_requirements || "—"}</p>
+                  <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
+                  <Textarea
+                    id="dietary_requirements"
+                    value={formData.lead_passenger_dietary_requirements}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_dietary_requirements: e.target.value }))}
+                    placeholder="e.g., Vegetarian, Gluten-free, No nuts..."
+                    rows={2}
+                  />
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Medical Conditions</span>
-                  <p className="text-sm mt-1">{booking.customers?.medical_conditions || "—"}</p>
+                  <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                  <Textarea
+                    id="medical_conditions"
+                    value={formData.lead_passenger_medical_conditions}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_medical_conditions: e.target.value }))}
+                    placeholder="Any medical conditions we should be aware of..."
+                    rows={2}
+                  />
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Accessibility Needs</span>
-                  <p className="text-sm mt-1">{booking.customers?.accessibility_needs || "—"}</p>
+                  <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                  <Textarea
+                    id="accessibility_needs"
+                    value={formData.lead_passenger_accessibility_needs}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_accessibility_needs: e.target.value }))}
+                    placeholder="Any mobility or accessibility requirements..."
+                    rows={2}
+                  />
                 </div>
               </div>
             </div>
@@ -771,19 +822,34 @@ export default function BookingEdit() {
                 <Shield className="h-5 w-5" />
                 Emergency Contact
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Name</span>
-                  <p className="text-sm mt-1">{booking.customers?.emergency_contact_name || "—"}</p>
+                  <Label htmlFor="emergency_contact_name">Name</Label>
+                  <Input
+                    id="emergency_contact_name"
+                    value={formData.lead_passenger_emergency_contact_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_emergency_contact_name: e.target.value }))}
+                    placeholder="Emergency contact name"
+                  />
                 </div>
                 <div>
-                  <span className="text-sm font-medium text-muted-foreground">Phone</span>
-                  <p className="text-sm mt-1">{booking.customers?.emergency_contact_phone || "—"}</p>
+                  <Label htmlFor="emergency_contact_phone">Phone</Label>
+                  <Input
+                    id="emergency_contact_phone"
+                    value={formData.lead_passenger_emergency_contact_phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_emergency_contact_phone: e.target.value }))}
+                    placeholder="Emergency contact phone"
+                  />
                 </div>
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">Relationship</span>
-                  <p className="text-sm mt-1">{booking.customers?.emergency_contact_relationship || "—"}</p>
-                </div>
+              </div>
+              <div>
+                <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                <Input
+                  id="emergency_contact_relationship"
+                  value={formData.lead_passenger_emergency_contact_relationship}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_emergency_contact_relationship: e.target.value }))}
+                  placeholder="e.g., Spouse, Partner, Parent, Child..."
+                />
               </div>
             </div>
           </div>
