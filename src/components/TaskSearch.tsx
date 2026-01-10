@@ -183,7 +183,7 @@ export const TaskSearch = ({ onSearch, onClear }: TaskSearchProps) => {
                         )}
                       >
                         <Calendar className="mr-2 h-3 w-3" />
-                        {startDate ? format(startDate, "MMM dd") : "Select"}
+                        {startDate ? format(startDate, "dd/MM") : "Select"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -209,7 +209,7 @@ export const TaskSearch = ({ onSearch, onClear }: TaskSearchProps) => {
                         )}
                       >
                         <Calendar className="mr-2 h-3 w-3" />
-                        {endDate ? format(endDate, "MMM dd") : "Select"}
+                        {endDate ? format(endDate, "dd/MM") : "Select"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">

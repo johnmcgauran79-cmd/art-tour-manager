@@ -230,10 +230,10 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
                     {formatCurrency(customer.average_tour_value)}
                   </TableCell>
                   <TableCell>
-                    {customer.first_tour_date ? format(new Date(customer.first_tour_date), 'MMM dd, yyyy') : '-'}
+                    {customer.first_tour_date ? format(new Date(customer.first_tour_date), 'dd/MM/yyyy') : '-'}
                   </TableCell>
                   <TableCell>
-                    {customer.last_tour_date ? format(new Date(customer.last_tour_date), 'MMM dd, yyyy') : '-'}
+                    {customer.last_tour_date ? format(new Date(customer.last_tour_date), 'dd/MM/yyyy') : '-'}
                   </TableCell>
                   <TableCell>
                     <div className="text-xs space-y-1">

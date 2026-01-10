@@ -60,7 +60,7 @@ export const TaskCard = ({ task, onView, showTourName = false }: TaskCardProps) 
               <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className={isOverdue ? 'text-error font-medium' : 'text-foreground'}>
                 <span className="text-xs text-muted-foreground mr-1">Due:</span>
-                {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                {format(new Date(task.due_date), 'dd/MM/yyyy')}
                 <span className="text-xs text-muted-foreground ml-1">
                   ({formatDistanceToNow(new Date(task.due_date), { addSuffix: true })})
                 </span>

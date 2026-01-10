@@ -274,7 +274,7 @@ export default function TaskDetail() {
                 <div>
                   <label className="text-sm font-medium mb-2 block">Due Date</label>
                   <p className="text-sm">
-                    {task.due_date ? format(new Date(task.due_date), 'PPp') : '—'}
+                    {task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy HH:mm') : '—'}
                   </p>
                 </div>
 

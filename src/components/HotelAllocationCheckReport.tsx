@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle, CheckCircle, ExternalLink, Hotel } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { formatDateToAustralian } from "@/lib/utils";
 
 interface HotelAllocationCheckReportProps {
   open?: boolean;
@@ -208,7 +209,7 @@ export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocati
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        Tour Date: {new Date(issue.tourDate).toLocaleDateString()}
+                        Tour Date: {formatDateToAustralian(issue.tourDate)}
                       </div>
                     </div>
                   </div>

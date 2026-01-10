@@ -866,7 +866,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                                 <p className="font-medium">{activity.name}</p>
                                 {activity.activity_date && (
                                   <p className="text-sm text-muted-foreground">
-                                    {new Date(activity.activity_date).toLocaleDateString()}
+                                    {new Date(activity.activity_date).toLocaleDateString('en-AU')}
                                   </p>
                                 )}
                               </div>

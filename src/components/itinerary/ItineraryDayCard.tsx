@@ -52,7 +52,7 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
             </Badge>
             <div className="flex items-center gap-1 text-sm text-gray-600">
               <Calendar className="h-4 w-4" />
-              {format(new Date(day.activity_date), 'EEEE, MMMM d, yyyy')}
+              {format(new Date(day.activity_date), 'EEEE, d MMMM yyyy')}
             </div>
           </div>
           {!isAgent && (

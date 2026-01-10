@@ -209,7 +209,7 @@ export const StreamlinedTasksTable = ({
                     <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(task.due_date), 'MMM dd, yyyy')}
+                        {format(new Date(task.due_date), 'dd/MM/yyyy')}
                       </div>
                       {isOverdue && (
                         <div className="text-xs text-red-600 font-medium">
