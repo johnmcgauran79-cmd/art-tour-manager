@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
+import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRecalculateBookingDates } from "@/hooks/useRecalculateBookingDates";
@@ -49,7 +50,22 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     email: string | null;
     phone: string | null;
     dietary_requirements: string | null;
+    medical_conditions: string | null;
+    accessibility_needs: string | null;
+    emergency_contact_name: string | null;
+    emergency_contact_phone: string | null;
+    emergency_contact_relationship: string | null;
   } | null>(null);
+
+  // Medical & emergency contact form data (editable, synced to customer)
+  const [medicalFormData, setMedicalFormData] = useState({
+    dietary_requirements: '',
+    medical_conditions: '',
+    accessibility_needs: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    emergency_contact_relationship: '',
+  });
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
@@ -101,6 +117,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
+  const updateCustomer = useUpdateCustomer();
   const recalculateBookingDates = useRecalculateBookingDates();
   const { toast } = useToast();
   
@@ -268,6 +285,16 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         lead_passenger_phone: selectedContact.phone || '',
       }));
       setLeadPassengerName(fullName);
+      
+      // Pre-fill medical form data from contact
+      setMedicalFormData({
+        dietary_requirements: selectedContact.dietary_requirements || '',
+        medical_conditions: selectedContact.medical_conditions || '',
+        accessibility_needs: selectedContact.accessibility_needs || '',
+        emergency_contact_name: selectedContact.emergency_contact_name || '',
+        emergency_contact_phone: selectedContact.emergency_contact_phone || '',
+        emergency_contact_relationship: selectedContact.emergency_contact_relationship || '',
+      });
     }
   }, [selectedContact]);
 
@@ -494,6 +521,29 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           throw new Error(`Failed to save activity allocations: ${activityError.message}`);
         }
         console.log('Activity bookings created:', activityData);
+      }
+
+      // Update customer with medical/emergency contact info if changed
+      if (selectedContact) {
+        const hasChanges = 
+          medicalFormData.dietary_requirements !== (selectedContact.dietary_requirements || '') ||
+          medicalFormData.medical_conditions !== (selectedContact.medical_conditions || '') ||
+          medicalFormData.accessibility_needs !== (selectedContact.accessibility_needs || '') ||
+          medicalFormData.emergency_contact_name !== (selectedContact.emergency_contact_name || '') ||
+          medicalFormData.emergency_contact_phone !== (selectedContact.emergency_contact_phone || '') ||
+          medicalFormData.emergency_contact_relationship !== (selectedContact.emergency_contact_relationship || '');
+
+        if (hasChanges) {
+          await updateCustomer.mutateAsync({
+            id: selectedContact.id,
+            dietary_requirements: medicalFormData.dietary_requirements || null,
+            medical_conditions: medicalFormData.medical_conditions || null,
+            accessibility_needs: medicalFormData.accessibility_needs || null,
+            emergency_contact_name: medicalFormData.emergency_contact_name || null,
+            emergency_contact_phone: medicalFormData.emergency_contact_phone || null,
+            emergency_contact_relationship: medicalFormData.emergency_contact_relationship || null,
+          });
+        }
       }
       
       toast({
@@ -862,39 +912,95 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             </TabsContent>
 
             <TabsContent value="medical" className="space-y-6">
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <h3 className="text-lg font-semibold">Medical & Emergency Contact</h3>
                 
-                <Card className="bg-muted/50">
-                  <CardContent className="pt-6">
-                    <p className="text-muted-foreground">
-                      Medical details, dietary requirements, and emergency contact information are stored on the contact record. 
-                      {selectedContact ? (
-                        <>
-                          {' '}You can view or edit this information by{' '}
-                          <Button 
-                            variant="link" 
-                            className="px-1 h-auto text-blue-600"
-                            onClick={() => {
-                              setShowAddContact(true);
-                              setAddingContactFor('lead');
-                            }}
-                          >
-                            editing the contact
-                          </Button>.
-                        </>
-                      ) : (
-                        <> Please select or create a contact to manage this information.</>
-                      )}
-                    </p>
-                    
-                    {selectedContact && (
-                      <div className="mt-4 space-y-2 text-sm">
-                        <div><span className="font-medium">Dietary Requirements:</span> {selectedContact.dietary_requirements || '—'}</div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {!selectedContact ? (
+                  <Card className="bg-muted/50">
+                    <CardContent className="pt-6">
+                      <p className="text-muted-foreground">
+                        Please select or create a contact first to manage medical and emergency contact information.
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Medical & Dietary Information</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
+                          <Textarea
+                            id="dietary_requirements"
+                            value={medicalFormData.dietary_requirements}
+                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, dietary_requirements: e.target.value }))}
+                            placeholder="e.g., Vegetarian, Gluten-free, No nuts..."
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                          <Textarea
+                            id="medical_conditions"
+                            value={medicalFormData.medical_conditions}
+                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
+                            placeholder="Any medical conditions we should be aware of..."
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                          <Textarea
+                            id="accessibility_needs"
+                            value={medicalFormData.accessibility_needs}
+                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
+                            placeholder="Any mobility or accessibility requirements..."
+                            rows={2}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Emergency Contact</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="emergency_contact_name">Name</Label>
+                            <Input
+                              id="emergency_contact_name"
+                              value={medicalFormData.emergency_contact_name}
+                              onChange={(e) => setMedicalFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
+                              placeholder="Emergency contact name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="emergency_contact_phone">Phone</Label>
+                            <Input
+                              id="emergency_contact_phone"
+                              value={medicalFormData.emergency_contact_phone}
+                              onChange={(e) => setMedicalFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
+                              placeholder="Emergency contact phone"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                          <Input
+                            id="emergency_contact_relationship"
+                            value={medicalFormData.emergency_contact_relationship}
+                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
+                            placeholder="e.g., Spouse, Partner, Parent, Child..."
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-4 border-t">
