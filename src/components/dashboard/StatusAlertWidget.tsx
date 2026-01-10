@@ -22,7 +22,7 @@ export const StatusAlertWidget = () => {
       <CardHeader className="pb-3">
         <CardTitle className="text-brand-navy flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          Status Alerts
+          Booking Status Alerts
           {totalCount > 0 && (
             <Badge variant="destructive" className="ml-auto">
               {totalCount}
