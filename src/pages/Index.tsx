@@ -18,6 +18,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
+import { RecentBookingsWidget } from "@/components/dashboard/RecentBookingsWidget";
 import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -131,6 +132,8 @@ const Index = () => {
           />
 
           <DashboardMetrics />
+          
+          <RecentBookingsWidget />
         </TabsContent>
       )}
 
