@@ -19,6 +19,7 @@ import { CustomerAnalyticsModal } from "@/components/CustomerAnalyticsModal";
 import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActions";
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { RecentBookingsWidget } from "@/components/dashboard/RecentBookingsWidget";
+import { StatusAlertWidget } from "@/components/dashboard/StatusAlertWidget";
 import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
@@ -133,7 +134,12 @@ const Index = () => {
 
           <DashboardMetrics />
           
-          <RecentBookingsWidget />
+          <div className="flex flex-col md:flex-row gap-6">
+            <RecentBookingsWidget />
+            <div className="w-full md:w-1/3">
+              <StatusAlertWidget />
+            </div>
+          </div>
         </TabsContent>
       )}
 
