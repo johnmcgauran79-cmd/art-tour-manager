@@ -21,6 +21,7 @@ import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { RecentBookingsWidget } from "@/components/dashboard/RecentBookingsWidget";
 import { StatusAlertWidget } from "@/components/dashboard/StatusAlertWidget";
 import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmailApprovalsWidget";
+import { EmailIssuesWidget } from "@/components/dashboard/EmailIssuesWidget";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
 import { useBookings } from "@/hooks/useBookings";
@@ -140,6 +141,7 @@ const Index = () => {
             <RecentBookingsWidget />
             <div className="w-full md:w-1/3 space-y-6">
               <StatusAlertWidget />
+              <EmailIssuesWidget />
               <PendingEmailApprovalsWidget />
             </div>
             <AlertsWidget />
