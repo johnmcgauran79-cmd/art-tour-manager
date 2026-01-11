@@ -14,10 +14,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useState, useEffect } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
-const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
+const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: React.ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
-    <span className="text-sm">{value || "—"}</span>
+    <div className="flex items-center gap-2">
+      <span className="text-sm">{value || "—"}</span>
+      {extra}
+    </div>
   </div>
 );
 
@@ -149,11 +152,6 @@ export default function ContactDetail() {
               Back
             </Button>
             
-            <WhatsAppButton 
-              phone={contact.phone} 
-              name={contact.first_name}
-            />
-            
             <Button
               variant="outline"
               size="sm"
@@ -230,7 +228,11 @@ export default function ContactDetail() {
               <InfoRow label="First Name" value={contact.first_name} />
               <InfoRow label="Last Name" value={contact.last_name} />
               <InfoRow label="Email" value={contact.email} />
-              <InfoRow label="Phone" value={contact.phone} />
+              <InfoRow 
+                label="Phone" 
+                value={contact.phone} 
+                extra={<WhatsAppButton phone={contact.phone} name={contact.first_name} size="icon" showLabel={false} variant="ghost" className="h-6 w-6 p-0" />}
+              />
               <InfoRow label="Spouse Name" value={contact.spouse_name} />
               <InfoRow label="City" value={contact.city} />
               <InfoRow label="State" value={contact.state} />
