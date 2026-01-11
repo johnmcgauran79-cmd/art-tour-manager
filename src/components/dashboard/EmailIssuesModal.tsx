@@ -1,8 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { Mail, AlertTriangle, MailX } from "lucide-react";
+import { Mail, AlertTriangle, MailX, X } from "lucide-react";
 import type { EmailIssue } from "@/hooks/useEmailIssues";
 
 interface EmailIssuesModalProps {
@@ -48,7 +49,7 @@ export const EmailIssuesModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
+        <DialogHeader className="flex flex-row items-center justify-between">
           <DialogTitle className="flex items-center gap-2">
             {issueType === 'bounced' ? (
               <MailX className="h-5 w-5 text-destructive" />
@@ -60,6 +61,12 @@ export const EmailIssuesModal = ({
               {issues.length}
             </Badge>
           </DialogTitle>
+          <DialogClose asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </Button>
+          </DialogClose>
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh]">
