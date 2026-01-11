@@ -1,23 +1,22 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useRecalculateBookingDates } from "@/hooks/useRecalculateBookingDates";
+import { useBookingFormState } from "@/hooks/useBookingFormState";
 
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { BookingDetailsForm } from "@/components/booking/BookingDetailsForm";
 import { LeadPassengerSection } from "@/components/booking/LeadPassengerSection";
+import { HotelAllocationTab } from "@/components/booking/HotelAllocationTab";
+import { ActivityAllocationTab } from "@/components/booking/ActivityAllocationTab";
+import { MedicalDetailsTab } from "@/components/booking/MedicalDetailsTab";
+import { TravelDocumentsTab } from "@/components/booking/TravelDocumentsTab";
 import { AddContactModal } from "@/components/AddContactModal";
 import { BookingConfirmationDialog } from "@/components/BookingConfirmationDialog";
 import { UserPlus } from "lucide-react";
@@ -42,7 +41,14 @@ interface AddBookingModalProps {
   preSelectedTourEndDate?: string;
 }
 
-export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, defaultStatus = "invoiced", preSelectedTourStartDate, preSelectedTourEndDate }: AddBookingModalProps) => {
+export const AddBookingModal = ({ 
+  open, 
+  onOpenChange, 
+  preSelectedTourId, 
+  defaultStatus = "invoiced", 
+  preSelectedTourStartDate, 
+  preSelectedTourEndDate 
+}: AddBookingModalProps) => {
   const [selectedContact, setSelectedContact] = useState<{
     id: string;
     first_name: string;
@@ -57,15 +63,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     emergency_contact_relationship: string | null;
   } | null>(null);
 
-  // Medical & emergency contact form data (editable, synced to customer)
-  const [medicalFormData, setMedicalFormData] = useState({
-    dietary_requirements: '',
-    medical_conditions: '',
-    accessibility_needs: '',
-    emergency_contact_name: '',
-    emergency_contact_phone: '',
-    emergency_contact_relationship: '',
-  });
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
@@ -75,45 +72,26 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
   
-  const [formData, setFormData] = useState({
-    tour_id: preSelectedTourId || '',
-    lead_passenger_name: '',
-    lead_passenger_email: '',
-    lead_passenger_phone: '',
-    passenger_count: 1,
-    passenger_2_name: '',
-    passenger_3_name: '',
-    group_name: '',
-    booking_agent: '',
-    status: defaultStatus || 'invoiced',
-    extra_requests: '',
-    accommodation_required: true,
-    check_in_date: '',
-    check_out_date: '',
-    invoice_notes: '',
-    secondary_contact_id: '',
-    secondary_contact_search: '',
-    
-    // Travel documents
-    passport_number: '',
-    passport_expiry_date: '',
-    passport_country: '',
-    id_number: '',
-    nationality: '',
+  const {
+    formData,
+    handleFormChange,
+    hotelAllocations,
+    setHotelAllocations,
+    activityAllocations,
+    setActivityAllocations,
+    medicalFormData,
+    setMedicalFormData,
+    buildHotelAllocations,
+    initializeHotelAllocations,
+    initializeActivityAllocations,
+    prefillMedicalFromContact,
+  } = useBookingFormState({
+    preSelectedTourId,
+    defaultStatus,
+    preSelectedTourStartDate,
+    preSelectedTourEndDate,
+    isOpen: open,
   });
-
-  const [hotelAllocations, setHotelAllocations] = useState<Record<string, {
-    allocated: boolean;
-    check_in_date: string;
-    check_out_date: string;
-    bedding: string;
-    room_type?: string;
-    room_upgrade?: string;
-    confirmation_number?: string;
-    room_requests?: string;
-  }>>({});
-
-  const [activityAllocations, setActivityAllocations] = useState<Record<string, number>>({});
 
   const { data: tours } = useTours();
   const createBooking = useCreateBooking();
@@ -123,81 +101,27 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
   
   const { data: hotels = [] } = useHotels(formData.tour_id);
   const { data: activities = [] } = useActivities(formData.tour_id);
-  
-  // Helper function to build hotel allocations - single source of truth
-  const buildHotelAllocations = (
-    hotelsList: typeof hotels,
-    accommodationRequired: boolean,
-    passengerCount: number,
-    existingAllocations: typeof hotelAllocations = {}
-  ) => {
-    const allocations: Record<string, any> = {};
-    
-    hotelsList.forEach(hotel => {
-      const existing = existingAllocations[hotel.id];
-      allocations[hotel.id] = {
-        allocated: accommodationRequired,
-        check_in_date: existing?.check_in_date || hotel.default_check_in || preSelectedTourStartDate || '',
-        check_out_date: existing?.check_out_date || hotel.default_check_out || preSelectedTourEndDate || '',
-        bedding: passengerCount === 1 ? 'single' : (existing?.bedding || 'double'),
-        room_type: existing?.room_type || hotel.default_room_type || '',
-        room_upgrade: existing?.room_upgrade || '',
-        confirmation_number: existing?.confirmation_number || '',
-        room_requests: existing?.room_requests || '',
-      };
-    });
-    
-    return allocations;
-  };
-  
-  // Single effect to manage hotel allocations - runs when hotels load or accommodation changes
+
+  // Reset contact-related state when modal opens
+  useEffect(() => {
+    if (open) {
+      setSelectedContact(null);
+      setSelectedSecondaryContact(null);
+      setLeadPassengerName('');
+      setActiveTab("details");
+    }
+  }, [open]);
+
+  // Initialize hotel allocations when hotels load
   useEffect(() => {
     if (!open || hotels.length === 0) return;
-    
-    const newAllocations = buildHotelAllocations(
-      hotels,
-      formData.accommodation_required,
-      formData.passenger_count,
-      hotelAllocations
-    );
-    
-    // Only update if there's an actual change to prevent infinite loops
-    const hasChanges = hotels.some(hotel => {
-      const existing = hotelAllocations[hotel.id];
-      const newAlloc = newAllocations[hotel.id];
-      return !existing || existing.allocated !== newAlloc.allocated;
-    });
-    
-    if (hasChanges || Object.keys(hotelAllocations).length === 0) {
-      setHotelAllocations(newAllocations);
-    }
+    initializeHotelAllocations(hotels);
   }, [open, hotels, formData.accommodation_required]);
-  
-  // Update bedding when passenger count changes
-  useEffect(() => {
-    if (Object.keys(hotelAllocations).length === 0) return;
-    
-    const needsBeddingUpdate = formData.passenger_count === 1 && 
-      Object.values(hotelAllocations).some(a => a.bedding !== 'single');
-    
-    if (needsBeddingUpdate) {
-      const updatedAllocations = { ...hotelAllocations };
-      Object.keys(updatedAllocations).forEach(hotelId => {
-        updatedAllocations[hotelId] = { ...updatedAllocations[hotelId], bedding: 'single' };
-      });
-      setHotelAllocations(updatedAllocations);
-    }
-  }, [formData.passenger_count]);
 
   // Initialize activity allocations when activities load
   useEffect(() => {
     if (!open || activities.length === 0) return;
-    
-    const initialAllocations: Record<string, number> = {};
-    activities.forEach(activity => {
-      initialAllocations[activity.id] = formData.passenger_count;
-    });
-    setActivityAllocations(initialAllocations);
+    initializeActivityAllocations(activities);
   }, [open, activities, formData.passenger_count]);
   
   // Set default dates to tour start/end when tour is selected and no hotels exist
@@ -208,93 +132,37 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     const selectedTour = tours?.find((t) => t.id === formData.tour_id);
     if (!selectedTour) return;
 
-    // Only set if empty to avoid overriding pre-filled values
-    setFormData((prev) => ({
-      ...prev,
-      check_in_date: prev.check_in_date || selectedTour.start_date,
-      check_out_date: prev.check_out_date || selectedTour.end_date,
-    }));
+    if (!formData.check_in_date || !formData.check_out_date) {
+      handleFormChange('check_in_date', formData.check_in_date || selectedTour.start_date);
+      handleFormChange('check_out_date', formData.check_out_date || selectedTour.end_date);
+    }
   }, [formData.tour_id, formData.accommodation_required, hotels.length, tours]);
 
+  // Pre-set tour ID from props
   useEffect(() => {
-    if (preSelectedTourId) {
+    if (preSelectedTourId && tours && tours.length > 0) {
       if (preSelectedTourStartDate && preSelectedTourEndDate) {
-        setFormData(prev => ({
-          ...prev,
-          tour_id: preSelectedTourId,
-          check_in_date: preSelectedTourStartDate,
-          check_out_date: preSelectedTourEndDate,
-        }));
-      } else if (tours && tours.length > 0) {
+        handleFormChange('tour_id', preSelectedTourId);
+        handleFormChange('check_in_date', preSelectedTourStartDate);
+        handleFormChange('check_out_date', preSelectedTourEndDate);
+      } else {
         const selectedTour = tours.find(tour => tour.id === preSelectedTourId);
         if (selectedTour) {
-          setFormData(prev => ({
-            ...prev,
-            tour_id: preSelectedTourId,
-          }));
+          handleFormChange('tour_id', preSelectedTourId);
         }
       }
     }
   }, [preSelectedTourId, tours]);
 
-  useEffect(() => {
-    if (open) {
-      const initialCheckIn = preSelectedTourStartDate || '';
-      const initialCheckOut = preSelectedTourEndDate || '';
-      
-      setFormData({
-        tour_id: preSelectedTourId || '',
-        lead_passenger_name: '',
-        lead_passenger_email: '',
-        lead_passenger_phone: '',
-        passenger_count: 1,
-        passenger_2_name: '',
-        passenger_3_name: '',
-        group_name: '',
-        booking_agent: '',
-        status: defaultStatus || 'invoiced',
-        extra_requests: '',
-        accommodation_required: true,
-        check_in_date: initialCheckIn,
-        check_out_date: initialCheckOut,
-        invoice_notes: '',
-        secondary_contact_id: '',
-        secondary_contact_search: '',
-        passport_number: '',
-        passport_expiry_date: '',
-        passport_country: '',
-        id_number: '',
-        nationality: '',
-      });
-      setSelectedContact(null);
-      setSelectedSecondaryContact(null);
-      setLeadPassengerName('');
-      setHotelAllocations({});
-      setActivityAllocations({});
-      setActiveTab("details");
-    }
-  }, [open, preSelectedTourId, defaultStatus, preSelectedTourStartDate, preSelectedTourEndDate]);
-
+  // Sync contact data to form
   useEffect(() => {
     if (selectedContact) {
       const fullName = `${selectedContact.first_name || ''} ${selectedContact.last_name || ''}`.trim();
-      setFormData(prev => ({
-        ...prev,
-        lead_passenger_name: fullName,
-        lead_passenger_email: selectedContact.email || '',
-        lead_passenger_phone: selectedContact.phone || '',
-      }));
+      handleFormChange('lead_passenger_name', fullName);
+      handleFormChange('lead_passenger_email', selectedContact.email || '');
+      handleFormChange('lead_passenger_phone', selectedContact.phone || '');
       setLeadPassengerName(fullName);
-      
-      // Pre-fill medical form data from contact
-      setMedicalFormData({
-        dietary_requirements: selectedContact.dietary_requirements || '',
-        medical_conditions: selectedContact.medical_conditions || '',
-        accessibility_needs: selectedContact.accessibility_needs || '',
-        emergency_contact_name: selectedContact.emergency_contact_name || '',
-        emergency_contact_phone: selectedContact.emergency_contact_phone || '',
-        emergency_contact_relationship: selectedContact.emergency_contact_relationship || '',
-      });
+      prefillMedicalFromContact(selectedContact);
     }
   }, [selectedContact]);
 
@@ -306,10 +174,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     setSelectedSecondaryContact(customer);
     handleFormChange('secondary_contact_id', customer ? customer.id : "");
     handleFormChange('secondary_contact_search', customer ? `${customer.first_name} ${customer.last_name}` : "");
-  };
-  
-  const handleFormChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleAddContactClick = (contactType: 'lead' | 'secondary') => {
@@ -396,14 +260,12 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     if (formData.accommodation_required) {
       const allocatedHotels = Object.entries(hotelAllocations).filter(([_, allocation]) => allocation.allocated);
       
-      // Check if tour has hotels but none are allocated
       if (hotels.length > 0 && allocatedHotels.length === 0) {
         setValidationError("Hotel must be allocated if accommodation is required for this booking. Please allocate at least one hotel in the Hotels tab.");
         setActiveTab("hotels");
         return;
       }
       
-      // Check if tour has no hotels loaded at all
       if (hotels.length === 0) {
         setShowNoHotelsWarning(true);
         return;
@@ -435,7 +297,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
       }
     }
 
-    // Show confirmation dialog instead of creating booking directly
     setShowConfirmation(true);
   };
 
@@ -447,15 +308,13 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         secondary_contact_id: formData.secondary_contact_id || null,
       };
 
-      // Create the booking first
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       console.log('Booking created:', newBooking);
       
-      // Save hotel allocations - use direct Supabase insert for better error handling
+      // Save hotel allocations
       const hotelInserts = Object.entries(hotelAllocations)
         .filter(([_, allocation]) => allocation.allocated)
         .map(([hotelId, allocation]) => {
-          // Convert empty strings to null for date fields
           const checkIn = (allocation.check_in_date || formData.check_in_date) || null;
           const checkOut = (allocation.check_out_date || formData.check_out_date) || null;
           
@@ -472,8 +331,8 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
             hotel_id: hotelId,
             required: true,
             allocated: true,
-            check_in_date: checkIn || null, // Ensure empty string becomes null
-            check_out_date: checkOut || null, // Ensure empty string becomes null
+            check_in_date: checkIn || null,
+            check_out_date: checkOut || null,
             nights: nights,
             bedding: (allocation.bedding || 'double') as 'single' | 'double' | 'twin',
             room_type: allocation.room_type || null,
@@ -484,7 +343,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         });
 
       if (hotelInserts.length > 0) {
-        const { data: hotelData, error: hotelError } = await supabase
+        const { error: hotelError } = await supabase
           .from('hotel_bookings')
           .insert(hotelInserts)
           .select();
@@ -493,10 +352,9 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           console.error('Error creating hotel bookings:', hotelError);
           throw new Error(`Failed to save hotel allocations: ${hotelError.message}`);
         }
-        console.log('Hotel bookings created:', hotelData);
       }
 
-      // Recalculate booking dates (hotel bookings are source of truth; falls back to tour dates when none exist)
+      // Recalculate booking dates
       if (cleanedFormData.accommodation_required) {
         await recalculateBookingDates.mutateAsync(newBooking.id);
       }
@@ -511,7 +369,7 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
         }));
 
       if (activityInserts.length > 0) {
-        const { data: activityData, error: activityError } = await supabase
+        const { error: activityError } = await supabase
           .from('activity_bookings')
           .insert(activityInserts)
           .select();
@@ -520,7 +378,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
           console.error('Error creating activity bookings:', activityError);
           throw new Error(`Failed to save activity allocations: ${activityError.message}`);
         }
-        console.log('Activity bookings created:', activityData);
       }
 
       // Update customer with medical/emergency contact info if changed
@@ -563,7 +420,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
     }
   };
 
-  // Prepare confirmation data
   const getConfirmationData = () => {
     const selectedTour = tours?.find(t => t.id === formData.tour_id);
     
@@ -635,7 +491,6 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
                   if (field === 'leadPassenger') setLeadPassengerName(value);
                   else if (field === 'leadEmail') handleFormChange('lead_passenger_email', value);
                   else if (field === 'leadPhone') handleFormChange('lead_passenger_phone', value);
-                  // Dietary is now managed on the contact, not the booking
                 }}
                 onContactSelect={handleContactSelect}
                 onEditContact={() => {
@@ -686,404 +541,53 @@ export const AddBookingModal = ({ open, onOpenChange, preSelectedTourId, default
               </div>
             </TabsContent>
 
-            <TabsContent value="hotels" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Hotel Allocations</h3>
-                {!formData.accommodation_required ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">Accommodation not required for this booking.</p>
-                  </div>
-                ) : hotels && hotels.length > 0 ? (
-                  hotels.map((hotel) => {
-                    const allocation = hotelAllocations[hotel.id] || {
-                      allocated: false,
-                      check_in_date: hotel.default_check_in || '',
-                      check_out_date: hotel.default_check_out || '',
-                      bedding: 'double',
-                      room_type: hotel.default_room_type || '',
-                    };
-
-                    return (
-                      <Card key={hotel.id}>
-                        <CardHeader>
-                          <CardTitle className="flex items-center justify-between">
-                            {hotel.name}
-                            <Switch
-                              checked={allocation.allocated}
-                              onCheckedChange={(checked) => {
-                                setHotelAllocations(prev => ({
-                                  ...prev,
-                                  [hotel.id]: { ...allocation, allocated: checked }
-                                }));
-                              }}
-                            />
-                          </CardTitle>
-                        </CardHeader>
-                        {allocation.allocated && (
-                          <CardContent className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <Label>Check In Date</Label>
-                                <Input
-                                  type="date"
-                                  value={allocation.check_in_date}
-                                  onChange={(e) => {
-                                    setHotelAllocations(prev => ({
-                                      ...prev,
-                                      [hotel.id]: { ...allocation, check_in_date: e.target.value }
-                                    }));
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <Label>Check Out Date</Label>
-                                <Input
-                                  type="date"
-                                  value={allocation.check_out_date}
-                                  onChange={(e) => {
-                                    setHotelAllocations(prev => ({
-                                      ...prev,
-                                      [hotel.id]: { ...allocation, check_out_date: e.target.value }
-                                    }));
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <Label>Bedding Type</Label>
-                                <Select 
-                                  value={allocation.bedding} 
-                                  onValueChange={(value) => {
-                                    if (formData.passenger_count === 1 && value !== 'single') {
-                                      toast({
-                                        title: "Invalid Selection",
-                                        description: "Single passenger bookings can only have Single bedding.",
-                                        variant: "destructive",
-                                      });
-                                      return;
-                                    }
-                                    if (formData.passenger_count >= 2 && value === 'single') {
-                                      toast({
-                                        title: "Invalid Selection",
-                                        description: `You have ${formData.passenger_count} passengers. Single bedding is not appropriate. Please select Double, Twin, Triple, or Family.`,
-                                        variant: "destructive",
-                                      });
-                                      return;
-                                    }
-                                    setHotelAllocations(prev => ({
-                                      ...prev,
-                                      [hotel.id]: { ...allocation, bedding: value }
-                                    }));
-                                  }}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem 
-                                      value="single"
-                                      disabled={formData.passenger_count >= 2}
-                                    >
-                                      Single
-                                    </SelectItem>
-                                    <SelectItem 
-                                      value="double" 
-                                      disabled={formData.passenger_count === 1}
-                                    >
-                                      Double
-                                    </SelectItem>
-                                    <SelectItem 
-                                      value="twin" 
-                                      disabled={formData.passenger_count === 1}
-                                    >
-                                      Twin
-                                    </SelectItem>
-                                    <SelectItem 
-                                      value="triple" 
-                                      disabled={formData.passenger_count === 1}
-                                    >
-                                      Triple
-                                    </SelectItem>
-                                    <SelectItem 
-                                      value="family" 
-                                      disabled={formData.passenger_count === 1}
-                                    >
-                                      Family
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label>Room Type</Label>
-                                <Input
-                                  value={allocation.room_type || ''}
-                                  onChange={(e) => {
-                                    setHotelAllocations(prev => ({
-                                      ...prev,
-                                      [hotel.id]: { ...allocation, room_type: e.target.value }
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        )}
-                      </Card>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No hotels available for this tour.</p>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setActiveTab("details")}>
-                  Back
-                </Button>
-                <Button 
-                  type="button"
-                  onClick={handleContinueToNextTab}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  Continue to Activities
-                </Button>
-              </div>
+            <TabsContent value="hotels">
+              <HotelAllocationTab
+                hotels={hotels}
+                hotelAllocations={hotelAllocations}
+                setHotelAllocations={setHotelAllocations}
+                accommodationRequired={formData.accommodation_required}
+                passengerCount={formData.passenger_count}
+                onBack={() => setActiveTab("details")}
+                onContinue={handleContinueToNextTab}
+              />
             </TabsContent>
 
-            <TabsContent value="activities" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Activity Allocations</h3>
-                {activities && activities.length > 0 ? (
-                  <div className="space-y-3">
-                    {activities.map((activity) => {
-                      const allocation = activityAllocations[activity.id] ?? formData.passenger_count;
-
-                      return (
-                        <Card key={activity.id}>
-                          <CardContent className="pt-6">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                              <div>
-                                <p className="font-medium">{activity.name}</p>
-                                {activity.activity_date && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {new Date(activity.activity_date).toLocaleDateString('en-AU')}
-                                  </p>
-                                )}
-                              </div>
-                              <div>
-                                <Label>Passengers Attending</Label>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={allocation}
-                                  onChange={(e) => {
-                                    const value = parseInt(e.target.value) || 0;
-                                    setActivityAllocations(prev => ({
-                                      ...prev,
-                                      [activity.id]: value
-                                    }));
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground">No activities available for this tour.</p>
-                  </div>
-                )}
-              </div>
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setActiveTab("hotels")}>
-                  Back
-                </Button>
-                <Button 
-                  type="button"
-                  onClick={handleContinueToNextTab}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  Continue to Medical Details
-                </Button>
-              </div>
+            <TabsContent value="activities">
+              <ActivityAllocationTab
+                activities={activities}
+                activityAllocations={activityAllocations}
+                setActivityAllocations={setActivityAllocations}
+                passengerCount={formData.passenger_count}
+                onBack={() => setActiveTab("hotels")}
+                onContinue={handleContinueToNextTab}
+              />
             </TabsContent>
 
-            <TabsContent value="medical" className="space-y-6">
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Medical & Emergency Contact</h3>
-                
-                {!selectedContact ? (
-                  <Card className="bg-muted/50">
-                    <CardContent className="pt-6">
-                      <p className="text-muted-foreground">
-                        Please select or create a contact first to manage medical and emergency contact information.
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <>
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Medical & Dietary Information</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div>
-                          <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
-                          <Textarea
-                            id="dietary_requirements"
-                            value={medicalFormData.dietary_requirements}
-                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, dietary_requirements: e.target.value }))}
-                            placeholder="e.g., Vegetarian, Gluten-free, No nuts..."
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="medical_conditions">Medical Conditions</Label>
-                          <Textarea
-                            id="medical_conditions"
-                            value={medicalFormData.medical_conditions}
-                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, medical_conditions: e.target.value }))}
-                            placeholder="Any medical conditions we should be aware of..."
-                            rows={2}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
-                          <Textarea
-                            id="accessibility_needs"
-                            value={medicalFormData.accessibility_needs}
-                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, accessibility_needs: e.target.value }))}
-                            placeholder="Any mobility or accessibility requirements..."
-                            rows={2}
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">Emergency Contact</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label htmlFor="emergency_contact_name">Name</Label>
-                            <Input
-                              id="emergency_contact_name"
-                              value={medicalFormData.emergency_contact_name}
-                              onChange={(e) => setMedicalFormData(prev => ({ ...prev, emergency_contact_name: e.target.value }))}
-                              placeholder="Emergency contact name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="emergency_contact_phone">Phone</Label>
-                            <Input
-                              id="emergency_contact_phone"
-                              value={medicalFormData.emergency_contact_phone}
-                              onChange={(e) => setMedicalFormData(prev => ({ ...prev, emergency_contact_phone: e.target.value }))}
-                              placeholder="Emergency contact phone"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="emergency_contact_relationship">Relationship</Label>
-                          <Input
-                            id="emergency_contact_relationship"
-                            value={medicalFormData.emergency_contact_relationship}
-                            onChange={(e) => setMedicalFormData(prev => ({ ...prev, emergency_contact_relationship: e.target.value }))}
-                            placeholder="e.g., Spouse, Partner, Parent, Child..."
-                          />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setActiveTab("activities")}>
-                  Back
-                </Button>
-                <Button 
-                  type="button"
-                  onClick={handleContinueToNextTab}
-                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
-                >
-                  Continue to Travel Documents
-                </Button>
-              </div>
+            <TabsContent value="medical">
+              <MedicalDetailsTab
+                medicalFormData={medicalFormData}
+                setMedicalFormData={setMedicalFormData}
+                hasSelectedContact={!!selectedContact}
+                onBack={() => setActiveTab("activities")}
+                onContinue={handleContinueToNextTab}
+              />
             </TabsContent>
 
-            <TabsContent value="travel" className="space-y-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Travel Documents</h3>
-                
-                <div>
-                  <Label htmlFor="passport_number">Passport Number</Label>
-                  <Input
-                    id="passport_number"
-                    value={formData.passport_number}
-                    onChange={(e) => handleFormChange('passport_number', e.target.value)}
-                    placeholder="Passport number"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
-                  <Input
-                    id="passport_expiry_date"
-                    type="date"
-                    value={formData.passport_expiry_date}
-                    onChange={(e) => handleFormChange('passport_expiry_date', e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="passport_country">Passport Country</Label>
-                  <Input
-                    id="passport_country"
-                    value={formData.passport_country}
-                    onChange={(e) => handleFormChange('passport_country', e.target.value)}
-                    placeholder="Country of issue"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input
-                    id="nationality"
-                    value={formData.nationality}
-                    onChange={(e) => handleFormChange('nationality', e.target.value)}
-                    placeholder="Nationality"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="id_number">ID Number</Label>
-                  <Input
-                    id="id_number"
-                    value={formData.id_number}
-                    onChange={(e) => handleFormChange('id_number', e.target.value)}
-                    placeholder="National ID or other identification number"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setActiveTab("medical")}>
-                  Back
-                </Button>
-                <Button 
-                  type="button"
-                  onClick={handleShowConfirmation}
-                  className={defaultStatus === 'waitlisted' ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
-                >
-                  {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Review & Create Booking'}
-                </Button>
-              </div>
+            <TabsContent value="travel">
+              <TravelDocumentsTab
+                formData={{
+                  passport_number: formData.passport_number,
+                  passport_expiry_date: formData.passport_expiry_date,
+                  passport_country: formData.passport_country,
+                  nationality: formData.nationality,
+                  id_number: formData.id_number,
+                }}
+                onFormChange={handleFormChange}
+                onBack={() => setActiveTab("medical")}
+                onSubmit={handleShowConfirmation}
+                isWaitlistMode={defaultStatus === 'waitlisted'}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>
