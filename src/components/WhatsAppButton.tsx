@@ -40,6 +40,8 @@ export const WhatsAppButton = ({
   
   // Build the WhatsApp URL
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+  
+  console.log('WhatsApp URL debug:', { phone, cleanPhone, whatsappUrl });
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
