@@ -5,7 +5,11 @@ import { StatsSkeleton } from "@/components/ui/skeleton";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 
-export const DashboardMetrics = () => {
+interface DashboardMetricsProps {
+  onRevenueClick?: () => void;
+}
+
+export const DashboardMetrics = ({ onRevenueClick }: DashboardMetricsProps) => {
   const navigate = useNavigate();
   const { data: tours, isLoading: toursLoading } = useTours();
   const { data: bookings, isLoading: bookingsLoading } = useBookings();
@@ -61,7 +65,10 @@ export const DashboardMetrics = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card 
+        className="cursor-pointer hover:shadow-md transition-shadow"
+        onClick={onRevenueClick}
+      >
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Estimated Monthly Revenue</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />

@@ -134,7 +134,7 @@ const Index = () => {
             onAddTask={() => setAddTaskModalOpen(true)}
           />
 
-          <DashboardMetrics />
+          <DashboardMetrics onRevenueClick={() => setCustomerAnalyticsOpen(true)} />
           
           <div className="flex flex-col md:flex-row gap-6">
             <RecentBookingsWidget />
