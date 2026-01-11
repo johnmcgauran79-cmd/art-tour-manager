@@ -25,6 +25,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useBookingAuditLog } from "@/hooks/useBookingAuditLog";
 import { BookingAuditTrail } from "@/components/BookingAuditTrail";
 import { Separator } from "@/components/ui/separator";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -162,6 +163,11 @@ export default function BookingDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            
+            <WhatsAppButton 
+              phone={booking.customers?.phone} 
+              name={booking.customers?.first_name}
+            />
             
             {!isAgent && (
               <>

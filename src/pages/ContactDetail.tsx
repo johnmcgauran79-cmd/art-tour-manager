@@ -12,6 +12,7 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useState, useEffect } from "react";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -147,6 +148,11 @@ export default function ContactDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            
+            <WhatsAppButton 
+              phone={contact.phone} 
+              name={contact.first_name}
+            />
             
             <Button
               variant="outline"
