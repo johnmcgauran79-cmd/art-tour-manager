@@ -11,10 +11,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
-const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: React.ReactNode }) => (
+const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
     <div className="flex items-center gap-2">
