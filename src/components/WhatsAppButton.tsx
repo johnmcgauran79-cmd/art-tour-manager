@@ -30,8 +30,8 @@ export const WhatsAppButton = ({
   
   // Build the default message
   const defaultMessage = name 
-    ? `Hi ${name}, ` 
-    : "Hi, ";
+    ? `Hi ${name}, this is regarding your booking...` 
+    : "Hi, this is regarding your booking...";
   
   const finalMessage = message || defaultMessage;
   
