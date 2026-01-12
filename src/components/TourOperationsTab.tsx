@@ -105,11 +105,13 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     }))
     .filter(item => item.dietary && item.dietary.trim() !== '');
 
-  // Get contact list for WhatsApp export
-  const contactList = tourBookings.map(booking => ({
-    name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-    phone: booking.customers?.phone || ''
-  }));
+  // Get contact list for WhatsApp export - Only include bookings with WhatsApp group comms enabled
+  const contactList = tourBookings
+    .filter(booking => booking.whatsapp_group_comms === true)
+    .map(booking => ({
+      name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+      phone: booking.customers?.phone || ''
+    }));
 
   // Calculate total individual passengers
   const totalPassengers = tourBookings.reduce((total, booking) => {
