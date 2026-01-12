@@ -103,6 +103,7 @@ export const useCreateBooking = () => {
       passport_country?: string;
       id_number?: string;
       nationality?: string;
+      whatsapp_group_comms?: boolean;
     }) => {
       
       // Calculate nights
@@ -185,6 +186,7 @@ export const useCreateBooking = () => {
           passport_country: bookingData.passport_country || null,
           id_number: bookingData.id_number || null,
           nationality: bookingData.nationality || null,
+          whatsapp_group_comms: bookingData.whatsapp_group_comms ?? true,
         }])
         .select()
         .single();

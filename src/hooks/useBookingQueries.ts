@@ -28,6 +28,7 @@ export interface Booking {
   passport_country: string | null;
   id_number: string | null;
   nationality: string | null;
+  whatsapp_group_comms: boolean;
 }
 
 export const useBookings = () => {
