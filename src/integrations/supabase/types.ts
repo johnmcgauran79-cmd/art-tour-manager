@@ -522,6 +522,7 @@ export type Database = {
           total_nights: number | null
           tour_id: string | null
           updated_at: string | null
+          whatsapp_group_comms: boolean
         }
         Insert: {
           accommodation_required?: boolean | null
@@ -548,6 +549,7 @@ export type Database = {
           total_nights?: number | null
           tour_id?: string | null
           updated_at?: string | null
+          whatsapp_group_comms?: boolean
         }
         Update: {
           accommodation_required?: boolean | null
@@ -574,6 +576,7 @@ export type Database = {
           total_nights?: number | null
           tour_id?: string | null
           updated_at?: string | null
+          whatsapp_group_comms?: boolean
         }
         Relationships: [
           {

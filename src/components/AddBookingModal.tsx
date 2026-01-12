@@ -455,6 +455,7 @@ export const AddBookingModal = ({
       checkInDate: formData.check_in_date,
       checkOutDate: formData.check_out_date,
       bedding: formData.accommodation_required ? 'As per hotel allocations' : 'N/A',
+      whatsappGroupComms: formData.whatsapp_group_comms,
       hotels: allocatedHotels,
       activities: selectedActivities,
     };

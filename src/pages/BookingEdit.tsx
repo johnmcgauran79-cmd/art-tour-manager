@@ -69,6 +69,7 @@ export default function BookingEdit() {
     check_in_date: '',
     check_out_date: '',
     secondary_contact_id: '',
+    whatsapp_group_comms: true,
     
     passport_number: '',
     passport_expiry_date: '',
@@ -120,6 +121,7 @@ export default function BookingEdit() {
         check_in_date: booking.check_in_date || '',
         check_out_date: booking.check_out_date || '',
         secondary_contact_id: booking.secondary_contact_id || '',
+        whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
         
         passport_number: booking.passport_number || '',
         passport_expiry_date: booking.passport_expiry_date || '',
@@ -280,6 +282,7 @@ export default function BookingEdit() {
       passport_country: formData.passport_country || null,
       id_number: formData.id_number || null,
       nationality: formData.nationality || null,
+      whatsapp_group_comms: formData.whatsapp_group_comms,
     }, {
       onSuccess: () => {
         toast({
@@ -669,13 +672,31 @@ export default function BookingEdit() {
                 )}
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="accommodation_required"
-                  checked={formData.accommodation_required}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, accommodation_required: checked }))}
-                />
-                <Label htmlFor="accommodation_required">Accommodation Required</Label>
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="accommodation_required"
+                    checked={formData.accommodation_required}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, accommodation_required: checked }))}
+                  />
+                  <Label htmlFor="accommodation_required">Accommodation Required</Label>
+                </div>
+
+                <div className="flex items-center justify-between border-t pt-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="whatsapp_group_comms" className="text-sm font-medium">
+                      WhatsApp Group Communications
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Include this booking in the tour's WhatsApp group
+                    </p>
+                  </div>
+                  <Switch
+                    id="whatsapp_group_comms"
+                    checked={formData.whatsapp_group_comms ?? true}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, whatsapp_group_comms: checked }))}
+                  />
+                </div>
               </div>
 
               <div>

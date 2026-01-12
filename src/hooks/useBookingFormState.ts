@@ -43,6 +43,7 @@ export interface BookingFormData {
   passport_country: string;
   id_number: string;
   nationality: string;
+  whatsapp_group_comms: boolean;
 }
 
 interface UseBookingFormStateProps {
@@ -97,6 +98,7 @@ export const useBookingFormState = ({
     passport_country: '',
     id_number: '',
     nationality: '',
+    whatsapp_group_comms: true,
   });
 
   const [hotelAllocations, setHotelAllocations] = useState<Record<string, HotelAllocation>>({});
@@ -143,6 +145,7 @@ export const useBookingFormState = ({
         passport_country: '',
         id_number: '',
         nationality: '',
+        whatsapp_group_comms: true,
       });
       setHotelAllocations({});
       setActivityAllocations({});

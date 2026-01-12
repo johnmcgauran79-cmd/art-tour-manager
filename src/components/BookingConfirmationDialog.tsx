@@ -26,6 +26,7 @@ interface BookingConfirmationDialogProps {
     checkInDate?: string;
     checkOutDate?: string;
     bedding?: string;
+    whatsappGroupComms?: boolean;
     hotels: Array<{
       name: string;
       checkIn: string;
@@ -103,6 +104,14 @@ export const BookingConfirmationDialog = ({
             <div>
               <h3 className="font-semibold text-lg mb-2">Total Passengers</h3>
               <p className="text-muted-foreground">{bookingData.passengerCount}</p>
+            </div>
+
+            {/* WhatsApp Group Communications */}
+            <div>
+              <h3 className="font-semibold text-lg mb-2">WhatsApp Group Communications</h3>
+              <p className="text-muted-foreground">
+                {bookingData.whatsappGroupComms !== false ? 'Yes - included in tour group' : 'No - excluded from tour group'}
+              </p>
             </div>
 
             {/* Hotels */}

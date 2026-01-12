@@ -77,6 +77,22 @@ export const BookingDetailsForm = ({
             />
           </div>
         </div>
+        
+        <div className="flex items-center justify-between pt-2 border-t">
+          <div className="space-y-0.5">
+            <Label htmlFor="whatsapp_group_comms" className="text-sm font-medium">
+              WhatsApp Group Communications
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Include this booking in the tour's WhatsApp group
+            </p>
+          </div>
+          <Switch
+            id="whatsapp_group_comms"
+            checked={formData.whatsapp_group_comms ?? true}
+            onCheckedChange={(checked) => setFormData('whatsapp_group_comms', checked)}
+          />
+        </div>
       </div>
 
       {/* Additional Passengers */}
