@@ -19,11 +19,11 @@ interface ReportItem {
 }
 
 interface UseReportDataOptions {
-  accommodationOnly?: boolean;
+  showAllContacts?: boolean;
 }
 
 export const useReportData = (tourId: string, options: UseReportDataOptions = {}): ReportItem[] => {
-  const { accommodationOnly = false } = options;
+  const { showAllContacts = false } = options;
   const { data: allBookings } = useBookings();
   const { data: activities } = useActivities(tourId);
   
@@ -51,19 +51,14 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
   });
 
   const tourBookings = (allBookings || []).filter(booking => {
-    const baseFilter = booking.tour_id === tourId && 
+    return booking.tour_id === tourId && 
       booking.status !== 'cancelled' && 
       booking.status !== 'waitlisted';
-    
-    if (accommodationOnly) {
-      return baseFilter && booking.accommodation_required === true;
-    }
-    return baseFilter;
   });
 
-  // Contact List Report - Only include bookings with WhatsApp group comms enabled
+  // Contact List Report - Only include bookings with WhatsApp group comms enabled (unless showAllContacts is true)
   const contactList = tourBookings
-    .filter(booking => booking.whatsapp_group_comms === true)
+    .filter(booking => showAllContacts || booking.whatsapp_group_comms === true)
     .map(booking => ({
       firstName: booking.customers?.first_name || '',
       lastName: booking.customers?.last_name || '',

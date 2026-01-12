@@ -38,8 +38,8 @@ export const TourOperationsReportsModal = ({
   onBookingClick
 }: TourOperationsReportsModalProps) => {
   const { data: hotels } = useHotels(tourId);
-  const [accommodationOnly, setAccommodationOnly] = useState(false);
-  const reports = useReportData(tourId, { accommodationOnly });
+  const [showAllContacts, setShowAllContacts] = useState(false);
+  const reports = useReportData(tourId, { showAllContacts });
   
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
@@ -198,16 +198,18 @@ export const TourOperationsReportsModal = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{displayReport.description}</span>
-                <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="accommodation-filter" 
-                    checked={accommodationOnly}
-                    onCheckedChange={(checked) => setAccommodationOnly(checked === true)}
-                  />
-                  <Label htmlFor="accommodation-filter" className="text-sm cursor-pointer">
-                    Accommodation only
-                  </Label>
-                </div>
+                {displayReport.type === 'contacts' && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="show-all-filter" 
+                      checked={showAllContacts}
+                      onCheckedChange={(checked) => setShowAllContacts(checked === true)}
+                    />
+                    <Label htmlFor="show-all-filter" className="text-sm cursor-pointer">
+                      Show All
+                    </Label>
+                  </div>
+                )}
               </div>
               
               <div className="border rounded-lg">
