@@ -61,12 +61,14 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
     return baseFilter;
   });
 
-  // Contact List Report
-  const contactList = tourBookings.map(booking => ({
-    firstName: booking.customers?.first_name || '',
-    lastName: booking.customers?.last_name || '',
-    phone: booking.customers?.phone || ''
-  }));
+  // Contact List Report - Only include bookings with WhatsApp group comms enabled
+  const contactList = tourBookings
+    .filter(booking => booking.whatsapp_group_comms === true)
+    .map(booking => ({
+      firstName: booking.customers?.first_name || '',
+      lastName: booking.customers?.last_name || '',
+      phone: booking.customers?.phone || ''
+    }));
 
   // Dietary Requirements Report
   const dietaryRequirements = tourBookings
