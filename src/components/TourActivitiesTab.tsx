@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Edit, Printer, Mail, Bell, Check, RefreshCw } from "lucide-react";
 import { useActivities, Activity } from "@/hooks/useActivities";
@@ -275,7 +276,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold">Activities</h3>
           {alertCount > 0 && (
@@ -294,158 +295,203 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
           )}
         </div>
         {!isAgent && (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button 
               onClick={() => setResetDialogOpen(true)}
               variant="outline"
+              size="sm"
               disabled={!activities || activities.length === 0}
             >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Reset Activities
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Reset</span>
             </Button>
             <Button
               onClick={handleQuickUpdateToggle}
               variant={quickUpdateMode ? "secondary" : "outline"}
+              size="sm"
             >
-              {quickUpdateMode ? "Cancel Quick Update" : "Quick Update"}
+              <span className="hidden sm:inline">{quickUpdateMode ? "Cancel Quick Update" : "Quick Update"}</span>
+              <span className="sm:hidden">{quickUpdateMode ? "Cancel" : "Quick"}</span>
             </Button>
             <Button 
               onClick={onAddActivity}
+              size="sm"
               className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
             >
-              Add Activity
+              <span className="hidden sm:inline">Add Activity</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         )}
       </div>
 
       {sortedActivities && sortedActivities.length > 0 ? (
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Activity Name</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Spots Available</TableHead>
-                <TableHead>Pax Attending</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedActivities.map((activity) => (
-                <TableRow 
-                  key={activity.id} 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setSelectedActivityForView(activity)}
-                >
-                  <TableCell className="font-medium">{activity.name}</TableCell>
-                  <TableCell>{activity.location || '-'}</TableCell>
-                  <TableCell>
-                    {activity.activity_date 
-                      ? formatDateToDDMMYYYY(activity.activity_date)
-                      : 'TBD'
-                    }
-                  </TableCell>
-                  <TableCell>
-                    {activity.start_time ? formatTime(activity.start_time) : '-'}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {quickUpdateMode ? (
-                      <Input
-                        type="number"
-                        value={editingData[activity.id]?.spots_available ?? activity.spots_available ?? 0}
-                        onChange={(e) => updateEditingData(activity.id, 'spots_available', parseInt(e.target.value) || 0)}
-                        className="w-20"
-                      />
-                    ) : (
-                      activity.spots_available || 0
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <span className="text-muted-foreground">
-                      {paxAttendingData[activity.id] || 0}
-                    </span>
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    {quickUpdateMode ? (
-                      <Select
-                        value={editingData[activity.id]?.activity_status ?? activity.activity_status ?? 'pending'}
-                        onValueChange={(value) => updateEditingData(activity.id, 'activity_status', value)}
-                      >
-                        <SelectTrigger className="w-40">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="booked">Booked</SelectItem>
-                          <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
-                          <SelectItem value="fully_paid">Fully Paid</SelectItem>
-                          <SelectItem value="confirmed">Confirmed</SelectItem>
-                          <SelectItem value="on_hold">On Hold</SelectItem>
-                          <SelectItem value="contacted_enquiry_sent">Contacted/Enquiry Sent</SelectItem>
-                          <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
-                          <SelectItem value="finalised">Finalised</SelectItem>
-                          <SelectItem value="cancelled">Cancelled</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
-                        {activity.activity_status.toUpperCase()}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="flex gap-1">
-                      {quickUpdateMode ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleUpdateActivity(activity.id)}
-                          title="Save Changes"
-                        >
-                          <Check className="h-4 w-4 text-green-600" />
-                        </Button>
-                      ) : (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEditActivity(activity)}
-                            title="Edit Activity"
-                            disabled={isAgent}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedActivityForPrint(activity)}
-                            title="Print Passenger List"
-                            disabled={isAgent}
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedActivityForEmail(activity)}
-                            title="Email Passenger List"
-                            disabled={isAgent}
-                          >
-                            <Mail className="h-4 w-4" />
-                          </Button>
-                        </>
+        <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-3">
+            {sortedActivities.map((activity) => (
+              <Card 
+                key={activity.id}
+                className="cursor-pointer hover:bg-accent/50 transition-colors"
+                onClick={() => setSelectedActivityForView(activity)}
+              >
+                <CardContent className="p-3">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{activity.name}</p>
+                      {activity.location && (
+                        <p className="text-xs text-muted-foreground truncate">{activity.location}</p>
                       )}
                     </div>
-                  </TableCell>
+                    <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
+                      {activity.activity_status?.toUpperCase() || 'PENDING'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : 'TBD'}
+                    </span>
+                    <span>{activity.start_time ? formatTime(activity.start_time) : '-'}</span>
+                    <span>{paxAttendingData[activity.id] || 0} pax</span>
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => onEditActivity(activity)} disabled={isAgent}>
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop Table View */}
+          <div className="hidden md:block border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Activity Name</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead>Spots Available</TableHead>
+                  <TableHead>Pax Attending</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {sortedActivities.map((activity) => (
+                  <TableRow 
+                    key={activity.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedActivityForView(activity)}
+                  >
+                    <TableCell className="font-medium">{activity.name}</TableCell>
+                    <TableCell>{activity.location || '-'}</TableCell>
+                    <TableCell>
+                      {activity.activity_date 
+                        ? formatDateToDDMMYYYY(activity.activity_date)
+                        : 'TBD'
+                      }
+                    </TableCell>
+                    <TableCell>
+                      {activity.start_time ? formatTime(activity.start_time) : '-'}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {quickUpdateMode ? (
+                        <Input
+                          type="number"
+                          value={editingData[activity.id]?.spots_available ?? activity.spots_available ?? 0}
+                          onChange={(e) => updateEditingData(activity.id, 'spots_available', parseInt(e.target.value) || 0)}
+                          className="w-20"
+                        />
+                      ) : (
+                        activity.spots_available || 0
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-muted-foreground">
+                        {paxAttendingData[activity.id] || 0}
+                      </span>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {quickUpdateMode ? (
+                        <Select
+                          value={editingData[activity.id]?.activity_status ?? activity.activity_status ?? 'pending'}
+                          onValueChange={(value) => updateEditingData(activity.id, 'activity_status', value)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="booked">Booked</SelectItem>
+                            <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
+                            <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                            <SelectItem value="confirmed">Confirmed</SelectItem>
+                            <SelectItem value="on_hold">On Hold</SelectItem>
+                            <SelectItem value="contacted_enquiry_sent">Contacted/Enquiry Sent</SelectItem>
+                            <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
+                            <SelectItem value="finalised">Finalised</SelectItem>
+                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
+                          {activity.activity_status.toUpperCase()}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1">
+                        {quickUpdateMode ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleUpdateActivity(activity.id)}
+                            title="Save Changes"
+                          >
+                            <Check className="h-4 w-4 text-green-600" />
+                          </Button>
+                        ) : (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onEditActivity(activity)}
+                              title="Edit Activity"
+                              disabled={isAgent}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedActivityForPrint(activity)}
+                              title="Print Passenger List"
+                              disabled={isAgent}
+                            >
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedActivityForEmail(activity)}
+                              title="Email Passenger List"
+                              disabled={isAgent}
+                            >
+                              <Mail className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </>
       ) : (
         <div className="text-center py-8">
           <p className="text-muted-foreground">No activities added yet.</p>

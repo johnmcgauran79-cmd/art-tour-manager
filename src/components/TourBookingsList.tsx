@@ -167,63 +167,65 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
       ) : (
         <>
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-green-600">{confirmedBookings.length}</div>
-                <div className="text-sm text-muted-foreground">Confirmed Bookings</div>
-                <div className="text-xs text-muted-foreground">{totalConfirmedPassengers} passengers</div>
+              <CardContent className="p-2 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">{confirmedBookings.length}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Confirmed</div>
+                <div className="text-xs text-muted-foreground hidden sm:block">{totalConfirmedPassengers} passengers</div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-orange-600">{waitlistedBookings.length}</div>
-                <div className="text-sm text-muted-foreground">Waitlisted Bookings</div>
-                <div className="text-xs text-muted-foreground">{totalWaitlistedPassengers} passengers</div>
+              <CardContent className="p-2 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold text-orange-600">{waitlistedBookings.length}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Waitlisted</div>
+                <div className="text-xs text-muted-foreground hidden sm:block">{totalWaitlistedPassengers} passengers</div>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-blue-600">{allTourBookings.filter(b => b.status !== 'cancelled').length}</div>
-                <div className="text-sm text-muted-foreground">Total Interest</div>
-                <div className="text-xs text-muted-foreground">{totalConfirmedPassengers + totalWaitlistedPassengers} passengers</div>
+              <CardContent className="p-2 sm:p-4">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">{allTourBookings.filter(b => b.status !== 'cancelled').length}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">Total</div>
+                <div className="text-xs text-muted-foreground hidden sm:block">{totalConfirmedPassengers + totalWaitlistedPassengers} pax</div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-2">
-              <div className="relative flex-1 max-w-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="relative flex-1 min-w-0 sm:max-w-md">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search across all bookings for this tour..."
+                  placeholder="Search bookings..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Button
-                variant={showWaitlistOnly ? "default" : "outline"}
-                size="sm"
-                onClick={() => setShowWaitlistOnly(!showWaitlistOnly)}
-                className="flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                {showWaitlistOnly ? "Show All" : "Waitlist Only"}
-              </Button>
-              {searchQuery && (
+              <div className="flex items-center gap-2">
                 <Button
-                  variant="outline"
+                  variant={showWaitlistOnly ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => setShowWaitlistOnly(!showWaitlistOnly)}
+                  className="flex items-center gap-1.5 whitespace-nowrap"
                 >
-                  Clear
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">{showWaitlistOnly ? "Show All" : "Waitlist Only"}</span>
+                  <span className="sm:hidden">{showWaitlistOnly ? "All" : "Waitlist"}</span>
                 </Button>
-              )}
+                {searchQuery && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSearchQuery("")}
+                  >
+                    Clear
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredBookings.length} of {allTourBookings.length} bookings
-              {searchQuery && ` (filtered by: "${searchQuery}")`}
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {filteredBookings.length} of {allTourBookings.length} bookings
             </div>
           </div>
           
@@ -232,95 +234,145 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
               {searchQuery ? `No bookings found matching "${searchQuery}".` : "No bookings match the current filter."}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3 font-medium">Lead Passenger</th>
-                    <th className="text-left p-3 font-medium">Additional Passengers</th>
-                    <th className="text-left p-3 font-medium">Pax</th>
-                    <th className="text-left p-3 font-medium">Check In</th>
-                    <th className="text-left p-3 font-medium">Check Out</th>
-                    <th className="text-left p-3 font-medium">Nights</th>
-                    <th className="text-left p-3 font-medium">Status</th>
-                    <th className="text-left p-3 font-medium">Notes</th>
-                    <th className="text-left p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredBookings.map((booking) => (
-                    <tr 
-                      key={booking.id} 
-                      className="border-b hover:bg-accent cursor-pointer transition-colors"
-                      onClick={() => handleViewBooking(booking)}
-                    >
-                      <td className="p-3">
-                        {booking.customers?.first_name} {booking.customers?.last_name}
-                      </td>
-                      <td className="p-3">
-                        <div className="space-y-1">
-                          {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
-                          {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
-                          {booking.group_name && <div className="text-sm text-gray-500">Group: {booking.group_name}</div>}
+            <>
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-3">
+                {filteredBookings.map((booking) => (
+                  <Card 
+                    key={booking.id}
+                    className="cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={() => handleViewBooking(booking)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">
+                            {booking.customers?.first_name} {booking.customers?.last_name}
+                          </p>
+                          {(booking.passenger_2_name || booking.passenger_3_name) && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              +{[booking.passenger_2_name, booking.passenger_3_name].filter(Boolean).join(', ')}
+                            </p>
+                          )}
                         </div>
-                      </td>
-                      <td className="p-3">{booking.passenger_count}</td>
-                      <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}</td>
-                      <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}</td>
-                      <td className="p-3">{booking.total_nights || '-'}</td>
-                      <td className="p-3">
-                        <Badge className={getStatusColor(booking.status || 'pending')}>
-                          {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
+                        <Badge className={`text-xs ${getStatusColor(booking.status || 'pending')}`}>
+                          {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                         </Badge>
-                      </td>
-                      <td className="p-3 max-w-xs">
-                        <div className="truncate" title={booking.extra_requests || ''}>
-                          {booking.extra_requests || '-'}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={(e) => handleEditBooking(e, booking)}
-                            disabled={isAgent}
-                          >
-                            <Edit className="h-3 w-3" />
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>{booking.passenger_count} pax</span>
+                        <span>{booking.accommodation_required ? `${booking.total_nights || 0} nights` : 'No accom'}</span>
+                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => handleEditBooking(e, booking)} disabled={isAgent}>
+                            <Edit className="h-3.5 w-3.5" />
                           </Button>
                           <Button 
                             size="sm" 
-                            variant="outline"
-                            className="text-blue-600 hover:text-blue-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEmailBookingId(booking.id);
-                              setEmailPreviewOpen(true);
-                            }}
+                            variant="ghost" 
+                            className="h-7 w-7 p-0 text-blue-600"
+                            onClick={(e) => { e.stopPropagation(); setEmailBookingId(booking.id); setEmailPreviewOpen(true); }}
                             disabled={!booking.customers?.email || isAgent}
-                            title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
                           >
-                            <Mail className="h-3 w-3" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="text-red-600 hover:text-red-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteBooking(booking);
-                            }}
-                            disabled={deleteBookingMutation.isPending || isAgent}
-                          >
-                            <Trash2 className="h-3 w-3" />
+                            <Mail className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                      </td>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-medium">Lead Passenger</th>
+                      <th className="text-left p-3 font-medium">Additional Passengers</th>
+                      <th className="text-left p-3 font-medium">Pax</th>
+                      <th className="text-left p-3 font-medium">Check In</th>
+                      <th className="text-left p-3 font-medium">Check Out</th>
+                      <th className="text-left p-3 font-medium">Nights</th>
+                      <th className="text-left p-3 font-medium">Status</th>
+                      <th className="text-left p-3 font-medium">Notes</th>
+                      <th className="text-left p-3 font-medium">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {filteredBookings.map((booking) => (
+                      <tr 
+                        key={booking.id} 
+                        className="border-b hover:bg-accent cursor-pointer transition-colors"
+                        onClick={() => handleViewBooking(booking)}
+                      >
+                        <td className="p-3">
+                          {booking.customers?.first_name} {booking.customers?.last_name}
+                        </td>
+                        <td className="p-3">
+                          <div className="space-y-1">
+                            {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
+                            {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
+                            {booking.group_name && <div className="text-sm text-gray-500">Group: {booking.group_name}</div>}
+                          </div>
+                        </td>
+                        <td className="p-3">{booking.passenger_count}</td>
+                        <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}</td>
+                        <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}</td>
+                        <td className="p-3">{booking.total_nights || '-'}</td>
+                        <td className="p-3">
+                          <Badge className={getStatusColor(booking.status || 'pending')}>
+                            {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
+                          </Badge>
+                        </td>
+                        <td className="p-3 max-w-xs">
+                          <div className="truncate" title={booking.extra_requests || ''}>
+                            {booking.extra_requests || '-'}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={(e) => handleEditBooking(e, booking)}
+                              disabled={isAgent}
+                            >
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-blue-600 hover:text-blue-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEmailBookingId(booking.id);
+                                setEmailPreviewOpen(true);
+                              }}
+                              disabled={!booking.customers?.email || isAgent}
+                              title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
+                            >
+                              <Mail className="h-3 w-3" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-red-600 hover:text-red-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteBooking(booking);
+                              }}
+                              disabled={deleteBookingMutation.isPending || isAgent}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </>
       )}

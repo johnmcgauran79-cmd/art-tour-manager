@@ -157,9 +157,9 @@ export default function TourDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <AppBreadcrumbs
           items={[
             { label: "Back", onClick: () => goBack("/?tab=tours") },
@@ -167,22 +167,23 @@ export default function TourDetail() {
           ]}
         />
         
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{tour.name}</h1>
-            <p className="text-muted-foreground mt-1">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{tour.name}</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               {formatDateRange(tour.start_date, tour.end_date)}
             </p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => goBack("/?tab=tours")}
+              className="flex-shrink-0"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
+              <ArrowLeft className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Back</span>
             </Button>
             
             {!isAgent && userRole !== 'operations_team' && (
@@ -191,25 +192,27 @@ export default function TourDetail() {
                   variant="outline"
                   size="sm"
                   onClick={() => navigate(`/tours/${id}/edit`)}
+                  className="flex-shrink-0"
                 >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
+                  <Edit className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Edit</span>
                 </Button>
                 
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setDuplicateDialogOpen(true)}
+                  className="flex-shrink-0"
                 >
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
+                  <Copy className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Duplicate</span>
                 </Button>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
+                    <Button variant="outline" size="sm" className="flex-shrink-0">
+                      <Trash2 className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Delete</span>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
@@ -235,34 +238,34 @@ export default function TourDetail() {
 
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Overview</span>
+        <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-7 md:w-auto h-auto p-1 gap-1">
+          <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="hotels" className="flex items-center gap-2">
-            <Building className="h-4 w-4" />
-            <span className="hidden sm:inline">Hotels</span>
+          <TabsTrigger value="hotels" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Hotels</span>
           </TabsTrigger>
-          <TabsTrigger value="bookings" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Bookings</span>
+          <TabsTrigger value="bookings" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Bookings</span>
           </TabsTrigger>
-          <TabsTrigger value="activities" className="flex items-center gap-2">
-            <MapPin className="h-4 w-4" />
-            <span className="hidden sm:inline">Activities</span>
+          <TabsTrigger value="activities" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Activities</span>
           </TabsTrigger>
-          <TabsTrigger value="operations" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden sm:inline">Operations</span>
+          <TabsTrigger value="operations" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Ops</span>
           </TabsTrigger>
-          <TabsTrigger value="tasks" className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" />
-            <span className="hidden sm:inline">Tasks</span>
+          <TabsTrigger value="tasks" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Tasks</span>
           </TabsTrigger>
-          <TabsTrigger value="itinerary" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Itinerary</span>
+          <TabsTrigger value="itinerary" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+            <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Itinerary</span>
           </TabsTrigger>
         </TabsList>
 
