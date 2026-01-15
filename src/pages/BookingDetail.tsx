@@ -26,6 +26,7 @@ import { useBookingAuditLog } from "@/hooks/useBookingAuditLog";
 import { BookingAuditTrail } from "@/components/BookingAuditTrail";
 import { Separator } from "@/components/ui/separator";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
+import { ContactAvatar } from "@/components/ContactAvatar";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -144,17 +145,78 @@ export default function BookingDetail() {
           ]}
         />
         
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{leadPassengerName}</h1>
-            {tour && (
-              <p className="text-muted-foreground mt-1">
-                {tour.name}
-              </p>
+        {/* Mobile action buttons */}
+        <div className="flex flex-wrap gap-2 sm:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goBack(tour ? `/tours/${tour.id}` : "/?tab=bookings")}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          
+          <WhatsAppButton 
+            phone={booking.customers?.phone} 
+            name={booking.customers?.first_name}
+          />
+          
+          {!isAgent && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailPreview(true)}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Email
+              </Button>
+              
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            {booking.customers && (
+              <ContactAvatar
+                contactId={booking.customers.id}
+                avatarUrl={booking.customers.avatar_url || null}
+                firstName={booking.customers.first_name}
+                lastName={booking.customers.last_name}
+                editable={false}
+                size="lg"
+              />
             )}
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold truncate">{leadPassengerName}</h1>
+              {tour && (
+                <p className="text-muted-foreground mt-1 text-sm sm:text-base truncate">
+                  {tour.name}
+                </p>
+              )}
+            </div>
           </div>
           
-          <div className="flex gap-2">
+          {/* Desktop action buttons */}
+          <div className="hidden sm:flex gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
