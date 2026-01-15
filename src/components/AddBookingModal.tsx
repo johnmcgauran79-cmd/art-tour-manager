@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCreateBooking } from "@/hooks/useBookings";
@@ -19,7 +19,7 @@ import { MedicalDetailsTab } from "@/components/booking/MedicalDetailsTab";
 import { TravelDocumentsTab } from "@/components/booking/TravelDocumentsTab";
 import { AddContactModal } from "@/components/AddContactModal";
 import { BookingConfirmationDialog } from "@/components/BookingConfirmationDialog";
-import { UserPlus } from "lucide-react";
+import { UserPlus, X } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
 import {
@@ -466,9 +466,17 @@ export const AddBookingModal = ({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Add New Booking'}
-            </DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>
+                {defaultStatus === 'waitlisted' ? 'Add to Waitlist' : 'Add New Booking'}
+              </DialogTitle>
+              <DialogClose asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Close</span>
+                </Button>
+              </DialogClose>
+            </div>
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
