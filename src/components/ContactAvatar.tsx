@@ -276,28 +276,38 @@ export const ContactAvatar = ({
         </DialogContent>
       </Dialog>
 
-      {/* Full Image Dialog */}
+      {/* Full Image Dialog - Mobile optimized */}
       <Dialog open={showFullImage} onOpenChange={setShowFullImage}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden mx-4">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md p-0 overflow-hidden rounded-xl">
           <DialogTitle className="sr-only">Profile Photo</DialogTitle>
-          <div className="relative">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background h-10 w-10"
-              onClick={() => setShowFullImage(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-            {avatarUrl && (
-              <img
-                src={avatarUrl}
-                alt={`${firstName} ${lastName}`}
-                className="w-full h-auto max-h-[80vh] object-contain"
-              />
-            )}
+          <div className="relative flex flex-col">
+            {/* Header with close button */}
+            <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+              <span className="font-medium text-sm">Profile Photo</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowFullImage(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Image container */}
+            <div className="flex items-center justify-center bg-muted/20 p-4">
+              {avatarUrl && (
+                <img
+                  src={avatarUrl}
+                  alt={`${firstName} ${lastName}`}
+                  className="max-w-full max-h-[60vh] w-auto h-auto object-contain rounded-lg"
+                />
+              )}
+            </div>
+            
+            {/* Footer with actions */}
             {editable && (
-              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+              <div className="p-3 border-t bg-muted/30">
                 <Button
                   variant="secondary"
                   size="sm"
