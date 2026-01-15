@@ -60,6 +60,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
         )
       `)
       .eq('activity_id', activityId)
+      .gt('passengers_attending', 0)
       .neq('bookings.status', 'cancelled');
 
     if (error) {
