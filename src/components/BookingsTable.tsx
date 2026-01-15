@@ -81,34 +81,41 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span>All Bookings ({filteredBookings.length} {searchQuery ? 'found' : 'total'})</span>
-              <Badge variant="secondary" className="text-sm">
+        <CardHeader className="space-y-4">
+          {/* Title and count - stacks on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="flex flex-wrap items-center gap-2">
+              <span className="text-lg sm:text-xl">All Bookings ({filteredBookings.length})</span>
+              <Badge variant="secondary" className="text-xs sm:text-sm">
                 {bookingsThisMonth} this month
               </Badge>
-            </div>
-            <div className="flex gap-2">
+            </CardTitle>
+            
+            {/* Action buttons - wrap on mobile */}
+            <div className="flex flex-wrap gap-2">
               {onViewAnalytics && !isAgent && (
                 <Button 
                   onClick={onViewAnalytics} 
                   variant="outline"
+                  size="sm"
+                  className="text-xs sm:text-sm"
                 >
-                  <TrendingUp className="h-4 w-4 mr-2" />
-                  Analytics
+                  <TrendingUp className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Analytics</span>
                 </Button>
               )}
               {onBulkStatusUpdate && !isAgent && (
                 <Button 
                   onClick={onBulkStatusUpdate} 
-                  className="bg-brand-yellow hover:bg-brand-yellow/90 text-brand-navy relative"
+                  size="sm"
+                  className="bg-brand-yellow hover:bg-brand-yellow/90 text-brand-navy relative text-xs sm:text-sm"
                 >
-                  Update Status
+                  <span className="hidden sm:inline">Update Status</span>
+                  <span className="sm:hidden">Status</span>
                   {statusUpdateCount > 0 && (
                     <Badge 
                       variant="destructive" 
-                      className="ml-2 px-2 py-0.5 text-xs"
+                      className="ml-1 sm:ml-2 px-1.5 py-0.5 text-xs"
                     >
                       {statusUpdateCount}
                     </Badge>
@@ -116,36 +123,46 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                 </Button>
               )}
               {!isAgent && (
-                <Button onClick={onAddBooking} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Booking
+                <Button 
+                  onClick={onAddBooking} 
+                  size="sm"
+                  className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow text-xs sm:text-sm"
+                >
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Booking</span>
                 </Button>
               )}
             </div>
-          </CardTitle>
-          <CardDescription>
+          </div>
+          
+          <CardDescription className="text-xs sm:text-sm">
             Search across all bookings in the system
           </CardDescription>
-          <div className="flex items-center gap-3 mt-4">
-            <div className="relative flex-1 max-w-md">
+          
+          {/* Search and view toggle - stacks on mobile */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search by passenger name, tour, or group..."
+                placeholder="Search passenger, tour, group..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
-            <ViewToggle view={view} onViewChange={setView} />
-            {searchQuery && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              <ViewToggle view={view} onViewChange={setView} />
+              {searchQuery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                  className="whitespace-nowrap"
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -164,66 +181,80 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
               ))}
             </div>
           ) : (
-            <div className="border rounded-lg">
-              <Table className="table-fixed">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead style={{ width: '12%' }}>Tour</TableHead>
-                    <TableHead style={{ width: '11%' }}>Lead Passenger</TableHead>
-                    <TableHead style={{ width: '11%' }}>Other Passengers</TableHead>
-                    <TableHead style={{ width: '5%' }}>Pax</TableHead>
-                    <TableHead style={{ width: '9%' }}>Check In</TableHead>
-                    <TableHead style={{ width: '9%' }}>Check Out</TableHead>
-                    <TableHead style={{ width: '5%' }}>Nights</TableHead>
-                    <TableHead style={{ width: '8%' }}>Status</TableHead>
-                    <TableHead style={{ width: '9%' }}>Created</TableHead>
-                    <TableHead style={{ width: '12%' }}>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredBookings.map((booking) => (
-                    <TableRow 
-                      key={booking.id} 
-                      className="cursor-pointer hover:bg-accent/50"
-                      onClick={() => handleBookingClick(booking)}
-                    >
-                      <TableCell>{booking.tours?.name || 'No Tour'}</TableCell>
-                      <TableCell>
-                        {booking.customers?.first_name} {booking.customers?.last_name}
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
-                          {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
-                          {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}
-                        </div>
-                      </TableCell>
-                      <TableCell>{booking.passenger_count}</TableCell>
-                      <TableCell>
-                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}
-                      </TableCell>
-                      <TableCell>
-                        {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}
-                      </TableCell>
-                      <TableCell>{booking.total_nights || '-'}</TableCell>
-                      <TableCell>
-                        <Badge className={getBookingStatusColor(booking.status || 'pending')}>
-                          {formatStatusText(booking.status || 'pending')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {formatDateToDDMMYYYY(booking.created_at)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="truncate" title={booking.extra_requests || ''}>
-                          {booking.extra_requests || '-'}
-                        </div>
-                      </TableCell>
+            <>
+              {/* Mobile card view for table mode on small screens */}
+              <div className="block md:hidden space-y-3">
+                {filteredBookings.map((booking) => (
+                  <BookingCard
+                    key={booking.id}
+                    booking={booking}
+                    onView={handleBookingClick}
+                  />
+                ))}
+              </div>
+              
+              {/* Desktop table view */}
+              <div className="hidden md:block border rounded-lg overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[120px]">Tour</TableHead>
+                      <TableHead className="min-w-[120px]">Lead Passenger</TableHead>
+                      <TableHead className="min-w-[120px]">Other Passengers</TableHead>
+                      <TableHead className="min-w-[50px]">Pax</TableHead>
+                      <TableHead className="min-w-[90px]">Check In</TableHead>
+                      <TableHead className="min-w-[90px]">Check Out</TableHead>
+                      <TableHead className="min-w-[60px]">Nights</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[90px]">Created</TableHead>
+                      <TableHead className="min-w-[120px]">Notes</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBookings.map((booking) => (
+                      <TableRow 
+                        key={booking.id} 
+                        className="cursor-pointer hover:bg-accent/50"
+                        onClick={() => handleBookingClick(booking)}
+                      >
+                        <TableCell className="font-medium">{booking.tours?.name || 'No Tour'}</TableCell>
+                        <TableCell>
+                          {booking.customers?.first_name} {booking.customers?.last_name}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {booking.passenger_2_name && <div>{booking.passenger_2_name}</div>}
+                            {booking.passenger_3_name && <div>{booking.passenger_3_name}</div>}
+                            {booking.group_name && <div className="text-sm text-muted-foreground">Group: {booking.group_name}</div>}
+                          </div>
+                        </TableCell>
+                        <TableCell>{booking.passenger_count}</TableCell>
+                        <TableCell>
+                          {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}
+                        </TableCell>
+                        <TableCell>
+                          {booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}
+                        </TableCell>
+                        <TableCell>{booking.total_nights || '-'}</TableCell>
+                        <TableCell>
+                          <Badge className={getBookingStatusColor(booking.status || 'pending')}>
+                            {formatStatusText(booking.status || 'pending')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {formatDateToDDMMYYYY(booking.created_at)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="truncate max-w-[150px]" title={booking.extra_requests || ''}>
+                            {booking.extra_requests || '-'}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
