@@ -5,6 +5,7 @@ import { Calendar, Users, MapPin, Eye } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
+import { ContactAvatar } from "@/components/ContactAvatar";
 
 interface BookingCardProps {
   booking: any;
@@ -25,16 +26,28 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
     <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className={`${typography.cardTitle} truncate mb-1`}>
-              {leadPassenger}
-            </h3>
-            {booking.tours?.name && (
-              <div className={`flex items-center gap-1.5 ${typography.metadata}`}>
-                <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate">{booking.tours.name}</span>
-              </div>
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            {booking.customers && (
+              <ContactAvatar
+                contactId={booking.customers.id}
+                avatarUrl={booking.customers.avatar_url || null}
+                firstName={booking.customers.first_name}
+                lastName={booking.customers.last_name}
+                editable={false}
+                size="sm"
+              />
             )}
+            <div className="flex-1 min-w-0">
+              <h3 className={`${typography.cardTitle} truncate mb-1`}>
+                {leadPassenger}
+              </h3>
+              {booking.tours?.name && (
+                <div className={`flex items-center gap-1.5 ${typography.metadata}`}>
+                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">{booking.tours.name}</span>
+                </div>
+              )}
+            </div>
           </div>
           <Badge className={getBookingStatusColor(booking.status || 'pending')}>
             {formatStatusText(booking.status || 'pending')}

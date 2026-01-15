@@ -11,6 +11,7 @@ import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { ContactAvatar } from "@/components/ContactAvatar";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -245,17 +246,29 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                   >
                     <CardContent className="p-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate">
-                            {booking.customers?.first_name} {booking.customers?.last_name}
-                          </p>
-                          {(booking.passenger_2_name || booking.passenger_3_name) && (
-                            <p className="text-xs text-muted-foreground truncate">
-                              +{[booking.passenger_2_name, booking.passenger_3_name].filter(Boolean).join(', ')}
-                            </p>
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          {booking.customers && (
+                            <ContactAvatar
+                              contactId={booking.customers.id}
+                              avatarUrl={booking.customers.avatar_url || null}
+                              firstName={booking.customers.first_name}
+                              lastName={booking.customers.last_name}
+                              editable={false}
+                              size="sm"
+                            />
                           )}
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium truncate">
+                              {booking.customers?.first_name} {booking.customers?.last_name}
+                            </p>
+                            {(booking.passenger_2_name || booking.passenger_3_name) && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                +{[booking.passenger_2_name, booking.passenger_3_name].filter(Boolean).join(', ')}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <Badge className={`text-xs ${getStatusColor(booking.status || 'pending')}`}>
+                        <Badge className={`text-xs flex-shrink-0 ${getStatusColor(booking.status || 'pending')}`}>
                           {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                         </Badge>
                       </div>
@@ -306,7 +319,19 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                         onClick={() => handleViewBooking(booking)}
                       >
                         <td className="p-3">
-                          {booking.customers?.first_name} {booking.customers?.last_name}
+                          <div className="flex items-center gap-2">
+                            {booking.customers && (
+                              <ContactAvatar
+                                contactId={booking.customers.id}
+                                avatarUrl={booking.customers.avatar_url || null}
+                                firstName={booking.customers.first_name}
+                                lastName={booking.customers.last_name}
+                                editable={false}
+                                size="sm"
+                              />
+                            )}
+                            <span>{booking.customers?.first_name} {booking.customers?.last_name}</span>
+                          </div>
                         </td>
                         <td className="p-3">
                           <div className="space-y-1">
