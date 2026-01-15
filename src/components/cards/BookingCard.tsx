@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Calendar, Users, MapPin, Eye } from "lucide-react";
+import { Calendar, Users, MapPin, Eye, Camera, Upload, Loader2 } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
 import { ContactAvatar } from "@/components/ContactAvatar";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface BookingCardProps {
   booking: any;
@@ -16,6 +19,9 @@ interface BookingCardProps {
 
 export const BookingCard = ({ booking, onView }: BookingCardProps) => {
   const [showFullImage, setShowFullImage] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
   
   const leadPassenger = booking.customers 
     ? `${booking.customers.first_name} ${booking.customers.last_name}`
@@ -27,14 +33,73 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
   ].filter(Boolean);
 
   const avatarUrl = booking.customers?.avatar_url;
+  const contactId = booking.customers?.id;
   const initials = booking.customers 
     ? `${booking.customers.first_name?.[0] || ''}${booking.customers.last_name?.[0] || ''}`
     : '?';
 
   const handleAvatarClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (avatarUrl) {
-      setShowFullImage(true);
+    setShowFullImage(true);
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !contactId) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${contactId}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      // Update the customer record
+      const { error: updateError } = await supabase
+        .from('customers')
+        .update({ avatar_url: publicUrl })
+        .eq('id', contactId);
+
+      if (updateError) throw updateError;
+
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+
+      toast.success('Profile photo updated');
+      setShowFullImage(false);
+    } catch (error: any) {
+      console.error('Error uploading photo:', error);
+      toast.error(error.message || 'Failed to upload photo');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -47,7 +112,7 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
               {booking.customers && (
                 <div 
                   onClick={handleAvatarClick}
-                  className={avatarUrl ? "cursor-pointer" : ""}
+                  className="cursor-pointer"
                 >
                   <ContactAvatar
                     contactId={booking.customers.id}
@@ -163,16 +228,49 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
         </CardContent>
       </Card>
 
-      {/* Full Image Dialog */}
+      {/* Full Image Dialog with Update Option */}
       <Dialog open={showFullImage} onOpenChange={setShowFullImage}>
-        <DialogContent className="max-w-sm p-2">
-          {avatarUrl && (
-            <img 
-              src={avatarUrl} 
-              alt={leadPassenger}
-              className="w-full h-auto rounded-lg"
+        <DialogContent className="max-w-sm p-4">
+          <div className="space-y-4">
+            <div className="text-center font-medium">{leadPassenger}</div>
+            
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt={leadPassenger}
+                className="w-full h-auto rounded-lg max-h-80 object-contain"
+              />
+            ) : (
+              <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                <span className="text-4xl text-muted-foreground">{initials}</span>
+              </div>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileSelect}
             />
-          )}
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4 mr-2" />
+                )}
+                {avatarUrl ? 'Change Photo' : 'Add Photo'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>
