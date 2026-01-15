@@ -122,166 +122,206 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
   if (!activity) return null;
 
   const InfoRow = ({ label, value }: { label: string; value: React.ReactNode }) => (
-    <div className="flex justify-between py-2 border-b border-border last:border-0">
-      <span className="text-muted-foreground text-sm">{label}</span>
-      <span className="text-sm font-medium text-right">{value || '-'}</span>
+    <div className="flex justify-between py-1.5 sm:py-2 border-b border-border last:border-0 gap-2">
+      <span className="text-muted-foreground text-xs sm:text-sm flex-shrink-0">{label}</span>
+      <span className="text-xs sm:text-sm font-medium text-right truncate">{value || '-'}</span>
     </div>
   );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between gap-4">
-            <span>{activity.name}</span>
-            <Badge variant={getStatusColor(activity.activity_status || 'pending')}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="text-base sm:text-lg truncate pr-2">{activity.name}</span>
+            <Badge variant={getStatusColor(activity.activity_status || 'pending')} className="self-start sm:self-auto text-xs">
               {(activity.activity_status || 'pending').replace(/_/g, ' ').toUpperCase()}
             </Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Basic Info */}
           <div className="space-y-1">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Basic Information</h4>
-            <div className="bg-muted/30 rounded-lg p-4">
+            <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Basic Information</h4>
+            <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
               <InfoRow label="Location" value={activity.location} />
               <InfoRow label="Date" value={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : null} />
-              <InfoRow label="Cutoff Date" value={activity.cutoff_date ? formatDateToDDMMYYYY(activity.cutoff_date) : null} />
-              <InfoRow label="Start Time" value={formatTime(activity.start_time)} />
-              <InfoRow label="End Time" value={formatTime(activity.end_time)} />
-              <InfoRow label="Spots Available" value={activity.spots_available || 0} />
-              <InfoRow label="Pax Attending" value={paxAttending} />
+              <InfoRow label="Cutoff" value={activity.cutoff_date ? formatDateToDDMMYYYY(activity.cutoff_date) : null} />
+              <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Start" value={formatTime(activity.start_time)} />
+                <InfoRow label="End" value={formatTime(activity.end_time)} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Spots" value={activity.spots_available || 0} />
+                <InfoRow label="Pax" value={paxAttending} />
+              </div>
             </div>
           </div>
 
-          {/* Transport Details */}
-          <div className="space-y-1">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Transport Details</h4>
-            <div className="bg-muted/30 rounded-lg p-4">
+          {/* Transport Details - Collapsible on mobile */}
+          <details className="group">
+            <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none flex items-center gap-2">
+              <span>Transport Details</span>
+              <span className="text-xs text-muted-foreground/60 group-open:hidden">(tap to expand)</span>
+            </summary>
+            <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 mt-1">
               <InfoRow 
-                label="Transport Status" 
+                label="Status" 
                 value={
-                  <Badge variant="outline">
+                  <Badge variant="outline" className="text-xs">
                     {(activity.transport_status || 'pending').replace(/_/g, ' ').toUpperCase()}
                   </Badge>
                 } 
               />
-              <InfoRow label="Transport Company" value={activity.transport_company} />
-              <InfoRow label="Transport Contact" value={activity.transport_contact_name} />
-              <InfoRow label="Transport Phone" value={activity.transport_phone} />
-              <InfoRow label="Transport Email" value={activity.transport_email} />
+              <InfoRow label="Company" value={activity.transport_company} />
+              <InfoRow label="Contact" value={activity.transport_contact_name} />
+              <InfoRow label="Phone" value={activity.transport_phone} />
+              <InfoRow label="Email" value={activity.transport_email} />
               <InfoRow label="Pickup Time" value={formatTime(activity.pickup_time)} />
               <InfoRow label="Pickup Location" value={activity.pickup_location} />
               <InfoRow label="Collection Time" value={formatTime(activity.collection_time)} />
               <InfoRow label="Collection Location" value={activity.collection_location} />
-              <InfoRow label="Drop Off Location" value={activity.dropoff_location} />
+              <InfoRow label="Drop Off" value={activity.dropoff_location} />
             </div>
-          </div>
+          </details>
 
           {/* Guide Details */}
           {(activity.guide_name || activity.guide_phone || activity.guide_email) && (
             <div className="space-y-1">
-              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Guide Details</h4>
-              <div className="bg-muted/30 rounded-lg p-4">
-                <InfoRow label="Guide Name" value={activity.guide_name} />
-                <InfoRow label="Guide Phone" value={activity.guide_phone} />
-                <InfoRow label="Guide Email" value={activity.guide_email} />
+              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Guide Details</h4>
+              <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
+                <InfoRow label="Name" value={activity.guide_name} />
+                <InfoRow label="Phone" value={activity.guide_phone} />
+                <InfoRow label="Email" value={activity.guide_email} />
               </div>
             </div>
           )}
 
           {/* Hospitality */}
           {activity.hospitality_inclusions && (
-            <div className="space-y-1">
-              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Hospitality Inclusions</h4>
-              <div className="bg-muted/30 rounded-lg p-4">
-                <p className="text-sm whitespace-pre-wrap">{activity.hospitality_inclusions}</p>
+            <details className="group">
+              <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
+                Hospitality Inclusions
+              </summary>
+              <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 mt-1">
+                <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.hospitality_inclusions}</p>
               </div>
-            </div>
+            </details>
           )}
 
           {/* Notes */}
           {(activity.notes || activity.operations_notes || activity.transport_notes) && (
-            <div className="space-y-1">
-              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Notes</h4>
-              <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+            <details className="group">
+              <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
+                Notes
+              </summary>
+              <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 space-y-2 sm:space-y-3 mt-1">
                 {activity.notes && (
                   <div>
-                    <span className="text-xs text-muted-foreground uppercase">General Notes</span>
-                    <p className="text-sm whitespace-pre-wrap">{activity.notes}</p>
+                    <span className="text-xs text-muted-foreground uppercase">General</span>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.notes}</p>
                   </div>
                 )}
                 {activity.operations_notes && (
                   <div>
-                    <span className="text-xs text-muted-foreground uppercase">Operations Notes</span>
-                    <p className="text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
+                    <span className="text-xs text-muted-foreground uppercase">Operations</span>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
                   </div>
                 )}
                 {activity.transport_notes && (
                   <div>
-                    <span className="text-xs text-muted-foreground uppercase">Transport Notes</span>
-                    <p className="text-sm whitespace-pre-wrap">{activity.transport_notes}</p>
+                    <span className="text-xs text-muted-foreground uppercase">Transport</span>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.transport_notes}</p>
                   </div>
                 )}
               </div>
-            </div>
+            </details>
           )}
 
           {/* Bookings List */}
           <div className="space-y-1">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">
+            <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
               Bookings ({activityBookings.length})
             </h4>
             {activityBookings.length > 0 ? (
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Lead Passenger</TableHead>
-                      <TableHead>Other Passengers</TableHead>
-                      <TableHead className="text-right">Pax Attending</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {activityBookings.map((ab) => (
-                      <TableRow key={ab.id}>
-                        <TableCell className="font-medium">
-                          {ab.booking.lead_passenger 
-                            ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}`
-                            : '-'}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {[ab.booking.passenger_2_name, ab.booking.passenger_3_name]
-                            .filter(Boolean)
-                            .join(', ') || '-'}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {ab.passengers_attending}
-                        </TableCell>
+              <>
+                {/* Mobile Card View */}
+                <div className="sm:hidden space-y-2">
+                  {activityBookings.map((ab) => (
+                    <div key={ab.id} className="bg-muted/30 rounded-lg p-2.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm truncate">
+                            {ab.booking.lead_passenger 
+                              ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}`
+                              : '-'}
+                          </p>
+                          {(ab.booking.passenger_2_name || ab.booking.passenger_3_name) && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              +{[ab.booking.passenger_2_name, ab.booking.passenger_3_name].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="text-xs flex-shrink-0">
+                          {ab.passengers_attending} pax
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View */}
+                <div className="hidden sm:block border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Lead Passenger</TableHead>
+                        <TableHead>Other Passengers</TableHead>
+                        <TableHead className="text-right">Pax Attending</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {activityBookings.map((ab) => (
+                        <TableRow key={ab.id}>
+                          <TableCell className="font-medium">
+                            {ab.booking.lead_passenger 
+                              ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}`
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {[ab.booking.passenger_2_name, ab.booking.passenger_3_name]
+                              .filter(Boolean)
+                              .join(', ') || '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {ab.passengers_attending}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             ) : (
-              <div className="bg-muted/30 rounded-lg p-4 text-center text-muted-foreground text-sm">
+              <div className="bg-muted/30 rounded-lg p-3 sm:p-4 text-center text-muted-foreground text-xs sm:text-sm">
                 No bookings allocated to this activity
               </div>
             )}
           </div>
         </div>
 
-        <DialogFooter className="flex gap-2 sm:gap-0">
-          {!isAgent && (
-            <Button onClick={handleEditClick} className="gap-2">
-              <Edit className="h-4 w-4" />
-              Edit Activity
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex flex-row gap-2 pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1 sm:flex-none">
             Close
           </Button>
+          {!isAgent && (
+            <Button onClick={handleEditClick} className="gap-2 flex-1 sm:flex-none">
+              <Edit className="h-4 w-4" />
+              <span className="hidden sm:inline">Edit Activity</span>
+              <span className="sm:hidden">Edit</span>
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
