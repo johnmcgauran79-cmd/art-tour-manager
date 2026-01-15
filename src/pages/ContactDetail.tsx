@@ -136,7 +136,70 @@ export default function ContactDetail() {
           ]}
         />
         
-        <div className="flex items-start justify-between">
+        {/* Mobile action buttons - shown at top on mobile */}
+        <div className="flex flex-wrap gap-2 sm:hidden">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => goBack("/?tab=contacts")}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateWithContext(`/contacts/${id}/edit`)}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+          
+          <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+            if (!open) {
+              setDeleteError(null);
+            }
+            setShowDeleteDialog(open);
+          }}>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" onClick={async () => {
+                setDeleteError(null);
+                const hasBookings = await checkForBookings();
+                setShowDeleteDialog(true);
+              }}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div>
+                    {deleteError ? (
+                      <div className="text-destructive font-semibold text-base">
+                        {deleteError}
+                      </div>
+                    ) : (
+                      <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
+                    )}
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                {!deleteError && (
+                  <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    Delete
+                  </AlertDialogAction>
+                )}
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <ContactAvatar
               contactId={contact.id}
@@ -146,13 +209,14 @@ export default function ContactDetail() {
               editable={true}
               size="lg"
             />
-            <div>
-              <h1 className="text-3xl font-bold">{fullName}</h1>
-              <p className="text-muted-foreground mt-1">{contact.email}</p>
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold truncate">{fullName}</h1>
+              <p className="text-muted-foreground mt-1 text-sm sm:text-base truncate">{contact.email}</p>
             </div>
           </div>
           
-          <div className="flex gap-2">
+          {/* Desktop action buttons - hidden on mobile */}
+          <div className="hidden sm:flex gap-2 flex-shrink-0">
             <Button
               variant="outline"
               size="sm"
