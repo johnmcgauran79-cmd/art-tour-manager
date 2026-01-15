@@ -2,7 +2,7 @@ import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, Trash2, X } from "lucide-react";
+import { Camera, Trash2, X, ImagePlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -26,8 +26,10 @@ export const ContactAvatar = ({
   size = "lg",
 }: ContactAvatarProps) => {
   const [showFullImage, setShowFullImage] = useState(false);
+  const [showUploadOptions, setShowUploadOptions] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -36,7 +38,7 @@ export const ContactAvatar = ({
   const sizeClasses = {
     sm: "h-12 w-12",
     md: "h-20 w-20",
-    lg: "h-32 w-32",
+    lg: "h-24 w-24 md:h-32 md:w-32",
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -64,6 +66,7 @@ export const ContactAvatar = ({
     }
 
     setIsUploading(true);
+    setShowUploadOptions(false);
 
     try {
       // Generate unique filename
@@ -108,15 +111,15 @@ export const ContactAvatar = ({
       });
     } finally {
       setIsUploading(false);
-      // Reset input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      // Reset inputs
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   };
 
   const handleRemovePhoto = async () => {
     setIsUploading(true);
+    setShowUploadOptions(false);
 
     try {
       // Update customer record to remove avatar
@@ -146,50 +149,70 @@ export const ContactAvatar = ({
     }
   };
 
+  const handleAvatarClick = () => {
+    if (editable && !avatarUrl) {
+      setShowUploadOptions(true);
+    } else if (avatarUrl) {
+      setShowFullImage(true);
+    }
+  };
+
   return (
     <>
-      <div className="relative group">
-        <Avatar
-          className={cn(
-            sizeClasses[size],
-            "cursor-pointer transition-opacity",
-            avatarUrl && "hover:opacity-80"
-          )}
-          onClick={() => avatarUrl && setShowFullImage(true)}
-        >
-          <AvatarImage src={avatarUrl || undefined} alt={`${firstName} ${lastName}`} />
-          <AvatarFallback className="text-2xl font-semibold bg-muted">
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative">
+          <Avatar
+            className={cn(
+              sizeClasses[size],
+              "cursor-pointer transition-all active:scale-95",
+              avatarUrl ? "hover:opacity-80" : "hover:ring-2 hover:ring-primary/50",
+              isUploading && "opacity-50"
+            )}
+            onClick={handleAvatarClick}
+          >
+            {isUploading ? (
+              <AvatarFallback className="bg-muted">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </AvatarFallback>
+            ) : (
+              <>
+                <AvatarImage src={avatarUrl || undefined} alt={`${firstName} ${lastName}`} />
+                <AvatarFallback className="text-xl md:text-2xl font-semibold bg-muted">
+                  {initials}
+                </AvatarFallback>
+              </>
+            )}
+          </Avatar>
 
-        {editable && (
-          <div className="absolute -bottom-1 -right-1 flex gap-1">
+          {/* Desktop: Small overlay button */}
+          {editable && !isUploading && (
             <Button
               type="button"
               size="icon"
               variant="secondary"
-              className="h-8 w-8 rounded-full shadow-md"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
+              className="absolute -bottom-1 -right-1 h-8 w-8 md:h-9 md:w-9 rounded-full shadow-md border-2 border-background"
+              onClick={() => setShowUploadOptions(true)}
             >
               <Camera className="h-4 w-4" />
             </Button>
-            {avatarUrl && (
-              <Button
-                type="button"
-                size="icon"
-                variant="destructive"
-                className="h-8 w-8 rounded-full shadow-md"
-                onClick={handleRemovePhoto}
-                disabled={isUploading}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+          )}
+        </div>
+
+        {/* Mobile: Visible text button for easier access */}
+        {editable && !isUploading && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="md:hidden text-xs h-8 px-3"
+            onClick={() => setShowUploadOptions(true)}
+          >
+            <Camera className="h-3.5 w-3.5 mr-1.5" />
+            {avatarUrl ? "Change Photo" : "Add Photo"}
+          </Button>
         )}
 
+        {/* Hidden file inputs */}
         <input
           ref={fileInputRef}
           type="file"
@@ -197,20 +220,74 @@ export const ContactAvatar = ({
           className="hidden"
           onChange={handleFileSelect}
         />
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
       </div>
+
+      {/* Upload Options Dialog - Mobile optimized */}
+      <Dialog open={showUploadOptions} onOpenChange={setShowUploadOptions}>
+        <DialogContent className="max-w-sm mx-4 p-0 gap-0 rounded-xl overflow-hidden">
+          <DialogTitle className="px-4 py-3 text-center border-b bg-muted/30 font-medium">
+            Profile Photo
+          </DialogTitle>
+          <div className="p-2 space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-14 text-base px-4 rounded-lg"
+              onClick={() => cameraInputRef.current?.click()}
+            >
+              <Camera className="h-5 w-5 mr-3 text-primary" />
+              Take Photo
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start h-14 text-base px-4 rounded-lg"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-5 w-5 mr-3 text-primary" />
+              Choose from Library
+            </Button>
+            {avatarUrl && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-14 text-base px-4 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleRemovePhoto}
+              >
+                <Trash2 className="h-5 w-5 mr-3" />
+                Remove Photo
+              </Button>
+            )}
+          </div>
+          <div className="p-2 pt-0">
+            <Button
+              variant="outline"
+              className="w-full h-12 rounded-lg"
+              onClick={() => setShowUploadOptions(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Full Image Dialog */}
       <Dialog open={showFullImage} onOpenChange={setShowFullImage}>
-        <DialogContent className="max-w-lg p-0 overflow-hidden">
+        <DialogContent className="max-w-lg p-0 overflow-hidden mx-4">
           <DialogTitle className="sr-only">Profile Photo</DialogTitle>
           <div className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background"
+              className="absolute top-2 right-2 z-10 bg-background/80 hover:bg-background h-10 w-10"
               onClick={() => setShowFullImage(false)}
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
             {avatarUrl && (
               <img
@@ -218,6 +295,22 @@ export const ContactAvatar = ({
                 alt={`${firstName} ${lastName}`}
                 className="w-full h-auto max-h-[80vh] object-contain"
               />
+            )}
+            {editable && (
+              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full h-10"
+                  onClick={() => {
+                    setShowFullImage(false);
+                    setShowUploadOptions(true);
+                  }}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  Change Photo
+                </Button>
+              </div>
             )}
           </div>
         </DialogContent>
