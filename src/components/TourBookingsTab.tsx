@@ -48,7 +48,7 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   return (
     <>
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
             <div className="flex items-center gap-2">
@@ -80,50 +80,50 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
             </div>
           </div>
           {!isAgent && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={() => setBulkEmailModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 border-blue-500/30 text-blue-600 hover:bg-blue-500/5"
+                className="flex items-center gap-1.5 border-blue-500/30 text-blue-600 hover:bg-blue-500/5"
               >
                 <Mail className="h-4 w-4" />
-                Send Email
+                <span className="hidden sm:inline">Send Email</span>
               </Button>
               <Button
                 onClick={() => setBulkStatusModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
+                className="flex items-center gap-1.5 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
               >
                 <Users className="h-4 w-4" />
-                Bulk Update Status
+                <span className="hidden md:inline">Bulk Status</span>
               </Button>
               <Button
                 onClick={() => setBulkDietaryModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
+                className="flex items-center gap-1.5 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
               >
                 <Utensils className="h-4 w-4" />
-                Bulk Update Dietary
+                <span className="hidden md:inline">Dietary</span>
               </Button>
               <Button
                 onClick={() => setAddWaitlistModalOpen(true)}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-2 border-orange-500/30 text-orange-600 hover:bg-orange-500/5"
+                className="flex items-center gap-1.5 border-orange-500/30 text-orange-600 hover:bg-orange-500/5"
               >
                 <UserPlus className="h-4 w-4" />
-                Add to Waitlist
+                <span className="hidden lg:inline">Waitlist</span>
               </Button>
               <Button
                 onClick={() => setAddBookingModalOpen(true)}
                 size="sm"
-                className="flex items-center gap-2 bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+                className="flex items-center gap-1.5 bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
               >
                 <Plus className="h-4 w-4" />
-                Add Booking
+                <span className="hidden sm:inline">Add</span>
               </Button>
             </div>
           )}
