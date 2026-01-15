@@ -52,6 +52,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
       emergency_contact_relationship: null,
       medical_conditions: null,
       accessibility_needs: null,
+      avatar_url: null,
     };
 
     createCustomer.mutate(customerData, {

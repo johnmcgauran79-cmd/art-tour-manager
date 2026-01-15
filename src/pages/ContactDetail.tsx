@@ -13,7 +13,7 @@ import { ContactBookingsList } from "@/components/ContactBookingsList";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
-
+import { ContactAvatar } from "@/components/ContactAvatar";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -137,9 +137,19 @@ export default function ContactDetail() {
         />
         
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">{fullName}</h1>
-            <p className="text-muted-foreground mt-1">{contact.email}</p>
+          <div className="flex items-center gap-4">
+            <ContactAvatar
+              contactId={contact.id}
+              avatarUrl={contact.avatar_url || null}
+              firstName={contact.first_name}
+              lastName={contact.last_name}
+              editable={true}
+              size="lg"
+            />
+            <div>
+              <h1 className="text-3xl font-bold">{fullName}</h1>
+              <p className="text-muted-foreground mt-1">{contact.email}</p>
+            </div>
           </div>
           
           <div className="flex gap-2">

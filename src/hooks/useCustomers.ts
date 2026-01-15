@@ -23,6 +23,7 @@ export interface Customer {
   emergency_contact_relationship: string | null;
   medical_conditions: string | null;
   accessibility_needs: string | null;
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }
