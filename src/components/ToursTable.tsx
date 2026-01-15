@@ -90,71 +90,77 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   return (
     <>
       <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
+        <CardHeader className="space-y-4">
+          {/* Title and buttons - stacks on mobile */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div>
-              <CardTitle>
+              <CardTitle className="text-lg sm:text-xl">
                 {showOnlyActive ? 'Active Tours' : 'All Tours'}{' '}
-                ({searchFilteredTours.length} {searchQuery ? 'found' : showOnlyActive ? 'active' : 'total'})
+                ({searchFilteredTours.length})
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 {showOnlyActive 
                   ? 'Current active tours'
                   : 'Complete list of all tours'
                 }
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {showOnlyActive && onViewAll && (
                 <Button onClick={onViewAll} variant="outline" size="sm">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View All
+                  <Eye className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">View All</span>
                 </Button>
               )}
               {!isAgent && (
                 <Button 
                   onClick={() => setShowAddTour(true)}
+                  size="sm"
                   className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Tour
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Tour</span>
                 </Button>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3 mt-4">
-            <div className="relative flex-1 max-w-md">
+          
+          {/* Search, filters, and toggle - stacks on mobile */}
+          <div className="flex flex-col gap-3">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
-                placeholder="Search by tour name, host, location..."
+                placeholder="Search tours..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox 
-                id="show-archived" 
-                checked={showArchived}
-                onCheckedChange={(checked) => setShowArchived(checked as boolean)}
-              />
-              <Label 
-                htmlFor="show-archived" 
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-              >
-                Show Archived Tours
-              </Label>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="show-archived" 
+                  checked={showArchived}
+                  onCheckedChange={(checked) => setShowArchived(checked as boolean)}
+                />
+                <Label 
+                  htmlFor="show-archived" 
+                  className="text-xs sm:text-sm font-medium leading-none cursor-pointer whitespace-nowrap"
+                >
+                  Show Archived
+                </Label>
+              </div>
+              <ViewToggle view={view} onViewChange={setView} />
+              {searchQuery && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchQuery("")}
+                >
+                  Clear
+                </Button>
+              )}
             </div>
-            <ViewToggle view={view} onViewChange={setView} />
-            {searchQuery && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSearchQuery("")}
-              >
-                Clear
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -188,44 +194,62 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tour Name</TableHead>
-                  <TableHead>Tour Host</TableHead>
-                  <TableHead>Start Date</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Total Pax</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile card view for table mode */}
+              <div className="block md:hidden space-y-3">
                 {searchFilteredTours.map((tour) => (
-                  <TableRow 
+                  <TourCard
                     key={tour.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleTourClick(tour)}
-                  >
-                    <TableCell className="font-medium">{tour.name}</TableCell>
-                    <TableCell>{tour.tour_host}</TableCell>
-                    <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
-                    <TableCell>{tour.location || '-'}</TableCell>
-                    <TableCell>{getTotalPassengers(tour.id)}</TableCell>
-                    <TableCell>
-                      <Badge className={getTourStatusColor(tour.status)}>
-                        {formatStatusText(tour.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate" title={tour.notes || ''}>
-                        {tour.notes || '-'}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    tour={tour}
+                    totalPassengers={getTotalPassengers(tour.id)}
+                    onView={handleTourClick}
+                    onEdit={() => navigateWithContext(`/tours/${tour.id}/edit`)}
+                  />
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              
+              {/* Desktop table view */}
+              <div className="hidden md:block border rounded-lg overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[150px]">Tour Name</TableHead>
+                      <TableHead className="min-w-[120px]">Tour Host</TableHead>
+                      <TableHead className="min-w-[100px]">Start Date</TableHead>
+                      <TableHead className="min-w-[120px]">Location</TableHead>
+                      <TableHead className="min-w-[80px]">Total Pax</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[150px]">Notes</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {searchFilteredTours.map((tour) => (
+                      <TableRow 
+                        key={tour.id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => handleTourClick(tour)}
+                      >
+                        <TableCell className="font-medium">{tour.name}</TableCell>
+                        <TableCell>{tour.tour_host}</TableCell>
+                        <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
+                        <TableCell>{tour.location || '-'}</TableCell>
+                        <TableCell>{getTotalPassengers(tour.id)}</TableCell>
+                        <TableCell>
+                          <Badge className={getTourStatusColor(tour.status)}>
+                            {formatStatusText(tour.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="max-w-[150px] truncate" title={tour.notes || ''}>
+                            {tour.notes || '-'}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -185,46 +185,44 @@ export const AllTasksView = () => {
   return (
     <>
       <Card className="border-brand-navy/20 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5 text-brand-navy" />
-              <CardTitle className="text-brand-navy">
+        <CardHeader className="space-y-4">
+          {/* Title and buttons - stacks on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-brand-navy flex-shrink-0" />
+              <CardTitle className="text-brand-navy text-lg sm:text-xl">
                 {getFilterTitle()}
               </CardTitle>
-              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
+              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy text-xs">
                 {currentFilteredTasks.length} {hasSearchFilters || activeFilter ? 'filtered' : 'active'}
               </Badge>
-              {activeFilter && (
-                <Badge variant="outline" className="text-xs">
-                  {getFilterTitle()}
-                </Badge>
-              )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {activeFilter && (
                 <Button
                   onClick={handleBackToAllTasks}
                   size="sm"
                   variant="outline"
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Clear Filter
+                  <span className="hidden sm:inline">Clear Filter</span>
+                  <span className="sm:hidden">Clear</span>
                 </Button>
               )}
               <Button
                 onClick={() => setAddTaskModalOpen(true)}
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-1"
               >
                 <Plus className="h-4 w-4" />
-                Add Task
+                <span className="hidden sm:inline">Add Task</span>
               </Button>
             </div>
           </div>
           
-          <div className="mt-4">
+          {/* Categories grid */}
+          <div className="mt-2">
             <TaskCategoriesGrid 
               tasks={pendingTasks}
               onCategoryClick={handleCategoryClick}

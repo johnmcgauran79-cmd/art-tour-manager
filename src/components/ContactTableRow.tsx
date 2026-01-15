@@ -49,12 +49,12 @@ export const ContactTableRow = ({ customer, onClick }: ContactTableRowProps) => 
       </TableCell>
       <TableCell>{customer.spouse_name || "-"}</TableCell>
       <TableCell>
-        <div className="max-w-xs truncate" title={customer.dietary_requirements || ""}>
+        <div className="max-w-[120px] truncate" title={customer.dietary_requirements || ""}>
           {customer.dietary_requirements || "-"}
         </div>
       </TableCell>
       <TableCell>
-        <div className="max-w-xs truncate" title={customer.notes || ""}>
+        <div className="max-w-[150px] truncate" title={customer.notes || ""}>
           {customer.notes || "-"}
         </div>
       </TableCell>

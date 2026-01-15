@@ -10,6 +10,8 @@ import { ContactTableRow } from "./ContactTableRow";
 import { AddContactModal } from "./AddContactModal";
 import { ContactExportModal } from "./ContactExportModal";
 import { ContactImportModal } from "./ContactImportModal";
+import { ContactCard } from "./cards/ContactCard";
+
 export const ContactsTable = () => {
   const { navigateWithContext } = useNavigationContext();
   const [showAddContact, setShowAddContact] = useState(false);
@@ -53,53 +55,77 @@ export const ContactsTable = () => {
   }
   return <>
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            All Contacts ({totalCount.toLocaleString()} total)
-            <div className="flex items-center gap-2">
+        <CardHeader className="space-y-4">
+          {/* Title and buttons - stacks on mobile */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="text-lg sm:text-xl">
+              All Contacts ({totalCount.toLocaleString()})
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
               <Button onClick={() => setShowExport(true)} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
+                <Download className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Export</span>
               </Button>
               <Button onClick={() => setShowImport(true)} variant="outline" size="sm">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
+                <Upload className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Import</span>
               </Button>
-              <Button onClick={() => setShowAddContact(true)} className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Contact
+              <Button onClick={() => setShowAddContact(true)} size="sm" className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Contact</span>
               </Button>
             </div>
-          </CardTitle>
-          <CardDescription>
-            Search across all {totalCount.toLocaleString()} contacts in the database
+          </div>
+          
+          <CardDescription className="text-xs sm:text-sm">
+            Search across all {totalCount.toLocaleString()} contacts
           </CardDescription>
-          <div className="flex items-center space-x-2 mt-4">
-            <div className="relative flex-1 max-w-md">
+          
+          {/* Search input */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input placeholder="Search by name, email, phone, location..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10" />
+              <Input 
+                placeholder="Search name, email, phone..." 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+                className="pl-10 text-sm" 
+              />
             </div>
-            {searchQuery && <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
+            {searchQuery && (
+              <Button variant="outline" size="sm" onClick={() => setSearchQuery("")}>
                 Clear
-              </Button>}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent>
           {customers.length === 0 ? <div className="text-center py-8 text-muted-foreground">
               {searchQuery ? "No contacts found matching your search." : "No contacts found."}
             </div> : <>
-              <div className="border rounded-lg">
+              {/* Mobile card view */}
+              <div className="block md:hidden space-y-3">
+                {customers.map(customer => (
+                  <ContactCard 
+                    key={customer.id} 
+                    customer={customer} 
+                    onClick={handleContactClick} 
+                  />
+                ))}
+              </div>
+              
+              {/* Desktop table view */}
+              <div className="hidden md:block border rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>First Name</TableHead>
-                      <TableHead>Last Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Spouse</TableHead>
-                      <TableHead>Dietary Requirement</TableHead>
-                      <TableHead>Dietary Requirements</TableHead>
-                      <TableHead>Notes</TableHead>
+                      <TableHead className="min-w-[100px]">First Name</TableHead>
+                      <TableHead className="min-w-[100px]">Last Name</TableHead>
+                      <TableHead className="min-w-[150px]">Email</TableHead>
+                      <TableHead className="min-w-[120px]">Phone</TableHead>
+                      <TableHead className="min-w-[100px]">Spouse</TableHead>
+                      <TableHead className="min-w-[120px]">Dietary</TableHead>
+                      <TableHead className="min-w-[150px]">Notes</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -108,21 +134,31 @@ export const ContactsTable = () => {
                 </Table>
               </div>
               
-              {/* Pagination */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount.toLocaleString()} contacts
+              {/* Pagination - stacks on mobile */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
+                <div className="text-xs sm:text-sm text-muted-foreground text-center sm:text-left">
+                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, totalCount)} of {totalCount.toLocaleString()}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
+                    disabled={currentPage === 1}
+                  >
                     <ChevronLeft className="h-4 w-4" />
-                    Previous
+                    <span className="hidden sm:inline ml-1">Previous</span>
                   </Button>
-                  <span className="text-sm">
-                    Page {currentPage} of {totalPages}
+                  <span className="text-xs sm:text-sm whitespace-nowrap">
+                    {currentPage} / {totalPages}
                   </span>
-                  <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>
-                    Next
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} 
+                    disabled={currentPage === totalPages}
+                  >
+                    <span className="hidden sm:inline mr-1">Next</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

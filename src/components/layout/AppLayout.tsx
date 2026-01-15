@@ -73,17 +73,50 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <DashboardHeader isAdmin={isAdmin} />
 
       <div className="border-b bg-white sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
           <Tabs value={getActiveTab()} className="w-full">
-            <TabsList className={`w-full ${isMobile ? 'h-auto grid grid-cols-4 gap-1' : isAgent ? 'grid grid-cols-2' : `grid ${isAdminOrManager ? 'grid-cols-7' : 'grid-cols-6'}`}`}>
-              {!isAgent && <TabsTrigger value="dashboard" onClick={() => handleTabChange('dashboard')}>Dashboard</TabsTrigger>}
-              {!isAgent && <TabsTrigger value="operations" onClick={() => handleTabChange('operations')}>Operations</TabsTrigger>}
-              {!isAgent && <TabsTrigger value="tasks" onClick={() => handleTabChange('tasks')}>Tasks</TabsTrigger>}
-              <TabsTrigger value="tours" onClick={() => handleTabChange('tours')}>Tours</TabsTrigger>
-              <TabsTrigger value="bookings" onClick={() => handleTabChange('bookings')}>Bookings</TabsTrigger>
-              {!isAgent && <TabsTrigger value="contacts" onClick={() => handleTabChange('contacts')}>Contacts</TabsTrigger>}
+            <TabsList className={`w-full h-auto p-1 ${
+              isMobile 
+                ? `grid ${isAgent ? 'grid-cols-2' : isAdminOrManager ? 'grid-cols-4' : 'grid-cols-3'} gap-1` 
+                : isAgent 
+                  ? 'grid grid-cols-2' 
+                  : `grid ${isAdminOrManager ? 'grid-cols-7' : 'grid-cols-6'}`
+            }`}>
+              {!isAgent && (
+                <TabsTrigger value="dashboard" onClick={() => handleTabChange('dashboard')} className="text-xs sm:text-sm px-2 sm:px-3">
+                  <span className="hidden sm:inline">Dashboard</span>
+                  <span className="sm:hidden">Home</span>
+                </TabsTrigger>
+              )}
+              {!isAgent && (
+                <TabsTrigger value="operations" onClick={() => handleTabChange('operations')} className="text-xs sm:text-sm px-2 sm:px-3">
+                  <span className="hidden sm:inline">Operations</span>
+                  <span className="sm:hidden">Ops</span>
+                </TabsTrigger>
+              )}
+              {!isAgent && (
+                <TabsTrigger value="tasks" onClick={() => handleTabChange('tasks')} className="text-xs sm:text-sm px-2 sm:px-3">
+                  Tasks
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="tours" onClick={() => handleTabChange('tours')} className="text-xs sm:text-sm px-2 sm:px-3">
+                Tours
+              </TabsTrigger>
+              <TabsTrigger value="bookings" onClick={() => handleTabChange('bookings')} className="text-xs sm:text-sm px-2 sm:px-3">
+                <span className="hidden sm:inline">Bookings</span>
+                <span className="sm:hidden">Book</span>
+              </TabsTrigger>
+              {!isAgent && (
+                <TabsTrigger value="contacts" onClick={() => handleTabChange('contacts')} className="text-xs sm:text-sm px-2 sm:px-3">
+                  <span className="hidden sm:inline">Contacts</span>
+                  <span className="sm:hidden">Contacts</span>
+                </TabsTrigger>
+              )}
               {isAdminOrManager && (
-                <TabsTrigger value="settings" onClick={() => handleTabChange('settings')}>Settings</TabsTrigger>
+                <TabsTrigger value="settings" onClick={() => handleTabChange('settings')} className="text-xs sm:text-sm px-2 sm:px-3">
+                  <span className="hidden sm:inline">Settings</span>
+                  <span className="sm:hidden">Set</span>
+                </TabsTrigger>
               )}
             </TabsList>
           </Tabs>
