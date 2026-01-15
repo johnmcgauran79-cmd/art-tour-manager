@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUpdateBooking } from "@/hooks/useBookings";
@@ -161,8 +162,18 @@ export const PaymentStatusModal = ({ open, onOpenChange, bookings, activeLevel }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{activeLevel?.label || "Payment Status"} ({filteredBookings.length} bookings)</DialogTitle>
-          <p className="text-sm text-muted-foreground">{getLevelDescription()}</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle>{activeLevel?.label || "Payment Status"} ({filteredBookings.length} bookings)</DialogTitle>
+              <p className="text-sm text-muted-foreground">{getLevelDescription()}</p>
+            </div>
+            <DialogClose asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -164,7 +164,15 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Email Preview & Approval</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Email Preview & Approval</DialogTitle>
+            <DialogClose asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+              </Button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
         {isLoading ? (
