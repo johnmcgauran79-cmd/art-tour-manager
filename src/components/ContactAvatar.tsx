@@ -150,10 +150,10 @@ export const ContactAvatar = ({
   };
 
   const handleAvatarClick = () => {
-    if (editable && !avatarUrl) {
-      setShowUploadOptions(true);
-    } else if (avatarUrl) {
+    if (avatarUrl) {
       setShowFullImage(true);
+    } else if (editable) {
+      setShowUploadOptions(true);
     }
   };
 
@@ -184,8 +184,8 @@ export const ContactAvatar = ({
             )}
           </Avatar>
 
-          {/* Desktop: Small overlay button */}
-          {editable && !isUploading && (
+          {/* Desktop: Small overlay button - only for md and lg sizes */}
+          {editable && !isUploading && size !== "sm" && (
             <Button
               type="button"
               size="icon"
@@ -198,8 +198,8 @@ export const ContactAvatar = ({
           )}
         </div>
 
-        {/* Mobile: Visible text button for easier access */}
-        {editable && !isUploading && (
+        {/* Mobile: Visible text button for easier access - only for md and lg sizes */}
+        {editable && !isUploading && size !== "sm" && (
           <Button
             type="button"
             variant="outline"
