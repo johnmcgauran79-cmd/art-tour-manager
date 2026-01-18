@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,10 +28,17 @@ export const ContactAvatar = ({
   const [showFullImage, setShowFullImage] = useState(false);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState(avatarUrl);
+  const [pendingFileSelect, setPendingFileSelect] = useState<'camera' | 'library' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Keep local state in sync with prop
+  useEffect(() => {
+    setLocalAvatarUrl(avatarUrl);
+  }, [avatarUrl]);
 
   const initials = `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
 
@@ -43,7 +50,10 @@ export const ContactAvatar = ({
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setPendingFileSelect(null);
+      return;
+    }
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
@@ -52,6 +62,7 @@ export const ContactAvatar = ({
         description: "Please select an image file.",
         variant: "destructive",
       });
+      setPendingFileSelect(null);
       return;
     }
 
@@ -62,11 +73,13 @@ export const ContactAvatar = ({
         description: "Please select an image under 5MB.",
         variant: "destructive",
       });
+      setPendingFileSelect(null);
       return;
     }
 
     setIsUploading(true);
     setShowUploadOptions(false);
+    setPendingFileSelect(null);
 
     try {
       // Generate unique filename
@@ -86,17 +99,26 @@ export const ContactAvatar = ({
         .from("contact-avatars")
         .getPublicUrl(filePath);
 
+      const newAvatarUrl = urlData.publicUrl;
+
       // Update customer record
       const { error: updateError } = await supabase
         .from("customers")
-        .update({ avatar_url: urlData.publicUrl })
+        .update({ avatar_url: newAvatarUrl })
         .eq("id", contactId);
 
       if (updateError) throw updateError;
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ["customer", contactId] });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      // Update local state immediately for instant feedback
+      setLocalAvatarUrl(newAvatarUrl);
+
+      // Invalidate all relevant queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["customer", contactId] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["bookings"] }),
+        queryClient.invalidateQueries({ queryKey: ["tour-bookings"] }),
+      ]);
 
       toast({
         title: "Photo updated",
@@ -130,9 +152,16 @@ export const ContactAvatar = ({
 
       if (updateError) throw updateError;
 
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ["customer", contactId] });
-      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      // Update local state immediately
+      setLocalAvatarUrl(null);
+
+      // Invalidate all relevant queries
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["customer", contactId] }),
+        queryClient.invalidateQueries({ queryKey: ["customers"] }),
+        queryClient.invalidateQueries({ queryKey: ["bookings"] }),
+        queryClient.invalidateQueries({ queryKey: ["tour-bookings"] }),
+      ]);
 
       toast({
         title: "Photo removed",
@@ -150,11 +179,35 @@ export const ContactAvatar = ({
   };
 
   const handleAvatarClick = () => {
-    if (avatarUrl) {
+    if (localAvatarUrl) {
       setShowFullImage(true);
     } else if (editable) {
       setShowUploadOptions(true);
     }
+  };
+
+  const handleSelectFromLibrary = () => {
+    setPendingFileSelect('library');
+    // Small delay to ensure file picker opens properly
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 100);
+  };
+
+  const handleTakePhoto = () => {
+    setPendingFileSelect('camera');
+    setTimeout(() => {
+      cameraInputRef.current?.click();
+    }, 100);
+  };
+
+  // Handle dialog close - only close if not waiting for file selection
+  const handleUploadOptionsChange = (open: boolean) => {
+    if (!open && pendingFileSelect) {
+      // Don't close if we're waiting for file picker
+      return;
+    }
+    setShowUploadOptions(open);
   };
 
   return (
@@ -165,7 +218,7 @@ export const ContactAvatar = ({
             className={cn(
               sizeClasses[size],
               "cursor-pointer transition-all active:scale-95",
-              avatarUrl ? "hover:opacity-80" : "hover:ring-2 hover:ring-primary/50",
+              localAvatarUrl ? "hover:opacity-80" : "hover:ring-2 hover:ring-primary/50",
               isUploading && "opacity-50"
             )}
             onClick={handleAvatarClick}
@@ -176,7 +229,7 @@ export const ContactAvatar = ({
               </AvatarFallback>
             ) : (
               <>
-                <AvatarImage src={avatarUrl || undefined} alt={`${firstName} ${lastName}`} />
+                <AvatarImage src={localAvatarUrl || undefined} alt={`${firstName} ${lastName}`} />
                 <AvatarFallback className="text-xl md:text-2xl font-semibold bg-muted">
                   {initials}
                 </AvatarFallback>
@@ -208,11 +261,11 @@ export const ContactAvatar = ({
             onClick={() => setShowUploadOptions(true)}
           >
             <Camera className="h-3.5 w-3.5 mr-1.5" />
-            {avatarUrl ? "Change Photo" : "Add Photo"}
+            {localAvatarUrl ? "Change Photo" : "Add Photo"}
           </Button>
         )}
 
-        {/* Hidden file inputs */}
+        {/* Hidden file inputs - moved outside dialog */}
         <input
           ref={fileInputRef}
           type="file"
@@ -230,36 +283,36 @@ export const ContactAvatar = ({
         />
       </div>
 
-      {/* Upload Options Dialog - Mobile optimized */}
-      <Dialog open={showUploadOptions} onOpenChange={setShowUploadOptions}>
-        <DialogContent className="max-w-sm mx-4 p-0 gap-0 rounded-xl overflow-hidden">
-          <DialogTitle className="px-4 py-3 text-center border-b bg-muted/30 font-medium">
+      {/* Upload Options Dialog - Mobile optimized with better positioning */}
+      <Dialog open={showUploadOptions} onOpenChange={handleUploadOptionsChange}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-xs sm:max-w-sm p-0 gap-0 rounded-xl overflow-hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <DialogTitle className="px-4 py-3 text-center border-b bg-muted/30 font-medium text-sm">
             Profile Photo
           </DialogTitle>
           <div className="p-2 space-y-1">
             <Button
               variant="ghost"
-              className="w-full justify-start h-14 text-base px-4 rounded-lg"
-              onClick={() => cameraInputRef.current?.click()}
+              className="w-full justify-start h-12 sm:h-14 text-sm sm:text-base px-4 rounded-lg"
+              onClick={handleTakePhoto}
             >
-              <Camera className="h-5 w-5 mr-3 text-primary" />
+              <Camera className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
               Take Photo
             </Button>
             <Button
               variant="ghost"
-              className="w-full justify-start h-14 text-base px-4 rounded-lg"
-              onClick={() => fileInputRef.current?.click()}
+              className="w-full justify-start h-12 sm:h-14 text-sm sm:text-base px-4 rounded-lg"
+              onClick={handleSelectFromLibrary}
             >
-              <ImagePlus className="h-5 w-5 mr-3 text-primary" />
+              <ImagePlus className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
               Choose from Library
             </Button>
-            {avatarUrl && (
+            {localAvatarUrl && (
               <Button
                 variant="ghost"
-                className="w-full justify-start h-14 text-base px-4 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
+                className="w-full justify-start h-12 sm:h-14 text-sm sm:text-base px-4 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
                 onClick={handleRemovePhoto}
               >
-                <Trash2 className="h-5 w-5 mr-3" />
+                <Trash2 className="h-5 w-5 mr-3 flex-shrink-0" />
                 Remove Photo
               </Button>
             )}
@@ -267,7 +320,7 @@ export const ContactAvatar = ({
           <div className="p-2 pt-0">
             <Button
               variant="outline"
-              className="w-full h-12 rounded-lg"
+              className="w-full h-10 sm:h-12 rounded-lg"
               onClick={() => setShowUploadOptions(false)}
             >
               Cancel
@@ -278,11 +331,11 @@ export const ContactAvatar = ({
 
       {/* Full Image Dialog - Mobile optimized */}
       <Dialog open={showFullImage} onOpenChange={setShowFullImage}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-md p-0 overflow-hidden rounded-xl">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md p-0 overflow-hidden rounded-xl fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <DialogTitle className="sr-only">Profile Photo</DialogTitle>
-          <div className="relative flex flex-col">
+          <div className="relative flex flex-col max-h-[85vh]">
             {/* Header with close button */}
-            <div className="flex items-center justify-between p-3 border-b bg-muted/30">
+            <div className="flex items-center justify-between p-3 border-b bg-muted/30 flex-shrink-0">
               <span className="font-medium text-sm">Profile Photo</span>
               <Button
                 variant="ghost"
@@ -295,19 +348,19 @@ export const ContactAvatar = ({
             </div>
             
             {/* Image container */}
-            <div className="flex items-center justify-center bg-muted/20 p-4">
-              {avatarUrl && (
+            <div className="flex items-center justify-center bg-muted/20 p-4 overflow-auto flex-1 min-h-0">
+              {localAvatarUrl && (
                 <img
-                  src={avatarUrl}
+                  src={localAvatarUrl}
                   alt={`${firstName} ${lastName}`}
-                  className="max-w-full max-h-[60vh] w-auto h-auto object-contain rounded-lg"
+                  className="max-w-full max-h-[50vh] w-auto h-auto object-contain rounded-lg"
                 />
               )}
             </div>
             
             {/* Footer with actions */}
             {editable && (
-              <div className="p-3 border-t bg-muted/30">
+              <div className="p-3 border-t bg-muted/30 flex-shrink-0">
                 <Button
                   variant="secondary"
                   size="sm"
