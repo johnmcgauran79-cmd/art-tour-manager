@@ -248,14 +248,16 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           {booking.customers && (
-                            <ContactAvatar
-                              contactId={booking.customers.id}
-                              avatarUrl={booking.customers.avatar_url || null}
-                              firstName={booking.customers.first_name}
-                              lastName={booking.customers.last_name}
-                              editable={false}
-                              size="sm"
-                            />
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <ContactAvatar
+                                contactId={booking.customers.id}
+                                avatarUrl={booking.customers.avatar_url || null}
+                                firstName={booking.customers.first_name}
+                                lastName={booking.customers.last_name}
+                                editable={true}
+                                size="sm"
+                              />
+                            </div>
                           )}
                           <div className="min-w-0 flex-1">
                             <p className="font-medium truncate">
@@ -321,14 +323,16 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                         <td className="p-3">
                           <div className="flex items-center gap-2">
                             {booking.customers && (
-                              <ContactAvatar
-                                contactId={booking.customers.id}
-                                avatarUrl={booking.customers.avatar_url || null}
-                                firstName={booking.customers.first_name}
-                                lastName={booking.customers.last_name}
-                                editable={false}
-                                size="sm"
-                              />
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <ContactAvatar
+                                  contactId={booking.customers.id}
+                                  avatarUrl={booking.customers.avatar_url || null}
+                                  firstName={booking.customers.first_name}
+                                  lastName={booking.customers.last_name}
+                                  editable={true}
+                                  size="sm"
+                                />
+                              </div>
                             )}
                             <span>{booking.customers?.first_name} {booking.customers?.last_name}</span>
                           </div>
