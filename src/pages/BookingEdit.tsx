@@ -554,6 +554,7 @@ export default function BookingEdit() {
                 selectedContactId={selectedSecondaryContact?.id || ''}
                 placeholder="Search for secondary contact..."
                 required={false}
+                label="Secondary Contact Name"
               />
               
               {selectedSecondaryContact && (

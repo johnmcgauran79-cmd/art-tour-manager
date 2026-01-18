@@ -159,6 +159,7 @@ export const BookingDetailsForm = ({
             onContactSelect={(contact) => onSecondaryContactSelect?.(contact)}
             selectedContactId={formData.secondary_contact_id || ''}
             required={false}
+            label="Secondary Contact Name"
           />
         )}
       </div>
