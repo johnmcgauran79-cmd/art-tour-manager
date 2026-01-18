@@ -825,6 +825,47 @@ export type Database = {
           },
         ]
       }
+      email_issue_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          acknowledged_by: string
+          created_at: string
+          email_address: string | null
+          email_log_id: string | null
+          id: string
+          issue_type: string
+          last_event_at: string | null
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledged_by: string
+          created_at?: string
+          email_address?: string | null
+          email_log_id?: string | null
+          id?: string
+          issue_type: string
+          last_event_at?: string | null
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledged_by?: string
+          created_at?: string
+          email_address?: string | null
+          email_log_id?: string | null
+          id?: string
+          issue_type?: string
+          last_event_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_issue_acknowledgments_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           booking_id: string | null
