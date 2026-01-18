@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, MapPin, DollarSign, Eye, Edit, Copy } from "lucide-react";
+import { Calendar, Users, MapPin, DollarSign, Edit, Copy } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
@@ -15,12 +15,24 @@ interface TourCardProps {
 }
 
 export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicate }: TourCardProps) => {
+  const handleCardClick = () => {
+    if (onView) {
+      onView(tour);
+    }
+  };
+
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in">
+    <Card 
+      className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] animate-fade-in cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <h3 className={`${typography.cardTitle} truncate mb-1`}>
+        <div className="flex flex-col gap-2">
+          <Badge className={`${getTourStatusColor(tour.status)} self-start`}>
+            {formatStatusText(tour.status)}
+          </Badge>
+          <div className="min-w-0">
+            <h3 className={`${typography.cardTitle} line-clamp-2 mb-1`}>
               {tour.name}
             </h3>
             {tour.location && (
@@ -30,9 +42,6 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
               </div>
             )}
           </div>
-          <Badge className={getTourStatusColor(tour.status)}>
-            {formatStatusText(tour.status)}
-          </Badge>
         </div>
       </CardHeader>
 
@@ -84,50 +93,38 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          {onView && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onView(tour);
-              }}
-              className="flex-1 hover-scale"
-            >
-              <Eye className="h-4 w-4 mr-1.5" />
-              View
-            </Button>
-          )}
-          {onEdit && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit(tour);
-              }}
-              className="flex-1 hover-scale"
-            >
-              <Edit className="h-4 w-4 mr-1.5" />
-              Edit
-            </Button>
-          )}
-          {onDuplicate && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDuplicate(tour);
-              }}
-              className="hover-scale"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        {/* Actions - Only Edit and Duplicate buttons */}
+        {(onEdit || onDuplicate) && (
+          <div className="flex gap-2 pt-2">
+            {onEdit && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(tour);
+                }}
+                className="flex-1 hover-scale"
+              >
+                <Edit className="h-4 w-4 mr-1.5" />
+                Edit
+              </Button>
+            )}
+            {onDuplicate && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(tour);
+                }}
+                className="hover-scale"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
