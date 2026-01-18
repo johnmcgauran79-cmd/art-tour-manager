@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Booking } from "./useBookings";
 import { Tour } from "./useTours";
-import { differenceInDays, differenceInMonths } from "date-fns";
+import { differenceInDays } from "date-fns";
 
 export interface PaymentAlertLevel {
   level: 1 | 2 | 3;
@@ -13,9 +13,9 @@ export interface PaymentAlertLevel {
 interface UsePaymentAlertsResult {
   activeLevel: PaymentAlertLevel | null;
   totalUnpaid: number;
-  level1Count: number;
-  level2Count: number;
-  level3Count: number;
+  level1Count: number; // Deposits owing
+  level2Count: number; // Instalments owing
+  level3Count: number; // Final payment owing
 }
 
 export const usePaymentAlerts = (
@@ -34,73 +34,88 @@ export const usePaymentAlerts = (
     }
 
     const today = new Date();
-    const tourStartDate = new Date(tour.start_date);
-    const daysUntilTour = differenceInDays(tourStartDate, today);
-    const monthsUntilTour = differenceInMonths(tourStartDate, today);
 
     // Filter out bookings that should never be counted
     const activeBookings = bookings.filter(
       (b) =>
         b.status !== "cancelled" &&
         b.status !== "waitlisted" &&
-        b.status !== "host" &&
-        b.status !== "fully_paid"
+        b.status !== "host"
     );
 
-    // Level 1: Count pending + invoiced (should be deposited)
-    // Exclude racing_breaks_invoice
-    const level1Bookings = activeBookings.filter(
-      (b) => b.status === "pending" || b.status === "invoiced"
-    );
+    // Level 1: Deposits owing - "invoiced" status 7 days after booking created
+    const level1Bookings = activeBookings.filter((b) => {
+      if (b.status !== "invoiced") return false;
+      const createdAt = new Date(b.created_at);
+      const daysSinceCreated = differenceInDays(today, createdAt);
+      return daysSinceCreated >= 7;
+    });
     const level1Count = level1Bookings.length;
 
-    // Level 2: Count pending + invoiced + deposited (should be instalment_paid)
-    // Only applies if instalment_required is true AND < 6 months until tour
-    // Exclude racing_breaks_invoice
-    const level2Bookings = activeBookings.filter(
-      (b) =>
-        b.status === "pending" ||
-        b.status === "invoiced" ||
-        b.status === "deposited"
-    );
-    const level2Count = level2Bookings.length;
+    // Level 2: Instalments owing - tour has instalment_required, past instalment_date,
+    // and status is not instalment_paid or fully_paid
+    let level2Count = 0;
+    if (tour.instalment_required && tour.instalment_date) {
+      const instalmentDate = new Date(tour.instalment_date);
+      if (today > instalmentDate) {
+        const level2Bookings = activeBookings.filter(
+          (b) => b.status !== "instalment_paid" && b.status !== "fully_paid"
+        );
+        level2Count = level2Bookings.length;
+      }
+    }
 
-    // Level 3: Count all non-fully_paid bookings (includes racing_breaks_invoice)
-    // Applies when < 100 days until tour
-    const level3Count = activeBookings.length;
+    // Level 3: Final payment owing - past final_payment_date and not fully_paid
+    let level3Count = 0;
+    if (tour.final_payment_date) {
+      const finalPaymentDate = new Date(tour.final_payment_date);
+      if (today > finalPaymentDate) {
+        const level3Bookings = activeBookings.filter(
+          (b) => b.status !== "fully_paid"
+        );
+        level3Count = level3Bookings.length;
+      }
+    }
 
-    // Determine which level is active based on time
+    // Determine which level is active (show the most urgent one)
     let activeLevel: PaymentAlertLevel | null = null;
 
-    if (daysUntilTour < 100) {
-      // Level 3: Under 100 days - everyone should be fully paid
+    if (level3Count > 0) {
       activeLevel = {
         level: 3,
         label: "Final Payment",
         count: level3Count,
-        description: `${level3Count} not fully paid`,
+        description: `${level3Count} not fully paid (past final payment date)`,
       };
-    } else if (monthsUntilTour < 6 && tour.instalment_required) {
-      // Level 2: Under 6 months AND instalment required
+    } else if (level2Count > 0) {
       activeLevel = {
         level: 2,
         label: "Instalments Due",
         count: level2Count,
-        description: `${level2Count} awaiting instalment`,
+        description: `${level2Count} awaiting instalment (past instalment date)`,
       };
-    } else {
-      // Level 1: Default - deposits should be paid
+    } else if (level1Count > 0) {
       activeLevel = {
         level: 1,
         label: "Deposits Due",
         count: level1Count,
-        description: `${level1Count} awaiting deposit`,
+        description: `${level1Count} awaiting deposit (invoiced 7+ days)`,
+      };
+    } else {
+      // All good - no payment issues
+      activeLevel = {
+        level: 1,
+        label: "All Payments OK",
+        count: 0,
+        description: "No outstanding payment issues",
       };
     }
 
+    const totalUnpaid = activeBookings.filter(b => b.status !== "fully_paid").length;
+
     return {
       activeLevel,
-      totalUnpaid: activeBookings.length,
+      totalUnpaid,
       level1Count,
       level2Count,
       level3Count,
