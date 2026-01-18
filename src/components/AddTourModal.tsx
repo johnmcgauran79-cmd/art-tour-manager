@@ -291,7 +291,23 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               <Label htmlFor="instalment_required">Instalment Required</Label>
               <Select 
                 value={formData.instalment_required ? "yes" : "no"} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, instalment_required: value === "yes" }))}
+                onValueChange={(value) => {
+                  const isRequired = value === "yes";
+                  setFormData(prev => {
+                    // Auto-calculate instalment date as 6 months before tour start
+                    let instalmentDate = prev.instalment_date;
+                    if (isRequired && prev.start_date && !prev.instalment_date) {
+                      const startDate = new Date(prev.start_date);
+                      startDate.setMonth(startDate.getMonth() - 6);
+                      instalmentDate = startDate.toISOString().split('T')[0];
+                    }
+                    return { 
+                      ...prev, 
+                      instalment_required: isRequired,
+                      instalment_date: isRequired ? instalmentDate : ""
+                    };
+                  });
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
