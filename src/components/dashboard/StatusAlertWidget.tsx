@@ -10,8 +10,9 @@ export const StatusAlertWidget = () => {
   const { data: filterCounts, isLoading } = useFilterCounts();
 
   const depositsOwing = filterCounts?.depositsOwing || 0;
+  const instalmentsOwing = filterCounts?.instalmentsOwing || 0;
   const paymentDue = filterCounts?.paymentDue || 0;
-  const totalCount = depositsOwing + paymentDue;
+  const totalCount = depositsOwing + instalmentsOwing + paymentDue;
 
   const handleClick = () => {
     navigate('/bookings/bulk-status');
@@ -42,15 +43,23 @@ export const StatusAlertWidget = () => {
             <div className="space-y-2">
               {depositsOwing > 0 && (
                 <div className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                  <span className="text-sm">Deposits Owing</span>
+                  <span className="text-sm">Deposits Owing (7+ days)</span>
                   <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
                     {depositsOwing}
                   </Badge>
                 </div>
               )}
+              {instalmentsOwing > 0 && (
+                <div className="flex items-center justify-between p-2 rounded-md bg-muted/50">
+                  <span className="text-sm">Instalments Owing</span>
+                  <Badge variant="outline" className="bg-orange-100 text-orange-800 border-orange-300">
+                    {instalmentsOwing}
+                  </Badge>
+                </div>
+              )}
               {paymentDue > 0 && (
                 <div className="flex items-center justify-between p-2 rounded-md bg-muted/50">
-                  <span className="text-sm">Final Payments Due</span>
+                  <span className="text-sm">Final Payments Owing</span>
                   <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">
                     {paymentDue}
                   </Badge>

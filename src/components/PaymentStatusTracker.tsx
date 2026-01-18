@@ -91,15 +91,15 @@ export const PaymentStatusTracker = ({
             </p>
             <div className="border-t pt-2 mt-2 space-y-1 text-xs">
               <div className="flex justify-between">
-                <span>Deposits pending:</span>
+                <span>Deposits owing (7+ days):</span>
                 <span className="font-medium">{level1Count}</span>
               </div>
               <div className="flex justify-between">
-                <span>Instalments pending:</span>
+                <span>Instalments owing:</span>
                 <span className="font-medium">{level2Count}</span>
               </div>
               <div className="flex justify-between">
-                <span>Not fully paid:</span>
+                <span>Final payment owing:</span>
                 <span className="font-medium">{level3Count}</span>
               </div>
             </div>

@@ -120,21 +120,19 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25, se
   });
 };
 
-export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due' | null, page: number = 1, pageSize: number = 50) => {
-  const { data: settings } = useGeneralSettings();
-  
+export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_owing' | 'payment_due' | null, page: number = 1, pageSize: number = 50) => {
   return useQuery({
-    queryKey: ['bookings', 'filtered', filterType, page, pageSize, settings],
+    queryKey: ['bookings', 'filtered', filterType, page, pageSize],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
 
-      const depositsOwingDays = settings?.find(s => s.setting_key === 'deposits_owing_days')?.setting_value || 14;
-      const paymentDueDays = settings?.find(s => s.setting_key === 'payment_due_days')?.setting_value || 80;
+      const today = new Date();
 
       if (filterType === 'deposits_owing') {
+        // Deposits owing: invoiced status 7+ days after booking created
         const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - depositsOwingDays);
+        cutoffDate.setDate(cutoffDate.getDate() - 7);
         
         const { data, error, count } = await supabase
           .from('bookings')
@@ -152,24 +150,45 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
         if (error) throw error;
         return { data: data || [], count: count || 0 };
         
-      } else if (filterType === 'payment_due') {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() + paymentDueDays);
-        
+      } else if (filterType === 'instalments_owing') {
+        // Instalments owing: tour has instalment_required, past instalment_date,
+        // status is not instalment_paid or fully_paid
         const { data, error, count } = await supabase
           .from('bookings')
           .select(`
             *,
-            tours!inner (name, start_date),
+            tours!inner (name, start_date, instalment_required, instalment_date),
             customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
             secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
           `, { count: 'exact' })
+          .eq('tours.instalment_required', true)
+          .lt('tours.instalment_date', today.toISOString().split('T')[0])
+          .neq('status', 'instalment_paid')
           .neq('status', 'fully_paid')
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
-          .lt('tours.start_date', cutoffDate.toISOString())
-          .gte('tours.start_date', new Date().toISOString().split('T')[0])
+          .order('created_at', { ascending: false })
+          .range(start, end);
+        
+        if (error) throw error;
+        return { data: data || [], count: count || 0 };
+        
+      } else if (filterType === 'payment_due') {
+        // Final payment owing: past final_payment_date and not fully_paid
+        const { data, error, count } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            tours!inner (name, start_date, final_payment_date),
+            customers!lead_passenger_id (id, first_name, last_name, email, phone, dietary_requirements),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
+          `, { count: 'exact' })
+          .lt('tours.final_payment_date', today.toISOString().split('T')[0])
+          .neq('status', 'fully_paid')
+          .neq('status', 'host')
+          .neq('status', 'cancelled')
+          .neq('status', 'waitlisted')
           .order('created_at', { ascending: false })
           .range(start, end);
         
@@ -179,21 +198,19 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'payment_due'
 
       return { data: [], count: 0 };
     },
-    enabled: filterType !== null && settings !== undefined,
+    enabled: filterType !== null,
   });
 };
 
 export const useFilterCounts = () => {
-  const { data: settings } = useGeneralSettings();
-  
   return useQuery({
-    queryKey: ['bookings', 'filter-counts', settings],
+    queryKey: ['bookings', 'filter-counts'],
     queryFn: async () => {
-      const depositsOwingDays = settings?.find(s => s.setting_key === 'deposits_owing_days')?.setting_value || 14;
-      const paymentDueDays = settings?.find(s => s.setting_key === 'payment_due_days')?.setting_value || 80;
-
+      const today = new Date();
+      
+      // Deposits owing: invoiced status 7+ days after booking created
       const cutoffDateDeposits = new Date();
-      cutoffDateDeposits.setDate(cutoffDateDeposits.getDate() - depositsOwingDays);
+      cutoffDateDeposits.setDate(cutoffDateDeposits.getDate() - 7);
       
       const { count: depositsOwingCount } = await supabase
         .from('bookings')
@@ -201,24 +218,34 @@ export const useFilterCounts = () => {
         .eq('status', 'invoiced')
         .lt('created_at', cutoffDateDeposits.toISOString());
 
-      const cutoffDatePayments = new Date();
-      cutoffDatePayments.setDate(cutoffDatePayments.getDate() + paymentDueDays);
-      
-      const { count: paymentDueCount } = await supabase
+      // Instalments owing: tour has instalment_required, past instalment_date,
+      // status is not instalment_paid or fully_paid
+      const { count: instalmentsOwingCount } = await supabase
         .from('bookings')
-        .select('*, tours!inner(start_date)', { count: 'exact', head: true })
+        .select('*, tours!inner(instalment_required, instalment_date)', { count: 'exact', head: true })
+        .eq('tours.instalment_required', true)
+        .lt('tours.instalment_date', today.toISOString().split('T')[0])
+        .neq('status', 'instalment_paid')
         .neq('status', 'fully_paid')
         .neq('status', 'host')
         .neq('status', 'cancelled')
-        .neq('status', 'waitlisted')
-        .lt('tours.start_date', cutoffDatePayments.toISOString())
-        .gte('tours.start_date', new Date().toISOString().split('T')[0]);
+        .neq('status', 'waitlisted');
+
+      // Final payment owing: past final_payment_date and not fully_paid
+      const { count: paymentDueCount } = await supabase
+        .from('bookings')
+        .select('*, tours!inner(final_payment_date)', { count: 'exact', head: true })
+        .lt('tours.final_payment_date', today.toISOString().split('T')[0])
+        .neq('status', 'fully_paid')
+        .neq('status', 'host')
+        .neq('status', 'cancelled')
+        .neq('status', 'waitlisted');
 
       return {
         depositsOwing: depositsOwingCount || 0,
+        instalmentsOwing: instalmentsOwingCount || 0,
         paymentDue: paymentDueCount || 0,
       };
     },
-    enabled: settings !== undefined,
   });
 };
