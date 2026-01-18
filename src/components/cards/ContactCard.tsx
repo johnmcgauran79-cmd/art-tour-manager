@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, User, Eye } from "lucide-react";
+import { Phone, Mail, Eye } from "lucide-react";
 import { formatAustralianMobile, Customer } from "@/hooks/useCustomers";
 import { typography } from "@/lib/typography";
+import { ContactAvatar } from "@/components/ContactAvatar";
 
 interface ContactCardProps {
   customer: Customer;
@@ -20,8 +21,15 @@ export const ContactCard = ({ customer, onClick }: ContactCardProps) => {
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-              <User className="h-5 w-5 text-muted-foreground" />
+            <div onClick={(e) => e.stopPropagation()}>
+              <ContactAvatar
+                contactId={customer.id}
+                avatarUrl={customer.avatar_url || null}
+                firstName={customer.first_name}
+                lastName={customer.last_name}
+                editable={true}
+                size="sm"
+              />
             </div>
             <div className="min-w-0">
               <h3 className={`${typography.cardTitle} truncate`}>
