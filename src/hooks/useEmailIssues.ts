@@ -11,6 +11,14 @@ export interface EmailIssue {
   booking_id: string | null;
   issue_type: 'bounced' | 'complained' | 'unread';
   event_type?: string;
+  lastEventAt?: string;
+}
+
+interface Acknowledgment {
+  email_log_id: string | null;
+  email_address: string | null;
+  issue_type: string;
+  last_event_at: string | null;
 }
 
 export const useEmailIssues = () => {
@@ -18,7 +26,7 @@ export const useEmailIssues = () => {
     queryKey: ['email-issues'],
     refetchInterval: 30000, // Refresh every 30 seconds
     queryFn: async () => {
-      // Fetch all email logs with their events and tour info
+      // Fetch email logs with events and tour info
       const { data: emailLogs, error } = await supabase
         .from('email_logs')
         .select(`
@@ -36,13 +44,37 @@ export const useEmailIssues = () => {
 
       if (error) throw error;
 
+      // Fetch acknowledgments
+      const { data: acknowledgments, error: ackError } = await supabase
+        .from('email_issue_acknowledgments')
+        .select('email_log_id, email_address, issue_type, last_event_at');
+
+      if (ackError) throw ackError;
+
+      // Build lookup maps for acknowledgments
+      const unreadAckSet = new Set(
+        (acknowledgments as Acknowledgment[] || [])
+          .filter(a => a.issue_type === 'unread' && a.email_log_id)
+          .map(a => a.email_log_id)
+      );
+
+      const bouncedAckMap = new Map<string, string>();
+      (acknowledgments as Acknowledgment[] || [])
+        .filter(a => (a.issue_type === 'bounced' || a.issue_type === 'complained') && a.email_address)
+        .forEach(a => {
+          const existing = bouncedAckMap.get(a.email_address!);
+          if (!existing || (a.last_event_at && a.last_event_at > existing)) {
+            bouncedAckMap.set(a.email_address!, a.last_event_at || '');
+          }
+        });
+
       const bouncedErrors: EmailIssue[] = [];
       const unreadEmails: EmailIssue[] = [];
 
       emailLogs?.forEach((log: any) => {
         const events = log.email_events || [];
-        const hasBounced = events.some((e: any) => e.event_type === 'bounced');
-        const hasComplained = events.some((e: any) => e.event_type === 'complained');
+        const bouncedEvent = events.find((e: any) => e.event_type === 'bounced');
+        const complainedEvent = events.find((e: any) => e.event_type === 'complained');
         const hasOpened = events.some((e: any) => e.event_type === 'opened');
         const hasDelivered = events.some((e: any) => e.event_type === 'delivered');
 
@@ -56,24 +88,35 @@ export const useEmailIssues = () => {
           booking_id: log.booking_id,
         };
 
-        if (hasBounced) {
-          bouncedErrors.push({
-            ...baseIssue,
-            issue_type: 'bounced',
-            event_type: 'bounced',
-          });
-        } else if (hasComplained) {
-          bouncedErrors.push({
-            ...baseIssue,
-            issue_type: 'complained',
-            event_type: 'complained',
-          });
+        if (bouncedEvent) {
+          const lastAckTime = bouncedAckMap.get(log.recipient_email);
+          // Show if not acknowledged OR if a new bounce occurred after acknowledgment
+          if (!lastAckTime || bouncedEvent.created_at > lastAckTime) {
+            bouncedErrors.push({
+              ...baseIssue,
+              issue_type: 'bounced',
+              event_type: 'bounced',
+              lastEventAt: bouncedEvent.created_at,
+            });
+          }
+        } else if (complainedEvent) {
+          const lastAckTime = bouncedAckMap.get(log.recipient_email);
+          if (!lastAckTime || complainedEvent.created_at > lastAckTime) {
+            bouncedErrors.push({
+              ...baseIssue,
+              issue_type: 'complained',
+              event_type: 'complained',
+              lastEventAt: complainedEvent.created_at,
+            });
+          }
         } else if (hasDelivered && !hasOpened) {
-          // Only count as unread if delivered but not opened
-          unreadEmails.push({
-            ...baseIssue,
-            issue_type: 'unread',
-          });
+          // Only show unread if not acknowledged
+          if (!unreadAckSet.has(log.id)) {
+            unreadEmails.push({
+              ...baseIssue,
+              issue_type: 'unread',
+            });
+          }
         }
       });
 
