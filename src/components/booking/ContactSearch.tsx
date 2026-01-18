@@ -12,6 +12,7 @@ interface ContactSearchProps {
   selectedContactId: string;
   placeholder?: string;
   required?: boolean;
+  label?: string;
 }
 
 export const ContactSearch = ({ 
@@ -20,7 +21,8 @@ export const ContactSearch = ({
   onContactSelect, 
   selectedContactId,
   placeholder = "Start typing name to search existing contacts...",
-  required = true
+  required = true,
+  label = "Lead Passenger Name"
 }: ContactSearchProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const { data: customers } = useAllCustomers();
@@ -46,10 +48,10 @@ export const ContactSearch = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="leadPassenger">Lead Passenger Name</Label>
+      <Label htmlFor="contactSearch">{label}</Label>
       <div className="relative">
         <Input
-          id="leadPassenger"
+          id="contactSearch"
           value={value}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={() => setShowSuggestions(true)}
