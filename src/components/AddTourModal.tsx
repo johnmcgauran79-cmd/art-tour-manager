@@ -45,7 +45,25 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   });
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Auto-calculate final payment date (3 months before start) when start_date changes
+      if (field === "start_date" && value && !prev.final_payment_date) {
+        const startDate = new Date(value);
+        startDate.setMonth(startDate.getMonth() - 3);
+        updated.final_payment_date = startDate.toISOString().split('T')[0];
+      }
+      
+      // Also update instalment date if instalment is required and date not set
+      if (field === "start_date" && value && prev.instalment_required && !prev.instalment_date) {
+        const startDate = new Date(value);
+        startDate.setMonth(startDate.getMonth() - 6);
+        updated.instalment_date = startDate.toISOString().split('T')[0];
+      }
+      
+      return updated;
+    });
   };
 
   const calculateDaysAndNights = (startDate: string, endDate: string) => {
