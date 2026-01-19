@@ -284,10 +284,12 @@ export default function BookingDetail() {
               {!isMobile && <Heart className="h-4 w-4" />}
               <span>Medical</span>
             </TabsTrigger>
-            <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
-              {!isMobile && <FileText className="h-4 w-4" />}
-              <span>Travel</span>
-            </TabsTrigger>
+            {tour?.travel_documents_required && (
+              <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+                {!isMobile && <FileText className="h-4 w-4" />}
+                <span>Travel</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="comments" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
               {!isMobile && <MessageSquare className="h-4 w-4" />}
               <span>History ({comments.length + auditLog.length})</span>
@@ -433,18 +435,20 @@ export default function BookingDetail() {
             </div>
           </TabsContent>
 
-          <TabsContent value="travel" className="space-y-4 mt-6">
-            <div className="bg-card rounded-lg border p-6">
-              <h3 className="text-lg font-semibold mb-4">Travel Documents</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoRow label="Passport Number" value={booking.passport_number} />
-                <InfoRow label="Passport Expiry Date" value={booking.passport_expiry_date ? formatDateToDDMMYYYY(booking.passport_expiry_date) : null} />
-                <InfoRow label="Passport Country" value={booking.passport_country} />
-                <InfoRow label="ID Number" value={booking.id_number} />
-                <InfoRow label="Nationality" value={booking.nationality} />
+          {tour?.travel_documents_required && (
+            <TabsContent value="travel" className="space-y-4 mt-6">
+              <div className="bg-card rounded-lg border p-6">
+                <h3 className="text-lg font-semibold mb-4">Travel Documents</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <InfoRow label="Passport Number" value={booking.passport_number} />
+                  <InfoRow label="Passport Expiry Date" value={booking.passport_expiry_date ? formatDateToDDMMYYYY(booking.passport_expiry_date) : null} />
+                  <InfoRow label="Passport Country" value={booking.passport_country} />
+                  <InfoRow label="ID Number" value={booking.id_number} />
+                  <InfoRow label="Nationality" value={booking.nationality} />
+                </div>
               </div>
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
 
           <TabsContent value="comments" className="space-y-6 mt-6">
             <div className="bg-card rounded-lg border p-6">
