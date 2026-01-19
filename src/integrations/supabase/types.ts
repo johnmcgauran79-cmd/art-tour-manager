@@ -718,6 +718,92 @@ export type Database = {
           },
         ]
       }
+      customer_access_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          customer_id: string
+          expires_at: string
+          id: string
+          last_used_at: string | null
+          token: string
+          use_count: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          customer_id: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          token?: string
+          use_count?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          customer_id?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string | null
+          token?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_access_tokens_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_profile_updates: {
+        Row: {
+          changes: Json
+          customer_id: string
+          id: string
+          ip_address: string | null
+          token_id: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          changes: Json
+          customer_id: string
+          id?: string
+          ip_address?: string | null
+          token_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          changes?: Json
+          customer_id?: string
+          id?: string
+          ip_address?: string | null
+          token_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_profile_updates_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_profile_updates_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "customer_access_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           accessibility_needs: string | null

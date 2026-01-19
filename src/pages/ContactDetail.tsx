@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
+import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -147,6 +148,13 @@ export default function ContactDetail() {
             Back
           </Button>
           
+          <SendProfileUpdateButton
+            customerId={contact.id}
+            customerName={fullName}
+            customerEmail={contact.email || null}
+            size="sm"
+          />
+          
           <Button
             variant="outline"
             size="sm"
@@ -225,6 +233,12 @@ export default function ContactDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            
+            <SendProfileUpdateButton
+              customerId={contact.id}
+              customerName={fullName}
+              customerEmail={contact.email || null}
+            />
             
             <Button
               variant="outline"
