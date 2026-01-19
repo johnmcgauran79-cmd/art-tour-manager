@@ -19,6 +19,7 @@ import TaskEdit from "./pages/TaskEdit";
 import ContactDetail from "./pages/ContactDetail";
 import ContactEdit from "./pages/ContactEdit";
 import BulkBookingStatus from "./pages/BulkBookingStatus";
+import UpdateProfile from "./pages/UpdateProfile";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
 import ActivityAllocations from "./pages/operations/ActivityAllocations";
@@ -58,6 +59,7 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/update-profile/:token" element={<UpdateProfile />} />
               <Route
                 path="/"
                 element={

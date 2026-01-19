@@ -26,3 +26,12 @@ verify_jwt = false
 
 [functions.archive-completed-tours]
 verify_jwt = false
+
+[functions.send-profile-update-request]
+verify_jwt = false
+
+[functions.validate-profile-token]
+verify_jwt = false
+
+[functions.update-customer-profile]
+verify_jwt = false
