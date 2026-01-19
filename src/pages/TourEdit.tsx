@@ -39,6 +39,7 @@ export default function TourEdit() {
     instalment_amount: "",
     instalment_date: "",
     final_payment_date: "",
+    travel_documents_required: false,
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international"
@@ -51,7 +52,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required')
           .eq('id', id)
           .single();
         
@@ -75,6 +76,7 @@ export default function TourEdit() {
             instalment_amount: tour.instalment_amount?.toString() || "",
             instalment_date: tour.instalment_date ? formatDateForInput(tour.instalment_date) : "",
             final_payment_date: tour.final_payment_date ? formatDateForInput(tour.final_payment_date) : "",
+            travel_documents_required: data.travel_documents_required || false,
             capacity: tour.capacity?.toString() || "",
             minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
             tour_type: (data.tour_type as "domestic" | "international") || "domestic"
@@ -134,6 +136,7 @@ export default function TourEdit() {
       instalment_amount: formData.instalment_required && formData.instalment_amount ? parseFloat(formData.instalment_amount) : null,
       instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
       final_payment_date: formData.final_payment_date || null,
+      travel_documents_required: formData.travel_documents_required,
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
       tour_type: formData.tour_type,
@@ -467,6 +470,32 @@ export default function TourEdit() {
               value={formData.final_payment_date}
               onChange={(e) => handleInputChange("final_payment_date", e.target.value)}
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="travel_documents_required">Travel Documents Required</Label>
+            <Select 
+              value={formData.travel_documents_required ? "yes" : "no"} 
+              onValueChange={(value) => {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  travel_documents_required: value === "yes"
+                }));
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no">No</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              When enabled, bookings will show travel documents section (passport, ID, etc.)
+            </p>
           </div>
         </div>
 

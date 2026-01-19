@@ -1768,6 +1768,7 @@ export type Database = {
           status: Database["public"]["Enums"]["tour_status"] | null
           tour_host: string
           tour_type: string | null
+          travel_documents_required: boolean
           updated_at: string | null
           url_reference: string | null
         }
@@ -1805,6 +1806,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
           tour_type?: string | null
+          travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
         }
@@ -1842,6 +1844,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
           tour_type?: string | null
+          travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
         }
