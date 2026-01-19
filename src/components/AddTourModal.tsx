@@ -350,7 +350,39 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 />
               </div>
             )}
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {formData.instalment_required && (
+              <div className="space-y-2">
+                <Label htmlFor="instalment_date">Instalment Due Date</Label>
+                <Input
+                  id="instalment_date"
+                  type="date"
+                  value={formData.instalment_date}
+                  onChange={(e) => handleInputChange("instalment_date", e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Defaults to 6 months before tour start
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="final_payment_date">Final Payment Date</Label>
+              <Input
+                id="final_payment_date"
+                type="date"
+                value={formData.final_payment_date}
+                onChange={(e) => handleInputChange("final_payment_date", e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Defaults to 90 days before tour start
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="capacity">Maximum Capacity</Label>
               <Input
