@@ -10,6 +10,8 @@ const corsHeaders = {
 interface UpdateProfilePayload {
   token: string;
   updates: {
+    first_name?: string;
+    last_name?: string;
     preferred_name?: string;
     email?: string;
     phone?: string;
@@ -76,7 +78,8 @@ const handler = async (req: Request): Promise<Response> => {
     // Track what changed
     const changes: Record<string, { old: any; new: any }> = {};
     const allowedFields = [
-      'preferred_name', 'email', 'phone', 'city', 'state', 'country',
+      'first_name', 'last_name', 'preferred_name', 
+      'email', 'phone', 'city', 'state', 'country',
       'dietary_requirements', 'emergency_contact_name', 
       'emergency_contact_phone', 'emergency_contact_relationship',
       'medical_conditions', 'accessibility_needs'

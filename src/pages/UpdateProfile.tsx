@@ -86,6 +86,8 @@ export default function UpdateProfile() {
         body: { 
           token, 
           updates: {
+            first_name: formData.first_name,
+            last_name: formData.last_name,
             preferred_name: formData.preferred_name,
             email: formData.email,
             phone: formData.phone,
@@ -205,7 +207,25 @@ export default function UpdateProfile() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg border-b pb-2">Contact Information</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="first_name">First Name</Label>
+                    <Input
+                      id="first_name"
+                      value={formData.first_name || ""}
+                      onChange={(e) => handleInputChange("first_name", e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="last_name">Surname</Label>
+                    <Input
+                      id="last_name"
+                      value={formData.last_name || ""}
+                      onChange={(e) => handleInputChange("last_name", e.target.value)}
+                    />
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="preferred_name">Preferred Name</Label>
                     <Input
@@ -215,7 +235,9 @@ export default function UpdateProfile() {
                       placeholder="What would you like to be called?"
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
@@ -261,7 +283,7 @@ export default function UpdateProfile() {
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="country">Country</Label>
                     <Input
                       id="country"
