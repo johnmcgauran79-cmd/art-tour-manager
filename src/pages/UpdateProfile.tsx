@@ -180,21 +180,21 @@ export default function UpdateProfile() {
   return (
     <div className="min-h-screen bg-muted/30 py-8 px-4">
       <div className="max-w-2xl mx-auto">
-        <Card>
-          <CardHeader className="text-center border-b">
-            <div className="mx-auto mb-4">
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-brand-navy text-white p-6">
+            <div className="flex items-center justify-center gap-4">
               <img 
                 src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" 
                 alt="Australian Racing Tours" 
-                className="h-16 mx-auto"
+                className="h-12"
               />
+              <CardTitle className="text-2xl text-white">Update Your Profile</CardTitle>
             </div>
-            <CardTitle className="text-2xl">Update Your Profile</CardTitle>
-            <CardDescription>
+            <CardDescription className="text-center text-white/80 mt-2">
               Hi {customer?.first_name}! Please review and update your information below.
             </CardDescription>
             {hoursRemaining > 0 && (
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-2">
+              <div className="flex items-center justify-center gap-2 text-sm text-white/70 mt-2">
                 <Clock className="h-4 w-4" />
                 <span>This link expires in {hoursRemaining} hours</span>
               </div>
@@ -379,7 +379,12 @@ export default function UpdateProfile() {
               </div>
 
               <div className="pt-4">
-                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                <Button 
+                  type="submit" 
+                  className="w-full bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow" 
+                  size="lg" 
+                  disabled={submitting}
+                >
                   {submitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
