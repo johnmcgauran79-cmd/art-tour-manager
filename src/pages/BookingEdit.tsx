@@ -437,10 +437,12 @@ export default function BookingEdit() {
             {!isMobile && <Heart className="h-4 w-4" />}
             <span>Medical</span>
           </TabsTrigger>
-          <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
-            {!isMobile && <FileText className="h-4 w-4" />}
-            <span>Travel</span>
-          </TabsTrigger>
+          {tour?.travel_documents_required && (
+            <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <FileText className="h-4 w-4" />}
+              <span>Travel</span>
+            </TabsTrigger>
+          )}
           <TabsTrigger value="communication" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
             {!isMobile && <MessageSquare className="h-4 w-4" />}
             <span>Comments</span>
