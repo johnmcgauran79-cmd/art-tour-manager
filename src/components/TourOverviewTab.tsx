@@ -34,6 +34,7 @@ interface TourOverviewTabProps {
     instalmentAmount: number;
     instalmentDate: string;
     finalPaymentDate: string;
+    travelDocumentsRequired: boolean;
     totalCapacity: number;
     minimumPassengers: number | null;
     startDate: string;
@@ -308,6 +309,12 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                     {new Date(tour.finalPaymentDate).toLocaleDateString('en-AU')}
                   </div>
                 )}
+                <div>
+                  <span className="font-medium">Travel Documents Required:</span>{" "}
+                  <span className={tour.travelDocumentsRequired ? "text-green-600" : "text-muted-foreground"}>
+                    {tour.travelDocumentsRequired ? "Yes" : "No"}
+                  </span>
+                </div>
               </div>
             </div>
           )}
