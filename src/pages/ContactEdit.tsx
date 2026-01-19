@@ -27,6 +27,7 @@ export default function ContactEdit() {
       setEditedContact({
         first_name: contact.first_name,
         last_name: contact.last_name,
+        preferred_name: contact.preferred_name || '',
         email: contact.email,
         phone: contact.phone || '',
         city: contact.city || '',
@@ -141,7 +142,7 @@ export default function ContactEdit() {
           <CardTitle>Contact Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
               <Input
@@ -160,6 +161,18 @@ export default function ContactEdit() {
                 required
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="preferred_name">Preferred Name</Label>
+              <Input
+                id="preferred_name"
+                value={editedContact.preferred_name || ''}
+                onChange={(e) => setEditedContact({ ...editedContact, preferred_name: e.target.value })}
+                placeholder="Nickname or preferred name"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input

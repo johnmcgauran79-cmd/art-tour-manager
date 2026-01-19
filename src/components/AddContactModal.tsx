@@ -25,7 +25,12 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
     state: "",
     country: "",
     spouse_name: "",
+    emergency_contact_name: "",
+    emergency_contact_phone: "",
+    emergency_contact_relationship: "",
     dietary_requirements: "",
+    medical_conditions: "",
+    accessibility_needs: "",
     notes: "",
   });
 
@@ -44,16 +49,16 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
       state: formData.state || null,
       country: formData.country || null,
       spouse_name: formData.spouse_name || null,
+      emergency_contact_name: formData.emergency_contact_name || null,
+      emergency_contact_phone: formData.emergency_contact_phone || null,
+      emergency_contact_relationship: formData.emergency_contact_relationship || null,
       dietary_requirements: formData.dietary_requirements || null,
+      medical_conditions: formData.medical_conditions || null,
+      accessibility_needs: formData.accessibility_needs || null,
       notes: formData.notes || null,
       // Add missing fields required by Customer interface
       crm_id: null,
       last_synced_at: null,
-      emergency_contact_name: null,
-      emergency_contact_phone: null,
-      emergency_contact_relationship: null,
-      medical_conditions: null,
-      accessibility_needs: null,
       avatar_url: null,
     };
 
@@ -73,7 +78,12 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
           state: "",
           country: "",
           spouse_name: "",
+          emergency_contact_name: "",
+          emergency_contact_phone: "",
+          emergency_contact_relationship: "",
           dietary_requirements: "",
+          medical_conditions: "",
+          accessibility_needs: "",
           notes: "",
         });
       },
@@ -181,14 +191,67 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
-            <Textarea
-              id="dietary_requirements"
-              value={formData.dietary_requirements}
-              onChange={(e) => handleInputChange("dietary_requirements", e.target.value)}
-              rows={2}
-            />
+          <div className="border-t pt-4 mt-4">
+            <h4 className="text-sm font-medium mb-3">Emergency Contact</h4>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_name">Name</Label>
+                <Input
+                  id="emergency_contact_name"
+                  value={formData.emergency_contact_name}
+                  onChange={(e) => handleInputChange("emergency_contact_name", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_phone">Phone</Label>
+                <Input
+                  id="emergency_contact_phone"
+                  value={formData.emergency_contact_phone}
+                  onChange={(e) => handleInputChange("emergency_contact_phone", e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_relationship">Relationship</Label>
+                <Input
+                  id="emergency_contact_relationship"
+                  value={formData.emergency_contact_relationship}
+                  onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <h4 className="text-sm font-medium mb-3">Medical & Dietary</h4>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="dietary_requirements">Dietary Requirements</Label>
+                <Textarea
+                  id="dietary_requirements"
+                  value={formData.dietary_requirements}
+                  onChange={(e) => handleInputChange("dietary_requirements", e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="medical_conditions">Medical Conditions</Label>
+                <Textarea
+                  id="medical_conditions"
+                  value={formData.medical_conditions}
+                  onChange={(e) => handleInputChange("medical_conditions", e.target.value)}
+                  rows={2}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accessibility_needs">Accessibility Needs</Label>
+                <Textarea
+                  id="accessibility_needs"
+                  value={formData.accessibility_needs}
+                  onChange={(e) => handleInputChange("accessibility_needs", e.target.value)}
+                  rows={2}
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
