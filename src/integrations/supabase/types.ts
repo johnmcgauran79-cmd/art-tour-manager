@@ -295,8 +295,11 @@ export type Database = {
           id: string
           is_active: boolean
           recipient_filter: string
+          requires_approval: boolean
           rule_name: string
           rule_type: string
+          status_filter: string[] | null
+          trigger_type: string
           updated_at: string | null
         }
         Insert: {
@@ -307,8 +310,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           recipient_filter?: string
+          requires_approval?: boolean
           rule_name: string
           rule_type?: string
+          status_filter?: string[] | null
+          trigger_type?: string
           updated_at?: string | null
         }
         Update: {
@@ -319,8 +325,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           recipient_filter?: string
+          requires_approval?: boolean
           rule_name?: string
           rule_type?: string
+          status_filter?: string[] | null
+          trigger_type?: string
           updated_at?: string | null
         }
         Relationships: [
@@ -1312,6 +1321,55 @@ export type Database = {
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_booking_email_log: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          email_log_id: string | null
+          id: string
+          rule_id: string
+          sent_at: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          email_log_id?: string | null
+          id?: string
+          rule_id: string
+          sent_at?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          email_log_id?: string | null
+          id?: string
+          rule_id?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_booking_email_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_booking_email_log_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_booking_email_log_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automated_email_rules"
             referencedColumns: ["id"]
           },
         ]

@@ -28,9 +28,13 @@ export const useCreateAutomatedEmailRule = () => {
     mutationFn: async (rule: {
       rule_name: string;
       rule_type: string;
+      trigger_type?: string;
       days_before_tour: number;
       email_template_id: string;
       is_active: boolean;
+      requires_approval?: boolean;
+      recipient_filter?: string;
+      status_filter?: string[];
       created_by: string;
     }) => {
       const { data, error } = await supabase
