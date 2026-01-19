@@ -14,6 +14,7 @@ interface CustomerData {
   id: string;
   first_name: string;
   last_name: string;
+  preferred_name: string | null;
   email: string | null;
   phone: string | null;
   city: string | null;
@@ -85,6 +86,7 @@ export default function UpdateProfile() {
         body: { 
           token, 
           updates: {
+            preferred_name: formData.preferred_name,
             email: formData.email,
             phone: formData.phone,
             city: formData.city,
@@ -205,6 +207,16 @@ export default function UpdateProfile() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="preferred_name">Preferred Name</Label>
+                    <Input
+                      id="preferred_name"
+                      value={formData.preferred_name || ""}
+                      onChange={(e) => handleInputChange("preferred_name", e.target.value)}
+                      placeholder="What would you like to be called?"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
                     <Input
                       id="email"
@@ -249,7 +261,7 @@ export default function UpdateProfile() {
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <Label htmlFor="country">Country</Label>
                     <Input
                       id="country"
