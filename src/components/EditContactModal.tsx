@@ -26,6 +26,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
+    preferred_name: "",
     email: "",
     phone: "",
     city: "",
@@ -87,6 +88,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
       setFormData({
         first_name: contact.first_name || "",
         last_name: contact.last_name || "",
+        preferred_name: contact.preferred_name || "",
         email: contact.email || "",
         phone: contact.phone || "",
         city: contact.city || "",
@@ -110,6 +112,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
     
     const customerData = {
       ...formData,
+      preferred_name: formData.preferred_name || null,
       email: formData.email || null,
       phone: formData.phone || null,
       city: formData.city || null,
@@ -249,7 +252,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
           <TabsContent value="details" className="space-y-4">
             <form onSubmit={handleSubmit} className="space-y-4">
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name *</Label>
                   <Input
@@ -266,6 +269,15 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                     value={formData.last_name}
                     onChange={(e) => handleInputChange("last_name", e.target.value)}
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="preferred_name">Preferred Name</Label>
+                  <Input
+                    id="preferred_name"
+                    value={formData.preferred_name}
+                    onChange={(e) => handleInputChange("preferred_name", e.target.value)}
+                    placeholder="Nickname or preferred name"
                   />
                 </div>
               </div>

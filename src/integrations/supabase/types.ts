@@ -833,6 +833,7 @@ export type Database = {
           medical_conditions: string | null
           notes: string | null
           phone: string | null
+          preferred_name: string | null
           spouse_name: string | null
           state: string | null
           updated_at: string | null
@@ -856,6 +857,7 @@ export type Database = {
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
+          preferred_name?: string | null
           spouse_name?: string | null
           state?: string | null
           updated_at?: string | null
@@ -879,6 +881,7 @@ export type Database = {
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
+          preferred_name?: string | null
           spouse_name?: string | null
           state?: string | null
           updated_at?: string | null

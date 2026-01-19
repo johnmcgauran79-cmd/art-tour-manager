@@ -8,6 +8,7 @@ export interface Customer {
   id: string;
   first_name: string;
   last_name: string;
+  preferred_name: string | null;
   email: string | null;
   phone: string | null;
   city: string | null;
