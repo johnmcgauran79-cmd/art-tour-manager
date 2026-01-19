@@ -19,6 +19,7 @@ interface MedicalDetailsTabProps {
   hasSelectedContact: boolean;
   onBack: () => void;
   onContinue: () => void;
+  showTravelDocuments?: boolean;
 }
 
 export const MedicalDetailsTab = ({
@@ -27,6 +28,7 @@ export const MedicalDetailsTab = ({
   hasSelectedContact,
   onBack,
   onContinue,
+  showTravelDocuments = true,
 }: MedicalDetailsTabProps) => {
   const handleChange = (field: keyof MedicalFormData, value: string) => {
     setMedicalFormData(prev => ({ ...prev, [field]: value }));
@@ -52,7 +54,7 @@ export const MedicalDetailsTab = ({
             onClick={onContinue}
             className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
           >
-            Continue to Travel Documents
+            {showTravelDocuments ? 'Continue to Travel Documents' : 'Review & Create Booking'}
           </Button>
         </div>
       </div>
@@ -147,7 +149,7 @@ export const MedicalDetailsTab = ({
           onClick={onContinue}
           className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
         >
-          Continue to Travel Documents
+          {showTravelDocuments ? 'Continue to Travel Documents' : 'Review & Create Booking'}
         </Button>
       </div>
     </div>

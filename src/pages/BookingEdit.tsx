@@ -891,70 +891,72 @@ export default function BookingEdit() {
           </div>
         </TabsContent>
 
-        <TabsContent value="travel" className="space-y-4 mt-6">
-          <div className="bg-card border rounded-lg p-6 space-y-4">
-            <h3 className="text-lg font-medium">Travel Documents</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="passport_number">Passport Number</Label>
-                <Input
-                  id="passport_number"
-                  value={formData.passport_number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, passport_number: e.target.value }))}
-                  placeholder="Passport number"
-                />
-              </div>
-              <div>
-                <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
-                <Input
-                  id="passport_expiry_date"
-                  type="date"
-                  value={formData.passport_expiry_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, passport_expiry_date: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label htmlFor="passport_country">Passport Issuing Country</Label>
-                <Input
-                  id="passport_country"
-                  value={formData.passport_country}
-                  onChange={(e) => setFormData(prev => ({ ...prev, passport_country: e.target.value }))}
-                  placeholder="Country"
-                />
-              </div>
-              <div>
-                <Label htmlFor="nationality">Nationality</Label>
-                <Input
-                  id="nationality"
-                  value={formData.nationality}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
-                  placeholder="Nationality"
-                />
-              </div>
-              <div>
-                <Label htmlFor="id_number">National ID Number</Label>
-                <Input
-                  id="id_number"
-                  value={formData.id_number}
-                  onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
-                  placeholder="National ID or driver's license"
-                />
+        {tour?.travel_documents_required && (
+          <TabsContent value="travel" className="space-y-4 mt-6">
+            <div className="bg-card border rounded-lg p-6 space-y-4">
+              <h3 className="text-lg font-medium">Travel Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="passport_number">Passport Number</Label>
+                  <Input
+                    id="passport_number"
+                    value={formData.passport_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passport_number: e.target.value }))}
+                    placeholder="Passport number"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
+                  <Input
+                    id="passport_expiry_date"
+                    type="date"
+                    value={formData.passport_expiry_date}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passport_expiry_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="passport_country">Passport Issuing Country</Label>
+                  <Input
+                    id="passport_country"
+                    value={formData.passport_country}
+                    onChange={(e) => setFormData(prev => ({ ...prev, passport_country: e.target.value }))}
+                    placeholder="Country"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nationality">Nationality</Label>
+                  <Input
+                    id="nationality"
+                    value={formData.nationality}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
+                    placeholder="Nationality"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="id_number">National ID Number</Label>
+                  <Input
+                    id="id_number"
+                    value={formData.id_number}
+                    onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
+                    placeholder="National ID or driver's license"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => handleSubmit()}
-              disabled={updateBooking.isPending}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </TabsContent>
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={() => handleSubmit()}
+                disabled={updateBooking.isPending}
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </TabsContent>
+        )}
 
         <TabsContent value="communication" className="space-y-4 mt-6">
           <BookingCommentsSection bookingId={booking.id} />
