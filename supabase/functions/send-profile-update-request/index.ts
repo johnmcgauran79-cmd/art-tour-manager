@@ -102,6 +102,81 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://art-tour-manager.lovable.app";
     const updateLink = `${baseUrl}/update-profile/${tokenData.token}`;
 
+    // Helper to format field value or show placeholder
+    const formatField = (value: string | null, placeholder = 'Not provided') => {
+      return value && value.trim() ? value : `<span style="color: #999; font-style: italic;">${placeholder}</span>`;
+    };
+
+    // Build the current details section
+    const currentDetailsHtml = `
+      <div style="background: #f9f9f9; padding: 20px; border-radius: 6px; margin: 20px 0;">
+        <h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Your Current Details</h3>
+        
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666; width: 40%;"><strong>Name:</strong></td>
+            <td style="padding: 6px 0;">${customer.first_name} ${customer.last_name}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Preferred Name:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.preferred_name)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Email:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.email)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Phone:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.phone)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>City:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.city)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>State:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.state)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Country:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.country)}</td>
+          </tr>
+        </table>
+
+        <h4 style="margin-top: 15px; margin-bottom: 10px; color: #333; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">Emergency Contact</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666; width: 40%;"><strong>Name:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.emergency_contact_name)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Phone:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.emergency_contact_phone)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Relationship:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.emergency_contact_relationship)}</td>
+          </tr>
+        </table>
+
+        <h4 style="margin-top: 15px; margin-bottom: 10px; color: #333; font-size: 14px; border-bottom: 1px solid #ddd; padding-bottom: 8px;">Health & Dietary</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666; width: 40%;"><strong>Dietary Requirements:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.dietary_requirements)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Medical Conditions:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.medical_conditions)}</td>
+          </tr>
+          <tr>
+            <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Accessibility Needs:</strong></td>
+            <td style="padding: 6px 0;">${formatField(customer.accessibility_needs)}</td>
+          </tr>
+        </table>
+      </div>
+    `;
+
     // Send the email
     const emailResponse = await resend.emails.send({
       from: "Australian Racing Tours <info@australianracingtours.com.au>",
@@ -115,22 +190,27 @@ const handler = async (req: Request): Promise<Response> => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <div style="background: #36454F; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; margin-bottom: 10px;" />
             <h1 style="color: #fff; margin: 0; font-size: 24px;">Update Your Profile</h1>
           </div>
           
           <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
             <p style="margin-top: 0;">Dear ${customer.first_name},</p>
             
-            <p>We'd like to ensure we have your most up-to-date information on file. Please click the button below to review and update your contact details, emergency contacts, and dietary requirements.</p>
+            <p>We'd like to ensure we have your most up-to-date information on file. Please review your current details below and click the button to make any corrections.</p>
+            
+            ${currentDetailsHtml}
+            
+            <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">If any of the above details are incorrect or missing, please click below to update them.</p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${updateLink}" style="display: inline-block; background: #1e3a5f; color: #fff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Update My Profile</a>
+              <a href="${updateLink}" style="display: inline-block; background: #36454F; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Update My Details</a>
             </div>
             
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 20px 0;">
-              <p style="margin: 0; font-size: 14px; color: #666;">
-                <strong>Important:</strong> This link will expire in 24 hours. You can make multiple updates within this timeframe.
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 20px 0;">
+              <p style="margin: 0; font-size: 14px; color: #2e7d32;">
+                <strong>Note:</strong> This link will expire in 24 hours. You can make multiple updates within this timeframe.
               </p>
             </div>
             
