@@ -97,6 +97,7 @@ export default function TourDetail() {
     instalmentAmount: tour.instalment_amount || 0,
     instalmentDate: tour.instalment_date || "",
     finalPaymentDate: tour.final_payment_date || "",
+    travelDocumentsRequired: tour.travel_documents_required || false,
     totalCapacity: tour.capacity || 0,
     minimumPassengers: tour.minimum_passengers_required || null,
     startDate: tour.start_date,
