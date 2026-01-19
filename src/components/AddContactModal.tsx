@@ -18,6 +18,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
+    preferred_name: "",
     email: "",
     phone: "",
     city: "",
@@ -36,6 +37,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
     const customerData = {
       ...formData,
       // Convert empty strings to null for optional fields
+      preferred_name: formData.preferred_name || null,
       email: formData.email || null,
       phone: formData.phone || null,
       city: formData.city || null,
@@ -64,6 +66,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
         setFormData({
           first_name: "",
           last_name: "",
+          preferred_name: "",
           email: "",
           phone: "",
           city: "",
@@ -92,7 +95,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
               <Input
@@ -109,6 +112,15 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
                 value={formData.last_name}
                 onChange={(e) => handleInputChange("last_name", e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="preferred_name">Preferred Name</Label>
+              <Input
+                id="preferred_name"
+                value={formData.preferred_name}
+                onChange={(e) => handleInputChange("preferred_name", e.target.value)}
+                placeholder="Nickname or preferred name"
               />
             </div>
           </div>

@@ -26,6 +26,7 @@ export const prepareCustomerData = (contact: CSVContact) => {
   return {
     first_name: contact.first_name,
     last_name: contact.last_name,
+    preferred_name: null,
     email: contact.email || null,
     phone: contact.phone ? formatPhoneForWhatsApp(contact.phone) || contact.phone : null,
     city: contact.city || null,
