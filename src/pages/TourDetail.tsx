@@ -238,7 +238,7 @@ export default function TourDetail() {
 
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <div className="sticky top-0 z-30 bg-background -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 border-b">
+        <div className="sticky top-[52px] z-30 bg-background -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 border-b shadow-sm">
           <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-7 md:w-auto h-auto p-1 gap-1">
             <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
