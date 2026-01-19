@@ -32,27 +32,37 @@ const MERGE_FIELDS = {
   customer: [
     '{{customer_first_name}}', '{{customer_last_name}}', '{{customer_email}}', '{{customer_phone}}',
     '{{customer_city}}', '{{customer_state}}', '{{customer_country}}', '{{customer_spouse_name}}',
-    '{{customer_dietary_requirements}}', '{{customer_notes}}'
+    '{{customer_dietary_requirements}}', '{{customer_medical_conditions}}', '{{customer_accessibility_needs}}',
+    '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}',
+    '{{customer_notes}}'
   ],
   tour: [
-    '{{tour_name}}', '{{tour_location}}', '{{tour_start_date}}', '{{tour_end_date}}',
+    '{{tour_name}}', '{{tour_location}}', '{{tour_type}}', '{{tour_start_date}}', '{{tour_end_date}}',
     '{{tour_days}}', '{{tour_nights}}', '{{tour_pickup_point}}', '{{tour_host}}',
-    '{{tour_price_single}}', '{{tour_price_double}}', '{{tour_deposit_required}}',
-    '{{tour_final_payment_date}}', '{{tour_instalment_date}}', '{{tour_inclusions}}', '{{tour_exclusions}}'
+    '{{tour_capacity}}', '{{tour_minimum_passengers}}',
+    '{{tour_price_single}}', '{{tour_price_double}}', '{{tour_price_twin}}', '{{tour_deposit_required}}',
+    '{{tour_final_payment_date}}', '{{tour_instalment_date}}', '{{tour_instalment_amount}}', '{{tour_instalment_details}}',
+    '{{tour_inclusions}}', '{{tour_exclusions}}', '{{tour_travel_documents_required}}'
   ],
   booking: [
     '{{booking_passenger_count}}', '{{booking_status}}', '{{booking_check_in_date}}', '{{booking_check_out_date}}',
     '{{booking_total_nights}}', '{{booking_passenger_2_name}}', '{{booking_passenger_3_name}}',
-    '{{booking_group_name}}', '{{booking_extra_requests}}', '{{booking_passport_number}}'
+    '{{booking_group_name}}', '{{booking_booking_agent}}', '{{booking_extra_requests}}', '{{booking_invoice_notes}}',
+    '{{booking_passport_number}}', '{{booking_passport_country}}', '{{booking_passport_expiry_date}}',
+    '{{booking_nationality}}', '{{booking_id_number}}', '{{booking_revenue}}',
+    '{{booking_accommodation_required}}', '{{booking_whatsapp_group_comms}}'
   ],
   hotel: [
     '{{#hotel_bookings}}', '{{hotel_name}}', '{{hotel_check_in_date}}', '{{hotel_check_out_date}}',
     '{{hotel_nights}}', '{{hotel_room_type}}', '{{hotel_bedding}}', '{{hotel_room_upgrade}}',
-    '{{hotel_confirmation_number}}', '{{hotel_contact_name}}', '{{/hotel_bookings}}'
+    '{{hotel_room_requests}}', '{{hotel_confirmation_number}}', '{{hotel_address}}',
+    '{{hotel_contact_name}}', '{{hotel_contact_phone}}', '{{hotel_contact_email}}', '{{/hotel_bookings}}'
   ],
   activity: [
-    '{{#activity_bookings}}', '{{activity_name}}', '{{activity_date}}', '{{activity_start_time}}',
-    '{{activity_location}}', '{{activity_guide_name}}', '{{passengers_attending}}', '{{/activity_bookings}}'
+    '{{#activity_bookings}}', '{{activity_name}}', '{{activity_date}}', '{{activity_start_time}}', '{{activity_end_time}}',
+    '{{activity_pickup_time}}', '{{activity_pickup_location}}', '{{activity_collection_time}}', '{{activity_collection_location}}',
+    '{{activity_dropoff_location}}', '{{activity_location}}', '{{activity_guide_name}}', '{{activity_guide_phone}}',
+    '{{activity_guide_email}}', '{{activity_hospitality_inclusions}}', '{{passengers_attending}}', '{{/activity_bookings}}'
   ]
 };
 

@@ -10,11 +10,17 @@ export interface EmailMergeData {
   customer_country?: string;
   customer_spouse_name?: string;
   customer_dietary_requirements?: string;
+  customer_medical_conditions?: string;
+  customer_accessibility_needs?: string;
+  customer_emergency_contact_name?: string;
+  customer_emergency_contact_phone?: string;
+  customer_emergency_contact_relationship?: string;
   customer_notes?: string;
   
   // Tour fields
   tour_name?: string;
   tour_location?: string;
+  tour_type?: string;
   tour_start_date?: string;
   tour_end_date?: string;
   tour_days?: number;
@@ -24,12 +30,17 @@ export interface EmailMergeData {
   tour_inclusions?: string;
   tour_exclusions?: string;
   tour_host?: string;
+  tour_capacity?: number;
+  tour_minimum_passengers?: number;
   tour_price_single?: number;
   tour_price_double?: number;
+  tour_price_twin?: number;
   tour_deposit_required?: number;
   tour_final_payment_date?: string;
   tour_instalment_date?: string;
   tour_instalment_amount?: number;
+  tour_instalment_details?: string;
+  tour_travel_documents_required?: boolean;
   
   // Booking fields
   booking_passenger_count?: number;
@@ -42,12 +53,15 @@ export interface EmailMergeData {
   booking_group_name?: string;
   booking_booking_agent?: string;
   booking_extra_requests?: string;
+  booking_invoice_notes?: string;
   booking_passport_number?: string;
   booking_passport_country?: string;
   booking_passport_expiry_date?: string;
   booking_nationality?: string;
   booking_id_number?: string;
   booking_revenue?: number;
+  booking_accommodation_required?: boolean;
+  booking_whatsapp_group_comms?: boolean;
   
   // Hotel booking fields (for multiple hotels, will be handled as arrays)
   hotel_bookings?: Array<{
@@ -73,9 +87,15 @@ export interface EmailMergeData {
     activity_start_time?: string;
     activity_end_time?: string;
     activity_pickup_time?: string;
+    activity_pickup_location?: string;
+    activity_collection_time?: string;
+    activity_collection_location?: string;
+    activity_dropoff_location?: string;
     activity_location?: string;
     activity_guide_name?: string;
     activity_guide_phone?: string;
+    activity_guide_email?: string;
+    activity_hospitality_inclusions?: string;
     passengers_attending?: number;
   }>;
 }
@@ -198,11 +218,17 @@ export class EmailTemplateEngine {
       customer_country: customer.country,
       customer_spouse_name: customer.spouse_name,
       customer_dietary_requirements: customer.dietary_requirements,
+      customer_medical_conditions: customer.medical_conditions,
+      customer_accessibility_needs: customer.accessibility_needs,
+      customer_emergency_contact_name: customer.emergency_contact_name,
+      customer_emergency_contact_phone: customer.emergency_contact_phone,
+      customer_emergency_contact_relationship: customer.emergency_contact_relationship,
       customer_notes: customer.notes,
       
       // Tour fields
       tour_name: tour.name,
       tour_location: tour.location,
+      tour_type: tour.tour_type,
       tour_start_date: this.formatDate(tour.start_date),
       tour_end_date: this.formatDate(tour.end_date),
       tour_days: tour.days,
@@ -212,12 +238,17 @@ export class EmailTemplateEngine {
       tour_inclusions: tour.inclusions,
       tour_exclusions: tour.exclusions,
       tour_host: tour.tour_host,
+      tour_capacity: tour.capacity,
+      tour_minimum_passengers: tour.minimum_passengers_required,
       tour_price_single: tour.price_single,
       tour_price_double: tour.price_double,
+      tour_price_twin: tour.price_twin,
       tour_deposit_required: tour.deposit_required,
       tour_final_payment_date: this.formatDate(tour.final_payment_date),
       tour_instalment_date: this.formatDate(tour.instalment_date),
       tour_instalment_amount: tour.instalment_amount,
+      tour_instalment_details: tour.instalment_details,
+      tour_travel_documents_required: tour.travel_documents_required,
       
       // Booking fields
       booking_passenger_count: booking.passenger_count,
@@ -230,12 +261,15 @@ export class EmailTemplateEngine {
       booking_group_name: booking.group_name,
       booking_booking_agent: booking.booking_agent,
       booking_extra_requests: booking.extra_requests,
+      booking_invoice_notes: booking.invoice_notes,
       booking_passport_number: booking.passport_number,
       booking_passport_country: booking.passport_country,
       booking_passport_expiry_date: this.formatDate(booking.passport_expiry_date),
       booking_nationality: booking.nationality,
       booking_id_number: booking.id_number,
       booking_revenue: booking.revenue,
+      booking_accommodation_required: booking.accommodation_required,
+      booking_whatsapp_group_comms: booking.whatsapp_group_comms,
       
       // Hotel bookings
       hotel_bookings: hotelBookings.map((hb: any) => ({
@@ -261,9 +295,15 @@ export class EmailTemplateEngine {
         activity_start_time: ab.activities?.start_time,
         activity_end_time: ab.activities?.end_time,
         activity_pickup_time: ab.activities?.pickup_time,
+        activity_pickup_location: ab.activities?.pickup_location,
+        activity_collection_time: ab.activities?.collection_time,
+        activity_collection_location: ab.activities?.collection_location,
+        activity_dropoff_location: ab.activities?.dropoff_location,
         activity_location: ab.activities?.location,
         activity_guide_name: ab.activities?.guide_name,
         activity_guide_phone: ab.activities?.guide_phone,
+        activity_guide_email: ab.activities?.guide_email,
+        activity_hospitality_inclusions: ab.activities?.hospitality_inclusions,
         passengers_attending: ab.passengers_attending,
       })),
     };
