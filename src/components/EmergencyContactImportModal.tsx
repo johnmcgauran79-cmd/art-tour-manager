@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, FileText, AlertTriangle, CheckCircle, XCircle, User, HelpCircle, X } from "lucide-react";
+import { Upload, FileText, AlertTriangle, CheckCircle, XCircle, User, HelpCircle, X, Download } from "lucide-react";
 import { useAllCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
@@ -375,9 +375,44 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   const matchedCount = matchResults.filter(r => r.status === 'matched').length;
   const partialMatchCount = matchResults.filter(r => r.status === 'partial_match').length;
   const notFoundCount = matchResults.filter(r => r.status === 'not_found').length;
+  const skippedCount = matchResults.filter(r => r.status === 'skipped').length;
 
   const partialMatches = matchResults.filter(r => r.status === 'partial_match');
   const currentPartialMatch = partialMatches[currentPartialIndex];
+
+  // Get unmatched rows for CSV export
+  const unmatchedRows = matchResults.filter(r => r.status === 'not_found' || r.status === 'skipped');
+
+  const downloadUnmatchedCSV = () => {
+    if (unmatchedRows.length === 0) return;
+
+    // Create CSV content
+    const headers = ['Last Name', 'Email', 'Emergency Contact Name', 'Emergency Contact Phone', 'Emergency Contact Email', 'Reason'];
+    const rows = unmatchedRows.map(r => [
+      r.row.last_name,
+      r.row.email,
+      r.row.emergency_contact_name,
+      r.row.emergency_contact_phone,
+      r.row.emergency_contact_email,
+      r.status === 'skipped' ? 'Skipped (partial match rejected)' : 'No matching contact found'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `unmatched_emergency_contacts_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <Dialog open={open} onOpenChange={(value) => {
@@ -656,7 +691,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
               <CheckCircle className="h-16 w-16 text-emerald-600" />
               <div className="text-center">
                 <h3 className="text-lg font-semibold mb-2">Import Complete</h3>
-                <div className="flex items-center justify-center gap-4">
+                <div className="flex items-center justify-center gap-4 flex-wrap">
                   <Badge variant="default" className="bg-emerald-600">
                     {importResults.success} updated
                   </Badge>
@@ -672,6 +707,36 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                   )}
                 </div>
               </div>
+
+              {unmatchedRows.length > 0 && (
+                <div className="w-full max-w-md">
+                  <Card className="border-amber-500/30">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium mb-1">
+                            {unmatchedRows.length} record{unmatchedRows.length !== 1 ? 's' : ''} could not be matched
+                          </p>
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Download a CSV of unmatched rows for manual review.
+                          </p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={downloadUnmatchedCSV}
+                            className="w-full"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download Unmatched Records
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
               <Button onClick={() => {
                 onOpenChange(false);
                 resetModal();
