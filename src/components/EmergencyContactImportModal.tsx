@@ -387,10 +387,15 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   };
 
   const handleExistingDataDecision = (overwrite: boolean) => {
+    // Get the current list of has_existing matches from the CURRENT state
     const existingDataMatches = matchResults.filter(r => r.status === 'has_existing');
     const currentMatch = existingDataMatches[currentExistingIndex];
     
-    if (!currentMatch) return;
+    if (!currentMatch) {
+      // Safety: if no current match, just proceed to import
+      runImport(matchResults);
+      return;
+    }
     
     // Update the match result based on decision
     const updatedResults = matchResults.map(r => {
@@ -412,9 +417,12 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     
     setMatchResults(updatedResults);
     
-    // Move to next existing data conflict or proceed to import
-    if (currentExistingIndex < existingDataMatches.length - 1) {
-      setCurrentExistingIndex(prev => prev + 1);
+    // Check how many has_existing remain in the UPDATED results
+    const remainingExisting = updatedResults.filter(r => r.status === 'has_existing');
+    
+    if (remainingExisting.length > 0) {
+      // There are more to review - reset index to 0 since we're filtering fresh each time
+      setCurrentExistingIndex(0);
     } else {
       // All existing data conflicts reviewed, proceed to import
       runImport(updatedResults);
@@ -494,8 +502,8 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   const existingDataMatches = matchResults.filter(r => r.status === 'has_existing');
   const currentExistingMatch = existingDataMatches[currentExistingIndex];
 
-  // Get unmatched rows for CSV export
-  const unmatchedRows = matchResults.filter(r => r.status === 'not_found' || r.status === 'skipped' || r.status === 'has_existing');
+  // Get unmatched rows for CSV export (not_found and skipped only - has_existing becomes overwrite or skipped)
+  const unmatchedRows = matchResults.filter(r => r.status === 'not_found' || r.status === 'skipped');
 
   const downloadUnmatchedCSV = () => {
     if (unmatchedRows.length === 0) return;
