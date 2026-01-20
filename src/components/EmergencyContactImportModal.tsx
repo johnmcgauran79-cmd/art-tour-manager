@@ -82,12 +82,14 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   const findMatchingCustomer = (row: EmergencyContactRow) => {
     if (!existingCustomers) return null;
     
-    // Match by email only (required field from CSV)
-    if (row.email) {
-      const emailMatch = existingCustomers.find(
-        customer => customer.email?.toLowerCase() === row.email.toLowerCase()
+    // Match by both email AND last name
+    if (row.email && row.last_name) {
+      const match = existingCustomers.find(
+        customer => 
+          customer.email?.toLowerCase() === row.email.toLowerCase() &&
+          customer.last_name.toLowerCase() === row.last_name.toLowerCase()
       );
-      return emailMatch || null;
+      return match || null;
     }
     
     return null;
@@ -127,15 +129,16 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         terms.some(t => h.includes(t.toLowerCase()))
       );
 
+      const lastNameIdx = findIndex(['last name', 'lastname', 'last_name']);
       const emailIdx = findIndex(['email']);
       const emergencyNameIdx = findIndex(['emergency contact name', 'emergency_contact_name', 'emergencycontactname']);
       const emergencyPhoneIdx = findIndex(['emergency contact phone', 'emergency_contact_phone', 'emergencyphone']);
       const emergencyEmailIdx = findIndex(['emergency contact email', 'emergency_contact_email', 'emergencyemail']);
 
-      if (emailIdx === -1) {
+      if (lastNameIdx === -1 || emailIdx === -1) {
         toast({
-          title: "Missing Required Column",
-          description: "CSV must have an Email column to match contacts.",
+          title: "Missing Required Columns",
+          description: "CSV must have Last Name and Email columns to match contacts.",
           variant: "destructive",
         });
         return;
@@ -158,15 +161,15 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         
         const row: EmergencyContactRow = {
           first_name: '',
-          last_name: '',
+          last_name: values[lastNameIdx]?.trim() || '',
           email: values[emailIdx]?.trim() || '',
           emergency_contact_name: emergencyNameIdx !== -1 ? values[emergencyNameIdx]?.trim() || '' : '',
           emergency_contact_phone: emergencyPhoneIdx !== -1 ? values[emergencyPhoneIdx]?.trim() || '' : '',
           emergency_contact_email: emergencyEmailIdx !== -1 ? values[emergencyEmailIdx]?.trim() || '' : '',
         };
 
-        // Skip rows without email
-        if (!row.email) continue;
+        // Skip rows without email or last name
+        if (!row.email || !row.last_name) continue;
 
         const matchedCustomer = findMatchingCustomer(row);
         
@@ -285,20 +288,20 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                 <CardHeader>
                   <CardTitle className="text-lg">Expected CSV Format</CardTitle>
                   <CardDescription>
-                    Your CSV should contain the contact's email and their emergency contact details.
+                    Your CSV should contain the contact's last name, email, and their emergency contact details.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm overflow-x-auto">
                     <div className="whitespace-nowrap">
-                      Email, Emergency Contact Name, Emergency Contact Phone, Emergency Contact Email
+                      Last Name, Email, Emergency Contact Name, Emergency Contact Phone, Emergency Contact Email
                     </div>
                     <div className="whitespace-nowrap text-muted-foreground mt-1">
-                      john@email.com, Jane Smith, +61 400 123 456, jane@email.com
+                      Smith, john@email.com, Jane Smith, +61 400 123 456, jane@email.com
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-3">
-                    <strong>Required:</strong> Email (to match existing contacts)<br />
+                    <strong>Required:</strong> Last Name and Email (to match existing contacts)<br />
                     <strong>Optional:</strong> Emergency Contact Name, Phone, Email
                   </p>
                 </CardContent>
@@ -357,6 +360,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                   <TableHeader>
                     <TableRow>
                       <TableHead>Status</TableHead>
+                      <TableHead>CSV Last Name</TableHead>
                       <TableHead>CSV Email</TableHead>
                       <TableHead>Matched To</TableHead>
                       <TableHead>Emergency Contact</TableHead>
@@ -375,6 +379,9 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                           )}
                         </TableCell>
                         <TableCell className="font-medium">
+                          {result.row.last_name}
+                        </TableCell>
+                        <TableCell className="text-sm">
                           {result.row.email}
                         </TableCell>
                         <TableCell>
