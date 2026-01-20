@@ -190,7 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: #36454F; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
             <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; margin-bottom: 10px;" />
             <h1 style="color: #fff; margin: 0; font-size: 24px;">Update Your Profile</h1>
           </div>
@@ -205,7 +205,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">If any of the above details are incorrect or missing, please click below to update them.</p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${updateLink}" style="display: inline-block; background: #36454F; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Update My Details</a>
+              <a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Update My Details</a>
             </div>
             
             <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 20px 0;">
