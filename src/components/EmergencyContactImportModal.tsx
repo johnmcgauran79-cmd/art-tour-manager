@@ -287,7 +287,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     if (!currentMatch) return;
     
     // Update the match result based on decision
-    setMatchResults(prev => prev.map(r => {
+    const updatedResults = matchResults.map(r => {
       if (r === currentMatch) {
         if (accept && r.partialMatch) {
           return {
@@ -305,25 +305,27 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         }
       }
       return r;
-    }));
+    });
+    
+    setMatchResults(updatedResults);
     
     // Move to next partial match or proceed to import
     if (currentPartialIndex < partialMatches.length - 1) {
       setCurrentPartialIndex(prev => prev + 1);
     } else {
-      // All partial matches reviewed, proceed to import
-      setTimeout(() => handleImport(), 100);
+      // All partial matches reviewed, proceed to import with updated results
+      runImport(updatedResults);
     }
   };
 
-  const handleImport = async () => {
+  const runImport = async (resultsToProcess: MatchResult[]) => {
     setCurrentStep('processing');
     setIsProcessing(true);
     
-    const matchedRows = matchResults.filter(r => r.status === 'matched');
+    const matchedRows = resultsToProcess.filter(r => r.status === 'matched');
     let success = 0;
     let failed = 0;
-    const skipped = matchResults.filter(r => r.status === 'not_found' || r.status === 'skipped').length;
+    const skipped = resultsToProcess.filter(r => r.status === 'not_found' || r.status === 'skipped').length;
 
     for (let i = 0; i < matchedRows.length; i++) {
       const result = matchedRows[i];
@@ -338,7 +340,6 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
           updateData.emergency_contact_name = result.row.emergency_contact_name;
         }
         if (result.row.emergency_contact_phone) {
-          // Format phone for WhatsApp
           const formatted = formatPhoneForWhatsApp(result.row.emergency_contact_phone);
           updateData.emergency_contact_phone = formatted || result.row.emergency_contact_phone;
         }
@@ -355,12 +356,11 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
             onError: (error) => {
               failed++;
               console.error(`Failed to update ${result.customerName}:`, error);
-              resolve(); // Continue with next
+              resolve();
             },
           });
         });
 
-        // Small delay to avoid overwhelming the database
         await new Promise(resolve => setTimeout(resolve, 50));
       } catch (error) {
         failed++;
@@ -370,6 +370,10 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     setImportResults({ success, failed, skipped });
     setIsProcessing(false);
     setCurrentStep('complete');
+  };
+
+  const handleImport = async () => {
+    runImport(matchResults);
   };
 
   const matchedCount = matchResults.filter(r => r.status === 'matched').length;
