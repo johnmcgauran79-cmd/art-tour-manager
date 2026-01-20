@@ -823,6 +823,7 @@ export type Database = {
           crm_id: string | null
           dietary_requirements: string | null
           email: string | null
+          emergency_contact_email: string | null
           emergency_contact_name: string | null
           emergency_contact_phone: string | null
           emergency_contact_relationship: string | null
@@ -847,6 +848,7 @@ export type Database = {
           crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
+          emergency_contact_email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
@@ -871,6 +873,7 @@ export type Database = {
           crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
+          emergency_contact_email?: string | null
           emergency_contact_name?: string | null
           emergency_contact_phone?: string | null
           emergency_contact_relationship?: string | null
