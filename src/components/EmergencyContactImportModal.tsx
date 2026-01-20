@@ -421,8 +421,8 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         if (!value) resetModal();
       }
     }}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader className="flex flex-row items-start justify-between">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex flex-row items-start justify-between flex-shrink-0">
           <div>
             <DialogTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -432,320 +432,345 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
               Upload a CSV file to bulk update emergency contact information for existing contacts.
             </DialogDescription>
           </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenChange(false)} disabled={isProcessing}>
             <X className="h-4 w-4" />
           </Button>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
-          {currentStep === 'upload' && (
-            <div className="space-y-6 p-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Expected CSV Format</CardTitle>
-                  <CardDescription>
-                    Your CSV should contain the contact's last name, email, and their emergency contact details.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <div className="whitespace-nowrap">
-                      Last Name, Email, Emergency Contact Name, Emergency Contact Phone, Emergency Contact Email
-                    </div>
-                    <div className="whitespace-nowrap text-muted-foreground mt-1">
-                      Smith, john@email.com, Jane Smith, +61 400 123 456, jane@email.com
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-3">
-                    <strong>Required:</strong> Last Name and Email (to match existing contacts)<br />
-                    <strong>Optional:</strong> Emergency Contact Name, Phone, Email
-                  </p>
-                </CardContent>
-              </Card>
-
-              <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 border-muted-foreground/25">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-muted-foreground">CSV file</p>
-                  </div>
-                  <Input
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 'preview' && (
-            <div className="space-y-4 h-full flex flex-col">
-              <div className="flex items-center gap-4 flex-wrap">
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <FileText className="h-3 w-3" />
-                  {file?.name}
-                </Badge>
-                <Badge variant="default" className="bg-emerald-600">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  {matchedCount} matched
-                </Badge>
-                {partialMatchCount > 0 && (
-                  <Badge variant="outline" className="border-amber-500 text-amber-600">
-                    <HelpCircle className="h-3 w-3 mr-1" />
-                    {partialMatchCount} need review
-                  </Badge>
-                )}
-                {notFoundCount > 0 && (
-                  <Badge variant="destructive">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    {notFoundCount} not found
-                  </Badge>
-                )}
-              </div>
-
-              {partialMatchCount > 0 && (
-                <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                  <HelpCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground">
-                    {partialMatchCount} record{partialMatchCount !== 1 ? 's have' : ' has'} a partial match (email or last name matches, but not both). 
-                    You'll be asked to review each one before importing.
-                  </p>
-                </div>
-              )}
-
-              {notFoundCount > 0 && (
-                <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                  <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
-                  <p className="text-sm text-muted-foreground">
-                    {notFoundCount} contact{notFoundCount !== 1 ? 's' : ''} could not be matched and will be skipped.
-                  </p>
-                </div>
-              )}
-
-              <ScrollArea className="flex-1 border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Status</TableHead>
-                      <TableHead>CSV Last Name</TableHead>
-                      <TableHead>CSV Email</TableHead>
-                      <TableHead>Matched To</TableHead>
-                      <TableHead>Emergency Contact</TableHead>
-                      <TableHead>Phone</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {matchResults.map((result, idx) => (
-                      <TableRow key={idx} className={result.status === 'not_found' ? 'opacity-50' : ''}>
-                        <TableCell>
-                          {result.status === 'matched' && (
-                            <CheckCircle className="h-4 w-4 text-emerald-600" />
-                          )}
-                          {result.status === 'partial_match' && (
-                            <HelpCircle className="h-4 w-4 text-amber-500" />
-                          )}
-                          {result.status === 'not_found' && (
-                            <XCircle className="h-4 w-4 text-destructive" />
-                          )}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {result.row.last_name}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {result.row.email}
-                        </TableCell>
-                        <TableCell>
-                          {result.status === 'matched' && result.customerName}
-                          {result.status === 'partial_match' && (
-                            <span className="text-amber-600">
-                              Review: {result.partialMatch?.first_name} {result.partialMatch?.last_name}
-                            </span>
-                          )}
-                          {result.status === 'not_found' && <span className="text-muted-foreground">—</span>}
-                        </TableCell>
-                        <TableCell>{result.row.emergency_contact_name || '—'}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {result.row.emergency_contact_phone || '—'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-
-              <div className="flex justify-between pt-4 border-t">
-                <Button variant="outline" onClick={resetModal}>
-                  Cancel
-                </Button>
-                <Button onClick={handleProceedToReview} disabled={matchedCount === 0 && partialMatchCount === 0}>
-                  {partialMatchCount > 0 
-                    ? `Review ${partialMatchCount} Partial Match${partialMatchCount !== 1 ? 'es' : ''}`
-                    : `Import ${matchedCount} Contact${matchedCount !== 1 ? 's' : ''}`
-                  }
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 'review_partial' && currentPartialMatch && (
-            <div className="space-y-6 p-4">
-              <div className="flex items-center justify-between">
-                <Badge variant="outline" className="border-amber-500 text-amber-600">
-                  Reviewing {currentPartialIndex + 1} of {partialMatches.length}
-                </Badge>
-              </div>
-
-              <Card className="border-amber-500/50">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <HelpCircle className="h-5 w-5 text-amber-500" />
-                    Partial Match Found
-                  </CardTitle>
-                  <CardDescription>
-                    {currentPartialMatch.partialMatch?.matchType === 'email_only' 
-                      ? 'Email matches but last name is different'
-                      : 'Last name matches but email is different'
-                    }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">CSV Record</h4>
-                      <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                        <div>
-                          <span className="text-sm text-muted-foreground">Last Name:</span>
-                          <p className="font-medium">{currentPartialMatch.row.last_name}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">Email:</span>
-                          <p className="font-medium">{currentPartialMatch.row.email}</p>
-                        </div>
-                        <div className="pt-2 border-t">
-                          <span className="text-sm text-muted-foreground">Emergency Contact:</span>
-                          <p className="font-medium">{currentPartialMatch.row.emergency_contact_name || '—'}</p>
-                          <p className="text-sm">{currentPartialMatch.row.emergency_contact_phone || '—'}</p>
-                          <p className="text-sm">{currentPartialMatch.row.emergency_contact_email || '—'}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Database Contact</h4>
-                      <div className="bg-muted/50 p-4 rounded-lg space-y-2">
-                        <div>
-                          <span className="text-sm text-muted-foreground">Name:</span>
-                          <p className="font-medium">
-                            {currentPartialMatch.partialMatch?.first_name} {currentPartialMatch.partialMatch?.last_name}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">Email:</span>
-                          <p className="font-medium">{currentPartialMatch.partialMatch?.email || '—'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                    <p className="text-sm">
-                      {currentPartialMatch.partialMatch?.matchType === 'email_only' 
-                        ? `The email "${currentPartialMatch.row.email}" matches, but the CSV last name "${currentPartialMatch.row.last_name}" differs from the database "${currentPartialMatch.partialMatch?.last_name}".`
-                        : `The last name "${currentPartialMatch.row.last_name}" matches, but the CSV email "${currentPartialMatch.row.email}" differs from the database "${currentPartialMatch.partialMatch?.email}".`
-                      }
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="flex justify-between pt-4 border-t">
-                <Button variant="outline" onClick={() => handlePartialMatchDecision(false)}>
-                  Skip This Record
-                </Button>
-                <Button onClick={() => handlePartialMatchDecision(true)}>
-                  Add Emergency Details to This Contact
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {currentStep === 'processing' && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-6">
-              <div className="w-full max-w-md">
-                <Progress value={progress} className="h-2" />
-              </div>
-              <p className="text-muted-foreground">
-                Updating emergency contact details... {progress}%
-              </p>
-            </div>
-          )}
-
-          {currentStep === 'complete' && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-6">
-              <CheckCircle className="h-16 w-16 text-emerald-600" />
-              <div className="text-center">
-                <h3 className="text-lg font-semibold mb-2">Import Complete</h3>
-                <div className="flex items-center justify-center gap-4 flex-wrap">
-                  <Badge variant="default" className="bg-emerald-600">
-                    {importResults.success} updated
-                  </Badge>
-                  {importResults.failed > 0 && (
-                    <Badge variant="destructive">
-                      {importResults.failed} failed
-                    </Badge>
-                  )}
-                  {importResults.skipped > 0 && (
-                    <Badge variant="secondary">
-                      {importResults.skipped} skipped
-                    </Badge>
-                  )}
-                </div>
-              </div>
-
-              {unmatchedRows.length > 0 && (
-                <div className="w-full max-w-md">
-                  <Card className="border-amber-500/30">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start gap-3">
-                        <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 flex-shrink-0" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium mb-1">
-                            {unmatchedRows.length} record{unmatchedRows.length !== 1 ? 's' : ''} could not be matched
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-3">
-                            Download a CSV of unmatched rows for manual review.
-                          </p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={downloadUnmatchedCSV}
-                            className="w-full"
-                          >
-                            <Download className="h-4 w-4 mr-2" />
-                            Download Unmatched Records
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              )}
-
-              <Button onClick={() => {
-                onOpenChange(false);
-                resetModal();
-              }}>
-                Close
-              </Button>
-            </div>
-          )}
+        {/* Step Indicator */}
+        <div className="flex items-center justify-center gap-2 py-3 border-b flex-shrink-0">
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'upload' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-background/20 text-[10px]">1</span>
+            Upload
+          </div>
+          <div className="w-4 h-px bg-border" />
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'preview' ? 'bg-primary text-primary-foreground' : currentStep === 'review_partial' || currentStep === 'processing' || currentStep === 'complete' ? 'bg-muted text-muted-foreground' : 'bg-muted/50 text-muted-foreground/50'}`}>
+            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-background/20 text-[10px]">2</span>
+            Preview
+          </div>
+          <div className="w-4 h-px bg-border" />
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'review_partial' ? 'bg-amber-500 text-white' : currentStep === 'processing' || currentStep === 'complete' ? 'bg-muted text-muted-foreground' : 'bg-muted/50 text-muted-foreground/50'}`}>
+            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-background/20 text-[10px]">3</span>
+            Review
+          </div>
+          <div className="w-4 h-px bg-border" />
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'processing' || currentStep === 'complete' ? 'bg-emerald-600 text-white' : 'bg-muted/50 text-muted-foreground/50'}`}>
+            <span className="w-4 h-4 flex items-center justify-center rounded-full bg-background/20 text-[10px]">4</span>
+            Complete
+          </div>
         </div>
+
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="p-4">
+            {currentStep === 'upload' && (
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Expected CSV Format</CardTitle>
+                    <CardDescription>
+                      Your CSV should contain the contact's last name, email, and their emergency contact details.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+                      <div className="whitespace-nowrap">
+                        Last Name, Email, Emergency Contact Name, Emergency Contact Phone, Emergency Contact Email
+                      </div>
+                      <div className="whitespace-nowrap text-muted-foreground mt-1">
+                        Smith, john@email.com, Jane Smith, +61 400 123 456, jane@email.com
+                      </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3">
+                      <strong>Required:</strong> Last Name and Email (to match existing contacts)<br />
+                      <strong>Optional:</strong> Emergency Contact Name, Phone, Email
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer bg-muted/30 hover:bg-muted/50 border-muted-foreground/25">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <Upload className="w-10 h-10 mb-3 text-muted-foreground" />
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        <span className="font-semibold">Click to upload</span> or drag and drop
+                      </p>
+                      <p className="text-xs text-muted-foreground">CSV file</p>
+                    </div>
+                    <Input
+                      type="file"
+                      accept=".csv"
+                      className="hidden"
+                      onChange={handleFileUpload}
+                    />
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 'preview' && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    {file?.name}
+                  </Badge>
+                  <Badge variant="default" className="bg-primary">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    {matchedCount} matched
+                  </Badge>
+                  {partialMatchCount > 0 && (
+                    <Badge variant="outline" className="border-warning text-warning">
+                      <HelpCircle className="h-3 w-3 mr-1" />
+                      {partialMatchCount} need review
+                    </Badge>
+                  )}
+                  {notFoundCount > 0 && (
+                    <Badge variant="destructive">
+                      <XCircle className="h-3 w-3 mr-1" />
+                      {notFoundCount} not found
+                    </Badge>
+                  )}
+                </div>
+
+                {partialMatchCount > 0 && (
+                  <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                    <HelpCircle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground">
+                      {partialMatchCount} record{partialMatchCount !== 1 ? 's have' : ' has'} a partial match (email or last name matches, but not both). 
+                      You'll be asked to review each one before importing.
+                    </p>
+                  </div>
+                )}
+
+                {notFoundCount > 0 && (
+                  <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground">
+                      {notFoundCount} contact{notFoundCount !== 1 ? 's' : ''} could not be matched and will be skipped.
+                    </p>
+                  </div>
+                )}
+
+                <div className="border rounded-lg max-h-[300px] overflow-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Status</TableHead>
+                        <TableHead>CSV Last Name</TableHead>
+                        <TableHead>CSV Email</TableHead>
+                        <TableHead>Matched To</TableHead>
+                        <TableHead>Emergency Contact</TableHead>
+                        <TableHead>Phone</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {matchResults.map((result, idx) => (
+                        <TableRow key={idx} className={result.status === 'not_found' ? 'opacity-50' : ''}>
+                          <TableCell>
+                            {result.status === 'matched' && (
+                              <CheckCircle className="h-4 w-4 text-primary" />
+                            )}
+                            {result.status === 'partial_match' && (
+                              <HelpCircle className="h-4 w-4 text-warning" />
+                            )}
+                            {result.status === 'not_found' && (
+                              <XCircle className="h-4 w-4 text-destructive" />
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {result.row.last_name}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {result.row.email}
+                          </TableCell>
+                          <TableCell>
+                            {result.status === 'matched' && result.customerName}
+                            {result.status === 'partial_match' && (
+                              <span className="text-warning">
+                                Review: {result.partialMatch?.first_name} {result.partialMatch?.last_name}
+                              </span>
+                            )}
+                            {result.status === 'not_found' && <span className="text-muted-foreground">—</span>}
+                          </TableCell>
+                          <TableCell>{result.row.emergency_contact_name || '—'}</TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {result.row.emergency_contact_phone || '—'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                <div className="flex justify-between pt-4 border-t">
+                  <Button variant="outline" onClick={resetModal}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleProceedToReview} disabled={matchedCount === 0 && partialMatchCount === 0}>
+                    {partialMatchCount > 0 
+                      ? `Review ${partialMatchCount} Partial Match${partialMatchCount !== 1 ? 'es' : ''}`
+                      : `Import ${matchedCount} Contact${matchedCount !== 1 ? 's' : ''}`
+                    }
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 'review_partial' && currentPartialMatch && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="border-warning text-warning">
+                    Reviewing {currentPartialIndex + 1} of {partialMatches.length}
+                  </Badge>
+                </div>
+
+                <Card className="border-warning/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <HelpCircle className="h-5 w-5 text-warning" />
+                      Partial Match Found
+                    </CardTitle>
+                    <CardDescription>
+                      {currentPartialMatch.partialMatch?.matchType === 'email_only' 
+                        ? 'Email matches but last name is different'
+                        : 'Last name matches but email is different'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">CSV Record</h4>
+                        <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Last Name:</span>
+                            <p className="font-medium">{currentPartialMatch.row.last_name}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Email:</span>
+                            <p className="font-medium">{currentPartialMatch.row.email}</p>
+                          </div>
+                          <div className="pt-2 border-t">
+                            <span className="text-sm text-muted-foreground">Emergency Contact:</span>
+                            <p className="font-medium">{currentPartialMatch.row.emergency_contact_name || '—'}</p>
+                            <p className="text-sm">{currentPartialMatch.row.emergency_contact_phone || '—'}</p>
+                            <p className="text-sm">{currentPartialMatch.row.emergency_contact_email || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Database Contact</h4>
+                        <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Name:</span>
+                            <p className="font-medium">
+                              {currentPartialMatch.partialMatch?.first_name} {currentPartialMatch.partialMatch?.last_name}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Email:</span>
+                            <p className="font-medium">{currentPartialMatch.partialMatch?.email || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                      <AlertTriangle className="h-4 w-4 text-warning mt-0.5 flex-shrink-0" />
+                      <p className="text-sm">
+                        {currentPartialMatch.partialMatch?.matchType === 'email_only' 
+                          ? `The email "${currentPartialMatch.row.email}" matches, but the CSV last name "${currentPartialMatch.row.last_name}" differs from the database "${currentPartialMatch.partialMatch?.last_name}".`
+                          : `The last name "${currentPartialMatch.row.last_name}" matches, but the CSV email "${currentPartialMatch.row.email}" differs from the database "${currentPartialMatch.partialMatch?.email}".`
+                        }
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="flex justify-between pt-4 border-t">
+                  <Button variant="outline" onClick={() => handlePartialMatchDecision(false)}>
+                    Skip This Record
+                  </Button>
+                  <Button onClick={() => handlePartialMatchDecision(true)}>
+                    Add Emergency Details to This Contact
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 'processing' && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                <div className="w-full max-w-md">
+                  <Progress value={progress} className="h-2" />
+                </div>
+                <p className="text-muted-foreground">
+                  Updating emergency contact details... {progress}%
+                </p>
+              </div>
+            )}
+
+            {currentStep === 'complete' && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                <CheckCircle className="h-16 w-16 text-primary" />
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold mb-2">Import Complete</h3>
+                  <div className="flex items-center justify-center gap-4 flex-wrap">
+                    <Badge variant="default" className="bg-primary">
+                      {importResults.success} updated
+                    </Badge>
+                    {importResults.failed > 0 && (
+                      <Badge variant="destructive">
+                        {importResults.failed} failed
+                      </Badge>
+                    )}
+                    {importResults.skipped > 0 && (
+                      <Badge variant="secondary">
+                        {importResults.skipped} skipped
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
+                {unmatchedRows.length > 0 && (
+                  <div className="w-full max-w-md">
+                    <Card className="border-warning/30">
+                      <CardContent className="pt-4">
+                        <div className="flex items-start gap-3">
+                          <AlertTriangle className="h-5 w-5 text-warning mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium mb-1">
+                              {unmatchedRows.length} record{unmatchedRows.length !== 1 ? 's' : ''} could not be matched
+                            </p>
+                            <p className="text-sm text-muted-foreground mb-3">
+                              Download a CSV of unmatched rows for manual review.
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={downloadUnmatchedCSV}
+                              className="w-full"
+                            >
+                              <Download className="h-4 w-4 mr-2" />
+                              Download Unmatched Records
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                <Button onClick={() => {
+                  onOpenChange(false);
+                  resetModal();
+                }}>
+                  Close
+                </Button>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );
