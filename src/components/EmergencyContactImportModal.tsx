@@ -326,9 +326,19 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   const handlePartialMatchDecision = (accept: boolean) => {
     const partialMatches = matchResults.filter(r => r.status === 'partial_match');
     const currentMatch = partialMatches[currentPartialIndex];
-    
-    if (!currentMatch) return;
-    
+
+    if (!currentMatch) {
+      // Safety: if we somehow lost the current match (index out of date), advance the flow.
+      const hasExistingData = matchResults.some(r => r.status === 'has_existing');
+      if (hasExistingData) {
+        setCurrentExistingIndex(0);
+        setCurrentStep('review_existing');
+      } else {
+        runImport(matchResults);
+      }
+      return;
+    }
+
     // Update the match result based on decision
     const updatedResults = matchResults.map(r => {
       if (r === currentMatch) {
@@ -336,7 +346,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
           // Check if this customer already has emergency contact data
           const customer = existingCustomers?.find(c => c.id === r.partialMatch!.id);
           const hasExisting = customer && hasExistingEmergencyContact(customer);
-          
+
           if (hasExisting) {
             return {
               ...r,
@@ -350,39 +360,42 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                 email: customer.emergency_contact_email,
               },
             };
-          } else {
-            return {
-              ...r,
-              status: 'matched' as const,
-              customerId: r.partialMatch.id,
-              customerName: `${r.partialMatch.first_name} ${r.partialMatch.last_name}`,
-              customerEmail: r.partialMatch.email,
-            };
           }
-        } else {
+
           return {
             ...r,
-            status: 'skipped' as const,
+            status: 'matched' as const,
+            customerId: r.partialMatch.id,
+            customerName: `${r.partialMatch.first_name} ${r.partialMatch.last_name}`,
+            customerEmail: r.partialMatch.email,
           };
         }
+
+        return {
+          ...r,
+          status: 'skipped' as const,
+        };
       }
       return r;
     });
-    
+
     setMatchResults(updatedResults);
-    
-    // Move to next partial match or proceed to existing data review
-    if (currentPartialIndex < partialMatches.length - 1) {
-      setCurrentPartialIndex(prev => prev + 1);
+
+    // IMPORTANT: don't advance an index into a filtered array that shrinks.
+    // Instead, keep reviewing until there are no partial matches left.
+    const remainingPartial = updatedResults.filter(r => r.status === 'partial_match');
+    if (remainingPartial.length > 0) {
+      setCurrentPartialIndex(0);
+      return;
+    }
+
+    // No partial matches left - move on.
+    const hasExistingData = updatedResults.some(r => r.status === 'has_existing');
+    if (hasExistingData) {
+      setCurrentExistingIndex(0);
+      setCurrentStep('review_existing');
     } else {
-      // All partial matches reviewed, check for existing data conflicts
-      const hasExistingData = updatedResults.some(r => r.status === 'has_existing');
-      if (hasExistingData) {
-        setCurrentExistingIndex(0);
-        setCurrentStep('review_existing');
-      } else {
-        runImport(updatedResults);
-      }
+      runImport(updatedResults);
     }
   };
 
@@ -516,7 +529,13 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
       r.row.emergency_contact_name,
       r.row.emergency_contact_phone,
       r.row.emergency_contact_email,
-      r.status === 'skipped' ? 'Skipped (partial match rejected)' : 'No matching contact found'
+      r.status === 'skipped'
+        ? (r.partialMatch
+            ? 'Skipped (partial match rejected)'
+            : r.existingData
+              ? 'Skipped (kept existing emergency contact)'
+              : 'Skipped')
+        : 'No matching contact found'
     ]);
 
     const csvContent = [
