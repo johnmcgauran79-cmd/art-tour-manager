@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { ImageCropper } from "@/components/ImageCropper";
 
 interface ContactAvatarProps {
   contactId: string;
@@ -27,6 +28,8 @@ export const ContactAvatar = ({
 }: ContactAvatarProps) => {
   const [showFullImage, setShowFullImage] = useState(false);
   const [showUploadOptions, setShowUploadOptions] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [localAvatarUrl, setLocalAvatarUrl] = useState(avatarUrl);
   const [pendingFileSelect, setPendingFileSelect] = useState<'camera' | 'library' | null>(null);
@@ -66,31 +69,57 @@ export const ContactAvatar = ({
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 10MB for original, will be compressed after crop)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "File too large",
-        description: "Please select an image under 5MB.",
+        description: "Please select an image under 10MB.",
         variant: "destructive",
       });
       setPendingFileSelect(null);
       return;
     }
 
+    // Convert file to data URL for cropper
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageSrc(reader.result as string);
+      setShowUploadOptions(false);
+      setShowCropper(true);
+      setPendingFileSelect(null);
+    };
+    reader.onerror = () => {
+      toast({
+        title: "Failed to read image",
+        description: "Please try again with a different image.",
+        variant: "destructive",
+      });
+      setPendingFileSelect(null);
+    };
+    reader.readAsDataURL(file);
+
+    // Reset inputs
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setShowCropper(false);
+    setSelectedImageSrc(null);
     setIsUploading(true);
-    setShowUploadOptions(false);
-    setPendingFileSelect(null);
 
     try {
       // Generate unique filename
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${contactId}-${Date.now()}.${fileExt}`;
+      const fileName = `${contactId}-${Date.now()}.jpg`;
       const filePath = `${fileName}`;
 
-      // Upload to storage
+      // Upload cropped image to storage
       const { error: uploadError } = await supabase.storage
         .from("contact-avatars")
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, croppedBlob, { 
+          upsert: true,
+          contentType: "image/jpeg"
+        });
 
       if (uploadError) throw uploadError;
 
@@ -133,10 +162,12 @@ export const ContactAvatar = ({
       });
     } finally {
       setIsUploading(false);
-      // Reset inputs
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImageSrc(null);
   };
 
   const handleRemovePhoto = async () => {
@@ -328,6 +359,19 @@ export const ContactAvatar = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Image Cropper Dialog */}
+      {selectedImageSrc && (
+        <ImageCropper
+          imageSrc={selectedImageSrc}
+          open={showCropper}
+          onClose={handleCropCancel}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+          cropShape="round"
+          outputSize={400}
+        />
+      )}
 
       {/* Full Image Dialog - Mobile optimized */}
       <Dialog open={showFullImage} onOpenChange={setShowFullImage}>
