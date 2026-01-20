@@ -34,17 +34,24 @@ interface PartialMatchCustomer {
   matchType: 'email_only' | 'lastname_only';
 }
 
+interface ExistingEmergencyContact {
+  name: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
 interface MatchResult {
   row: EmergencyContactRow;
   customerId: string | null;
   customerName: string | null;
   customerEmail: string | null;
-  status: 'matched' | 'partial_match' | 'not_found' | 'skipped' | 'error';
+  status: 'matched' | 'partial_match' | 'not_found' | 'skipped' | 'error' | 'has_existing' | 'overwrite';
   partialMatch?: PartialMatchCustomer;
+  existingData?: ExistingEmergencyContact;
   message?: string;
 }
 
-type ImportStep = 'upload' | 'preview' | 'review_partial' | 'processing' | 'complete';
+type ImportStep = 'upload' | 'preview' | 'review_partial' | 'review_existing' | 'processing' | 'complete';
 
 export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyContactImportModalProps) => {
   const [currentStep, setCurrentStep] = useState<ImportStep>('upload');
@@ -54,6 +61,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   const [progress, setProgress] = useState(0);
   const [importResults, setImportResults] = useState({ success: 0, failed: 0, skipped: 0 });
   const [currentPartialIndex, setCurrentPartialIndex] = useState(0);
+  const [currentExistingIndex, setCurrentExistingIndex] = useState(0);
 
   const { data: existingCustomers } = useAllCustomers();
   const updateCustomer = useUpdateCustomer();
@@ -67,6 +75,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     setProgress(0);
     setImportResults({ success: 0, failed: 0, skipped: 0 });
     setCurrentPartialIndex(0);
+    setCurrentExistingIndex(0);
   };
 
   const parseCSVLine = (line: string): string[] => {
@@ -91,8 +100,16 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     return values;
   };
 
-  const findMatchingCustomer = (row: EmergencyContactRow): { exact: any | null; partial: PartialMatchCustomer | null } => {
-    if (!existingCustomers) return { exact: null, partial: null };
+  const hasExistingEmergencyContact = (customer: any): boolean => {
+    return !!(customer.emergency_contact_name || customer.emergency_contact_phone || customer.emergency_contact_email);
+  };
+
+  const findMatchingCustomer = (row: EmergencyContactRow): { 
+    exact: any | null; 
+    partial: PartialMatchCustomer | null;
+    existingData: ExistingEmergencyContact | null;
+  } => {
+    if (!existingCustomers) return { exact: null, partial: null, existingData: null };
     
     // First try exact match: both email AND last name
     if (row.email && row.last_name) {
@@ -101,7 +118,14 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
           customer.email?.toLowerCase() === row.email.toLowerCase() &&
           customer.last_name.toLowerCase() === row.last_name.toLowerCase()
       );
-      if (exactMatch) return { exact: exactMatch, partial: null };
+      if (exactMatch) {
+        const existingData = hasExistingEmergencyContact(exactMatch) ? {
+          name: exactMatch.emergency_contact_name,
+          phone: exactMatch.emergency_contact_phone,
+          email: exactMatch.emergency_contact_email,
+        } : null;
+        return { exact: exactMatch, partial: null, existingData };
+      }
     }
     
     // Check for partial matches
@@ -119,7 +143,8 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
             last_name: emailMatch.last_name,
             email: emailMatch.email,
             matchType: 'email_only'
-          }
+          },
+          existingData: null
         };
       }
     }
@@ -141,13 +166,14 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
               last_name: match.last_name,
               email: match.email,
               matchType: 'lastname_only'
-            }
+            },
+            existingData: null
           };
         }
       }
     }
     
-    return { exact: null, partial: null };
+    return { exact: null, partial: null, existingData: null };
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -226,16 +252,28 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         // Skip rows without email or last name
         if (!row.email || !row.last_name) continue;
 
-        const { exact, partial } = findMatchingCustomer(row);
+        const { exact, partial, existingData } = findMatchingCustomer(row);
         
         if (exact) {
-          results.push({
-            row,
-            customerId: exact.id,
-            customerName: `${exact.first_name} ${exact.last_name}`,
-            customerEmail: exact.email,
-            status: 'matched',
-          });
+          // Check if contact already has emergency data
+          if (existingData) {
+            results.push({
+              row,
+              customerId: exact.id,
+              customerName: `${exact.first_name} ${exact.last_name}`,
+              customerEmail: exact.email,
+              status: 'has_existing',
+              existingData,
+            });
+          } else {
+            results.push({
+              row,
+              customerId: exact.id,
+              customerName: `${exact.first_name} ${exact.last_name}`,
+              customerEmail: exact.email,
+              status: 'matched',
+            });
+          }
         } else if (partial) {
           results.push({
             row,
@@ -272,9 +310,14 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
 
   const handleProceedToReview = () => {
     const hasPartialMatches = matchResults.some(r => r.status === 'partial_match');
+    const hasExistingData = matchResults.some(r => r.status === 'has_existing');
+    
     if (hasPartialMatches) {
       setCurrentPartialIndex(0);
       setCurrentStep('review_partial');
+    } else if (hasExistingData) {
+      setCurrentExistingIndex(0);
+      setCurrentStep('review_existing');
     } else {
       handleImport();
     }
@@ -309,11 +352,52 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     
     setMatchResults(updatedResults);
     
-    // Move to next partial match or proceed to import
+    // Move to next partial match or proceed to existing data review
     if (currentPartialIndex < partialMatches.length - 1) {
       setCurrentPartialIndex(prev => prev + 1);
     } else {
-      // All partial matches reviewed, proceed to import with updated results
+      // All partial matches reviewed, check for existing data conflicts
+      const hasExistingData = updatedResults.some(r => r.status === 'has_existing');
+      if (hasExistingData) {
+        setCurrentExistingIndex(0);
+        setCurrentStep('review_existing');
+      } else {
+        runImport(updatedResults);
+      }
+    }
+  };
+
+  const handleExistingDataDecision = (overwrite: boolean) => {
+    const existingDataMatches = matchResults.filter(r => r.status === 'has_existing');
+    const currentMatch = existingDataMatches[currentExistingIndex];
+    
+    if (!currentMatch) return;
+    
+    // Update the match result based on decision
+    const updatedResults = matchResults.map(r => {
+      if (r === currentMatch) {
+        if (overwrite) {
+          return {
+            ...r,
+            status: 'overwrite' as const,
+          };
+        } else {
+          return {
+            ...r,
+            status: 'skipped' as const,
+          };
+        }
+      }
+      return r;
+    });
+    
+    setMatchResults(updatedResults);
+    
+    // Move to next existing data conflict or proceed to import
+    if (currentExistingIndex < existingDataMatches.length - 1) {
+      setCurrentExistingIndex(prev => prev + 1);
+    } else {
+      // All existing data conflicts reviewed, proceed to import
       runImport(updatedResults);
     }
   };
@@ -322,14 +406,17 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     setCurrentStep('processing');
     setIsProcessing(true);
     
-    const matchedRows = resultsToProcess.filter(r => r.status === 'matched');
+    // Include both 'matched' and 'overwrite' statuses for processing
+    const rowsToUpdate = resultsToProcess.filter(r => r.status === 'matched' || r.status === 'overwrite');
     let success = 0;
     let failed = 0;
-    const skipped = resultsToProcess.filter(r => r.status === 'not_found' || r.status === 'skipped').length;
+    const skipped = resultsToProcess.filter(r => 
+      r.status === 'not_found' || r.status === 'skipped' || r.status === 'has_existing'
+    ).length;
 
-    for (let i = 0; i < matchedRows.length; i++) {
-      const result = matchedRows[i];
-      setProgress(Math.round(((i + 1) / matchedRows.length) * 100));
+    for (let i = 0; i < rowsToUpdate.length; i++) {
+      const result = rowsToUpdate[i];
+      setProgress(Math.round(((i + 1) / rowsToUpdate.length) * 100));
 
       try {
         const updateData: Record<string, string | null> = {
@@ -378,14 +465,18 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
 
   const matchedCount = matchResults.filter(r => r.status === 'matched').length;
   const partialMatchCount = matchResults.filter(r => r.status === 'partial_match').length;
+  const hasExistingCount = matchResults.filter(r => r.status === 'has_existing').length;
   const notFoundCount = matchResults.filter(r => r.status === 'not_found').length;
   const skippedCount = matchResults.filter(r => r.status === 'skipped').length;
 
   const partialMatches = matchResults.filter(r => r.status === 'partial_match');
   const currentPartialMatch = partialMatches[currentPartialIndex];
+  
+  const existingDataMatches = matchResults.filter(r => r.status === 'has_existing');
+  const currentExistingMatch = existingDataMatches[currentExistingIndex];
 
   // Get unmatched rows for CSV export
-  const unmatchedRows = matchResults.filter(r => r.status === 'not_found' || r.status === 'skipped');
+  const unmatchedRows = matchResults.filter(r => r.status === 'not_found' || r.status === 'skipped' || r.status === 'has_existing');
 
   const downloadUnmatchedCSV = () => {
     if (unmatchedRows.length === 0) return;
@@ -448,12 +539,12 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
             Upload
           </div>
           <div className="w-4 h-px bg-border" />
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'preview' ? 'bg-primary text-primary-foreground' : currentStep === 'review_partial' || currentStep === 'processing' || currentStep === 'complete' ? 'bg-muted text-muted-foreground' : 'bg-muted/50 text-muted-foreground/50'}`}>
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'preview' ? 'bg-primary text-primary-foreground' : ['review_partial', 'review_existing', 'processing', 'complete'].includes(currentStep) ? 'bg-muted text-muted-foreground' : 'bg-muted/50 text-muted-foreground/50'}`}>
             <span className="w-4 h-4 flex items-center justify-center rounded-full bg-background/20 text-[10px]">2</span>
             Preview
           </div>
           <div className="w-4 h-px bg-border" />
-          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'review_partial' ? 'bg-amber-500 text-white' : currentStep === 'processing' || currentStep === 'complete' ? 'bg-muted text-muted-foreground' : 'bg-muted/50 text-muted-foreground/50'}`}>
+          <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${currentStep === 'review_partial' || currentStep === 'review_existing' ? 'bg-amber-500 text-white' : ['processing', 'complete'].includes(currentStep) ? 'bg-muted text-muted-foreground' : 'bg-muted/50 text-muted-foreground/50'}`}>
             <span className="w-4 h-4 flex items-center justify-center rounded-full bg-background/20 text-[10px]">3</span>
             Review
           </div>
@@ -528,6 +619,12 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                       {partialMatchCount} need review
                     </Badge>
                   )}
+                  {hasExistingCount > 0 && (
+                    <Badge variant="outline" className="border-amber-600 text-amber-600">
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      {hasExistingCount} have existing data
+                    </Badge>
+                  )}
                   {notFoundCount > 0 && (
                     <Badge variant="destructive">
                       <XCircle className="h-3 w-3 mr-1" />
@@ -542,6 +639,16 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                     <p className="text-sm text-muted-foreground">
                       {partialMatchCount} record{partialMatchCount !== 1 ? 's have' : ' has'} a partial match (email or last name matches, but not both). 
                       You'll be asked to review each one before importing.
+                    </p>
+                  </div>
+                )}
+
+                {hasExistingCount > 0 && (
+                  <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                    <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-muted-foreground">
+                      {hasExistingCount} contact{hasExistingCount !== 1 ? 's already have' : ' already has'} emergency contact data. 
+                      You'll be asked to overwrite or skip each one.
                     </p>
                   </div>
                 )}
@@ -574,6 +681,9 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                             {result.status === 'matched' && (
                               <CheckCircle className="h-4 w-4 text-primary" />
                             )}
+                            {result.status === 'has_existing' && (
+                              <AlertTriangle className="h-4 w-4 text-amber-600" />
+                            )}
                             {result.status === 'partial_match' && (
                               <HelpCircle className="h-4 w-4 text-warning" />
                             )}
@@ -589,6 +699,11 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                           </TableCell>
                           <TableCell>
                             {result.status === 'matched' && result.customerName}
+                            {result.status === 'has_existing' && (
+                              <span className="text-amber-600">
+                                {result.customerName} (has existing)
+                              </span>
+                            )}
                             {result.status === 'partial_match' && (
                               <span className="text-warning">
                                 Review: {result.partialMatch?.first_name} {result.partialMatch?.last_name}
@@ -610,10 +725,12 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                   <Button variant="outline" onClick={resetModal}>
                     Cancel
                   </Button>
-                  <Button onClick={handleProceedToReview} disabled={matchedCount === 0 && partialMatchCount === 0}>
+                  <Button onClick={handleProceedToReview} disabled={matchedCount === 0 && partialMatchCount === 0 && hasExistingCount === 0}>
                     {partialMatchCount > 0 
                       ? `Review ${partialMatchCount} Partial Match${partialMatchCount !== 1 ? 'es' : ''}`
-                      : `Import ${matchedCount} Contact${matchedCount !== 1 ? 's' : ''}`
+                      : hasExistingCount > 0
+                        ? `Review ${hasExistingCount} with Existing Data`
+                        : `Import ${matchedCount} Contact${matchedCount !== 1 ? 's' : ''}`
                     }
                   </Button>
                 </div>
@@ -698,6 +815,83 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                   </Button>
                   <Button onClick={() => handlePartialMatchDecision(true)}>
                     Add Emergency Details to This Contact
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {currentStep === 'review_existing' && currentExistingMatch && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="border-amber-600 text-amber-600">
+                    Reviewing {currentExistingIndex + 1} of {existingDataMatches.length}
+                  </Badge>
+                </div>
+
+                <Card className="border-amber-500/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-amber-600" />
+                      Contact Already Has Emergency Data
+                    </CardTitle>
+                    <CardDescription>
+                      <span className="font-medium">{currentExistingMatch.customerName}</span> already has emergency contact information saved.
+                      Would you like to overwrite it with the data from the CSV?
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-destructive uppercase tracking-wide flex items-center gap-1">
+                          <XCircle className="h-3 w-3" />
+                          Current (will be replaced)
+                        </h4>
+                        <div className="bg-destructive/5 border border-destructive/20 p-4 rounded-lg space-y-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Name:</span>
+                            <p className="font-medium">{currentExistingMatch.existingData?.name || '—'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Phone:</span>
+                            <p className="font-medium font-mono text-sm">{currentExistingMatch.existingData?.phone || '—'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Email:</span>
+                            <p className="font-medium">{currentExistingMatch.existingData?.email || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm text-primary uppercase tracking-wide flex items-center gap-1">
+                          <CheckCircle className="h-3 w-3" />
+                          New (from CSV)
+                        </h4>
+                        <div className="bg-primary/5 border border-primary/20 p-4 rounded-lg space-y-2">
+                          <div>
+                            <span className="text-sm text-muted-foreground">Name:</span>
+                            <p className="font-medium">{currentExistingMatch.row.emergency_contact_name || '—'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Phone:</span>
+                            <p className="font-medium font-mono text-sm">{currentExistingMatch.row.emergency_contact_phone || '—'}</p>
+                          </div>
+                          <div>
+                            <span className="text-sm text-muted-foreground">Email:</span>
+                            <p className="font-medium">{currentExistingMatch.row.emergency_contact_email || '—'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="flex justify-between pt-4 border-t">
+                  <Button variant="outline" onClick={() => handleExistingDataDecision(false)}>
+                    Skip (Keep Current)
+                  </Button>
+                  <Button variant="destructive" onClick={() => handleExistingDataDecision(true)}>
+                    Overwrite with New Data
                   </Button>
                 </div>
               </div>
