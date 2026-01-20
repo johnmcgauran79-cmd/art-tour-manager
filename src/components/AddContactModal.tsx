@@ -52,6 +52,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
       emergency_contact_name: formData.emergency_contact_name || null,
       emergency_contact_phone: formData.emergency_contact_phone || null,
       emergency_contact_relationship: formData.emergency_contact_relationship || null,
+      emergency_contact_email: null,
       dietary_requirements: formData.dietary_requirements || null,
       medical_conditions: formData.medical_conditions || null,
       accessibility_needs: formData.accessibility_needs || null,

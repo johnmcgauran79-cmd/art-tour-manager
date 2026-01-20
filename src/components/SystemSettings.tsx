@@ -2,11 +2,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Mail, Shield, Users, FileText } from "lucide-react";
+import { Settings, Database, Mail, Shield, Users, FileText, Upload } from "lucide-react";
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
 import { CRMIntegrationSettings } from "./CRMIntegrationSettings";
+import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -16,6 +17,7 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
   const [generalSettingsOpen, setGeneralSettingsOpen] = useState(false);
   const [userManagementOpen, setUserManagementOpen] = useState(false);
   const [systemLogOpen, setSystemLogOpen] = useState(false);
+  const [emergencyContactImportOpen, setEmergencyContactImportOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -146,6 +148,33 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
 
       </div>
 
+      {/* Data Import Section */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Data Import</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Upload className="h-5 w-5" />
+                Emergency Contacts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="text-sm text-muted-foreground">
+                Bulk import emergency contact details from a CSV file to update existing contacts.
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setEmergencyContactImportOpen(true)}
+              >
+                Import CSV
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
       {/* CRM Integration Settings */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">CRM Integration</h2>
@@ -192,6 +221,11 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
       <SystemLogModal 
         open={systemLogOpen} 
         onOpenChange={setSystemLogOpen} 
+      />
+
+      <EmergencyContactImportModal
+        open={emergencyContactImportOpen}
+        onOpenChange={setEmergencyContactImportOpen}
       />
     </div>
   );

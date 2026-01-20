@@ -40,6 +40,7 @@ export const prepareCustomerData = (contact: CSVContact) => {
     emergency_contact_name: null,
     emergency_contact_phone: null,
     emergency_contact_relationship: null,
+    emergency_contact_email: null,
     medical_conditions: null,
     accessibility_needs: null,
     avatar_url: null,
