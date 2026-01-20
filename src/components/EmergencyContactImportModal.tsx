@@ -333,13 +333,32 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
     const updatedResults = matchResults.map(r => {
       if (r === currentMatch) {
         if (accept && r.partialMatch) {
-          return {
-            ...r,
-            status: 'matched' as const,
-            customerId: r.partialMatch.id,
-            customerName: `${r.partialMatch.first_name} ${r.partialMatch.last_name}`,
-            customerEmail: r.partialMatch.email,
-          };
+          // Check if this customer already has emergency contact data
+          const customer = existingCustomers?.find(c => c.id === r.partialMatch!.id);
+          const hasExisting = customer && hasExistingEmergencyContact(customer);
+          
+          if (hasExisting) {
+            return {
+              ...r,
+              status: 'has_existing' as const,
+              customerId: r.partialMatch.id,
+              customerName: `${r.partialMatch.first_name} ${r.partialMatch.last_name}`,
+              customerEmail: r.partialMatch.email,
+              existingData: {
+                name: customer.emergency_contact_name,
+                phone: customer.emergency_contact_phone,
+                email: customer.emergency_contact_email,
+              },
+            };
+          } else {
+            return {
+              ...r,
+              status: 'matched' as const,
+              customerId: r.partialMatch.id,
+              customerName: `${r.partialMatch.first_name} ${r.partialMatch.last_name}`,
+              customerEmail: r.partialMatch.email,
+            };
+          }
         } else {
           return {
             ...r,
