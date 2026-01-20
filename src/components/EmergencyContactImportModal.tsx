@@ -82,21 +82,15 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
   const findMatchingCustomer = (row: EmergencyContactRow) => {
     if (!existingCustomers) return null;
     
-    // First try to match by email (most reliable)
+    // Match by email only (required field from CSV)
     if (row.email) {
       const emailMatch = existingCustomers.find(
         customer => customer.email?.toLowerCase() === row.email.toLowerCase()
       );
-      if (emailMatch) return emailMatch;
+      return emailMatch || null;
     }
     
-    // Then try to match by first + last name
-    const nameMatch = existingCustomers.find(
-      customer => 
-        customer.first_name.toLowerCase() === row.first_name.toLowerCase() &&
-        customer.last_name.toLowerCase() === row.last_name.toLowerCase()
-    );
-    return nameMatch || null;
+    return null;
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,17 +127,15 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         terms.some(t => h.includes(t.toLowerCase()))
       );
 
-      const firstNameIdx = findIndex(['first name', 'firstname', 'first_name']);
-      const lastNameIdx = findIndex(['last name', 'lastname', 'last_name']);
       const emailIdx = findIndex(['email']);
       const emergencyNameIdx = findIndex(['emergency contact name', 'emergency_contact_name', 'emergencycontactname']);
       const emergencyPhoneIdx = findIndex(['emergency contact phone', 'emergency_contact_phone', 'emergencyphone']);
       const emergencyEmailIdx = findIndex(['emergency contact email', 'emergency_contact_email', 'emergencyemail']);
 
-      if (firstNameIdx === -1 || lastNameIdx === -1) {
+      if (emailIdx === -1) {
         toast({
-          title: "Missing Required Columns",
-          description: "CSV must have First Name and Last Name columns to match contacts.",
+          title: "Missing Required Column",
+          description: "CSV must have an Email column to match contacts.",
           variant: "destructive",
         });
         return;
@@ -165,16 +157,16 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
         const values = parseCSVLine(lines[i]);
         
         const row: EmergencyContactRow = {
-          first_name: values[firstNameIdx]?.trim() || '',
-          last_name: values[lastNameIdx]?.trim() || '',
-          email: emailIdx !== -1 ? values[emailIdx]?.trim() || '' : '',
+          first_name: '',
+          last_name: '',
+          email: values[emailIdx]?.trim() || '',
           emergency_contact_name: emergencyNameIdx !== -1 ? values[emergencyNameIdx]?.trim() || '' : '',
           emergency_contact_phone: emergencyPhoneIdx !== -1 ? values[emergencyPhoneIdx]?.trim() || '' : '',
           emergency_contact_email: emergencyEmailIdx !== -1 ? values[emergencyEmailIdx]?.trim() || '' : '',
         };
 
-        // Skip empty rows
-        if (!row.first_name && !row.last_name) continue;
+        // Skip rows without email
+        if (!row.email) continue;
 
         const matchedCustomer = findMatchingCustomer(row);
         
@@ -293,21 +285,21 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                 <CardHeader>
                   <CardTitle className="text-lg">Expected CSV Format</CardTitle>
                   <CardDescription>
-                    Your CSV should contain columns to identify contacts (name/email) and their emergency contact details.
+                    Your CSV should contain the contact's email and their emergency contact details.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="bg-muted/50 p-4 rounded-lg font-mono text-sm overflow-x-auto">
                     <div className="whitespace-nowrap">
-                      First Name, Last Name, Email, Emergency Contact Name, Emergency Contact Phone, Emergency Contact Email
+                      Email, Emergency Contact Name, Emergency Contact Phone, Emergency Contact Email
                     </div>
                     <div className="whitespace-nowrap text-muted-foreground mt-1">
-                      John, Smith, john@email.com, Jane Smith, +61 400 123 456, jane@email.com
+                      john@email.com, Jane Smith, +61 400 123 456, jane@email.com
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-3">
-                    <strong>Required:</strong> First Name and Last Name (for matching)<br />
-                    <strong>Optional:</strong> Email (helps with accurate matching), Emergency Contact fields
+                    <strong>Required:</strong> Email (to match existing contacts)<br />
+                    <strong>Optional:</strong> Emergency Contact Name, Phone, Email
                   </p>
                 </CardContent>
               </Card>
@@ -365,11 +357,11 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                   <TableHeader>
                     <TableRow>
                       <TableHead>Status</TableHead>
-                      <TableHead>CSV Name</TableHead>
+                      <TableHead>CSV Email</TableHead>
                       <TableHead>Matched To</TableHead>
                       <TableHead>Emergency Contact</TableHead>
                       <TableHead>Phone</TableHead>
-                      <TableHead>Email</TableHead>
+                      <TableHead>Emergency Email</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -383,7 +375,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
                           )}
                         </TableCell>
                         <TableCell className="font-medium">
-                          {result.row.first_name} {result.row.last_name}
+                          {result.row.email}
                         </TableCell>
                         <TableCell>
                           {result.customerName || <span className="text-muted-foreground">—</span>}
