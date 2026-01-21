@@ -196,24 +196,24 @@ export const TourDetailModalWithHotelsTab = ({
             <TabsList className={`grid w-full ${canViewOperations ? 'grid-cols-5' : 'grid-cols-4'} bg-gray-50`}>
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
-                Overview
+                <span className="hidden sm:inline">Overview</span>
               </TabsTrigger>
               <TabsTrigger value="hotels" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <MapPin className="h-4 w-4" />
-                Hotels
+                <span className="hidden sm:inline">Hotels</span>
               </TabsTrigger>
               <TabsTrigger value="activities" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <Calendar className="h-4 w-4" />
-                Activities
+                <span className="hidden sm:inline">Activities</span>
               </TabsTrigger>
               <TabsTrigger value="bookings" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <Users className="h-4 w-4" />
-                Bookings
+                <span className="hidden sm:inline">Bookings</span>
               </TabsTrigger>
               {canViewOperations && (
                 <TabsTrigger value="operations" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                   <Settings className="h-4 w-4" />
-                  Operations
+                  <span className="hidden sm:inline">Operations</span>
                 </TabsTrigger>
               )}
             </TabsList>
