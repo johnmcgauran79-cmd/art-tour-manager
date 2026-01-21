@@ -24,6 +24,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           created_at: string | null
+          depart_for_activity: string | null
           dropoff_location: string | null
           end_time: string | null
           hospitality_inclusions: string | null
@@ -43,6 +44,7 @@ export type Database = {
           transport_company: string | null
           transport_contact_name: string | null
           transport_email: string | null
+          transport_mode: string | null
           transport_notes: string | null
           transport_phone: string | null
           transport_status:
@@ -61,6 +63,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          depart_for_activity?: string | null
           dropoff_location?: string | null
           end_time?: string | null
           hospitality_inclusions?: string | null
@@ -80,6 +83,7 @@ export type Database = {
           transport_company?: string | null
           transport_contact_name?: string | null
           transport_email?: string | null
+          transport_mode?: string | null
           transport_notes?: string | null
           transport_phone?: string | null
           transport_status?:
@@ -98,6 +102,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           created_at?: string | null
+          depart_for_activity?: string | null
           dropoff_location?: string | null
           end_time?: string | null
           hospitality_inclusions?: string | null
@@ -117,6 +122,7 @@ export type Database = {
           transport_company?: string | null
           transport_contact_name?: string | null
           transport_email?: string | null
+          transport_mode?: string | null
           transport_notes?: string | null
           transport_phone?: string | null
           transport_status?:

@@ -173,6 +173,11 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                   </Badge>
                 } 
               />
+              <InfoRow 
+                label="Transport Mode" 
+                value={activity.transport_mode ? activity.transport_mode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not Required'} 
+              />
+              <InfoRow label="Depart for Activity" value={formatTime(activity.depart_for_activity)} />
               <InfoRow label="Company" value={activity.transport_company} />
               <InfoRow label="Contact" value={activity.transport_contact_name} />
               <InfoRow label="Phone" value={activity.transport_phone} />
