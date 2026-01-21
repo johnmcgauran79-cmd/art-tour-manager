@@ -177,9 +177,10 @@ const handler = async (req: Request): Promise<Response> => {
       return processed;
     };
 
-    // Check if profile update link/button is needed in the template
+    // Check if profile update link/button is needed in the template.
+    // NOTE: Be tolerant to whitespace added by editors (e.g. "{{ profile_update_button }}").
     const contentToCheck = customContent || template?.content_template || '';
-    const needsProfileUpdateLink = contentToCheck.includes('{{profile_update_link}}') || contentToCheck.includes('{{profile_update_button}}');
+    const needsProfileUpdateLink = /\{\{\s*profile_update_(link|button)\s*\}\}/.test(contentToCheck);
     
     console.log('Profile update check - customContent length:', customContent?.length || 0);
     console.log('Profile update check - needsProfileUpdateLink:', needsProfileUpdateLink);
@@ -208,13 +209,9 @@ const handler = async (req: Request): Promise<Response> => {
       } else if (tokenData) {
         const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
         profileUpdateLink = `${baseUrl}/update-profile?token=${tokenData.token}`;
-        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
-          <tr>
-            <td>
-              <a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a>
-            </td>
-          </tr>
-        </table>`;
+        // IMPORTANT: Keep this HTML on a single line.
+        // Later in the pipeline we convert any remaining "\n" to "<br>", which can break table markup.
+        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a></td></tr></table>`;
         console.log('Generated profile update link for customer:', booking.customers.id);
       }
     }
