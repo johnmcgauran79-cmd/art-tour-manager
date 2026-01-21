@@ -142,6 +142,8 @@ export const useDuplicateTour = () => {
           transport_contact_name: activity.transport_contact_name,
           transport_phone: activity.transport_phone,
           transport_email: activity.transport_email,
+          driver_name: activity.driver_name,
+          driver_phone: activity.driver_phone,
           hospitality_inclusions: activity.hospitality_inclusions,
           notes: activity.notes,
           operations_notes: activity.operations_notes,

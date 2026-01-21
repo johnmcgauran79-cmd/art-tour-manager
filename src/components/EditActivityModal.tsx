@@ -44,6 +44,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     transport_contact_name: "",
     transport_phone: "",
     transport_email: "",
+    driver_name: "",
+    driver_phone: "",
     hospitality_inclusions: "",
     notes: "",
     operations_notes: "",
@@ -80,6 +82,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         transport_contact_name: activity.transport_contact_name || "",
         transport_phone: activity.transport_phone || "",
         transport_email: activity.transport_email || "",
+        driver_name: activity.driver_name || "",
+        driver_phone: activity.driver_phone || "",
         hospitality_inclusions: activity.hospitality_inclusions || "",
         notes: activity.notes || "",
         operations_notes: activity.operations_notes || "",
@@ -138,6 +142,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           transport_contact_name: activityData.transport_contact_name || null,
           transport_phone: activityData.transport_phone || null,
           transport_email: activityData.transport_email || null,
+          driver_name: activityData.driver_name || null,
+          driver_phone: activityData.driver_phone || null,
           hospitality_inclusions: activityData.hospitality_inclusions || null,
           notes: activityData.notes || null,
           operations_notes: activityData.operations_notes || null,
@@ -471,6 +477,27 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                   type="email"
                   value={formData.transport_email}
                   onChange={(e) => handleInputChange("transport_email", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Driver Name & Phone */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="driver_name">Driver Name</Label>
+                <Input
+                  id="driver_name"
+                  value={formData.driver_name}
+                  onChange={(e) => handleInputChange("driver_name", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="driver_phone">Driver Phone</Label>
+                <Input
+                  id="driver_phone"
+                  value={formData.driver_phone}
+                  onChange={(e) => handleInputChange("driver_phone", e.target.value)}
                 />
               </div>
             </div>

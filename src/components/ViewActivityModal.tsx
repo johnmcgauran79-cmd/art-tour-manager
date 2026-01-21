@@ -211,6 +211,10 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
               <InfoRow label="Phone" value={activity.transport_phone} />
               <InfoRow label="Email" value={activity.transport_email} />
               <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Driver Name" value={activity.driver_name} />
+                <InfoRow label="Driver Phone" value={activity.driver_phone} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <InfoRow label="Pickup Time" value={formatTime(activity.pickup_time)} />
                 <InfoRow label="Collection Time" value={formatTime(activity.collection_time)} />
               </div>
