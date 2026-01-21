@@ -59,10 +59,18 @@ const MERGE_FIELDS = {
     '{{hotel_contact_name}}', '{{hotel_contact_phone}}', '{{hotel_contact_email}}', '{{/hotel_bookings}}'
   ],
   activity: [
-    '{{#activity_bookings}}', '{{activity_name}}', '{{activity_date}}', '{{activity_start_time}}', '{{activity_end_time}}',
-    '{{activity_pickup_time}}', '{{activity_pickup_location}}', '{{activity_collection_time}}', '{{activity_collection_location}}',
-    '{{activity_dropoff_location}}', '{{activity_location}}', '{{activity_contact_name}}', '{{activity_contact_phone}}',
-    '{{activity_contact_email}}', '{{activity_hospitality_inclusions}}', '{{passengers_attending}}', '{{/activity_bookings}}'
+    '{{#activity_bookings}}', '{{activity_name}}', '{{activity_date}}', '{{activity_status}}',
+    '{{activity_start_time}}', '{{activity_end_time}}', '{{activity_location}}',
+    '{{activity_pickup_time}}', '{{activity_pickup_location}}', 
+    '{{activity_collection_time}}', '{{activity_collection_location}}', '{{activity_dropoff_location}}',
+    '{{activity_depart_for_activity}}', '{{activity_transport_mode}}',
+    '{{activity_driver_name}}', '{{activity_driver_phone}}',
+    '{{activity_transport_company}}', '{{activity_transport_contact_name}}', 
+    '{{activity_transport_phone}}', '{{activity_transport_email}}',
+    '{{activity_contact_name}}', '{{activity_contact_phone}}', '{{activity_contact_email}}',
+    '{{activity_hospitality_inclusions}}', '{{activity_notes}}',
+    '{{activity_spots_available}}', '{{activity_spots_booked}}',
+    '{{passengers_attending}}', '{{/activity_bookings}}'
   ],
   actions: [
     '{{profile_update_button}}', '{{profile_update_link}}'
