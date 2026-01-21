@@ -243,31 +243,31 @@ export default function TourDetail() {
           <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-7 md:w-auto h-auto p-1 gap-1">
             <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Overview</span>
+              <span className="hidden sm:inline">Overview</span>
             </TabsTrigger>
             <TabsTrigger value="hotels" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Hotels</span>
+              <span className="hidden sm:inline">Hotels</span>
             </TabsTrigger>
             <TabsTrigger value="bookings" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Bookings</span>
+              <span className="hidden sm:inline">Bookings</span>
             </TabsTrigger>
             <TabsTrigger value="activities" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Activities</span>
+              <span className="hidden sm:inline">Activities</span>
             </TabsTrigger>
             <TabsTrigger value="operations" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Ops</span>
+              <span className="hidden sm:inline">Operations</span>
             </TabsTrigger>
             <TabsTrigger value="tasks" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Tasks</span>
+              <span className="hidden sm:inline">Tasks</span>
             </TabsTrigger>
             <TabsTrigger value="itinerary" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
               <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Itinerary</span>
+              <span className="hidden sm:inline">Itinerary</span>
             </TabsTrigger>
           </TabsList>
         </div>
