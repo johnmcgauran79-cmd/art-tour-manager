@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,9 @@ interface CustomerData {
 }
 
 export default function UpdateProfile() {
-  const { token } = useParams<{ token: string }>();
+  const { token: tokenFromPath } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
+  const token = tokenFromPath || searchParams.get("token") || undefined;
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
