@@ -20,12 +20,12 @@ export type Database = {
           activity_status: Database["public"]["Enums"]["activity_status"] | null
           collection_location: string | null
           collection_time: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
           created_at: string | null
           dropoff_location: string | null
           end_time: string | null
-          guide_email: string | null
-          guide_name: string | null
-          guide_phone: string | null
           hospitality_inclusions: string | null
           id: string
           location: string | null
@@ -57,12 +57,12 @@ export type Database = {
             | null
           collection_location?: string | null
           collection_time?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           dropoff_location?: string | null
           end_time?: string | null
-          guide_email?: string | null
-          guide_name?: string | null
-          guide_phone?: string | null
           hospitality_inclusions?: string | null
           id?: string
           location?: string | null
@@ -94,12 +94,12 @@ export type Database = {
             | null
           collection_location?: string | null
           collection_time?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           dropoff_location?: string | null
           end_time?: string | null
-          guide_email?: string | null
-          guide_name?: string | null
-          guide_phone?: string | null
           hospitality_inclusions?: string | null
           id?: string
           location?: string | null

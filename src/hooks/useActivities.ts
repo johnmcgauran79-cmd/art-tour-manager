@@ -19,9 +19,9 @@ export interface Activity {
   spots_booked: number | null;
   activity_status: string;
   transport_status: string;
-  guide_name: string | null;
-  guide_phone: string | null;
-  guide_email: string | null;
+  contact_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
   transport_company: string | null;
   transport_contact_name: string | null;
   transport_phone: string | null;

@@ -61,8 +61,8 @@ const MERGE_FIELDS = {
   activity: [
     '{{#activity_bookings}}', '{{activity_name}}', '{{activity_date}}', '{{activity_start_time}}', '{{activity_end_time}}',
     '{{activity_pickup_time}}', '{{activity_pickup_location}}', '{{activity_collection_time}}', '{{activity_collection_location}}',
-    '{{activity_dropoff_location}}', '{{activity_location}}', '{{activity_guide_name}}', '{{activity_guide_phone}}',
-    '{{activity_guide_email}}', '{{activity_hospitality_inclusions}}', '{{passengers_attending}}', '{{/activity_bookings}}'
+    '{{activity_dropoff_location}}', '{{activity_location}}', '{{activity_contact_name}}', '{{activity_contact_phone}}',
+    '{{activity_contact_email}}', '{{activity_hospitality_inclusions}}', '{{passengers_attending}}', '{{/activity_bookings}}'
   ]
 };
 

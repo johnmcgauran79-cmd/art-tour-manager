@@ -67,7 +67,7 @@ const handler = async (req: Request): Promise<Response> => {
         ),
         activity_bookings (
           passengers_attending,
-          activities (name, activity_date, start_time, location, guide_name)
+          activities (name, activity_date, start_time, location, contact_name)
         )
       `)
       .eq('id', bookingId)
@@ -256,8 +256,8 @@ const handler = async (req: Request): Promise<Response> => {
           activity_end_time: ab.activities?.end_time || '',
           activity_pickup_time: ab.activities?.pickup_time || '',
           activity_location: ab.activities?.location || '',
-          activity_guide_name: ab.activities?.guide_name || '',
-          activity_guide_phone: ab.activities?.guide_phone || '',
+          activity_contact_name: ab.activities?.contact_name || '',
+          activity_contact_phone: ab.activities?.contact_phone || '',
           passengers_attending: ab.passengers_attending || '',
         })),
       };

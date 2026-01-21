@@ -35,9 +35,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     spots_booked: "",
     activity_status: "pending",
     transport_status: "pending",
-    guide_name: "",
-    guide_phone: "",
-    guide_email: "",
+    contact_name: "",
+    contact_phone: "",
+    contact_email: "",
     transport_company: "",
     transport_contact_name: "",
     transport_phone: "",
@@ -69,9 +69,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         spots_booked: activity.spots_available?.toString() || "",
         activity_status: activity.activity_status || "pending",
         transport_status: activity.transport_status || "pending",
-        guide_name: activity.guide_name || "",
-        guide_phone: activity.guide_phone || "",
-        guide_email: activity.guide_email || "",
+        contact_name: activity.contact_name || "",
+        contact_phone: activity.contact_phone || "",
+        contact_email: activity.contact_email || "",
         transport_company: activity.transport_company || "",
         transport_contact_name: activity.transport_contact_name || "",
         transport_phone: activity.transport_phone || "",
@@ -340,30 +340,30 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="guide_name">Contact Name</Label>
+              <Label htmlFor="contact_name">Contact Name</Label>
               <Input
-                id="guide_name"
-                value={formData.guide_name}
-                onChange={(e) => handleInputChange("guide_name", e.target.value)}
+                id="contact_name"
+                value={formData.contact_name}
+                onChange={(e) => handleInputChange("contact_name", e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guide_phone">Contact Phone</Label>
+              <Label htmlFor="contact_phone">Contact Phone</Label>
               <Input
-                id="guide_phone"
-                value={formData.guide_phone}
-                onChange={(e) => handleInputChange("guide_phone", e.target.value)}
+                id="contact_phone"
+                value={formData.contact_phone}
+                onChange={(e) => handleInputChange("contact_phone", e.target.value)}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guide_email">Contact Email</Label>
+              <Label htmlFor="contact_email">Contact Email</Label>
               <Input
-                id="guide_email"
+                id="contact_email"
                 type="email"
-                value={formData.guide_email}
-                onChange={(e) => handleInputChange("guide_email", e.target.value)}
+                value={formData.contact_email}
+                onChange={(e) => handleInputChange("contact_email", e.target.value)}
               />
             </div>
           </div>
