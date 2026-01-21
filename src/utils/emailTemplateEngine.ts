@@ -84,18 +84,30 @@ export interface EmailMergeData {
   activity_bookings?: Array<{
     activity_name?: string;
     activity_date?: string;
+    activity_status?: string;
     activity_start_time?: string;
     activity_end_time?: string;
+    activity_location?: string;
     activity_pickup_time?: string;
     activity_pickup_location?: string;
     activity_collection_time?: string;
     activity_collection_location?: string;
     activity_dropoff_location?: string;
-    activity_location?: string;
+    activity_depart_for_activity?: string;
+    activity_transport_mode?: string;
+    activity_driver_name?: string;
+    activity_driver_phone?: string;
+    activity_transport_company?: string;
+    activity_transport_contact_name?: string;
+    activity_transport_phone?: string;
+    activity_transport_email?: string;
     activity_contact_name?: string;
     activity_contact_phone?: string;
     activity_contact_email?: string;
     activity_hospitality_inclusions?: string;
+    activity_notes?: string;
+    activity_spots_available?: number;
+    activity_spots_booked?: number;
     passengers_attending?: number;
   }>;
 }
@@ -292,18 +304,30 @@ export class EmailTemplateEngine {
       activity_bookings: activityBookings.map((ab: any) => ({
         activity_name: ab.activities?.name,
         activity_date: this.formatDate(ab.activities?.activity_date),
+        activity_status: ab.activities?.activity_status,
         activity_start_time: ab.activities?.start_time,
         activity_end_time: ab.activities?.end_time,
+        activity_location: ab.activities?.location,
         activity_pickup_time: ab.activities?.pickup_time,
         activity_pickup_location: ab.activities?.pickup_location,
         activity_collection_time: ab.activities?.collection_time,
         activity_collection_location: ab.activities?.collection_location,
         activity_dropoff_location: ab.activities?.dropoff_location,
-        activity_location: ab.activities?.location,
+        activity_depart_for_activity: ab.activities?.depart_for_activity,
+        activity_transport_mode: ab.activities?.transport_mode,
+        activity_driver_name: ab.activities?.driver_name,
+        activity_driver_phone: ab.activities?.driver_phone,
+        activity_transport_company: ab.activities?.transport_company,
+        activity_transport_contact_name: ab.activities?.transport_contact_name,
+        activity_transport_phone: ab.activities?.transport_phone,
+        activity_transport_email: ab.activities?.transport_email,
         activity_contact_name: ab.activities?.contact_name,
         activity_contact_phone: ab.activities?.contact_phone,
         activity_contact_email: ab.activities?.contact_email,
         activity_hospitality_inclusions: ab.activities?.hospitality_inclusions,
+        activity_notes: ab.activities?.notes,
+        activity_spots_available: ab.activities?.spots_available,
+        activity_spots_booked: ab.activities?.spots_booked,
         passengers_attending: ab.passengers_attending,
       })),
     };

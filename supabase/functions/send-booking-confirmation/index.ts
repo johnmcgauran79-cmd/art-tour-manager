@@ -67,7 +67,14 @@ const handler = async (req: Request): Promise<Response> => {
         ),
         activity_bookings (
           passengers_attending,
-          activities (name, activity_date, start_time, location, contact_name)
+          activities (
+            name, activity_date, activity_status, start_time, end_time, location,
+            pickup_time, pickup_location, collection_time, collection_location, dropoff_location,
+            depart_for_activity, transport_mode, driver_name, driver_phone,
+            transport_company, transport_contact_name, transport_phone, transport_email,
+            contact_name, contact_phone, contact_email, hospitality_inclusions, notes,
+            spots_available, spots_booked
+          )
         )
       `)
       .eq('id', bookingId)
@@ -295,12 +302,30 @@ const handler = async (req: Request): Promise<Response> => {
         activity_bookings: (booking.activity_bookings || []).map((ab: any) => ({
           activity_name: ab.activities?.name || '',
           activity_date: formatDate(ab.activities?.activity_date),
+          activity_status: ab.activities?.activity_status || '',
           activity_start_time: ab.activities?.start_time || '',
           activity_end_time: ab.activities?.end_time || '',
-          activity_pickup_time: ab.activities?.pickup_time || '',
           activity_location: ab.activities?.location || '',
+          activity_pickup_time: ab.activities?.pickup_time || '',
+          activity_pickup_location: ab.activities?.pickup_location || '',
+          activity_collection_time: ab.activities?.collection_time || '',
+          activity_collection_location: ab.activities?.collection_location || '',
+          activity_dropoff_location: ab.activities?.dropoff_location || '',
+          activity_depart_for_activity: ab.activities?.depart_for_activity || '',
+          activity_transport_mode: ab.activities?.transport_mode || '',
+          activity_driver_name: ab.activities?.driver_name || '',
+          activity_driver_phone: ab.activities?.driver_phone || '',
+          activity_transport_company: ab.activities?.transport_company || '',
+          activity_transport_contact_name: ab.activities?.transport_contact_name || '',
+          activity_transport_phone: ab.activities?.transport_phone || '',
+          activity_transport_email: ab.activities?.transport_email || '',
           activity_contact_name: ab.activities?.contact_name || '',
           activity_contact_phone: ab.activities?.contact_phone || '',
+          activity_contact_email: ab.activities?.contact_email || '',
+          activity_hospitality_inclusions: ab.activities?.hospitality_inclusions || '',
+          activity_notes: ab.activities?.notes || '',
+          activity_spots_available: ab.activities?.spots_available || '',
+          activity_spots_booked: ab.activities?.spots_booked || '',
           passengers_attending: ab.passengers_attending || '',
         })),
       };
