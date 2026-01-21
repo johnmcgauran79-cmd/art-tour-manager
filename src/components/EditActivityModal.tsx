@@ -122,7 +122,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           name: activityData.name,
           location: activityData.location || null,
           activity_date: activityData.activity_date || null,
-          cutoff_date: activityData.cutoff_date || null,
           start_time: activityData.start_time || null,
           end_time: activityData.end_time || null,
           depart_for_activity: activityData.depart_for_activity || null,
