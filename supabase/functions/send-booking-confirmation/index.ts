@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select(`
         *,
         tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions),
-        customers:lead_passenger_id (first_name, last_name, email, phone, city, state, country),
+        customers:lead_passenger_id (id, first_name, last_name, email, phone, city, state, country),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
         hotel_bookings (
           check_in_date,
@@ -170,6 +170,44 @@ const handler = async (req: Request): Promise<Response> => {
       return processed;
     };
 
+    // Check if profile update link/button is needed in the template
+    const contentToCheck = customContent || template?.content_template || '';
+    const needsProfileUpdateLink = contentToCheck.includes('{{profile_update_link}}') || contentToCheck.includes('{{profile_update_button}}');
+    
+    let profileUpdateLink = '';
+    let profileUpdateButton = '';
+    
+    if (needsProfileUpdateLink && booking.customers?.id) {
+      // Generate a profile update token
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
+      
+      const { data: tokenData, error: tokenError } = await supabaseClient
+        .from('customer_access_tokens')
+        .insert({
+          customer_id: booking.customers.id,
+          created_by: 'system', // System-generated token
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('token')
+        .single();
+      
+      if (tokenError) {
+        console.error('Error creating profile update token:', tokenError);
+      } else if (tokenData) {
+        const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+        profileUpdateLink = `${baseUrl}/update-profile?token=${tokenData.token}`;
+        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;">
+          <tr>
+            <td>
+              <a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a>
+            </td>
+          </tr>
+        </table>`;
+        console.log('Generated profile update link for customer:', booking.customers.id);
+      }
+    }
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
@@ -179,6 +217,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('Custom subject provided:', !!customSubject);
       console.log('Custom content provided:', !!customContent);
       console.log('Hotel bookings count:', booking.hotel_bookings?.length || 0);
+      console.log('Profile update link generated:', !!profileUpdateLink);
       
       if (booking.hotel_bookings && booking.hotel_bookings.length > 0) {
         console.log('First hotel booking:', JSON.stringify({
@@ -230,6 +269,10 @@ const handler = async (req: Request): Promise<Response> => {
         booking_medical_conditions: booking.customers?.medical_conditions || '',
         booking_emergency_contact_name: booking.customers?.emergency_contact_name || '',
         booking_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+        
+        // Profile update action fields
+        profile_update_link: profileUpdateLink,
+        profile_update_button: profileUpdateButton,
         
         // Hotel bookings array
         hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({

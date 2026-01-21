@@ -63,6 +63,9 @@ const MERGE_FIELDS = {
     '{{activity_pickup_time}}', '{{activity_pickup_location}}', '{{activity_collection_time}}', '{{activity_collection_location}}',
     '{{activity_dropoff_location}}', '{{activity_location}}', '{{activity_contact_name}}', '{{activity_contact_phone}}',
     '{{activity_contact_email}}', '{{activity_hospitality_inclusions}}', '{{passengers_attending}}', '{{/activity_bookings}}'
+  ],
+  actions: [
+    '{{profile_update_button}}', '{{profile_update_link}}'
   ]
 };
 
