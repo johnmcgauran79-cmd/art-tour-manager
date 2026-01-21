@@ -110,6 +110,11 @@ export interface EmailMergeData {
     activity_spots_booked?: number;
     passengers_attending?: number;
   }>;
+
+  // Actions (handled securely server-side in edge functions)
+  // Client-side previews/sends should preserve placeholders so the server can generate tokens.
+  profile_update_button?: string;
+  profile_update_link?: string;
 }
 
 export interface EmailTemplate {
@@ -330,6 +335,12 @@ export class EmailTemplateEngine {
         activity_spots_booked: ab.activities?.spots_booked,
         passengers_attending: ab.passengers_attending,
       })),
+
+      // Actions
+      // IMPORTANT: Tokens/links must be generated server-side.
+      // When bulk-email flows pre-process templates on the client, we MUST NOT erase these.
+      profile_update_button: '{{profile_update_button}}',
+      profile_update_link: '{{profile_update_link}}',
     };
   }
 }
