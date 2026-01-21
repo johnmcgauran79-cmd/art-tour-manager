@@ -284,7 +284,8 @@ const handler = async (req: Request): Promise<Response> => {
         profileUpdateLink = `${baseUrl}/update-profile/${tokenData.token}`;
         // IMPORTANT: Keep this HTML on a single line.
         // Later in the pipeline we convert any remaining "\n" to "<br>", which can break table markup.
-        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a></td></tr></table>`;
+        // data-art-profile-update marker helps us reliably detect whether the button is already present.
+        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a></td></tr></table>`;
         console.log('Generated profile update link for customer:', booking.customers.id);
       }
     }
@@ -427,13 +428,13 @@ const handler = async (req: Request): Promise<Response> => {
       // Final safety pass: if the client-side render stripped the placeholder out of href,
       // patch the update-profile anchor/button into a working state.
       if (profileUpdateLink) {
-        const beforeInject = emailHtml;
+        // Patch empty href="" anchors first.
         emailHtml = injectProfileUpdateLink(emailHtml, profileUpdateLink);
 
-        const didInjectLink = beforeInject !== emailHtml;
-        const hasButtonAlready = emailHtml.includes('Update My Profile') || emailHtml.includes(profileUpdateLink);
-
-        if (!didInjectLink && !hasButtonAlready && /update\s+your\s+profile/i.test(emailHtml) && profileUpdateButton) {
+        // If the email references profile updates but the button token was stripped upstream,
+        // inject the button near the copy (without being blocked by the presence of the link).
+        const hasButtonAlready = /data-art-profile-update=(['"])button\1/i.test(emailHtml) || emailHtml.includes('Update My Profile');
+        if (!hasButtonAlready && /update\s+your\s+profile/i.test(emailHtml) && profileUpdateButton) {
           emailHtml = injectProfileUpdateButtonNearCopy(emailHtml, profileUpdateButton);
         }
       }
