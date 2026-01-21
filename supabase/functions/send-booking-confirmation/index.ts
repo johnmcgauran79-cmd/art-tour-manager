@@ -181,6 +181,10 @@ const handler = async (req: Request): Promise<Response> => {
     const contentToCheck = customContent || template?.content_template || '';
     const needsProfileUpdateLink = contentToCheck.includes('{{profile_update_link}}') || contentToCheck.includes('{{profile_update_button}}');
     
+    console.log('Profile update check - customContent length:', customContent?.length || 0);
+    console.log('Profile update check - needsProfileUpdateLink:', needsProfileUpdateLink);
+    console.log('Profile update check - customer id:', booking.customers?.id);
+    
     let profileUpdateLink = '';
     let profileUpdateButton = '';
     
