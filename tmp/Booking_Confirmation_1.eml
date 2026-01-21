@@ -1,0 +1,167 @@
+Delivered-To: johnmcgauran79@gmail.com
+Received: by 2002:a17:504:dc63:b0:1e0e:62bb:5424 with SMTP id fc3csp274135njc;
+        Tue, 20 Jan 2026 19:59:08 -0800 (PST)
+X-Received: by 2002:a05:6a00:14c2:b0:81f:9986:c238 with SMTP id d2e1a72fcca58-81fa178095dmr12328293b3a.5.1768967948341;
+        Tue, 20 Jan 2026 19:59:08 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1768967948; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Msed4hOzEBDht+MzREAIFFPlNmbAyaCbZ+YCq9ZMd4hxC6PlJ/sJZcURT4wFOSQhPV
+         hYCbBDo+mObbi8LPML7AeCvsI8iqfUcpagP0U29TQZx77xdlvSGGJ2PrpfAYvfZfbArs
+         ljB4WbJM3UOwnlM4hX/e7A15hfPHcd+xgLWlxqo88aLtL9bkysxhLJRRb9NLPyV4t9bD
+         oD5Fdu2egYhUgh3HWLZ84sgAzgXUd+g8i+uL3PGpA3mS9j+f/UydtkNMf74cC09qEiaj
+         GnCXowzpEvNj2+pp7+mH/hH1jmBUdrRJ4/YNGEvMoA6owfWaFJ58xqR6aLwzwQuhQp5y
+         09eA==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=feedback-id:mime-version:date:message-id:subject:to:from
+         :dkim-signature:dkim-signature;
+        bh=xQ+cxj+RPaS0rr1eHzZPIhz3YG/JM+SV9wE6Nd7/5f4=;
+        fh=UB2G2VdoHHCTVDpBQVODDOpdkrQNTL1LH/r9OKBkgh4=;
+        b=JHZPO5LSa6gtT5Oz7j0rzwxwPAXAteK2oNCUjnf05ysiqRm3+KFF9XsFN3TxwtHKW3
+         6aIcmXzeUVS+eFD6PXW9v/oXG6dPiwJV4ZobGf4KuLeSiM6WBXpqj3z6RQ58NooT/xEF
+         3DDnf3A8+ik1IcShk3n/1RPqOJ/mmDsxqdhKCMJIEEXiz64jaIefVk8c/hnuGGre5N1z
+         d2mKYiQMK8LC+Q11m3800p369PkpBJIUPV0W7bgtWtLh1xEdBFOlaWfs5bh9VyslZTgW
+         45yDTJ2AR5CQbKioHDz1LLWjk2WZWvs9ACEyJJFkSBynTvo/9hD+2+eGXXpcCbi59/+J
+         o5Jw==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@australianracingtours.com.au header.s=resend header.b=K+INSeXa;
+       dkim=pass header.i=@amazonses.com header.s=suwteswkahkjx5z3rgaujjw4zqymtlt2 header.b=My24sUZ7;
+       spf=pass (google.com: domain of 0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@send.australianracingtours.com.au designates 23.251.234.57 as permitted sender) smtp.mailfrom=0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@send.australianracingtours.com.au;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=australianracingtours.com.au
+Return-Path: <0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@send.australianracingtours.com.au>
+Received: from e234-57.smtp-out.ap-northeast-1.amazonses.com (e234-57.smtp-out.ap-northeast-1.amazonses.com. [23.251.234.57])
+        by mx.google.com with ESMTPS id d2e1a72fcca58-81fa1274d66si21564450b3a.209.2026.01.20.19.59.07
+        for <johnmcgauran79@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Tue, 20 Jan 2026 19:59:08 -0800 (PST)
+Received-SPF: pass (google.com: domain of 0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@send.australianracingtours.com.au designates 23.251.234.57 as permitted sender) client-ip=23.251.234.57;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@australianracingtours.com.au header.s=resend header.b=K+INSeXa;
+       dkim=pass header.i=@amazonses.com header.s=suwteswkahkjx5z3rgaujjw4zqymtlt2 header.b=My24sUZ7;
+       spf=pass (google.com: domain of 0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@send.australianracingtours.com.au designates 23.251.234.57 as permitted sender) smtp.mailfrom=0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@send.australianracingtours.com.au;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=australianracingtours.com.au
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; s=resend;
+	d=australianracingtours.com.au; t=1768967947;
+	h=From:To:Subject:Message-ID:Date:MIME-Version:Content-Type;
+	bh=xQ+cxj+RPaS0rr1eHzZPIhz3YG/JM+SV9wE6Nd7/5f4=;
+	b=K+INSeXad4Ktfj0D4pfJJW3/N/PcfpD0HiBZboekGyCjNvPpZgjHzkf6HZZwojsx
+	N8e5D8NjCZSAO1OZF9o3o9dKFkJJitFP2vaQVsqFJpODY75E1ZkibrBtU1DUoPguShU
+	crypSn0mZOJ2D78Y5gL7ZYwYxuNtLS3/V6J+/VTo=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=suwteswkahkjx5z3rgaujjw4zqymtlt2; d=amazonses.com; t=1768967947;
+	h=From:To:Subject:Message-ID:Date:MIME-Version:Content-Type:Feedback-ID;
+	bh=xQ+cxj+RPaS0rr1eHzZPIhz3YG/JM+SV9wE6Nd7/5f4=;
+	b=My24sUZ7NN4JcxAPquOv2HRTD7GRcqV+Vh4nMVLYDSKHZpRywrzwdC95QMUVPZqK
+	55mfb20sEZRowQ8xLiCCCxZITR1hmDg1ANqn1s5Q+8Wdly3PxN62LEBXLU4QRXt0wpR
+	x6MxZZmGLw50bqEyTSQ9NRdbsef4IiQtXONzBC6E=
+From: Bookings <bookings@australianracingtours.com.au>
+To: johnmcgauran79@gmail.com
+Subject: Booking Confirmation - 2026 DUMMY tour
+Message-ID: <0106019bdeb4c484-d3e1bc6f-d8b5-4f95-94ac-e89749282f50-000000@ap-northeast-1.amazonses.com>
+Date: Wed, 21 Jan 2026 03:59:07 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="--_NmP-b02c2910e6e9a03a-Part_1"
+Feedback-ID: ::1.ap-northeast-1.TOS0vxEE3Ar6ai29fkp2i/jb+l2iigajCGeLfF7S3sk=:AmazonSES
+X-SES-Outgoing: 2026.01.21-23.251.234.57
+
+----_NmP-b02c2910e6e9a03a-Part_1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Dear John McGauran,
+
+We look forward to welcoming you on our 2026 DUMMY =
+tour in just over a months time. Please find your booking confirmation =
+details below. If anything is incorrect or needs updating with your booking=
+ dates or details, please let us know as soon as possible. You can update =
+your profile here with any dietary, emergency contacts or other contact =
+information, so we have everything correct.
+
+You'll receive the final =
+updated guest information pack two weeks before the tour starts. Inside =
+you=E2=80=99ll find everything you need =E2=80=94 your day-by-day schedule,=
+ dress codes, and all the important details to help you prepare for your =
+trip.
+
+TOUR DETAILS
+
+ * 2026 DUMMY tour
+ * Location: Melbourne
+ * Tour dates: 01/02/2026 - 10/02/2026
+ * Duration: 10 days, 9 nights
+
+PASSENGER INFORMATION
+
+ * Lead Passenger: John McGauran
+ * Phone Number: +61412122560
+ * Total Passengers: 1
+ * Passenger 2: N/A
+ * Passenger 3: N/A
+ * Dietary Requirements: testing dietary requirements =
+field
+ * EMERGENCY CONTACT: N/A N/A
+
+
+
+ACCOMMODATION
+
+
+
+ * Hotel: Hotel A
+ * Check In: 01/02/2026
+ * Check Out: 08/02/2026
+ * Nights: 7
+ * Room Type: Superior King Deluxe
+ * Room Bedding: single
+
+
+
+ * Hotel: Hotel B
+ * Check In: 08/02/2026
+ * Check Out: 10/02/2026
+ * Nights: 2
+ * Room Type: king classic
+ * Room Bedding: single
+
+
+
+If you have any other questions, don't hesitate to ask.
+
+Best regards,
+
+ART Team
+----_NmP-b02c2910e6e9a03a-Part_1
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<p>Dear John McGauran,</p><p>We look forward to welcoming you on our <stron=
+g>2026 DUMMY tour </strong>in just over a months time. Please find your boo=
+king confirmation details below. If anything is incorrect or needs updating=
+ with your booking dates or details, please let us know as soon as possible=
+. You can <a href=3D"" rel=3D"noopener noreferrer" target=3D"_blank"><stron=
+g>update your profile here</strong></a> with any dietary, emergency contact=
+s or other contact information, so we have everything correct.</p><p>You'll=
+ receive the final updated guest information pack two weeks before the tour=
+ starts. Inside you=E2=80=99ll find everything you need =E2=80=94 your day-=
+by-day schedule, dress codes, and all the important details to help you pre=
+pare for your trip.</p><p><strong>TOUR DETAILS</strong></p><ul><li><strong>=
+2026 DUMMY tour</strong></li><li>Location: Melbourne</li><li>Tour dates: 01=
+/02/2026 - 10/02/2026</li><li>Duration: 10 days, 9 nights</li></ul><p><stro=
+ng>PASSENGER INFORMATION</strong></p><ul><li>Lead Passenger: <strong>John M=
+cGauran</strong></li><li>Phone Number: +61412122560</li><li>Total Passenger=
+s: 1</li><li>Passenger 2: N/A</li><li>Passenger 3: N/A</li><li>Dietary Requ=
+irements: testing dietary requirements field</li><li>EMERGENCY CONTACT: N/A=
+ N/A</li></ul><p></p><p><strong>ACCOMMODATION</strong></p><p></p><ul><li>Ho=
+tel: <strong>Hotel A</strong></li><li>Check In: 01/02/2026</li><li>Check Ou=
+t: 08/02/2026</li><li>Nights: 7</li><li>Room Type: Superior King Deluxe</li=
+><li>Room Bedding: single</li></ul><p></p><ul><li>Hotel: <strong>Hotel B</s=
+trong></li><li>Check In: 08/02/2026</li><li>Check Out: 10/02/2026</li><li>N=
+ights: 2</li><li>Room Type: king classic </li><li>Room Bedding: single</li>=
+</ul><p></p><p>If you have any other questions, don't hesitate to ask.</p><=
+p>Best regards,</p><p>ART Team</p><img alt=3D"" src=3D"http://ec940fab8bd31=
+d4725d460381f8387c5.ap-northeast-1.resend-links.com/CI0/0106019bdeb4c484-d3=
+e1bc6f-d8b5-4f95-94ac-e89749282f50-000000/noy9IBqPYA6BpYpJ_tJeC68n4YEUo3b0q=
+Yz0mfc0tg4=3D246" style=3D"display: none; width: 1px; height: 1px;">
+
+----_NmP-b02c2910e6e9a03a-Part_1--
