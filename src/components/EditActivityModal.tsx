@@ -25,7 +25,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     name: "",
     location: "",
     activity_date: "",
-    cutoff_date: "",
     start_time: "",
     end_time: "",
     pickup_time: "",
@@ -60,7 +59,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         name: activity.name || "",
         location: activity.location || "",
         activity_date: activity.activity_date || "",
-        cutoff_date: activity.cutoff_date || "",
         start_time: activity.start_time || "",
         end_time: activity.end_time || "",
         pickup_time: activity.pickup_time || "",
@@ -257,16 +255,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 type="date"
                 value={formData.activity_date}
                 onChange={(e) => handleInputChange("activity_date", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="cutoff_date">Cutoff Date</Label>
-              <Input
-                id="cutoff_date"
-                type="date"
-                value={formData.cutoff_date}
-                onChange={(e) => handleInputChange("cutoff_date", e.target.value)}
               />
             </div>
 
