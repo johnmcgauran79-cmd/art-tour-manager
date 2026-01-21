@@ -121,7 +121,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           ),
           activity_bookings (
             passengers_attending,
-            activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+            activities (name, activity_date, start_time, end_time, pickup_time, location, contact_name, contact_phone)
           )
         `)
         .eq('id', allBookingsData[0].id)

@@ -92,9 +92,9 @@ export interface EmailMergeData {
     activity_collection_location?: string;
     activity_dropoff_location?: string;
     activity_location?: string;
-    activity_guide_name?: string;
-    activity_guide_phone?: string;
-    activity_guide_email?: string;
+    activity_contact_name?: string;
+    activity_contact_phone?: string;
+    activity_contact_email?: string;
     activity_hospitality_inclusions?: string;
     passengers_attending?: number;
   }>;
@@ -300,9 +300,9 @@ export class EmailTemplateEngine {
         activity_collection_location: ab.activities?.collection_location,
         activity_dropoff_location: ab.activities?.dropoff_location,
         activity_location: ab.activities?.location,
-        activity_guide_name: ab.activities?.guide_name,
-        activity_guide_phone: ab.activities?.guide_phone,
-        activity_guide_email: ab.activities?.guide_email,
+        activity_contact_name: ab.activities?.contact_name,
+        activity_contact_phone: ab.activities?.contact_phone,
+        activity_contact_email: ab.activities?.contact_email,
         activity_hospitality_inclusions: ab.activities?.hospitality_inclusions,
         passengers_attending: ab.passengers_attending,
       })),

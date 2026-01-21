@@ -527,7 +527,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
             ? formatDateToDDMMYYYY(selectedActivityForEmail.activity_date) 
             : undefined
           }
-          defaultToEmail={selectedActivityForEmail.guide_email || ""}
+          defaultToEmail={selectedActivityForEmail.contact_email || ""}
         />
       )}
 

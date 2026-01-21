@@ -186,13 +186,13 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
           </details>
 
           {/* Contact Details */}
-          {(activity.guide_name || activity.guide_phone || activity.guide_email) && (
+          {(activity.contact_name || activity.contact_phone || activity.contact_email) && (
             <div className="space-y-1">
               <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Contact Details</h4>
               <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
-                <InfoRow label="Name" value={activity.guide_name} />
-                <InfoRow label="Phone" value={activity.guide_phone} />
-                <InfoRow label="Email" value={activity.guide_email} />
+                <InfoRow label="Name" value={activity.contact_name} />
+                <InfoRow label="Phone" value={activity.contact_phone} />
+                <InfoRow label="Email" value={activity.contact_email} />
               </div>
             </div>
           )}
