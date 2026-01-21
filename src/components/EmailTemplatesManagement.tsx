@@ -437,12 +437,13 @@ export const EmailTemplatesManagement = () => {
                 </div>
                 
                 <Tabs defaultValue="customer" className="w-full">
-                  <TabsList className="grid w-full grid-cols-5">
+                  <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="customer">Customer</TabsTrigger>
                     <TabsTrigger value="tour">Tour</TabsTrigger>
                     <TabsTrigger value="booking">Booking</TabsTrigger>
                     <TabsTrigger value="hotel">Hotel</TabsTrigger>
                     <TabsTrigger value="activity">Activity</TabsTrigger>
+                    <TabsTrigger value="actions">Actions</TabsTrigger>
                   </TabsList>
                   
                   {Object.entries(MERGE_FIELDS).map(([category, fields]) => (
