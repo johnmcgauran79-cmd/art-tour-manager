@@ -59,6 +59,8 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
+              {/* Support both legacy query-param links (/update-profile?token=...) and the canonical path-param links (/update-profile/:token). */}
+              <Route path="/update-profile" element={<UpdateProfile />} />
               <Route path="/update-profile/:token" element={<UpdateProfile />} />
               <Route
                 path="/"

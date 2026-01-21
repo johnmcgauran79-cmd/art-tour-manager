@@ -279,7 +279,9 @@ const handler = async (req: Request): Promise<Response> => {
         console.error('Error creating profile update token:', tokenError);
       } else if (tokenData) {
         const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
-        profileUpdateLink = `${baseUrl}/update-profile?token=${tokenData.token}`;
+        // Canonical format used across the app: /update-profile/:token
+        // (we still support legacy query-param links in the router for old emails).
+        profileUpdateLink = `${baseUrl}/update-profile/${tokenData.token}`;
         // IMPORTANT: Keep this HTML on a single line.
         // Later in the pipeline we convert any remaining "\n" to "<br>", which can break table markup.
         profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a></td></tr></table>`;
