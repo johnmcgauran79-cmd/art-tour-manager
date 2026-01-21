@@ -19,6 +19,11 @@ interface BookingConfirmationRequest {
   bccEmails?: string[];
 }
 
+// Some rich text editors can inject zero-width characters into text nodes.
+// If these land inside merge fields (e.g. "{{profile_update_button\u200b}}"),
+// our placeholder detection + replacement will silently fail.
+const stripZeroWidth = (value: string) => value.replace(/[\u200B-\u200D\uFEFF]/g, "");
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -116,12 +121,13 @@ const handler = async (req: Request): Promise<Response> => {
     // Helper function to process template (simplified version of EmailTemplateEngine)
     // IMPORTANT: Process in correct order - conditionals/loops FIRST, then simple variables
     const processTemplate = (templateStr: string, data: any): string => {
-      let processed = templateStr;
+      // Normalize to avoid invisible zero-width chars breaking merge fields.
+      let processed = stripZeroWidth(templateStr);
       
       // STEP 1: Handle conditional sections {{#variable}}...{{/variable}} FIRST
       // This ensures array loops are processed before simple variable replacement
       processed = processed.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (match, key, content) => {
-        const value = getNestedValue(data, key.trim());
+        const value = getNestedValue(data, stripZeroWidth(String(key)).trim());
         
         // For arrays (like hotel_bookings), repeat the content for each item
         if (Array.isArray(value)) {
@@ -131,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
           return value.map(item => {
             // Process inner variables with the array item's data
             return content.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
-              const trimmedKey = innerKey.trim();
+              const trimmedKey = stripZeroWidth(innerKey).trim();
               // First try to get value from the array item
               let itemValue = getNestedValue(item, trimmedKey);
               // If not found in item, try from root data (for mixed templates)
@@ -147,7 +153,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (value) {
           // Process inner variables with root data
           return content.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
-            const innerValue = getNestedValue(data, innerKey.trim());
+            const innerValue = getNestedValue(data, stripZeroWidth(innerKey).trim());
             return innerValue !== undefined && innerValue !== null ? String(innerValue) : '';
           });
         }
@@ -156,12 +162,12 @@ const handler = async (req: Request): Promise<Response> => {
       
       // STEP 2: Handle inverted conditional sections {{^variable}}...{{/variable}}
       processed = processed.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (match, key, content) => {
-        const value = getNestedValue(data, key.trim());
+        const value = getNestedValue(data, stripZeroWidth(String(key)).trim());
         const isEmpty = !value || (Array.isArray(value) && value.length === 0);
         if (isEmpty) {
           // Process inner variables
           return content.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
-            const innerValue = getNestedValue(data, innerKey.trim());
+            const innerValue = getNestedValue(data, stripZeroWidth(innerKey).trim());
             return innerValue !== undefined && innerValue !== null ? String(innerValue) : '';
           });
         }
@@ -170,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       // STEP 3: Handle remaining simple variable replacements {{variable}}
       processed = processed.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (match, key) => {
-        const value = getNestedValue(data, key.trim());
+        const value = getNestedValue(data, stripZeroWidth(String(key)).trim());
         return value !== undefined && value !== null ? String(value) : '';
       });
       
@@ -180,9 +186,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if profile update link/button is needed in the template.
     // NOTE: Be tolerant to whitespace added by editors (e.g. "{{ profile_update_button }}").
     const contentToCheck = customContent || template?.content_template || '';
-    const needsProfileUpdateLink = /\{\{\s*profile_update_(link|button)\s*\}\}/.test(contentToCheck);
+    const normalizedContentToCheck = stripZeroWidth(contentToCheck);
+    const needsProfileUpdateLink = /\{\{\s*profile_update_(link|button)\s*\}\}/.test(normalizedContentToCheck);
     
     console.log('Profile update check - customContent length:', customContent?.length || 0);
+    console.log('Profile update check - has "profile_update" substring:', normalizedContentToCheck.includes('profile_update'));
     console.log('Profile update check - needsProfileUpdateLink:', needsProfileUpdateLink);
     console.log('Profile update check - customer id:', booking.customers?.id);
     
