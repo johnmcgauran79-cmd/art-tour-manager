@@ -24,6 +24,40 @@ interface BookingConfirmationRequest {
 // our placeholder detection + replacement will silently fail.
 const stripZeroWidth = (value: string) => value.replace(/[\u200B-\u200D\uFEFF]/g, "");
 
+// If client-side editors pre-render templates, placeholders like {{profile_update_link}}
+// can be replaced with an empty string, leaving <a href="">update your profile</a>.
+// This helper patches such links at send-time, so we still deliver a working URL.
+const injectProfileUpdateLink = (html: string, link: string): string => {
+  return html.replace(
+    /<a\b([^>]*?)href=(['"])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi,
+    (full, preAttrs, quote, href, postAttrs, inner) => {
+      const innerText = String(inner)
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      const isUpdateProfileLink = innerText.includes("update your profile");
+      const isHrefEmpty = String(href).trim() === "" || String(href).trim() === "#";
+
+      if (isUpdateProfileLink && isHrefEmpty) {
+        return `<a${preAttrs}href=${quote}${link}${quote}${postAttrs}>${inner}</a>`;
+      }
+
+      return full;
+    }
+  );
+};
+
+// If the template copy references profile updates but the {{profile_update_button}} token
+// was stripped during client-side processing, we inject a button near the copy.
+const injectProfileUpdateButtonNearCopy = (html: string, buttonHtml: string): string => {
+  return html.replace(
+    /(<p\b[^>]*>[\s\S]*?update\s+your\s+profile[\s\S]*?<\/p>)/i,
+    `$1${buttonHtml}`
+  );
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -187,10 +221,20 @@ const handler = async (req: Request): Promise<Response> => {
     // NOTE: Be tolerant to whitespace added by editors (e.g. "{{ profile_update_button }}").
     const contentToCheck = customContent || template?.content_template || '';
     const normalizedContentToCheck = stripZeroWidth(contentToCheck);
-    const needsProfileUpdateLink = /\{\{\s*profile_update_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    // IMPORTANT: Some client-side flows pre-render templates using EmailTemplateEngine.
+    // That engine cannot generate secure profile update tokens, so it may replace these
+    // placeholders with empty strings before the email hits this function.
+    // We therefore also detect the user-facing copy as a fallback.
+    const hasProfileUpdatePlaceholder = /\{\{\s*profile_update_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    const hasProfileUpdateCopy = /update\s+your\s+profile/i.test(normalizedContentToCheck);
+    const hasEmptyUpdateProfileAnchor = /<a[^>]*href=(['"])\s*\1[^>]*>[\s\S]*update\s+your\s+profile/i.test(normalizedContentToCheck);
+    const needsProfileUpdateLink = hasProfileUpdatePlaceholder || hasProfileUpdateCopy || hasEmptyUpdateProfileAnchor;
     
     console.log('Profile update check - customContent length:', customContent?.length || 0);
     console.log('Profile update check - has "profile_update" substring:', normalizedContentToCheck.includes('profile_update'));
+    console.log('Profile update check - hasProfileUpdatePlaceholder:', hasProfileUpdatePlaceholder);
+    console.log('Profile update check - hasProfileUpdateCopy:', hasProfileUpdateCopy);
+    console.log('Profile update check - hasEmptyUpdateProfileAnchor:', hasEmptyUpdateProfileAnchor);
     console.log('Profile update check - needsProfileUpdateLink:', needsProfileUpdateLink);
     console.log('Profile update check - customer id:', booking.customers?.id);
     
@@ -358,6 +402,20 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Convert line breaks to HTML breaks
       emailHtml = emailHtml.replace(/\n/g, '<br>');
+
+      // Final safety pass: if the client-side render stripped the placeholder out of href,
+      // patch the update-profile anchor/button into a working state.
+      if (profileUpdateLink) {
+        const beforeInject = emailHtml;
+        emailHtml = injectProfileUpdateLink(emailHtml, profileUpdateLink);
+
+        const didInjectLink = beforeInject !== emailHtml;
+        const hasButtonAlready = emailHtml.includes('Update My Profile') || emailHtml.includes(profileUpdateLink);
+
+        if (!didInjectLink && !hasButtonAlready && /update\s+your\s+profile/i.test(emailHtml) && profileUpdateButton) {
+          emailHtml = injectProfileUpdateButtonNearCopy(emailHtml, profileUpdateButton);
+        }
+      }
     } else {
       // Fallback to simple HTML if no template found
       emailHtml = `
