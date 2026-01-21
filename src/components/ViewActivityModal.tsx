@@ -148,8 +148,8 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
               <InfoRow label="Location" value={activity.location} />
               <InfoRow label="Date" value={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : null} />
               <div className="grid grid-cols-2 gap-2">
-                <InfoRow label="Start" value={formatTime(activity.start_time)} />
-                <InfoRow label="End" value={formatTime(activity.end_time)} />
+                <InfoRow label="Activity Start" value={formatTime(activity.start_time)} />
+                <InfoRow label="Activity End" value={formatTime(activity.end_time)} />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <InfoRow label="Spots" value={activity.spots_available || 0} />
@@ -185,10 +185,10 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </div>
           </details>
 
-          {/* Guide Details */}
+          {/* Contact Details */}
           {(activity.guide_name || activity.guide_phone || activity.guide_email) && (
             <div className="space-y-1">
-              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Guide Details</h4>
+              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Contact Details</h4>
               <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
                 <InfoRow label="Name" value={activity.guide_name} />
                 <InfoRow label="Phone" value={activity.guide_phone} />

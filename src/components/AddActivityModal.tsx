@@ -260,7 +260,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="start_time">Start Time</Label>
+              <Label htmlFor="start_time">Activity Start Time</Label>
               <Input
                 id="start_time"
                 type="time"
@@ -270,7 +270,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_time">End Time</Label>
+              <Label htmlFor="end_time">Activity End Time</Label>
               <Input
                 id="end_time"
                 type="time"
@@ -320,7 +320,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="guide_name">Guide Name</Label>
+              <Label htmlFor="guide_name">Contact Name</Label>
               <Input
                 id="guide_name"
                 value={formData.guide_name}
@@ -329,7 +329,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guide_phone">Guide Phone</Label>
+              <Label htmlFor="guide_phone">Contact Phone</Label>
               <Input
                 id="guide_phone"
                 value={formData.guide_phone}
@@ -338,7 +338,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="guide_email">Guide Email</Label>
+              <Label htmlFor="guide_email">Contact Email</Label>
               <Input
                 id="guide_email"
                 type="email"
