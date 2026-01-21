@@ -148,47 +148,22 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
               <InfoRow label="Location" value={activity.location} />
               <InfoRow label="Date" value={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : null} />
               <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Spots" value={activity.spots_available || 0} />
+                <InfoRow label="Pax" value={paxAttending} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <InfoRow label="Activity Start" value={formatTime(activity.start_time)} />
                 <InfoRow label="Activity End" value={formatTime(activity.end_time)} />
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <InfoRow label="Spots" value={activity.spots_available || 0} />
-                <InfoRow label="Pax" value={paxAttending} />
+                <InfoRow label="Depart for Activity" value={formatTime(activity.depart_for_activity)} />
+                <InfoRow 
+                  label="Transport Mode" 
+                  value={activity.transport_mode ? activity.transport_mode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not Required'} 
+                />
               </div>
             </div>
           </div>
-
-          {/* Transport Details - Collapsible on mobile */}
-          <details className="group">
-            <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none flex items-center gap-2">
-              <span>Transport Details</span>
-              <span className="text-xs text-muted-foreground/60 group-open:hidden">(tap to expand)</span>
-            </summary>
-            <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 mt-1">
-              <InfoRow 
-                label="Status" 
-                value={
-                  <Badge variant="outline" className="text-xs">
-                    {(activity.transport_status || 'pending').replace(/_/g, ' ').toUpperCase()}
-                  </Badge>
-                } 
-              />
-              <InfoRow 
-                label="Transport Mode" 
-                value={activity.transport_mode ? activity.transport_mode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not Required'} 
-              />
-              <InfoRow label="Depart for Activity" value={formatTime(activity.depart_for_activity)} />
-              <InfoRow label="Company" value={activity.transport_company} />
-              <InfoRow label="Contact" value={activity.transport_contact_name} />
-              <InfoRow label="Phone" value={activity.transport_phone} />
-              <InfoRow label="Email" value={activity.transport_email} />
-              <InfoRow label="Pickup Time" value={formatTime(activity.pickup_time)} />
-              <InfoRow label="Pickup Location" value={activity.pickup_location} />
-              <InfoRow label="Collection Time" value={formatTime(activity.collection_time)} />
-              <InfoRow label="Collection Location" value={activity.collection_location} />
-              <InfoRow label="Drop Off" value={activity.dropoff_location} />
-            </div>
-          </details>
 
           {/* Contact Details */}
           {(activity.contact_name || activity.contact_phone || activity.contact_email) && (
@@ -204,7 +179,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
 
           {/* Hospitality */}
           {activity.hospitality_inclusions && (
-            <details className="group">
+            <details className="group" open>
               <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
                 Hospitality Inclusions
               </summary>
@@ -214,29 +189,62 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </details>
           )}
 
+          {/* Transport Details - Collapsible on mobile */}
+          <details className="group">
+            <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none flex items-center gap-2">
+              <span>Transport Details</span>
+              <span className="text-xs text-muted-foreground/60 group-open:hidden">(tap to expand)</span>
+            </summary>
+            <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 mt-1">
+              <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Company" value={activity.transport_company} />
+                <InfoRow 
+                  label="Status" 
+                  value={
+                    <Badge variant="outline" className="text-xs">
+                      {(activity.transport_status || 'pending').replace(/_/g, ' ').toUpperCase()}
+                    </Badge>
+                  } 
+                />
+              </div>
+              <InfoRow label="Contact" value={activity.transport_contact_name} />
+              <InfoRow label="Phone" value={activity.transport_phone} />
+              <InfoRow label="Email" value={activity.transport_email} />
+              <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Pickup Time" value={formatTime(activity.pickup_time)} />
+                <InfoRow label="Collection Time" value={formatTime(activity.collection_time)} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <InfoRow label="Pickup Location" value={activity.pickup_location} />
+                <InfoRow label="Collection Location" value={activity.collection_location} />
+              </div>
+              <InfoRow label="Drop Off" value={activity.dropoff_location} />
+              {activity.transport_notes && (
+                <div className="mt-2 pt-2 border-t">
+                  <span className="text-xs text-muted-foreground uppercase">Transport Notes</span>
+                  <p className="text-xs sm:text-sm whitespace-pre-wrap mt-1">{activity.transport_notes}</p>
+                </div>
+              )}
+            </div>
+          </details>
+
           {/* Notes */}
-          {(activity.notes || activity.operations_notes || activity.transport_notes) && (
-            <details className="group">
+          {(activity.notes || activity.operations_notes) && (
+            <details className="group" open>
               <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
                 Notes
               </summary>
               <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 space-y-2 sm:space-y-3 mt-1">
                 {activity.notes && (
                   <div>
-                    <span className="text-xs text-muted-foreground uppercase">General</span>
+                    <span className="text-xs text-muted-foreground uppercase">Activity Notes</span>
                     <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.notes}</p>
                   </div>
                 )}
                 {activity.operations_notes && (
                   <div>
-                    <span className="text-xs text-muted-foreground uppercase">Operations</span>
+                    <span className="text-xs text-muted-foreground uppercase">Operations Notes</span>
                     <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
-                  </div>
-                )}
-                {activity.transport_notes && (
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase">Transport</span>
-                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.transport_notes}</p>
                   </div>
                 )}
               </div>

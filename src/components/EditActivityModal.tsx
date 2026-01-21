@@ -234,6 +234,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Row 1: Activity Name & Location */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Activity Name *</Label>
@@ -253,7 +254,10 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 onChange={(e) => handleInputChange("location", e.target.value)}
               />
             </div>
+          </div>
 
+          {/* Row 2: Activity Date & Activity Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="activity_date">Activity Date</Label>
               <Input
@@ -261,47 +265,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 type="date"
                 value={formData.activity_date}
                 onChange={(e) => handleInputChange("activity_date", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="spots_booked">Spots Booked</Label>
-              <Input
-                id="spots_booked"
-                type="number"
-                value={formData.spots_booked}
-                onChange={(e) => handleInputChange("spots_booked", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pax_attending">Pax Attending (Read Only)</Label>
-              <Input
-                id="pax_attending"
-                type="number"
-                value={paxAttending}
-                disabled
-                className="bg-muted"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="start_time">Activity Start Time</Label>
-              <Input
-                id="start_time"
-                type="time"
-                value={formData.start_time}
-                onChange={(e) => handleInputChange("start_time", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="end_time">Activity End Time</Label>
-              <Input
-                id="end_time"
-                type="time"
-                value={formData.end_time}
-                onChange={(e) => handleInputChange("end_time", e.target.value)}
               />
             </div>
 
@@ -325,25 +288,88 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Row 3: Spots Booked & Pax Attending */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="spots_booked">Spots Booked</Label>
+              <Input
+                id="spots_booked"
+                type="number"
+                value={formData.spots_booked}
+                onChange={(e) => handleInputChange("spots_booked", e.target.value)}
+              />
+            </div>
 
             <div className="space-y-2">
-              <Label htmlFor="transport_status">Transport Status</Label>
-              <Select value={formData.transport_status} onValueChange={(value) => handleInputChange("transport_status", value)}>
+              <Label htmlFor="pax_attending">Pax Attending (Read Only)</Label>
+              <Input
+                id="pax_attending"
+                type="number"
+                value={paxAttending}
+                disabled
+                className="bg-muted"
+              />
+            </div>
+          </div>
+
+          {/* Row 4: Activity Start Time & End Time */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_time">Activity Start Time</Label>
+              <Input
+                id="start_time"
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => handleInputChange("start_time", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_time">Activity End Time</Label>
+              <Input
+                id="end_time"
+                type="time"
+                value={formData.end_time}
+                onChange={(e) => handleInputChange("end_time", e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* Row 5: Depart for Activity & Transport Mode */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="depart_for_activity">Depart for Activity</Label>
+              <Input
+                id="depart_for_activity"
+                type="time"
+                value={formData.depart_for_activity}
+                onChange={(e) => handleInputChange("depart_for_activity", e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="transport_mode">Transport Mode</Label>
+              <Select value={formData.transport_mode} onValueChange={(value) => handleInputChange("transport_mode", value)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="not_required">Not Required</SelectItem>
-                  <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="checked">Checked</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="walking">Walking</SelectItem>
+                  <SelectItem value="private_coach">Private Coach</SelectItem>
+                  <SelectItem value="shuttle_bus">Shuttle Bus</SelectItem>
+                  <SelectItem value="taxi">Taxi</SelectItem>
+                  <SelectItem value="ferry">Ferry</SelectItem>
+                  <SelectItem value="train">Train</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
+          {/* Row 6: Contact Name, Phone, Email */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contact_name">Contact Name</Label>
@@ -374,77 +400,83 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="transport_company">Transport Company</Label>
-              <Input
-                id="transport_company"
-                value={formData.transport_company}
-                onChange={(e) => handleInputChange("transport_company", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="transport_contact_name">Transport Contact</Label>
-              <Input
-                id="transport_contact_name"
-                value={formData.transport_contact_name}
-                onChange={(e) => handleInputChange("transport_contact_name", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="transport_phone">Transport Phone</Label>
-              <Input
-                id="transport_phone"
-                value={formData.transport_phone}
-                onChange={(e) => handleInputChange("transport_phone", e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="transport_email">Transport Email</Label>
-              <Input
-                id="transport_email"
-                type="email"
-                value={formData.transport_email}
-                onChange={(e) => handleInputChange("transport_email", e.target.value)}
-              />
-            </div>
+          {/* Row 7: Hospitality Inclusions */}
+          <div className="space-y-2">
+            <Label htmlFor="hospitality_inclusions">Hospitality Inclusions</Label>
+            <Textarea
+              id="hospitality_inclusions"
+              value={formData.hospitality_inclusions}
+              onChange={(e) => handleInputChange("hospitality_inclusions", e.target.value)}
+              rows={3}
+            />
           </div>
 
+          {/* Transport Details Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Transport Details</h3>
+            <h3 className="text-lg font-semibold border-b pb-2">Transport Details</h3>
+            
+            {/* Transport Company & Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="transport_mode">Transport Mode</Label>
-                <Select value={formData.transport_mode} onValueChange={(value) => handleInputChange("transport_mode", value)}>
+                <Label htmlFor="transport_company">Transport Company</Label>
+                <Input
+                  id="transport_company"
+                  value={formData.transport_company}
+                  onChange={(e) => handleInputChange("transport_company", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="transport_status">Transport Status</Label>
+                <Select value={formData.transport_status} onValueChange={(value) => handleInputChange("transport_status", value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="not_required">Not Required</SelectItem>
-                    <SelectItem value="walking">Walking</SelectItem>
-                    <SelectItem value="private_coach">Private Coach</SelectItem>
-                    <SelectItem value="shuttle_bus">Shuttle Bus</SelectItem>
-                    <SelectItem value="taxi">Taxi</SelectItem>
-                    <SelectItem value="ferry">Ferry</SelectItem>
-                    <SelectItem value="train">Train</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="booked">Booked</SelectItem>
+                    <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
+                    <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
+            {/* Transport Contact Name, Phone, Email */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="depart_for_activity">Depart for Activity</Label>
+                <Label htmlFor="transport_contact_name">Transport Contact Name</Label>
                 <Input
-                  id="depart_for_activity"
-                  type="time"
-                  value={formData.depart_for_activity}
-                  onChange={(e) => handleInputChange("depart_for_activity", e.target.value)}
+                  id="transport_contact_name"
+                  value={formData.transport_contact_name}
+                  onChange={(e) => handleInputChange("transport_contact_name", e.target.value)}
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="transport_phone">Transport Phone</Label>
+                <Input
+                  id="transport_phone"
+                  value={formData.transport_phone}
+                  onChange={(e) => handleInputChange("transport_phone", e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="transport_email">Transport Email</Label>
+                <Input
+                  id="transport_email"
+                  type="email"
+                  value={formData.transport_email}
+                  onChange={(e) => handleInputChange("transport_email", e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Pick Up Time & Collection Time */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="pickup_time">Pick Up Time</Label>
                 <Input
@@ -464,7 +496,10 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                   onChange={(e) => handleInputChange("collection_time", e.target.value)}
                 />
               </div>
+            </div>
 
+            {/* Pickup Location & Collection Location */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="pickup_location">Pick Up Location</Label>
                 <Input
@@ -482,7 +517,10 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                   onChange={(e) => handleInputChange("collection_location", e.target.value)}
                 />
               </div>
+            </div>
 
+            {/* Drop Off Location */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="dropoff_location">Drop Off Location</Label>
                 <Input
@@ -492,20 +530,22 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 />
               </div>
             </div>
+
+            {/* Transport Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="transport_notes">Transport Notes</Label>
+              <Textarea
+                id="transport_notes"
+                value={formData.transport_notes}
+                onChange={(e) => handleInputChange("transport_notes", e.target.value)}
+                rows={3}
+              />
+            </div>
           </div>
 
+          {/* Activity Notes & Operations Notes */}
           <div className="space-y-2">
-            <Label htmlFor="hospitality_inclusions">Hospitality Inclusions</Label>
-            <Textarea
-              id="hospitality_inclusions"
-              value={formData.hospitality_inclusions}
-              onChange={(e) => handleInputChange("hospitality_inclusions", e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">Activity Notes</Label>
             <Textarea
               id="notes"
               value={formData.notes}
@@ -520,16 +560,6 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
               id="operations_notes"
               value={formData.operations_notes}
               onChange={(e) => handleInputChange("operations_notes", e.target.value)}
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="transport_notes">Transport Notes</Label>
-            <Textarea
-              id="transport_notes"
-              value={formData.transport_notes}
-              onChange={(e) => handleInputChange("transport_notes", e.target.value)}
               rows={3}
             />
           </div>
