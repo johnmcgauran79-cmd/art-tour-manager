@@ -28,6 +28,8 @@ export interface Activity {
   transport_contact_name: string | null;
   transport_phone: string | null;
   transport_email: string | null;
+  driver_name: string | null;
+  driver_phone: string | null;
   hospitality_inclusions: string | null;
   notes: string | null;
   operations_notes: string | null;
