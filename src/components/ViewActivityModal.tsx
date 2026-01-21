@@ -147,7 +147,6 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
               <InfoRow label="Location" value={activity.location} />
               <InfoRow label="Date" value={activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : null} />
-              <InfoRow label="Cutoff" value={activity.cutoff_date ? formatDateToDDMMYYYY(activity.cutoff_date) : null} />
               <div className="grid grid-cols-2 gap-2">
                 <InfoRow label="Start" value={formatTime(activity.start_time)} />
                 <InfoRow label="End" value={formatTime(activity.end_time)} />

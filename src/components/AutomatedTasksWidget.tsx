@@ -67,7 +67,7 @@ export const AutomatedTasksWidget = ({ tourId }: AutomatedTasksWidgetProps) => {
         <div className="mt-4 p-3 bg-purple-100 border border-purple-200 rounded-lg">
           <p className="text-xs text-purple-700">
             <strong>Intelligent Automation:</strong> Task due dates automatically update when you change any related dates - 
-            tour dates, hotel cutoff dates, or activity cutoff dates. The system maintains perfect synchronization without any manual intervention.
+            tour dates or hotel cutoff dates. The system maintains perfect synchronization without any manual intervention.
           </p>
         </div>
       </CardContent>

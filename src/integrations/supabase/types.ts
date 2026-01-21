@@ -21,7 +21,6 @@ export type Database = {
           collection_location: string | null
           collection_time: string | null
           created_at: string | null
-          cutoff_date: string | null
           dropoff_location: string | null
           end_time: string | null
           guide_email: string | null
@@ -59,7 +58,6 @@ export type Database = {
           collection_location?: string | null
           collection_time?: string | null
           created_at?: string | null
-          cutoff_date?: string | null
           dropoff_location?: string | null
           end_time?: string | null
           guide_email?: string | null
@@ -97,7 +95,6 @@ export type Database = {
           collection_location?: string | null
           collection_time?: string | null
           created_at?: string | null
-          cutoff_date?: string | null
           dropoff_location?: string | null
           end_time?: string | null
           guide_email?: string | null
