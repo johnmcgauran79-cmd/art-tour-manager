@@ -23,6 +23,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
     activity_date: "",
     start_time: "",
     end_time: "",
+    depart_for_activity: "",
     pickup_time: "",
     collection_time: "",
     pickup_location: "",
@@ -31,6 +32,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
     spots_available: "",
     activity_status: "pending",
     transport_status: "pending",
+    transport_mode: "not_required",
     contact_name: "",
     contact_phone: "",
     contact_email: "",
@@ -66,6 +68,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
           activity_date: activityData.activity_date || null,
           start_time: activityData.start_time || null,
           end_time: activityData.end_time || null,
+          depart_for_activity: activityData.depart_for_activity || null,
           pickup_time: activityData.pickup_time || null,
           collection_time: activityData.collection_time || null,
           pickup_location: activityData.pickup_location || null,
@@ -75,9 +78,10 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
           spots_booked: 0,
           activity_status: activityData.activity_status,
           transport_status: activityData.transport_status,
-          guide_name: activityData.guide_name || null,
-          guide_phone: activityData.guide_phone || null,
-          guide_email: activityData.guide_email || null,
+          transport_mode: activityData.transport_mode || 'not_required',
+          contact_name: activityData.contact_name || null,
+          contact_phone: activityData.contact_phone || null,
+          contact_email: activityData.contact_email || null,
           transport_company: activityData.transport_company || null,
           transport_contact_name: activityData.transport_contact_name || null,
           transport_phone: activityData.transport_phone || null,
@@ -150,6 +154,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
         activity_date: "",
         start_time: "",
         end_time: "",
+        depart_for_activity: "",
         pickup_time: "",
         collection_time: "",
         pickup_location: "",
@@ -158,6 +163,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
         spots_available: "",
         activity_status: "pending",
         transport_status: "pending",
+        transport_mode: "not_required",
         contact_name: "",
         contact_phone: "",
         contact_email: "",
@@ -390,6 +396,35 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Transport Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="transport_mode">Transport Mode</Label>
+                <Select value={formData.transport_mode} onValueChange={(value) => handleInputChange("transport_mode", value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="not_required">Not Required</SelectItem>
+                    <SelectItem value="walking">Walking</SelectItem>
+                    <SelectItem value="private_coach">Private Coach</SelectItem>
+                    <SelectItem value="shuttle_bus">Shuttle Bus</SelectItem>
+                    <SelectItem value="taxi">Taxi</SelectItem>
+                    <SelectItem value="ferry">Ferry</SelectItem>
+                    <SelectItem value="train">Train</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="depart_for_activity">Depart for Activity</Label>
+                <Input
+                  id="depart_for_activity"
+                  type="time"
+                  value={formData.depart_for_activity}
+                  onChange={(e) => handleInputChange("depart_for_activity", e.target.value)}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="pickup_time">Pick Up Time</Label>
                 <Input

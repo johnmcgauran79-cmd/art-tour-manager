@@ -10,6 +10,7 @@ export interface Activity {
   activity_date: string | null;
   start_time: string | null;
   end_time: string | null;
+  depart_for_activity: string | null;
   pickup_time: string | null;
   collection_time: string | null;
   pickup_location: string | null;
@@ -19,6 +20,7 @@ export interface Activity {
   spots_booked: number | null;
   activity_status: string;
   transport_status: string;
+  transport_mode: string | null;
   contact_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
