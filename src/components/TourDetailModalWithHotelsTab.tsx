@@ -193,7 +193,7 @@ export const TourDetailModalWithHotelsTab = ({
           </DialogHeader>
 
           <Tabs value={currentTab} onValueChange={setCurrentTab} className={`w-full`}>
-            <TabsList className={`grid w-full ${canViewOperations ? 'grid-cols-5' : 'grid-cols-4'} bg-gray-50`}>
+            <TabsList className={`grid w-full ${canViewOperations ? 'grid-cols-5' : 'grid-cols-4'} bg-gray-50 sticky top-0 z-50`}>
               <TabsTrigger value="overview" className="flex items-center gap-2 data-[state=active]:bg-brand-navy data-[state=active]:text-brand-yellow">
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">Overview</span>
