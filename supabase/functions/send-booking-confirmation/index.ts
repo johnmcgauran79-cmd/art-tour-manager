@@ -71,6 +71,23 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // For auditing/profile-update token creation we want a UUID in created_by.
+    // When called from the web app we can attribute it to the current user.
+    // When called from automated jobs (no auth header), we fall back to a valid UUID.
+    const SYSTEM_ACTOR_ID = '00000000-0000-0000-0000-000000000000';
+    const authHeader = req.headers.get('Authorization') || '';
+    const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : '';
+    let requestUserId: string | null = null;
+
+    if (bearerToken) {
+      const { data: userData, error: userError } = await supabaseClient.auth.getUser(bearerToken);
+      if (userError) {
+        console.warn('[ProfileUpdate] Unable to resolve request user from JWT:', userError.message);
+      } else {
+        requestUserId = userData.user?.id ?? null;
+      }
+    }
+
     const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails }: BookingConfirmationRequest = await req.json();
 
     // Fetch email template for booking confirmation
@@ -250,7 +267,9 @@ const handler = async (req: Request): Promise<Response> => {
         .from('customer_access_tokens')
         .insert({
           customer_id: booking.customers.id,
-          created_by: 'system', // System-generated token
+          // IMPORTANT: This column is UUID in the DB; using "system" causes token creation to fail,
+          // which means no link/button can be generated.
+          created_by: requestUserId || SYSTEM_ACTOR_ID,
           expires_at: expiresAt.toISOString(),
         })
         .select('token')
