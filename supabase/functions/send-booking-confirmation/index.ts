@@ -110,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select(`
         *,
         tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions),
-        customers:lead_passenger_id (id, first_name, last_name, email, phone, city, state, country),
+        customers:lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, city, state, country, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
         hotel_bookings (
           check_in_date,
@@ -314,6 +314,7 @@ const handler = async (req: Request): Promise<Response> => {
         // Customer fields
         customer_first_name: booking.customers?.first_name || '',
         customer_last_name: booking.customers?.last_name || '',
+        customer_preferred_name: booking.customers?.preferred_name || '',
         customer_email: booking.customers?.email || '',
         customer_phone: booking.customers?.phone || '',
         customer_city: booking.customers?.city || '',
@@ -321,6 +322,11 @@ const handler = async (req: Request): Promise<Response> => {
         customer_country: booking.customers?.country || '',
         customer_spouse_name: booking.customers?.spouse_name || '',
         customer_dietary_requirements: booking.customers?.dietary_requirements || '',
+        customer_medical_conditions: booking.customers?.medical_conditions || '',
+        customer_accessibility_needs: booking.customers?.accessibility_needs || '',
+        customer_emergency_contact_name: booking.customers?.emergency_contact_name || '',
+        customer_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+        customer_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
         customer_notes: booking.customers?.notes || '',
         
         // Tour fields
