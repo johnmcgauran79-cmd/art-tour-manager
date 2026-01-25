@@ -327,6 +327,7 @@ export default function BookingDetail() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <InfoRow label="Lead Passenger" value={leadPassengerName} />
+                <InfoRow label="Preferred Name" value={booking.customers?.preferred_name} />
                 <InfoRow label="Email" value={booking.customers?.email} />
                 <InfoRow label="Phone" value={booking.customers?.phone} />
                 <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />

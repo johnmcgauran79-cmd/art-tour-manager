@@ -21,6 +21,7 @@ interface ActivityBookingInfo {
     lead_passenger: {
       first_name: string;
       last_name: string;
+      preferred_name: string | null;
     } | null;
   };
 }
@@ -56,7 +57,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
           passenger_2_name,
           passenger_3_name,
           status,
-          customers!bookings_lead_passenger_id_fkey(first_name, last_name)
+          customers!bookings_lead_passenger_id_fkey(first_name, last_name, preferred_name)
         )
       `)
       .eq('activity_id', activityId)
@@ -270,7 +271,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-sm truncate">
                             {ab.booking.lead_passenger 
-                              ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}`
+                              ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}${ab.booking.lead_passenger.preferred_name ? ` (${ab.booking.lead_passenger.preferred_name})` : ''}`
                               : '-'}
                           </p>
                           {(ab.booking.passenger_2_name || ab.booking.passenger_3_name) && (
@@ -302,7 +303,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                         <TableRow key={ab.id}>
                           <TableCell className="font-medium">
                             {ab.booking.lead_passenger 
-                              ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}`
+                              ? `${ab.booking.lead_passenger.first_name} ${ab.booking.lead_passenger.last_name}${ab.booking.lead_passenger.preferred_name ? ` (${ab.booking.lead_passenger.preferred_name})` : ''}`
                               : '-'}
                           </TableCell>
                           <TableCell className="text-muted-foreground">
