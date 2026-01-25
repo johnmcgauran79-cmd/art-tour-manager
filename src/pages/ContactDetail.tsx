@@ -315,6 +315,7 @@ export default function ContactDetail() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InfoRow label="First Name" value={contact.first_name} />
               <InfoRow label="Last Name" value={contact.last_name} />
+              <InfoRow label="Preferred Name" value={contact.preferred_name} />
               <InfoRow label="Email" value={contact.email} />
               <InfoRow 
                 label="Phone" 
