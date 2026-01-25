@@ -30,7 +30,7 @@ const EMAIL_TEMPLATE_TYPES = [
 
 const MERGE_FIELDS = {
   customer: [
-    '{{customer_first_name}}', '{{customer_last_name}}', '{{customer_email}}', '{{customer_phone}}',
+    '{{customer_first_name}}', '{{customer_last_name}}', '{{customer_preferred_name}}', '{{customer_email}}', '{{customer_phone}}',
     '{{customer_city}}', '{{customer_state}}', '{{customer_country}}', '{{customer_spouse_name}}',
     '{{customer_dietary_requirements}}', '{{customer_medical_conditions}}', '{{customer_accessibility_needs}}',
     '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}',

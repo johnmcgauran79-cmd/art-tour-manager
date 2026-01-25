@@ -3,6 +3,7 @@ export interface EmailMergeData {
   // Customer fields
   customer_first_name?: string;
   customer_last_name?: string;
+  customer_preferred_name?: string;
   customer_email?: string;
   customer_phone?: string;
   customer_city?: string;
@@ -228,6 +229,7 @@ export class EmailTemplateEngine {
       // Customer fields
       customer_first_name: customer.first_name,
       customer_last_name: customer.last_name,
+      customer_preferred_name: customer.preferred_name,
       customer_email: customer.email,
       customer_phone: customer.phone,
       customer_city: customer.city,
