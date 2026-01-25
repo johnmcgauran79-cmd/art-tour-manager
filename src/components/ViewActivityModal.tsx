@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
-
+import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
 interface ActivityBookingInfo {
   id: string;
   passengers_attending: number;
@@ -255,6 +255,9 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
               </div>
             </details>
           )}
+
+          {/* Attachments Section */}
+          <ActivityAttachmentsSection activityId={activity.id} />
 
           {/* Bookings List */}
           <div className="space-y-1">
