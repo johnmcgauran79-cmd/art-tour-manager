@@ -328,6 +328,27 @@ const handler = async (req: Request): Promise<Response> => {
         customer_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
         customer_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
         customer_notes: booking.customers?.notes || '',
+
+        // Nested objects (backwards-compatible with older templates using dot notation,
+        // e.g. {{customer.preferred_name}} or {{tour.name}})
+        customer: {
+          first_name: booking.customers?.first_name || '',
+          last_name: booking.customers?.last_name || '',
+          preferred_name: booking.customers?.preferred_name || '',
+          email: booking.customers?.email || '',
+          phone: booking.customers?.phone || '',
+          city: booking.customers?.city || '',
+          state: booking.customers?.state || '',
+          country: booking.customers?.country || '',
+          spouse_name: booking.customers?.spouse_name || '',
+          dietary_requirements: booking.customers?.dietary_requirements || '',
+          medical_conditions: booking.customers?.medical_conditions || '',
+          accessibility_needs: booking.customers?.accessibility_needs || '',
+          emergency_contact_name: booking.customers?.emergency_contact_name || '',
+          emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+          emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
+          notes: booking.customers?.notes || '',
+        },
         
         // Tour fields
         tour_name: booking.tours?.name || '',
@@ -340,6 +361,19 @@ const handler = async (req: Request): Promise<Response> => {
         tour_notes: booking.tours?.notes || '',
         tour_inclusions: booking.tours?.inclusions || '',
         tour_exclusions: booking.tours?.exclusions || '',
+
+        tour: {
+          name: booking.tours?.name || '',
+          location: booking.tours?.location || '',
+          start_date: formatDate(booking.tours?.start_date),
+          end_date: formatDate(booking.tours?.end_date),
+          days: booking.tours?.days || '',
+          nights: booking.tours?.nights || '',
+          pickup_point: booking.tours?.pickup_point || '',
+          notes: booking.tours?.notes || '',
+          inclusions: booking.tours?.inclusions || '',
+          exclusions: booking.tours?.exclusions || '',
+        },
         
         // Booking fields
         booking_passenger_count: booking.passenger_count || 1,
@@ -357,10 +391,30 @@ const handler = async (req: Request): Promise<Response> => {
         booking_medical_conditions: booking.customers?.medical_conditions || '',
         booking_emergency_contact_name: booking.customers?.emergency_contact_name || '',
         booking_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+
+        booking: {
+          passenger_count: booking.passenger_count || 1,
+          status: booking.status || '',
+          check_in_date: formatDate(booking.check_in_date),
+          check_out_date: formatDate(booking.check_out_date),
+          total_nights: booking.total_nights || '',
+          passenger_2_name: booking.passenger_2_name || '',
+          passenger_3_name: booking.passenger_3_name || '',
+          group_name: booking.group_name || '',
+          extra_requests: booking.extra_requests || '',
+          passport_number: booking.passport_number || '',
+          dietary_restrictions: booking.customers?.dietary_requirements || '',
+          medical_conditions: booking.customers?.medical_conditions || '',
+          emergency_contact_name: booking.customers?.emergency_contact_name || '',
+          emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+        },
         
         // Profile update action fields
         profile_update_link: profileUpdateLink,
         profile_update_button: profileUpdateButton,
+
+        // Alias used by some older templates/flows
+        profile_update_url: profileUpdateLink,
         
         // Hotel bookings array
         hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
