@@ -73,6 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
           id: customer.id,
           first_name: customer.first_name,
           last_name: customer.last_name,
+          preferred_name: customer.preferred_name,
           email: customer.email,
           phone: customer.phone,
           city: customer.city,
