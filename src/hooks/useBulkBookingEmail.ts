@@ -31,8 +31,10 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
             customers!lead_passenger_id (
-              first_name, last_name, email, phone, city, state, country,
-              spouse_name, dietary_requirements, notes
+              first_name, last_name, preferred_name, email, phone, city, state, country,
+              spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
+              emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+              notes
             ),
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
@@ -61,8 +63,10 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
             customers!lead_passenger_id (
-              first_name, last_name, email, phone, city, state, country,
-              spouse_name, dietary_requirements, notes
+              first_name, last_name, preferred_name, email, phone, city, state, country,
+              spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
+              emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+              notes
             ),
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
@@ -96,8 +100,10 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               deposit_required, final_payment_date, instalment_date, instalment_date, instalment_amount
             ),
             customers!lead_passenger_id (
-              first_name, last_name, email, phone, city, state, country,
-              spouse_name, dietary_requirements, notes
+              first_name, last_name, preferred_name, email, phone, city, state, country,
+              spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
+              emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
+              notes
             ),
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
