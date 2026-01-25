@@ -17,6 +17,26 @@ export interface EmailMergeData {
   customer_emergency_contact_phone?: string;
   customer_emergency_contact_relationship?: string;
   customer_notes?: string;
+
+  // Nested objects for dot-notation templates (backwards compatibility)
+  customer?: {
+    first_name?: string;
+    last_name?: string;
+    preferred_name?: string;
+    email?: string;
+    phone?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    spouse_name?: string;
+    dietary_requirements?: string;
+    medical_conditions?: string;
+    accessibility_needs?: string;
+    emergency_contact_name?: string;
+    emergency_contact_phone?: string;
+    emergency_contact_relationship?: string;
+    notes?: string;
+  };
   
   // Tour fields
   tour_name?: string;
@@ -63,6 +83,54 @@ export interface EmailMergeData {
   booking_revenue?: number;
   booking_accommodation_required?: boolean;
   booking_whatsapp_group_comms?: boolean;
+
+  booking?: {
+    passenger_count?: number;
+    status?: string;
+    check_in_date?: string;
+    check_out_date?: string;
+    total_nights?: number;
+    passenger_2_name?: string;
+    passenger_3_name?: string;
+    group_name?: string;
+    booking_agent?: string;
+    extra_requests?: string;
+    invoice_notes?: string;
+    passport_number?: string;
+    passport_country?: string;
+    passport_expiry_date?: string;
+    nationality?: string;
+    id_number?: string;
+    revenue?: number;
+    accommodation_required?: boolean;
+    whatsapp_group_comms?: boolean;
+  };
+
+  tour?: {
+    name?: string;
+    location?: string;
+    tour_type?: string;
+    start_date?: string;
+    end_date?: string;
+    days?: number;
+    nights?: number;
+    pickup_point?: string;
+    notes?: string;
+    inclusions?: string;
+    exclusions?: string;
+    tour_host?: string;
+    capacity?: number;
+    minimum_passengers_required?: number;
+    price_single?: number;
+    price_double?: number;
+    price_twin?: number;
+    deposit_required?: number;
+    final_payment_date?: string;
+    instalment_date?: string;
+    instalment_amount?: number;
+    instalment_details?: string;
+    travel_documents_required?: boolean;
+  };
   
   // Hotel booking fields (for multiple hotels, will be handled as arrays)
   hotel_bookings?: Array<{
@@ -152,11 +220,9 @@ export class EmailTemplateEngine {
             const trimmedKey = innerKey.trim();
             const itemValue = this.getNestedValue(item, trimmedKey);
             console.log(`  Replacing {{${trimmedKey}}} with:`, itemValue);
-            
-            // Show N/A for empty values in loops (hotel/activity bookings)
-            if (itemValue === undefined || itemValue === null || itemValue === '') {
-              return 'N/A';
-            }
+
+            // Keep empty values blank in loops
+            if (itemValue === undefined || itemValue === null || itemValue === '') return '';
             return String(itemValue);
           });
           return itemContent;
@@ -177,21 +243,11 @@ export class EmailTemplateEngine {
     processed = processed.replace(/\{\{([^}#^/]+)\}\}/g, (match, key) => {
       const trimmedKey = key.trim();
       const value = this.getNestedValue(data, trimmedKey);
-      
-      // If value is empty/null/undefined, show "N/A" for passenger and optional fields
+
+      // Empty field handling: keep most empty fields blank; only passenger 2/3 show N/A.
       if (value === undefined || value === null || value === '') {
-        // Show N/A for passenger names and other optional booking fields
-        if (trimmedKey.includes('passenger_') || 
-            trimmedKey.includes('booking_') ||
-            trimmedKey.includes('emergency_') ||
-            trimmedKey.includes('passport_') ||
-            trimmedKey.includes('customer_spouse') ||
-            trimmedKey.includes('customer_dietary') ||
-            trimmedKey.includes('hotel_') ||
-            trimmedKey.includes('activity_')) {
-          return 'N/A';
-        }
-        return '';
+        const isPassenger2Or3 = /passenger_(2|3)/.test(trimmedKey);
+        return isPassenger2Or3 ? 'N/A' : '';
       }
       
       return String(value);
@@ -243,6 +299,26 @@ export class EmailTemplateEngine {
       customer_emergency_contact_phone: customer.emergency_contact_phone,
       customer_emergency_contact_relationship: customer.emergency_contact_relationship,
       customer_notes: customer.notes,
+
+      // Nested objects for dot notation templates
+      customer: {
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        preferred_name: customer.preferred_name,
+        email: customer.email,
+        phone: customer.phone,
+        city: customer.city,
+        state: customer.state,
+        country: customer.country,
+        spouse_name: customer.spouse_name,
+        dietary_requirements: customer.dietary_requirements,
+        medical_conditions: customer.medical_conditions,
+        accessibility_needs: customer.accessibility_needs,
+        emergency_contact_name: customer.emergency_contact_name,
+        emergency_contact_phone: customer.emergency_contact_phone,
+        emergency_contact_relationship: customer.emergency_contact_relationship,
+        notes: customer.notes,
+      },
       
       // Tour fields
       tour_name: tour.name,
@@ -268,6 +344,32 @@ export class EmailTemplateEngine {
       tour_instalment_amount: tour.instalment_amount,
       tour_instalment_details: tour.instalment_details,
       tour_travel_documents_required: tour.travel_documents_required,
+
+      tour: {
+        name: tour.name,
+        location: tour.location,
+        tour_type: tour.tour_type,
+        start_date: tour.start_date,
+        end_date: tour.end_date,
+        days: tour.days,
+        nights: tour.nights,
+        pickup_point: tour.pickup_point,
+        notes: tour.notes,
+        inclusions: tour.inclusions,
+        exclusions: tour.exclusions,
+        tour_host: tour.tour_host,
+        capacity: tour.capacity,
+        minimum_passengers_required: tour.minimum_passengers_required,
+        price_single: tour.price_single,
+        price_double: tour.price_double,
+        price_twin: tour.price_twin,
+        deposit_required: tour.deposit_required,
+        final_payment_date: tour.final_payment_date,
+        instalment_date: tour.instalment_date,
+        instalment_amount: tour.instalment_amount,
+        instalment_details: tour.instalment_details,
+        travel_documents_required: tour.travel_documents_required,
+      },
       
       // Booking fields
       booking_passenger_count: booking.passenger_count,
@@ -289,6 +391,28 @@ export class EmailTemplateEngine {
       booking_revenue: booking.revenue,
       booking_accommodation_required: booking.accommodation_required,
       booking_whatsapp_group_comms: booking.whatsapp_group_comms,
+
+      booking: {
+        passenger_count: booking.passenger_count,
+        status: booking.status,
+        check_in_date: booking.check_in_date,
+        check_out_date: booking.check_out_date,
+        total_nights: booking.total_nights,
+        passenger_2_name: booking.passenger_2_name,
+        passenger_3_name: booking.passenger_3_name,
+        group_name: booking.group_name,
+        booking_agent: booking.booking_agent,
+        extra_requests: booking.extra_requests,
+        invoice_notes: booking.invoice_notes,
+        passport_number: booking.passport_number,
+        passport_country: booking.passport_country,
+        passport_expiry_date: booking.passport_expiry_date,
+        nationality: booking.nationality,
+        id_number: booking.id_number,
+        revenue: booking.revenue,
+        accommodation_required: booking.accommodation_required,
+        whatsapp_group_comms: booking.whatsapp_group_comms,
+      },
       
       // Hotel bookings
       hotel_bookings: hotelBookings.map((hb: any) => ({
