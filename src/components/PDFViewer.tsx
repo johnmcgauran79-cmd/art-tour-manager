@@ -24,14 +24,14 @@ export const PDFViewer = ({ isOpen, onClose, fileName, filePath }: PDFViewerProp
     setError(null);
     
     try {
-      const { data, error: downloadError } = await supabase.storage
+      // Use signed URL instead of blob URL for better browser compatibility
+      const { data, error: signedUrlError } = await supabase.storage
         .from('attachments')
-        .download(filePath);
+        .createSignedUrl(filePath, 3600); // Valid for 1 hour
 
-      if (downloadError) throw downloadError;
+      if (signedUrlError) throw signedUrlError;
 
-      const url = URL.createObjectURL(data);
-      setPdfUrl(url);
+      setPdfUrl(data.signedUrl);
     } catch (err) {
       console.error('Error loading PDF:', err);
       setError('Failed to load PDF file');
@@ -45,22 +45,10 @@ export const PDFViewer = ({ isOpen, onClose, fileName, filePath }: PDFViewerProp
     if (isOpen) {
       loadPDF();
     } else {
-      // Clean up URL when dialog closes
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-        setPdfUrl(null);
-      }
+      // Reset URL when dialog closes
+      setPdfUrl(null);
     }
   }, [isOpen]);
-
-  // Clean up URL on unmount
-  useEffect(() => {
-    return () => {
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-      }
-    };
-  }, [pdfUrl]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
