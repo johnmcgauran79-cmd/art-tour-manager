@@ -2308,7 +2308,7 @@ export type Database = {
         | "tentative_booking"
         | "finalised"
         | "cancelled"
-      app_role: "admin" | "manager" | "booking_agent" | "agent"
+      app_role: "admin" | "manager" | "booking_agent" | "agent" | "host"
       bedding_type: "single" | "double" | "twin"
       booking_status:
         | "pending"
@@ -2504,7 +2504,7 @@ export const Constants = {
         "finalised",
         "cancelled",
       ],
-      app_role: ["admin", "manager", "booking_agent", "agent"],
+      app_role: ["admin", "manager", "booking_agent", "agent", "host"],
       bedding_type: ["single", "double", "twin"],
       booking_status: [
         "pending",
