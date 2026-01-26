@@ -72,8 +72,10 @@ export default function TourDetail() {
   const secureDeleteTour = useSecureDeleteTour();
   const { alerts } = useTourAlerts(id || '', false);
   
-  // Agent users have view-only access
+  // Agent and host users have view-only access
   const isAgent = userRole === 'agent';
+  const isHost = userRole === 'host';
+  const isViewOnly = isAgent || isHost;
 
   // Transform tour data immediately - don't wait for useEffect
   const transformedTour = tour ? {
@@ -187,7 +189,7 @@ export default function TourDetail() {
               <span className="hidden sm:inline">Back</span>
             </Button>
             
-            {!isAgent && userRole !== 'operations_team' && (
+            {!isViewOnly && userRole !== 'operations_team' && (
               <>
                 <Button
                   variant="outline"

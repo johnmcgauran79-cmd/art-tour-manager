@@ -33,8 +33,10 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const [view, setView] = useState<'grid' | 'table'>('table');
   const [showArchived, setShowArchived] = useState(false);
   
-  // Agent users have view-only access
+  // Agent and host users have view-only access
   const isAgent = userRole === 'agent';
+  const isHost = userRole === 'host';
+  const isViewOnly = isAgent || isHost;
 
   // Filter tours based on archived status and showOnlyActive prop
   const filteredByStatus = tours?.filter(tour => {
@@ -112,7 +114,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                   <span className="hidden sm:inline">View All</span>
                 </Button>
               )}
-              {!isAgent && (
+              {!isViewOnly && (
                 <Button 
                   onClick={() => setShowAddTour(true)}
                   size="sm"

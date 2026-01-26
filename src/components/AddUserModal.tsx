@@ -21,6 +21,7 @@ const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
   { value: "manager", label: "Manager" },
   { value: "booking_agent", label: "Booking Agent" },
   { value: "agent", label: "Agent (View-Only)" },
+  { value: "host", label: "Host (Tour View-Only)" },
 ];
 
 export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalProps) {

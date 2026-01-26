@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
@@ -10,7 +11,10 @@ import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
 import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 import { PaymentStatusModal } from "@/components/PaymentStatusModal";
+import { TourHostAssignmentModal } from "@/components/TourHostAssignmentModal";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
+import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { useTourHostAssignments, useHostUsers } from "@/hooks/useTourHostAssignments";
 
 interface TourOverviewTabProps {
   tour: {
@@ -48,6 +52,10 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: hotels } = useHotels(tour.id);
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
   const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);
+  const [hostAssignmentModalOpen, setHostAssignmentModalOpen] = useState(false);
+  const { isAdminOrManager } = useIsAdminOrManager();
+  const { data: hostAssignments = [] } = useTourHostAssignments(tour.id);
+  const { data: hostUsers = [] } = useHostUsers();
   const { unacknowledgedCount } = useTourAlerts(tour.id);
 
   // Calculate booking statistics for this tour
@@ -119,10 +127,50 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardHeader>
           <CardContent>
             <div className="text-sm font-medium text-muted-foreground">Tour Host</div>
-            <p className="text-base font-semibold mt-1">{tour.tourHost}</p>
+            <p className="text-base font-semibold mt-1">{tour.tourHost || 'Not specified'}</p>
+            
+            {/* Assigned Host Users */}
+            {hostAssignments.length > 0 && (
+              <div className="mt-3 pt-3 border-t">
+                <div className="text-sm font-medium text-muted-foreground mb-1">Assigned Host Users</div>
+                <div className="flex flex-wrap gap-1">
+                  {hostAssignments.map(assignment => {
+                    const hostProfile = hostUsers.find(h => h.id === assignment.host_user_id);
+                    const displayName = hostProfile 
+                      ? `${hostProfile.first_name || ''} ${hostProfile.last_name || ''}`.trim() || hostProfile.email
+                      : 'Unknown';
+                    return (
+                      <Badge key={assignment.id} variant="secondary" className="text-xs">
+                        {displayName}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            
+            {isAdminOrManager && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3 w-full"
+                onClick={() => setHostAssignmentModalOpen(true)}
+              >
+                <UserPlus className="h-3 w-3 mr-1" />
+                Manage Host Users
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Host Assignment Modal */}
+      <TourHostAssignmentModal
+        open={hostAssignmentModalOpen}
+        onOpenChange={setHostAssignmentModalOpen}
+        tourId={tour.id}
+        tourName={tour.name}
+      />
 
       {/* Capacity and Waitlist Information */}
       <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-6 gap-4">
