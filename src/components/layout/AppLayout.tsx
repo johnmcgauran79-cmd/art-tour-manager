@@ -19,8 +19,11 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   const isAdmin = userRole === 'admin';
   const isMobile = useIsMobile();
   
-  // Agent users can only see bookings tab
+  // Agent users can only see bookings and tours tabs
   const isAgent = userRole === 'agent';
+  
+  // Host users can only see tours tab
+  const isHost = userRole === 'host';
 
   // Determine active tab from current route and query params
   const getActiveTab = () => {
@@ -77,24 +80,26 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
           <Tabs value={getActiveTab()} className="w-full">
             <TabsList className={`w-full h-auto p-1 ${
               isMobile 
-                ? `grid ${isAgent ? 'grid-cols-2' : isAdminOrManager ? 'grid-cols-4' : 'grid-cols-3'} gap-1` 
-                : isAgent 
-                  ? 'grid grid-cols-2' 
-                  : `grid ${isAdminOrManager ? 'grid-cols-7' : 'grid-cols-6'}`
+                ? `grid ${isHost ? 'grid-cols-1' : isAgent ? 'grid-cols-2' : isAdminOrManager ? 'grid-cols-4' : 'grid-cols-3'} gap-1` 
+                : isHost
+                  ? 'grid grid-cols-1 max-w-[120px]'
+                  : isAgent 
+                    ? 'grid grid-cols-2' 
+                    : `grid ${isAdminOrManager ? 'grid-cols-7' : 'grid-cols-6'}`
             }`}>
-              {!isAgent && (
+              {!isAgent && !isHost && (
                 <TabsTrigger value="dashboard" onClick={() => handleTabChange('dashboard')} className="text-xs sm:text-sm px-2 sm:px-3">
                   <span className="hidden sm:inline">Dashboard</span>
                   <span className="sm:hidden">Home</span>
                 </TabsTrigger>
               )}
-              {!isAgent && (
+              {!isAgent && !isHost && (
                 <TabsTrigger value="operations" onClick={() => handleTabChange('operations')} className="text-xs sm:text-sm px-2 sm:px-3">
                   <span className="hidden sm:inline">Operations</span>
                   <span className="sm:hidden">Ops</span>
                 </TabsTrigger>
               )}
-              {!isAgent && (
+              {!isAgent && !isHost && (
                 <TabsTrigger value="tasks" onClick={() => handleTabChange('tasks')} className="text-xs sm:text-sm px-2 sm:px-3">
                   Tasks
                 </TabsTrigger>
@@ -102,11 +107,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               <TabsTrigger value="tours" onClick={() => handleTabChange('tours')} className="text-xs sm:text-sm px-2 sm:px-3">
                 Tours
               </TabsTrigger>
-              <TabsTrigger value="bookings" onClick={() => handleTabChange('bookings')} className="text-xs sm:text-sm px-2 sm:px-3">
-                <span className="hidden sm:inline">Bookings</span>
-                <span className="sm:hidden">Book</span>
-              </TabsTrigger>
-              {!isAgent && (
+              {!isHost && (
+                <TabsTrigger value="bookings" onClick={() => handleTabChange('bookings')} className="text-xs sm:text-sm px-2 sm:px-3">
+                  <span className="hidden sm:inline">Bookings</span>
+                  <span className="sm:hidden">Book</span>
+                </TabsTrigger>
+              )}
+              {!isAgent && !isHost && (
                 <TabsTrigger value="contacts" onClick={() => handleTabChange('contacts')} className="text-xs sm:text-sm px-2 sm:px-3">
                   <span className="hidden sm:inline">Contacts</span>
                   <span className="sm:hidden">Contacts</span>

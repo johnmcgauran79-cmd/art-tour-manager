@@ -7,11 +7,12 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
-import { Trash2, UserX, UserPlus, KeyRound, Edit, X, Settings } from "lucide-react";
+import { Trash2, UserX, UserPlus, KeyRound, Edit, X, Settings, MapPin } from "lucide-react";
 import { AddUserModal } from "./AddUserModal";
 import { AdminPasswordResetModal } from "./AdminPasswordResetModal";
 import { UserProfileModal } from "./UserProfileModal";
 import { UserDepartmentSelector } from "./UserDepartmentSelector";
+import { TourHostAssignmentModal } from "./TourHostAssignmentModal";
 import { Department } from "@/hooks/useUserDepartments";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
@@ -31,6 +32,7 @@ const ROLE_OPTIONS: { value: RoleType; label: string }[] = [
   { value: "manager", label: "Manager" },
   { value: "booking_agent", label: "Booking Agent" },
   { value: "agent", label: "Agent (View-Only)" },
+  { value: "host", label: "Host (Tour View-Only)" },
 ];
 
 const DEPARTMENT_LABELS: Record<Department, string> = {
@@ -56,6 +58,7 @@ export function UserManagement({ onClose }: UserManagementProps) {
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showDepartmentSelector, setShowDepartmentSelector] = useState(false);
+  const [showHostTourAssignment, setShowHostTourAssignment] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string; email: string } | null>(null);
 
   const fetchUsersAndRoles = async () => {
@@ -279,6 +282,11 @@ export function UserManagement({ onClose }: UserManagementProps) {
     setShowDepartmentSelector(true);
   };
 
+  const handleManageHostTours = (userId: string, userEmail: string) => {
+    setSelectedUser({ id: userId, email: userEmail });
+    setShowHostTourAssignment(true);
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
     return new Date(dateString).toLocaleDateString('en-AU');
@@ -453,6 +461,18 @@ export function UserManagement({ onClose }: UserManagementProps) {
                           Reset Password
                         </Button>
                         
+                        {user.role === 'host' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleManageHostTours(user.id, user.email)}
+                            className="h-8 text-xs"
+                          >
+                            <MapPin className="h-3 w-3 mr-1" />
+                            Assign Tours
+                          </Button>
+                        )}
+                        
                         {user.role && (
                           <Button
                             size="sm"
@@ -566,6 +586,19 @@ export function UserManagement({ onClose }: UserManagementProps) {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* Tour Host Assignment Modal */}
+        {selectedUser && (
+          <TourHostAssignmentModal
+            open={showHostTourAssignment}
+            onOpenChange={(open) => {
+              setShowHostTourAssignment(open);
+              if (!open) setSelectedUser(null);
+            }}
+            hostUserId={selectedUser.id}
+            hostEmail={selectedUser.email}
+          />
+        )}
       </div>
     </div>
   );

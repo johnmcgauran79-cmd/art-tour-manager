@@ -1837,6 +1837,41 @@ export type Database = {
         }
         Relationships: []
       }
+      tour_host_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          host_user_id: string
+          id: string
+          notes: string | null
+          tour_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          host_user_id: string
+          id?: string
+          notes?: string | null
+          tour_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          host_user_id?: string
+          id?: string
+          notes?: string | null
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_host_assignments_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_itineraries: {
         Row: {
           created_at: string
@@ -2262,6 +2297,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_host_for_tour: {
+        Args: { _tour_id: string; _user_id: string }
         Returns: boolean
       }
       log_sensitive_operation: {
