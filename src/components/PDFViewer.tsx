@@ -82,29 +82,11 @@ export const PDFViewer = ({ isOpen, onClose, fileName, filePath }: PDFViewerProp
           )}
           
           {pdfUrl && !isLoading && !error && (
-            <object
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full h-full"
+            <iframe
+              src={`${pdfUrl}#view=FitH`}
+              className="w-full h-full border-0"
               title={fileName}
-            >
-              <div className="flex flex-col items-center justify-center h-full gap-4 p-4 text-center">
-                <AlertCircle className="h-8 w-8 text-muted-foreground" />
-                <p className="text-muted-foreground">
-                  Your browser cannot display this PDF inline.
-                </p>
-                <Button
-                  onClick={() => {
-                    const a = document.createElement('a');
-                    a.href = pdfUrl;
-                    a.download = fileName;
-                    a.click();
-                  }}
-                >
-                  Download PDF
-                </Button>
-              </div>
-            </object>
+            />
           )}
         </div>
       </DialogContent>
