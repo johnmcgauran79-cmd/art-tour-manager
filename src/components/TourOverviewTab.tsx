@@ -12,6 +12,7 @@ import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
 import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 import { PaymentStatusModal } from "@/components/PaymentStatusModal";
 import { TourHostAssignmentModal } from "@/components/TourHostAssignmentModal";
+import { TourHostsNotesSection } from "@/components/TourHostsNotesSection";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { useTourHostAssignments, useHostUsers } from "@/hooks/useTourHostAssignments";
@@ -283,6 +284,9 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Tour Hosts Notes - Editable by admins, managers, and hosts */}
+      <TourHostsNotesSection tourId={tour.id} />
 
       {/* Additional Notes */}
       {tour.notes && (

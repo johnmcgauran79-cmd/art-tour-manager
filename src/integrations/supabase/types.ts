@@ -2002,6 +2002,7 @@ export type Database = {
           start_date: string
           status: Database["public"]["Enums"]["tour_status"] | null
           tour_host: string
+          tour_hosts_notes: string | null
           tour_type: string | null
           travel_documents_required: boolean
           updated_at: string | null
@@ -2040,6 +2041,7 @@ export type Database = {
           start_date: string
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
+          tour_hosts_notes?: string | null
           tour_type?: string | null
           travel_documents_required?: boolean
           updated_at?: string | null
@@ -2078,6 +2080,7 @@ export type Database = {
           start_date?: string
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
+          tour_hosts_notes?: string | null
           tour_type?: string | null
           travel_documents_required?: boolean
           updated_at?: string | null
