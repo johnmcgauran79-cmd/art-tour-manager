@@ -174,7 +174,7 @@ export const TourOperationsNotesSection = ({ tourId, tourName, onNavigate }: Tou
               className="min-h-[100px]"
             />
           ) : (
-            <div className="min-h-[100px] p-3 border border-gray-200 rounded-md bg-gray-50 whitespace-pre-wrap">
+            <div className="min-h-[100px] p-3 border border-gray-200 rounded-md bg-gray-50 whitespace-pre-wrap break-words overflow-hidden">
               {operationsData.ops_notes || (
                 <span className="text-gray-500 italic">No general operations notes yet...</span>
               )}
@@ -204,7 +204,7 @@ export const TourOperationsNotesSection = ({ tourId, tourName, onNavigate }: Tou
                   className="min-h-[80px]"
                 />
               ) : (
-                <div className="min-h-[80px] p-3 border border-gray-200 rounded-md bg-gray-50 text-sm whitespace-pre-wrap">
+                <div className="min-h-[80px] p-3 border border-gray-200 rounded-md bg-gray-50 text-sm whitespace-pre-wrap break-words overflow-hidden">
                   {operationsData[key] || (
                     <span className="text-gray-500 italic">No {label.toLowerCase()} notes...</span>
                   )}
