@@ -31,7 +31,7 @@ const BOOKING_STATUSES = [
   'racing_breaks_invoice'
 ];
 
-type FilterType = 'all' | 'deposits_owing' | 'payment_due';
+type FilterType = 'all' | 'deposits_owing' | 'instalments_owing' | 'payment_due';
 
 // Define problematic status transitions
 const PROBLEMATIC_TRANSITIONS: Record<string, string[]> = {
@@ -406,6 +406,13 @@ export default function BulkBookingStatus() {
                 onClick={() => handleFilterChange('deposits_owing')}
               >
                 Deposits Owing ({filterCounts?.depositsOwing || 0})
+              </Button>
+              <Button
+                variant={activeFilter === 'instalments_owing' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFilterChange('instalments_owing')}
+              >
+                Instalments Owing ({filterCounts?.instalmentsOwing || 0})
               </Button>
               <Button
                 variant={activeFilter === 'payment_due' ? 'default' : 'outline'}
