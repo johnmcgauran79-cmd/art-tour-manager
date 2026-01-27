@@ -99,7 +99,7 @@ export function SendProfileUpdateButton({
               requirements, medical conditions, and accessibility needs.
             </p>
             <p className="text-sm text-muted-foreground">
-              The link will expire in 24 hours and can be used multiple times.
+              The link will expire in 72 hours and can be used multiple times.
             </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
