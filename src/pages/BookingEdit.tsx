@@ -62,7 +62,7 @@ export default function BookingEdit() {
     passenger_3_name: '',
     group_name: '',
     booking_agent: '',
-    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice',
+    status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'complimentary' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice',
     extra_requests: '',
     invoice_notes: '',
     accommodation_required: true,
@@ -600,6 +600,7 @@ export default function BookingEdit() {
                       <SelectItem value="deposited">Deposited</SelectItem>
                       <SelectItem value="instalment_paid">Instalment Paid</SelectItem>
                       <SelectItem value="fully_paid">Fully Paid</SelectItem>
+                      <SelectItem value="complimentary">Complimentary</SelectItem>
                       <SelectItem value="waitlisted">Waitlisted</SelectItem>
                       <SelectItem value="host">Host</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>

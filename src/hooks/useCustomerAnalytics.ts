@@ -95,7 +95,7 @@ export const useCustomerAnalytics = () => {
           customerData.status_breakdown.cancelled++;
         } else if (booking.status === 'pending' || booking.status === 'invoiced' || booking.status === 'deposited' || booking.status === 'instalment_paid') {
           customerData.status_breakdown.pending++;
-        } else if (booking.status === 'fully_paid' || booking.status === 'waitlisted') {
+        } else if (booking.status === 'fully_paid' || booking.status === 'complimentary' || booking.status === 'waitlisted') {
           customerData.status_breakdown.completed++;
         }
       });

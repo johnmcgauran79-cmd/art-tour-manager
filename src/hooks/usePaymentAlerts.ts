@@ -40,7 +40,8 @@ export const usePaymentAlerts = (
       (b) =>
         b.status !== "cancelled" &&
         b.status !== "waitlisted" &&
-        b.status !== "host"
+        b.status !== "host" &&
+        b.status !== "complimentary"
     );
 
     // Level 1: Deposits owing - "invoiced" status 7 days after booking created
@@ -53,7 +54,7 @@ export const usePaymentAlerts = (
     const level1Count = level1Bookings.length;
 
     // Level 2: Instalments owing - tour has instalment_required, past instalment_date,
-    // and status is not instalment_paid or fully_paid
+    // and status is not instalment_paid, fully_paid, or complimentary
     let level2Count = 0;
     if (tour.instalment_required && tour.instalment_date) {
       const instalmentDate = new Date(tour.instalment_date);
@@ -65,7 +66,7 @@ export const usePaymentAlerts = (
       }
     }
 
-    // Level 3: Final payment owing - past final_payment_date and not fully_paid
+    // Level 3: Final payment owing - past final_payment_date and not fully_paid or complimentary
     let level3Count = 0;
     if (tour.final_payment_date) {
       const finalPaymentDate = new Date(tour.final_payment_date);

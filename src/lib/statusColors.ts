@@ -11,6 +11,7 @@ export const getBookingStatusColor = (status: string): string => {
     'deposited': 'bg-status-deposited text-status-deposited-foreground',
     'instalment_paid': 'bg-status-instalment-paid text-status-instalment-paid-foreground',
     'fully_paid': 'bg-status-fully-paid text-status-fully-paid-foreground',
+    'complimentary': 'bg-status-fully-paid text-status-fully-paid-foreground',
     'cancelled': 'bg-status-cancelled text-status-cancelled-foreground',
     'waitlisted': 'bg-status-waitlisted text-status-waitlisted-foreground',
     'host': 'bg-status-pending text-status-pending-foreground',

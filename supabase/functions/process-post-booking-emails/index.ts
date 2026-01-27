@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Allowed statuses for post-booking emails
-const ALLOWED_STATUSES = ['invoiced', 'host', 'fully_paid', 'instalment_paid'];
+const ALLOWED_STATUSES = ['invoiced', 'host', 'fully_paid', 'complimentary', 'instalment_paid'];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
