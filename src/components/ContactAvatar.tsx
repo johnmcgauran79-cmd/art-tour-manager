@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { ImageCropper } from "@/components/ImageCropper";
+import { useAvatarUrl } from "@/hooks/useSignedUrl";
 
 interface ContactAvatarProps {
   contactId: string;
@@ -31,16 +32,19 @@ export const ContactAvatar = ({
   const [showCropper, setShowCropper] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [localAvatarUrl, setLocalAvatarUrl] = useState(avatarUrl);
+  const [localAvatarPath, setLocalAvatarPath] = useState<string | null>(null);
   const [pendingFileSelect, setPendingFileSelect] = useState<'camera' | 'library' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Use signed URL for avatar display
+  const { signedUrl: avatarSignedUrl, isLoading: isLoadingAvatar } = useAvatarUrl(localAvatarPath || avatarUrl);
+
   // Keep local state in sync with prop
   useEffect(() => {
-    setLocalAvatarUrl(avatarUrl);
+    setLocalAvatarPath(null); // Reset local path when prop changes
   }, [avatarUrl]);
 
   const initials = `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
@@ -123,23 +127,17 @@ export const ContactAvatar = ({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("contact-avatars")
-        .getPublicUrl(filePath);
-
-      const newAvatarUrl = urlData.publicUrl;
-
-      // Update customer record
+      // Store just the file path (not full URL) - this will be used with signed URLs
+      // Update customer record with the path
       const { error: updateError } = await supabase
         .from("customers")
-        .update({ avatar_url: newAvatarUrl })
+        .update({ avatar_url: filePath })
         .eq("id", contactId);
 
       if (updateError) throw updateError;
 
       // Update local state immediately for instant feedback
-      setLocalAvatarUrl(newAvatarUrl);
+      setLocalAvatarPath(filePath);
 
       // Invalidate all relevant queries
       await Promise.all([
@@ -184,7 +182,7 @@ export const ContactAvatar = ({
       if (updateError) throw updateError;
 
       // Update local state immediately
-      setLocalAvatarUrl(null);
+      setLocalAvatarPath(null);
 
       // Invalidate all relevant queries
       await Promise.all([
@@ -209,8 +207,11 @@ export const ContactAvatar = ({
     }
   };
 
+  // Determine if we have an avatar (either from signed URL or checking if prop/local path exists)
+  const hasAvatar = Boolean(avatarSignedUrl || localAvatarPath || avatarUrl);
+
   const handleAvatarClick = () => {
-    if (localAvatarUrl) {
+    if (hasAvatar) {
       setShowFullImage(true);
     } else if (editable) {
       setShowUploadOptions(true);
@@ -249,18 +250,18 @@ export const ContactAvatar = ({
             className={cn(
               sizeClasses[size],
               "cursor-pointer transition-all active:scale-95",
-              localAvatarUrl ? "hover:opacity-80" : "hover:ring-2 hover:ring-primary/50",
-              isUploading && "opacity-50"
+              hasAvatar ? "hover:opacity-80" : "hover:ring-2 hover:ring-primary/50",
+              (isUploading || isLoadingAvatar) && "opacity-50"
             )}
             onClick={handleAvatarClick}
           >
-            {isUploading ? (
+            {isUploading || isLoadingAvatar ? (
               <AvatarFallback className="bg-muted">
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </AvatarFallback>
             ) : (
               <>
-                <AvatarImage src={localAvatarUrl || undefined} alt={`${firstName} ${lastName}`} />
+                <AvatarImage src={avatarSignedUrl || undefined} alt={`${firstName} ${lastName}`} />
                 <AvatarFallback className="text-xl md:text-2xl font-semibold bg-muted">
                   {initials}
                 </AvatarFallback>
@@ -292,7 +293,7 @@ export const ContactAvatar = ({
             onClick={() => setShowUploadOptions(true)}
           >
             <Camera className="h-3.5 w-3.5 mr-1.5" />
-            {localAvatarUrl ? "Change Photo" : "Add Photo"}
+            {hasAvatar ? "Change Photo" : "Add Photo"}
           </Button>
         )}
 
@@ -337,7 +338,7 @@ export const ContactAvatar = ({
               <ImagePlus className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
               Choose from Library
             </Button>
-            {localAvatarUrl && (
+            {hasAvatar && (
               <Button
                 variant="ghost"
                 className="w-full justify-start h-12 sm:h-14 text-sm sm:text-base px-4 rounded-lg text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -393,9 +394,9 @@ export const ContactAvatar = ({
             
             {/* Image container */}
             <div className="flex items-center justify-center bg-muted/20 p-4 overflow-auto flex-1 min-h-0">
-              {localAvatarUrl && (
+              {avatarSignedUrl && (
                 <img
-                  src={localAvatarUrl}
+                  src={avatarSignedUrl}
                   alt={`${firstName} ${lastName}`}
                   className="max-w-full max-h-[50vh] w-auto h-auto object-contain rounded-lg"
                 />

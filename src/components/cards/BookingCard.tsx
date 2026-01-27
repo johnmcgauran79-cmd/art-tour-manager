@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Calendar, Users, MapPin, Eye, Camera, Upload, Loader2 } from "lucide-react";
+import { Calendar, Users, MapPin, Eye, Camera, Loader2 } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
@@ -11,6 +11,7 @@ import { ContactAvatar } from "@/components/ContactAvatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useAvatarUrl } from "@/hooks/useSignedUrl";
 
 interface BookingCardProps {
   booking: any;
@@ -32,11 +33,14 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
     booking.passenger_3_name,
   ].filter(Boolean);
 
-  const avatarUrl = booking.customers?.avatar_url;
+  const storedAvatarUrl = booking.customers?.avatar_url;
   const contactId = booking.customers?.id;
   const initials = booking.customers 
     ? `${booking.customers.first_name?.[0] || ''}${booking.customers.last_name?.[0] || ''}`
     : '?';
+
+  // Use signed URL for avatar display
+  const { signedUrl: avatarUrl, isLoading: isLoadingAvatar } = useAvatarUrl(storedAvatarUrl);
 
   const handleAvatarClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -62,26 +66,20 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
     setIsUploading(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${contactId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `${contactId}-${Date.now()}.jpg`;
+      const filePath = `${fileName}`;
 
-      // Upload to Supabase Storage
+      // Upload to Supabase Storage (contact-avatars bucket)
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
+        .from('contact-avatars')
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-
-      // Update the customer record
+      // Store just the path (not full URL) - signed URLs will be generated on demand
       const { error: updateError } = await supabase
         .from('customers')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: filePath })
         .eq('id', contactId);
 
       if (updateError) throw updateError;
@@ -116,7 +114,7 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
                 >
                   <ContactAvatar
                     contactId={booking.customers.id}
-                    avatarUrl={avatarUrl || null}
+                    avatarUrl={storedAvatarUrl || null}
                     firstName={booking.customers.first_name}
                     lastName={booking.customers.last_name}
                     editable={false}
