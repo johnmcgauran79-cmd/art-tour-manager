@@ -2362,6 +2362,7 @@ export type Database = {
         | "waitlisted"
         | "host"
         | "racing_breaks_invoice"
+        | "complimentary"
       department:
         | "operations"
         | "finance"
@@ -2558,6 +2559,7 @@ export const Constants = {
         "waitlisted",
         "host",
         "racing_breaks_invoice",
+        "complimentary",
       ],
       department: [
         "operations",

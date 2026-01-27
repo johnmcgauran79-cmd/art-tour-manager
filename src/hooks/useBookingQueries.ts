@@ -13,7 +13,7 @@ export interface Booking {
   passenger_3_name: string | null;
   group_name: string | null;
   booking_agent: string | null;
-  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice';
+  status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'complimentary' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice';
   extra_requests: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
@@ -165,6 +165,7 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
           .lt('tours.instalment_date', today.toISOString().split('T')[0])
           .neq('status', 'instalment_paid')
           .neq('status', 'fully_paid')
+          .neq('status', 'complimentary')
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
@@ -186,6 +187,7 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
           `, { count: 'exact' })
           .lt('tours.final_payment_date', today.toISOString().split('T')[0])
           .neq('status', 'fully_paid')
+          .neq('status', 'complimentary')
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
@@ -219,7 +221,7 @@ export const useFilterCounts = () => {
         .lt('created_at', cutoffDateDeposits.toISOString());
 
       // Instalments owing: tour has instalment_required, past instalment_date,
-      // status is not instalment_paid or fully_paid
+      // status is not instalment_paid, fully_paid, or complimentary
       const { count: instalmentsOwingCount } = await supabase
         .from('bookings')
         .select('*, tours!inner(instalment_required, instalment_date)', { count: 'exact', head: true })
@@ -227,16 +229,18 @@ export const useFilterCounts = () => {
         .lt('tours.instalment_date', today.toISOString().split('T')[0])
         .neq('status', 'instalment_paid')
         .neq('status', 'fully_paid')
+        .neq('status', 'complimentary')
         .neq('status', 'host')
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');
 
-      // Final payment owing: past final_payment_date and not fully_paid
+      // Final payment owing: past final_payment_date and not fully_paid or complimentary
       const { count: paymentDueCount } = await supabase
         .from('bookings')
         .select('*, tours!inner(final_payment_date)', { count: 'exact', head: true })
         .lt('tours.final_payment_date', today.toISOString().split('T')[0])
         .neq('status', 'fully_paid')
+        .neq('status', 'complimentary')
         .neq('status', 'host')
         .neq('status', 'cancelled')
         .neq('status', 'waitlisted');

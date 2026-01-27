@@ -19,13 +19,14 @@ const BOOKING_STATUSES = [
   { value: 'invoiced', label: 'Invoiced' },
   { value: 'host', label: 'Host' },
   { value: 'fully_paid', label: 'Fully Paid' },
+  { value: 'complimentary', label: 'Complimentary' },
   { value: 'instalment_paid', label: 'Instalment Paid' },
   { value: 'pending', label: 'Pending' },
   { value: 'waitlisted', label: 'Waitlisted' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const DEFAULT_POST_BOOKING_STATUSES = ['invoiced', 'host', 'fully_paid', 'instalment_paid'];
+const DEFAULT_POST_BOOKING_STATUSES = ['invoiced', 'host', 'fully_paid', 'complimentary', 'instalment_paid'];
 
 export const AutomatedEmailRulesManagement = () => {
   const { user } = useAuth();

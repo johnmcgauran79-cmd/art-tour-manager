@@ -114,6 +114,7 @@ export default function BookingDetail() {
       deposited: 'bg-purple-100 text-purple-800',
       instalment_paid: 'bg-indigo-100 text-indigo-800',
       fully_paid: 'bg-green-100 text-green-800',
+      complimentary: 'bg-green-100 text-green-800',
       cancelled: 'bg-red-100 text-red-800',
       waitlisted: 'bg-orange-100 text-orange-800',
       host: 'bg-pink-100 text-pink-800',

@@ -52,6 +52,7 @@ export const bookingStatusConfig = {
   deposited: { variant: 'success' as const, icon: null },
   instalment_paid: { variant: 'success' as const, icon: null },
   fully_paid: { variant: 'success' as const, icon: null },
+  complimentary: { variant: 'success' as const, icon: null },
   cancelled: { variant: 'destructive' as const, icon: null },
   waitlisted: { variant: 'secondary' as const, icon: null },
   host: { variant: 'default' as const, icon: null },

@@ -24,6 +24,7 @@ const BOOKING_STATUSES = [
   'deposited',
   'instalment_paid',
   'fully_paid',
+  'complimentary',
   'cancelled',
   'waitlisted',
   'host',
@@ -35,9 +36,10 @@ type FilterType = 'all' | 'deposits_owing' | 'payment_due';
 // Define problematic status transitions
 const PROBLEMATIC_TRANSITIONS: Record<string, string[]> = {
   'fully_paid': ['pending', 'invoiced', 'deposited', 'instalment_paid'],
+  'complimentary': ['pending', 'invoiced', 'deposited', 'instalment_paid'],
   'deposited': ['pending', 'invoiced'],
   'instalment_paid': ['pending', 'invoiced', 'deposited'],
-  'cancelled': ['fully_paid', 'deposited', 'instalment_paid'],
+  'cancelled': ['fully_paid', 'complimentary', 'deposited', 'instalment_paid'],
 };
 
 export default function BulkBookingStatus() {
