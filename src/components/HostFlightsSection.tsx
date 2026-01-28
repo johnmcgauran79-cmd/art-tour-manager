@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plane, Edit, Save, X } from "lucide-react";
+import { Plane, Edit, Save, X, ExternalLink } from "lucide-react";
 import { useTours, useUpdateTour } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -50,6 +50,14 @@ const getStatusBadgeVariant = (status: string) => {
 
 const getStatusLabel = (status: string) => {
   return FLIGHT_STATUS_OPTIONS.find(opt => opt.value === status)?.label || "Not Required";
+};
+
+const buildFlightSearchUrl = (flightNumber: string, flightDate: string) => {
+  const formattedDate = flightDate 
+    ? new Date(flightDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
+  const query = `${flightNumber} ${formattedDate} flight status`.trim();
+  return `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 };
 
 export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
@@ -216,7 +224,17 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
                 />
               ) : (
                 <div className="p-2 border border-gray-200 rounded-md bg-white mt-1">
-                  {flightsData.outbound_flight_number || (
+                  {flightsData.outbound_flight_number ? (
+                    <a
+                      href={buildFlightSearchUrl(flightsData.outbound_flight_number, flightsData.outbound_flight_date)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1.5"
+                    >
+                      {flightsData.outbound_flight_number}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
                     <span className="text-gray-500 italic">Not specified</span>
                   )}
                 </div>
@@ -262,7 +280,17 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
                 />
               ) : (
                 <div className="p-2 border border-gray-200 rounded-md bg-white mt-1">
-                  {flightsData.return_flight_number || (
+                  {flightsData.return_flight_number ? (
+                    <a
+                      href={buildFlightSearchUrl(flightsData.return_flight_number, flightsData.return_flight_date)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline flex items-center gap-1.5"
+                    >
+                      {flightsData.return_flight_number}
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  ) : (
                     <span className="text-gray-500 italic">Not specified</span>
                   )}
                 </div>
