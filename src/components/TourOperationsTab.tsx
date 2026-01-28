@@ -15,6 +15,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
+import { HostFlightsSection } from "@/components/HostFlightsSection";
 
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
@@ -315,6 +316,9 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
           </div>
         </CardContent>
       </Card>
+
+      {/* Host Flights Section */}
+      <HostFlightsSection tourId={tourId} />
 
       {/* Operations Notes Section */}
       <TourOperationsNotesSection 

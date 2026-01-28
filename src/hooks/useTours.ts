@@ -41,6 +41,11 @@ export interface Tour {
   ops_activities_notes: string | null;
   ops_other_notes: string | null;
   tour_hosts_notes: string | null;
+  host_flights_status: string | null;
+  outbound_flight_number: string | null;
+  outbound_flight_date: string | null;
+  return_flight_number: string | null;
+  return_flight_date: string | null;
   created_at: string;
   updated_at: string;
 }
