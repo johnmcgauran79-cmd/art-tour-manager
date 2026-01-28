@@ -208,7 +208,8 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
           )}
         </div>
 
-        {/* Flight Details Grid */}
+        {/* Flight Details Grid - Hidden when status is "not_required" and not editing */}
+        {(isEditing || flightsData.host_flights_status !== "not_required") && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Outbound Flight */}
           <div className="space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
@@ -322,6 +323,7 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
             </div>
           </div>
         </div>
+        )}
 
         <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
           <p className="text-xs text-brand-navy">
