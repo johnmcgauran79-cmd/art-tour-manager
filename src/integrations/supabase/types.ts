@@ -1977,6 +1977,7 @@ export type Database = {
           end_date: string
           exclusions: string | null
           final_payment_date: string | null
+          host_flights_status: string | null
           id: string
           inclusions: string | null
           instalment_amount: number | null
@@ -1995,10 +1996,14 @@ export type Database = {
           ops_other_notes: string | null
           ops_races_notes: string | null
           ops_transport_notes: string | null
+          outbound_flight_date: string | null
+          outbound_flight_number: string | null
           pickup_point: string | null
           price_double: number | null
           price_single: number | null
           price_twin: number | null
+          return_flight_date: string | null
+          return_flight_number: string | null
           start_date: string
           status: Database["public"]["Enums"]["tour_status"] | null
           tour_host: string
@@ -2016,6 +2021,7 @@ export type Database = {
           end_date: string
           exclusions?: string | null
           final_payment_date?: string | null
+          host_flights_status?: string | null
           id?: string
           inclusions?: string | null
           instalment_amount?: number | null
@@ -2034,10 +2040,14 @@ export type Database = {
           ops_other_notes?: string | null
           ops_races_notes?: string | null
           ops_transport_notes?: string | null
+          outbound_flight_date?: string | null
+          outbound_flight_number?: string | null
           pickup_point?: string | null
           price_double?: number | null
           price_single?: number | null
           price_twin?: number | null
+          return_flight_date?: string | null
+          return_flight_number?: string | null
           start_date: string
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
@@ -2055,6 +2065,7 @@ export type Database = {
           end_date?: string
           exclusions?: string | null
           final_payment_date?: string | null
+          host_flights_status?: string | null
           id?: string
           inclusions?: string | null
           instalment_amount?: number | null
@@ -2073,10 +2084,14 @@ export type Database = {
           ops_other_notes?: string | null
           ops_races_notes?: string | null
           ops_transport_notes?: string | null
+          outbound_flight_date?: string | null
+          outbound_flight_number?: string | null
           pickup_point?: string | null
           price_double?: number | null
           price_single?: number | null
           price_twin?: number | null
+          return_flight_date?: string | null
+          return_flight_number?: string | null
           start_date?: string
           status?: Database["public"]["Enums"]["tour_status"] | null
           tour_host?: string
