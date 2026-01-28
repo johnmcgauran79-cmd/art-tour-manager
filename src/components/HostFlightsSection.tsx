@@ -66,7 +66,7 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editingData, setEditingData] = useState<HostFlightsData>({
-    host_flights_status: "not_required",
+    host_flights_status: "not_booked",
     outbound_flight_number: "",
     outbound_flight_date: "",
     return_flight_number: "",
@@ -76,7 +76,7 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
   const tour = tours?.find(t => t.id === tourId);
 
   const flightsData: HostFlightsData = {
-    host_flights_status: tour?.host_flights_status || "not_required",
+    host_flights_status: tour?.host_flights_status || "not_booked",
     outbound_flight_number: tour?.outbound_flight_number || "",
     outbound_flight_date: tour?.outbound_flight_date || "",
     return_flight_number: tour?.return_flight_number || "",
@@ -90,7 +90,7 @@ export const HostFlightsSection = ({ tourId }: HostFlightsSectionProps) => {
 
   const handleCancel = () => {
     setEditingData({
-      host_flights_status: "not_required",
+      host_flights_status: "not_booked",
       outbound_flight_number: "",
       outbound_flight_date: "",
       return_flight_number: "",
