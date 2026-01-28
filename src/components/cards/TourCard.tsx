@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, MapPin, DollarSign, Edit, Copy } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
+import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
 
 interface TourCardProps {
@@ -89,7 +89,13 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
         {tour.tour_host && (
           <div className="pt-2 border-t">
             <div className={typography.label.small}>Tour Host</div>
-            <div className={`${typography.body.small} font-medium`}>{tour.tour_host}</div>
+            {tour.tour_host !== 'TBD' ? (
+              <Badge className={`${getHostFlightStatusStyle(tour.host_flights_status)} mt-1`}>
+                {tour.tour_host}
+              </Badge>
+            ) : (
+              <div className={`${typography.body.small} font-medium text-muted-foreground`}>{tour.tour_host}</div>
+            )}
           </div>
         )}
 

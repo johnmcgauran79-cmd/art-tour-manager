@@ -62,6 +62,18 @@ export const getTaskPriorityColor = (priority: string): string => {
   return priorityMap[priority] || priorityMap['medium'];
 };
 
+// Host flight status colors - for displaying host name with flight booking status
+export const getHostFlightStatusStyle = (status: string | null | undefined): string => {
+  const statusMap: Record<string, string> = {
+    'booked': 'bg-green-600 text-white hover:bg-green-600',
+    'not_required': 'bg-green-600 text-white hover:bg-green-600',
+    'waiting_confirmation': 'bg-orange-500 text-white hover:bg-orange-500',
+    'not_booked': 'bg-red-600 text-white hover:bg-red-600',
+  };
+  
+  return statusMap[status || 'not_booked'] || statusMap['not_booked'];
+};
+
 // Format status text for display
 export const formatStatusText = (status: string): string => {
   if (status === 'racing_breaks_invoice') {

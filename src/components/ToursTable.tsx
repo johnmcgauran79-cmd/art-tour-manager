@@ -13,7 +13,7 @@ import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { AddTourModal } from "@/components/AddTourModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
-import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
+import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "@/lib/statusColors";
 import { TourCard } from "@/components/cards/TourCard";
 import { ViewToggle } from "@/components/ViewToggle";
 import { useAuth } from "@/hooks/useAuth";
@@ -232,7 +232,15 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                         onClick={() => handleTourClick(tour)}
                       >
                         <TableCell className="font-medium">{tour.name}</TableCell>
-                        <TableCell>{tour.tour_host}</TableCell>
+                        <TableCell>
+                          {tour.tour_host && tour.tour_host !== 'TBD' ? (
+                            <Badge className={getHostFlightStatusStyle(tour.host_flights_status)}>
+                              {tour.tour_host}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">{tour.tour_host || 'TBD'}</span>
+                          )}
+                        </TableCell>
                         <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
                         <TableCell>{tour.location || '-'}</TableCell>
                         <TableCell>{getTotalPassengers(tour.id)}</TableCell>
