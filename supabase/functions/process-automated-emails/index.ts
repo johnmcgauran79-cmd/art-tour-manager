@@ -200,10 +200,23 @@ serve(async (req) => {
       }
     }
 
+    // Also process travel documents request rules
+    let travelDocsBatches = 0;
+    let travelDocsEmails = 0;
+    try {
+      console.log('--- Processing travel documents request rules ---');
+      const travelDocsResult = await processTravelDocsRules(supabase, errors);
+      travelDocsBatches = travelDocsResult.batchesCreated;
+      travelDocsEmails = travelDocsResult.emailsSent;
+    } catch (travelDocsError) {
+      console.error('Error processing travel docs rules:', travelDocsError);
+      errors.push({ type: 'travel_docs', error: travelDocsError });
+    }
+
     const result = {
       success: true,
-      totalBatchesCreated,
-      totalEmailsSent,
+      totalBatchesCreated: totalBatchesCreated + travelDocsBatches,
+      totalEmailsSent: totalEmailsSent + travelDocsEmails,
       rulesProcessed: rules?.length || 0,
       toursChecked: upcomingTours?.length || 0,
       errors: errors.length > 0 ? errors : undefined,
@@ -233,6 +246,171 @@ serve(async (req) => {
     );
   }
 });
+
+// Process travel documents request rules
+async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ batchesCreated: number; emailsSent: number }> {
+  let batchesCreated = 0;
+  let emailsSent = 0;
+
+  // Get travel docs rules
+  const { data: rules, error: rulesError } = await supabase
+    .from('automated_email_rules')
+    .select('*')
+    .eq('is_active', true)
+    .eq('rule_type', 'travel_documents_request')
+    .eq('trigger_type', 'days_before_tour')
+    .order('days_before_tour', { ascending: true });
+
+  if (rulesError) {
+    console.error('Error fetching travel docs rules:', rulesError);
+    throw rulesError;
+  }
+
+  if (!rules || rules.length === 0) {
+    console.log('No active travel docs rules found');
+    return { batchesCreated, emailsSent };
+  }
+
+  console.log(`Found ${rules.length} active travel docs rules`);
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  // Get tours requiring travel documents
+  const { data: tours, error: toursError } = await supabase
+    .from('tours')
+    .select('id, name, start_date, end_date')
+    .eq('travel_documents_required', true)
+    .gte('start_date', todayStr)
+    .neq('status', 'archived');
+
+  if (toursError) {
+    console.error('Error fetching tours:', toursError);
+    throw toursError;
+  }
+
+  console.log(`Found ${tours?.length || 0} tours requiring travel documents`);
+
+  for (const tour of tours || []) {
+    try {
+      const tourStartDate = new Date(tour.start_date);
+      const daysUntilTour = Math.floor((tourStartDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Find applicable rule
+      let applicableRule = null;
+      for (const rule of rules) {
+        if (daysUntilTour <= rule.days_before_tour) {
+          applicableRule = rule;
+          break;
+        }
+      }
+
+      if (!applicableRule) {
+        continue;
+      }
+
+      console.log(`Travel docs rule "${applicableRule.rule_name}" applies to tour "${tour.name}"`);
+
+      // Check for existing batch
+      const { data: existingBatch } = await supabase
+        .from('automated_email_log')
+        .select('id, approval_status, sent_at')
+        .eq('tour_id', tour.id)
+        .eq('rule_id', applicableRule.id)
+        .is('booking_id', null)
+        .maybeSingle();
+
+      if (existingBatch) {
+        if (existingBatch.approval_status === 'sent' || existingBatch.approval_status === 'processing') {
+          continue;
+        }
+        
+        if (existingBatch.approval_status === 'approved') {
+          // Process approved batch - invoke travel docs edge function
+          console.log(`Processing approved travel docs batch for "${tour.name}"`);
+          
+          await supabase
+            .from('automated_email_log')
+            .update({ approval_status: 'processing' })
+            .eq('id', existingBatch.id);
+          
+          const { data: result, error: invokeError } = await supabase.functions.invoke(
+            'process-travel-docs-emails',
+            { body: { tourId: tour.id, ruleId: applicableRule.id, batchId: existingBatch.id } }
+          );
+          
+          if (invokeError) {
+            console.error('Error invoking travel docs processor:', invokeError);
+            errors.push({ tour: tour.name, error: invokeError });
+            await supabase
+              .from('automated_email_log')
+              .update({ approval_status: 'approved' })
+              .eq('id', existingBatch.id);
+          } else {
+            emailsSent += result?.emailsSent || 0;
+          }
+          continue;
+        }
+        
+        if (existingBatch.approval_status === 'pending_approval') {
+          continue;
+        }
+        
+        if (existingBatch.approval_status === 'rejected') {
+          await supabase
+            .from('automated_email_log')
+            .delete()
+            .eq('id', existingBatch.id);
+        }
+      }
+
+      // Get eligible bookings
+      let bookingsQuery = supabase
+        .from('bookings')
+        .select(`id, customers!bookings_lead_passenger_id_fkey(email)`)
+        .eq('tour_id', tour.id)
+        .neq('status', 'cancelled')
+        .neq('status', 'waitlisted');
+
+      if (applicableRule.recipient_filter === 'with_accommodation') {
+        bookingsQuery = bookingsQuery.eq('accommodation_required', true);
+      } else if (applicableRule.recipient_filter === 'without_accommodation') {
+        bookingsQuery = bookingsQuery.eq('accommodation_required', false);
+      }
+
+      const { data: bookings } = await bookingsQuery;
+      const eligibleBookings = bookings?.filter((b: any) => b.customers?.email) || [];
+
+      if (eligibleBookings.length === 0) {
+        continue;
+      }
+
+      // Create batch approval record
+      const { error: insertError } = await supabase
+        .from('automated_email_log')
+        .insert({
+          tour_id: tour.id,
+          booking_id: null,
+          rule_id: applicableRule.id,
+          tour_start_date: tour.start_date,
+          days_before_send: applicableRule.days_before_tour,
+          booking_count: eligibleBookings.length,
+          approval_status: applicableRule.requires_approval ? 'pending_approval' : 'approved'
+        });
+
+      if (!insertError) {
+        console.log(`Created travel docs batch for "${tour.name}" with ${eligibleBookings.length} bookings`);
+        batchesCreated++;
+      }
+
+    } catch (tourError) {
+      console.error(`Error processing tour ${tour.name} for travel docs:`, tourError);
+      errors.push({ tour: tour.name, type: 'travel_docs', error: tourError });
+    }
+  }
+
+  return { batchesCreated, emailsSent };
+}
 
 // Helper function to process a batch and send emails to all bookings
 async function processBatchEmails(
