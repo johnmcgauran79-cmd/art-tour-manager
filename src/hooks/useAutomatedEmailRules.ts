@@ -37,9 +37,15 @@ export const useCreateAutomatedEmailRule = () => {
       status_filter?: string[];
       created_by: string;
     }) => {
+      // Convert empty email_template_id to null (for travel docs rules that don't use templates)
+      const ruleData = {
+        ...rule,
+        email_template_id: rule.email_template_id || null,
+      };
+
       const { data, error } = await supabase
         .from('automated_email_rules')
-        .insert(rule)
+        .insert(ruleData)
         .select()
         .single();
 
@@ -69,9 +75,15 @@ export const useUpdateAutomatedEmailRule = () => {
 
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      // Convert empty email_template_id to null
+      const updateData = {
+        ...updates,
+        email_template_id: updates.email_template_id || null,
+      };
+
       const { data, error } = await supabase
         .from('automated_email_rules')
-        .update(updates)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
