@@ -28,6 +28,7 @@ import { Separator } from "@/components/ui/separator";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
+import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -164,13 +165,23 @@ export default function BookingDetail() {
           />
           
           {!isAgent && booking.customers && (
-            <SendProfileUpdateButton
-              customerId={booking.customers.id}
-              customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
-              customerEmail={booking.customers.email || null}
-              bookingId={booking.id}
-              size="sm"
-            />
+            <>
+              <SendProfileUpdateButton
+                customerId={booking.customers.id}
+                customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                customerEmail={booking.customers.email || null}
+                bookingId={booking.id}
+                size="sm"
+              />
+              <SendTravelDocsRequestButton
+                bookingId={booking.id}
+                customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                customerEmail={booking.customers.email || null}
+                tourName={tour?.name || 'Unknown Tour'}
+                travelDocsRequired={tour?.travel_documents_required || false}
+                size="sm"
+              />
+            </>
           )}
           
           {!isAgent && (
@@ -244,12 +255,21 @@ export default function BookingDetail() {
             />
             
             {!isAgent && booking.customers && (
-              <SendProfileUpdateButton
-                customerId={booking.customers.id}
-                customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
-                customerEmail={booking.customers.email || null}
-                bookingId={booking.id}
-              />
+              <>
+                <SendProfileUpdateButton
+                  customerId={booking.customers.id}
+                  customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                  customerEmail={booking.customers.email || null}
+                  bookingId={booking.id}
+                />
+                <SendTravelDocsRequestButton
+                  bookingId={booking.id}
+                  customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                  customerEmail={booking.customers.email || null}
+                  tourName={tour?.name || 'Unknown Tour'}
+                  travelDocsRequired={tour?.travel_documents_required || false}
+                />
+              </>
             )}
             
             {!isAgent && (

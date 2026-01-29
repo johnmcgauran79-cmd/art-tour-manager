@@ -26,6 +26,7 @@ const EMAIL_TEMPLATE_TYPES = [
   { value: 'hotel_confirmation', label: 'Hotel Confirmation' },
   { value: 'welcome_email', label: 'Welcome Email' },
   { value: 'tour_update', label: 'Tour Update' },
+  { value: 'travel_documents_request', label: 'Travel Documents Request' },
 ];
 
 const MERGE_FIELDS = {
