@@ -41,7 +41,7 @@ export const AutomatedEmailRulesManagement = () => {
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState({
     rule_name: "",
-    rule_type: "booking_confirmation",
+    rule_type: "booking_confirmation" as "booking_confirmation" | "travel_documents_request",
     trigger_type: "days_before_tour" as "days_before_tour" | "days_after_booking",
     days_before_tour: 100,
     email_template_id: "",
@@ -131,12 +131,14 @@ export const AutomatedEmailRulesManagement = () => {
 
   const bookingConfirmationTemplates = templates?.filter(t => t.type === 'booking_confirmation');
 
-  // Separate rules by trigger type
-  const beforeTourRules = rules?.filter(r => (r as any).trigger_type !== 'days_after_booking') || [];
+  // Separate rules by trigger type and rule type
+  const beforeTourRules = rules?.filter(r => (r as any).trigger_type !== 'days_after_booking' && (r as any).rule_type !== 'travel_documents_request') || [];
   const afterBookingRules = rules?.filter(r => (r as any).trigger_type === 'days_after_booking') || [];
+  const travelDocsRules = rules?.filter(r => (r as any).rule_type === 'travel_documents_request') || [];
 
   const renderRuleCard = (rule: any) => {
     const isAfterBooking = rule.trigger_type === 'days_after_booking';
+    const isTravelDocs = rule.rule_type === 'travel_documents_request';
     
     return (
       <Card key={rule.id}>
@@ -154,6 +156,11 @@ export const AutomatedEmailRulesManagement = () => {
                   Post-Booking
                 </Badge>
               )}
+              {isTravelDocs && (
+                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+                  Travel Docs
+                </Badge>
+              )}
               {!rule.requires_approval && (
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -162,7 +169,7 @@ export const AutomatedEmailRulesManagement = () => {
               )}
             </CardTitle>
             <CardDescription>
-              {rule.email_templates?.name || "No template selected"}
+              {isTravelDocs ? "Sends travel document request emails with unique links" : rule.email_templates?.name || "No template selected"}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -186,7 +193,7 @@ export const AutomatedEmailRulesManagement = () => {
             </div>
             <div className="flex items-center gap-1">
               <Mail className="h-4 w-4" />
-              <span>Type: {rule.rule_type}</span>
+              <span>Type: {isTravelDocs ? 'Travel Documents Request' : rule.rule_type}</span>
             </div>
             <Badge variant="outline">
               {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
@@ -221,6 +228,7 @@ export const AutomatedEmailRulesManagement = () => {
       <Tabs defaultValue="rules" className="space-y-4">
         <TabsList>
           <TabsTrigger value="rules">Before Tour</TabsTrigger>
+          <TabsTrigger value="travel-docs">Travel Documents</TabsTrigger>
           <TabsTrigger value="post-booking">Post-Booking</TabsTrigger>
           <TabsTrigger value="history">Email History</TabsTrigger>
         </TabsList>
@@ -240,6 +248,58 @@ export const AutomatedEmailRulesManagement = () => {
                 <Button onClick={handleCreate} variant="outline" className="mt-4">
                   <Plus className="h-4 w-4 mr-2" />
                   Create your first rule
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="travel-docs" className="space-y-4">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-purple-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-purple-900">Travel Documents Request Emails</h4>
+                <p className="text-sm text-purple-700 mt-1">
+                  Send automated requests for passport details to customers on tours that require travel documents.
+                  Each customer receives a unique secure link to submit their passport information.
+                </p>
+                <p className="text-sm text-purple-600 mt-2">
+                  <strong>Note:</strong> Only applies to tours with "Travel Documents Required" enabled. Passport data is automatically purged 30 days after tour ends.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {rulesLoading ? (
+            <p>Loading...</p>
+          ) : travelDocsRules.length > 0 ? (
+            <div className="grid gap-4">
+              {travelDocsRules.map(renderRuleCard)}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No travel documents email rules configured</p>
+                <Button 
+                  onClick={() => {
+                    resetForm();
+                    setFormData(prev => ({
+                      ...prev,
+                      rule_type: 'travel_documents_request',
+                      trigger_type: 'days_before_tour',
+                      days_before_tour: 60,
+                      requires_approval: true,
+                      email_template_id: '',
+                    }));
+                    setIsDialogOpen(true);
+                  }} 
+                  variant="outline" 
+                  className="mt-4"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create travel docs rule
                 </Button>
               </CardContent>
             </Card>
@@ -410,24 +470,33 @@ export const AutomatedEmailRulesManagement = () => {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email_template_id">Email Template</Label>
-              <Select
-                value={formData.email_template_id}
-                onValueChange={(value) => setFormData({ ...formData, email_template_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select template" />
-                </SelectTrigger>
-                <SelectContent>
-                  {bookingConfirmationTemplates?.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {formData.rule_type === 'travel_documents_request' ? (
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <p className="text-sm text-purple-700">
+                  <strong>Travel Documents emails use a built-in template</strong> that includes the customer's name, 
+                  tour details, existing passport details (if any), and a secure link to submit their travel documents.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="email_template_id">Email Template</Label>
+                <Select
+                  value={formData.email_template_id}
+                  onValueChange={(value) => setFormData({ ...formData, email_template_id: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bookingConfirmationTemplates?.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="recipient_filter">Send To</Label>

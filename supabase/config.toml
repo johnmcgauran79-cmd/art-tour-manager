@@ -38,3 +38,18 @@ verify_jwt = false
 
 [functions.process-post-booking-emails]
 verify_jwt = false
+
+[functions.process-travel-docs-emails]
+verify_jwt = false
+
+[functions.send-travel-docs-request]
+verify_jwt = false
+
+[functions.validate-travel-docs-token]
+verify_jwt = false
+
+[functions.update-travel-docs]
+verify_jwt = false
+
+[functions.purge-passport-data]
+verify_jwt = false
