@@ -64,23 +64,43 @@ export const useBookings = () => {
   });
 };
 
-export const usePaginatedBookings = (page: number = 1, pageSize: number = 25, searchQuery: string = '') => {
+export const usePaginatedBookings = (
+  page: number = 1, 
+  pageSize: number = 25, 
+  searchQuery: string = '',
+  tourFilter: string = 'all',
+  statusFilter: string = 'all'
+) => {
   return useQuery({
-    queryKey: ['bookings', 'paginated', page, pageSize, searchQuery],
+    queryKey: ['bookings', 'paginated', page, pageSize, searchQuery, tourFilter, statusFilter],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
       
+      // Build base query
+      let query = supabase
+        .from('bookings')
+        .select(`
+          *,
+          tours (name, start_date),
+          customers!lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs, avatar_url),
+          secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
+        `, { count: 'exact' })
+        .order('created_at', { ascending: false });
+      
+      // Apply tour filter at database level
+      if (tourFilter !== 'all') {
+        query = query.eq('tour_id', tourFilter);
+      }
+      
+      // Apply status filter at database level
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter as any);
+      }
+      
+      // If there's a search query, fetch all matching records and filter client-side
       if (searchQuery.trim()) {
-        const { data: allData, error: allError } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            tours (name, start_date),
-            customers!lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs, avatar_url),
-            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
-          `)
-          .order('created_at', { ascending: false });
+        const { data: allData, error: allError } = await query;
         
         if (allError) throw allError;
         
@@ -103,16 +123,8 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25, se
         return { data: paginatedData, count: filtered.length };
       }
       
-      const { data, error, count } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          tours (name, start_date),
-          customers!lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs, avatar_url),
-          secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone)
-        `, { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range(start, end);
+      // Apply pagination
+      const { data, error, count } = await query.range(start, end);
       
       if (error) throw error;
       return { data: data || [], count: count || 0 };
@@ -120,9 +132,15 @@ export const usePaginatedBookings = (page: number = 1, pageSize: number = 25, se
   });
 };
 
-export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_owing' | 'payment_due' | null, page: number = 1, pageSize: number = 50) => {
+export const useFilteredBookings = (
+  filterType: 'deposits_owing' | 'instalments_owing' | 'payment_due' | null, 
+  page: number = 1, 
+  pageSize: number = 50,
+  tourFilter: string = 'all',
+  statusFilter: string = 'all'
+) => {
   return useQuery({
-    queryKey: ['bookings', 'filtered', filterType, page, pageSize],
+    queryKey: ['bookings', 'filtered', filterType, page, pageSize, tourFilter, statusFilter],
     queryFn: async () => {
       const start = (page - 1) * pageSize;
       const end = start + pageSize - 1;
@@ -134,7 +152,7 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 7);
         
-        const { data, error, count } = await supabase
+        let query = supabase
           .from('bookings')
           .select(`
             *,
@@ -144,8 +162,14 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
           `, { count: 'exact' })
           .eq('status', 'invoiced')
           .lt('created_at', cutoffDate.toISOString())
-          .order('created_at', { ascending: false })
-          .range(start, end);
+          .order('created_at', { ascending: false });
+        
+        // Apply tour filter
+        if (tourFilter !== 'all') {
+          query = query.eq('tour_id', tourFilter);
+        }
+        
+        const { data, error, count } = await query.range(start, end);
         
         if (error) throw error;
         return { data: data || [], count: count || 0 };
@@ -153,7 +177,7 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
       } else if (filterType === 'instalments_owing') {
         // Instalments owing: tour has instalment_required, past instalment_date,
         // status is not instalment_paid or fully_paid
-        const { data, error, count } = await supabase
+        let query = supabase
           .from('bookings')
           .select(`
             *,
@@ -169,15 +193,21 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
-          .order('created_at', { ascending: false })
-          .range(start, end);
+          .order('created_at', { ascending: false });
+        
+        // Apply tour filter
+        if (tourFilter !== 'all') {
+          query = query.eq('tour_id', tourFilter);
+        }
+        
+        const { data, error, count } = await query.range(start, end);
         
         if (error) throw error;
         return { data: data || [], count: count || 0 };
         
       } else if (filterType === 'payment_due') {
         // Final payment owing: past final_payment_date and not fully_paid
-        const { data, error, count } = await supabase
+        let query = supabase
           .from('bookings')
           .select(`
             *,
@@ -191,8 +221,14 @@ export const useFilteredBookings = (filterType: 'deposits_owing' | 'instalments_
           .neq('status', 'host')
           .neq('status', 'cancelled')
           .neq('status', 'waitlisted')
-          .order('created_at', { ascending: false })
-          .range(start, end);
+          .order('created_at', { ascending: false });
+        
+        // Apply tour filter
+        if (tourFilter !== 'all') {
+          query = query.eq('tour_id', tourFilter);
+        }
+        
+        const { data, error, count } = await query.range(start, end);
         
         if (error) throw error;
         return { data: data || [], count: count || 0 };
