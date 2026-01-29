@@ -66,11 +66,19 @@ export default function BulkBookingStatus() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
   
-  const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(currentPage, pageSize, debouncedSearch);
+  const { data: paginatedData, isLoading: paginatedLoading } = usePaginatedBookings(
+    currentPage, 
+    pageSize, 
+    debouncedSearch,
+    tourFilter,
+    statusFilter
+  );
   const { data: filteredData, isLoading: filteredLoading } = useFilteredBookings(
     activeFilter === 'all' ? null : activeFilter,
     currentPage,
-    pageSize
+    pageSize,
+    tourFilter,
+    statusFilter
   );
   const { data: filterCounts } = useFilterCounts();
   const { data: tours } = useTours();
@@ -94,22 +102,22 @@ export default function BulkBookingStatus() {
     setBulkStatus("");
   };
 
-  // Filter bookings based on status filter and tour filter (search is now server-side)
-  const filteredBookings = useMemo(() => {
-    let filtered = bookings;
+  // Reset to page 1 when tour filter changes
+  const handleTourFilterChange = (value: string) => {
+    setCurrentPage(1);
+    setTourFilter(value);
+    setSelectedBookings(new Set());
+  };
 
-    // Apply tour filter
-    if (tourFilter !== "all") {
-      filtered = filtered.filter(booking => booking.tour_id === tourFilter);
-    }
+  // Reset to page 1 when status filter changes
+  const handleStatusFilterChange = (value: string) => {
+    setCurrentPage(1);
+    setStatusFilter(value);
+    setSelectedBookings(new Set());
+  };
 
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(booking => booking.status === statusFilter);
-    }
-
-    return filtered;
-  }, [bookings, statusFilter, tourFilter]);
+  // Bookings are now filtered server-side, just use them directly
+  const filteredBookings = bookings;
 
   // Selection handlers
   const handleSelectAll = (checked: boolean) => {
@@ -434,7 +442,7 @@ export default function BulkBookingStatus() {
                   className="pl-8"
                 />
               </div>
-              <Select value={tourFilter} onValueChange={setTourFilter}>
+              <Select value={tourFilter} onValueChange={handleTourFilterChange}>
                 <SelectTrigger className="w-[250px]">
                   <SelectValue placeholder="Filter by tour" />
                 </SelectTrigger>
@@ -447,7 +455,7 @@ export default function BulkBookingStatus() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger className="w-[200px]">
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
