@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Mail, Clock, Calendar, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Edit, Trash2, Mail, Clock, Calendar, CheckCircle, AlertCircle, Eye } from "lucide-react";
 import { useAutomatedEmailRules, useCreateAutomatedEmailRule, useUpdateAutomatedEmailRule, useDeleteAutomatedEmailRule, useAutomatedEmailLog } from "@/hooks/useAutomatedEmailRules";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useAuth } from "@/hooks/useAuth";
@@ -38,6 +38,8 @@ export const AutomatedEmailRulesManagement = () => {
   const deleteRule = useDeleteAutomatedEmailRule();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<any>(null);
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState({
     rule_name: "",
@@ -258,7 +260,7 @@ export const AutomatedEmailRulesManagement = () => {
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-purple-600 mt-0.5" />
-              <div>
+              <div className="flex-1">
                 <h4 className="font-medium text-purple-900">Travel Documents Request Emails</h4>
                 <p className="text-sm text-purple-700 mt-1">
                   Send automated requests for passport details to customers on tours that require travel documents.
@@ -267,6 +269,24 @@ export const AutomatedEmailRulesManagement = () => {
                 <p className="text-sm text-purple-600 mt-2">
                   <strong>Note:</strong> Only applies to tours with "Travel Documents Required" enabled. Passport data is automatically purged 30 days after tour ends.
                 </p>
+                <div className="mt-3">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="bg-white"
+                    onClick={() => {
+                      // Find and select travel_documents_request template type
+                      const travelDocsTemplate = templates?.find(t => t.type === 'travel_documents_request');
+                      if (travelDocsTemplate) {
+                        setPreviewTemplate(travelDocsTemplate);
+                        setIsPreviewOpen(true);
+                      }
+                    }}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview Email Template
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -571,6 +591,72 @@ export const AutomatedEmailRulesManagement = () => {
             </Button>
             <Button onClick={handleSubmit}>
               {editingRule ? "Update Rule" : "Create Rule"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Travel Documents Request Email Preview</DialogTitle>
+            <DialogDescription>
+              This is how the travel documents request email will appear to customers
+            </DialogDescription>
+          </DialogHeader>
+          
+          {previewTemplate && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Subject</Label>
+                <div className="bg-muted p-3 rounded-md text-sm">
+                  {previewTemplate.subject_template}
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Email Content</Label>
+                <div className="border rounded-lg overflow-hidden">
+                  {/* Email header preview */}
+                  <div className="bg-[#232628] p-6 text-center">
+                    <img 
+                      src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" 
+                      alt="Australian Racing Tours" 
+                      className="h-10 mx-auto mb-2"
+                    />
+                    <h2 className="text-white text-xl font-semibold">Travel Documents Required</h2>
+                  </div>
+                  
+                  {/* Email body preview */}
+                  <div 
+                    className="p-6 bg-white prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{ 
+                      __html: previewTemplate.content_template
+                        .replace(/\{\{customer_first_name\}\}/g, '<span class="text-purple-600 font-medium">[Customer Name]</span>')
+                        .replace(/\{\{tour_name\}\}/g, '<span class="text-purple-600 font-medium">[Tour Name]</span>')
+                        .replace(/\{\{tour_start_date\}\}/g, '<span class="text-purple-600 font-medium">[Start Date]</span>')
+                        .replace(/\{\{tour_end_date\}\}/g, '<span class="text-purple-600 font-medium">[End Date]</span>')
+                        .replace(/\{\{travel_docs_button\}\}/g, '<div style="text-align: center; margin: 20px 0;"><span style="display: inline-block; background: #232628; color: #F5C518; padding: 12px 24px; border-radius: 6px; font-weight: bold;">Submit Travel Documents</span></div>')
+                        .replace(/\{\{#has_passport_details\}\}[\s\S]*?\{\{\/has_passport_details\}\}/g, '')
+                        .replace(/\{\{\^has_passport_details\}\}/g, '')
+                        .replace(/\{\{\/has_passport_details\}\}/g, '')
+                    }} 
+                  />
+                </div>
+              </div>
+              
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Merge Fields:</strong> The highlighted text in purple will be replaced with actual customer and tour data when the email is sent.
+                </p>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

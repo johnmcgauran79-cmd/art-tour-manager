@@ -262,6 +262,20 @@ async function processTravelDocsBatch(
 
   console.log(`=== Processing travel docs batch for tour "${tour.name}" ===`);
 
+  // Get the travel_documents_request template
+  const { data: template, error: templateError } = await supabase
+    .from('email_templates')
+    .select('*')
+    .eq('type', 'travel_documents_request')
+    .eq('is_active', true)
+    .order('is_default', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (templateError) {
+    console.error('Error fetching email template:', templateError);
+  }
+
   // Get all eligible bookings
   let bookingsQuery = supabase
     .from('bookings')
@@ -352,79 +366,111 @@ async function processTravelDocsBatch(
       if (booking.nationality) existingDetails.push(`Nationality: ${booking.nationality}`);
       if (booking.id_number) existingDetails.push(`ID Number: ${booking.id_number}`);
 
-      const existingDetailsHtml = existingDetails.length > 0 
-        ? `
-          <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 15px 0;">
-            <h4 style="margin: 0 0 10px 0; color: #333;">Current Details on File:</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-              ${existingDetails.map(d => `<li style="margin: 5px 0;">${d}</li>`).join('')}
-            </ul>
-          </div>
-        `
-        : `
-          <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 15px 0;">
-            <p style="margin: 0; color: #856404;">
-              <strong>No travel documents on file yet.</strong> Please provide your passport details as soon as possible.
+      // Build the travel docs button HTML
+      const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Submit Travel Documents</a></div>`;
+
+      // Process template content if we have one
+      let emailSubject = `Travel Documents Required - ${tour.name}`;
+      let emailContent = '';
+
+      if (template) {
+        // Replace merge fields in subject
+        emailSubject = template.subject_template
+          .replace(/\{\{tour_name\}\}/g, tour.name);
+
+        // Replace merge fields in content
+        emailContent = template.content_template
+          .replace(/\{\{customer_first_name\}\}/g, customer.first_name || '')
+          .replace(/\{\{customer_last_name\}\}/g, customer.last_name || '')
+          .replace(/\{\{tour_name\}\}/g, tour.name)
+          .replace(/\{\{tour_start_date\}\}/g, formatDate(tour.start_date))
+          .replace(/\{\{tour_end_date\}\}/g, formatDate(tour.end_date))
+          .replace(/\{\{travel_docs_button\}\}/g, travelDocsButton)
+          .replace(/\{\{travel_docs_link\}\}/g, updateLink)
+          .replace(/\{\{passport_number\}\}/g, booking.passport_number || '')
+          .replace(/\{\{passport_country\}\}/g, booking.passport_country || '')
+          .replace(/\{\{passport_expiry_date\}\}/g, booking.passport_expiry_date ? formatDate(booking.passport_expiry_date) : '')
+          .replace(/\{\{nationality\}\}/g, booking.nationality || '');
+
+        // Handle conditional sections for has_passport_details
+        const hasPassport = booking.passport_number || booking.passport_country || booking.passport_expiry_date || booking.nationality;
+        
+        if (hasPassport) {
+          // Remove the "no passport" section and keep the "has passport" section
+          emailContent = emailContent
+            .replace(/\{\{\^has_passport_details\}\}[\s\S]*?\{\{\/has_passport_details\}\}/g, '')
+            .replace(/\{\{#has_passport_details\}\}/g, '')
+            .replace(/\{\{\/has_passport_details\}\}/g, '');
+          
+          // Also handle inner conditionals
+          emailContent = emailContent
+            .replace(/\{\{#passport_number\}\}([\s\S]*?)\{\{\/passport_number\}\}/g, booking.passport_number ? '$1' : '')
+            .replace(/\{\{#passport_country\}\}([\s\S]*?)\{\{\/passport_country\}\}/g, booking.passport_country ? '$1' : '')
+            .replace(/\{\{#passport_expiry_date\}\}([\s\S]*?)\{\{\/passport_expiry_date\}\}/g, booking.passport_expiry_date ? '$1' : '')
+            .replace(/\{\{#nationality\}\}([\s\S]*?)\{\{\/nationality\}\}/g, booking.nationality ? '$1' : '');
+        } else {
+          // Remove the "has passport" section and keep the "no passport" section
+          emailContent = emailContent
+            .replace(/\{\{#has_passport_details\}\}[\s\S]*?\{\{\/has_passport_details\}\}/g, '')
+            .replace(/\{\{\^has_passport_details\}\}/g, '')
+            .replace(/\{\{\/has_passport_details\}\}/g, '');
+        }
+      } else {
+        // Fallback to hardcoded template if no template exists
+        emailContent = `
+          <p>Dear ${customer.first_name},</p>
+          <p>We require your passport details for your upcoming tour:</p>
+          <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <h3 style="margin: 0 0 10px 0; color: #2e7d32;">${tour.name}</h3>
+            <p style="margin: 0; font-size: 14px;">
+              <strong>Tour Dates:</strong> ${formatDate(tour.start_date)} - ${formatDate(tour.end_date)}
             </p>
           </div>
+          ${existingDetailsHtml}
+          <p>Please click the button below to provide or update your travel document details:</p>
+          ${travelDocsButton}
+          <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <p style="margin: 0; font-size: 14px; color: #1565c0;">
+              <strong>Note:</strong> This link will expire in 72 hours. Your passport details are securely stored and will be automatically deleted 30 days after your tour ends.
+            </p>
+          </div>
+          <p>If you have any questions, please don't hesitate to contact us.</p>
+          <p>Kind regards,<br><strong>Australian Racing Tours</strong></p>
         `;
+      }
+
+      // Build full email HTML
+      const fullEmailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; margin-bottom: 10px;" />
+            <h1 style="color: #fff; margin: 0; font-size: 24px;">Travel Documents Required</h1>
+          </div>
+          
+          <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+            ${emailContent}
+          </div>
+          
+          <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
+            <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="margin: 5px 0; word-break: break-all;">${updateLink}</p>
+          </div>
+        </body>
+        </html>
+      `;
 
       // Send the email
       const emailResponse = await resend.emails.send({
-        from: 'Australian Racing Tours <info@australianracingtours.com.au>',
+        from: template?.from_email || 'Australian Racing Tours <info@australianracingtours.com.au>',
         to: [customer.email],
-        subject: `Travel Documents Required - ${tour.name}`,
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-              <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; margin-bottom: 10px;" />
-              <h1 style="color: #fff; margin: 0; font-size: 24px;">Travel Documents Required</h1>
-            </div>
-            
-            <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-              <p style="margin-top: 0;">Dear ${customer.first_name},</p>
-              
-              <p>We require your passport details for your upcoming tour:</p>
-              
-              <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 15px 0;">
-                <h3 style="margin: 0 0 10px 0; color: #2e7d32;">${tour.name}</h3>
-                <p style="margin: 0; font-size: 14px;">
-                  <strong>Tour Dates:</strong> ${formatDate(tour.start_date)} - ${formatDate(tour.end_date)}
-                </p>
-              </div>
-              
-              ${existingDetailsHtml}
-              
-              <p>Please click the button below to provide or update your travel document details:</p>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Submit Travel Documents</a>
-              </div>
-              
-              <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
-                <p style="margin: 0; font-size: 14px; color: #1565c0;">
-                  <strong>Note:</strong> This link will expire in 72 hours. Your passport details are securely stored and will be automatically deleted 30 days after your tour ends.
-                </p>
-              </div>
-              
-              <p>If you have any questions, please don't hesitate to contact us.</p>
-              
-              <p style="margin-bottom: 0;">Kind regards,<br><strong>Australian Racing Tours</strong></p>
-            </div>
-            
-            <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
-              <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
-              <p style="margin: 5px 0; word-break: break-all;">${updateLink}</p>
-            </div>
-          </body>
-          </html>
-        `,
+        subject: emailSubject,
+        html: fullEmailHtml,
       });
 
       console.log(`✓ Email sent to ${customer.email}`);
