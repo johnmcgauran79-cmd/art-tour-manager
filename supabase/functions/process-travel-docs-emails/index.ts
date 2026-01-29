@@ -24,52 +24,15 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    console.log('Starting automated travel docs email processing...');
-
-    // Get all active travel_documents_request rules
-    const { data: rules, error: rulesError } = await supabase
-      .from('automated_email_rules')
-      .select('*')
-      .eq('is_active', true)
-      .eq('rule_type', 'travel_documents_request')
-      .eq('trigger_type', 'days_before_tour')
-      .order('days_before_tour', { ascending: true });
-
-    if (rulesError) {
-      console.error('Error fetching rules:', rulesError);
-      throw rulesError;
+    // Check if called with specific batch params (from process-automated-emails)
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      // No body provided, run full scan
     }
 
-    console.log(`Found ${rules?.length || 0} active travel docs rules`);
-
-    if (!rules || rules.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'No travel docs rules configured' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    let totalBatchesCreated = 0;
-    let totalEmailsSent = 0;
-    const errors: any[] = [];
-
-    // Get all upcoming tours that require travel documents
-    const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
-
-    const { data: upcomingTours, error: toursError } = await supabase
-      .from('tours')
-      .select('id, name, start_date, end_date')
-      .eq('travel_documents_required', true)
-      .gte('start_date', todayStr)
-      .neq('status', 'archived');
-
-    if (toursError) {
-      console.error('Error fetching tours:', toursError);
-      throw toursError;
-    }
-
-    console.log(`Found ${upcomingTours?.length || 0} upcoming tours requiring travel documents`);
+    const { tourId, ruleId, batchId } = body;
 
     // Helper function for rate limiting delay
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -84,6 +47,38 @@ serve(async (req) => {
         year: 'numeric' 
       });
     };
+
+    const errors: any[] = [];
+    let emailsSent = 0;
+
+    // If called with specific params, process that batch only
+    if (tourId && ruleId && batchId) {
+      console.log(`Processing specific travel docs batch: tour=${tourId}, batch=${batchId}`);
+      
+      const { data: tour } = await supabase
+        .from('tours')
+        .select('id, name, start_date, end_date')
+        .eq('id', tourId)
+        .single();
+
+      const { data: rule } = await supabase
+        .from('automated_email_rules')
+        .select('*')
+        .eq('id', ruleId)
+        .single();
+
+      if (tour && rule) {
+        emailsSent = await processTravelDocsBatch(supabase, resend, tour, rule, batchId, errors, delay, formatDate);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, emailsSent, errors: errors.length > 0 ? errors : undefined }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Otherwise, this is a standalone call - run full processing
+    console.log('Running full travel docs email processing...');
 
     // Process each tour
     for (const tour of upcomingTours || []) {
