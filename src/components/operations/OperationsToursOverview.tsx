@@ -57,8 +57,13 @@ export const OperationsToursOverview = () => {
       .reduce((total, booking) => total + booking.passenger_count, 0);
   };
 
-  // Filter tours by search query and exclude tours that have already started
+  // Filter tours by search query, exclude archived tours and tours that have already started
   const filteredTours = tours?.filter(tour => {
+    // Exclude archived tours
+    if (tour.status === 'past') {
+      return false;
+    }
+    
     // Exclude tours that have already started
     const tourStartDate = new Date(tour.start_date);
     const today = new Date();
