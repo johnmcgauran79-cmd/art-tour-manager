@@ -48,6 +48,7 @@ export const useDuplicateTour = () => {
         price_twin: originalTour.price_twin,
         deposit_required: originalTour.deposit_required,
         instalment_amount: originalTour.instalment_amount,
+        instalment_required: originalTour.instalment_required,
         instalment_date: originalTour.instalment_date ? 
           new Date(new Date(originalTour.instalment_date).getFullYear() + 1, 
                    new Date(originalTour.instalment_date).getMonth(), 
@@ -57,6 +58,25 @@ export const useDuplicateTour = () => {
                    new Date(originalTour.final_payment_date).getMonth(), 
                    new Date(originalTour.final_payment_date).getDate()).toISOString().split('T')[0] : null,
         capacity: originalTour.capacity,
+        minimum_passengers_required: originalTour.minimum_passengers_required,
+        travel_documents_required: originalTour.travel_documents_required,
+        tour_type: originalTour.tour_type,
+        url_reference: null,
+        // Copy operations notes
+        ops_notes: originalTour.ops_notes,
+        ops_accomm_notes: originalTour.ops_accomm_notes,
+        ops_races_notes: originalTour.ops_races_notes,
+        ops_transport_notes: originalTour.ops_transport_notes,
+        ops_dinner_notes: originalTour.ops_dinner_notes,
+        ops_activities_notes: originalTour.ops_activities_notes,
+        ops_other_notes: originalTour.ops_other_notes,
+        // Reset host-specific fields
+        tour_hosts_notes: null,
+        host_flights_status: 'not_booked',
+        outbound_flight_number: null,
+        outbound_flight_date: null,
+        return_flight_number: null,
+        return_flight_date: null,
       };
 
       const { data: newTour, error: createError } = await supabase
