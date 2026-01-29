@@ -23,7 +23,7 @@ import UpdateProfile from "./pages/UpdateProfile";
 import UpdateTravelDocs from "./pages/UpdateTravelDocs";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
-import ActivityAllocations from "./pages/operations/ActivityAllocations";
+
 import HotelAllocations from "./pages/operations/HotelAllocations";
 import BookingChanges from "./pages/operations/BookingChanges";
 
@@ -190,16 +190,6 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <ActivityBookings />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/operations/activity-allocations"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <ActivityAllocations />
                     </AppLayout>
                   </ProtectedRoute>
                 }

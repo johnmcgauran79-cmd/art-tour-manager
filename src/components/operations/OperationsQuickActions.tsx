@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, AlertCircle, Activity, Grid3X3, FileText } from "lucide-react";
+import { ClipboardCheck, Hotel, AlertCircle, Grid3X3, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,15 +41,6 @@ export const OperationsQuickActions = () => {
     },
   });
 
-  // Activity Allocation Check count
-  const { data: activityIssuesCount = 0 } = useQuery({
-    queryKey: ['activity-issues-count'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('check_missing_activity_allocations');
-      if (error) throw error;
-      return data?.length || 0;
-    },
-  });
 
   // Hotel Allocation Check count
   const { data: hotelIssuesCount = 0 } = useQuery({
@@ -168,13 +159,6 @@ export const OperationsQuickActions = () => {
       description: "Review all activity allocations",
       count: activityMatrixIssuesCount,
       onClick: () => navigate("/operations/activity-bookings"),
-    },
-    {
-      icon: Activity,
-      label: "Activity Allocation Check",
-      description: "Find missing activity allocations",
-      count: activityIssuesCount,
-      onClick: () => navigate("/operations/activity-allocations"),
     },
     {
       icon: Hotel,
