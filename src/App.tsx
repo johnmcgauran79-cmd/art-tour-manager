@@ -20,6 +20,7 @@ import ContactDetail from "./pages/ContactDetail";
 import ContactEdit from "./pages/ContactEdit";
 import BulkBookingStatus from "./pages/BulkBookingStatus";
 import UpdateProfile from "./pages/UpdateProfile";
+import UpdateTravelDocs from "./pages/UpdateTravelDocs";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
 import ActivityAllocations from "./pages/operations/ActivityAllocations";
@@ -62,6 +63,7 @@ function App() {
               {/* Support both legacy query-param links (/update-profile?token=...) and the canonical path-param links (/update-profile/:token). */}
               <Route path="/update-profile" element={<UpdateProfile />} />
               <Route path="/update-profile/:token" element={<UpdateProfile />} />
+              <Route path="/update-travel-docs/:token" element={<UpdateTravelDocs />} />
               <Route
                 path="/"
                 element={

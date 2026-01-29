@@ -779,36 +779,49 @@ export type Database = {
       }
       customer_access_tokens: {
         Row: {
+          booking_id: string | null
           created_at: string
           created_by: string
           customer_id: string
           expires_at: string
           id: string
           last_used_at: string | null
+          purpose: string | null
           token: string
           use_count: number
         }
         Insert: {
+          booking_id?: string | null
           created_at?: string
           created_by: string
           customer_id: string
           expires_at?: string
           id?: string
           last_used_at?: string | null
+          purpose?: string | null
           token?: string
           use_count?: number
         }
         Update: {
+          booking_id?: string | null
           created_at?: string
           created_by?: string
           customer_id?: string
           expires_at?: string
           id?: string
           last_used_at?: string | null
+          purpose?: string | null
           token?: string
           use_count?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "customer_access_tokens_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customer_access_tokens_customer_id_fkey"
             columns: ["customer_id"]
@@ -2334,6 +2347,7 @@ export type Database = {
         Args: { p_customer_id: string; p_dietary_value: string }
         Returns: undefined
       }
+      purge_passport_data: { Args: never; Returns: number }
       refresh_capacity_alerts: { Args: never; Returns: number }
       secure_customer_search: {
         Args: { search_term: string }
