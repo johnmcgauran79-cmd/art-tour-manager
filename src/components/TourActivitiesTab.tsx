@@ -112,6 +112,22 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
     setPaxAttendingData(paxData);
   };
 
+  const getActivityStatusColor = (status: string): string => {
+    const statusMap: Record<string, string> = {
+      'pending': 'bg-yellow-500 text-white hover:bg-yellow-500',
+      'contacted_enquiry_sent': 'bg-yellow-500 text-white hover:bg-yellow-500',
+      'on_hold': 'bg-orange-500 text-white hover:bg-orange-500',
+      'booked': 'bg-blue-600 text-white hover:bg-blue-600',
+      'tentative_booking': 'bg-blue-400 text-white hover:bg-blue-400',
+      'paid_deposit': 'bg-green-400 text-white hover:bg-green-400',
+      'fully_paid': 'bg-green-700 text-white hover:bg-green-700',
+      'finalised': 'bg-gray-900 text-white hover:bg-gray-900',
+      'confirmed': 'bg-gray-900 text-white hover:bg-gray-900',
+      'cancelled': 'bg-red-600 text-white hover:bg-red-600',
+    };
+    return statusMap[status] || statusMap['pending'];
+  };
+
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
     const [hours, minutes] = timeString.split(':');
@@ -343,8 +359,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                         <p className="text-xs text-muted-foreground truncate">{activity.location}</p>
                       )}
                     </div>
-                    <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'} className="text-xs">
-                      {activity.activity_status?.toUpperCase() || 'PENDING'}
+                    <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
+                      {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -437,8 +453,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge variant={activity.activity_status === 'confirmed' ? 'default' : 'secondary'}>
-                          {activity.activity_status.toUpperCase()}
+                        <Badge className={getActivityStatusColor(activity.activity_status || 'pending')}>
+                          {activity.activity_status.replace(/_/g, ' ').toUpperCase()}
                         </Badge>
                       )}
                     </TableCell>
