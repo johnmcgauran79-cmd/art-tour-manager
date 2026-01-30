@@ -11,9 +11,12 @@ import { AddContactModal } from "./AddContactModal";
 import { ContactExportModal } from "./ContactExportModal";
 import { ContactImportModal } from "./ContactImportModal";
 import { ContactCard } from "./cards/ContactCard";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionButton } from "@/components/ui/permission-button";
 
 export const ContactsTable = () => {
   const { navigateWithContext } = useNavigationContext();
+  const { isViewOnly, hasEditAccess } = usePermissions();
   const [showAddContact, setShowAddContact] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [showImport, setShowImport] = useState(false);
@@ -66,14 +69,18 @@ export const ContactsTable = () => {
                 <Download className="h-4 w-4 sm:mr-2" />
                 <span className="hidden sm:inline">Export</span>
               </Button>
-              <Button onClick={() => setShowImport(true)} variant="outline" size="sm">
-                <Upload className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Import</span>
-              </Button>
-              <Button onClick={() => setShowAddContact(true)} size="sm" className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Add Contact</span>
-              </Button>
+              {!isViewOnly && (
+                <PermissionButton resource="contact" action="create" onClick={() => setShowImport(true)} variant="outline" size="sm">
+                  <Upload className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Import</span>
+                </PermissionButton>
+              )}
+              {!isViewOnly && (
+                <PermissionButton resource="contact" action="create" onClick={() => setShowAddContact(true)} size="sm" className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow">
+                  <Plus className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Contact</span>
+                </PermissionButton>
+              )}
             </div>
           </div>
           

@@ -12,6 +12,7 @@ interface PermissionErrorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   action?: string;
+  reason?: string;
 }
 
 export const PermissionErrorDialog = ({ 
