@@ -13,7 +13,8 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
 import { BookingCard } from "@/components/cards/BookingCard";
 import { ViewToggle } from "@/components/ViewToggle";
-import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionButton } from "@/components/ui/permission-button";
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -26,11 +27,8 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
-  const { userRole } = useAuth();
+  const { isViewOnly, hasEditAccess } = usePermissions();
   const { data: filterCounts } = useFilterCounts();
-  
-  // Agent users have view-only access
-  const isAgent = userRole === 'agent';
   
   // Calculate combined count for deposits owing and final payments due
   const statusUpdateCount = (filterCounts?.depositsOwing || 0) + (filterCounts?.paymentDue || 0);
@@ -93,7 +91,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
             
             {/* Action buttons - wrap on mobile */}
             <div className="flex flex-wrap gap-2">
-              {onViewAnalytics && !isAgent && (
+              {onViewAnalytics && !isViewOnly && (
                 <Button 
                   onClick={onViewAnalytics} 
                   variant="outline"
@@ -104,8 +102,10 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                   <span className="hidden sm:inline">Analytics</span>
                 </Button>
               )}
-              {onBulkStatusUpdate && !isAgent && (
-                <Button 
+              {onBulkStatusUpdate && !isViewOnly && (
+                <PermissionButton 
+                  resource="booking"
+                  action="edit"
                   onClick={onBulkStatusUpdate} 
                   size="sm"
                   className="bg-brand-yellow hover:bg-brand-yellow/90 text-brand-navy relative text-xs sm:text-sm"
@@ -120,17 +120,19 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                       {statusUpdateCount}
                     </Badge>
                   )}
-                </Button>
+                </PermissionButton>
               )}
-              {!isAgent && (
-                <Button 
+              {!isViewOnly && (
+                <PermissionButton 
+                  resource="booking"
+                  action="create"
                   onClick={onAddBooking} 
                   size="sm"
                   className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow text-xs sm:text-sm"
                 >
                   <Plus className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Add Booking</span>
-                </Button>
+                </PermissionButton>
               )}
             </div>
           </div>

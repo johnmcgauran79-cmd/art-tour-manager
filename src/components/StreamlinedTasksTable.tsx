@@ -7,6 +7,8 @@ import { CheckCircle, Edit, Eye, Trash2, MapPin, Calendar, ClipboardList } from 
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { format } from "date-fns";
 import { TaskCard } from "@/components/cards/TaskCard";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionButton } from "@/components/ui/permission-button";
 interface StreamlinedTasksTableProps {
   tasks: Task[];
   loading?: boolean;
@@ -29,6 +31,7 @@ export const StreamlinedTasksTable = ({
   title = "Tasks" 
 }: StreamlinedTasksTableProps) => {
   const updateTask = useUpdateTask();
+  const { hasEditAccess, isViewOnly } = usePermissions();
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -111,10 +114,10 @@ export const StreamlinedTasksTable = ({
       <div className="text-center py-8 text-muted-foreground">
         <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-50" />
         <p>No tasks found</p>
-        {onCreateTask && (
-          <Button onClick={onCreateTask} className="mt-2">
+        {onCreateTask && hasEditAccess && (
+          <PermissionButton resource="task" action="create" onClick={onCreateTask} className="mt-2">
             Create your first task
-          </Button>
+          </PermissionButton>
         )}
       </div>
     );
@@ -242,16 +245,18 @@ export const StreamlinedTasksTable = ({
                   
                   <TableCell className="w-[100px] max-w-[100px]">
                     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                      {task.status !== 'completed' && (
-                        <Button
+                      {task.status !== 'completed' && hasEditAccess && (
+                        <PermissionButton
+                          resource="task"
+                          action="edit"
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => handleMarkComplete(e, task.id)}
+                          onClick={() => handleMarkComplete({ stopPropagation: () => {} } as React.MouseEvent, task.id)}
                           className="h-7 w-7 p-0"
-                          title="Mark as complete"
+                          actionDescription="mark tasks as complete"
                         >
                           <CheckCircle className="h-3 w-3" />
-                        </Button>
+                        </PermissionButton>
                       )}
                       <Button
                         variant="ghost"
@@ -261,9 +266,9 @@ export const StreamlinedTasksTable = ({
                           handleRowClick(task);
                         }}
                         className="h-7 w-7 p-0"
-                        title="View/Edit task"
+                        title="View task"
                       >
-                        <Edit className="h-3 w-3" />
+                        <Eye className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>

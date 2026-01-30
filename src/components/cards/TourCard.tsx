@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,8 @@ import { Calendar, Users, MapPin, DollarSign, Edit, Copy } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionButton } from "@/components/ui/permission-button";
 
 interface TourCardProps {
   tour: any;
@@ -15,6 +18,8 @@ interface TourCardProps {
 }
 
 export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicate }: TourCardProps) => {
+  const { hasEditAccess } = usePermissions();
+  
   const handleCardClick = () => {
     if (onView) {
       onView(tour);
@@ -101,33 +106,31 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
 
         {/* Actions - Only Edit and Duplicate buttons */}
         {(onEdit || onDuplicate) && (
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2" onClick={(e) => e.stopPropagation()}>
             {onEdit && (
-              <Button
+              <PermissionButton
+                resource="tour"
+                action="edit"
                 variant="outline"
                 size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEdit(tour);
-                }}
+                onClick={() => onEdit(tour)}
                 className="flex-1 hover-scale"
               >
                 <Edit className="h-4 w-4 mr-1.5" />
                 Edit
-              </Button>
+              </PermissionButton>
             )}
-            {onDuplicate && (
-              <Button
+            {onDuplicate && hasEditAccess && (
+              <PermissionButton
+                resource="tour"
+                action="create"
                 variant="outline"
                 size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(tour);
-                }}
+                onClick={() => onDuplicate(tour)}
                 className="hover-scale"
               >
                 <Copy className="h-4 w-4" />
-              </Button>
+              </PermissionButton>
             )}
           </div>
         )}

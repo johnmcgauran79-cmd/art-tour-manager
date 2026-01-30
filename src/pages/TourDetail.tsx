@@ -33,6 +33,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { supabase } from "@/integrations/supabase/client";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionButton } from "@/components/ui/permission-button";
 
 export default function TourDetail() {
   const { id } = useParams();
@@ -71,11 +73,7 @@ export default function TourDetail() {
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
   const { alerts } = useTourAlerts(id || '', false);
-  
-  // Agent and host users have view-only access
-  const isAgent = userRole === 'agent';
-  const isHost = userRole === 'host';
-  const isViewOnly = isAgent || isHost;
+  const { isViewOnly, hasEditAccess } = usePermissions();
 
   // Transform tour data immediately - don't wait for useEffect
   const transformedTour = tour ? {

@@ -16,6 +16,8 @@ import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import { usePermissions } from "@/hooks/usePermissions";
+import { PermissionButton } from "@/components/ui/permission-button";
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
@@ -84,6 +86,7 @@ export const EmailTemplatesManagement = () => {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isHtmlView, setIsHtmlView] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
+  const { hasEditAccess } = usePermissions();
   
   const { data: templates = [], isLoading } = useEmailTemplates();
   const { data: userEmails = [] } = useUserEmails();
@@ -236,10 +239,15 @@ export const EmailTemplatesManagement = () => {
           </Select>
         </div>
         
-        <Button onClick={handleCreate} className="flex items-center gap-2">
+        <PermissionButton 
+          resource="email_template" 
+          action="create" 
+          onClick={handleCreate} 
+          className="flex items-center gap-2"
+        >
           <Plus className="h-4 w-4" />
           Create Template
-        </Button>
+        </PermissionButton>
       </div>
 
       {/* Templates List */}
@@ -286,20 +294,22 @@ export const EmailTemplatesManagement = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 pt-2">
-                    <Button size="sm" variant="outline" onClick={() => handleEdit(template)}>
+                    <PermissionButton resource="email_template" action="edit" size="sm" variant="outline" onClick={() => handleEdit(template)}>
                       <Edit className="h-3 w-3" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => handleDuplicate(template)}>
+                    </PermissionButton>
+                    <PermissionButton resource="email_template" action="create" size="sm" variant="outline" onClick={() => handleDuplicate(template)}>
                       <Copy className="h-3 w-3" />
-                    </Button>
-                    <Button 
+                    </PermissionButton>
+                    <PermissionButton 
+                      resource="email_template" 
+                      action="delete"
                       size="sm" 
                       variant="outline" 
                       onClick={() => handleDelete(template)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="h-3 w-3" />
-                    </Button>
+                    </PermissionButton>
                   </div>
                 </div>
               </CardContent>
