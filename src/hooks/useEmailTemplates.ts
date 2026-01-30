@@ -89,9 +89,10 @@ export const useUpdateEmailTemplate = () => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
+      if (!data) throw new Error('Failed to update template. You may not have permission to edit this template.');
       return data;
     },
     onSuccess: () => {
