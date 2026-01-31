@@ -29,6 +29,7 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
 import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestButton";
+import { PassengerDetailsSection } from "@/components/booking/PassengerDetailsSection";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -354,11 +355,30 @@ export default function BookingDetail() {
                 <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
                 <InfoRow label="Secondary Contact" value={secondaryContactName} />
                 <InfoRow label="Passenger Count" value={booking.passenger_count?.toString()} />
-                <InfoRow label="Passenger 2" value={booking.passenger_2_name} />
-                <InfoRow label="Passenger 3" value={booking.passenger_3_name} />
                 <InfoRow label="Group Name" value={booking.group_name} />
                 <InfoRow label="Booking Agent" value={booking.booking_agent} />
               </div>
+
+              {/* Passenger Details with Expandable Sections */}
+              {(booking.passenger_2_name || (booking as any).passenger_2 || booking.passenger_3_name || (booking as any).passenger_3) && (
+                <div className="pt-4 border-t space-y-1">
+                  <h4 className="text-sm font-medium text-muted-foreground mb-2">Additional Passengers</h4>
+                  <PassengerDetailsSection
+                    passenger={(booking as any).passenger_2}
+                    passengerNumber={2}
+                    fallbackName={booking.passenger_2_name}
+                    bookingId={booking.id}
+                    isAgent={isAgent}
+                  />
+                  <PassengerDetailsSection
+                    passenger={(booking as any).passenger_3}
+                    passengerNumber={3}
+                    fallbackName={booking.passenger_3_name}
+                    bookingId={booking.id}
+                    isAgent={isAgent}
+                  />
+                </div>
+              )}
 
               {booking.extra_requests && (
                 <div className="pt-4 border-t">

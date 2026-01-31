@@ -104,7 +104,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Error fetching email template:', templateError);
     }
 
-    // Fetch booking details with all related information
+    // Fetch booking details with all related information including additional passengers
     const { data: booking, error: bookingError } = await supabaseClient
       .from('bookings')
       .select(`
@@ -112,6 +112,8 @@ const handler = async (req: Request): Promise<Response> => {
         tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, travel_documents_required, notes),
         customers:lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, city, state, country, spouse_name, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs, notes),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
+        passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
+        passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
         hotel_bookings (
           check_in_date,
           check_out_date,
@@ -567,6 +569,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Prepare BCC recipients
     const bccRecipients = bccEmails || [];
     
+    // Send main email to lead passenger
     const emailResponse = await resend.emails.send({
       from: `Bookings <${finalFromEmail}>`,
       to: [booking.customers.email],
@@ -612,11 +615,133 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Send emails to additional passengers (passenger_2 and passenger_3) if they have email addresses
+    // These passengers receive their own direct emails, not CC'd
+    const additionalPassengerEmails: string[] = [];
+    
+    const sendToPassenger = async (passenger: any, passengerLabel: string) => {
+      if (!passenger?.email) return;
+      
+      // Skip if this email is the same as the lead passenger
+      if (passenger.email === booking.customers.email) return;
+      
+      console.log(`Sending email to ${passengerLabel}: ${passenger.email}`);
+      
+      // Create personalized merge data for this passenger
+      const passengerMergeData = {
+        ...mergeData,
+        customer_first_name: passenger.first_name || '',
+        customer_last_name: passenger.last_name || '',
+        customer_preferred_name: passenger.preferred_name || '',
+        customer_email: passenger.email || '',
+        customer_phone: passenger.phone || '',
+        customer_dietary_requirements: passenger.dietary_requirements || '',
+        customer_medical_conditions: passenger.medical_conditions || '',
+        customer_accessibility_needs: passenger.accessibility_needs || '',
+        customer_emergency_contact_name: passenger.emergency_contact_name || '',
+        customer_emergency_contact_phone: passenger.emergency_contact_phone || '',
+        customer_emergency_contact_relationship: passenger.emergency_contact_relationship || '',
+        customer: {
+          first_name: passenger.first_name || '',
+          last_name: passenger.last_name || '',
+          preferred_name: passenger.preferred_name || '',
+          email: passenger.email || '',
+          phone: passenger.phone || '',
+          dietary_requirements: passenger.dietary_requirements || '',
+          medical_conditions: passenger.medical_conditions || '',
+          accessibility_needs: passenger.accessibility_needs || '',
+          emergency_contact_name: passenger.emergency_contact_name || '',
+          emergency_contact_phone: passenger.emergency_contact_phone || '',
+          emergency_contact_relationship: passenger.emergency_contact_relationship || '',
+        },
+      };
+      
+      // Generate profile update link for this passenger
+      let passengerProfileLink = '';
+      let passengerProfileButton = '';
+      
+      if (needsProfileUpdateLink && passenger.id) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+        
+        const { data: tokenData, error: tokenError } = await supabaseClient
+          .from('customer_access_tokens')
+          .insert({
+            customer_id: passenger.id,
+            created_by: requestUserId || SYSTEM_ACTOR_ID,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select('token')
+          .single();
+        
+        if (!tokenError && tokenData) {
+          const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+          passengerProfileLink = `${baseUrl}/update-profile/${tokenData.token}`;
+          passengerProfileButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${passengerProfileLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update My Profile</a></td></tr></table>`;
+          
+          passengerMergeData.profile_update_link = passengerProfileLink;
+          passengerMergeData.profile_update_button = passengerProfileButton;
+        }
+      }
+      
+      // Process template for this passenger
+      const contentToProcess = customContent || template?.content_template || '';
+      let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
+      passengerEmailHtml = passengerEmailHtml.replace(/\n/g, '<br>');
+      
+      if (passengerProfileLink) {
+        passengerEmailHtml = injectProfileUpdateLink(passengerEmailHtml, passengerProfileLink);
+        const hasButtonAlready = /data-art-profile-update=(['"])button\1/i.test(passengerEmailHtml) || passengerEmailHtml.includes('Update My Profile');
+        if (!hasButtonAlready && /update\s+your\s+profile/i.test(passengerEmailHtml) && passengerProfileButton) {
+          passengerEmailHtml = injectProfileUpdateButtonNearCopy(passengerEmailHtml, passengerProfileButton);
+        }
+      }
+      
+      const subjectToProcess = customSubject || template?.subject_template || emailSubject;
+      const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);
+      
+      try {
+        const passengerEmailResponse = await resend.emails.send({
+          from: `Bookings <${finalFromEmail}>`,
+          to: [passenger.email],
+          subject: passengerSubject,
+          html: passengerEmailHtml,
+        });
+        
+        if (passengerEmailResponse.data?.id) {
+          additionalPassengerEmails.push(passenger.email);
+          
+          await supabaseClient
+            .from('email_logs')
+            .insert({
+              message_id: passengerEmailResponse.data.id,
+              booking_id: bookingId,
+              tour_id: booking.tour_id,
+              recipient_email: passenger.email,
+              recipient_name: `${passenger.first_name} ${passenger.last_name}`,
+              subject: passengerSubject,
+              template_name: template?.name || 'Custom',
+            });
+        }
+      } catch (passengerEmailError) {
+        console.error(`Error sending email to ${passengerLabel}:`, passengerEmailError);
+      }
+    };
+    
+    // Send to passenger 2 and 3 if they exist
+    if (booking.passenger_2) {
+      await sendToPassenger(booking.passenger_2, 'Passenger 2');
+    }
+    if (booking.passenger_3) {
+      await sendToPassenger(booking.passenger_3, 'Passenger 3');
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
       sentTo: booking.customers.email,
-      ccTo: ccRecipients.length > 0 ? ccRecipients : undefined
+      ccTo: ccRecipients.length > 0 ? ccRecipients : undefined,
+      additionalPassengers: additionalPassengerEmails.length > 0 ? additionalPassengerEmails : undefined
     }), {
       status: 200,
       headers: {

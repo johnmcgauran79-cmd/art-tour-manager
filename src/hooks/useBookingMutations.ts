@@ -249,7 +249,7 @@ export const useUpdateBooking = () => {
   const { logOperation } = useAuditLog();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string }) => {
+    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string; passenger_2_id?: string | null; passenger_3_id?: string | null }) => {
       const finalUpdates: Record<string, any> = { ...updates };
 
       // Normalize empty date strings

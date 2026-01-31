@@ -281,6 +281,8 @@ export default function BookingEdit() {
       passenger_count: formData.passenger_count,
       passenger_2_name: formData.passenger_2_name,
       passenger_3_name: formData.passenger_3_name,
+      passenger_2_id: selectedPassenger2?.id || null,
+      passenger_3_id: selectedPassenger3?.id || null,
       group_name: formData.group_name,
       booking_agent: formData.booking_agent,
       status: formData.status,
@@ -621,20 +623,34 @@ export default function BookingEdit() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="passenger_2_name">Passenger 2 Name</Label>
-                  <Input
-                    id="passenger_2_name"
-                    value={formData.passenger_2_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_2_name: e.target.value }))}
+                <div className="md:col-span-2">
+                  <PassengerContactSearch
+                    label="Passenger 2"
+                    selectedContact={selectedPassenger2}
+                    onContactSelect={(contact) => {
+                      setSelectedPassenger2(contact);
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        passenger_2_name: contact ? `${contact.first_name} ${contact.last_name}` : ''
+                      }));
+                    }}
+                    placeholder="Search or enter passenger 2 name..."
+                    showExpandedDetails={false}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="passenger_3_name">Passenger 3 Name</Label>
-                  <Input
-                    id="passenger_3_name"
-                    value={formData.passenger_3_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passenger_3_name: e.target.value }))}
+                <div className="md:col-span-2">
+                  <PassengerContactSearch
+                    label="Passenger 3"
+                    selectedContact={selectedPassenger3}
+                    onContactSelect={(contact) => {
+                      setSelectedPassenger3(contact);
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        passenger_3_name: contact ? `${contact.first_name} ${contact.last_name}` : ''
+                      }));
+                    }}
+                    placeholder="Search or enter passenger 3 name..."
+                    showExpandedDetails={false}
                   />
                 </div>
                 <div>
