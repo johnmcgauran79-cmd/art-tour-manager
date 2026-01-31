@@ -20,6 +20,21 @@ export interface MedicalFormData {
   emergency_contact_relationship: string;
 }
 
+export interface PassengerContactData {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  dietary_requirements: string | null;
+  medical_conditions: string | null;
+  accessibility_needs: string | null;
+  emergency_contact_name: string | null;
+  emergency_contact_phone: string | null;
+  emergency_contact_relationship: string | null;
+  preferred_name?: string | null;
+}
+
 export interface BookingFormData {
   tour_id: string;
   lead_passenger_name: string;
@@ -28,6 +43,8 @@ export interface BookingFormData {
   passenger_count: number;
   passenger_2_name: string;
   passenger_3_name: string;
+  passenger_2_id: string;
+  passenger_3_id: string;
   group_name: string;
   booking_agent: string;
   status: string;
@@ -83,6 +100,8 @@ export const useBookingFormState = ({
     passenger_count: 1,
     passenger_2_name: '',
     passenger_3_name: '',
+    passenger_2_id: '',
+    passenger_3_id: '',
     group_name: '',
     booking_agent: '',
     status: defaultStatus || 'invoiced',
@@ -130,6 +149,8 @@ export const useBookingFormState = ({
         passenger_count: 1,
         passenger_2_name: '',
         passenger_3_name: '',
+        passenger_2_id: '',
+        passenger_3_id: '',
         group_name: '',
         booking_agent: '',
         status: defaultStatus || 'invoiced',

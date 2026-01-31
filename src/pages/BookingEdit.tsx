@@ -22,6 +22,8 @@ import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ContactSearch } from "@/components/booking/ContactSearch";
+import { PassengerContactSearch } from "@/components/booking/PassengerContactSearch";
+import { PassengerContactData } from "@/hooks/useBookingFormState";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +86,8 @@ export default function BookingEdit() {
   const [showAddContact, setShowAddContact] = useState(false);
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
   const [secondaryContactName, setSecondaryContactName] = useState('');
+  const [selectedPassenger2, setSelectedPassenger2] = useState<PassengerContactData | null>(null);
+  const [selectedPassenger3, setSelectedPassenger3] = useState<PassengerContactData | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
 
@@ -133,6 +137,15 @@ export default function BookingEdit() {
       if (booking.secondary_contact) {
         setSelectedSecondaryContact(booking.secondary_contact);
         setSecondaryContactName(`${booking.secondary_contact.first_name} ${booking.secondary_contact.last_name}`);
+      }
+      
+      // Set passenger 2 and 3 contacts if they exist (from updated query)
+      const bookingWithPassengers = booking as any;
+      if (bookingWithPassengers.passenger_2) {
+        setSelectedPassenger2(bookingWithPassengers.passenger_2 as PassengerContactData);
+      }
+      if (bookingWithPassengers.passenger_3) {
+        setSelectedPassenger3(bookingWithPassengers.passenger_3 as PassengerContactData);
       }
     }
   }, [booking]);

@@ -569,7 +569,9 @@ export type Database = {
           invoice_notes: string | null
           lead_passenger_id: string | null
           nationality: string | null
+          passenger_2_id: string | null
           passenger_2_name: string | null
+          passenger_3_id: string | null
           passenger_3_name: string | null
           passenger_count: number
           passport_country: string | null
@@ -596,7 +598,9 @@ export type Database = {
           invoice_notes?: string | null
           lead_passenger_id?: string | null
           nationality?: string | null
+          passenger_2_id?: string | null
           passenger_2_name?: string | null
+          passenger_3_id?: string | null
           passenger_3_name?: string | null
           passenger_count?: number
           passport_country?: string | null
@@ -623,7 +627,9 @@ export type Database = {
           invoice_notes?: string | null
           lead_passenger_id?: string | null
           nationality?: string | null
+          passenger_2_id?: string | null
           passenger_2_name?: string | null
+          passenger_3_id?: string | null
           passenger_3_name?: string | null
           passenger_count?: number
           passport_country?: string | null
@@ -641,6 +647,20 @@ export type Database = {
           {
             foreignKeyName: "bookings_lead_passenger_id_fkey"
             columns: ["lead_passenger_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_passenger_2_id_fkey"
+            columns: ["passenger_2_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_passenger_3_id_fkey"
+            columns: ["passenger_3_id"]
             isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]

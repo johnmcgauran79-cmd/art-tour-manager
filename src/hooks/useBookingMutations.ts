@@ -90,6 +90,8 @@ export const useCreateBooking = () => {
       passenger_count: number;
       passenger_2_name?: string;
       passenger_3_name?: string;
+      passenger_2_id?: string | null;
+      passenger_3_id?: string | null;
       group_name?: string;
       booking_agent?: string;
       status: string;
@@ -104,6 +106,7 @@ export const useCreateBooking = () => {
       id_number?: string;
       nationality?: string;
       whatsapp_group_comms?: boolean;
+      secondary_contact_id?: string | null;
     }) => {
       
       // Calculate nights
@@ -172,6 +175,9 @@ export const useCreateBooking = () => {
           passenger_count: bookingData.passenger_count,
           passenger_2_name: bookingData.passenger_2_name || null,
           passenger_3_name: bookingData.passenger_3_name || null,
+          passenger_2_id: bookingData.passenger_2_id || null,
+          passenger_3_id: bookingData.passenger_3_id || null,
+          secondary_contact_id: bookingData.secondary_contact_id || null,
           group_name: bookingData.group_name || null,
           booking_agent: bookingData.booking_agent || null,
           status: bookingData.status as any,

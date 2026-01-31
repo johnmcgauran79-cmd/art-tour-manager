@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ContactSearch } from "@/components/booking/ContactSearch";
+import { PassengerContactSearch } from "@/components/booking/PassengerContactSearch";
+import { PassengerContactData } from "@/hooks/useBookingFormState";
 
 interface BookingDetailsFormProps {
   formData: any;
@@ -15,6 +16,10 @@ interface BookingDetailsFormProps {
   isWaitlistMode?: boolean;
   onSecondaryContactSelect?: (contact: any) => void;
   selectedSecondaryContact?: any;
+  selectedPassenger2?: PassengerContactData | null;
+  selectedPassenger3?: PassengerContactData | null;
+  onPassenger2Select?: (contact: PassengerContactData | null) => void;
+  onPassenger3Select?: (contact: PassengerContactData | null) => void;
 }
 
 export const BookingDetailsForm = ({ 
@@ -24,7 +29,11 @@ export const BookingDetailsForm = ({
   preSelectedTourId,
   isWaitlistMode = false,
   onSecondaryContactSelect,
-  selectedSecondaryContact
+  selectedSecondaryContact,
+  selectedPassenger2,
+  selectedPassenger3,
+  onPassenger2Select,
+  onPassenger3Select,
 }: BookingDetailsFormProps) => {
   // Clear check-in/out dates when accommodation is not required
   useEffect(() => {
@@ -35,6 +44,28 @@ export const BookingDetailsForm = ({
       }
     }
   }, [formData.accommodation_required, formData.check_in_date, formData.check_out_date, setFormData]);
+
+  const handlePassenger2Select = (contact: PassengerContactData | null) => {
+    if (contact) {
+      setFormData('passenger_2_id', contact.id);
+      setFormData('passenger_2_name', `${contact.first_name} ${contact.last_name}`);
+    } else {
+      setFormData('passenger_2_id', '');
+      setFormData('passenger_2_name', '');
+    }
+    onPassenger2Select?.(contact);
+  };
+
+  const handlePassenger3Select = (contact: PassengerContactData | null) => {
+    if (contact) {
+      setFormData('passenger_3_id', contact.id);
+      setFormData('passenger_3_name', `${contact.first_name} ${contact.last_name}`);
+    } else {
+      setFormData('passenger_3_id', '');
+      setFormData('passenger_3_name', '');
+    }
+    onPassenger3Select?.(contact);
+  };
 
   return (
     <div className="space-y-6">
@@ -98,30 +129,37 @@ export const BookingDetailsForm = ({
       {/* Additional Passengers */}
       {formData.passenger_count > 1 && (
         <div className="border rounded-lg p-4 space-y-4">
-          <h3 className="text-lg font-medium text-brand-navy">Additional Passengers</h3>
+          <div>
+            <h3 className="text-lg font-medium text-brand-navy">Additional Passengers</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Search for existing contacts or enter a name to create a new contact. Each passenger with an email can receive their own booking communications.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {formData.passenger_count >= 2 && (
-              <div>
-                <Label htmlFor="passenger_2_name">Passenger 2 Name</Label>
-                <Input
-                  id="passenger_2_name"
-                  value={formData.passenger_2_name}
-                  onChange={(e) => setFormData('passenger_2_name', e.target.value)}
-                  placeholder="Full name"
-                />
-              </div>
+              <PassengerContactSearch
+                label="Passenger 2"
+                selectedContact={selectedPassenger2 || null}
+                onContactSelect={handlePassenger2Select}
+                fallbackName={formData.passenger_2_name}
+                onFallbackNameChange={(name) => setFormData('passenger_2_name', name)}
+                showExpandedDetails={true}
+                required={false}
+                placeholder="Search or enter passenger name..."
+              />
             )}
             
             {formData.passenger_count >= 3 && (
-              <div>
-                <Label htmlFor="passenger_3_name">Passenger 3 Name</Label>
-                <Input
-                  id="passenger_3_name"
-                  value={formData.passenger_3_name}
-                  onChange={(e) => setFormData('passenger_3_name', e.target.value)}
-                  placeholder="Full name"
-                />
-              </div>
+              <PassengerContactSearch
+                label="Passenger 3"
+                selectedContact={selectedPassenger3 || null}
+                onContactSelect={handlePassenger3Select}
+                fallbackName={formData.passenger_3_name}
+                onFallbackNameChange={(name) => setFormData('passenger_3_name', name)}
+                showExpandedDetails={true}
+                required={false}
+                placeholder="Search or enter passenger name..."
+              />
             )}
           </div>
         </div>
@@ -129,24 +167,26 @@ export const BookingDetailsForm = ({
 
       {/* Secondary Contact */}
       <div className="border rounded-lg p-4 space-y-4">
-        <h3 className="text-lg font-medium text-brand-navy">Secondary Contact (Optional)</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Add a secondary contact who will also receive booking emails
-        </p>
+        <div>
+          <h3 className="text-lg font-medium text-brand-navy">Secondary Contact (Optional)</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Add a contact who manages this booking (e.g., agent, family member). They will be CC'd on all emails sent to the lead passenger.
+          </p>
+        </div>
         {selectedSecondaryContact ? (
-          <div className="bg-gray-50 p-3 rounded border">
+          <div className="bg-muted/30 p-3 rounded border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">{selectedSecondaryContact.first_name} {selectedSecondaryContact.last_name}</p>
-                <p className="text-sm text-gray-600">{selectedSecondaryContact.email}</p>
+                <p className="text-sm text-muted-foreground">{selectedSecondaryContact.email}</p>
                 {selectedSecondaryContact.phone && (
-                  <p className="text-sm text-gray-600">{selectedSecondaryContact.phone}</p>
+                  <p className="text-sm text-muted-foreground">{selectedSecondaryContact.phone}</p>
                 )}
               </div>
               <button
                 type="button"
                 onClick={() => onSecondaryContactSelect?.(null)}
-                className="text-sm text-red-600 hover:text-red-700"
+                className="text-sm text-destructive hover:text-destructive/80"
               >
                 Remove
               </button>
