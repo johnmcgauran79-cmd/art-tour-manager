@@ -10,6 +10,7 @@ const corsHeaders = {
 interface ProfileUpdateRequestPayload {
   customerId: string;
   bookingId?: string;
+  customerName?: string; // Optional override for display name
 }
 
 const handler = async (req: Request): Promise<Response> => {
