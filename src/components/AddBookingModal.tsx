@@ -64,6 +64,8 @@ export const AddBookingModal = ({
   } | null>(null);
 
   const [selectedSecondaryContact, setSelectedSecondaryContact] = useState<any>(null);
+  const [selectedPassenger2, setSelectedPassenger2] = useState<any>(null);
+  const [selectedPassenger3, setSelectedPassenger3] = useState<any>(null);
   const [leadPassengerName, setLeadPassengerName] = useState('');
   const [showAddContact, setShowAddContact] = useState(false);
   const [addingContactFor, setAddingContactFor] = useState<'lead' | 'secondary' | null>(null);
@@ -107,6 +109,8 @@ export const AddBookingModal = ({
     if (open) {
       setSelectedContact(null);
       setSelectedSecondaryContact(null);
+      setSelectedPassenger2(null);
+      setSelectedPassenger3(null);
       setLeadPassengerName('');
       setActiveTab("details");
     }
@@ -311,6 +315,8 @@ export const AddBookingModal = ({
         ...formData,
         passport_expiry_date: formData.passport_expiry_date || null,
         secondary_contact_id: formData.secondary_contact_id || null,
+        passenger_2_id: formData.passenger_2_id || null,
+        passenger_3_id: formData.passenger_3_id || null,
       };
 
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
@@ -429,8 +435,16 @@ export const AddBookingModal = ({
     const selectedTour = tours?.find(t => t.id === formData.tour_id);
     
     const otherPassengers = [];
-    if (formData.passenger_2_name) otherPassengers.push(formData.passenger_2_name);
-    if (formData.passenger_3_name) otherPassengers.push(formData.passenger_3_name);
+    if (selectedPassenger2) {
+      otherPassengers.push(`${selectedPassenger2.first_name} ${selectedPassenger2.last_name}${selectedPassenger2.email ? ` (${selectedPassenger2.email})` : ''}`);
+    } else if (formData.passenger_2_name) {
+      otherPassengers.push(formData.passenger_2_name);
+    }
+    if (selectedPassenger3) {
+      otherPassengers.push(`${selectedPassenger3.first_name} ${selectedPassenger3.last_name}${selectedPassenger3.email ? ` (${selectedPassenger3.email})` : ''}`);
+    } else if (formData.passenger_3_name) {
+      otherPassengers.push(formData.passenger_3_name);
+    }
     
     const allocatedHotels = hotels
       .filter(hotel => hotelAllocations[hotel.id]?.allocated)
@@ -529,6 +543,10 @@ export const AddBookingModal = ({
                   isWaitlistMode={formData.status === 'waitlisted'}
                   onSecondaryContactSelect={handleSecondaryContactSelect}
                   selectedSecondaryContact={selectedSecondaryContact}
+                  selectedPassenger2={selectedPassenger2}
+                  selectedPassenger3={selectedPassenger3}
+                  onPassenger2Select={setSelectedPassenger2}
+                  onPassenger3Select={setSelectedPassenger3}
                 />
                 <div className="flex justify-end mt-2">
                   <Button
