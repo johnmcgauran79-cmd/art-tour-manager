@@ -39,6 +39,13 @@ const MERGE_FIELDS = {
     '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}',
     '{{customer_notes}}'
   ],
+  lead_passenger: [
+    '{{lead_passenger_first_name}}', '{{lead_passenger_last_name}}', '{{lead_passenger_preferred_name}}', 
+    '{{lead_passenger_email}}', '{{lead_passenger_phone}}',
+    '{{lead_passenger_city}}', '{{lead_passenger_state}}', '{{lead_passenger_country}}', '{{lead_passenger_spouse_name}}',
+    '{{lead_passenger_dietary_requirements}}', '{{lead_passenger_medical_conditions}}', '{{lead_passenger_accessibility_needs}}',
+    '{{lead_passenger_emergency_contact_name}}', '{{lead_passenger_emergency_contact_phone}}', '{{lead_passenger_emergency_contact_relationship}}'
+  ],
   passenger_2: [
     '{{passenger_2_first_name}}', '{{passenger_2_last_name}}', '{{passenger_2_preferred_name}}', 
     '{{passenger_2_email}}', '{{passenger_2_phone}}',
@@ -468,8 +475,9 @@ export const EmailTemplatesManagement = () => {
                 </div>
                 
                 <Tabs defaultValue="customer" className="w-full">
-                  <TabsList className="grid w-full grid-cols-4 mb-1">
-                    <TabsTrigger value="customer">Customer</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-5 mb-1">
+                    <TabsTrigger value="customer">Recipient</TabsTrigger>
+                    <TabsTrigger value="lead_passenger">Lead Pax</TabsTrigger>
                     <TabsTrigger value="passenger_2">Pax 2</TabsTrigger>
                     <TabsTrigger value="passenger_3">Pax 3</TabsTrigger>
                     <TabsTrigger value="tour">Tour</TabsTrigger>

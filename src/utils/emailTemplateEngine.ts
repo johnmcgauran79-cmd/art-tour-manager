@@ -1,6 +1,6 @@
 // Email template engine with comprehensive mail merge fields
 export interface EmailMergeData {
-  // Customer fields
+  // Customer fields (dynamic - changes per recipient for multi-passenger emails)
   customer_first_name?: string;
   customer_last_name?: string;
   customer_preferred_name?: string;
@@ -17,6 +17,23 @@ export interface EmailMergeData {
   customer_emergency_contact_phone?: string;
   customer_emergency_contact_relationship?: string;
   customer_notes?: string;
+
+  // Lead passenger fields (static - always the lead passenger regardless of recipient)
+  lead_passenger_first_name?: string;
+  lead_passenger_last_name?: string;
+  lead_passenger_preferred_name?: string;
+  lead_passenger_email?: string;
+  lead_passenger_phone?: string;
+  lead_passenger_city?: string;
+  lead_passenger_state?: string;
+  lead_passenger_country?: string;
+  lead_passenger_spouse_name?: string;
+  lead_passenger_dietary_requirements?: string;
+  lead_passenger_medical_conditions?: string;
+  lead_passenger_accessibility_needs?: string;
+  lead_passenger_emergency_contact_name?: string;
+  lead_passenger_emergency_contact_phone?: string;
+  lead_passenger_emergency_contact_relationship?: string;
 
   // Nested objects for dot-notation templates (backwards compatibility)
   customer?: {
@@ -84,7 +101,7 @@ export interface EmailMergeData {
   booking_accommodation_required?: boolean;
   booking_whatsapp_group_comms?: boolean;
 
-  // Passenger 2 fields
+  // Passenger 2 fields (static - always passenger 2)
   passenger_2_first_name?: string;
   passenger_2_last_name?: string;
   passenger_2_preferred_name?: string;
@@ -97,7 +114,7 @@ export interface EmailMergeData {
   passenger_2_emergency_contact_phone?: string;
   passenger_2_emergency_contact_relationship?: string;
 
-  // Passenger 3 fields
+  // Passenger 3 fields (static - always passenger 3)
   passenger_3_first_name?: string;
   passenger_3_last_name?: string;
   passenger_3_preferred_name?: string;
@@ -308,7 +325,7 @@ export class EmailTemplateEngine {
     const activityBookings = booking.activity_bookings || [];
     
     return {
-      // Customer fields
+      // Customer fields (dynamic - will be overridden for additional passengers)
       customer_first_name: customer.first_name,
       customer_last_name: customer.last_name,
       customer_preferred_name: customer.preferred_name,
@@ -325,6 +342,23 @@ export class EmailTemplateEngine {
       customer_emergency_contact_phone: customer.emergency_contact_phone,
       customer_emergency_contact_relationship: customer.emergency_contact_relationship,
       customer_notes: customer.notes,
+
+      // Lead passenger fields (static - always the lead passenger regardless of recipient)
+      lead_passenger_first_name: customer.first_name,
+      lead_passenger_last_name: customer.last_name,
+      lead_passenger_preferred_name: customer.preferred_name,
+      lead_passenger_email: customer.email,
+      lead_passenger_phone: customer.phone,
+      lead_passenger_city: customer.city,
+      lead_passenger_state: customer.state,
+      lead_passenger_country: customer.country,
+      lead_passenger_spouse_name: customer.spouse_name,
+      lead_passenger_dietary_requirements: customer.dietary_requirements,
+      lead_passenger_medical_conditions: customer.medical_conditions,
+      lead_passenger_accessibility_needs: customer.accessibility_needs,
+      lead_passenger_emergency_contact_name: customer.emergency_contact_name,
+      lead_passenger_emergency_contact_phone: customer.emergency_contact_phone,
+      lead_passenger_emergency_contact_relationship: customer.emergency_contact_relationship,
 
       // Nested objects for dot notation templates
       customer: {
