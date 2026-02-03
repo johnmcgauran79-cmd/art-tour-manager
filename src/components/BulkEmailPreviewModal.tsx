@@ -39,6 +39,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
+  const [includeAdditionalPassengers, setIncludeAdditionalPassengers] = useState(true);
   
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
     setSendProgress({ current, total });
@@ -71,6 +72,18 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           id,
           accommodation_required,
           customers:lead_passenger_id (
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          passenger_2:customers!passenger_2_id (
+            id,
+            first_name,
+            last_name,
+            email
+          ),
+          passenger_3:customers!passenger_3_id (
             id,
             first_name,
             last_name,
@@ -167,6 +180,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       setSelectedTemplateId("blank");
       setPreviewBooking(null);
       setFromEmail("bookings@australianracingtours.com.au");
+      setIncludeAdditionalPassengers(true);
     }
   }, [open]);
 
@@ -260,7 +274,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         fromEmail,
         ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
-        selectedBookingIds: Array.from(selectedBookingIds)
+        selectedBookingIds: Array.from(selectedBookingIds),
+        includeAdditionalPassengers
       });
       setShowConfirmDialog(false);
       setSendProgress(null);
@@ -276,6 +291,21 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   // Get selected recipients' names for confirmation dialog
   const selectedRecipients = allBookingsData?.filter(b => selectedBookingIds.has(b.id)) || [];
+  
+  // Calculate additional passengers count for selected bookings
+  const additionalPassengersCount = selectedRecipients.reduce((count, booking: any) => {
+    let additionalEmails = 0;
+    if (booking.passenger_2?.email && booking.passenger_2.email !== booking.customers?.email) {
+      additionalEmails++;
+    }
+    if (booking.passenger_3?.email && booking.passenger_3.email !== booking.customers?.email && booking.passenger_3.email !== booking.passenger_2?.email) {
+      additionalEmails++;
+    }
+    return count + additionalEmails;
+  }, 0);
+  
+  // Total potential emails
+  const totalPotentialEmails = selectedBookingIds.size + (includeAdditionalPassengers ? additionalPassengersCount : 0);
 
   if (!tourId) return null;
 
@@ -347,7 +377,16 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label>Select Recipients ({selectedBookingIds.size} selected):</Label>
+                  <div className="flex flex-col gap-1">
+                    <Label>
+                      {selectedBookingIds.size} bookings
+                      {includeAdditionalPassengers && additionalPassengersCount > 0 && (
+                        <span className="text-muted-foreground font-normal">
+                          {' '}(up to {totalPotentialEmails} emails incl. additional passengers)
+                        </span>
+                      )}
+                    </Label>
+                  </div>
                   <div className="flex gap-1">
                     <Button 
                       type="button"
@@ -387,7 +426,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     </Button>
                   </div>
                 </div>
-                <ScrollArea className="h-[200px] border rounded-md p-2">
+                <ScrollArea className="h-[180px] border rounded-md p-2">
                   {allBookingsLoading ? (
                     <div className="flex items-center justify-center p-4">
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -396,6 +435,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     <div className="space-y-2">
                       {allBookingsData?.map((booking: any) => {
                         const hasAccommodation = booking.hotel_bookings && booking.hotel_bookings.length > 0;
+                        const hasAdditionalPax = booking.passenger_2?.email || booking.passenger_3?.email;
                         return (
                           <div key={booking.id} className="flex items-center space-x-2">
                             <Checkbox
@@ -410,6 +450,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                               {booking.customers?.first_name} {booking.customers?.last_name}
                               <span className="text-muted-foreground ml-2 text-xs">
                                 {hasAccommodation ? '🏨' : '🎯'}
+                                {hasAdditionalPax && ' 👥'}
                               </span>
                             </label>
                           </div>
@@ -418,6 +459,26 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     </div>
                   )}
                 </ScrollArea>
+                
+                {/* Additional passengers toggle */}
+                <div className="flex items-center space-x-2 mt-3 pt-3 border-t">
+                  <Checkbox
+                    id="includeAdditionalPassengers"
+                    checked={includeAdditionalPassengers}
+                    onCheckedChange={(checked) => setIncludeAdditionalPassengers(checked === true)}
+                  />
+                  <label
+                    htmlFor="includeAdditionalPassengers"
+                    className="text-sm font-medium leading-none cursor-pointer"
+                  >
+                    Include additional passengers (Pax 2 & 3)
+                    {additionalPassengersCount > 0 && (
+                      <span className="text-muted-foreground font-normal ml-1">
+                        — {additionalPassengersCount} additional {additionalPassengersCount === 1 ? 'email' : 'emails'}
+                      </span>
+                    )}
+                  </label>
+                </div>
               </div>
             </div>
 

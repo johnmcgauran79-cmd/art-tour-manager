@@ -17,6 +17,7 @@ interface BookingConfirmationRequest {
   fromEmail?: string;
   ccEmails?: string[];
   bccEmails?: string[];
+  includeAdditionalPassengers?: boolean;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
@@ -88,7 +89,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers }: BookingConfirmationRequest = await req.json();
+    
+    // Default to true if not explicitly provided (backwards compatible)
+    const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
 
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
@@ -728,12 +732,16 @@ const handler = async (req: Request): Promise<Response> => {
       }
     };
     
-    // Send to passenger 2 and 3 if they exist
-    if (booking.passenger_2) {
-      await sendToPassenger(booking.passenger_2, 'Passenger 2');
-    }
-    if (booking.passenger_3) {
-      await sendToPassenger(booking.passenger_3, 'Passenger 3');
+    // Send to passenger 2 and 3 if they exist AND if includeAdditionalPassengers is true
+    if (shouldIncludeAdditionalPassengers) {
+      if (booking.passenger_2) {
+        await sendToPassenger(booking.passenger_2, 'Passenger 2');
+      }
+      if (booking.passenger_3) {
+        await sendToPassenger(booking.passenger_3, 'Passenger 3');
+      }
+    } else {
+      console.log('Skipping additional passengers as includeAdditionalPassengers is false');
     }
 
     return new Response(JSON.stringify({ 
