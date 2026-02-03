@@ -309,7 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
         // IMPORTANT: Keep this HTML on a single line.
         // Later in the pipeline we convert any remaining "\n" to "<br>", which can break table markup.
         // data-art-profile-update marker helps us reliably detect whether the button is already present.
-        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">Update Your Profile</a></td></tr></table>`;
+        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #2563eb; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE MY PROFILE</a></td></tr></table>`;
         console.log('Generated profile update link for customer:', booking.customers.id);
       }
     }
