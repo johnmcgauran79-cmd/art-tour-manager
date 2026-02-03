@@ -303,7 +303,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Create comprehensive merge data object with nested structures
     // Defined at handler scope so it's accessible to sendToPassenger
     let mergeData: Record<string, any> = {
-      // Customer fields (will be overridden for additional passengers)
+      // Customer fields (dynamic - will be overridden for additional passengers)
       customer_first_name: booking.customers?.first_name || '',
       customer_last_name: booking.customers?.last_name || '',
       customer_preferred_name: booking.customers?.preferred_name || '',
@@ -320,6 +320,23 @@ const handler = async (req: Request): Promise<Response> => {
       customer_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
       customer_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
       customer_notes: booking.customers?.notes || '',
+
+      // Lead passenger fields (static - always the lead passenger regardless of recipient)
+      lead_passenger_first_name: booking.customers?.first_name || '',
+      lead_passenger_last_name: booking.customers?.last_name || '',
+      lead_passenger_preferred_name: booking.customers?.preferred_name || '',
+      lead_passenger_email: booking.customers?.email || '',
+      lead_passenger_phone: booking.customers?.phone || '',
+      lead_passenger_city: booking.customers?.city || '',
+      lead_passenger_state: booking.customers?.state || '',
+      lead_passenger_country: booking.customers?.country || '',
+      lead_passenger_spouse_name: booking.customers?.spouse_name || '',
+      lead_passenger_dietary_requirements: booking.customers?.dietary_requirements || '',
+      lead_passenger_medical_conditions: booking.customers?.medical_conditions || '',
+      lead_passenger_accessibility_needs: booking.customers?.accessibility_needs || '',
+      lead_passenger_emergency_contact_name: booking.customers?.emergency_contact_name || '',
+      lead_passenger_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
+      lead_passenger_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
 
       // Nested objects (backwards-compatible with older templates using dot notation,
       // e.g. {{customer.preferred_name}} or {{tour.name}})
