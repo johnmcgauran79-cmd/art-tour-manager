@@ -164,17 +164,28 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
         onProgress?.(i + 1, bookings.length);
         
         try {
-          // Convert booking to merge data format
-          const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
+          // When including additional passengers, send raw templates to the edge function
+          // so it can process them individually for each passenger with their own data.
+          // Otherwise, pre-process for the lead passenger only.
+          const shouldSendRawTemplates = includeAdditionalPassengers !== false;
           
-          // Process templates with individual booking data
-          const personalizedSubject = subjectTemplate ? 
-            EmailTemplateEngine.processTemplate(subjectTemplate, mergeData) : 
-            `Email for ${booking.customers?.first_name || 'Customer'}`;
-            
-          const personalizedContent = contentTemplate ? 
-            EmailTemplateEngine.processTemplate(contentTemplate, mergeData) : 
-            `Dear ${booking.customers?.first_name || 'Customer'},\n\n\n\nBest regards,\nYour Team`;
+          let personalizedSubject: string | undefined;
+          let personalizedContent: string | undefined;
+          
+          if (shouldSendRawTemplates) {
+            // Send raw templates - edge function will process for each recipient
+            personalizedSubject = subjectTemplate;
+            personalizedContent = contentTemplate;
+          } else {
+            // Pre-process for lead passenger only
+            const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
+            personalizedSubject = subjectTemplate ? 
+              EmailTemplateEngine.processTemplate(subjectTemplate, mergeData) : 
+              undefined;
+            personalizedContent = contentTemplate ? 
+              EmailTemplateEngine.processTemplate(contentTemplate, mergeData) : 
+              undefined;
+          }
           
           const { error } = await supabase.functions.invoke('send-booking-confirmation', {
             body: { 
