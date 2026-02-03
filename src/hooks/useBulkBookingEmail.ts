@@ -7,7 +7,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers }: { 
       tourId: string; 
       recipientType?: string;
       subjectTemplate?: string; 
@@ -16,6 +16,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
       selectedBookingIds?: string[];
       ccEmails?: string[];
       bccEmails?: string[];
+      includeAdditionalPassengers?: boolean;
     }) => {
       let bookings;
       
@@ -31,11 +32,14 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
             customers!lead_passenger_id (
-              first_name, last_name, preferred_name, email, phone, city, state, country,
+              id, first_name, last_name, preferred_name, email, phone, city, state, country,
               spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
               emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
               notes
             ),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone),
+            passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
+            passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
               room_upgrade, room_requests, confirmation_number,
@@ -63,11 +67,14 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
             customers!lead_passenger_id (
-              first_name, last_name, preferred_name, email, phone, city, state, country,
+              id, first_name, last_name, preferred_name, email, phone, city, state, country,
               spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
               emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
               notes
             ),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone),
+            passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
+            passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
               room_upgrade, room_requests, confirmation_number,
@@ -75,7 +82,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             ),
             activity_bookings (
               passengers_attending,
-              activities (name, activity_date, start_time, end_time, pickup_time, location, guide_name, guide_phone)
+              activities (name, activity_date, start_time, end_time, pickup_time, location, contact_name, contact_phone)
             )
           `)
           .eq('tour_id', tourId)
@@ -97,14 +104,17 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             tours:tour_id (
               name, location, start_date, end_date, days, nights, pickup_point,
               notes, inclusions, exclusions, tour_host, price_single, price_double,
-              deposit_required, final_payment_date, instalment_date, instalment_date, instalment_amount
+              deposit_required, final_payment_date, instalment_date, instalment_amount
             ),
             customers!lead_passenger_id (
-              first_name, last_name, preferred_name, email, phone, city, state, country,
+              id, first_name, last_name, preferred_name, email, phone, city, state, country,
               spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
               emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
               notes
             ),
+            secondary_contact:customers!secondary_contact_id (id, first_name, last_name, email, phone),
+            passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
+            passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, medical_conditions, accessibility_needs, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship),
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
               room_upgrade, room_requests, confirmation_number,
@@ -125,22 +135,15 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
           id: b.id,
           name: `${b.customers?.first_name} ${b.customers?.last_name}`,
           hotel_bookings_count: b.hotel_bookings?.length || 0,
-          hotel_bookings: b.hotel_bookings
+          passenger_2: b.passenger_2?.first_name,
+          passenger_3: b.passenger_3?.first_name
         })));
         
         // Only include bookings that have hotel bookings
         bookings = data?.filter(booking => {
           const hasHotelBookings = booking.hotel_bookings && booking.hotel_bookings.length > 0;
-          console.log(`[Bulk Email] ${booking.customers?.first_name} ${booking.customers?.last_name}:`, {
-            hasHotelBookings,
-            hotel_bookings: booking.hotel_bookings
-          });
           return hasHotelBookings;
         });
-        
-        console.log('[Bulk Email] Filtered bookings with hotel:', bookings?.map(b => 
-          `${b.customers?.first_name} ${b.customers?.last_name}`
-        ));
       }
 
       if (!bookings || bookings.length === 0) {
@@ -180,7 +183,8 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               customContent: personalizedContent,
               fromEmail,
               ccEmails,
-              bccEmails
+              bccEmails,
+              includeAdditionalPassengers: includeAdditionalPassengers ?? true
             }
           });
           
