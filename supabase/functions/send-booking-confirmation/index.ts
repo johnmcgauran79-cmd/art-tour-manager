@@ -413,6 +413,32 @@ const handler = async (req: Request): Promise<Response> => {
       booking_passport_country: booking.passport_country || '',
       booking_nationality: booking.nationality || '',
 
+      // Passenger 2 fields (from linked contact record)
+      passenger_2_first_name: booking.passenger_2?.first_name || '',
+      passenger_2_last_name: booking.passenger_2?.last_name || '',
+      passenger_2_preferred_name: booking.passenger_2?.preferred_name || '',
+      passenger_2_email: booking.passenger_2?.email || '',
+      passenger_2_phone: booking.passenger_2?.phone || '',
+      passenger_2_dietary_requirements: booking.passenger_2?.dietary_requirements || '',
+      passenger_2_medical_conditions: booking.passenger_2?.medical_conditions || '',
+      passenger_2_accessibility_needs: booking.passenger_2?.accessibility_needs || '',
+      passenger_2_emergency_contact_name: booking.passenger_2?.emergency_contact_name || '',
+      passenger_2_emergency_contact_phone: booking.passenger_2?.emergency_contact_phone || '',
+      passenger_2_emergency_contact_relationship: booking.passenger_2?.emergency_contact_relationship || '',
+
+      // Passenger 3 fields (from linked contact record)
+      passenger_3_first_name: booking.passenger_3?.first_name || '',
+      passenger_3_last_name: booking.passenger_3?.last_name || '',
+      passenger_3_preferred_name: booking.passenger_3?.preferred_name || '',
+      passenger_3_email: booking.passenger_3?.email || '',
+      passenger_3_phone: booking.passenger_3?.phone || '',
+      passenger_3_dietary_requirements: booking.passenger_3?.dietary_requirements || '',
+      passenger_3_medical_conditions: booking.passenger_3?.medical_conditions || '',
+      passenger_3_accessibility_needs: booking.passenger_3?.accessibility_needs || '',
+      passenger_3_emergency_contact_name: booking.passenger_3?.emergency_contact_name || '',
+      passenger_3_emergency_contact_phone: booking.passenger_3?.emergency_contact_phone || '',
+      passenger_3_emergency_contact_relationship: booking.passenger_3?.emergency_contact_relationship || '',
+
       booking: {
         id: booking.id || '',
         status: booking.status || '',
