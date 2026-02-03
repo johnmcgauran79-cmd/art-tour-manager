@@ -39,6 +39,18 @@ const MERGE_FIELDS = {
     '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}',
     '{{customer_notes}}'
   ],
+  passenger_2: [
+    '{{passenger_2_first_name}}', '{{passenger_2_last_name}}', '{{passenger_2_preferred_name}}', 
+    '{{passenger_2_email}}', '{{passenger_2_phone}}',
+    '{{passenger_2_dietary_requirements}}', '{{passenger_2_medical_conditions}}', '{{passenger_2_accessibility_needs}}',
+    '{{passenger_2_emergency_contact_name}}', '{{passenger_2_emergency_contact_phone}}', '{{passenger_2_emergency_contact_relationship}}'
+  ],
+  passenger_3: [
+    '{{passenger_3_first_name}}', '{{passenger_3_last_name}}', '{{passenger_3_preferred_name}}', 
+    '{{passenger_3_email}}', '{{passenger_3_phone}}',
+    '{{passenger_3_dietary_requirements}}', '{{passenger_3_medical_conditions}}', '{{passenger_3_accessibility_needs}}',
+    '{{passenger_3_emergency_contact_name}}', '{{passenger_3_emergency_contact_phone}}', '{{passenger_3_emergency_contact_relationship}}'
+  ],
   tour: [
     '{{tour_name}}', '{{tour_location}}', '{{tour_type}}', '{{tour_start_date}}', '{{tour_end_date}}',
     '{{tour_days}}', '{{tour_nights}}', '{{tour_pickup_point}}', '{{tour_host}}',
@@ -456,9 +468,13 @@ export const EmailTemplatesManagement = () => {
                 </div>
                 
                 <Tabs defaultValue="customer" className="w-full">
-                  <TabsList className="grid w-full grid-cols-6">
+                  <TabsList className="grid w-full grid-cols-4 mb-1">
                     <TabsTrigger value="customer">Customer</TabsTrigger>
+                    <TabsTrigger value="passenger_2">Pax 2</TabsTrigger>
+                    <TabsTrigger value="passenger_3">Pax 3</TabsTrigger>
                     <TabsTrigger value="tour">Tour</TabsTrigger>
+                  </TabsList>
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="booking">Booking</TabsTrigger>
                     <TabsTrigger value="hotel">Hotel</TabsTrigger>
                     <TabsTrigger value="activity">Activity</TabsTrigger>
