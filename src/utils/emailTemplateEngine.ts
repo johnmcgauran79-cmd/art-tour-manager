@@ -84,6 +84,32 @@ export interface EmailMergeData {
   booking_accommodation_required?: boolean;
   booking_whatsapp_group_comms?: boolean;
 
+  // Passenger 2 fields
+  passenger_2_first_name?: string;
+  passenger_2_last_name?: string;
+  passenger_2_preferred_name?: string;
+  passenger_2_email?: string;
+  passenger_2_phone?: string;
+  passenger_2_dietary_requirements?: string;
+  passenger_2_medical_conditions?: string;
+  passenger_2_accessibility_needs?: string;
+  passenger_2_emergency_contact_name?: string;
+  passenger_2_emergency_contact_phone?: string;
+  passenger_2_emergency_contact_relationship?: string;
+
+  // Passenger 3 fields
+  passenger_3_first_name?: string;
+  passenger_3_last_name?: string;
+  passenger_3_preferred_name?: string;
+  passenger_3_email?: string;
+  passenger_3_phone?: string;
+  passenger_3_dietary_requirements?: string;
+  passenger_3_medical_conditions?: string;
+  passenger_3_accessibility_needs?: string;
+  passenger_3_emergency_contact_name?: string;
+  passenger_3_emergency_contact_phone?: string;
+  passenger_3_emergency_contact_relationship?: string;
+
   booking?: {
     passenger_count?: number;
     status?: string;
@@ -391,6 +417,32 @@ export class EmailTemplateEngine {
       booking_revenue: booking.revenue,
       booking_accommodation_required: booking.accommodation_required,
       booking_whatsapp_group_comms: booking.whatsapp_group_comms,
+
+      // Passenger 2 fields (from linked contact record)
+      passenger_2_first_name: booking.passenger_2?.first_name,
+      passenger_2_last_name: booking.passenger_2?.last_name,
+      passenger_2_preferred_name: booking.passenger_2?.preferred_name,
+      passenger_2_email: booking.passenger_2?.email,
+      passenger_2_phone: booking.passenger_2?.phone,
+      passenger_2_dietary_requirements: booking.passenger_2?.dietary_requirements,
+      passenger_2_medical_conditions: booking.passenger_2?.medical_conditions,
+      passenger_2_accessibility_needs: booking.passenger_2?.accessibility_needs,
+      passenger_2_emergency_contact_name: booking.passenger_2?.emergency_contact_name,
+      passenger_2_emergency_contact_phone: booking.passenger_2?.emergency_contact_phone,
+      passenger_2_emergency_contact_relationship: booking.passenger_2?.emergency_contact_relationship,
+
+      // Passenger 3 fields (from linked contact record)
+      passenger_3_first_name: booking.passenger_3?.first_name,
+      passenger_3_last_name: booking.passenger_3?.last_name,
+      passenger_3_preferred_name: booking.passenger_3?.preferred_name,
+      passenger_3_email: booking.passenger_3?.email,
+      passenger_3_phone: booking.passenger_3?.phone,
+      passenger_3_dietary_requirements: booking.passenger_3?.dietary_requirements,
+      passenger_3_medical_conditions: booking.passenger_3?.medical_conditions,
+      passenger_3_accessibility_needs: booking.passenger_3?.accessibility_needs,
+      passenger_3_emergency_contact_name: booking.passenger_3?.emergency_contact_name,
+      passenger_3_emergency_contact_phone: booking.passenger_3?.emergency_contact_phone,
+      passenger_3_emergency_contact_relationship: booking.passenger_3?.emergency_contact_relationship,
 
       booking: {
         passenger_count: booking.passenger_count,
