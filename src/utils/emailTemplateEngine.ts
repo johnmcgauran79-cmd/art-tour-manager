@@ -287,10 +287,21 @@ export class EmailTemplateEngine {
       const trimmedKey = key.trim();
       const value = this.getNestedValue(data, trimmedKey);
 
-      // Empty field handling: keep most empty fields blank; only passenger 2/3 show N/A.
+      // Empty field handling: show N/A for specific field types when empty
       if (value === undefined || value === null || value === '') {
-        const isPassenger2Or3 = /passenger_(2|3)/.test(trimmedKey);
-        return isPassenger2Or3 ? 'N/A' : '';
+        // Fields that should show N/A when empty
+        const naFields = [
+          /passenger_(2|3)/,                    // All passenger 2/3 fields
+          /dietary/i,                           // Dietary requirements
+          /accessibility/i,                     // Accessibility needs
+          /medical/i,                           // Medical conditions
+          /emergency_contact/i,                 // Emergency contact fields
+          /booking_passenger_2_name/,           // Legacy passenger name fields
+          /booking_passenger_3_name/,
+        ];
+        
+        const shouldShowNA = naFields.some(pattern => pattern.test(trimmedKey));
+        return shouldShowNA ? 'N/A' : '';
       }
       
       return String(value);

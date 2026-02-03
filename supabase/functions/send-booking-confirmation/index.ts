@@ -233,8 +233,26 @@ const handler = async (req: Request): Promise<Response> => {
       
       // STEP 3: Handle remaining simple variable replacements {{variable}}
       processed = processed.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (match, key) => {
-        const value = getNestedValue(data, stripZeroWidth(String(key)).trim());
-        return value !== undefined && value !== null ? String(value) : '';
+        const trimmedKey = stripZeroWidth(String(key)).trim();
+        const value = getNestedValue(data, trimmedKey);
+        
+        // Empty field handling: show N/A for specific field types when empty
+        if (value === undefined || value === null || value === '') {
+          const naFields = [
+            /passenger_(2|3)/,                    // All passenger 2/3 fields
+            /dietary/i,                           // Dietary requirements
+            /accessibility/i,                     // Accessibility needs
+            /medical/i,                           // Medical conditions
+            /emergency_contact/i,                 // Emergency contact fields
+            /booking_passenger_2_name/,           // Legacy passenger name fields
+            /booking_passenger_3_name/,
+          ];
+          
+          const shouldShowNA = naFields.some(pattern => pattern.test(trimmedKey));
+          return shouldShowNA ? 'N/A' : '';
+        }
+        
+        return String(value);
       });
       
       return processed;
