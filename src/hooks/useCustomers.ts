@@ -145,7 +145,24 @@ export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuer
       // Add search filter if provided
       if (searchQuery && searchQuery.trim()) {
         const searchTerm = searchQuery.trim();
-        query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,state.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%,spouse_name.ilike.%${searchTerm}%`);
+        const searchWords = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        
+        // If multiple words (likely first + last name), search for each word in name fields
+        if (searchWords.length >= 2) {
+          // Build a filter that matches all words across first_name and last_name
+          const firstWord = searchWords[0];
+          const secondWord = searchWords.slice(1).join(' ');
+          
+          // Match "first last" or "last first" pattern, or fallback to any field containing the full term
+          query = query.or(
+            `and(first_name.ilike.%${firstWord}%,last_name.ilike.%${secondWord}%),` +
+            `and(first_name.ilike.%${secondWord}%,last_name.ilike.%${firstWord}%),` +
+            `email.ilike.%${searchTerm}%`
+          );
+        } else {
+          // Single word - search across all fields
+          query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,phone.ilike.%${searchTerm}%,city.ilike.%${searchTerm}%,state.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%,spouse_name.ilike.%${searchTerm}%`);
+        }
       }
 
       const start = (page - 1) * pageSize;
