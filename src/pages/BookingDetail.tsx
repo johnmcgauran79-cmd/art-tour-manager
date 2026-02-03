@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft } from "lucide-react";
+import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink } from "lucide-react";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
-import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
+import { useBookings, useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { useActivities } from "@/hooks/useActivities";
@@ -49,7 +49,9 @@ export default function BookingDetail() {
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [currentTab, setCurrentTab] = useState("details");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRemoveSecondaryContactDialog, setShowRemoveSecondaryContactDialog] = useState(false);
   const deleteBooking = useDeleteBooking();
+  const updateBooking = useUpdateBooking();
   const isMobile = useIsMobile();
   
   // Agent users have view-only access
@@ -85,6 +87,30 @@ export default function BookingDetail() {
         setShowDeleteDialog(false);
       },
     });
+  };
+
+  const handleRemoveSecondaryContact = () => {
+    if (!booking) return;
+    updateBooking.mutate(
+      { id: booking.id, secondary_contact_id: null },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Secondary Contact Removed",
+            description: "The secondary contact has been removed from this booking.",
+          });
+          setShowRemoveSecondaryContactDialog(false);
+        },
+        onError: (error: any) => {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to remove secondary contact",
+            variant: "destructive",
+          });
+          setShowRemoveSecondaryContactDialog(false);
+        },
+      }
+    );
   };
 
   if (isLoading) {
@@ -353,7 +379,34 @@ export default function BookingDetail() {
                 <InfoRow label="Email" value={booking.customers?.email} />
                 <InfoRow label="Phone" value={booking.customers?.phone} />
                 <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
-                <InfoRow label="Secondary Contact" value={secondaryContactName} />
+                {/* Secondary Contact with View/Remove */}
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium text-muted-foreground">Secondary Contact</span>
+                  {booking.secondary_contact ? (
+                    <div className="flex items-center gap-2">
+                      <Link 
+                        to={`/contacts/${booking.secondary_contact.id}`}
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        {secondaryContactName}
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                      {!isAgent && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          onClick={() => setShowRemoveSecondaryContactDialog(true)}
+                          title="Remove secondary contact"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm">—</span>
+                  )}
+                </div>
                 <InfoRow label="Passenger Count" value={booking.passenger_count?.toString()} />
                 <InfoRow label="Group Name" value={booking.group_name} />
                 <InfoRow label="Booking Agent" value={booking.booking_agent} />
@@ -548,6 +601,23 @@ export default function BookingDetail() {
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={showRemoveSecondaryContactDialog} onOpenChange={setShowRemoveSecondaryContactDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Secondary Contact?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove {secondaryContactName} as the secondary contact from this booking. They will no longer be CC'd on emails sent to the lead passenger.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRemoveSecondaryContact}>
+                Remove
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
