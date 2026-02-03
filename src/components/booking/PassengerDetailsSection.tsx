@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, User, Phone, Mail, Heart, AlertCircle, Accessibility, Users } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronDown, ChevronUp, User, Phone, Mail, Heart, AlertCircle, Accessibility, Users, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
@@ -137,8 +138,15 @@ export const PassengerDetailsSection = ({
           )}
 
           {/* Actions */}
-          {!isAgent && passenger.email && (
-            <div className="pt-2 border-t">
+          <div className="pt-2 border-t flex flex-wrap items-center gap-2">
+            <Link 
+              to={`/contacts/${passenger.id}`}
+              className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+            >
+              View Contact
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+            {!isAgent && passenger.email && (
               <SendProfileUpdateButton
                 customerId={passenger.id}
                 customerName={`${passenger.first_name} ${passenger.last_name}`}
@@ -146,8 +154,8 @@ export const PassengerDetailsSection = ({
                 bookingId={bookingId}
                 size="sm"
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
