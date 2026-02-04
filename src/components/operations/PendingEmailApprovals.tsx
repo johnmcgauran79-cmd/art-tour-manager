@@ -30,6 +30,7 @@ export const PendingEmailApprovals = () => {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isProceedingToConfirm, setIsProceedingToConfirm] = useState(false);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked && pendingApprovals) {
@@ -70,8 +71,13 @@ export const PendingEmailApprovals = () => {
   };
 
   const proceedToConfirmReject = () => {
+    setIsProceedingToConfirm(true);
     setShowRejectDialog(false);
-    setShowConfirmRejectDialog(true);
+    // Small delay to ensure dialog closes before opening the next one
+    setTimeout(() => {
+      setShowConfirmRejectDialog(true);
+      setIsProceedingToConfirm(false);
+    }, 100);
   };
 
   const confirmReject = () => {
@@ -82,6 +88,7 @@ export const PendingEmailApprovals = () => {
   };
 
   const cancelReject = () => {
+    if (isProceedingToConfirm) return; // Don't cancel if we're proceeding to confirm
     setShowRejectDialog(false);
     setShowConfirmRejectDialog(false);
     setRejectionReason("");
