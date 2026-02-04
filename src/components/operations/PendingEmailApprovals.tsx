@@ -26,6 +26,7 @@ export const PendingEmailApprovals = () => {
   
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showConfirmRejectDialog, setShowConfirmRejectDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -68,11 +69,22 @@ export const PendingEmailApprovals = () => {
     setShowRejectDialog(true);
   };
 
+  const proceedToConfirmReject = () => {
+    setShowRejectDialog(false);
+    setShowConfirmRejectDialog(true);
+  };
+
   const confirmReject = () => {
     rejectEmails.mutate({ approvalIds: selectedIds, reason: rejectionReason });
     setSelectedIds([]);
     setRejectionReason("");
+    setShowConfirmRejectDialog(false);
+  };
+
+  const cancelReject = () => {
     setShowRejectDialog(false);
+    setShowConfirmRejectDialog(false);
+    setRejectionReason("");
   };
 
   if (isLoading) {
@@ -263,14 +275,16 @@ export const PendingEmailApprovals = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Reject Dialog */}
-      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+      {/* Reject Dialog - Step 1: Reason */}
+      <AlertDialog open={showRejectDialog} onOpenChange={(open) => {
+        if (!open) cancelReject();
+        else setShowRejectDialog(open);
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reject Email Batch</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to reject {selectedIds.length} email batch(es)? 
-              No emails will be sent for the rejected batches.
+              You are about to reject {selectedIds.length} email batch(es). 
               Optionally provide a reason for the rejection.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -281,9 +295,41 @@ export const PendingEmailApprovals = () => {
             className="mt-2"
           />
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setRejectionReason("")}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmReject}>
-              Reject
+            <AlertDialogCancel onClick={cancelReject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={proceedToConfirmReject} className="bg-destructive hover:bg-destructive/90">
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Dialog - Step 2: Final Confirmation */}
+      <AlertDialog open={showConfirmRejectDialog} onOpenChange={(open) => {
+        if (!open) cancelReject();
+        else setShowConfirmRejectDialog(open);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">⚠️ Permanent Rejection</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p className="font-medium text-foreground">
+                This action is permanent and cannot be undone.
+              </p>
+              <p>
+                The selected {selectedIds.length} email batch(es) will be permanently rejected and will <strong>never</strong> be sent or reappear for approval.
+              </p>
+              <p className="text-sm">
+                If you need to send these emails in the future, you will need to manually trigger them or create a new automated rule.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelReject}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmReject}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Permanently Reject
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
