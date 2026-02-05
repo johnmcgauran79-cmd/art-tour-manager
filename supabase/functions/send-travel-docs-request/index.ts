@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from("bookings")
       .select(`
         *,
-        customers!lead_passenger_id (id, first_name, last_name, email),
+        customers!lead_passenger_id (id, first_name, last_name, email, preferred_name),
         tours (id, name, start_date, end_date, travel_documents_required)
       `)
       .eq("id", bookingId)
@@ -135,37 +135,87 @@ const handler = async (req: Request): Promise<Response> => {
       });
     };
 
-    // Check what passport details we already have
-    const existingDetails = [];
-    if (booking.passport_number) existingDetails.push(`Passport Number: ${booking.passport_number}`);
-    if (booking.passport_country) existingDetails.push(`Passport Country: ${booking.passport_country}`);
-    if (booking.passport_expiry_date) existingDetails.push(`Expiry Date: ${formatDate(booking.passport_expiry_date)}`);
-    if (booking.nationality) existingDetails.push(`Nationality: ${booking.nationality}`);
-    if (booking.id_number) existingDetails.push(`ID Number: ${booking.id_number}`);
+    // Generate the travel docs button HTML
+    const travelDocsButtonHtml = `<a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SUBMIT TRAVEL DOCUMENTS</a>`;
 
-    const existingDetailsHtml = existingDetails.length > 0 
-      ? `
-        <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 15px 0;">
-          <h4 style="margin: 0 0 10px 0; color: #333;">Current Details on File:</h4>
-          <ul style="margin: 0; padding-left: 20px;">
-            ${existingDetails.map(d => `<li style="margin: 5px 0;">${d}</li>`).join('')}
-          </ul>
-        </div>
-      `
-      : `
-        <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 15px 0;">
-          <p style="margin: 0; color: #856404;">
-            <strong>No travel documents on file yet.</strong> Please provide your passport details as soon as possible.
-          </p>
-        </div>
-      `;
+    // Check for existing passport details
+    const hasPassportDetails = !!(booking.passport_number || booking.passport_country || booking.passport_expiry_date || booking.nationality || booking.id_number);
 
-    // Send the email
-    const emailResponse = await resend.emails.send({
-      from: "Australian Racing Tours <info@australianracingtours.com.au>",
-      to: [customer.email],
-      subject: `Travel Documents Required - ${tour.name}`,
-      html: `
+    // Try to fetch the database template
+    const { data: template } = await supabase
+      .from("email_templates")
+      .select("*")
+      .eq("type", "travel_documents_request")
+      .eq("is_active", true)
+      .order("is_default", { ascending: false })
+      .limit(1)
+      .single();
+
+    let finalSubject: string;
+    let finalHtml: string;
+    let fromEmail: string;
+
+    if (template) {
+      // Use database template with merge field processing
+      fromEmail = template.from_email || "Australian Racing Tours <info@australianracingtours.com.au>";
+
+      // Build merge field replacements
+      const replacements: Record<string, string> = {
+        // Customer fields (dynamic - recipient)
+        '{{customer_first_name}}': customer.preferred_name || customer.first_name || '',
+        '{{customer_last_name}}': customer.last_name || '',
+        '{{customer_email}}': customer.email || '',
+        '{{customer_preferred_name}}': customer.preferred_name || customer.first_name || '',
+        
+        // Tour fields
+        '{{tour_name}}': tour.name || '',
+        '{{tour_start_date}}': tour.start_date ? formatDate(tour.start_date) : '',
+        '{{tour_end_date}}': tour.end_date ? formatDate(tour.end_date) : '',
+        
+        // Passport fields
+        '{{passport_number}}': booking.passport_number || '',
+        '{{passport_country}}': booking.passport_country || '',
+        '{{passport_expiry_date}}': booking.passport_expiry_date ? formatDate(booking.passport_expiry_date) : '',
+        '{{nationality}}': booking.nationality || '',
+        '{{id_number}}': booking.id_number || '',
+        
+        // Action buttons and links
+        '{{travel_docs_button}}': travelDocsButtonHtml,
+        '{{travel_docs_link}}': updateLink,
+      };
+
+      // Process template content
+      let processedContent = template.content_template || '';
+      let processedSubject = template.subject_template || `Travel Documents Required - ${tour.name}`;
+
+      // Handle conditional sections for passport details
+      const hasDetailsRegex = /\{\{#has_passport_details\}\}([\s\S]*?)\{\{\/has_passport_details\}\}/g;
+      const noDetailsRegex = /\{\{#no_passport_details\}\}([\s\S]*?)\{\{\/no_passport_details\}\}/g;
+      const notHasDetailsRegex = /\{\{\^has_passport_details\}\}([\s\S]*?)\{\{\/has_passport_details\}\}/g;
+
+      if (hasPassportDetails) {
+        // Show content inside {{#has_passport_details}}, remove {{^has_passport_details}} and {{#no_passport_details}}
+        processedContent = processedContent.replace(hasDetailsRegex, '$1');
+        processedContent = processedContent.replace(notHasDetailsRegex, '');
+        processedContent = processedContent.replace(noDetailsRegex, '');
+      } else {
+        // Show content inside {{^has_passport_details}} and {{#no_passport_details}}, remove {{#has_passport_details}}
+        processedContent = processedContent.replace(notHasDetailsRegex, '$1');
+        processedContent = processedContent.replace(noDetailsRegex, '$1');
+        processedContent = processedContent.replace(hasDetailsRegex, '');
+      }
+
+      // Apply all merge field replacements
+      for (const [key, value] of Object.entries(replacements)) {
+        const regex = new RegExp(key.replace(/[{}]/g, '\\$&'), 'g');
+        processedContent = processedContent.replace(regex, value);
+        processedSubject = processedSubject.replace(regex, value);
+      }
+
+      finalSubject = processedSubject;
+
+      // Wrap in branded HTML template
+      finalHtml = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -179,7 +229,61 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
           
           <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-            <p style="margin-top: 0;">Dear ${customer.first_name},</p>
+            ${processedContent}
+          </div>
+          
+          <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
+            <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="margin: 5px 0; word-break: break-all;">${updateLink}</p>
+          </div>
+        </body>
+        </html>
+      `;
+    } else {
+      // Use hardcoded fallback template
+      fromEmail = "Australian Racing Tours <info@australianracingtours.com.au>";
+      finalSubject = `Travel Documents Required - ${tour.name}`;
+
+      // Check what passport details we already have
+      const existingDetails = [];
+      if (booking.passport_number) existingDetails.push(`Passport Number: ${booking.passport_number}`);
+      if (booking.passport_country) existingDetails.push(`Passport Country: ${booking.passport_country}`);
+      if (booking.passport_expiry_date) existingDetails.push(`Expiry Date: ${formatDate(booking.passport_expiry_date)}`);
+      if (booking.nationality) existingDetails.push(`Nationality: ${booking.nationality}`);
+      if (booking.id_number) existingDetails.push(`ID Number: ${booking.id_number}`);
+
+      const existingDetailsHtml = existingDetails.length > 0 
+        ? `
+          <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #333;">Current Details on File:</h4>
+            <ul style="margin: 0; padding-left: 20px;">
+              ${existingDetails.map(d => `<li style="margin: 5px 0;">${d}</li>`).join('')}
+            </ul>
+          </div>
+        `
+        : `
+          <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 15px 0;">
+            <p style="margin: 0; color: #856404;">
+              <strong>No travel documents on file yet.</strong> Please provide your passport details as soon as possible.
+            </p>
+          </div>
+        `;
+
+      finalHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; margin-bottom: 10px;" />
+            <h1 style="color: #fff; margin: 0; font-size: 24px;">Travel Documents Required</h1>
+          </div>
+          
+          <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+            <p style="margin-top: 0;">Dear ${customer.preferred_name || customer.first_name},</p>
             
             <p>We require your passport details for your upcoming tour:</p>
             
@@ -195,7 +299,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Please click the button below to provide or update your travel document details:</p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Submit Travel Documents</a>
+              ${travelDocsButtonHtml}
             </div>
             
             <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
@@ -215,7 +319,15 @@ const handler = async (req: Request): Promise<Response> => {
           </div>
         </body>
         </html>
-      `,
+      `;
+    }
+
+    // Send the email
+    const emailResponse = await resend.emails.send({
+      from: fromEmail,
+      to: [customer.email],
+      subject: finalSubject,
+      html: finalHtml,
     });
 
     console.log("Travel docs request email sent:", emailResponse);
@@ -226,7 +338,7 @@ const handler = async (req: Request): Promise<Response> => {
         message_id: emailResponse.data.id,
         recipient_email: customer.email,
         recipient_name: `${customer.first_name} ${customer.last_name}`,
-        subject: `Travel Documents Required - ${tour.name}`,
+        subject: finalSubject,
         template_name: "travel_documents_request",
         booking_id: bookingId,
         tour_id: tour.id,
