@@ -1,0 +1,121 @@
+Delivered-To: johnmcgauran79@gmail.com
+Received: by 2002:a17:504:441a:b0:1e0e:62bb:5424 with SMTP id e26csp3692741njg;
+        Thu, 5 Feb 2026 04:35:14 -0800 (PST)
+X-Received: by 2002:a05:6a21:4c03:b0:366:14b0:4b03 with SMTP id adf61e73a8af0-393724b7f0fmr6148891637.63.1770294913901;
+        Thu, 05 Feb 2026 04:35:13 -0800 (PST)
+ARC-Seal: i=1; a=rsa-sha256; t=1770294913; cv=none;
+        d=google.com; s=arc-20240605;
+        b=Vc82Rdh/CIGN0Qd+cVIB9m1OOwxUTfuPZWcOFb9e6MOWKjRysSpSqWluE4hDMl434Q
+         814H9DVGWgJn84rVYG6gEaScwBxR5NM95NF0t6JcHX0yNX2Cm7FDVzLFi+W/W7rEUPVk
+         BX9cwZo1j0FzHKd5PK5/ehxGeD1GfnNBjdykhLtXpUVZ1S1ND3CfoDoIVEIUdVMKCXhq
+         xVUGQrb5kbtTjPueexnLFlwqMVjAlk4OHg40gLwDa6dMH7dcb7iyhwV35FKt3jC7x+pP
+         BYNQdmTMC1aLn6hcBvD2jOtm4HBu+MM2uqV4iguak21++UTdItBbVuaSOoHiqFRYk6eZ
+         fbWQ==
+ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;
+        h=feedback-id:mime-version:date:message-id:subject:to:from
+         :dkim-signature:dkim-signature;
+        bh=P80Ud6b5VfV9yrxj/H2tsTVnUtN+4GepmNqEAxBfB5I=;
+        fh=UB2G2VdoHHCTVDpBQVODDOpdkrQNTL1LH/r9OKBkgh4=;
+        b=hMM33fcI9XPN5nzNmT5XitmXhGUrm9Q8Dglc2INMbNntK8iP6DQ7Y96yN1PNn+Ctr/
+         2RoFHDgPoG97+IkQjjE6Xe/Ny9T6eCWsjaFUD4ItbAiNsi6ndYZSJrGieKE8CVEYomH4
+         cbYx4wyvDIHxZY7wIsi0a7NdWmZqXrkhs21oafg9DOHXBtT/tgSroXUNJ0C5xbUpcMQE
+         onNcUamdYh/ylmEfH14PNlN2n8glftO7b4q0l3K5fA/Zx81RzBDeU5HXnGdbrInLZ4RM
+         ioNxAhrn0N2gj8Qce7XU4ZBEqQqTb9cnb+Zv8nOcaHeEjLufKuQv3l1cUvmUACHDcgtH
+         +VcA==;
+        dara=google.com
+ARC-Authentication-Results: i=1; mx.google.com;
+       dkim=pass header.i=@australianracingtours.com.au header.s=resend header.b=s8lQDc5F;
+       dkim=pass header.i=@amazonses.com header.s=suwteswkahkjx5z3rgaujjw4zqymtlt2 header.b=YKZaJYBc;
+       spf=pass (google.com: domain of 0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@send.australianracingtours.com.au designates 23.251.234.58 as permitted sender) smtp.mailfrom=0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@send.australianracingtours.com.au;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=australianracingtours.com.au
+Return-Path: <0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@send.australianracingtours.com.au>
+Received: from e234-58.smtp-out.ap-northeast-1.amazonses.com (e234-58.smtp-out.ap-northeast-1.amazonses.com. [23.251.234.58])
+        by mx.google.com with ESMTPS id 41be03b00d2f7-c6c8302ce7esi7186271a12.35.2026.02.05.04.35.13
+        for <johnmcgauran79@gmail.com>
+        (version=TLS1_3 cipher=TLS_AES_128_GCM_SHA256 bits=128/128);
+        Thu, 05 Feb 2026 04:35:13 -0800 (PST)
+Received-SPF: pass (google.com: domain of 0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@send.australianracingtours.com.au designates 23.251.234.58 as permitted sender) client-ip=23.251.234.58;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@australianracingtours.com.au header.s=resend header.b=s8lQDc5F;
+       dkim=pass header.i=@amazonses.com header.s=suwteswkahkjx5z3rgaujjw4zqymtlt2 header.b=YKZaJYBc;
+       spf=pass (google.com: domain of 0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@send.australianracingtours.com.au designates 23.251.234.58 as permitted sender) smtp.mailfrom=0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@send.australianracingtours.com.au;
+       dmarc=pass (p=NONE sp=NONE dis=NONE) header.from=australianracingtours.com.au
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple; s=resend;
+	d=australianracingtours.com.au; t=1770294913;
+	h=From:To:Subject:Message-ID:Date:MIME-Version:Content-Type;
+	bh=P80Ud6b5VfV9yrxj/H2tsTVnUtN+4GepmNqEAxBfB5I=;
+	b=s8lQDc5Fe5oYjyvKpCRXqRgDtliT8xWJ4/JosKktM1LQss8L6N+S+Rk8HxI4Clsw
+	9i1aBQFAebIex4EXKM6iZedSF57n1MmO39KJUH3fB1K8wrbb9yW/xAM135gtaqk1VQj
+	C2j3nDlFxkA+OXAJhEL71D+ex+xfFABFdHR75JDc=
+DKIM-Signature: v=1; a=rsa-sha256; q=dns/txt; c=relaxed/simple;
+	s=suwteswkahkjx5z3rgaujjw4zqymtlt2; d=amazonses.com; t=1770294913;
+	h=From:To:Subject:Message-ID:Date:MIME-Version:Content-Type:Feedback-ID;
+	bh=P80Ud6b5VfV9yrxj/H2tsTVnUtN+4GepmNqEAxBfB5I=;
+	b=YKZaJYBc9zTaIXlu7xoCrNa7oUke4ck50N5c/2RTAvF7OHpcKhMtGRoYAmr6omO4
+	1GiPXv5gB36S8PMrA6/0fVO5KvQ0Benmi6rL3NHOPLKwSr6y/rXoPfldRwd2/wIkxEe
+	vTM4Dfg93K4QtaGlJ2Dnlkl/PmEYggtu1fd4bJWM=
+From: Bookings <bookings@australianracingtours.com.au>
+To: johnmcgauran79@gmail.com
+Subject: Travel Documents Required - 2026 DUMMY tour
+Message-ID: <0106019c2dcca7c4-3e19689e-fad9-4a26-bc6b-f1a42e35b7c0-000000@ap-northeast-1.amazonses.com>
+Date: Thu, 5 Feb 2026 12:35:12 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="--_NmP-61b1210376ed64b9-Part_1"
+Feedback-ID: ::1.ap-northeast-1.TOS0vxEE3Ar6ai29fkp2i/jb+l2iigajCGeLfF7S3sk=:AmazonSES
+X-SES-Outgoing: 2026.02.05-23.251.234.58
+
+----_NmP-61b1210376ed64b9-Part_1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+Dear John,
+
+We require your passport details for your upcoming tour:
+
+
+2026 DUMMY TOUR
+
+Tour Dates: 03/03/2026 - 08/03/2026
+
+
+
+No travel documents on file yet. Please provide your passport details as =
+soon as possible.
+
+
+
+Please click the button below to provide or update =
+your travel document details:
+
+
+
+Note: This link will expire in 72 hours. =
+Your passport details are securely stored and will be automatically deleted=
+ 30 days after your tour ends.
+
+If you have any questions, please don't =
+hesitate to contact us.
+
+Kind regards,
+
+Australian Racing Tours
+----_NmP-61b1210376ed64b9-Part_1
+Content-Type: text/html; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+<p>Dear John,</p><p>We require your passport details for your upcoming tour=
+:</p><h3>2026 DUMMY tour</h3><p><strong>Tour Dates:</strong> 03/03/2026 - 0=
+8/03/2026</p><p> </p><p><strong>No travel documents on file yet.</strong> P=
+lease provide your passport details as soon as possible.</p><p></p><p>Pleas=
+e click the button below to provide or update your travel document details:=
+</p><p></p><p><strong>Note:</strong> This link will expire in 72 hours. You=
+r passport details are securely stored and will be automatically deleted 30=
+ days after your tour ends.</p><p>If you have any questions, please don't h=
+esitate to contact us.</p><p>Kind regards,</p><p><strong>Australian Racing =
+Tours</strong></p><img alt=3D"" src=3D"http://ec940fab8bd31d4725d460381f838=
+7c5.ap-northeast-1.resend-links.com/CI0/0106019c2dcca7c4-3e19689e-fad9-4a26=
+-bc6b-f1a42e35b7c0-000000/7x11yEOoAuTGpIVkNWpU_P2QmmsHGkSUWjdIs1ybvyg=3D249=
+" style=3D"display: none; width: 1px; height: 1px;">
+
+----_NmP-61b1210376ed64b9-Part_1--
