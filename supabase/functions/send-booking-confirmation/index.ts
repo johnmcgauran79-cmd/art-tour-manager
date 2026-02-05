@@ -59,6 +59,36 @@ const injectProfileUpdateButtonNearCopy = (html: string, buttonHtml: string): st
   );
 };
 
+// Similar helpers for travel docs links
+const injectTravelDocsLink = (html: string, link: string): string => {
+  return html.replace(
+    /<a\b([^>]*?)href=(['"])(.*?)\2([^>]*)>([\s\S]*?)<\/a>/gi,
+    (full, preAttrs, quote, href, postAttrs, inner) => {
+      const innerText = String(inner)
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      const isTravelDocsLink = innerText.includes("travel document") || innerText.includes("submit travel");
+      const isHrefEmpty = String(href).trim() === "" || String(href).trim() === "#";
+
+      if (isTravelDocsLink && isHrefEmpty) {
+        return `<a${preAttrs}href=${quote}${link}${quote}${postAttrs}>${inner}</a>`;
+      }
+
+      return full;
+    }
+  );
+};
+
+const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): string => {
+  return html.replace(
+    /(<p\b[^>]*>[\s\S]*?(travel\s+document|passport\s+detail)[\s\S]*?<\/p>)/i,
+    `$1${buttonHtml}`
+  );
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -314,6 +344,54 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Check if travel docs link/button is needed in the template
+    // Similar pattern to profile update links
+    const hasTravelDocsPlaceholder = /\{\{\s*travel_docs_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    const hasTravelDocsCopy = /(travel\s+document|passport\s+detail)/i.test(normalizedContentToCheck);
+    const hasEmptyTravelDocsAnchor = /<a[^>]*href=(['"])\s*\1[^>]*>[\s\S]*(travel\s+document|submit\s+travel)/i.test(normalizedContentToCheck);
+    const needsTravelDocsLink = hasTravelDocsPlaceholder || hasTravelDocsCopy || hasEmptyTravelDocsAnchor;
+    
+    // Only generate travel docs links if the tour requires travel documents
+    const tourRequiresTravelDocs = booking.tours?.travel_documents_required === true;
+    const shouldGenerateTravelDocsLink = needsTravelDocsLink && tourRequiresTravelDocs;
+    
+    console.log('Travel docs check - hasTravelDocsPlaceholder:', hasTravelDocsPlaceholder);
+    console.log('Travel docs check - hasTravelDocsCopy:', hasTravelDocsCopy);
+    console.log('Travel docs check - tourRequiresTravelDocs:', tourRequiresTravelDocs);
+    console.log('Travel docs check - shouldGenerateTravelDocsLink:', shouldGenerateTravelDocsLink);
+    
+    let travelDocsLink = '';
+    let travelDocsButton = '';
+    
+    if (shouldGenerateTravelDocsLink && booking.customers?.id) {
+      // Generate a travel docs token (72-hour expiry, booking-specific)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 72); // 72 hour expiry for travel docs
+      
+      const { data: tokenData, error: tokenError } = await supabaseClient
+        .from('customer_access_tokens')
+        .insert({
+          customer_id: booking.customers.id,
+          booking_id: bookingId,
+          purpose: 'travel_documents',
+          created_by: requestUserId || SYSTEM_ACTOR_ID,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('token')
+        .single();
+      
+      if (tokenError) {
+        console.error('Error creating travel docs token:', tokenError);
+      } else if (tokenData) {
+        const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+        travelDocsLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
+        // IMPORTANT: Keep this HTML on a single line to prevent formatting issues.
+        // data-art-travel-docs marker helps us reliably detect whether the button is already present.
+        travelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${travelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SUBMIT TRAVEL DOCUMENTS</a></td></tr></table>`;
+        console.log('Generated travel docs link for customer:', booking.customers.id);
+      }
+    }
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
@@ -502,6 +580,9 @@ const handler = async (req: Request): Promise<Response> => {
       // Alias used by some older templates/flows
       profile_update_url: profileUpdateLink,
       
+      // Travel docs action fields
+      travel_docs_link: travelDocsLink,
+      travel_docs_button: travelDocsButton,
       // Hotel bookings array
       hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
         hotel_name: hb.hotels?.name || '',
@@ -597,6 +678,19 @@ const handler = async (req: Request): Promise<Response> => {
         const hasButtonAlready = /data-art-profile-update=(['"])button\1/i.test(emailHtml) || emailHtml.includes('Update Your Profile');
         if (!hasButtonAlready && /update\s+your\s+profile/i.test(emailHtml) && profileUpdateButton) {
           emailHtml = injectProfileUpdateButtonNearCopy(emailHtml, profileUpdateButton);
+        }
+      }
+      
+      // Final safety pass for travel docs: same pattern as profile update
+      if (travelDocsLink) {
+        // Patch empty href="" anchors for travel docs links first.
+        emailHtml = injectTravelDocsLink(emailHtml, travelDocsLink);
+
+        // If the email references travel docs but the button token was stripped upstream,
+        // inject the button near the copy.
+        const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(emailHtml) || emailHtml.includes('SUBMIT TRAVEL DOCUMENTS');
+        if (!hasTravelDocsButtonAlready && /(travel\s+document|passport\s+detail)/i.test(emailHtml) && travelDocsButton) {
+          emailHtml = injectTravelDocsButtonNearCopy(emailHtml, travelDocsButton);
         }
       }
     } else {
@@ -739,6 +833,36 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
       
+      // Generate travel docs link for this passenger if tour requires it
+      let passengerTravelDocsLink = '';
+      let passengerTravelDocsButton = '';
+      
+      if (shouldGenerateTravelDocsLink && passenger.id) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 72);
+        
+        const { data: tokenData, error: tokenError } = await supabaseClient
+          .from('customer_access_tokens')
+          .insert({
+            customer_id: passenger.id,
+            booking_id: bookingId,
+            purpose: 'travel_documents',
+            created_by: requestUserId || SYSTEM_ACTOR_ID,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select('token')
+          .single();
+        
+        if (!tokenError && tokenData) {
+          const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+          passengerTravelDocsLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
+          passengerTravelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${passengerTravelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SUBMIT TRAVEL DOCUMENTS</a></td></tr></table>`;
+          
+          passengerMergeData.travel_docs_link = passengerTravelDocsLink;
+          passengerMergeData.travel_docs_button = passengerTravelDocsButton;
+        }
+      }
+      
       // Process template for this passenger
       const contentToProcess = customContent || template?.content_template || '';
       let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
@@ -749,6 +873,14 @@ const handler = async (req: Request): Promise<Response> => {
         const hasButtonAlready = /data-art-profile-update=(['"])button\1/i.test(passengerEmailHtml) || passengerEmailHtml.includes('Update Your Profile');
         if (!hasButtonAlready && /update\s+your\s+profile/i.test(passengerEmailHtml) && passengerProfileButton) {
           passengerEmailHtml = injectProfileUpdateButtonNearCopy(passengerEmailHtml, passengerProfileButton);
+        }
+      }
+      
+      if (passengerTravelDocsLink) {
+        passengerEmailHtml = injectTravelDocsLink(passengerEmailHtml, passengerTravelDocsLink);
+        const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(passengerEmailHtml) || passengerEmailHtml.includes('SUBMIT TRAVEL DOCUMENTS');
+        if (!hasTravelDocsButtonAlready && /(travel\s+document|passport\s+detail)/i.test(passengerEmailHtml) && passengerTravelDocsButton) {
+          passengerEmailHtml = injectTravelDocsButtonNearCopy(passengerEmailHtml, passengerTravelDocsButton);
         }
       }
       
