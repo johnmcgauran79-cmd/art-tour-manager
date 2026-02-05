@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.process-status-change-emails]
 verify_jwt = false
+
+[functions.send-rooming-list]
+verify_jwt = false
