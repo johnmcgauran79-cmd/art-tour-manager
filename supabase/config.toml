@@ -59,3 +59,33 @@ verify_jwt = false
 
 [functions.send-rooming-list]
 verify_jwt = false
+
+[functions.delete-user]
+verify_jwt = false
+
+[functions.generate-itinerary-document]
+verify_jwt = false
+
+[functions.migrate-passenger-names]
+verify_jwt = false
+
+[functions.process-automated-reports]
+verify_jwt = false
+
+[functions.refresh-tour-alerts]
+verify_jwt = false
+
+[functions.reset-user-password]
+verify_jwt = false
+
+[functions.send-activity-passenger-list]
+verify_jwt = false
+
+[functions.send-itinerary-email]
+verify_jwt = false
+
+[functions.send-test-automated-report]
+verify_jwt = false
+
+[functions.sync-crm-contacts]
+verify_jwt = false
