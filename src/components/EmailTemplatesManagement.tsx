@@ -95,7 +95,8 @@ const MERGE_FIELDS = {
     '{{passengers_attending}}', '{{/activity_bookings}}'
   ],
   actions: [
-    '{{profile_update_button}}', '{{profile_update_link}}'
+    '{{profile_update_button}}', '{{profile_update_link}}',
+    '{{travel_docs_button}}', '{{travel_docs_link}}'
   ]
 };
 
