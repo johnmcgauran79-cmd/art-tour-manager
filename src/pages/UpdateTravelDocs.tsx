@@ -5,22 +5,31 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, CheckCircle, AlertCircle, Clock, Shield, Plane } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle, Clock, Shield, Plane, User } from "lucide-react";
 import { toast } from "sonner";
+
+interface PassengerInfo {
+  slot: number;
+  customer_id: string | null;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  has_email: boolean;
+  is_token_owner: boolean;
+  travel_docs: {
+    name_as_per_passport: string | null;
+    passport_number: string | null;
+    passport_expiry_date: string | null;
+    passport_country: string | null;
+    nationality: string | null;
+    id_number: string | null;
+  } | null;
+}
 
 interface CustomerData {
   id: string;
   first_name: string;
   last_name: string;
-}
-
-interface BookingData {
-  id: string;
-  passport_number: string | null;
-  passport_expiry_date: string | null;
-  passport_country: string | null;
-  nationality: string | null;
-  id_number: string | null;
 }
 
 interface TourData {
@@ -30,6 +39,17 @@ interface TourData {
   end_date: string;
 }
 
+interface PassengerFormData {
+  slot: number;
+  customer_id: string | null;
+  name_as_per_passport: string;
+  passport_number: string;
+  passport_expiry_date: string;
+  passport_country: string;
+  nationality: string;
+  id_number: string;
+}
+
 export default function UpdateTravelDocs() {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
@@ -37,16 +57,11 @@ export default function UpdateTravelDocs() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [customer, setCustomer] = useState<CustomerData | null>(null);
-  const [booking, setBooking] = useState<BookingData | null>(null);
   const [tour, setTour] = useState<TourData | null>(null);
+  const [passengers, setPassengers] = useState<PassengerInfo[]>([]);
+  const [editableSlots, setEditableSlots] = useState<number[]>([]);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    passport_number: "",
-    passport_expiry_date: "",
-    passport_country: "",
-    nationality: "",
-    id_number: "",
-  });
+  const [formData, setFormData] = useState<PassengerFormData[]>([]);
 
   useEffect(() => {
     validateToken();
@@ -71,16 +86,24 @@ export default function UpdateTravelDocs() {
       }
 
       setCustomer(data.customer);
-      setBooking(data.booking);
       setTour(data.tour);
+      setPassengers(data.passengers);
+      setEditableSlots(data.editableSlots);
       setExpiresAt(data.expiresAt);
-      setFormData({
-        passport_number: data.booking.passport_number || "",
-        passport_expiry_date: data.booking.passport_expiry_date || "",
-        passport_country: data.booking.passport_country || "",
-        nationality: data.booking.nationality || "",
-        id_number: data.booking.id_number || "",
-      });
+      
+      // Initialize form data for each passenger
+      const initialFormData: PassengerFormData[] = data.passengers.map((p: PassengerInfo) => ({
+        slot: p.slot,
+        customer_id: p.customer_id,
+        name_as_per_passport: p.travel_docs?.name_as_per_passport || `${p.first_name} ${p.last_name}`,
+        passport_number: p.travel_docs?.passport_number || "",
+        passport_expiry_date: p.travel_docs?.passport_expiry_date || "",
+        passport_country: p.travel_docs?.passport_country || "",
+        nationality: p.travel_docs?.nationality || "",
+        id_number: p.travel_docs?.id_number || "",
+      }));
+      setFormData(initialFormData);
+      
       setLoading(false);
     } catch (err: any) {
       console.error("Token validation error:", err);
@@ -89,13 +112,25 @@ export default function UpdateTravelDocs() {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  const handleInputChange = (slot: number, field: string, value: string) => {
+    setFormData((prev) => 
+      prev.map((p) => 
+        p.slot === slot ? { ...p, [field]: value } : p
+      )
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token || !booking) return;
+    if (!token) return;
+
+    // Only submit editable passengers
+    const passengersToSubmit = formData.filter(p => editableSlots.includes(p.slot));
+
+    if (passengersToSubmit.length === 0) {
+      toast.error("No passengers to update");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -103,13 +138,16 @@ export default function UpdateTravelDocs() {
       const { data, error } = await supabase.functions.invoke("update-travel-docs", {
         body: { 
           token, 
-          updates: {
-            passport_number: formData.passport_number || null,
-            passport_expiry_date: formData.passport_expiry_date || null,
-            passport_country: formData.passport_country || null,
-            nationality: formData.nationality || null,
-            id_number: formData.id_number || null,
-          }
+          passengers: passengersToSubmit.map(p => ({
+            slot: p.slot,
+            customer_id: p.customer_id,
+            name_as_per_passport: p.name_as_per_passport || null,
+            passport_number: p.passport_number || null,
+            passport_expiry_date: p.passport_expiry_date || null,
+            passport_country: p.passport_country || null,
+            nationality: p.nationality || null,
+            id_number: p.id_number || null,
+          }))
         },
       });
 
@@ -137,6 +175,11 @@ export default function UpdateTravelDocs() {
       month: 'long', 
       year: 'numeric' 
     });
+  };
+
+  const getPassengerLabel = (slot: number, passenger: PassengerInfo) => {
+    if (slot === 1) return "Lead Passenger";
+    return `Passenger ${slot}`;
   };
 
   if (loading) {
@@ -177,14 +220,14 @@ export default function UpdateTravelDocs() {
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
             <CardTitle>Travel Documents Submitted!</CardTitle>
             <CardDescription>
-              Your travel documents have been saved successfully. A confirmation email has been sent to you.
+              Travel documents have been saved successfully. A confirmation email has been sent.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg">
               <Shield className="h-6 w-6 text-blue-600 mx-auto mb-2" />
               <p className="text-sm text-blue-700">
-                Your passport details are stored securely and will be automatically deleted 30 days after your tour ends.
+                Passport details are stored securely and will be automatically deleted 30 days after the tour ends.
               </p>
             </div>
             <Button onClick={() => setSuccess(false)} variant="outline">
@@ -201,7 +244,7 @@ export default function UpdateTravelDocs() {
 
   return (
     <div className="min-h-screen bg-muted/30 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <Card className="overflow-hidden">
           <CardHeader className="bg-brand-navy text-white p-6">
             <div className="flex items-center justify-center gap-4">
@@ -213,7 +256,7 @@ export default function UpdateTravelDocs() {
               <CardTitle className="text-2xl text-white">Travel Documents</CardTitle>
             </div>
             <CardDescription className="text-center text-white/80 mt-2">
-              Hi {customer?.first_name}! Please provide your passport details for your upcoming tour.
+              Hi {customer?.first_name}! Please provide passport details for your booking.
             </CardDescription>
             {hoursRemaining > 0 && (
               <div className="flex items-center justify-center gap-2 text-sm text-white/70 mt-2">
@@ -238,74 +281,130 @@ export default function UpdateTravelDocs() {
                 </div>
               )}
 
-              {/* Passport Details */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg border-b pb-2">Passport Details</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="passport_number">Passport Number *</Label>
-                    <Input
-                      id="passport_number"
-                      value={formData.passport_number}
-                      onChange={(e) => handleInputChange("passport_number", e.target.value)}
-                      placeholder="e.g., PA1234567"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="passport_country">Country of Issue *</Label>
-                    <Input
-                      id="passport_country"
-                      value={formData.passport_country}
-                      onChange={(e) => handleInputChange("passport_country", e.target.value)}
-                      placeholder="e.g., Australia"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="passport_expiry_date">Expiry Date *</Label>
-                    <Input
-                      id="passport_expiry_date"
-                      type="date"
-                      value={formData.passport_expiry_date}
-                      onChange={(e) => handleInputChange("passport_expiry_date", e.target.value)}
-                      required
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Most countries require at least 6 months validity
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="nationality">Nationality *</Label>
-                    <Input
-                      id="nationality"
-                      value={formData.nationality}
-                      onChange={(e) => handleInputChange("nationality", e.target.value)}
-                      placeholder="e.g., Australian"
-                      required
-                    />
-                  </div>
+              {/* Info about what they can edit */}
+              {passengers.length > 1 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-sm text-amber-800">
+                    {editableSlots.length === passengers.length ? (
+                      <>You can update travel documents for all {passengers.length} passengers on this booking.</>
+                    ) : (
+                      <>
+                        You can update your own details
+                        {editableSlots.length > 1 && " and any passengers without email addresses"}.
+                        Other passengers with email addresses will receive their own link.
+                      </>
+                    )}
+                  </p>
                 </div>
-              </div>
+              )}
 
-              {/* Additional ID */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-lg border-b pb-2">Additional Identification (Optional)</h3>
+              {/* Passenger Forms */}
+              {passengers.map((passenger, index) => {
+                const paxFormData = formData.find(f => f.slot === passenger.slot);
+                const isEditable = editableSlots.includes(passenger.slot);
                 
-                <div className="space-y-2">
-                  <Label htmlFor="id_number">National ID / Driver's License Number</Label>
-                  <Input
-                    id="id_number"
-                    value={formData.id_number}
-                    onChange={(e) => handleInputChange("id_number", e.target.value)}
-                    placeholder="Optional additional identification"
-                  />
-                </div>
-              </div>
+                if (!paxFormData) return null;
+
+                return (
+                  <div 
+                    key={passenger.slot} 
+                    className={`space-y-4 p-4 rounded-lg border ${
+                      isEditable ? 'bg-white border-border' : 'bg-muted/50 border-muted'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 border-b pb-2">
+                      <User className={`h-5 w-5 ${isEditable ? 'text-primary' : 'text-muted-foreground'}`} />
+                      <h3 className="font-semibold text-lg">
+                        {getPassengerLabel(passenger.slot, passenger)}: {passenger.first_name} {passenger.last_name}
+                      </h3>
+                      {passenger.is_token_owner && (
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">You</span>
+                      )}
+                      {!isEditable && (
+                        <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded ml-auto">
+                          Will receive their own link
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`name_${passenger.slot}`}>Name as per Passport *</Label>
+                        <Input
+                          id={`name_${passenger.slot}`}
+                          value={paxFormData.name_as_per_passport}
+                          onChange={(e) => handleInputChange(passenger.slot, "name_as_per_passport", e.target.value)}
+                          placeholder="Full name exactly as shown on passport"
+                          required={isEditable}
+                          disabled={!isEditable}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`passport_${passenger.slot}`}>Passport Number *</Label>
+                        <Input
+                          id={`passport_${passenger.slot}`}
+                          value={paxFormData.passport_number}
+                          onChange={(e) => handleInputChange(passenger.slot, "passport_number", e.target.value)}
+                          placeholder="e.g., PA1234567"
+                          required={isEditable}
+                          disabled={!isEditable}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`country_${passenger.slot}`}>Country of Issue *</Label>
+                        <Input
+                          id={`country_${passenger.slot}`}
+                          value={paxFormData.passport_country}
+                          onChange={(e) => handleInputChange(passenger.slot, "passport_country", e.target.value)}
+                          placeholder="e.g., Australia"
+                          required={isEditable}
+                          disabled={!isEditable}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`expiry_${passenger.slot}`}>Expiry Date *</Label>
+                        <Input
+                          id={`expiry_${passenger.slot}`}
+                          type="date"
+                          value={paxFormData.passport_expiry_date}
+                          onChange={(e) => handleInputChange(passenger.slot, "passport_expiry_date", e.target.value)}
+                          required={isEditable}
+                          disabled={!isEditable}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Most countries require at least 6 months validity
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`nationality_${passenger.slot}`}>Nationality *</Label>
+                        <Input
+                          id={`nationality_${passenger.slot}`}
+                          value={paxFormData.nationality}
+                          onChange={(e) => handleInputChange(passenger.slot, "nationality", e.target.value)}
+                          placeholder="e.g., Australian"
+                          required={isEditable}
+                          disabled={!isEditable}
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor={`id_${passenger.slot}`}>National ID / Driver's License (Optional)</Label>
+                        <Input
+                          id={`id_${passenger.slot}`}
+                          value={paxFormData.id_number}
+                          onChange={(e) => handleInputChange(passenger.slot, "id_number", e.target.value)}
+                          placeholder="Optional additional identification"
+                          disabled={!isEditable}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
 
               {/* Privacy Notice */}
               <div className="bg-blue-50 p-4 rounded-lg">
@@ -314,8 +413,8 @@ export default function UpdateTravelDocs() {
                   <div className="text-sm text-blue-700">
                     <p className="font-medium mb-1">Privacy & Security</p>
                     <p>
-                      Your passport details are encrypted and stored securely. They will be 
-                      automatically deleted from our systems 30 days after your tour ends.
+                      Passport details are encrypted and stored securely. They will be 
+                      automatically deleted from our systems 30 days after the tour ends.
                     </p>
                   </div>
                 </div>
@@ -326,7 +425,7 @@ export default function UpdateTravelDocs() {
                   type="submit" 
                   className="w-full bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow" 
                   size="lg" 
-                  disabled={submitting}
+                  disabled={submitting || editableSlots.length === 0}
                 >
                   {submitting ? (
                     <>
@@ -334,7 +433,7 @@ export default function UpdateTravelDocs() {
                       Saving...
                     </>
                   ) : (
-                    "Submit Travel Documents"
+                    `Submit Travel Documents${passengers.length > 1 ? ` (${editableSlots.length} passenger${editableSlots.length > 1 ? 's' : ''})` : ''}`
                   )}
                 </Button>
               </div>

@@ -558,6 +558,66 @@ export type Database = {
           },
         ]
       }
+      booking_travel_docs: {
+        Row: {
+          booking_id: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          id_number: string | null
+          name_as_per_passport: string | null
+          nationality: string | null
+          passenger_slot: number
+          passport_country: string | null
+          passport_expiry_date: string | null
+          passport_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          id_number?: string | null
+          name_as_per_passport?: string | null
+          nationality?: string | null
+          passenger_slot: number
+          passport_country?: string | null
+          passport_expiry_date?: string | null
+          passport_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          id_number?: string | null
+          name_as_per_passport?: string | null
+          nationality?: string | null
+          passenger_slot?: number
+          passport_country?: string | null
+          passport_expiry_date?: string | null
+          passport_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_travel_docs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_travel_docs_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           accommodation_required: boolean | null

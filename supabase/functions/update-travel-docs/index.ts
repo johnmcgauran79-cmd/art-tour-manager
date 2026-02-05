@@ -7,15 +7,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface PassengerTravelDoc {
+  slot: number;
+  customer_id?: string;
+  name_as_per_passport?: string;
+  passport_number?: string;
+  passport_expiry_date?: string;
+  passport_country?: string;
+  nationality?: string;
+  id_number?: string;
+}
+
 interface UpdateTravelDocsPayload {
   token: string;
-  updates: {
-    passport_number?: string;
-    passport_expiry_date?: string;
-    passport_country?: string;
-    nationality?: string;
-    id_number?: string;
-  };
+  passengers: PassengerTravelDoc[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -31,11 +36,18 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-    const { token, updates }: UpdateTravelDocsPayload = await req.json();
+    const { token, passengers }: UpdateTravelDocsPayload = await req.json();
 
     if (!token) {
       return new Response(
         JSON.stringify({ error: "Token is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!passengers || !Array.isArray(passengers) || passengers.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Passenger data is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -72,13 +84,19 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const customer = tokenData.customers;
     const bookingId = tokenData.booking_id;
+    const customer = tokenData.customers;
 
-    // Get current booking data
+    // Get booking with tour info and all passengers
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
-      .select("*, tours(name)")
+      .select(`
+        id, passenger_count,
+        tours(name),
+        lead_passenger:customers!lead_passenger_id(id, first_name, last_name, email),
+        passenger_2:customers!passenger_2_id(id, first_name, last_name, email),
+        passenger_3:customers!passenger_3_id(id, first_name, last_name, email)
+      `)
       .eq("id", bookingId)
       .single();
 
@@ -89,49 +107,92 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Track what changed
-    const changes: Record<string, { old: any; new: any }> = {};
-    const allowedFields = [
-      'passport_number', 'passport_expiry_date', 'passport_country', 
-      'nationality', 'id_number'
-    ];
+    // Build a map of slot -> customer for validation
+    const slotToCustomer: Record<number, any> = {};
+    if (booking.lead_passenger) slotToCustomer[1] = booking.lead_passenger;
+    if (booking.passenger_count >= 2 && booking.passenger_2) slotToCustomer[2] = booking.passenger_2;
+    if (booking.passenger_count >= 3 && booking.passenger_3) slotToCustomer[3] = booking.passenger_3;
 
-    // Build update object and track changes
-    const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString()
-    };
+    // Determine which slots this token owner can edit
+    const tokenOwnerCustomerId = tokenData.customer_id;
+    const editableSlots = Object.entries(slotToCustomer)
+      .filter(([_, cust]) => cust.id === tokenOwnerCustomerId || !cust.email)
+      .map(([slot, _]) => parseInt(slot));
 
-    for (const field of allowedFields) {
-      if (field in updates) {
-        const newValue = updates[field as keyof typeof updates];
-        const oldValue = booking[field];
+    // Process each passenger update
+    const changes: Record<number, Record<string, { old: any; new: any }>> = {};
+    let totalChanges = 0;
+
+    for (const pax of passengers) {
+      const slot = pax.slot;
+      
+      // Validate slot is editable by this token owner
+      if (!editableSlots.includes(slot)) {
+        console.log(`Skipping slot ${slot} - not editable by token owner`);
+        continue;
+      }
+
+      const slotCustomer = slotToCustomer[slot];
+      if (!slotCustomer) continue;
+
+      // Get existing doc for this slot
+      const { data: existingDoc } = await supabase
+        .from("booking_travel_docs")
+        .select("*")
+        .eq("booking_id", bookingId)
+        .eq("passenger_slot", slot)
+        .single();
+
+      // Track changes
+      const slotChanges: Record<string, { old: any; new: any }> = {};
+      const fields = ['name_as_per_passport', 'passport_number', 'passport_expiry_date', 'passport_country', 'nationality', 'id_number'];
+      
+      for (const field of fields) {
+        const newValue = pax[field as keyof PassengerTravelDoc] || null;
+        const oldValue = existingDoc?.[field] || null;
         
         if (newValue !== oldValue) {
-          changes[field] = { old: oldValue, new: newValue };
-          updateData[field] = newValue || null;
+          slotChanges[field] = { old: oldValue, new: newValue };
         }
+      }
+
+      if (Object.keys(slotChanges).length === 0) {
+        continue; // No changes for this passenger
+      }
+
+      changes[slot] = slotChanges;
+      totalChanges += Object.keys(slotChanges).length;
+
+      // Upsert the travel doc record
+      const docData = {
+        booking_id: bookingId,
+        customer_id: slotCustomer.id,
+        passenger_slot: slot,
+        name_as_per_passport: pax.name_as_per_passport || null,
+        passport_number: pax.passport_number || null,
+        passport_expiry_date: pax.passport_expiry_date || null,
+        passport_country: pax.passport_country || null,
+        nationality: pax.nationality || null,
+        id_number: pax.id_number || null,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existingDoc) {
+        await supabase
+          .from("booking_travel_docs")
+          .update(docData)
+          .eq("id", existingDoc.id);
+      } else {
+        await supabase
+          .from("booking_travel_docs")
+          .insert(docData);
       }
     }
 
-    // Only proceed if there are actual changes
-    if (Object.keys(changes).length === 0) {
+    if (totalChanges === 0) {
       return new Response(
         JSON.stringify({ success: true, message: "No changes detected" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Update booking with travel document details
-    const { error: updateError } = await supabase
-      .from("bookings")
-      .update(updateData)
-      .eq("id", bookingId);
-
-    if (updateError) {
-      console.error("Update error:", updateError);
-      return new Response(
-        JSON.stringify({ error: "Failed to update travel documents" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -156,19 +217,42 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .eq("id", tokenData.id);
 
-    // Send confirmation email
+    // Send confirmation email to token owner
     const customerEmail = customer.email;
     if (resend && customerEmail) {
+      // Build changes summary
       const changesHtml = Object.entries(changes)
-        .map(([field, { old, new: newVal }]) => {
-          const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          const displayOld = old || '(not provided)';
-          const displayNew = newVal || '(not provided)';
-          return `<tr>
-            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${fieldName}</strong></td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #999;">${displayOld}</td>
-            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #2e7d32;">${displayNew}</td>
-          </tr>`;
+        .map(([slot, slotChanges]) => {
+          const paxName = slotToCustomer[parseInt(slot)]
+            ? `${slotToCustomer[parseInt(slot)].first_name} ${slotToCustomer[parseInt(slot)].last_name}`
+            : `Passenger ${slot}`;
+          
+          const fieldRows = Object.entries(slotChanges)
+            .map(([field, { old: oldVal, new: newVal }]) => {
+              const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              const displayOld = oldVal || '(not provided)';
+              const displayNew = newVal || '(not provided)';
+              return `<tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${fieldName}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; color: #999;">${displayOld}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; color: #2e7d32;">${displayNew}</td>
+              </tr>`;
+            })
+            .join('');
+          
+          return `
+            <h4 style="margin: 20px 0 10px 0; color: #333;">${paxName}</h4>
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f5f5f5;">
+                  <th style="padding: 10px; text-align: left;">Field</th>
+                  <th style="padding: 10px; text-align: left;">Previous</th>
+                  <th style="padding: 10px; text-align: left;">Updated</th>
+                </tr>
+              </thead>
+              <tbody>${fieldRows}</tbody>
+            </table>
+          `;
         })
         .join('');
 
@@ -193,30 +277,19 @@ const handler = async (req: Request): Promise<Response> => {
               <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
                 <p style="margin-top: 0;">Dear ${customer.first_name},</p>
                 
-                <p>Your travel documents have been successfully updated for <strong>${booking.tours?.name || 'your booking'}</strong>. Here's a summary of the changes:</p>
+                <p>Travel documents have been successfully updated for <strong>${booking.tours?.name || 'your booking'}</strong>. Here's a summary of the changes:</p>
                 
-                <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-                  <thead>
-                    <tr style="background: #f5f5f5;">
-                      <th style="padding: 10px; text-align: left;">Field</th>
-                      <th style="padding: 10px; text-align: left;">Previous</th>
-                      <th style="padding: 10px; text-align: left;">Updated</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${changesHtml}
-                  </tbody>
-                </table>
+                ${changesHtml}
                 
                 <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 20px 0;">
                   <p style="margin: 0; font-size: 14px; color: #2e7d32;">
-                    ✓ Your travel documents have been saved securely.
+                    ✓ Travel documents have been saved securely.
                   </p>
                 </div>
                 
                 <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
                   <p style="margin: 0; font-size: 14px; color: #1565c0;">
-                    <strong>Privacy Note:</strong> Your passport details will be automatically deleted from our systems 30 days after your tour ends.
+                    <strong>Privacy Note:</strong> Passport details will be automatically deleted from our systems 30 days after the tour ends.
                   </p>
                 </div>
                 
@@ -239,7 +312,8 @@ const handler = async (req: Request): Promise<Response> => {
       JSON.stringify({ 
         success: true, 
         message: "Travel documents updated successfully",
-        changesCount: Object.keys(changes).length
+        passengersUpdated: Object.keys(changes).length,
+        totalChanges
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
