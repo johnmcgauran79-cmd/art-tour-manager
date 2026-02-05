@@ -349,6 +349,7 @@ export type Database = {
           rule_name: string
           rule_type: string
           status_filter: string[] | null
+          trigger_conditions: Json | null
           trigger_type: string
           updated_at: string | null
         }
@@ -364,6 +365,7 @@ export type Database = {
           rule_name: string
           rule_type?: string
           status_filter?: string[] | null
+          trigger_conditions?: Json | null
           trigger_type?: string
           updated_at?: string | null
         }
@@ -379,6 +381,7 @@ export type Database = {
           rule_name?: string
           rule_type?: string
           status_filter?: string[] | null
+          trigger_conditions?: Json | null
           trigger_type?: string
           updated_at?: string | null
         }
@@ -1493,6 +1496,89 @@ export type Database = {
         }
         Relationships: []
       }
+      status_change_email_queue: {
+        Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
+          batch_date: string
+          booking_id: string
+          created_at: string
+          email_log_id: string | null
+          id: string
+          new_status: string
+          previous_status: string | null
+          processed_at: string | null
+          rejection_reason: string | null
+          rule_id: string
+          tour_id: string | null
+          triggered_at: string
+        }
+        Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_date?: string
+          booking_id: string
+          created_at?: string
+          email_log_id?: string | null
+          id?: string
+          new_status: string
+          previous_status?: string | null
+          processed_at?: string | null
+          rejection_reason?: string | null
+          rule_id: string
+          tour_id?: string | null
+          triggered_at?: string
+        }
+        Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_date?: string
+          booking_id?: string
+          created_at?: string
+          email_log_id?: string | null
+          id?: string
+          new_status?: string
+          previous_status?: string | null
+          processed_at?: string | null
+          rejection_reason?: string | null
+          rule_id?: string
+          tour_id?: string | null
+          triggered_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "status_change_email_queue_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_change_email_queue_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_change_email_queue_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automated_email_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_change_email_queue_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_assignments: {
         Row: {
           assigned_at: string
@@ -2318,6 +2404,16 @@ export type Database = {
       delete_booking_with_cascade: {
         Args: { p_booking_id: string }
         Returns: undefined
+      }
+      evaluate_trigger_conditions: {
+        Args: {
+          p_booking_status: string
+          p_conditions: Json
+          p_passenger_count: number
+          p_tour_id: string
+          p_tour_type: string
+        }
+        Returns: boolean
       }
       generate_temp_password: { Args: never; Returns: string }
       generate_tour_operation_tasks: {
