@@ -9,11 +9,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Mail, Clock, Calendar, CheckCircle, AlertCircle, Eye } from "lucide-react";
+import { Plus, Edit, Trash2, Mail, Clock, Calendar, CheckCircle, AlertCircle, Eye, Zap } from "lucide-react";
 import { useAutomatedEmailRules, useCreateAutomatedEmailRule, useUpdateAutomatedEmailRule, useDeleteAutomatedEmailRule, useAutomatedEmailLog } from "@/hooks/useAutomatedEmailRules";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
+import { TriggerConditionBuilder, ConditionGroup } from "@/components/TriggerConditionBuilder";
 
 const BOOKING_STATUSES = [
   { value: 'invoiced', label: 'Invoiced' },
@@ -44,13 +45,14 @@ export const AutomatedEmailRulesManagement = () => {
   const [formData, setFormData] = useState({
     rule_name: "",
     rule_type: "booking_confirmation" as "booking_confirmation" | "travel_documents_request",
-    trigger_type: "days_before_tour" as "days_before_tour" | "days_after_booking",
+    trigger_type: "days_before_tour" as "days_before_tour" | "days_after_booking" | "on_status_change",
     days_before_tour: 100,
     email_template_id: "",
     is_active: true,
     requires_approval: true,
     recipient_filter: "all" as "all" | "with_accommodation" | "without_accommodation",
     status_filter: [] as string[],
+    trigger_conditions: null as ConditionGroup | null,
   });
 
   const resetForm = () => {
@@ -64,6 +66,7 @@ export const AutomatedEmailRulesManagement = () => {
       requires_approval: true,
       recipient_filter: "all",
       status_filter: [],
+      trigger_conditions: null,
     });
     setEditingRule(null);
   };
@@ -85,6 +88,7 @@ export const AutomatedEmailRulesManagement = () => {
       requires_approval: rule.requires_approval ?? true,
       recipient_filter: rule.recipient_filter || "all",
       status_filter: rule.status_filter || [],
+      trigger_conditions: rule.trigger_conditions || null,
     });
     setIsDialogOpen(true);
   };
@@ -134,19 +138,25 @@ export const AutomatedEmailRulesManagement = () => {
   const bookingConfirmationTemplates = templates?.filter(t => t.type === 'booking_confirmation');
 
   // Separate rules by trigger type and rule type
-  const beforeTourRules = rules?.filter(r => (r as any).trigger_type !== 'days_after_booking' && (r as any).rule_type !== 'travel_documents_request') || [];
+  const beforeTourRules = rules?.filter(r => 
+    (r as any).trigger_type !== 'days_after_booking' && 
+    (r as any).trigger_type !== 'on_status_change' &&
+    (r as any).rule_type !== 'travel_documents_request'
+  ) || [];
   const afterBookingRules = rules?.filter(r => (r as any).trigger_type === 'days_after_booking') || [];
+  const statusChangeRules = rules?.filter(r => (r as any).trigger_type === 'on_status_change') || [];
   const travelDocsRules = rules?.filter(r => (r as any).rule_type === 'travel_documents_request') || [];
 
   const renderRuleCard = (rule: any) => {
     const isAfterBooking = rule.trigger_type === 'days_after_booking';
+    const isStatusChange = rule.trigger_type === 'on_status_change';
     const isTravelDocs = rule.rule_type === 'travel_documents_request';
     
     return (
       <Card key={rule.id}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 flex-wrap">
               {rule.rule_name}
               {rule.is_active ? (
                 <Badge variant="default">Active</Badge>
@@ -158,15 +168,26 @@ export const AutomatedEmailRulesManagement = () => {
                   Post-Booking
                 </Badge>
               )}
+              {isStatusChange && (
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                  <Zap className="h-3 w-3 mr-1" />
+                  Status Change
+                </Badge>
+              )}
               {isTravelDocs && (
                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
                   Travel Docs
                 </Badge>
               )}
-              {!rule.requires_approval && (
+              {!rule.requires_approval && !isStatusChange && (
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Auto-Send
+                </Badge>
+              )}
+              {isStatusChange && (
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                  Batch Approval
                 </Badge>
               )}
             </CardTitle>
@@ -185,14 +206,24 @@ export const AutomatedEmailRulesManagement = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>
-                {isAfterBooking 
-                  ? `${rule.days_before_tour} days after booking` 
-                  : `${rule.days_before_tour} days before tour`}
-              </span>
-            </div>
+            {!isStatusChange && (
+              <div className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {isAfterBooking 
+                    ? `${rule.days_before_tour} days after booking` 
+                    : `${rule.days_before_tour} days before tour`}
+                </span>
+              </div>
+            )}
+            {isStatusChange && rule.trigger_conditions && (
+              <div className="flex items-center gap-1">
+                <Zap className="h-4 w-4" />
+                <span>
+                  Triggers on conditions ({rule.trigger_conditions.conditions?.length || 0} conditions)
+                </span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
               <Mail className="h-4 w-4" />
               <span>Type: {isTravelDocs ? 'Travel Documents Request' : rule.rule_type}</span>
@@ -228,8 +259,9 @@ export const AutomatedEmailRulesManagement = () => {
       </div>
 
       <Tabs defaultValue="rules" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="rules">Before Tour</TabsTrigger>
+          <TabsTrigger value="status-change">Status Change</TabsTrigger>
           <TabsTrigger value="travel-docs">Travel Documents</TabsTrigger>
           <TabsTrigger value="post-booking">Post-Booking</TabsTrigger>
           <TabsTrigger value="history">Email History</TabsTrigger>
@@ -250,6 +282,60 @@ export const AutomatedEmailRulesManagement = () => {
                 <Button onClick={handleCreate} variant="outline" className="mt-4">
                   <Plus className="h-4 w-4 mr-2" />
                   Create your first rule
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="status-change" className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <Zap className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-amber-900">Event-Based Email Automation</h4>
+                <p className="text-sm text-amber-700 mt-1">
+                  Trigger emails automatically when booking statuses change, filtered by flexible conditions like tour type, specific tours, or passenger count.
+                </p>
+                <p className="text-sm text-amber-600 mt-2">
+                  <strong>Batch Approval:</strong> Status change emails are queued throughout the day and presented for batch approval before sending.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {rulesLoading ? (
+            <p>Loading...</p>
+          ) : statusChangeRules.length > 0 ? (
+            <div className="grid gap-4">
+              {statusChangeRules.map(renderRuleCard)}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Zap className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No status change email rules configured</p>
+                <Button 
+                  onClick={() => {
+                    resetForm();
+                    setFormData(prev => ({
+                      ...prev,
+                      trigger_type: 'on_status_change',
+                      days_before_tour: 0,
+                      requires_approval: true,
+                      trigger_conditions: {
+                        operator: 'AND',
+                        conditions: [{ field: 'booking.status', operator: 'in', values: ['deposited'] }],
+                        groups: []
+                      },
+                    }));
+                    setIsDialogOpen(true);
+                  }} 
+                  variant="outline" 
+                  className="mt-4"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create status change rule
                 </Button>
               </CardContent>
             </Card>
@@ -447,17 +533,27 @@ export const AutomatedEmailRulesManagement = () => {
               <Label htmlFor="trigger_type">Trigger Type</Label>
               <Select
                 value={formData.trigger_type}
-                onValueChange={(value: "days_before_tour" | "days_after_booking") => {
+                onValueChange={(value: "days_before_tour" | "days_after_booking" | "on_status_change") => {
                   const newData: any = { ...formData, trigger_type: value };
                   if (value === 'days_after_booking') {
                     newData.requires_approval = false;
                     newData.days_before_tour = 7;
+                    newData.trigger_conditions = null;
                     if (newData.status_filter.length === 0) {
                       newData.status_filter = DEFAULT_POST_BOOKING_STATUSES;
                     }
+                  } else if (value === 'on_status_change') {
+                    newData.requires_approval = true;
+                    newData.days_before_tour = 0;
+                    newData.trigger_conditions = {
+                      operator: 'AND',
+                      conditions: [{ field: 'booking.status', operator: 'in', values: ['deposited'] }],
+                      groups: []
+                    };
                   } else {
                     newData.requires_approval = true;
                     newData.days_before_tour = 100;
+                    newData.trigger_conditions = null;
                   }
                   setFormData(newData);
                 }}
@@ -467,28 +563,42 @@ export const AutomatedEmailRulesManagement = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="days_before_tour">Days Before Tour Start</SelectItem>
+                  <SelectItem value="on_status_change">On Status Change (Event-Based)</SelectItem>
                   <SelectItem value="days_after_booking">Days After Booking Created</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="days_before_tour">
-                {formData.trigger_type === 'days_after_booking' ? 'Days After Booking' : 'Days Before Tour Start'}
-              </Label>
-              <Input
-                id="days_before_tour"
-                type="number"
-                value={formData.days_before_tour}
-                onChange={(e) => setFormData({ ...formData, days_before_tour: parseInt(e.target.value) })}
-                placeholder={formData.trigger_type === 'days_after_booking' ? "7" : "100"}
-              />
-              <p className="text-sm text-muted-foreground">
-                {formData.trigger_type === 'days_after_booking' 
-                  ? 'Email will be sent this many days after the booking is created'
-                  : 'Email will be sent this many days before the tour starts'}
-              </p>
-            </div>
+            {formData.trigger_type === 'on_status_change' ? (
+              <div className="space-y-2">
+                <Label>Trigger Conditions</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Define when this email should be triggered based on booking and tour properties
+                </p>
+                <TriggerConditionBuilder
+                  value={formData.trigger_conditions}
+                  onChange={(conditions) => setFormData({ ...formData, trigger_conditions: conditions })}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="days_before_tour">
+                  {formData.trigger_type === 'days_after_booking' ? 'Days After Booking' : 'Days Before Tour Start'}
+                </Label>
+                <Input
+                  id="days_before_tour"
+                  type="number"
+                  value={formData.days_before_tour}
+                  onChange={(e) => setFormData({ ...formData, days_before_tour: parseInt(e.target.value) })}
+                  placeholder={formData.trigger_type === 'days_after_booking' ? "7" : "100"}
+                />
+                <p className="text-sm text-muted-foreground">
+                  {formData.trigger_type === 'days_after_booking' 
+                    ? 'Email will be sent this many days after the booking is created'
+                    : 'Email will be sent this many days before the tour starts'}
+                </p>
+              </div>
+            )}
 
             {formData.rule_type === 'travel_documents_request' ? (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
@@ -580,6 +690,19 @@ export const AutomatedEmailRulesManagement = () => {
                 </div>
                 <p className="text-sm text-green-700 mt-1">
                   Post-booking emails are sent automatically without requiring approval.
+                </p>
+              </div>
+            )}
+
+            {formData.trigger_type === 'on_status_change' && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <Zap className="h-4 w-4" />
+                  <span className="text-sm font-medium">Batch Approval Required</span>
+                </div>
+                <p className="text-sm text-amber-700 mt-1">
+                  Status change emails are queued throughout the day and require batch approval before sending.
+                  All passengers with email addresses on matching bookings will receive the email.
                 </p>
               </div>
             )}

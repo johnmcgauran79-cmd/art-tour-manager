@@ -35,6 +35,7 @@ export const useCreateAutomatedEmailRule = () => {
       requires_approval?: boolean;
       recipient_filter?: string;
       status_filter?: string[];
+      trigger_conditions?: any;
       created_by: string;
     }) => {
       // Convert empty email_template_id to null (for travel docs rules that don't use templates)

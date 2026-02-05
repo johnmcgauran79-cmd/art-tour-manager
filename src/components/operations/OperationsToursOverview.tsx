@@ -13,6 +13,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { GlobalTourAlertsModal } from "@/components/GlobalTourAlertsModal";
 import { TourAlertButton } from "./TourAlertButton";
+import { PendingStatusChangeApprovals } from "./PendingStatusChangeApprovals";
 
 const getDaysUntilTour = (startDate: string) => {
   const start = new Date(startDate);
@@ -154,6 +155,8 @@ export const OperationsToursOverview = () => {
 
   return (
     <>
+      <PendingStatusChangeApprovals />
+      
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
