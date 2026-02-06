@@ -58,9 +58,9 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
         <TableRow>
           <TableHead className="w-[50px]">Status</TableHead>
           <TableHead>Passenger</TableHead>
-          <TableHead>First Name</TableHead>
-          <TableHead>Middle Name</TableHead>
-          <TableHead>Surname</TableHead>
+          <TableHead>First Name (Passport)</TableHead>
+          <TableHead>Middle Name (Passport)</TableHead>
+          <TableHead>Surname (Passport)</TableHead>
           <TableHead>Passport No.</TableHead>
           <TableHead>Country</TableHead>
           <TableHead>Nationality</TableHead>

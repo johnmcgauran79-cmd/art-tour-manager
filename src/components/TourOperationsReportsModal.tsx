@@ -94,7 +94,7 @@ export const TourOperationsReportsModal = ({
   const handleExportPassportCSV = () => {
     if (!passportData || passportData.length === 0) return;
     
-    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name', 'Middle Name', 'Surname', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name (Passport)', 'Middle Name (Passport)', 'Surname (Passport)', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
     const csvData = passportData.map(item => [
       item.passengerName,
       item.bookingReference,
@@ -140,7 +140,7 @@ export const TourOperationsReportsModal = ({
   const generatePassportCSV = () => {
     if (!passportData || passportData.length === 0) return '';
     
-    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name', 'Middle Name', 'Surname', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name (Passport)', 'Middle Name (Passport)', 'Surname (Passport)', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
     const csvData = passportData.map(item => [
       item.passengerName,
       item.bookingReference,

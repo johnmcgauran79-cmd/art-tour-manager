@@ -101,9 +101,9 @@ export const BookingTravelDocsDisplay = ({
           <TableHeader>
             <TableRow>
               <TableHead className="w-[140px]">Passenger</TableHead>
-              <TableHead>First Name</TableHead>
-              <TableHead>Middle Name</TableHead>
-              <TableHead>Surname</TableHead>
+              <TableHead>First Name (Passport)</TableHead>
+              <TableHead>Middle Name (Passport)</TableHead>
+              <TableHead>Surname (Passport)</TableHead>
               <TableHead>Date of Birth</TableHead>
               <TableHead>Passport Number</TableHead>
               <TableHead>Expiry Date</TableHead>
