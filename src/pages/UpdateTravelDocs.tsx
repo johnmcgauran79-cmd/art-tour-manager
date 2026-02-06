@@ -22,7 +22,7 @@ interface PassengerInfo {
     passport_expiry_date: string | null;
     passport_country: string | null;
     nationality: string | null;
-    id_number: string | null;
+    date_of_birth: string | null;
   } | null;
 }
 
@@ -47,7 +47,7 @@ interface PassengerFormData {
   passport_expiry_date: string;
   passport_country: string;
   nationality: string;
-  id_number: string;
+  date_of_birth: string;
 }
 
 export default function UpdateTravelDocs() {
@@ -100,7 +100,7 @@ export default function UpdateTravelDocs() {
         passport_expiry_date: p.travel_docs?.passport_expiry_date || "",
         passport_country: p.travel_docs?.passport_country || "",
         nationality: p.travel_docs?.nationality || "",
-        id_number: p.travel_docs?.id_number || "",
+        date_of_birth: p.travel_docs?.date_of_birth || "",
       }));
       setFormData(initialFormData);
       
@@ -146,7 +146,7 @@ export default function UpdateTravelDocs() {
             passport_expiry_date: p.passport_expiry_date || null,
             passport_country: p.passport_country || null,
             nationality: p.nationality || null,
-            id_number: p.id_number || null,
+            date_of_birth: p.date_of_birth || null,
           }))
         },
       });
@@ -391,13 +391,14 @@ export default function UpdateTravelDocs() {
                         />
                       </div>
 
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor={`id_${passenger.slot}`}>National ID / Driver's License (Optional)</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor={`dob_${passenger.slot}`}>Date of Birth *</Label>
                         <Input
-                          id={`id_${passenger.slot}`}
-                          value={paxFormData.id_number}
-                          onChange={(e) => handleInputChange(passenger.slot, "id_number", e.target.value)}
-                          placeholder="Optional additional identification"
+                          id={`dob_${passenger.slot}`}
+                          type="date"
+                          value={paxFormData.date_of_birth}
+                          onChange={(e) => handleInputChange(passenger.slot, "date_of_birth", e.target.value)}
+                          required={isEditable}
                           disabled={!isEditable}
                         />
                       </div>

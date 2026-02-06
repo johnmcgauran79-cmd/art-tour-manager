@@ -15,7 +15,7 @@ interface PassengerTravelDoc {
   passport_expiry_date?: string;
   passport_country?: string;
   nationality?: string;
-  id_number?: string;
+  date_of_birth?: string;
 }
 
 interface UpdateTravelDocsPayload {
@@ -145,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Track changes
       const slotChanges: Record<string, { old: any; new: any }> = {};
-      const fields = ['name_as_per_passport', 'passport_number', 'passport_expiry_date', 'passport_country', 'nationality', 'id_number'];
+      const fields = ['name_as_per_passport', 'passport_number', 'passport_expiry_date', 'passport_country', 'nationality', 'date_of_birth'];
       
       for (const field of fields) {
         const newValue = pax[field as keyof PassengerTravelDoc] || null;
@@ -173,7 +173,7 @@ const handler = async (req: Request): Promise<Response> => {
         passport_expiry_date: pax.passport_expiry_date || null,
         passport_country: pax.passport_country || null,
         nationality: pax.nationality || null,
-        id_number: pax.id_number || null,
+        date_of_birth: pax.date_of_birth || null,
         updated_at: new Date().toISOString(),
       };
 
