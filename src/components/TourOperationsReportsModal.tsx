@@ -141,6 +141,26 @@ export const TourOperationsReportsModal = ({
     setShowPDFViewer(true);
   };
 
+  // Generate CSV content for passport report
+  const generatePassportCSV = () => {
+    if (!passportData || passportData.length === 0) return '';
+    
+    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+    const csvData = passportData.map(item => [
+      item.passengerName,
+      item.bookingReference,
+      item.groupName || '',
+      item.nameAsPerPassport || '',
+      item.passportNumber || '',
+      item.passportCountry || '',
+      item.nationality || '',
+      item.dateOfBirth || '',
+      item.passportExpiry || ''
+    ].map(value => `"${String(value).replace(/"/g, '""')}"`).join(','));
+
+    return [headers.join(','), ...csvData].join('\n');
+  };
+
   // Email passport report
   const handleSendPassportEmail = async (emailData: {
     from: string;
@@ -164,8 +184,9 @@ export const TourOperationsReportsModal = ({
       };
       
       const htmlContent = generateReportHTML(passportReport, tourName);
+      const csvContent = generatePassportCSV();
       
-      const { error } = await supabase.functions.invoke('send-rooming-list', {
+      const { error } = await supabase.functions.invoke('send-passport-report', {
         body: {
           from: emailData.from,
           to: emailData.to,
@@ -174,7 +195,8 @@ export const TourOperationsReportsModal = ({
           subject: emailData.subject,
           message: emailData.message,
           htmlContent: htmlContent,
-          tourId: tourId
+          csvContent: csvContent,
+          tourName: tourName
         }
       });
 
