@@ -11,7 +11,7 @@ export interface BookingTravelDoc {
   passport_expiry_date: string | null;
   passport_country: string | null;
   nationality: string | null;
-  id_number: string | null;
+  date_of_birth: string | null;
   created_at: string;
   updated_at: string;
   customer?: {

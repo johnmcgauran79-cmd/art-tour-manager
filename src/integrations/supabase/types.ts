@@ -563,6 +563,7 @@ export type Database = {
           booking_id: string
           created_at: string
           customer_id: string | null
+          date_of_birth: string | null
           id: string
           id_number: string | null
           name_as_per_passport: string | null
@@ -577,6 +578,7 @@ export type Database = {
           booking_id: string
           created_at?: string
           customer_id?: string | null
+          date_of_birth?: string | null
           id?: string
           id_number?: string | null
           name_as_per_passport?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           booking_id?: string
           created_at?: string
           customer_id?: string | null
+          date_of_birth?: string | null
           id?: string
           id_number?: string | null
           name_as_per_passport?: string | null

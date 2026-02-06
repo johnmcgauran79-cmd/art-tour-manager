@@ -24,7 +24,7 @@ interface PassengerInfo {
     passport_expiry_date: string | null;
     passport_country: string | null;
     nationality: string | null;
-    id_number: string | null;
+    date_of_birth: string | null;
   } | null;
 }
 
@@ -134,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
           passport_expiry_date: existingDoc.passport_expiry_date,
           passport_country: existingDoc.passport_country,
           nationality: existingDoc.nationality,
-          id_number: existingDoc.id_number,
+          date_of_birth: existingDoc.date_of_birth,
         } : null,
       });
     };

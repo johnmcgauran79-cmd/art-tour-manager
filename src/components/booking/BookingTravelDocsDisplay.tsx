@@ -59,7 +59,7 @@ export const BookingTravelDocsDisplay = ({
 
   const hasDocuments = (doc: typeof travelDocs[0] | undefined): boolean => {
     if (!doc) return false;
-    return !!(doc.passport_number || doc.name_as_per_passport || doc.nationality || doc.id_number);
+    return !!(doc.passport_number || doc.name_as_per_passport || doc.nationality || doc.date_of_birth);
   };
 
   const isPassportExpiringSoon = (expiryDate: string | null): boolean => {
@@ -102,11 +102,11 @@ export const BookingTravelDocsDisplay = ({
             <TableRow>
               <TableHead className="w-[140px]">Passenger</TableHead>
               <TableHead>Name as per Passport</TableHead>
+              <TableHead>Date of Birth</TableHead>
               <TableHead>Passport Number</TableHead>
               <TableHead>Expiry Date</TableHead>
               <TableHead>Country</TableHead>
               <TableHead>Nationality</TableHead>
-              <TableHead>ID Number</TableHead>
               <TableHead className="w-[80px] text-center">Status</TableHead>
             </TableRow>
           </TableHeader>
@@ -132,6 +132,9 @@ export const BookingTravelDocsDisplay = ({
                   <TableCell className="text-sm">
                     {doc?.name_as_per_passport || '—'}
                   </TableCell>
+                  <TableCell className="text-sm">
+                    {doc?.date_of_birth ? formatDateToDDMMYYYY(doc.date_of_birth) : '—'}
+                  </TableCell>
                   <TableCell className="font-mono text-sm">
                     {doc?.passport_number || '—'}
                   </TableCell>
@@ -152,9 +155,6 @@ export const BookingTravelDocsDisplay = ({
                   </TableCell>
                   <TableCell className="text-sm">
                     {doc?.nationality || '—'}
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">
-                    {doc?.id_number || '—'}
                   </TableCell>
                   <TableCell className="text-center">
                     {hasDoc ? (
