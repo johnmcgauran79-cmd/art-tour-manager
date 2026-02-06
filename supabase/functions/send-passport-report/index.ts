@@ -67,6 +67,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Create filename-safe tour name
     const safeFileName = tourName.replace(/[^a-zA-Z0-9]/g, '_');
     
+    // Encode CSV content to base64 using Deno's native encoding
+    const encoder = new TextEncoder();
+    const csvBytes = encoder.encode(csvContent);
+    const base64Content = btoa(String.fromCharCode(...csvBytes));
+    
     const emailData: any = {
       from: `Tour Operations <${from}>`,
       to: [to],
@@ -75,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
       attachments: [
         {
           filename: `${safeFileName}_Passport_Details.csv`,
-          content: Buffer.from(csvContent).toString('base64'),
+          content: base64Content,
         }
       ]
     };
