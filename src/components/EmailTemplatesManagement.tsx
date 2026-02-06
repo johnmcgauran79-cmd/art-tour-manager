@@ -71,7 +71,7 @@ const MERGE_FIELDS = {
     '{{booking_total_nights}}', '{{booking_passenger_2_name}}', '{{booking_passenger_3_name}}',
     '{{booking_group_name}}', '{{booking_booking_agent}}', '{{booking_extra_requests}}', '{{booking_invoice_notes}}',
     '{{booking_passport_number}}', '{{booking_passport_country}}', '{{booking_passport_expiry_date}}',
-    '{{booking_nationality}}', '{{booking_id_number}}', '{{booking_revenue}}',
+    '{{booking_nationality}}', '{{booking_revenue}}',
     '{{booking_accommodation_required}}', '{{booking_whatsapp_group_comms}}'
   ],
   hotel: [
@@ -97,7 +97,7 @@ const MERGE_FIELDS = {
   travel_docs: [
     '{{passport_first_name}}', '{{passport_middle_name}}', '{{passport_surname}}',
     '{{passport_number}}', '{{passport_country}}', '{{passport_expiry_date}}',
-    '{{date_of_birth}}', '{{nationality}}', '{{id_number}}',
+    '{{date_of_birth}}', '{{nationality}}',
     '{{existing_passport_details}}', '{{#has_passport_details}}', '{{/has_passport_details}}',
     '{{^has_passport_details}}', '{{/has_passport_details}}'
   ],

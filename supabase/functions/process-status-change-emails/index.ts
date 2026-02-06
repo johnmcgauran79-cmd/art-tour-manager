@@ -54,7 +54,6 @@ serve(async (req) => {
           passport_country,
           passport_expiry_date,
           nationality,
-          id_number,
           customers:customers!bookings_lead_passenger_id_fkey(
             id,
             first_name,

@@ -103,7 +103,6 @@ export const useCreateBooking = () => {
       passport_number?: string;
       passport_expiry_date?: string | null;
       passport_country?: string;
-      id_number?: string;
       nationality?: string;
       whatsapp_group_comms?: boolean;
       secondary_contact_id?: string | null;
@@ -190,7 +189,6 @@ export const useCreateBooking = () => {
           passport_number: bookingData.passport_number || null,
           passport_expiry_date: bookingData.passport_expiry_date || null,
           passport_country: bookingData.passport_country || null,
-          id_number: bookingData.id_number || null,
           nationality: bookingData.nationality || null,
           whatsapp_group_comms: bookingData.whatsapp_group_comms ?? true,
         }])

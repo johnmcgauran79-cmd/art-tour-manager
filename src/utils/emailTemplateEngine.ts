@@ -96,7 +96,6 @@ export interface EmailMergeData {
   booking_passport_country?: string;
   booking_passport_expiry_date?: string;
   booking_nationality?: string;
-  booking_id_number?: string;
   booking_revenue?: number;
   booking_accommodation_required?: boolean;
   booking_whatsapp_group_comms?: boolean;
@@ -136,7 +135,6 @@ export interface EmailMergeData {
   passport_expiry_date?: string;
   date_of_birth?: string;
   nationality?: string;
-  id_number?: string;
   name_as_per_passport?: string;
   has_passport_details?: boolean;
 
@@ -149,7 +147,6 @@ export interface EmailMergeData {
   lead_passport_expiry_date?: string;
   lead_date_of_birth?: string;
   lead_nationality?: string;
-  lead_id_number?: string;
 
   // Passenger 2 travel docs (static reference)
   pax2_passport_first_name?: string;
@@ -160,7 +157,6 @@ export interface EmailMergeData {
   pax2_passport_expiry_date?: string;
   pax2_date_of_birth?: string;
   pax2_nationality?: string;
-  pax2_id_number?: string;
 
   // Passenger 3 travel docs (static reference)
   pax3_passport_first_name?: string;
@@ -171,7 +167,6 @@ export interface EmailMergeData {
   pax3_passport_expiry_date?: string;
   pax3_date_of_birth?: string;
   pax3_nationality?: string;
-  pax3_id_number?: string;
 
   booking?: {
     passenger_count?: number;
@@ -189,7 +184,6 @@ export interface EmailMergeData {
     passport_country?: string;
     passport_expiry_date?: string;
     nationality?: string;
-    id_number?: string;
     revenue?: number;
     accommodation_required?: boolean;
     whatsapp_group_comms?: boolean;
@@ -504,7 +498,6 @@ export class EmailTemplateEngine {
       booking_passport_country: booking.passport_country,
       booking_passport_expiry_date: this.formatDate(booking.passport_expiry_date),
       booking_nationality: booking.nationality,
-      booking_id_number: booking.id_number,
       booking_revenue: booking.revenue,
       booking_accommodation_required: booking.accommodation_required,
       booking_whatsapp_group_comms: booking.whatsapp_group_comms,
@@ -551,7 +544,6 @@ export class EmailTemplateEngine {
         passport_country: booking.passport_country,
         passport_expiry_date: booking.passport_expiry_date,
         nationality: booking.nationality,
-        id_number: booking.id_number,
         revenue: booking.revenue,
         accommodation_required: booking.accommodation_required,
         whatsapp_group_comms: booking.whatsapp_group_comms,

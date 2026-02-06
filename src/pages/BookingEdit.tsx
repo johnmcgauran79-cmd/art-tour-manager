@@ -76,7 +76,6 @@ export default function BookingEdit() {
     passport_number: '',
     passport_expiry_date: '',
     passport_country: '',
-    id_number: '',
     nationality: '',
   });
 
@@ -130,7 +129,6 @@ export default function BookingEdit() {
         passport_number: booking.passport_number || '',
         passport_expiry_date: booking.passport_expiry_date || '',
         passport_country: booking.passport_country || '',
-        id_number: booking.id_number || '',
         nationality: booking.nationality || '',
       });
 
@@ -295,7 +293,6 @@ export default function BookingEdit() {
       passport_number: formData.passport_number || null,
       passport_expiry_date: formData.passport_expiry_date || null,
       passport_country: formData.passport_country || null,
-      id_number: formData.id_number || null,
       nationality: formData.nationality || null,
       whatsapp_group_comms: formData.whatsapp_group_comms,
     }, {
@@ -960,15 +957,6 @@ export default function BookingEdit() {
                     value={formData.nationality}
                     onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
                     placeholder="Nationality"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="id_number">National ID Number</Label>
-                  <Input
-                    id="id_number"
-                    value={formData.id_number}
-                    onChange={(e) => setFormData(prev => ({ ...prev, id_number: e.target.value }))}
-                    placeholder="National ID or driver's license"
                   />
                 </div>
               </div>

@@ -26,7 +26,6 @@ export interface Booking {
   passport_number: string | null;
   passport_expiry_date: string | null;
   passport_country: string | null;
-  id_number: string | null;
   nationality: string | null;
   whatsapp_group_comms: boolean;
 }
