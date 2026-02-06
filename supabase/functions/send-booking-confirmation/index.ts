@@ -175,6 +175,20 @@ const handler = async (req: Request): Promise<Response> => {
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
         passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
         passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
+        booking_travel_docs (
+          passenger_slot,
+          customer_id,
+          passport_first_name,
+          passport_middle_name,
+          passport_surname,
+          passport_number,
+          passport_country,
+          passport_expiry_date,
+          nationality,
+          date_of_birth,
+          id_number,
+          name_as_per_passport
+        ),
         hotel_bookings (
           check_in_date,
           check_out_date,
@@ -223,6 +237,71 @@ const handler = async (req: Request): Promise<Response> => {
         month: '2-digit',
         year: 'numeric'
       });
+    };
+
+    const getTravelDocsForPassenger = (customerId?: string | null, slotNumber?: number) => {
+      const docs = booking.booking_travel_docs || [];
+
+      if (customerId) {
+        const byCustomer = docs.find((d: any) => d.customer_id === customerId);
+        if (byCustomer) return byCustomer;
+      }
+
+      if (typeof slotNumber === 'number') {
+        return docs.find((d: any) => Number(d.passenger_slot) === slotNumber) || null;
+      }
+
+      return null;
+    };
+
+    const computeHasPassportDetails = (docs: any | null | undefined): boolean => {
+      if (!docs) return false;
+      return Boolean(
+        docs.passport_number ||
+          docs.passport_country ||
+          docs.passport_expiry_date ||
+          docs.nationality ||
+          docs.passport_first_name ||
+          docs.passport_surname ||
+          docs.date_of_birth ||
+          docs.id_number ||
+          docs.name_as_per_passport
+      );
+    };
+
+    // IMPORTANT: Keep this HTML single-line (no \n) because later we run .replace(/\n/g, '<br>')
+    // which can break table markup.
+    const buildExistingPassportDetailsHtml = (docs: any | null | undefined): string => {
+      if (!computeHasPassportDetails(docs)) return '';
+
+      const formatField = (value: string | null | undefined, placeholder = 'Not provided') => {
+        const trimmed = value ? String(value).trim() : '';
+        return trimmed ? trimmed : `<span style="color: #999; font-style: italic;">${placeholder}</span>`;
+      };
+
+      const nameAsPerPassportRaw = docs?.name_as_per_passport ? String(docs.name_as_per_passport).trim() : '';
+      const nameFromParts = [docs?.passport_first_name, docs?.passport_middle_name, docs?.passport_surname]
+        .filter(Boolean)
+        .map((v: any) => String(v).trim())
+        .filter(Boolean)
+        .join(' ');
+
+      const nameAsPerPassport = nameAsPerPassportRaw || nameFromParts;
+
+      return [
+        `<div style="background:#f9f9f9;padding:16px;border-radius:6px;margin:20px 0;">`,
+        `<h3 style="margin:0 0 12px 0;color:#333;font-size:16px;border-bottom:1px solid #ddd;padding-bottom:10px;">Current Details on File</h3>`,
+        `<table style="width:100%;border-collapse:collapse;font-size:14px;">`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;width:40%;"><strong>Name (as per passport):</strong></td><td style="padding:6px 0;">${formatField(nameAsPerPassport)}</td></tr>`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Date of Birth:</strong></td><td style="padding:6px 0;">${docs?.date_of_birth ? formatDate(docs.date_of_birth) : formatField(null)}</td></tr>`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Passport Number:</strong></td><td style="padding:6px 0;">${formatField(docs?.passport_number)}</td></tr>`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Passport Country:</strong></td><td style="padding:6px 0;">${formatField(docs?.passport_country)}</td></tr>`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Passport Expiry:</strong></td><td style="padding:6px 0;">${docs?.passport_expiry_date ? formatDate(docs.passport_expiry_date) : formatField(null)}</td></tr>`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Nationality:</strong></td><td style="padding:6px 0;">${formatField(docs?.nationality)}</td></tr>`,
+        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>ID Number:</strong></td><td style="padding:6px 0;">${formatField(docs?.id_number)}</td></tr>`,
+        `</table>`,
+        `</div>`,
+      ].join('');
     };
 
     // Helper function to get nested value from object
@@ -422,7 +501,11 @@ const handler = async (req: Request): Promise<Response> => {
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
-    
+
+    const leadTravelDocs = getTravelDocsForPassenger(booking.customers?.id, 1);
+    const leadHasPassportDetails = computeHasPassportDetails(leadTravelDocs);
+    const leadExistingPassportDetails = buildExistingPassportDetailsHtml(leadTravelDocs);
+
     // Create comprehensive merge data object with nested structures
     // Defined at handler scope so it's accessible to sendToPassenger
     let mergeData: Record<string, any> = {
@@ -443,6 +526,20 @@ const handler = async (req: Request): Promise<Response> => {
       customer_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
       customer_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
       customer_notes: booking.customers?.notes || '',
+
+      // Travel docs fields (dynamic - changes per recipient)
+      passport_first_name: leadTravelDocs?.passport_first_name || '',
+      passport_middle_name: leadTravelDocs?.passport_middle_name || '',
+      passport_surname: leadTravelDocs?.passport_surname || '',
+      name_as_per_passport: leadTravelDocs?.name_as_per_passport || '',
+      passport_number: leadTravelDocs?.passport_number || '',
+      passport_country: leadTravelDocs?.passport_country || '',
+      passport_expiry_date: formatDate(leadTravelDocs?.passport_expiry_date),
+      nationality: leadTravelDocs?.nationality || '',
+      date_of_birth: formatDate(leadTravelDocs?.date_of_birth),
+      id_number: leadTravelDocs?.id_number || '',
+      has_passport_details: leadHasPassportDetails,
+      existing_passport_details: leadExistingPassportDetails,
 
       // Lead passenger fields (static - always the lead passenger regardless of recipient)
       lead_passenger_first_name: booking.customers?.first_name || '',
@@ -796,13 +893,17 @@ const handler = async (req: Request): Promise<Response> => {
     // These passengers receive their own direct emails, not CC'd
     const additionalPassengerEmails: string[] = [];
     
-    const sendToPassenger = async (passenger: any, passengerLabel: string) => {
+    const sendToPassenger = async (passenger: any, passengerLabel: string, passengerSlotNumber: number) => {
       if (!passenger?.email) return;
       
       // Skip if this email is the same as the lead passenger
       if (passenger.email === booking.customers.email) return;
       
       console.log(`Sending email to ${passengerLabel}: ${passenger.email}`);
+
+      const passengerDocs = getTravelDocsForPassenger(passenger.id, passengerSlotNumber);
+      const passengerHasPassportDetails = computeHasPassportDetails(passengerDocs);
+      const passengerExistingPassportDetails = buildExistingPassportDetailsHtml(passengerDocs);
       
       // Create personalized merge data for this passenger
       const passengerMergeData = {
@@ -818,6 +919,21 @@ const handler = async (req: Request): Promise<Response> => {
         customer_emergency_contact_name: passenger.emergency_contact_name || '',
         customer_emergency_contact_phone: passenger.emergency_contact_phone || '',
         customer_emergency_contact_relationship: passenger.emergency_contact_relationship || '',
+
+        // Travel docs fields (dynamic)
+        passport_first_name: passengerDocs?.passport_first_name || '',
+        passport_middle_name: passengerDocs?.passport_middle_name || '',
+        passport_surname: passengerDocs?.passport_surname || '',
+        name_as_per_passport: passengerDocs?.name_as_per_passport || '',
+        passport_number: passengerDocs?.passport_number || '',
+        passport_country: passengerDocs?.passport_country || '',
+        passport_expiry_date: formatDate(passengerDocs?.passport_expiry_date),
+        nationality: passengerDocs?.nationality || '',
+        date_of_birth: formatDate(passengerDocs?.date_of_birth),
+        id_number: passengerDocs?.id_number || '',
+        has_passport_details: passengerHasPassportDetails,
+        existing_passport_details: passengerExistingPassportDetails,
+
         customer: {
           first_name: passenger.first_name || '',
           last_name: passenger.last_name || '',
@@ -949,10 +1065,10 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to passenger 2 and 3 if they exist AND if includeAdditionalPassengers is true
     if (shouldIncludeAdditionalPassengers) {
       if (booking.passenger_2) {
-        await sendToPassenger(booking.passenger_2, 'Passenger 2');
+        await sendToPassenger(booking.passenger_2, 'Passenger 2', 2);
       }
       if (booking.passenger_3) {
-        await sendToPassenger(booking.passenger_3, 'Passenger 3');
+        await sendToPassenger(booking.passenger_3, 'Passenger 3', 3);
       }
     } else {
       console.log('Skipping additional passengers as includeAdditionalPassengers is false');
