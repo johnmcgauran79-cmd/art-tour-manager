@@ -89,6 +89,33 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
   );
 };
 
+// Branded email wrapper - wraps content in ART header with logo
+const wrapBrandedEmail = (content: string, title?: string): string => {
+  const headerTitle = title || 'Australian Racing Tours';
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
+    <h1 style="color: #fff; margin: 0; font-size: 24px;">${headerTitle}</h1>
+  </div>
+  
+  <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+    ${content}
+  </div>
+  
+  <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
+    <p style="margin: 0;">Australian Racing Tours</p>
+    <p style="margin: 5px 0;">This email was sent regarding your tour booking.</p>
+  </div>
+</body>
+</html>`;
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -693,17 +720,18 @@ const handler = async (req: Request): Promise<Response> => {
           emailHtml = injectTravelDocsButtonNearCopy(emailHtml, travelDocsButton);
         }
       }
+      
+      // Wrap the processed content in the branded email wrapper
+      emailHtml = wrapBrandedEmail(emailHtml);
     } else {
-      // Fallback to simple HTML if no template found
-      emailHtml = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h1>Booking Confirmation</h1>
-          <p>Dear ${booking.customers?.first_name} ${booking.customers?.last_name},</p>
-          <p>Thank you for your booking confirmation for <strong>${booking.tours?.name || 'your tour'}</strong>.</p>
-          <p>We will be in touch with more details soon.</p>
-          <p>Best regards,<br>The Team</p>
-        </div>
+      // Fallback to simple HTML if no template found - use branded wrapper
+      const fallbackContent = `
+        <p>Dear ${booking.customers?.first_name} ${booking.customers?.last_name},</p>
+        <p>Thank you for your booking confirmation for <strong>${booking.tours?.name || 'your tour'}</strong>.</p>
+        <p>We will be in touch with more details soon.</p>
+        <p>Best regards,<br>The Team</p>
       `;
+      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation');
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
@@ -883,6 +911,9 @@ const handler = async (req: Request): Promise<Response> => {
           passengerEmailHtml = injectTravelDocsButtonNearCopy(passengerEmailHtml, passengerTravelDocsButton);
         }
       }
+      
+      // Wrap in branded email template
+      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
       const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);
