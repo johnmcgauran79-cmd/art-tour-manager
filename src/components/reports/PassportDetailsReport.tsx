@@ -56,7 +56,6 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
         <TableRow>
           <TableHead className="w-[50px]">Status</TableHead>
           <TableHead>Passenger</TableHead>
-          <TableHead>Type</TableHead>
           <TableHead>Name as per Passport</TableHead>
           <TableHead>Passport No.</TableHead>
           <TableHead>Country</TableHead>
@@ -80,11 +79,6 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
               {passenger.groupName && (
                 <span className="text-xs text-muted-foreground block">{passenger.groupName}</span>
               )}
-            </TableCell>
-            <TableCell>
-              <Badge variant="outline" className="text-xs">
-                {passenger.passengerType}
-              </Badge>
             </TableCell>
             <TableCell>{passenger.nameAsPerPassport || '-'}</TableCell>
             <TableCell className="font-mono text-sm">{passenger.passportNumber || '-'}</TableCell>
