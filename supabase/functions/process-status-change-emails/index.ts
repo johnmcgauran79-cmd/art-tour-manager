@@ -217,7 +217,7 @@ serve(async (req) => {
             }
 
             const updateLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
-            const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Submit Travel Documents</a></div>`;
+            const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PASSPORT DETAILS</a></div>`;
 
             // Add travel docs specific replacements
             replacements['{{travel_docs_button}}'] = travelDocsButton;
