@@ -30,6 +30,7 @@ import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
 import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestButton";
 import { PassengerDetailsSection } from "@/components/booking/PassengerDetailsSection";
+import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -554,13 +555,13 @@ export default function BookingDetail() {
             <TabsContent value="travel" className="space-y-4 mt-6">
               <div className="bg-card rounded-lg border p-6">
                 <h3 className="text-lg font-semibold mb-4">Travel Documents</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InfoRow label="Passport Number" value={booking.passport_number} />
-                  <InfoRow label="Passport Expiry Date" value={booking.passport_expiry_date ? formatDateToDDMMYYYY(booking.passport_expiry_date) : null} />
-                  <InfoRow label="Passport Country" value={booking.passport_country} />
-                  <InfoRow label="ID Number" value={booking.id_number} />
-                  <InfoRow label="Nationality" value={booking.nationality} />
-                </div>
+                <BookingTravelDocsDisplay
+                  bookingId={booking.id}
+                  passengerCount={booking.passenger_count}
+                  leadPassenger={booking.customers}
+                  passenger2={(booking as any).passenger_2}
+                  passenger3={(booking as any).passenger_3}
+                />
               </div>
             </TabsContent>
           )}
