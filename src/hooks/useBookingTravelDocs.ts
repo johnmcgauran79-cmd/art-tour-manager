@@ -6,6 +6,9 @@ export interface BookingTravelDoc {
   booking_id: string;
   passenger_slot: number;
   customer_id: string | null;
+  passport_first_name: string | null;
+  passport_middle_name: string | null;
+  passport_surname: string | null;
   name_as_per_passport: string | null;
   passport_number: string | null;
   passport_expiry_date: string | null;

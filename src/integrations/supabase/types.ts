@@ -571,7 +571,10 @@ export type Database = {
           passenger_slot: number
           passport_country: string | null
           passport_expiry_date: string | null
+          passport_first_name: string | null
+          passport_middle_name: string | null
           passport_number: string | null
+          passport_surname: string | null
           updated_at: string
         }
         Insert: {
@@ -586,7 +589,10 @@ export type Database = {
           passenger_slot: number
           passport_country?: string | null
           passport_expiry_date?: string | null
+          passport_first_name?: string | null
+          passport_middle_name?: string | null
           passport_number?: string | null
+          passport_surname?: string | null
           updated_at?: string
         }
         Update: {
@@ -601,7 +607,10 @@ export type Database = {
           passenger_slot?: number
           passport_country?: string | null
           passport_expiry_date?: string | null
+          passport_first_name?: string | null
+          passport_middle_name?: string | null
           passport_number?: string | null
+          passport_surname?: string | null
           updated_at?: string
         }
         Relationships: [

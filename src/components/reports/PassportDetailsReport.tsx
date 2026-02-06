@@ -9,7 +9,9 @@ interface PassportDetailsReportProps {
     passengerType: string;
     bookingReference: string;
     groupName: string;
-    nameAsPerPassport: string;
+    passportFirstName: string;
+    passportMiddleName: string;
+    passportSurname: string;
     passportNumber: string;
     passportCountry: string;
     passportExpiry: string;
@@ -56,7 +58,9 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
         <TableRow>
           <TableHead className="w-[50px]">Status</TableHead>
           <TableHead>Passenger</TableHead>
-          <TableHead>Name as per Passport</TableHead>
+          <TableHead>First Name</TableHead>
+          <TableHead>Middle Name</TableHead>
+          <TableHead>Surname</TableHead>
           <TableHead>Passport No.</TableHead>
           <TableHead>Country</TableHead>
           <TableHead>Nationality</TableHead>
@@ -80,7 +84,9 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
                 <span className="text-xs text-muted-foreground block">{passenger.groupName}</span>
               )}
             </TableCell>
-            <TableCell>{passenger.nameAsPerPassport || '-'}</TableCell>
+            <TableCell>{passenger.passportFirstName || '-'}</TableCell>
+            <TableCell>{passenger.passportMiddleName || '-'}</TableCell>
+            <TableCell>{passenger.passportSurname || '-'}</TableCell>
             <TableCell className="font-mono text-sm">{passenger.passportNumber || '-'}</TableCell>
             <TableCell>{passenger.passportCountry || '-'}</TableCell>
             <TableCell>{passenger.nationality || '-'}</TableCell>

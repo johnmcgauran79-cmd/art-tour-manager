@@ -94,27 +94,22 @@ export const TourOperationsReportsModal = ({
   const handleExportPassportCSV = () => {
     if (!passportData || passportData.length === 0) return;
     
-    const headers = ['Passenger Name', 'Type', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
-    const csvData = passportData.map(item => ({
-      passengername: item.passengerName,
-      type: item.passengerType,
-      bookingref: item.bookingReference,
-      group: item.groupName || '',
-      nameasperpassport: item.nameAsPerPassport || '',
-      passportno: item.passportNumber || '',
-      country: item.passportCountry || '',
-      nationality: item.nationality || '',
-      dateofbirth: item.dateOfBirth || '',
-      expiry: item.passportExpiry || ''
-    }));
+    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name', 'Middle Name', 'Surname', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+    const csvData = passportData.map(item => [
+      item.passengerName,
+      item.bookingReference,
+      item.groupName || '',
+      item.passportFirstName || '',
+      item.passportMiddleName || '',
+      item.passportSurname || '',
+      item.passportNumber || '',
+      item.passportCountry || '',
+      item.nationality || '',
+      item.dateOfBirth || '',
+      item.passportExpiry || ''
+    ].map(value => `"${String(value).replace(/"/g, '""')}"`).join(','));
 
-    const csvContent = [
-      headers.join(','),
-      ...csvData.map(row => headers.map(header => {
-        const value = row[header.toLowerCase().replace(/\s+/g, '') as keyof typeof row] || '';
-        return `"${String(value).replace(/"/g, '""')}"`;
-      }).join(','))
-    ].join('\n');
+    const csvContent = [headers.join(','), ...csvData].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -145,12 +140,14 @@ export const TourOperationsReportsModal = ({
   const generatePassportCSV = () => {
     if (!passportData || passportData.length === 0) return '';
     
-    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+    const headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name', 'Middle Name', 'Surname', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
     const csvData = passportData.map(item => [
       item.passengerName,
       item.bookingReference,
       item.groupName || '',
-      item.nameAsPerPassport || '',
+      item.passportFirstName || '',
+      item.passportMiddleName || '',
+      item.passportSurname || '',
       item.passportNumber || '',
       item.passportCountry || '',
       item.nationality || '',

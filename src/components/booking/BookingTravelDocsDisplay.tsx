@@ -59,7 +59,7 @@ export const BookingTravelDocsDisplay = ({
 
   const hasDocuments = (doc: typeof travelDocs[0] | undefined): boolean => {
     if (!doc) return false;
-    return !!(doc.passport_number || doc.name_as_per_passport || doc.nationality || doc.date_of_birth);
+    return !!(doc.passport_number || doc.passport_first_name || doc.passport_surname || doc.nationality || doc.date_of_birth);
   };
 
   const isPassportExpiringSoon = (expiryDate: string | null): boolean => {
@@ -101,7 +101,9 @@ export const BookingTravelDocsDisplay = ({
           <TableHeader>
             <TableRow>
               <TableHead className="w-[140px]">Passenger</TableHead>
-              <TableHead>Name as per Passport</TableHead>
+              <TableHead>First Name</TableHead>
+              <TableHead>Middle Name</TableHead>
+              <TableHead>Surname</TableHead>
               <TableHead>Date of Birth</TableHead>
               <TableHead>Passport Number</TableHead>
               <TableHead>Expiry Date</TableHead>
@@ -130,7 +132,13 @@ export const BookingTravelDocsDisplay = ({
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {doc?.name_as_per_passport || '—'}
+                    {doc?.passport_first_name || '—'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {doc?.passport_middle_name || '—'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {doc?.passport_surname || '—'}
                   </TableCell>
                   <TableCell className="text-sm">
                     {doc?.date_of_birth ? formatDateToDDMMYYYY(doc.date_of_birth) : '—'}
