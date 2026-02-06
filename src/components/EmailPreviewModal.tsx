@@ -32,6 +32,11 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const [emailData, setEmailData] = useState<BookingEmailData | null>(null);
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
+  // Store original templates with merge fields for server-side processing
+  const [originalSubjectTemplate, setOriginalSubjectTemplate] = useState("");
+  const [originalContentTemplate, setOriginalContentTemplate] = useState("");
+  // Track if user has manually edited the content (if so, send their edits as-is)
+  const [userHasEdited, setUserHasEdited] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const [ccEmails, setCcEmails] = useState<string>("");
@@ -99,18 +104,27 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   }, [selectedTemplateId]);
 
   // Generate email content when booking or template changes
+  // IMPORTANT: Keep original templates with merge fields for server-side processing
+  // The preview shows personalized content, but we send raw templates to the Edge Function
   useEffect(() => {
     if (booking) {
       const recipientEmail = booking.customers?.email || '';
       const recipientName = `${booking.customers?.first_name} ${booking.customers?.last_name}`;
 
+      // Reset edit flag when template changes
+      setUserHasEdited(false);
+
       if (selectedTemplateId && selectedTemplateId !== "blank" && emailTemplates) {
         const template = emailTemplates.find(t => t.id === selectedTemplateId);
         if (template) {
-          // Convert booking data to merge format
+          // Store original templates with merge fields for server-side processing
+          setOriginalSubjectTemplate(template.subject_template);
+          setOriginalContentTemplate(template.content_template);
+
+          // Convert booking data to merge format for preview only
           const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
 
-          // Process template with merge data
+          // Process template with merge data for PREVIEW display
           const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
           const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
 
@@ -124,8 +138,15 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
           setEditedContent(processedContent);
         }
       } else {
-        // Default blank email template - convert line breaks to HTML
-        const defaultSubject = `Email for ${recipientName}`;
+        // Default blank email template
+        const defaultSubjectTemplate = `Email for {{customer_first_name}}`;
+        const defaultContentTemplate = `<p>Dear {{customer_first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
+        
+        setOriginalSubjectTemplate(defaultSubjectTemplate);
+        setOriginalContentTemplate(defaultContentTemplate);
+
+        // Show personalized preview
+        const defaultSubject = `Email for ${booking.customers?.first_name || 'Customer'}`;
         const defaultContent = `<p>Dear ${booking.customers?.first_name || 'Customer'},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
 
         setEmailData({
@@ -144,10 +165,24 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
     if (!bookingId) return;
     
     try {
+      // IMPORTANT: If user hasn't edited, send original templates with merge fields.
+      // The Edge Function will process these with proper recipient-specific data.
+      // This ensures lead passenger gets correct data and additional passengers get personalized emails.
+      // If user has edited, originalSubjectTemplate/originalContentTemplate have been updated
+      // to match their edits, so we send those.
+      const subjectToSend = originalSubjectTemplate || editedSubject;
+      const contentToSend = originalContentTemplate || editedContent;
+      
+      console.log('[EmailPreviewModal] Sending email:', { 
+        userHasEdited, 
+        hasOriginalTemplate: !!originalContentTemplate,
+        subjectPreview: subjectToSend.substring(0, 50) 
+      });
+      
       await sendEmail.mutateAsync({
         bookingId,
-        customSubject: editedSubject,
-        customContent: editedContent,
+        customSubject: subjectToSend,
+        customContent: contentToSend,
         fromEmail,
         ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
@@ -259,7 +294,13 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
               <Input
                 id="subject"
                 value={editedSubject}
-                onChange={(e) => setEditedSubject(e.target.value)}
+                onChange={(e) => {
+                  setEditedSubject(e.target.value);
+                  setUserHasEdited(true);
+                  // When user edits, update the original template as well
+                  // This means user edits will be sent as-is (already personalized)
+                  setOriginalSubjectTemplate(e.target.value);
+                }}
               />
             </div>
 
@@ -269,7 +310,13 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                 <ReactQuill
                   theme="snow"
                   value={editedContent}
-                  onChange={setEditedContent}
+                  onChange={(value) => {
+                    setEditedContent(value);
+                    setUserHasEdited(true);
+                    // When user edits, update the original template as well
+                    // This means user edits will be sent as-is (already personalized)
+                    setOriginalContentTemplate(value);
+                  }}
                   modules={quillModules}
                   className="bg-white"
                   style={{ minHeight: '300px' }}
