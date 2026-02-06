@@ -490,7 +490,7 @@ const handler = async (req: Request): Promise<Response> => {
         travelDocsLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
         // IMPORTANT: Keep this HTML on a single line to prevent formatting issues.
         // data-art-travel-docs marker helps us reliably detect whether the button is already present.
-        travelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${travelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SUBMIT PASSPORT DETAILS</a></td></tr></table>`;
+        travelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${travelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PASSPORT DETAILS</a></td></tr></table>`;
         console.log('Generated travel docs link for customer:', booking.customers.id);
       }
     }
@@ -808,7 +808,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         // If the email references travel docs but the button token was stripped upstream,
         // inject the button near the copy.
-        const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(emailHtml) || emailHtml.includes('SUBMIT PASSPORT DETAILS');
+        const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(emailHtml) || emailHtml.includes('UPDATE PASSPORT DETAILS');
         if (!hasTravelDocsButtonAlready && /(travel\s+document|passport\s+detail)/i.test(emailHtml) && travelDocsButton) {
           emailHtml = injectTravelDocsButtonNearCopy(emailHtml, travelDocsButton);
         }
@@ -995,7 +995,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (!tokenError && tokenData) {
           const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
           passengerTravelDocsLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
-          passengerTravelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${passengerTravelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SUBMIT TRAVEL DOCUMENTS</a></td></tr></table>`;
+          passengerTravelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${passengerTravelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PASSPORT DETAILS</a></td></tr></table>`;
           
           passengerMergeData.travel_docs_link = passengerTravelDocsLink;
           passengerMergeData.travel_docs_button = passengerTravelDocsButton;
@@ -1017,7 +1017,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (passengerTravelDocsLink) {
         passengerEmailHtml = injectTravelDocsLink(passengerEmailHtml, passengerTravelDocsLink);
-        const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(passengerEmailHtml) || passengerEmailHtml.includes('SUBMIT TRAVEL DOCUMENTS');
+        const hasTravelDocsButtonAlready = /data-art-travel-docs=(['"])button\1/i.test(passengerEmailHtml) || passengerEmailHtml.includes('UPDATE PASSPORT DETAILS');
         if (!hasTravelDocsButtonAlready && /(travel\s+document|passport\s+detail)/i.test(passengerEmailHtml) && passengerTravelDocsButton) {
           passengerEmailHtml = injectTravelDocsButtonNearCopy(passengerEmailHtml, passengerTravelDocsButton);
         }

@@ -228,7 +228,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const updateLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
-        const travelDocsButtonHtml = `<a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SUBMIT PASSPORT DETAILS</a>`;
+        const travelDocsButtonHtml = `<a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PASSPORT DETAILS</a>`;
 
         let finalSubject: string;
         let finalHtml: string;
