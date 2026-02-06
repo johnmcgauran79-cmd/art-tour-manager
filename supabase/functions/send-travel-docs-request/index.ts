@@ -11,6 +11,17 @@ interface TravelDocsRequestPayload {
   bookingId: string;
 }
 
+interface TravelDocsData {
+  passport_first_name: string | null;
+  passport_middle_name: string | null;
+  passport_surname: string | null;
+  passport_number: string | null;
+  passport_country: string | null;
+  passport_expiry_date: string | null;
+  nationality: string | null;
+  date_of_birth: string | null;
+}
+
 interface PassengerInfo {
   id: string;
   first_name: string;
@@ -18,6 +29,8 @@ interface PassengerInfo {
   email: string;
   preferred_name: string | null;
   slot: 'lead' | 'pax2' | 'pax3';
+  slotNumber: number;
+  travelDocs: TravelDocsData | null;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -74,7 +87,19 @@ const handler = async (req: Request): Promise<Response> => {
         customers!lead_passenger_id (id, first_name, last_name, email, preferred_name),
         passenger_2:customers!passenger_2_id (id, first_name, last_name, email, preferred_name),
         passenger_3:customers!passenger_3_id (id, first_name, last_name, email, preferred_name),
-        tours (id, name, start_date, end_date, travel_documents_required)
+        tours (id, name, start_date, end_date, travel_documents_required),
+        booking_travel_docs (
+          passenger_slot,
+          customer_id,
+          passport_first_name,
+          passport_middle_name,
+          passport_surname,
+          passport_number,
+          passport_country,
+          passport_expiry_date,
+          nationality,
+          date_of_birth
+        )
       `)
       .eq("id", bookingId)
       .single();
@@ -95,40 +120,54 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    
+    // Helper to get travel docs for a specific passenger slot
+    const getTravelDocsForSlot = (slot: number) => {
+      return (booking.booking_travel_docs || []).find((doc: any) => doc.passenger_slot === slot);
+    };
 
     // Collect all passengers with email addresses
     const passengers: PassengerInfo[] = [];
     
     if (booking.customers?.email) {
+      const docs = getTravelDocsForSlot(1);
       passengers.push({
         id: booking.customers.id,
         first_name: booking.customers.first_name,
         last_name: booking.customers.last_name,
         email: booking.customers.email,
         preferred_name: booking.customers.preferred_name,
-        slot: 'lead'
+        slot: 'lead',
+        slotNumber: 1,
+        travelDocs: docs || null
       });
     }
     
     if (booking.passenger_2?.email) {
+      const docs = getTravelDocsForSlot(2);
       passengers.push({
         id: booking.passenger_2.id,
         first_name: booking.passenger_2.first_name,
         last_name: booking.passenger_2.last_name,
         email: booking.passenger_2.email,
         preferred_name: booking.passenger_2.preferred_name,
-        slot: 'pax2'
+        slot: 'pax2',
+        slotNumber: 2,
+        travelDocs: docs || null
       });
     }
     
     if (booking.passenger_3?.email) {
+      const docs = getTravelDocsForSlot(3);
       passengers.push({
         id: booking.passenger_3.id,
         first_name: booking.passenger_3.first_name,
         last_name: booking.passenger_3.last_name,
         email: booking.passenger_3.email,
         preferred_name: booking.passenger_3.preferred_name,
-        slot: 'pax3'
+        slot: 'pax3',
+        slotNumber: 3,
+        travelDocs: docs || null
       });
     }
 
@@ -195,6 +234,51 @@ const handler = async (req: Request): Promise<Response> => {
         if (template) {
           fromEmail = template.from_email || "Australian Racing Tours <info@australianracingtours.com.au>";
 
+          // Get this passenger's travel docs
+          const docs = passenger.travelDocs;
+          
+          // Build existing details section if passenger has submitted passport details
+          const hasPassportDetails = docs && !!(docs.passport_number || docs.passport_country || docs.passport_expiry_date || docs.nationality || docs.passport_first_name);
+          
+          let existingDetailsHtml = '';
+          if (hasPassportDetails) {
+            const formatField = (value: string | null, placeholder = 'Not provided') => {
+              return value && value.trim() ? value : `<span style="color: #999; font-style: italic;">${placeholder}</span>`;
+            };
+            
+            existingDetailsHtml = `
+              <div style="background: #f9f9f9; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                <h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Your Current Passport Details</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666; width: 40%;"><strong>Name (as per passport):</strong></td>
+                    <td style="padding: 6px 0;">${formatField([docs.passport_first_name, docs.passport_middle_name, docs.passport_surname].filter(Boolean).join(' ') || null)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Passport Number:</strong></td>
+                    <td style="padding: 6px 0;">${formatField(docs.passport_number)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Passport Country:</strong></td>
+                    <td style="padding: 6px 0;">${formatField(docs.passport_country)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Passport Expiry:</strong></td>
+                    <td style="padding: 6px 0;">${docs.passport_expiry_date ? formatDate(docs.passport_expiry_date) : formatField(null)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Nationality:</strong></td>
+                    <td style="padding: 6px 0;">${formatField(docs.nationality)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Date of Birth:</strong></td>
+                    <td style="padding: 6px 0;">${docs.date_of_birth ? formatDate(docs.date_of_birth) : formatField(null)}</td>
+                  </tr>
+                </table>
+              </div>
+            `;
+          }
+
           const replacements: Record<string, string> = {
             '{{customer_first_name}}': passenger.preferred_name || passenger.first_name || '',
             '{{customer_last_name}}': passenger.last_name || '',
@@ -203,11 +287,15 @@ const handler = async (req: Request): Promise<Response> => {
             '{{tour_name}}': tour.name || '',
             '{{tour_start_date}}': tour.start_date ? formatDate(tour.start_date) : '',
             '{{tour_end_date}}': tour.end_date ? formatDate(tour.end_date) : '',
-            '{{passport_number}}': booking.passport_number || '',
-            '{{passport_country}}': booking.passport_country || '',
-            '{{passport_expiry_date}}': booking.passport_expiry_date ? formatDate(booking.passport_expiry_date) : '',
-            '{{nationality}}': booking.nationality || '',
-            '{{id_number}}': booking.id_number || '',
+            '{{passport_first_name}}': docs?.passport_first_name || '',
+            '{{passport_middle_name}}': docs?.passport_middle_name || '',
+            '{{passport_surname}}': docs?.passport_surname || '',
+            '{{passport_number}}': docs?.passport_number || '',
+            '{{passport_country}}': docs?.passport_country || '',
+            '{{passport_expiry_date}}': docs?.passport_expiry_date ? formatDate(docs.passport_expiry_date) : '',
+            '{{nationality}}': docs?.nationality || '',
+            '{{date_of_birth}}': docs?.date_of_birth ? formatDate(docs.date_of_birth) : '',
+            '{{existing_passport_details}}': existingDetailsHtml,
             '{{travel_docs_button}}': travelDocsButtonHtml,
             '{{travel_docs_link}}': updateLink,
           };
@@ -216,7 +304,6 @@ const handler = async (req: Request): Promise<Response> => {
           let processedSubject = template.subject_template || `Passport Details Required - ${tour.name}`;
 
           // Handle conditional sections
-          const hasPassportDetails = !!(booking.passport_number || booking.passport_country || booking.passport_expiry_date || booking.nationality || booking.id_number);
           const hasDetailsRegex = /\{\{#has_passport_details\}\}([\s\S]*?)\{\{\/has_passport_details\}\}/g;
           const noDetailsRegex = /\{\{#no_passport_details\}\}([\s\S]*?)\{\{\/no_passport_details\}\}/g;
           const notHasDetailsRegex = /\{\{\^has_passport_details\}\}([\s\S]*?)\{\{\/has_passport_details\}\}/g;
@@ -266,6 +353,51 @@ const handler = async (req: Request): Promise<Response> => {
           fromEmail = "Australian Racing Tours <info@australianracingtours.com.au>";
           finalSubject = `Passport Details Required - ${tour.name}`;
 
+          // Get this passenger's travel docs for fallback email
+          const docs = passenger.travelDocs;
+          const hasPassportDetails = docs && !!(docs.passport_number || docs.passport_country || docs.passport_expiry_date || docs.nationality || docs.passport_first_name);
+          
+          // Build existing details section if passport details exist
+          let existingDetailsHtml = '';
+          if (hasPassportDetails) {
+            const formatField = (value: string | null, placeholder = 'Not provided') => {
+              return value && value.trim() ? value : `<span style="color: #999; font-style: italic;">${placeholder}</span>`;
+            };
+            
+            existingDetailsHtml = `
+              <div style="background: #f9f9f9; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                <h3 style="margin-top: 0; margin-bottom: 15px; color: #333; font-size: 16px; border-bottom: 1px solid #ddd; padding-bottom: 10px;">Your Current Passport Details</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666; width: 40%;"><strong>Name (as per passport):</strong></td>
+                    <td style="padding: 6px 0;">${formatField([docs.passport_first_name, docs.passport_middle_name, docs.passport_surname].filter(Boolean).join(' ') || null)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Passport Number:</strong></td>
+                    <td style="padding: 6px 0;">${formatField(docs.passport_number)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Passport Country:</strong></td>
+                    <td style="padding: 6px 0;">${formatField(docs.passport_country)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Passport Expiry:</strong></td>
+                    <td style="padding: 6px 0;">${docs.passport_expiry_date ? formatDate(docs.passport_expiry_date) : formatField(null)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Nationality:</strong></td>
+                    <td style="padding: 6px 0;">${formatField(docs.nationality)}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 10px 6px 0; color: #666;"><strong>Date of Birth:</strong></td>
+                    <td style="padding: 6px 0;">${docs.date_of_birth ? formatDate(docs.date_of_birth) : formatField(null)}</td>
+                  </tr>
+                </table>
+                <p style="margin: 15px 0 0 0; font-size: 14px; color: #666;">If any of the above details are incorrect, please click below to update them.</p>
+              </div>
+            `;
+          }
+
           finalHtml = `
             <!DOCTYPE html>
             <html>
@@ -276,13 +408,13 @@ const handler = async (req: Request): Promise<Response> => {
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
-                <h1 style="color: #fff; margin: 0; font-size: 24px;">Passport Details Required</h1>
+                <h1 style="color: #fff; margin: 0; font-size: 24px;">Passport Details ${hasPassportDetails ? 'Confirmation' : 'Required'}</h1>
               </div>
               
               <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
                 <p style="margin-top: 0;">Dear ${passenger.preferred_name || passenger.first_name},</p>
                 
-                <p>We require your passport details for your upcoming tour:</p>
+                <p>${hasPassportDetails ? 'Please review your passport details below for your upcoming tour:' : 'We require your passport details for your upcoming tour:'}</p>
                 
                 <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 15px 0;">
                   <h3 style="margin: 0 0 10px 0; color: #2e7d32;">${tour.name}</h3>
@@ -291,7 +423,9 @@ const handler = async (req: Request): Promise<Response> => {
                   </p>
                 </div>
                 
-                <p>Please click the button below to provide your passport details:</p>
+                ${existingDetailsHtml}
+                
+                <p>${hasPassportDetails ? 'To update your details, please click the button below:' : 'Please click the button below to provide your passport details:'}</p>
                 
                 <div style="text-align: center; margin: 30px 0;">
                   ${travelDocsButtonHtml}
