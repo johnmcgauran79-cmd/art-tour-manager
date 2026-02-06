@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -24,10 +24,11 @@ import { supabase } from "@/integrations/supabase/client";
 interface TourOperationsTabProps {
   tourId: string;
   tourName: string;
+  travelDocumentsRequired?: boolean;
   onNavigate?: (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => void;
 }
 
-export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperationsTabProps) => {
+export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, onNavigate }: TourOperationsTabProps) => {
   const navigate = useNavigate();
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
@@ -39,7 +40,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
@@ -119,7 +120,7 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
     return total + booking.passenger_count;
   }, 0);
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking') => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
@@ -307,6 +308,18 @@ export const TourOperationsTab = ({ tourId, tourName, onNavigate }: TourOperatio
               <p className="font-semibold text-gray-800 group-hover:text-cyan-700 text-xs">Email Tracking</p>
               <p className="text-xs text-gray-600">Delivery & Opens</p>
             </div>
+            {travelDocumentsRequired && (
+              <div 
+                className="text-center p-3 border-2 border-teal-200 rounded-lg cursor-pointer hover:bg-teal-50 hover:border-teal-300 hover:shadow-md transition-all duration-200 group"
+                onClick={() => handleReportClick('passport')}
+              >
+                <div className="bg-teal-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-teal-200 transition-colors">
+                  <BookUser className="h-5 w-5 text-teal-600" />
+                </div>
+                <p className="font-semibold text-gray-800 group-hover:text-teal-700 text-xs">Passport Details</p>
+                <p className="text-xs text-gray-600">Travel Documents</p>
+              </div>
+            )}
           </div>
           <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
             <p className="text-xs text-brand-navy">

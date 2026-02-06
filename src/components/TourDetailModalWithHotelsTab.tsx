@@ -260,6 +260,7 @@ export const TourDetailModalWithHotelsTab = ({
                 <TourOperationsTab
                   tourId={currentTour?.id || ""}
                   tourName={currentTour?.name || ""}
+                  travelDocumentsRequired={currentTour?.travel_documents_required}
                 />
               </TabsContent>
             )}

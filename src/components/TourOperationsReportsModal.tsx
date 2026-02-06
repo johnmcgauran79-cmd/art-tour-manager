@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Mail } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { ContactsReport } from "@/components/reports/ContactsReport";
@@ -13,17 +13,22 @@ import { PassengerSummaryReport } from "@/components/reports/PassengerSummaryRep
 import { PassengerListReport } from "@/components/reports/PassengerListReport";
 import { ActivityMatrixReport } from "@/components/reports/ActivityMatrixReport";
 import { EmailTrackingReport } from "@/components/reports/EmailTrackingReport";
+import { PassportDetailsReport } from "@/components/reports/PassportDetailsReport";
 import { HotelSelectionDialog } from "@/components/reports/HotelSelectionDialog";
 import { useReportData } from "@/components/reports/useReportData";
+import { usePassportReport } from "@/hooks/usePassportReport";
 import { exportReportToCSV, generateReportHTML } from "@/components/reports/ReportExportUtils";
 import { ReportPDFViewer } from "@/components/reports/ReportPDFViewer";
+import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TourOperationsReportsModalProps {
   tourId: string;
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | null;
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
@@ -38,6 +43,8 @@ export const TourOperationsReportsModal = ({
   onBookingClick
 }: TourOperationsReportsModalProps) => {
   const { data: hotels } = useHotels(tourId);
+  const { data: passportData, isLoading: passportLoading } = usePassportReport(tourId);
+  const { toast } = useToast();
   const [showAllContacts, setShowAllContacts] = useState(false);
   const reports = useReportData(tourId, { showAllContacts });
   
@@ -46,9 +53,11 @@ export const TourOperationsReportsModal = ({
   const [hotelSelectionOpen, setHotelSelectionOpen] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState('');
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Get the specific report to display
-  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking'
+  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport'
     ? reports.find(r => r.type === reportType) || null 
     : null;
 
@@ -80,6 +89,203 @@ export const TourOperationsReportsModal = ({
         return null;
     }
   };
+
+  // CSV export for passport report
+  const handleExportPassportCSV = () => {
+    if (!passportData || passportData.length === 0) return;
+    
+    const headers = ['Passenger Name', 'Type', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+    const csvData = passportData.map(item => ({
+      passengername: item.passengerName,
+      type: item.passengerType,
+      bookingref: item.bookingReference,
+      group: item.groupName || '',
+      nameasperpassport: item.nameAsPerPassport || '',
+      passportno: item.passportNumber || '',
+      country: item.passportCountry || '',
+      nationality: item.nationality || '',
+      dateofbirth: item.dateOfBirth || '',
+      expiry: item.passportExpiry || ''
+    }));
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => headers.map(header => {
+        const value = row[header.toLowerCase().replace(/\s+/g, '') as keyof typeof row] || '';
+        return `"${String(value).replace(/"/g, '""')}"`;
+      }).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${tourName}_Passport_Details.csv`;
+    link.click();
+  };
+
+  // PDF view for passport report
+  const handleViewPassportPDF = () => {
+    if (!passportData) return;
+    
+    const passportReport = {
+      id: 'passport',
+      type: 'passport' as const,
+      title: 'Passport Details',
+      description: 'Complete passport and travel document information for all passengers',
+      count: passportData.length,
+      data: passportData
+    };
+    
+    const htmlContent = generateReportHTML(passportReport, tourName);
+    setGeneratedHTML(htmlContent);
+    setShowPDFViewer(true);
+  };
+
+  // Email passport report
+  const handleSendPassportEmail = async (emailData: {
+    from: string;
+    to: string;
+    cc: string;
+    bcc: string;
+    subject: string;
+    message: string;
+  }) => {
+    if (!passportData) return;
+    
+    setIsSendingEmail(true);
+    try {
+      const passportReport = {
+        id: 'passport',
+        type: 'passport' as const,
+        title: 'Passport Details',
+        description: 'Complete passport and travel document information for all passengers',
+        count: passportData.length,
+        data: passportData
+      };
+      
+      const htmlContent = generateReportHTML(passportReport, tourName);
+      
+      const { error } = await supabase.functions.invoke('send-rooming-list', {
+        body: {
+          from: emailData.from,
+          to: emailData.to,
+          cc: emailData.cc || undefined,
+          bcc: emailData.bcc || undefined,
+          subject: emailData.subject,
+          message: emailData.message,
+          htmlContent: htmlContent,
+          tourId: tourId
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Email Sent",
+        description: `Passport details report has been sent to ${emailData.to}`,
+      });
+      setEmailModalOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send email",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  // Handle passport report
+  if (reportType === 'passport') {
+    return (
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <DialogTitle>Passport Details - {tourName}</DialogTitle>
+                  <Badge variant="secondary">{passportData?.length || 0} passengers</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={handleExportPassportCSV}
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                    disabled={!passportData || passportData.length === 0}
+                  >
+                    <Download className="h-4 w-4" />
+                    Export CSV
+                  </Button>
+                  <Button 
+                    onClick={handleViewPassportPDF}
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                    disabled={!passportData || passportData.length === 0}
+                  >
+                    <FileText className="h-4 w-4" />
+                    View PDF
+                  </Button>
+                  <Button 
+                    onClick={() => setEmailModalOpen(true)}
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-2"
+                    disabled={!passportData || passportData.length === 0}
+                  >
+                    <Mail className="h-4 w-4" />
+                    Email Report
+                  </Button>
+                  <DialogClose asChild>
+                    <Button variant="outline" size="sm">
+                      Close
+                    </Button>
+                  </DialogClose>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Complete passport and travel document information for all passengers on this tour.
+              </p>
+              
+              {passportLoading ? (
+                <div className="text-center py-8 text-muted-foreground">Loading passport details...</div>
+              ) : passportData && passportData.length > 0 ? (
+                <div className="border rounded-lg">
+                  <PassportDetailsReport data={passportData} />
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No passport details found. Passengers may not have submitted their travel documents yet.
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <ReportPDFViewer
+          open={showPDFViewer}
+          onOpenChange={setShowPDFViewer}
+          htmlContent={generatedHTML}
+          reportTitle="Passport Details"
+          tourName={tourName}
+        />
+
+        <EmailPassportReportModal
+          open={emailModalOpen}
+          onOpenChange={setEmailModalOpen}
+          tourName={tourName}
+          onSend={handleSendPassportEmail}
+          isSending={isSendingEmail}
+        />
+      </>
+    );
+  }
 
   // Handle email tracking report
   if (reportType === 'emailtracking') {

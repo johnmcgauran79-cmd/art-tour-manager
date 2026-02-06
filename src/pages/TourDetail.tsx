@@ -341,6 +341,7 @@ export default function TourDetail() {
           <TourOperationsTab
             tourId={tour.id}
             tourName={tour.name}
+            travelDocumentsRequired={tour.travel_documents_required}
             onNavigate={handleNavigate}
           />
           <div className="mt-6">

@@ -1,6 +1,6 @@
 interface ReportItem {
   id: string;
-  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix';
+  type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'passport';
   title: string;
   description: string;
   count: number;
@@ -46,6 +46,21 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
         passengername: item.name,
         dietaryrequirements: item.dietaryRequirements,
         notes: ''
+      }));
+      break;
+    case 'passport':
+      headers = ['Passenger Name', 'Type', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+      csvData = report.data.map(item => ({
+        passengername: item.passengerName,
+        type: item.passengerType,
+        bookingref: item.bookingReference,
+        group: item.groupName || '',
+        nameasperpassport: item.nameAsPerPassport || '',
+        passportno: item.passportNumber || '',
+        country: item.passportCountry || '',
+        nationality: item.nationality || '',
+        dateofbirth: item.dateOfBirth || '',
+        expiry: item.passportExpiry || ''
       }));
       break;
   }
@@ -131,6 +146,27 @@ export const printReport = (report: ReportItem, tourName: string) => {
                 <td>${item.name}</td>
                 <td>${item.dietaryRequirements || '-'}</td>
                 <td class="notes-column">_________________________</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
+    case 'passport':
+      tableHTML = `
+        <table>
+          <thead><tr><th>Passenger</th><th>Type</th><th>Name as per Passport</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr>
+                <td>${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
+                <td>${item.passengerType}</td>
+                <td>${item.nameAsPerPassport || '-'}</td>
+                <td>${item.passportNumber || '-'}</td>
+                <td>${item.passportCountry || '-'}</td>
+                <td>${item.nationality || '-'}</td>
+                <td>${item.dateOfBirth || '-'}</td>
+                <td>${item.passportExpiry || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -273,6 +309,38 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.name}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.dietaryRequirements || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px; border-left: 3px solid #333; min-height: 40px;">_________________________</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      break;
+    case 'passport':
+      tableContent = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passenger</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Type</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Name as per Passport</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passport No.</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Country</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Nationality</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">DOB</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Expiry</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${report.data.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerType}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.nameAsPerPassport || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px; font-family: monospace;">${item.passportNumber || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passportCountry || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.nationality || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.dateOfBirth || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passportExpiry || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
