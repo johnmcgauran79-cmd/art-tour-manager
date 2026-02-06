@@ -121,20 +121,19 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
     
-    // Helper to get travel docs for a specific passenger slot
-    const getTravelDocsForSlot = (slot: number) => {
+    // Helper to get travel docs for a specific passenger
+    const getTravelDocsForPassenger = (customerId: string, slot: number) => {
       const allDocs = booking.booking_travel_docs || [];
-      console.log(`Looking for travel docs for slot ${slot}. Available docs:`, JSON.stringify(allDocs.map((d: any) => ({ slot: d.passenger_slot, name: d.passport_first_name }))));
-      const found = allDocs.find((doc: any) => doc.passenger_slot === slot);
-      console.log(`Found docs for slot ${slot}:`, found ? JSON.stringify({ name: found.passport_first_name, number: found.passport_number }) : 'null');
-      return found;
+      const byCustomer = allDocs.find((doc: any) => doc.customer_id === customerId);
+      if (byCustomer) return byCustomer;
+      return allDocs.find((doc: any) => Number(doc.passenger_slot) === slot) || null;
     };
 
     // Collect all passengers with email addresses
     const passengers: PassengerInfo[] = [];
     
     if (booking.customers?.email) {
-      const docs = getTravelDocsForSlot(1);
+      const docs = getTravelDocsForPassenger(booking.customers.id, 1);
       passengers.push({
         id: booking.customers.id,
         first_name: booking.customers.first_name,
@@ -148,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     if (booking.passenger_2?.email) {
-      const docs = getTravelDocsForSlot(2);
+      const docs = getTravelDocsForPassenger(booking.passenger_2.id, 2);
       passengers.push({
         id: booking.passenger_2.id,
         first_name: booking.passenger_2.first_name,
@@ -162,7 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
     
     if (booking.passenger_3?.email) {
-      const docs = getTravelDocsForSlot(3);
+      const docs = getTravelDocsForPassenger(booking.passenger_3.id, 3);
       passengers.push({
         id: booking.passenger_3.id,
         first_name: booking.passenger_3.first_name,
