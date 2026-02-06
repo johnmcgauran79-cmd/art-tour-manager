@@ -127,6 +127,52 @@ export interface EmailMergeData {
   passenger_3_emergency_contact_phone?: string;
   passenger_3_emergency_contact_relationship?: string;
 
+  // Travel document fields (dynamic - changes per recipient for multi-passenger emails)
+  passport_first_name?: string;
+  passport_middle_name?: string;
+  passport_surname?: string;
+  passport_number?: string;
+  passport_country?: string;
+  passport_expiry_date?: string;
+  date_of_birth?: string;
+  nationality?: string;
+  id_number?: string;
+  name_as_per_passport?: string;
+  has_passport_details?: boolean;
+
+  // Lead passenger travel docs (static reference)
+  lead_passport_first_name?: string;
+  lead_passport_middle_name?: string;
+  lead_passport_surname?: string;
+  lead_passport_number?: string;
+  lead_passport_country?: string;
+  lead_passport_expiry_date?: string;
+  lead_date_of_birth?: string;
+  lead_nationality?: string;
+  lead_id_number?: string;
+
+  // Passenger 2 travel docs (static reference)
+  pax2_passport_first_name?: string;
+  pax2_passport_middle_name?: string;
+  pax2_passport_surname?: string;
+  pax2_passport_number?: string;
+  pax2_passport_country?: string;
+  pax2_passport_expiry_date?: string;
+  pax2_date_of_birth?: string;
+  pax2_nationality?: string;
+  pax2_id_number?: string;
+
+  // Passenger 3 travel docs (static reference)
+  pax3_passport_first_name?: string;
+  pax3_passport_middle_name?: string;
+  pax3_passport_surname?: string;
+  pax3_passport_number?: string;
+  pax3_passport_country?: string;
+  pax3_passport_expiry_date?: string;
+  pax3_date_of_birth?: string;
+  pax3_nationality?: string;
+  pax3_id_number?: string;
+
   booking?: {
     passenger_count?: number;
     status?: string;

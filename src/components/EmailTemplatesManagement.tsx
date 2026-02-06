@@ -94,6 +94,13 @@ const MERGE_FIELDS = {
     '{{activity_spots_available}}', '{{activity_spots_booked}}',
     '{{passengers_attending}}', '{{/activity_bookings}}'
   ],
+  travel_docs: [
+    '{{passport_first_name}}', '{{passport_middle_name}}', '{{passport_surname}}',
+    '{{passport_number}}', '{{passport_country}}', '{{passport_expiry_date}}',
+    '{{date_of_birth}}', '{{nationality}}', '{{id_number}}',
+    '{{existing_passport_details}}', '{{#has_passport_details}}', '{{/has_passport_details}}',
+    '{{^has_passport_details}}', '{{/has_passport_details}}'
+  ],
   actions: [
     '{{profile_update_button}}', '{{profile_update_link}}',
     '{{travel_docs_button}}', '{{travel_docs_link}}'
