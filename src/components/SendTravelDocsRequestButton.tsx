@@ -86,22 +86,22 @@ export function SendTravelDocsRequestButton(props: SendTravelDocsRequestButtonPr
 
       if (error) {
         console.error("Send error:", error);
-        toast.error(data?.error || "Failed to send travel documents request");
+        toast.error(data?.error || "Failed to send passport details request");
         setSending(false);
         return;
       }
 
       if (data.sentTo && data.sentTo.length > 0) {
-        toast.success(`Travel documents request sent to ${data.sentTo.length} passenger(s)`);
+        toast.success(`Passport details request sent to ${data.sentTo.length} passenger(s)`);
       } else if (data.success) {
-        toast.success("Travel documents request sent successfully");
+        toast.success("Passport details request sent successfully");
       }
       
       if (data.failed && data.failed.length > 0) {
         toast.warning(`Failed to send to: ${data.failed.join(", ")}`);
       }
     } catch (err: any) {
-      console.error("Error sending travel docs request:", err);
+      console.error("Error sending passport details request:", err);
       toast.error("An error occurred. Please try again.");
     }
 
@@ -117,7 +117,7 @@ export function SendTravelDocsRequestButton(props: SendTravelDocsRequestButtonPr
     return (
       <Button variant={variant} size={size} disabled title="No passengers have email addresses">
         <Plane className="h-4 w-4 mr-2" />
-        Request Travel Docs
+        Request Passport Details
       </Button>
     );
   }
@@ -131,12 +131,12 @@ export function SendTravelDocsRequestButton(props: SendTravelDocsRequestButtonPr
           ) : (
             <Plane className="h-4 w-4 mr-2" />
           )}
-          {sending ? "Sending..." : "Request Travel Docs"}
+          {sending ? "Sending..." : "Request Passport Details"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Request Travel Documents</AlertDialogTitle>
+          <AlertDialogTitle>Request Passport Details</AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
             <p>
               This will send {passengersWithEmail.length === 1 ? "an email" : "individual emails"} to {passengersWithEmail.length === 1 ? "the following passenger" : `${passengersWithEmail.length} passengers`} requesting
