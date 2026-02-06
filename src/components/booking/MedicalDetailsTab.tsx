@@ -19,7 +19,7 @@ interface MedicalDetailsTabProps {
   hasSelectedContact: boolean;
   onBack: () => void;
   onContinue: () => void;
-  showTravelDocuments?: boolean;
+  isWaitlistMode?: boolean;
 }
 
 export const MedicalDetailsTab = ({
@@ -28,11 +28,13 @@ export const MedicalDetailsTab = ({
   hasSelectedContact,
   onBack,
   onContinue,
-  showTravelDocuments = true,
+  isWaitlistMode = false,
 }: MedicalDetailsTabProps) => {
   const handleChange = (field: keyof MedicalFormData, value: string) => {
     setMedicalFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const submitButtonText = isWaitlistMode ? 'Add to Waitlist' : 'Review & Create Booking';
 
   if (!hasSelectedContact) {
     return (
@@ -52,9 +54,9 @@ export const MedicalDetailsTab = ({
           <Button 
             type="button"
             onClick={onContinue}
-            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+            className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
           >
-            {showTravelDocuments ? 'Continue to Travel Documents' : 'Review & Create Booking'}
+            {submitButtonText}
           </Button>
         </div>
       </div>
@@ -147,9 +149,9 @@ export const MedicalDetailsTab = ({
         <Button 
           type="button"
           onClick={onContinue}
-          className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+          className={isWaitlistMode ? "bg-orange-600 hover:bg-orange-700 text-white" : "bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"}
         >
-          {showTravelDocuments ? 'Continue to Travel Documents' : 'Review & Create Booking'}
+          {submitButtonText}
         </Button>
       </div>
     </div>

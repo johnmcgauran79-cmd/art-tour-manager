@@ -16,7 +16,6 @@ import { LeadPassengerSection } from "@/components/booking/LeadPassengerSection"
 import { HotelAllocationTab } from "@/components/booking/HotelAllocationTab";
 import { ActivityAllocationTab } from "@/components/booking/ActivityAllocationTab";
 import { MedicalDetailsTab } from "@/components/booking/MedicalDetailsTab";
-import { TravelDocumentsTab } from "@/components/booking/TravelDocumentsTab";
 import { AddContactModal } from "@/components/AddContactModal";
 import { BookingConfirmationDialog } from "@/components/BookingConfirmationDialog";
 import { UserPlus, X } from "lucide-react";
@@ -233,12 +232,7 @@ export const AddBookingModal = ({
     } else if (activeTab === "activities") {
       setActiveTab("medical");
     } else if (activeTab === "medical") {
-      const selectedTour = tours?.find((t) => t.id === formData.tour_id);
-      if (selectedTour?.travel_documents_required) {
-        setActiveTab("travel");
-      } else {
-        handleShowConfirmation();
-      }
+      handleShowConfirmation();
     }
   };
 
@@ -499,14 +493,11 @@ export const AddBookingModal = ({
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full ${tours?.find((t) => t.id === formData.tour_id)?.travel_documents_required ? 'grid-cols-5' : 'grid-cols-4'}`}>
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="hotels">Hotels</TabsTrigger>
               <TabsTrigger value="activities">Activities</TabsTrigger>
               <TabsTrigger value="medical">Medical</TabsTrigger>
-              {tours?.find((t) => t.id === formData.tour_id)?.travel_documents_required && (
-                <TabsTrigger value="travel">Travel Docs</TabsTrigger>
-              )}
             </TabsList>
 
             <TabsContent value="details" className="space-y-6">
@@ -605,27 +596,9 @@ export const AddBookingModal = ({
                 hasSelectedContact={!!selectedContact}
                 onBack={() => setActiveTab("activities")}
                 onContinue={handleContinueToNextTab}
-                showTravelDocuments={tours?.find((t) => t.id === formData.tour_id)?.travel_documents_required ?? true}
+                isWaitlistMode={defaultStatus === 'waitlisted'}
               />
             </TabsContent>
-
-            {tours?.find((t) => t.id === formData.tour_id)?.travel_documents_required && (
-              <TabsContent value="travel">
-                <TravelDocumentsTab
-                  formData={{
-                    passport_number: formData.passport_number,
-                    passport_expiry_date: formData.passport_expiry_date,
-                    passport_country: formData.passport_country,
-                    nationality: formData.nationality,
-                    id_number: formData.id_number,
-                  }}
-                  onFormChange={handleFormChange}
-                  onBack={() => setActiveTab("medical")}
-                  onSubmit={handleShowConfirmation}
-                  isWaitlistMode={defaultStatus === 'waitlisted'}
-                />
-              </TabsContent>
-            )}
           </Tabs>
         </DialogContent>
       </Dialog>
