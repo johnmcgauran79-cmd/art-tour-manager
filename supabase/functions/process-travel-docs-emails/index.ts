@@ -286,7 +286,6 @@ async function processTravelDocsBatch(
       passport_expiry_date,
       passport_country,
       nationality,
-      id_number,
       customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, email)
     `)
     .eq('tour_id', tour.id)
@@ -364,7 +363,6 @@ async function processTravelDocsBatch(
       if (booking.passport_country) existingDetails.push(`Passport Country: ${booking.passport_country}`);
       if (booking.passport_expiry_date) existingDetails.push(`Expiry Date: ${formatDate(booking.passport_expiry_date)}`);
       if (booking.nationality) existingDetails.push(`Nationality: ${booking.nationality}`);
-      if (booking.id_number) existingDetails.push(`ID Number: ${booking.id_number}`);
 
       // Build the travel docs button HTML
       const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Submit Travel Documents</a></div>`;

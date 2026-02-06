@@ -58,7 +58,6 @@ export interface BookingFormData {
   passport_number: string;
   passport_expiry_date: string;
   passport_country: string;
-  id_number: string;
   nationality: string;
   whatsapp_group_comms: boolean;
 }
@@ -115,7 +114,6 @@ export const useBookingFormState = ({
     passport_number: '',
     passport_expiry_date: '',
     passport_country: '',
-    id_number: '',
     nationality: '',
     whatsapp_group_comms: true,
   });
@@ -164,7 +162,6 @@ export const useBookingFormState = ({
         passport_number: '',
         passport_expiry_date: '',
         passport_country: '',
-        id_number: '',
         nationality: '',
         whatsapp_group_comms: true,
       });

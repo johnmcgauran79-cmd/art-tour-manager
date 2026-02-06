@@ -186,7 +186,6 @@ const handler = async (req: Request): Promise<Response> => {
           passport_expiry_date,
           nationality,
           date_of_birth,
-          id_number,
           name_as_per_passport
         ),
         hotel_bookings (
@@ -264,7 +263,6 @@ const handler = async (req: Request): Promise<Response> => {
           docs.passport_first_name ||
           docs.passport_surname ||
           docs.date_of_birth ||
-          docs.id_number ||
           docs.name_as_per_passport
       );
     };
@@ -298,7 +296,6 @@ const handler = async (req: Request): Promise<Response> => {
         `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Passport Country:</strong></td><td style="padding:6px 0;">${formatField(docs?.passport_country)}</td></tr>`,
         `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Passport Expiry:</strong></td><td style="padding:6px 0;">${docs?.passport_expiry_date ? formatDate(docs.passport_expiry_date) : formatField(null)}</td></tr>`,
         `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>Nationality:</strong></td><td style="padding:6px 0;">${formatField(docs?.nationality)}</td></tr>`,
-        `<tr><td style="padding:6px 10px 6px 0;color:#666;"><strong>ID Number:</strong></td><td style="padding:6px 0;">${formatField(docs?.id_number)}</td></tr>`,
         `</table>`,
         `</div>`,
       ].join('');
@@ -537,7 +534,6 @@ const handler = async (req: Request): Promise<Response> => {
       passport_expiry_date: formatDate(leadTravelDocs?.passport_expiry_date),
       nationality: leadTravelDocs?.nationality || '',
       date_of_birth: formatDate(leadTravelDocs?.date_of_birth),
-      id_number: leadTravelDocs?.id_number || '',
       has_passport_details: leadHasPassportDetails,
       existing_passport_details: leadExistingPassportDetails,
 
@@ -930,7 +926,6 @@ const handler = async (req: Request): Promise<Response> => {
         passport_expiry_date: formatDate(passengerDocs?.passport_expiry_date),
         nationality: passengerDocs?.nationality || '',
         date_of_birth: formatDate(passengerDocs?.date_of_birth),
-        id_number: passengerDocs?.id_number || '',
         has_passport_details: passengerHasPassportDetails,
         existing_passport_details: passengerExistingPassportDetails,
 
