@@ -123,7 +123,11 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Helper to get travel docs for a specific passenger slot
     const getTravelDocsForSlot = (slot: number) => {
-      return (booking.booking_travel_docs || []).find((doc: any) => doc.passenger_slot === slot);
+      const allDocs = booking.booking_travel_docs || [];
+      console.log(`Looking for travel docs for slot ${slot}. Available docs:`, JSON.stringify(allDocs.map((d: any) => ({ slot: d.passenger_slot, name: d.passport_first_name }))));
+      const found = allDocs.find((doc: any) => doc.passenger_slot === slot);
+      console.log(`Found docs for slot ${slot}:`, found ? JSON.stringify({ name: found.passport_first_name, number: found.passport_number }) : 'null');
+      return found;
     };
 
     // Collect all passengers with email addresses
@@ -236,9 +240,11 @@ const handler = async (req: Request): Promise<Response> => {
 
           // Get this passenger's travel docs
           const docs = passenger.travelDocs;
+          console.log(`Processing email for ${passenger.email} (slot ${passenger.slotNumber}). Travel docs:`, docs ? JSON.stringify({ passport_first_name: docs.passport_first_name, passport_number: docs.passport_number, nationality: docs.nationality }) : 'null');
           
           // Build existing details section if passenger has submitted passport details
           const hasPassportDetails = docs && !!(docs.passport_number || docs.passport_country || docs.passport_expiry_date || docs.nationality || docs.passport_first_name);
+          console.log(`hasPassportDetails for ${passenger.email}:`, hasPassportDetails);
           
           let existingDetailsHtml = '';
           if (hasPassportDetails) {
