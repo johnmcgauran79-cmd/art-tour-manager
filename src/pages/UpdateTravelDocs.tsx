@@ -161,13 +161,13 @@ export default function UpdateTravelDocs() {
       });
 
       if (error) {
-        toast.error(data?.error || "Failed to update travel documents");
+        toast.error(data?.error || "Failed to update passport details");
         setSubmitting(false);
         return;
       }
 
       setSuccess(true);
-      toast.success("Travel documents updated successfully!");
+      toast.success("Passport details updated successfully!");
     } catch (err: any) {
       console.error("Update error:", err);
       toast.error("An error occurred. Please try again.");
@@ -213,7 +213,7 @@ export default function UpdateTravelDocs() {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-sm text-muted-foreground">
-              Please contact Australian Racing Tours if you need to submit your travel documents.
+              Please contact Australian Racing Tours if you need to submit your passport details.
             </p>
           </CardContent>
         </Card>
@@ -227,9 +227,9 @@ export default function UpdateTravelDocs() {
         <Card className="max-w-md w-full">
           <CardHeader className="text-center">
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-            <CardTitle>Travel Documents Submitted!</CardTitle>
+            <CardTitle>Passport Details Submitted!</CardTitle>
             <CardDescription>
-              Travel documents have been saved successfully. A confirmation email has been sent.
+              Passport details have been saved successfully. A confirmation email has been sent.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
@@ -262,7 +262,7 @@ export default function UpdateTravelDocs() {
                 alt="Australian Racing Tours" 
                 className="h-12"
               />
-              <CardTitle className="text-2xl text-white">Travel Documents</CardTitle>
+              <CardTitle className="text-2xl text-white">Passport Details</CardTitle>
             </div>
             <CardDescription className="text-center text-white/80 mt-2">
               Hi {customer?.first_name}! Please provide passport details for your booking.
@@ -295,7 +295,7 @@ export default function UpdateTravelDocs() {
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-sm text-amber-800">
                     {editableSlots.length === passengers.length ? (
-                      <>You can update travel documents for all {passengers.length} passengers on this booking.</>
+                      <>You can update passport details for all {passengers.length} passengers on this booking.</>
                     ) : (
                       <>
                         You can update your own details
@@ -468,7 +468,7 @@ export default function UpdateTravelDocs() {
                       Saving...
                     </>
                   ) : (
-                    `Submit Travel Documents${passengers.length > 1 ? ` (${editableSlots.length} passenger${editableSlots.length > 1 ? 's' : ''})` : ''}`
+                    `Submit Passport Details${passengers.length > 1 ? ` (${editableSlots.length} passenger${editableSlots.length > 1 ? 's' : ''})` : ''}`
                   )}
                 </Button>
               </div>

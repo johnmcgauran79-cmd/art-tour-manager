@@ -186,7 +186,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const updateLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
-        const travelDocsButtonHtml = `<a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SUBMIT TRAVEL DOCUMENTS</a>`;
+        const travelDocsButtonHtml = `<a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SUBMIT PASSPORT DETAILS</a>`;
 
         let finalSubject: string;
         let finalHtml: string;
@@ -213,7 +213,7 @@ const handler = async (req: Request): Promise<Response> => {
           };
 
           let processedContent = template.content_template || '';
-          let processedSubject = template.subject_template || `Travel Documents Required - ${tour.name}`;
+          let processedSubject = template.subject_template || `Passport Details Required - ${tour.name}`;
 
           // Handle conditional sections
           const hasPassportDetails = !!(booking.passport_number || booking.passport_country || booking.passport_expiry_date || booking.nationality || booking.id_number);
@@ -248,7 +248,7 @@ const handler = async (req: Request): Promise<Response> => {
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
-                <h1 style="color: #fff; margin: 0; font-size: 24px;">Travel Documents Required</h1>
+                <h1 style="color: #fff; margin: 0; font-size: 24px;">Passport Details Required</h1>
               </div>
               
               <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
@@ -264,7 +264,7 @@ const handler = async (req: Request): Promise<Response> => {
           `;
         } else {
           fromEmail = "Australian Racing Tours <info@australianracingtours.com.au>";
-          finalSubject = `Travel Documents Required - ${tour.name}`;
+          finalSubject = `Passport Details Required - ${tour.name}`;
 
           finalHtml = `
             <!DOCTYPE html>
@@ -276,7 +276,7 @@ const handler = async (req: Request): Promise<Response> => {
             <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
               <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
                 <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
-                <h1 style="color: #fff; margin: 0; font-size: 24px;">Travel Documents Required</h1>
+                <h1 style="color: #fff; margin: 0; font-size: 24px;">Passport Details Required</h1>
               </div>
               
               <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
@@ -291,7 +291,7 @@ const handler = async (req: Request): Promise<Response> => {
                   </p>
                 </div>
                 
-                <p>Please click the button below to provide your travel document details:</p>
+                <p>Please click the button below to provide your passport details:</p>
                 
                 <div style="text-align: center; margin: 30px 0;">
                   ${travelDocsButtonHtml}
@@ -355,7 +355,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Travel documents request sent to ${sentEmails.length} passenger(s)`,
+        message: `Passport details request sent to ${sentEmails.length} passenger(s)`,
         sentTo: sentEmails,
         failed: failedEmails.length > 0 ? failedEmails : undefined
       }),
