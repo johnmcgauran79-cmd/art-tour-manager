@@ -17,6 +17,9 @@ interface PassengerInfo {
   has_email: boolean;
   is_token_owner: boolean;
   travel_docs: {
+    passport_first_name: string | null;
+    passport_middle_name: string | null;
+    passport_surname: string | null;
     name_as_per_passport: string | null;
     passport_number: string | null;
     passport_expiry_date: string | null;
@@ -42,7 +45,9 @@ interface TourData {
 interface PassengerFormData {
   slot: number;
   customer_id: string | null;
-  name_as_per_passport: string;
+  passport_first_name: string;
+  passport_middle_name: string;
+  passport_surname: string;
   passport_number: string;
   passport_expiry_date: string;
   passport_country: string;
@@ -95,7 +100,9 @@ export default function UpdateTravelDocs() {
       const initialFormData: PassengerFormData[] = data.passengers.map((p: PassengerInfo) => ({
         slot: p.slot,
         customer_id: p.customer_id,
-        name_as_per_passport: p.travel_docs?.name_as_per_passport || `${p.first_name} ${p.last_name}`,
+        passport_first_name: p.travel_docs?.passport_first_name || p.first_name || "",
+        passport_middle_name: p.travel_docs?.passport_middle_name || "",
+        passport_surname: p.travel_docs?.passport_surname || p.last_name || "",
         passport_number: p.travel_docs?.passport_number || "",
         passport_expiry_date: p.travel_docs?.passport_expiry_date || "",
         passport_country: p.travel_docs?.passport_country || "",
@@ -141,7 +148,9 @@ export default function UpdateTravelDocs() {
           passengers: passengersToSubmit.map(p => ({
             slot: p.slot,
             customer_id: p.customer_id,
-            name_as_per_passport: p.name_as_per_passport || null,
+            passport_first_name: p.passport_first_name || null,
+            passport_middle_name: p.passport_middle_name || null,
+            passport_surname: p.passport_surname || null,
             passport_number: p.passport_number || null,
             passport_expiry_date: p.passport_expiry_date || null,
             passport_country: p.passport_country || null,
@@ -327,19 +336,44 @@ export default function UpdateTravelDocs() {
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor={`name_${passenger.slot}`}>Name as per Passport *</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor={`firstname_${passenger.slot}`}>First Name (as per Passport) *</Label>
                         <Input
-                          id={`name_${passenger.slot}`}
-                          value={paxFormData.name_as_per_passport}
-                          onChange={(e) => handleInputChange(passenger.slot, "name_as_per_passport", e.target.value)}
-                          placeholder="Full name exactly as shown on passport"
+                          id={`firstname_${passenger.slot}`}
+                          value={paxFormData.passport_first_name}
+                          onChange={(e) => handleInputChange(passenger.slot, "passport_first_name", e.target.value)}
+                          placeholder="First name"
                           required={isEditable}
                           disabled={!isEditable}
                         />
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor={`middlename_${passenger.slot}`}>Middle Name</Label>
+                        <Input
+                          id={`middlename_${passenger.slot}`}
+                          value={paxFormData.passport_middle_name}
+                          onChange={(e) => handleInputChange(passenger.slot, "passport_middle_name", e.target.value)}
+                          placeholder="Middle name (if applicable)"
+                          disabled={!isEditable}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor={`surname_${passenger.slot}`}>Surname (as per Passport) *</Label>
+                        <Input
+                          id={`surname_${passenger.slot}`}
+                          value={paxFormData.passport_surname}
+                          onChange={(e) => handleInputChange(passenger.slot, "passport_surname", e.target.value)}
+                          placeholder="Surname/Family name"
+                          required={isEditable}
+                          disabled={!isEditable}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                       <div className="space-y-2">
                         <Label htmlFor={`passport_${passenger.slot}`}>Passport Number *</Label>
                         <Input

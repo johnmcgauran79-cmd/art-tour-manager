@@ -6,7 +6,9 @@ export interface PassportReportData {
   passengerType: string;
   bookingReference: string;
   groupName: string;
-  nameAsPerPassport: string;
+  passportFirstName: string;
+  passportMiddleName: string;
+  passportSurname: string;
   passportNumber: string;
   passportCountry: string;
   passportExpiry: string;
@@ -91,14 +93,16 @@ export const usePassportReport = (tourId: string) => {
             passengerName = booking.passenger_3_name || 'Passenger 3';
           }
 
-          const hasDocuments = !!(doc?.passport_number || doc?.name_as_per_passport);
+          const hasDocuments = !!(doc?.passport_number || doc?.passport_first_name || doc?.passport_surname);
 
           reportData.push({
             passengerName,
             passengerType: getPassengerType(slot),
             bookingReference: booking.id.substring(0, 8).toUpperCase(),
             groupName: booking.group_name || '',
-            nameAsPerPassport: doc?.name_as_per_passport || '',
+            passportFirstName: doc?.passport_first_name || '',
+            passportMiddleName: doc?.passport_middle_name || '',
+            passportSurname: doc?.passport_surname || '',
             passportNumber: doc?.passport_number || '',
             passportCountry: doc?.passport_country || '',
             passportExpiry: doc?.passport_expiry_date || '',

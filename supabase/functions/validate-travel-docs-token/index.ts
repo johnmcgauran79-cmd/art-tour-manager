@@ -19,6 +19,9 @@ interface PassengerInfo {
   has_email: boolean;
   is_token_owner: boolean;
   travel_docs: {
+    passport_first_name: string | null;
+    passport_middle_name: string | null;
+    passport_surname: string | null;
     name_as_per_passport: string | null;
     passport_number: string | null;
     passport_expiry_date: string | null;
@@ -129,6 +132,9 @@ const handler = async (req: Request): Promise<Response> => {
         has_email: !!customer.email,
         is_token_owner: customer.id === tokenOwnerCustomerId,
         travel_docs: existingDoc ? {
+          passport_first_name: existingDoc.passport_first_name,
+          passport_middle_name: existingDoc.passport_middle_name,
+          passport_surname: existingDoc.passport_surname,
           name_as_per_passport: existingDoc.name_as_per_passport,
           passport_number: existingDoc.passport_number,
           passport_expiry_date: existingDoc.passport_expiry_date,

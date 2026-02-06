@@ -10,7 +10,9 @@ const corsHeaders = {
 interface PassengerTravelDoc {
   slot: number;
   customer_id?: string;
-  name_as_per_passport?: string;
+  passport_first_name?: string;
+  passport_middle_name?: string;
+  passport_surname?: string;
   passport_number?: string;
   passport_expiry_date?: string;
   passport_country?: string;
@@ -145,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Track changes
       const slotChanges: Record<string, { old: any; new: any }> = {};
-      const fields = ['name_as_per_passport', 'passport_number', 'passport_expiry_date', 'passport_country', 'nationality', 'date_of_birth'];
+      const fields = ['passport_first_name', 'passport_middle_name', 'passport_surname', 'passport_number', 'passport_expiry_date', 'passport_country', 'nationality', 'date_of_birth'];
       
       for (const field of fields) {
         const newValue = pax[field as keyof PassengerTravelDoc] || null;
@@ -168,7 +170,9 @@ const handler = async (req: Request): Promise<Response> => {
         booking_id: bookingId,
         customer_id: slotCustomer.id,
         passenger_slot: slot,
-        name_as_per_passport: pax.name_as_per_passport || null,
+        passport_first_name: pax.passport_first_name || null,
+        passport_middle_name: pax.passport_middle_name || null,
+        passport_surname: pax.passport_surname || null,
         passport_number: pax.passport_number || null,
         passport_expiry_date: pax.passport_expiry_date || null,
         passport_country: pax.passport_country || null,
