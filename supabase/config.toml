@@ -89,3 +89,12 @@ verify_jwt = false
 
 [functions.sync-crm-contacts]
 verify_jwt = false
+
+[functions.validate-waiver-token]
+verify_jwt = false
+
+[functions.submit-waiver]
+verify_jwt = false
+
+[functions.send-waiver-request]
+verify_jwt = false

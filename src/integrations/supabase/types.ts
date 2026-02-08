@@ -630,6 +630,73 @@ export type Database = {
           },
         ]
       }
+      booking_waivers: {
+        Row: {
+          booking_id: string
+          created_at: string
+          customer_id: string | null
+          id: string
+          ip_address: string | null
+          passenger_slot: number
+          signed_at: string
+          signed_name: string
+          token_id: string | null
+          user_agent: string | null
+          waiver_content: string
+          waiver_version: number
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          ip_address?: string | null
+          passenger_slot?: number
+          signed_at?: string
+          signed_name: string
+          token_id?: string | null
+          user_agent?: string | null
+          waiver_content: string
+          waiver_version?: number
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          ip_address?: string | null
+          passenger_slot?: number
+          signed_at?: string
+          signed_name?: string
+          token_id?: string | null
+          user_agent?: string | null
+          waiver_content?: string
+          waiver_version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_waivers_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_waivers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_waivers_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "customer_access_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           accommodation_required: boolean | null
