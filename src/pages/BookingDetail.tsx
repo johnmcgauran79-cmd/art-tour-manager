@@ -4,7 +4,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink } from "lucide-react";
+import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield } from "lucide-react";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useBookings, useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
@@ -31,6 +31,8 @@ import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
 import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestButton";
 import { PassengerDetailsSection } from "@/components/booking/PassengerDetailsSection";
 import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
+import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
+import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -209,6 +211,13 @@ export default function BookingDetail() {
                 travelDocsRequired={tour?.travel_documents_required || false}
                 size="sm"
               />
+              <SendWaiverRequestButton
+                bookingId={booking.id}
+                customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                customerEmail={booking.customers.email || null}
+                tourName={tour?.name || 'Unknown Tour'}
+                size="sm"
+              />
             </>
           )}
           
@@ -297,6 +306,12 @@ export default function BookingDetail() {
                   tourName={tour?.name || 'Unknown Tour'}
                   travelDocsRequired={tour?.travel_documents_required || false}
                 />
+                <SendWaiverRequestButton
+                  bookingId={booking.id}
+                  customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                  customerEmail={booking.customers.email || null}
+                  tourName={tour?.name || 'Unknown Tour'}
+                />
               </>
             )}
             
@@ -336,7 +351,7 @@ export default function BookingDetail() {
 
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-1 h-auto p-1">
             <TabsTrigger value="details" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
               {!isMobile && <FileText className="h-4 w-4" />}
               <span>Details</span>
@@ -359,6 +374,10 @@ export default function BookingDetail() {
                 <span>Travel</span>
               </TabsTrigger>
             )}
+            <TabsTrigger value="waiver" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
+              {!isMobile && <Shield className="h-4 w-4" />}
+              <span>Waiver</span>
+            </TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
               {!isMobile && <MessageSquare className="h-4 w-4" />}
               <span>History ({comments.length + auditLog.length})</span>
@@ -565,6 +584,29 @@ export default function BookingDetail() {
               </div>
             </TabsContent>
           )}
+
+          <TabsContent value="waiver" className="space-y-4 mt-6">
+            <div className="bg-card rounded-lg border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Waiver Status</h3>
+                {!isAgent && booking.customers && (
+                  <SendWaiverRequestButton
+                    bookingId={booking.id}
+                    customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                    customerEmail={booking.customers.email || null}
+                    tourName={tour?.name || 'Unknown Tour'}
+                  />
+                )}
+              </div>
+              <WaiverStatusDisplay
+                bookingId={booking.id}
+                passengerCount={booking.passenger_count}
+                leadPassenger={booking.customers}
+                passenger2={(booking as any).passenger_2}
+                passenger3={(booking as any).passenger_3}
+              />
+            </div>
+          </TabsContent>
 
           <TabsContent value="comments" className="space-y-6 mt-6">
             <div className="bg-card rounded-lg border p-6">
