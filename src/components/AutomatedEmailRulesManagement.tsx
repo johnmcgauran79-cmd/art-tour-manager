@@ -760,7 +760,7 @@ export const AutomatedEmailRulesManagement = () => {
                         .replace(/\{\{tour_name\}\}/g, '<span class="text-purple-600 font-medium">[Tour Name]</span>')
                         .replace(/\{\{tour_start_date\}\}/g, '<span class="text-purple-600 font-medium">[Start Date]</span>')
                         .replace(/\{\{tour_end_date\}\}/g, '<span class="text-purple-600 font-medium">[End Date]</span>')
-                        .replace(/\{\{travel_docs_button\}\}/g, '<div style="text-align: center; margin: 20px 0;"><span style="display: inline-block; background: #232628; color: #F5C518; padding: 12px 24px; border-radius: 6px; font-weight: bold;">Submit Travel Documents</span></div>')
+                        .replace(/\{\{travel_docs_button\}\}/g, '<div style="text-align: center; margin: 20px 0;"><span style="display: inline-block; background: #232628; color: #F5C518; padding: 12px 24px; border-radius: 6px; font-weight: bold;">UPDATE PASSPORT DETAILS</span></div>')
                         .replace(/\{\{#has_passport_details\}\}[\s\S]*?\{\{\/has_passport_details\}\}/g, '')
                         .replace(/\{\{\^has_passport_details\}\}/g, '')
                         .replace(/\{\{\/has_passport_details\}\}/g, '')
