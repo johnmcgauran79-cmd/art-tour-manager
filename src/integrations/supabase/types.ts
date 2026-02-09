@@ -2544,16 +2544,27 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: undefined
       }
-      evaluate_trigger_conditions: {
-        Args: {
-          p_booking_status: string
-          p_conditions: Json
-          p_passenger_count: number
-          p_tour_id: string
-          p_tour_type: string
-        }
-        Returns: boolean
-      }
+      evaluate_trigger_conditions:
+        | {
+            Args: {
+              p_booking_status: Database["public"]["Enums"]["booking_status"]
+              p_conditions: Json
+              p_passenger_count: number
+              p_tour_id: string
+              p_tour_type: string
+            }
+            Returns: boolean
+          }
+        | {
+            Args: {
+              p_booking_status: string
+              p_conditions: Json
+              p_passenger_count: number
+              p_tour_id: string
+              p_tour_type: string
+            }
+            Returns: boolean
+          }
       generate_temp_password: { Args: never; Returns: string }
       generate_tour_operation_tasks: {
         Args: { p_tour_id: string }
