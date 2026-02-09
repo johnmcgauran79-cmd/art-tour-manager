@@ -263,6 +263,26 @@ export interface EmailMergeData {
     passengers_attending?: number;
   }>;
 
+  // Computed condition fields (boolean flags for conditional template sections)
+  has_passenger_2?: boolean;
+  has_passenger_3?: boolean;
+  has_multiple_passengers?: boolean;
+  passenger_2_has_email?: boolean;
+  passenger_2_missing_email?: boolean;
+  passenger_3_has_email?: boolean;
+  passenger_3_missing_email?: boolean;
+  passenger_2_has_phone?: boolean;
+  passenger_2_missing_phone?: boolean;
+  passenger_3_has_phone?: boolean;
+  passenger_3_missing_phone?: boolean;
+  has_hotel_bookings?: boolean;
+  has_activity_bookings?: boolean;
+  has_accommodation?: boolean;
+  no_accommodation?: boolean;
+  has_group_name?: boolean;
+  has_extra_requests?: boolean;
+  tour_requires_travel_docs?: boolean;
+
   // Actions (handled securely server-side in edge functions)
   // Client-side previews/sends should preserve placeholders so the server can generate tokens.
   profile_update_button?: string;
@@ -596,6 +616,26 @@ export class EmailTemplateEngine {
         activity_spots_booked: ab.activities?.spots_booked,
         passengers_attending: ab.passengers_attending,
       })),
+
+      // Computed condition fields
+      has_passenger_2: !!booking.passenger_2,
+      has_passenger_3: !!booking.passenger_3,
+      has_multiple_passengers: (booking.passenger_count || 1) > 1,
+      passenger_2_has_email: !!booking.passenger_2?.email,
+      passenger_2_missing_email: !!booking.passenger_2 && !booking.passenger_2?.email,
+      passenger_3_has_email: !!booking.passenger_3?.email,
+      passenger_3_missing_email: !!booking.passenger_3 && !booking.passenger_3?.email,
+      passenger_2_has_phone: !!booking.passenger_2?.phone,
+      passenger_2_missing_phone: !!booking.passenger_2 && !booking.passenger_2?.phone,
+      passenger_3_has_phone: !!booking.passenger_3?.phone,
+      passenger_3_missing_phone: !!booking.passenger_3 && !booking.passenger_3?.phone,
+      has_hotel_bookings: hotelBookings.length > 0,
+      has_activity_bookings: activityBookings.length > 0,
+      has_accommodation: !!booking.accommodation_required,
+      no_accommodation: !booking.accommodation_required,
+      has_group_name: !!booking.group_name,
+      has_extra_requests: !!booking.extra_requests,
+      tour_requires_travel_docs: !!tour.travel_documents_required,
 
       // Actions
       // IMPORTANT: Tokens/links must be generated server-side.

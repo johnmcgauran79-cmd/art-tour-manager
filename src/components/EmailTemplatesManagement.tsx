@@ -104,6 +104,34 @@ const MERGE_FIELDS = {
   actions: [
     '{{profile_update_button}}', '{{profile_update_link}}',
     '{{travel_docs_button}}', '{{travel_docs_link}}'
+  ],
+  conditions: [
+    '--- Passenger Conditions ---',
+    '{{#has_passenger_2}} ... {{/has_passenger_2}}',
+    '{{^has_passenger_2}} ... {{/has_passenger_2}}',
+    '{{#has_passenger_3}} ... {{/has_passenger_3}}',
+    '{{#has_multiple_passengers}} ... {{/has_multiple_passengers}}',
+    '{{#passenger_2_has_email}} ... {{/passenger_2_has_email}}',
+    '{{#passenger_2_missing_email}} ... {{/passenger_2_missing_email}}',
+    '{{#passenger_3_has_email}} ... {{/passenger_3_has_email}}',
+    '{{#passenger_3_missing_email}} ... {{/passenger_3_missing_email}}',
+    '{{#passenger_2_has_phone}} ... {{/passenger_2_has_phone}}',
+    '{{#passenger_2_missing_phone}} ... {{/passenger_2_missing_phone}}',
+    '{{#passenger_3_has_phone}} ... {{/passenger_3_has_phone}}',
+    '{{#passenger_3_missing_phone}} ... {{/passenger_3_missing_phone}}',
+    '--- Booking Conditions ---',
+    '{{#has_accommodation}} ... {{/has_accommodation}}',
+    '{{^has_accommodation}} ... {{/has_accommodation}}',
+    '{{#has_hotel_bookings}} ... {{/has_hotel_bookings}}',
+    '{{#has_activity_bookings}} ... {{/has_activity_bookings}}',
+    '{{#has_group_name}} ... {{/has_group_name}}',
+    '{{#has_extra_requests}} ... {{/has_extra_requests}}',
+    '--- Tour Conditions ---',
+    '{{#tour_requires_travel_docs}} ... {{/tour_requires_travel_docs}}',
+    '{{^tour_requires_travel_docs}} ... {{/tour_requires_travel_docs}}',
+    '--- Passport Conditions ---',
+    '{{#has_passport_details}} ... {{/has_passport_details}}',
+    '{{^has_passport_details}} ... {{/has_passport_details}}',
   ]
 };
 
@@ -490,29 +518,44 @@ export const EmailTemplatesManagement = () => {
                     <TabsTrigger value="passenger_3">Pax 3</TabsTrigger>
                     <TabsTrigger value="tour">Tour</TabsTrigger>
                   </TabsList>
-                  <TabsList className="grid w-full grid-cols-4">
+                  <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="booking">Booking</TabsTrigger>
                     <TabsTrigger value="hotel">Hotel</TabsTrigger>
                     <TabsTrigger value="activity">Activity</TabsTrigger>
                     <TabsTrigger value="actions">Actions</TabsTrigger>
+                    <TabsTrigger value="conditions">Conditions</TabsTrigger>
                   </TabsList>
                   
                   {Object.entries(MERGE_FIELDS).map(([category, fields]) => (
                     <TabsContent key={category} value={category}>
                       <ScrollArea className="h-[400px]">
+                        {category === 'conditions' && (
+                          <p className="text-xs text-muted-foreground px-2 mb-2">
+                            Use <code className="bg-muted px-1 rounded">{'{{#field}}'}</code> to show content when true, <code className="bg-muted px-1 rounded">{'{{^field}}'}</code> to show when false. Place your content between the opening and closing tags.
+                          </p>
+                        )}
                         <div className="space-y-2">
-                          {fields.map((field, index) => (
-                            <Button
-                              key={index}
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="justify-start font-mono text-xs w-full"
-                              onClick={() => insertMergeField(field)}
-                            >
-                              {field}
-                            </Button>
-                          ))}
+                          {fields.map((field, index) => {
+                            if (field.startsWith('---')) {
+                              return (
+                                <div key={index} className="text-xs font-semibold text-muted-foreground px-2 pt-3 pb-1 border-b border-border">
+                                  {field.replace(/---/g, '').trim()}
+                                </div>
+                              );
+                            }
+                            return (
+                              <Button
+                                key={index}
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="justify-start font-mono text-xs w-full"
+                                onClick={() => insertMergeField(field)}
+                              >
+                                {field}
+                              </Button>
+                            );
+                          })}
                         </div>
                       </ScrollArea>
                     </TabsContent>
