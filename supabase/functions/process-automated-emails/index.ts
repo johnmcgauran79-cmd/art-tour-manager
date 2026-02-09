@@ -125,13 +125,10 @@ serve(async (req) => {
             continue;
           }
           
-          // If rejected, delete and allow recreation with updated filters
+          // If rejected, respect the rejection - do not regenerate
           if (existingBatch.approval_status === 'rejected') {
-            console.log(`Deleting rejected batch for tour "${tour.name}" to allow recreation`);
-            await supabase
-              .from('automated_email_log')
-              .delete()
-              .eq('id', existingBatch.id);
+            console.log(`Batch was rejected for tour "${tour.name}", rule "${applicableRule.rule_name}" - skipping (rejection is permanent)`);
+            continue;
           }
         }
 
@@ -357,10 +354,8 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
         }
         
         if (existingBatch.approval_status === 'rejected') {
-          await supabase
-            .from('automated_email_log')
-            .delete()
-            .eq('id', existingBatch.id);
+          console.log(`Travel docs batch was rejected for tour "${tour.name}" - skipping (rejection is permanent)`);
+          continue;
         }
       }
 
