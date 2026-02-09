@@ -703,6 +703,26 @@ const handler = async (req: Request): Promise<Response> => {
       // Travel docs action fields
       travel_docs_link: travelDocsLink,
       travel_docs_button: travelDocsButton,
+
+      // Computed condition fields (boolean flags for conditional template sections)
+      has_passenger_2: !!booking.passenger_2,
+      has_passenger_3: !!booking.passenger_3,
+      has_multiple_passengers: (booking.passenger_count || 1) > 1,
+      passenger_2_has_email: !!booking.passenger_2?.email,
+      passenger_2_missing_email: !!booking.passenger_2 && !booking.passenger_2?.email,
+      passenger_3_has_email: !!booking.passenger_3?.email,
+      passenger_3_missing_email: !!booking.passenger_3 && !booking.passenger_3?.email,
+      passenger_2_has_phone: !!booking.passenger_2?.phone,
+      passenger_2_missing_phone: !!booking.passenger_2 && !booking.passenger_2?.phone,
+      passenger_3_has_phone: !!booking.passenger_3?.phone,
+      passenger_3_missing_phone: !!booking.passenger_3 && !booking.passenger_3?.phone,
+      has_hotel_bookings: (booking.hotel_bookings || []).length > 0,
+      has_activity_bookings: (booking.activity_bookings || []).length > 0,
+      has_accommodation: !!booking.accommodation_required,
+      no_accommodation: !booking.accommodation_required,
+      has_group_name: !!booking.group_name,
+      has_extra_requests: !!booking.extra_requests,
+      tour_requires_travel_docs: !!booking.tours?.travel_documents_required,
       // Hotel bookings array
       hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
         hotel_name: hb.hotels?.name || '',
