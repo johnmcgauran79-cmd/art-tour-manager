@@ -36,18 +36,29 @@ function formatOperationType(type: string, details?: any): string {
     return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
   }
   
-  if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
+  if (type === 'UPDATE_HOTEL_BOOKING_DATES' || (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates)) {
     const changes = [];
-    if (details.hotel_dates.old?.check_in !== details.hotel_dates.new?.check_in) {
+    if (details?.hotel_dates?.old?.check_in !== details?.hotel_dates?.new?.check_in) {
       changes.push(`check-in changed`);
     }
-    if (details.hotel_dates.old?.check_out !== details.hotel_dates.new?.check_out) {
+    if (details?.hotel_dates?.old?.check_out !== details?.hotel_dates?.new?.check_out) {
       changes.push(`check-out changed`);
     }
     if (changes.length > 0) {
-      return `Hotel Updated: ${changes.join(', ')}`;
+      return `Hotel Date Change: ${changes.join(', ')}`;
     }
-    return 'Hotel Updated';
+    return 'Hotel Date Change';
+  }
+  
+  if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && details?.bedding && !details?.hotel_dates)) {
+    const changes = [];
+    if (details?.bedding) {
+      changes.push(`bedding: ${details.bedding.old} → ${details.bedding.new}`);
+    }
+    if (changes.length > 0) {
+      return `Hotel Room/Bedding Change: ${changes.join(', ')}`;
+    }
+    return 'Hotel Room/Bedding Change';
   }
   
   if (type === 'UPDATE_ACTIVITY_BOOKING') {
@@ -294,14 +305,18 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
         });
       }
       
-      // Show hotel updates separately
+      // Show hotel updates separately - split into date vs room/bedding changes
       const hotelUpdates = entries.filter(e => e.operation_type === 'UPDATE_HOTEL_BOOKING' && e.id !== cancelEntry?.id);
       hotelUpdates.forEach(entry => {
         const profile = profiles?.find(p => p.id === entry.user_id);
+        // Determine the specific subtype
+        const hasDateChange = !!entry.details?.hotel_dates;
+        const hasBeddingChange = !!entry.details?.bedding;
+        const opType = hasDateChange ? 'UPDATE_HOTEL_BOOKING_DATES' : (hasBeddingChange ? 'UPDATE_HOTEL_BOOKING_ROOM' : 'UPDATE_HOTEL_BOOKING');
         consolidatedChanges.push({
           id: entry.id,
           timestamp: entry.timestamp,
-          operation_type: entry.operation_type,
+          operation_type: opType,
           booking_id: bookingId,
           customer_name: customerName,
           tour_name: tourName,
@@ -381,10 +396,18 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
           }
         }
         
+        // Reclassify UPDATE_HOTEL_BOOKING into specific subtypes
+        let opType = entry.operation_type;
+        if (opType === 'UPDATE_HOTEL_BOOKING') {
+          const hasDateChange = !!entry.details?.hotel_dates;
+          const hasBeddingChange = !!entry.details?.bedding;
+          opType = hasDateChange ? 'UPDATE_HOTEL_BOOKING_DATES' : (hasBeddingChange ? 'UPDATE_HOTEL_BOOKING_ROOM' : 'UPDATE_HOTEL_BOOKING');
+        }
+        
         consolidatedChanges.push({
           id: entry.id,
           timestamp: entry.timestamp,
-          operation_type: entry.operation_type,
+          operation_type: opType,
           booking_id: bookingId,
           customer_name: customerName,
           tour_name: tourName,

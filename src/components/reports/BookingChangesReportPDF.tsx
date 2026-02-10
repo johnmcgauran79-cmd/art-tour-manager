@@ -32,18 +32,29 @@ const formatOperationType = (type: string, details?: any): string => {
     'CANCEL_BOOKING': 'Booking Cancelled',
   };
   
-  if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
+  if (type === 'UPDATE_HOTEL_BOOKING_DATES' || (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates)) {
     const changes = [];
-    if (details.hotel_dates.old?.check_in !== details.hotel_dates.new?.check_in) {
+    if (details?.hotel_dates?.old?.check_in !== details?.hotel_dates?.new?.check_in) {
       changes.push(`check-in changed`);
     }
-    if (details.hotel_dates.old?.check_out !== details.hotel_dates.new?.check_out) {
+    if (details?.hotel_dates?.old?.check_out !== details?.hotel_dates?.new?.check_out) {
       changes.push(`check-out changed`);
     }
     if (changes.length > 0) {
-      return `Hotel Updated: ${changes.join(', ')}`;
+      return `Hotel Date Change: ${changes.join(', ')}`;
     }
-    return 'Hotel Updated';
+    return 'Hotel Date Change';
+  }
+  
+  if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && details?.bedding && !details?.hotel_dates)) {
+    const changes = [];
+    if (details?.bedding) {
+      changes.push(`bedding: ${details.bedding.old} → ${details.bedding.new}`);
+    }
+    if (changes.length > 0) {
+      return `Hotel Room/Bedding Change: ${changes.join(', ')}`;
+    }
+    return 'Hotel Room/Bedding Change';
   }
   
   if (type === 'UPDATE_ACTIVITY_BOOKING') {

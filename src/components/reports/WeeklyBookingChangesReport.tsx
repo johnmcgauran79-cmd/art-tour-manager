@@ -73,19 +73,31 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
       return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
     }
     
-    // Handle hotel updates with details
-    if (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates) {
+    // Handle hotel date changes
+    if (type === 'UPDATE_HOTEL_BOOKING_DATES' || (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates)) {
       const changes = [];
-      if (details.hotel_dates.old?.check_in !== details.hotel_dates.new?.check_in) {
+      if (details?.hotel_dates?.old?.check_in !== details?.hotel_dates?.new?.check_in) {
         changes.push(`check-in changed`);
       }
-      if (details.hotel_dates.old?.check_out !== details.hotel_dates.new?.check_out) {
+      if (details?.hotel_dates?.old?.check_out !== details?.hotel_dates?.new?.check_out) {
         changes.push(`check-out changed`);
       }
       if (changes.length > 0) {
-        return `Hotel Updated: ${changes.join(', ')}`;
+        return `Hotel Date Change: ${changes.join(', ')}`;
       }
-      return 'Hotel Updated';
+      return 'Hotel Date Change';
+    }
+    
+    // Handle hotel room/bedding changes
+    if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && details?.bedding && !details?.hotel_dates)) {
+      const changes = [];
+      if (details?.bedding) {
+        changes.push(`bedding: ${details.bedding.old} → ${details.bedding.new}`);
+      }
+      if (changes.length > 0) {
+        return `Hotel Room/Bedding Change: ${changes.join(', ')}`;
+      }
+      return 'Hotel Room/Bedding Change';
     }
     
     // Handle activity updates
