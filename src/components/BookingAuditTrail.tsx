@@ -14,6 +14,8 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
       'UPDATE_BOOKING': 'Updated booking',
       'ADD_HOTEL_TO_BOOKING': 'Added hotel',
       'UPDATE_HOTEL_BOOKING': 'Updated hotel',
+      'UPDATE_HOTEL_BOOKING_DATES': 'Hotel date change',
+      'UPDATE_HOTEL_BOOKING_ROOM': 'Hotel room/bedding change',
       'REMOVE_HOTEL_FROM_BOOKING': 'Removed hotel',
       'ADD_ACTIVITY_TO_BOOKING': 'Added activity',
       'UPDATE_ACTIVITY_BOOKING': 'Updated activity',
@@ -55,7 +57,7 @@ export const BookingAuditTrail = ({ entries }: BookingAuditTrailProps) => {
       changes.push(`Check-in: ${details.check_in || 'TBD'}, Check-out: ${details.check_out || 'TBD'}, Bedding: ${details.bedding || 'TBD'}`);
     }
 
-    if (operation === 'UPDATE_HOTEL_BOOKING') {
+    if (operation === 'UPDATE_HOTEL_BOOKING' || operation === 'UPDATE_HOTEL_BOOKING_DATES' || operation === 'UPDATE_HOTEL_BOOKING_ROOM') {
       if (details.hotel_dates) {
         changes.push(`Hotel dates: ${details.hotel_dates.old.check_in} to ${details.hotel_dates.old.check_out} → ${details.hotel_dates.new.check_in} to ${details.hotel_dates.new.check_out}`);
       }
