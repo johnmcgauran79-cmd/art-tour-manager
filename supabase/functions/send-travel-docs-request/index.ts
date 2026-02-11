@@ -235,7 +235,7 @@ const handler = async (req: Request): Promise<Response> => {
         let fromEmail: string;
 
         if (template) {
-          fromEmail = template.from_email || "Australian Racing Tours <info@australianracingtours.com.au>";
+          fromEmail = template.from_email || "Australian Racing Tours <bookings@australianracingtours.com.au>";
 
           // Get this passenger's travel docs
           const docs = passenger.travelDocs;
@@ -355,7 +355,7 @@ const handler = async (req: Request): Promise<Response> => {
             </html>
           `;
         } else {
-          fromEmail = "Australian Racing Tours <info@australianracingtours.com.au>";
+          fromEmail = "Australian Racing Tours <bookings@australianracingtours.com.au>";
           finalSubject = `Passport Details Required - ${tour.name}`;
 
           // Get this passenger's travel docs for fallback email

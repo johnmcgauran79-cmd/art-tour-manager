@@ -161,7 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       try {
         await resend.emails.send({
-          from: "Australian Racing Tours <info@australianracingtours.com.au>",
+          from: "Australian Racing Tours <bookings@australianracingtours.com.au>",
           to: [customerEmail],
           subject: "Your Profile Has Been Updated",
           html: `

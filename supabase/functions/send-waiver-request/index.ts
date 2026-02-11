@@ -192,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
 </html>`;
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
-          from: "Australian Racing Tours <info@australianracingtours.com.au>",
+          from: "Australian Racing Tours <bookings@australianracingtours.com.au>",
           to: [passenger.email],
           subject: `Tour Waiver - ${tour.name}`,
           html: emailHtml,
