@@ -263,8 +263,9 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     setSendProgress(null);
     
     try {
-      const subjectTemplate = originalSubjectTemplate || editedSubject;
-      const contentTemplate = originalContentTemplate || editedContent;
+      // Use the edited values - these reflect any changes the user made in the editor
+      const subjectTemplate = editedSubject;
+      const contentTemplate = editedContent;
       
       await bulkEmailMutation.mutateAsync({
         tourId,
