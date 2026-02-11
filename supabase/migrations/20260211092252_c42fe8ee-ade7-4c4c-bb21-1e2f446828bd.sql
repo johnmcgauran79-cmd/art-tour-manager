@@ -1,0 +1,1 @@
+UPDATE booking_travel_docs SET passport_middle_name = 'James', updated_at = now() WHERE id = 'cf5a4ebd-782d-4e03-bf01-4dd6e8fdfb19';
