@@ -465,7 +465,7 @@ async function processTravelDocsBatch(
 
       // Send the email
       const emailResponse = await resend.emails.send({
-        from: template?.from_email || 'Australian Racing Tours <info@australianracingtours.com.au>',
+        from: template?.from_email || 'Australian Racing Tours <bookings@australianracingtours.com.au>',
         to: [customer.email],
         subject: emailSubject,
         html: fullEmailHtml,
