@@ -2549,9 +2549,9 @@ export type Database = {
             Args: {
               p_booking_status: Database["public"]["Enums"]["booking_status"]
               p_conditions: Json
-              p_passenger_count: number
-              p_tour_id: string
-              p_tour_type: string
+              p_passenger_count?: number
+              p_tour_id?: string
+              p_tour_type?: string
             }
             Returns: boolean
           }
@@ -2559,9 +2559,9 @@ export type Database = {
             Args: {
               p_booking_status: string
               p_conditions: Json
-              p_passenger_count: number
-              p_tour_id: string
-              p_tour_type: string
+              p_passenger_count?: number
+              p_tour_id?: string
+              p_tour_type?: string
             }
             Returns: boolean
           }
