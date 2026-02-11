@@ -55,8 +55,6 @@ export const TourOperationsReport = ({ hotels, activities }: TourOperationsRepor
                   <TableHead className="font-semibold">Check Out</TableHead>
                   <TableHead className="font-semibold">Default Room Type</TableHead>
                   <TableHead className="font-semibold">Rooms Reserved</TableHead>
-                  <TableHead className="font-semibold">Booking Status</TableHead>
-                  <TableHead className="font-semibold">Contact</TableHead>
                   <TableHead className="font-semibold">Notes</TableHead>
                 </TableRow>
               </TableHeader>
@@ -69,18 +67,6 @@ export const TourOperationsReport = ({ hotels, activities }: TourOperationsRepor
                     <TableCell>{hotel.default_check_out ? formatDateToDDMMYYYY(hotel.default_check_out) : '-'}</TableCell>
                     <TableCell>{hotel.default_room_type || '-'}</TableCell>
                     <TableCell>{hotel.rooms_reserved ?? '-'}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">{hotel.booking_status}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      {hotel.contact_name ? (
-                        <div className="text-xs">
-                          <div>{hotel.contact_name}</div>
-                          {hotel.contact_phone && <div className="text-muted-foreground">{hotel.contact_phone}</div>}
-                          {hotel.contact_email && <div className="text-muted-foreground">{hotel.contact_email}</div>}
-                        </div>
-                      ) : '-'}
-                    </TableCell>
                     <TableCell className="max-w-[200px] truncate">{hotel.operations_notes || '-'}</TableCell>
                   </TableRow>
                 ))}
