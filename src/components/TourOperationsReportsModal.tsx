@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, Mail } from "lucide-react";
 import { useHotels } from "@/hooks/useHotels";
+import { useActivities } from "@/hooks/useActivities";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
@@ -14,6 +15,7 @@ import { PassengerListReport } from "@/components/reports/PassengerListReport";
 import { ActivityMatrixReport } from "@/components/reports/ActivityMatrixReport";
 import { EmailTrackingReport } from "@/components/reports/EmailTrackingReport";
 import { PassportDetailsReport } from "@/components/reports/PassportDetailsReport";
+import { TourOperationsReport } from "@/components/reports/TourOperationsReport";
 import { HotelSelectionDialog } from "@/components/reports/HotelSelectionDialog";
 import { useReportData } from "@/components/reports/useReportData";
 import { usePassportReport } from "@/hooks/usePassportReport";
@@ -28,7 +30,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | null;
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
@@ -43,6 +45,7 @@ export const TourOperationsReportsModal = ({
   onBookingClick
 }: TourOperationsReportsModalProps) => {
   const { data: hotels } = useHotels(tourId);
+  const { data: activities } = useActivities(tourId);
   const { data: passportData, isLoading: passportLoading } = usePassportReport(tourId);
   const { toast } = useToast();
   const [showAllContacts, setShowAllContacts] = useState(false);
@@ -57,7 +60,7 @@ export const TourOperationsReportsModal = ({
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   // Get the specific report to display
-  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport'
+  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops'
     ? reports.find(r => r.type === reportType) || null 
     : null;
 
@@ -214,6 +217,42 @@ export const TourOperationsReportsModal = ({
       setIsSendingEmail(false);
     }
   };
+
+  // Handle tour operations report
+  if (reportType === 'tourops') {
+    return (
+      <>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <DialogTitle>Tour Operations Report - {tourName}</DialogTitle>
+                  <Badge variant="secondary">{hotels?.length || 0} hotels, {activities?.length || 0} activities</Badge>
+                </div>
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">
+                    Close
+                  </Button>
+                </DialogClose>
+              </div>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Comprehensive hotel and activity details for updating itinerary and guest documents.
+              </p>
+              
+              <TourOperationsReport 
+                hotels={hotels || []} 
+                activities={activities || []} 
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
 
   // Handle passport report
   if (reportType === 'passport') {
