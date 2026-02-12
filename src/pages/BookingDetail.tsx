@@ -4,7 +4,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield } from "lucide-react";
+import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield, Plane } from "lucide-react";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useBookings, useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
@@ -368,8 +368,8 @@ export default function BookingDetail() {
             </TabsTrigger>
             {tour?.travel_documents_required && (
               <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
-                {!isMobile && <FileText className="h-4 w-4" />}
-                <span>Travel</span>
+                {!isMobile && <Plane className="h-4 w-4" />}
+                <span>Passport Details</span>
               </TabsTrigger>
             )}
             <TabsTrigger value="waiver" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
@@ -571,7 +571,7 @@ export default function BookingDetail() {
           {tour?.travel_documents_required && (
             <TabsContent value="travel" className="space-y-4 mt-6">
               <div className="bg-card rounded-lg border p-6">
-                <h3 className="text-lg font-semibold mb-4">Travel Documents</h3>
+                <h3 className="text-lg font-semibold mb-4">Passport Details</h3>
                 <BookingTravelDocsDisplay
                   bookingId={booking.id}
                   passengerCount={booking.passenger_count}
