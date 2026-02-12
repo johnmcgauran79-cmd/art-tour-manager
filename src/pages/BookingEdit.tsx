@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft, Save } from "lucide-react";
+import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft, Save, Plane } from "lucide-react";
+import { BookingTravelDocsEdit } from "@/components/booking/BookingTravelDocsEdit";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
@@ -73,10 +74,6 @@ export default function BookingEdit() {
     secondary_contact_id: '',
     whatsapp_group_comms: true,
     
-    passport_number: '',
-    passport_expiry_date: '',
-    passport_country: '',
-    nationality: '',
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -126,10 +123,6 @@ export default function BookingEdit() {
         secondary_contact_id: booking.secondary_contact_id || '',
         whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
         
-        passport_number: booking.passport_number || '',
-        passport_expiry_date: booking.passport_expiry_date || '',
-        passport_country: booking.passport_country || '',
-        nationality: booking.nationality || '',
       });
 
       if (booking.secondary_contact) {
@@ -290,10 +283,6 @@ export default function BookingEdit() {
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
       secondary_contact_id: formData.secondary_contact_id || null,
-      passport_number: formData.passport_number || null,
-      passport_expiry_date: formData.passport_expiry_date || null,
-      passport_country: formData.passport_country || null,
-      nationality: formData.nationality || null,
       whatsapp_group_comms: formData.whatsapp_group_comms,
     }, {
       onSuccess: () => {
@@ -451,8 +440,8 @@ export default function BookingEdit() {
           </TabsTrigger>
           {tour?.travel_documents_required && (
             <TabsTrigger value="travel" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
-              {!isMobile && <FileText className="h-4 w-4" />}
-              <span>Travel</span>
+              {!isMobile && <Plane className="h-4 w-4" />}
+              <span>Passport Details</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="communication" className="flex items-center gap-1 text-xs md:text-sm px-2 py-2">
@@ -920,59 +909,13 @@ export default function BookingEdit() {
 
         {tour?.travel_documents_required && (
           <TabsContent value="travel" className="space-y-4 mt-6">
-            <div className="bg-card border rounded-lg p-6 space-y-4">
-              <h3 className="text-lg font-medium">Travel Documents</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="passport_number">Passport Number</Label>
-                  <Input
-                    id="passport_number"
-                    value={formData.passport_number}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passport_number: e.target.value }))}
-                    placeholder="Passport number"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="passport_expiry_date">Passport Expiry Date</Label>
-                  <Input
-                    id="passport_expiry_date"
-                    type="date"
-                    value={formData.passport_expiry_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passport_expiry_date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="passport_country">Passport Issuing Country</Label>
-                  <Input
-                    id="passport_country"
-                    value={formData.passport_country}
-                    onChange={(e) => setFormData(prev => ({ ...prev, passport_country: e.target.value }))}
-                    placeholder="Country"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input
-                    id="nationality"
-                    value={formData.nationality}
-                    onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
-                    placeholder="Nationality"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => handleSubmit()}
-                disabled={updateBooking.isPending}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
+            <BookingTravelDocsEdit
+              bookingId={booking.id}
+              passengerCount={formData.passenger_count}
+              leadPassenger={booking.customers ? { id: booking.customers.id, first_name: booking.customers.first_name, last_name: booking.customers.last_name } : null}
+              passenger2={selectedPassenger2 ? { id: selectedPassenger2.id, first_name: selectedPassenger2.first_name, last_name: selectedPassenger2.last_name } : null}
+              passenger3={selectedPassenger3 ? { id: selectedPassenger3.id, first_name: selectedPassenger3.first_name, last_name: selectedPassenger3.last_name } : null}
+            />
           </TabsContent>
         )}
 
