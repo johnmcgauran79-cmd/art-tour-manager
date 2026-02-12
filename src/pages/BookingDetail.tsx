@@ -189,10 +189,7 @@ export default function BookingDetail() {
             Back
           </Button>
           
-          <WhatsAppButton 
-            phone={booking.customers?.phone} 
-            name={booking.customers?.first_name}
-          />
+          {/* WhatsApp button hidden until properly implemented */}
           
           {!isAgent && booking.customers && (
             <>
@@ -307,10 +304,7 @@ export default function BookingDetail() {
               </Button>
             )}
             
-            <WhatsAppButton 
-              phone={booking.customers?.phone} 
-              name={booking.customers?.first_name}
-            />
+            {/* WhatsApp button hidden until properly implemented */}
             
             {!isAgent && booking.customers && (
               <>
