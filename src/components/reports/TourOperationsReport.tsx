@@ -1,17 +1,26 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Hotel } from "@/hooks/useHotels";
 import { Activity } from "@/hooks/useActivities";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { CheckCircle, AlertTriangle } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface TourOperationsReportProps {
   hotels: Hotel[];
   activities: Activity[];
+  changedFields?: Set<string>;
+  reviewedAt?: string | null;
+  reviewerName?: string | null;
+  changeCount?: number;
+  onMarkReviewed?: () => void;
+  isMarkingReviewed?: boolean;
 }
 
 const formatTime = (time: string | null) => {
   if (!time) return '-';
-  // Handle HH:MM:SS format
   const parts = time.split(':');
   if (parts.length >= 2) {
     const hours = parseInt(parts[0]);
@@ -23,8 +32,25 @@ const formatTime = (time: string | null) => {
   return time;
 };
 
-export const TourOperationsReport = ({ hotels, activities }: TourOperationsReportProps) => {
-  // Sort activities by date then time
+const ChangedCell = ({ children, isChanged, className }: { children: React.ReactNode; isChanged: boolean; className?: string }) => (
+  <TableCell className={cn(
+    className,
+    isChanged && "bg-amber-100 dark:bg-amber-900/30 ring-2 ring-amber-400 ring-inset"
+  )}>
+    {children}
+  </TableCell>
+);
+
+export const TourOperationsReport = ({ 
+  hotels, 
+  activities, 
+  changedFields = new Set(),
+  reviewedAt,
+  reviewerName,
+  changeCount = 0,
+  onMarkReviewed,
+  isMarkingReviewed = false,
+}: TourOperationsReportProps) => {
   const sortedActivities = [...activities].sort((a, b) => {
     if (a.activity_date && b.activity_date) {
       const dateCompare = a.activity_date.localeCompare(b.activity_date);
@@ -36,8 +62,59 @@ export const TourOperationsReport = ({ hotels, activities }: TourOperationsRepor
     return 0;
   });
 
+  const isChanged = (key: string) => changedFields.has(key);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Review Status Header */}
+      <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+        <div className="flex items-center gap-3">
+          {changeCount > 0 ? (
+            <>
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  {changeCount} field{changeCount !== 1 ? 's' : ''} changed since last review
+                </p>
+                {reviewedAt && (
+                  <p className="text-xs text-muted-foreground">
+                    Last reviewed by <span className="font-medium">{reviewerName || 'Unknown'}</span> on{' '}
+                    {format(new Date(reviewedAt), 'dd/MM/yyyy \'at\' HH:mm')}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : reviewedAt ? (
+            <>
+              <CheckCircle className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Report reviewed — no changes</p>
+                <p className="text-xs text-muted-foreground">
+                  Last reviewed by <span className="font-medium">{reviewerName || 'Unknown'}</span> on{' '}
+                  {format(new Date(reviewedAt), 'dd/MM/yyyy \'at\' HH:mm')}
+                </p>
+              </div>
+            </>
+          ) : (
+            <>
+              <AlertTriangle className="h-5 w-5 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">This report has not been reviewed yet.</p>
+            </>
+          )}
+        </div>
+        {onMarkReviewed && (
+          <Button
+            onClick={onMarkReviewed}
+            variant={changeCount > 0 ? "default" : "outline"}
+            size="sm"
+            disabled={isMarkingReviewed}
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            {isMarkingReviewed ? 'Saving...' : 'Mark as Reviewed'}
+          </Button>
+        )}
+      </div>
+
       {/* Hotels Section */}
       <div>
         <h3 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
@@ -59,17 +136,20 @@ export const TourOperationsReport = ({ hotels, activities }: TourOperationsRepor
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {hotels.map(hotel => (
-                  <TableRow key={hotel.id}>
-                    <TableCell className="font-medium">{hotel.name}</TableCell>
-                    <TableCell>{hotel.address || '-'}</TableCell>
-                    <TableCell>{hotel.default_check_in ? formatDateToDDMMYYYY(hotel.default_check_in) : '-'}</TableCell>
-                    <TableCell>{hotel.default_check_out ? formatDateToDDMMYYYY(hotel.default_check_out) : '-'}</TableCell>
-                    <TableCell>{hotel.default_room_type || '-'}</TableCell>
-                    <TableCell>{hotel.rooms_reserved ?? '-'}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{hotel.operations_notes || '-'}</TableCell>
-                  </TableRow>
-                ))}
+                {hotels.map(hotel => {
+                  const key = `hotel_${hotel.id}`;
+                  return (
+                    <TableRow key={hotel.id}>
+                      <ChangedCell isChanged={isChanged(`${key}.name`)} className="font-medium">{hotel.name}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.address`)}>{hotel.address || '-'}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.default_check_in`)}>{hotel.default_check_in ? formatDateToDDMMYYYY(hotel.default_check_in) : '-'}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.default_check_out`)}>{hotel.default_check_out ? formatDateToDDMMYYYY(hotel.default_check_out) : '-'}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.default_room_type`)}>{hotel.default_room_type || '-'}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.rooms_reserved`)}>{hotel.rooms_reserved ?? '-'}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.operations_notes`)} className="max-w-[200px] truncate">{hotel.operations_notes || '-'}</ChangedCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -99,27 +179,30 @@ export const TourOperationsReport = ({ hotels, activities }: TourOperationsRepor
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sortedActivities.map(activity => (
-                  <TableRow key={activity.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : '-'}
-                    </TableCell>
-                    <TableCell className="font-medium">{activity.name}</TableCell>
-                    <TableCell>{formatTime(activity.depart_for_activity)}</TableCell>
-                    <TableCell>{formatTime(activity.end_time)}</TableCell>
-                    <TableCell>
-                      {activity.transport_mode ? (
-                        <Badge variant="outline" className="capitalize">{activity.transport_mode}</Badge>
-                      ) : '-'}
-                    </TableCell>
-                    <TableCell className="max-w-[250px]">
-                      <div className="whitespace-pre-wrap text-sm">{activity.hospitality_inclusions || '-'}</div>
-                    </TableCell>
-                    <TableCell className="max-w-[250px]">
-                      <div className="whitespace-pre-wrap text-sm">{activity.notes || '-'}</div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {sortedActivities.map(activity => {
+                  const key = `activity_${activity.id}`;
+                  return (
+                    <TableRow key={activity.id}>
+                      <ChangedCell isChanged={isChanged(`${key}.activity_date`)} className="whitespace-nowrap">
+                        {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : '-'}
+                      </ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.name`)} className="font-medium">{activity.name}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.depart_for_activity`)}>{formatTime(activity.depart_for_activity)}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.end_time`)}>{formatTime(activity.end_time)}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.transport_mode`)}>
+                        {activity.transport_mode ? (
+                          <Badge variant="outline" className="capitalize">{activity.transport_mode}</Badge>
+                        ) : '-'}
+                      </ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.hospitality_inclusions`)} className="max-w-[250px]">
+                        <div className="whitespace-pre-wrap text-sm">{activity.hospitality_inclusions || '-'}</div>
+                      </ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.notes`)} className="max-w-[250px]">
+                        <div className="whitespace-pre-wrap text-sm">{activity.notes || '-'}</div>
+                      </ChangedCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
