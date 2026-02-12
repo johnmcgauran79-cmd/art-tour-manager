@@ -56,9 +56,8 @@ export const TourAttendeesReport = ({ tourId, tourName }: TourAttendeesReportPro
             {attendees.map((name, index) => (
               <div
                 key={index}
-                className="py-2 px-3 border-b border-border flex items-center gap-3"
+                className="py-2 px-3 border-b border-border"
               >
-                <span className="text-sm text-muted-foreground w-6 text-right">{index + 1}.</span>
                 <span className="text-sm font-medium text-foreground">{name}</span>
               </div>
             ))}
@@ -92,7 +91,6 @@ export const generateTourAttendeesHTML = (attendees: string[], tourName: string)
         .count { font-size: 14px; color: #888; }
         .attendees-list { padding: 0 32px 32px; }
         .attendee-row { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
-        .attendee-num { color: #888; display: inline-block; width: 30px; text-align: right; margin-right: 12px; }
         .attendee-name { font-weight: 500; }
         table.columns-table { width: 100%; border-collapse: collapse; }
         table.columns-table td { width: 50%; vertical-align: top; padding: 0 16px; }
@@ -115,17 +113,15 @@ export const generateTourAttendeesHTML = (attendees: string[], tourName: string)
         <table class="columns-table">
           <tr>
             <td>
-              ${attendees.slice(0, Math.ceil(attendees.length / 2)).map((name, i) => `
+              ${attendees.slice(0, Math.ceil(attendees.length / 2)).map((name) => `
                 <div class="attendee-row">
-                  <span class="attendee-num">${i + 1}.</span>
                   <span class="attendee-name">${name}</span>
                 </div>
               `).join('')}
             </td>
             <td>
-              ${attendees.slice(Math.ceil(attendees.length / 2)).map((name, i) => `
+              ${attendees.slice(Math.ceil(attendees.length / 2)).map((name) => `
                 <div class="attendee-row">
-                  <span class="attendee-num">${Math.ceil(attendees.length / 2) + i + 1}.</span>
                   <span class="attendee-name">${name}</span>
                 </div>
               `).join('')}
