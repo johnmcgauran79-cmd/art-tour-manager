@@ -276,7 +276,7 @@ export default function BookingDetail() {
           </div>
           
           {/* Desktop action buttons */}
-          <div className="hidden sm:flex gap-2 flex-shrink-0">
+          <div className="hidden sm:flex flex-wrap gap-2 flex-shrink-0 justify-end">
             <Button
               variant="outline"
               size="sm"
