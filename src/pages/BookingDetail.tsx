@@ -253,8 +253,7 @@ export default function BookingDetail() {
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4">
             {booking.customers && (
               <ContactAvatar
                 contactId={booking.customers.id}
@@ -273,10 +272,10 @@ export default function BookingDetail() {
                 </p>
               )}
             </div>
-          </div>
+        </div>
           
-          {/* Desktop action buttons */}
-          <div className="hidden sm:flex flex-wrap gap-2 flex-shrink-0 justify-end">
+        {/* Desktop action buttons */}
+        <div className="hidden sm:flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -345,7 +344,6 @@ export default function BookingDetail() {
                 </Button>
               </>
             )}
-          </div>
         </div>
       </div>
 
