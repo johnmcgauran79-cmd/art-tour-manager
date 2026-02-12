@@ -312,15 +312,17 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
         </div>
         {!isAgent && (
           <div className="flex flex-wrap gap-2">
-            <Button 
-              onClick={() => setResetDialogOpen(true)}
-              variant="outline"
-              size="sm"
-              disabled={!activities || activities.length === 0}
-            >
-              <RefreshCw className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Reset</span>
-            </Button>
+            {userRole === 'admin' && (
+              <Button 
+                onClick={() => setResetDialogOpen(true)}
+                variant="outline"
+                size="sm"
+                disabled={!activities || activities.length === 0}
+              >
+                <RefreshCw className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Reset</span>
+              </Button>
+            )}
             <Button
               onClick={handleQuickUpdateToggle}
               variant={quickUpdateMode ? "secondary" : "outline"}
