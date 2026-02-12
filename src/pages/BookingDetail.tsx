@@ -285,6 +285,28 @@ export default function BookingDetail() {
               Back
             </Button>
             
+            {!isAgent && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
+              </Button>
+            )}
+            
+            {!isAgent && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowEmailPreview(true)}
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Email
+              </Button>
+            )}
+            
             <WhatsAppButton 
               phone={booking.customers?.phone} 
               name={booking.customers?.first_name}
@@ -315,34 +337,14 @@ export default function BookingDetail() {
             )}
             
             {!isAgent && (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigateWithContext(`/bookings/${id}/edit`)}
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowEmailPreview(true)}
-                >
-                  <Mail className="mr-2 h-4 w-4" />
-                  Email
-                </Button>
-                
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setShowDeleteDialog(true)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-              </>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setShowDeleteDialog(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
             )}
         </div>
       </div>
