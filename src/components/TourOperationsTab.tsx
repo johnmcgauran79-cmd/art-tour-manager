@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -40,7 +40,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
@@ -120,7 +120,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     return total + booking.passenger_count;
   }, 0);
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops') => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
@@ -277,6 +277,16 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">Passenger List</p>
               <p className="text-xs text-gray-600">{totalPassengers} passengers</p>
+            </div>
+            <div 
+              className="text-center p-3 border-2 border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('tourattendees')}
+            >
+              <div className="bg-emerald-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-emerald-200 transition-colors">
+                <UserCheck className="h-5 w-5 text-emerald-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-emerald-700 text-xs">Tour Attendees</p>
+              <p className="text-xs text-gray-600">External Report</p>
             </div>
             <div 
               className="text-center p-3 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
