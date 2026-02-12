@@ -84,8 +84,8 @@ export const generateTourAttendeesHTML = (attendees: string[], tourName: string)
       <title>Tour Attendees - ${tourName}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; color: #333; }
-        .branded-header { background-color: #232628; padding: 24px 32px; text-align: center; display: flex; justify-content: center; align-items: center; }
-        .branded-header img { height: 50px; max-width: 200px; width: auto; display: block; margin: 0 auto; }
+        .branded-header { background-color: #232628; padding: 24px 32px; text-align: center; }
+        .branded-header img { height: 50px; max-width: 200px; width: auto; display: inline-block; }
         .title-section { padding: 24px 32px; text-align: center; }
         .tour-name { font-size: 24px; font-weight: bold; margin-bottom: 4px; }
         .report-title { font-size: 20px; color: #666; margin-bottom: 8px; }
