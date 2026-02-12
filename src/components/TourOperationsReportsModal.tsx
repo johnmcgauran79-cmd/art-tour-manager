@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, Mail } from "lucide-react";
+import html2pdf from "html2pdf.js";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
 import { RoomingListModal } from "@/components/RoomingListModal";
@@ -223,56 +224,56 @@ export const TourOperationsReportsModal = ({
 
   // Handle tour attendees report
   if (reportType === 'tourattendees') {
-    const handleViewAttendeesPDF = () => {
+    const handleDownloadAttendeesPDF = () => {
       const htmlContent = generateTourAttendeesHTML(attendees, tourName);
-      setGeneratedHTML(htmlContent);
-      setShowPDFViewer(true);
+      const element = document.createElement('div');
+      element.innerHTML = htmlContent;
+      
+      const opt = {
+        margin: 0,
+        filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tour_attendees.pdf`,
+        image: { type: 'png' as const },
+        html2canvas: { scale: 3, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+      
+      html2pdf().set(opt).from(element).save();
     };
 
     return (
-      <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <DialogTitle>Tour Attendees - {tourName}</DialogTitle>
-                  <Badge variant="secondary">{attendees.length} attendees</Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={handleViewAttendeesPDF}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    disabled={attendees.length === 0}
-                  >
-                    <FileText className="h-4 w-4" />
-                    View PDF
-                  </Button>
-                  <DialogClose asChild>
-                    <Button variant="outline" size="sm">
-                      Close
-                    </Button>
-                  </DialogClose>
-                </div>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <DialogTitle>Tour Attendees - {tourName}</DialogTitle>
+                <Badge variant="secondary">{attendees.length} attendees</Badge>
               </div>
-            </DialogHeader>
-
-            <div className="border rounded-lg overflow-hidden">
-              <TourAttendeesReport tourId={tourId} tourName={tourName} />
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleDownloadAttendeesPDF}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  disabled={attendees.length === 0}
+                >
+                  <Download className="h-4 w-4" />
+                  Download PDF
+                </Button>
+                <DialogClose asChild>
+                  <Button variant="outline" size="sm">
+                    Close
+                  </Button>
+                </DialogClose>
+              </div>
             </div>
-          </DialogContent>
-        </Dialog>
+          </DialogHeader>
 
-        <ReportPDFViewer
-          open={showPDFViewer}
-          onOpenChange={setShowPDFViewer}
-          htmlContent={generatedHTML}
-          reportTitle="Tour Attendees"
-          tourName={tourName}
-        />
-      </>
+          <div className="border rounded-lg overflow-hidden">
+            <TourAttendeesReport tourId={tourId} tourName={tourName} />
+          </div>
+        </DialogContent>
+      </Dialog>
     );
   }
 
