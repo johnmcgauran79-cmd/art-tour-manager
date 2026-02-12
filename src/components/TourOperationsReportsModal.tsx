@@ -230,7 +230,7 @@ export const TourOperationsReportsModal = ({
       const opt = {
         margin: 0,
         filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tour_attendees.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.95 },
+        image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
