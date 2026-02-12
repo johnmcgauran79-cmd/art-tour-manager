@@ -231,6 +231,7 @@ export const TourOperationsReportsModal = ({
       element.style.position = 'absolute';
       element.style.left = '-9999px';
       element.style.top = '0';
+      element.style.width = '210mm';
       document.body.appendChild(element);
       
       const opt = {

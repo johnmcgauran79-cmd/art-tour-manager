@@ -94,8 +94,8 @@ export const generateTourAttendeesHTML = (attendees: string[], tourName: string)
         .attendee-row { padding: 8px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
         .attendee-num { color: #888; display: inline-block; width: 30px; text-align: right; margin-right: 12px; }
         .attendee-name { font-weight: 500; }
-        .columns { display: flex; gap: 32px; }
-        .column { flex: 1; }
+        table.columns-table { width: 100%; border-collapse: collapse; }
+        table.columns-table td { width: 50%; vertical-align: top; padding: 0 16px; }
         @media print {
           body { margin: 0; }
           .branded-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -112,24 +112,26 @@ export const generateTourAttendeesHTML = (attendees: string[], tourName: string)
         <div class="count">${attendees.length} attendees</div>
       </div>
       <div class="attendees-list">
-        <div class="columns">
-          <div class="column">
-            ${attendees.slice(0, Math.ceil(attendees.length / 2)).map((name, i) => `
-              <div class="attendee-row">
-                <span class="attendee-num">${i + 1}.</span>
-                <span class="attendee-name">${name}</span>
-              </div>
-            `).join('')}
-          </div>
-          <div class="column">
-            ${attendees.slice(Math.ceil(attendees.length / 2)).map((name, i) => `
-              <div class="attendee-row">
-                <span class="attendee-num">${Math.ceil(attendees.length / 2) + i + 1}.</span>
-                <span class="attendee-name">${name}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
+        <table class="columns-table">
+          <tr>
+            <td>
+              ${attendees.slice(0, Math.ceil(attendees.length / 2)).map((name, i) => `
+                <div class="attendee-row">
+                  <span class="attendee-num">${i + 1}.</span>
+                  <span class="attendee-name">${name}</span>
+                </div>
+              `).join('')}
+            </td>
+            <td>
+              ${attendees.slice(Math.ceil(attendees.length / 2)).map((name, i) => `
+                <div class="attendee-row">
+                  <span class="attendee-num">${Math.ceil(attendees.length / 2) + i + 1}.</span>
+                  <span class="attendee-name">${name}</span>
+                </div>
+              `).join('')}
+            </td>
+          </tr>
+        </table>
       </div>
     </body>
     </html>
