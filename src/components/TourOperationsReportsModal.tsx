@@ -228,6 +228,10 @@ export const TourOperationsReportsModal = ({
       const htmlContent = generateTourAttendeesHTML(attendees, tourName);
       const element = document.createElement('div');
       element.innerHTML = htmlContent;
+      element.style.position = 'absolute';
+      element.style.left = '-9999px';
+      element.style.top = '0';
+      document.body.appendChild(element);
       
       const opt = {
         margin: 0,
@@ -237,7 +241,9 @@ export const TourOperationsReportsModal = ({
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
       };
       
-      html2pdf().set(opt).from(element).save();
+      html2pdf().set(opt).from(element).save().then(() => {
+        document.body.removeChild(element);
+      });
     };
 
     return (
