@@ -2226,6 +2226,41 @@ export type Database = {
         }
         Relationships: []
       }
+      tour_ops_reviews: {
+        Row: {
+          created_at: string
+          data_snapshot: Json
+          id: string
+          reviewed_at: string
+          reviewed_by: string
+          tour_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_snapshot?: Json
+          id?: string
+          reviewed_at?: string
+          reviewed_by: string
+          tour_id: string
+        }
+        Update: {
+          created_at?: string
+          data_snapshot?: Json
+          id?: string
+          reviewed_at?: string
+          reviewed_by?: string
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_ops_reviews_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tours: {
         Row: {
           capacity: number | null

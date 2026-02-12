@@ -20,6 +20,7 @@ import { HostFlightsSection } from "@/components/HostFlightsSection";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { supabase } from "@/integrations/supabase/client";
+import { useTourOpsReview } from "@/hooks/useTourOpsReview";
 
 interface TourOperationsTabProps {
   tourId: string;
@@ -45,6 +46,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
   const { unacknowledgedCount } = useTourAlerts(tourId);
+  const { changeCount: tourOpsChangeCount } = useTourOpsReview(tourId);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -312,11 +314,16 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               className="text-center p-3 border-2 border-amber-200 rounded-lg cursor-pointer hover:bg-amber-50 hover:border-amber-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('tourops')}
             >
-              <div className="bg-amber-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-amber-200 transition-colors">
+              <div className="bg-amber-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-amber-200 transition-colors relative">
                 <Megaphone className="h-5 w-5 text-amber-600" />
+                {tourOpsChangeCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                    {tourOpsChangeCount}
+                  </Badge>
+                )}
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-amber-700 text-xs">Tour Ops Report</p>
-              <p className="text-xs text-gray-600">Hotels & Activities</p>
+              <p className="text-xs text-gray-600">{tourOpsChangeCount > 0 ? `${tourOpsChangeCount} changes` : 'Hotels & Activities'}</p>
             </div>
             <div 
               className="text-center p-3 border-2 border-cyan-200 rounded-lg cursor-pointer hover:bg-cyan-50 hover:border-cyan-300 hover:shadow-md transition-all duration-200 group"

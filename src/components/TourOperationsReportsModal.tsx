@@ -26,6 +26,7 @@ import { EmailPassportReportModal } from "@/components/reports/EmailPassportRepo
 import { TourAttendeesReport, useTourAttendeesData, generateTourAttendeesHTML } from "@/components/reports/TourAttendeesReport";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useTourOpsReview } from "@/hooks/useTourOpsReview";
 
 interface TourOperationsReportsModalProps {
   tourId: string;
@@ -36,6 +37,63 @@ interface TourOperationsReportsModalProps {
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
+
+// Extracted Tour Ops Report modal with review workflow
+const TourOpsReportModal = ({ tourId, tourName, hotels, activities, open, onOpenChange }: {
+  tourId: string; tourName: string; hotels: any[]; activities: any[]; open: boolean; onOpenChange: (open: boolean) => void;
+}) => {
+  const { review, reviewerProfile, changedFields, changeCount, markReviewed } = useTourOpsReview(tourId);
+  const { toast } = useToast();
+
+  const handleMarkReviewed = async () => {
+    try {
+      await markReviewed.mutateAsync();
+      toast({ title: "Reviewed", description: "Report marked as reviewed. Changes have been acknowledged." });
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message || "Failed to mark as reviewed", variant: "destructive" });
+    }
+  };
+
+  const reviewerName = reviewerProfile
+    ? `${reviewerProfile.first_name || ''} ${reviewerProfile.last_name || ''}`.trim() || 'Unknown'
+    : null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <DialogTitle>Tour Operations Report - {tourName}</DialogTitle>
+              <Badge variant="secondary">{hotels.length} hotels, {activities.length} activities</Badge>
+              {changeCount > 0 && (
+                <Badge variant="destructive">{changeCount} change{changeCount !== 1 ? 's' : ''}</Badge>
+              )}
+            </div>
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Close</Button>
+            </DialogClose>
+          </div>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Comprehensive hotel and activity details for updating itinerary and guest documents.
+          </p>
+          <TourOperationsReport
+            hotels={hotels}
+            activities={activities}
+            changedFields={changedFields}
+            reviewedAt={review?.reviewed_at}
+            reviewerName={reviewerName}
+            changeCount={changeCount}
+            onMarkReviewed={handleMarkReviewed}
+            isMarkingReviewed={markReviewed.isPending}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export const TourOperationsReportsModal = ({ 
   tourId, 
@@ -277,38 +335,14 @@ export const TourOperationsReportsModal = ({
 
   // Handle tour operations report
   if (reportType === 'tourops') {
-    return (
-      <>
-        <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <DialogTitle>Tour Operations Report - {tourName}</DialogTitle>
-                  <Badge variant="secondary">{hotels?.length || 0} hotels, {activities?.length || 0} activities</Badge>
-                </div>
-                <DialogClose asChild>
-                  <Button variant="outline" size="sm">
-                    Close
-                  </Button>
-                </DialogClose>
-              </div>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Comprehensive hotel and activity details for updating itinerary and guest documents.
-              </p>
-              
-              <TourOperationsReport 
-                hotels={hotels || []} 
-                activities={activities || []} 
-              />
-            </div>
-          </DialogContent>
-        </Dialog>
-      </>
-    );
+    return <TourOpsReportModal
+      tourId={tourId}
+      tourName={tourName}
+      hotels={hotels || []}
+      activities={activities || []}
+      open={open}
+      onOpenChange={onOpenChange}
+    />;
   }
 
   // Handle passport report
