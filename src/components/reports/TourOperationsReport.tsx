@@ -169,10 +169,11 @@ export const TourOperationsReport = ({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="font-semibold">Date</TableHead>
-                  <TableHead className="font-semibold">Activity Name</TableHead>
-                  <TableHead className="font-semibold">Depart Time</TableHead>
-                  <TableHead className="font-semibold">End Time</TableHead>
+                   <TableHead className="font-semibold">Date</TableHead>
+                   <TableHead className="font-semibold">Activity Name</TableHead>
+                   <TableHead className="font-semibold">Start Time</TableHead>
+                   <TableHead className="font-semibold">Depart Time</TableHead>
+                   <TableHead className="font-semibold">End Time</TableHead>
                   <TableHead className="font-semibold">Transport Mode</TableHead>
                   <TableHead className="font-semibold">Hospitality Inclusions</TableHead>
                   <TableHead className="font-semibold">Activity Notes</TableHead>
@@ -187,6 +188,7 @@ export const TourOperationsReport = ({
                         {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : '-'}
                       </ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.name`)} className="font-medium">{activity.name}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.start_time`)}>{formatTime(activity.start_time)}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.depart_for_activity`)}>{formatTime(activity.depart_for_activity)}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.end_time`)}>{formatTime(activity.end_time)}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.transport_mode`)}>
