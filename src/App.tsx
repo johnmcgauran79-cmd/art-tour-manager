@@ -22,6 +22,7 @@ import BulkBookingStatus from "./pages/BulkBookingStatus";
 import UpdateProfile from "./pages/UpdateProfile";
 import UpdateTravelDocs from "./pages/UpdateTravelDocs";
 import SignWaiver from "./pages/SignWaiver";
+import SelectPickup from "./pages/SelectPickup";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
 
@@ -66,6 +67,7 @@ function App() {
               <Route path="/update-profile/:token" element={<UpdateProfile />} />
               <Route path="/update-travel-docs/:token" element={<UpdateTravelDocs />} />
               <Route path="/waiver/:token" element={<SignWaiver />} />
+              <Route path="/select-pickup/:token" element={<SelectPickup />} />
               <Route
                 path="/"
                 element={

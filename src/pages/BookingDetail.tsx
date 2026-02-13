@@ -32,7 +32,9 @@ import { SendTravelDocsRequestButton } from "@/components/SendTravelDocsRequestB
 import { PassengerDetailsSection } from "@/components/booking/PassengerDetailsSection";
 import { BookingTravelDocsDisplay } from "@/components/booking/BookingTravelDocsDisplay";
 import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
+import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
+import { usePickupOptions } from "@/hooks/usePickupOptions";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -69,6 +71,8 @@ export default function BookingDetail() {
   const { data: tours = [] } = useTours();
   
   const tour = tours.find(t => t.id === booking?.tour_id);
+  const { data: pickupOptions = [] } = usePickupOptions(booking?.tour_id || '');
+  const selectedPickup = pickupOptions.find(p => p.id === booking?.selected_pickup_option_id);
 
   const handleDelete = () => {
     if (!booking) return;
@@ -215,6 +219,15 @@ export default function BookingDetail() {
                 tourName={tour?.name || 'Unknown Tour'}
                 size="sm"
               />
+              {tour?.pickup_location_required && (
+                <SendPickupRequestButton
+                  bookingId={booking.id}
+                  customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                  customerEmail={booking.customers.email || null}
+                  tourName={tour?.name || 'Unknown Tour'}
+                  size="sm"
+                />
+              )}
             </>
           )}
           
@@ -327,6 +340,14 @@ export default function BookingDetail() {
                   customerEmail={booking.customers.email || null}
                   tourName={tour?.name || 'Unknown Tour'}
                 />
+                {tour?.pickup_location_required && (
+                  <SendPickupRequestButton
+                    bookingId={booking.id}
+                    customerName={`${booking.customers.first_name} ${booking.customers.last_name}`}
+                    customerEmail={booking.customers.email || null}
+                    tourName={tour?.name || 'Unknown Tour'}
+                  />
+                )}
               </>
             )}
             
@@ -424,6 +445,12 @@ export default function BookingDetail() {
                 <InfoRow label="Passenger Count" value={booking.passenger_count?.toString()} />
                 <InfoRow label="Group Name" value={booking.group_name} />
                 <InfoRow label="Booking Agent" value={booking.booking_agent} />
+                {tour?.pickup_location_required && (
+                  <InfoRow 
+                    label="Pickup Location" 
+                    value={selectedPickup ? `${selectedPickup.name}${selectedPickup.pickup_time ? ` (${selectedPickup.pickup_time})` : ''}` : 'Not selected'} 
+                  />
+                )}
               </div>
 
               {/* Passenger Details with Expandable Sections */}

@@ -12,10 +12,13 @@ interface PassengerSummaryReportProps {
     status: string;
     groupName: string;
     notes: string;
+    pickupLocation?: string;
   }>;
 }
 
 export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) => {
+  const hasPickup = data.some(item => item.pickupLocation);
+  
   return (
     <Table>
       <TableHeader>
@@ -27,6 +30,7 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
           <TableHead className="w-[90px]">Check In</TableHead>
           <TableHead className="w-[90px]">Check Out</TableHead>
           <TableHead className="w-[60px]">Nights</TableHead>
+          {hasPickup && <TableHead className="w-[120px]">Pickup Location</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -39,6 +43,7 @@ export const PassengerSummaryReport = ({ data }: PassengerSummaryReportProps) =>
             <TableCell className="w-[90px]">{item.checkIn}</TableCell>
             <TableCell className="w-[90px]">{item.checkOut}</TableCell>
             <TableCell className="w-[60px]">{item.nights}</TableCell>
+            {hasPickup && <TableCell className="w-[120px]">{item.pickupLocation || '-'}</TableCell>}
           </TableRow>
         ))}
       </TableBody>
