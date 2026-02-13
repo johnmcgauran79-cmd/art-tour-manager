@@ -15,6 +15,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
+import { usePickupReportData } from "@/components/reports/PickupLocationReport";
 import { HostFlightsSection } from "@/components/HostFlightsSection";
 
 import { TourAlertsModal } from "@/components/TourAlertsModal";
@@ -48,6 +49,8 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
   const { unacknowledgedCount } = useTourAlerts(tourId);
   const { changeCount: tourOpsChangeCount } = useTourOpsReview(tourId);
+  const { data: pickupReportData } = usePickupReportData(tourId);
+  const pickupPendingCount = pickupLocationRequired ? (pickupReportData?.pendingCount || 0) : 0;
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -353,11 +356,16 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 className="text-center p-3 border-2 border-sky-200 rounded-lg cursor-pointer hover:bg-sky-50 hover:border-sky-300 hover:shadow-md transition-all duration-200 group"
                 onClick={() => handleReportClick('pickup')}
               >
-                <div className="bg-sky-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-sky-200 transition-colors">
+                <div className="bg-sky-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-sky-200 transition-colors relative">
                   <MapPin className="h-5 w-5 text-sky-600" />
+                  {pickupPendingCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                      {pickupPendingCount}
+                    </Badge>
+                  )}
                 </div>
                 <p className="font-semibold text-gray-800 group-hover:text-sky-700 text-xs">Pickup Locations</p>
-                <p className="text-xs text-gray-600">By Location</p>
+                <p className="text-xs text-gray-600">{pickupPendingCount > 0 ? `${pickupPendingCount} pending` : 'All selected'}</p>
               </div>
             )}
           </div>
