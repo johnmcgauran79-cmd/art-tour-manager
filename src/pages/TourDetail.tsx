@@ -356,6 +356,7 @@ export default function TourDetail() {
             tourId={tour.id}
             tourName={tour.name}
             travelDocumentsRequired={tour.travel_documents_required}
+            pickupLocationRequired={tour.pickup_location_required || false}
             onNavigate={handleNavigate}
           />
           <div className="mt-6">
