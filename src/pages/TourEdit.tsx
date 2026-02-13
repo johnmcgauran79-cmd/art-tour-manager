@@ -40,6 +40,7 @@ export default function TourEdit() {
     instalment_date: "",
     final_payment_date: "",
     travel_documents_required: false,
+    pickup_location_required: false,
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international"
@@ -52,7 +53,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required')
           .eq('id', id)
           .single();
         
@@ -77,6 +78,7 @@ export default function TourEdit() {
             instalment_date: tour.instalment_date ? formatDateForInput(tour.instalment_date) : "",
             final_payment_date: tour.final_payment_date ? formatDateForInput(tour.final_payment_date) : "",
             travel_documents_required: data.travel_documents_required || false,
+            pickup_location_required: data.pickup_location_required || false,
             capacity: tour.capacity?.toString() || "",
             minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
             tour_type: (data.tour_type as "domestic" | "international") || "domestic"
@@ -137,6 +139,7 @@ export default function TourEdit() {
       instalment_date: formData.instalment_required && formData.instalment_date ? formData.instalment_date : null,
       final_payment_date: formData.final_payment_date || null,
       travel_documents_required: formData.travel_documents_required,
+      pickup_location_required: formData.pickup_location_required,
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
       tour_type: formData.tour_type,
@@ -495,6 +498,30 @@ export default function TourEdit() {
             </Select>
             <p className="text-xs text-muted-foreground">
               When enabled, bookings will show travel documents section (passport, ID, etc.)
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="pickup_location_required">Pickup Location Required</Label>
+            <Select 
+              value={formData.pickup_location_required ? "yes" : "no"} 
+              onValueChange={(value) => {
+                setFormData(prev => ({ 
+                  ...prev, 
+                  pickup_location_required: value === "yes"
+                }));
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="no">No</SelectItem>
+                <SelectItem value="yes">Yes</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              When enabled, customers will be asked to select a pickup location.
             </p>
           </div>
         </div>
