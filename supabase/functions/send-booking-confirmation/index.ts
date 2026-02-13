@@ -170,7 +170,8 @@ const handler = async (req: Request): Promise<Response> => {
       .from('bookings')
       .select(`
         *,
-        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, travel_documents_required, notes),
+        tours:tour_id (name, start_date, end_date, days, nights, location, pickup_point, inclusions, exclusions, tour_type, tour_host, capacity, minimum_passengers_required, price_single, price_double, price_twin, deposit_required, final_payment_date, instalment_date, instalment_amount, instalment_details, travel_documents_required, pickup_location_required, notes),
+        selected_pickup_option:tour_pickup_options!bookings_selected_pickup_option_id_fkey (id, name, pickup_time, details),
         customers:lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, city, state, country, spouse_name, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs, notes),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
         passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
@@ -495,6 +496,50 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Check if pickup location link/button is needed
+    const tourRequiresPickup = booking.tours?.pickup_location_required === true;
+    const hasPickupPlaceholder = /\{\{\s*pickup_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    const needsPickupLink = hasPickupPlaceholder && tourRequiresPickup;
+    
+    console.log('Pickup check - tourRequiresPickup:', tourRequiresPickup);
+    console.log('Pickup check - hasPickupPlaceholder:', hasPickupPlaceholder);
+    
+    // Resolve current pickup selection
+    const selectedPickupOption = booking.selected_pickup_option;
+    const pickupLocationName = selectedPickupOption?.name || '';
+    const pickupLocationTime = selectedPickupOption?.pickup_time || '';
+    const pickupLocationDetails = selectedPickupOption?.details || '';
+    const hasPickupSelection = !!selectedPickupOption;
+    
+    let pickupLink = '';
+    let pickupButton = '';
+    
+    if (needsPickupLink && booking.customers?.id) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 72);
+      
+      const { data: tokenData, error: tokenError } = await supabaseClient
+        .from('customer_access_tokens')
+        .insert({
+          customer_id: booking.customers.id,
+          booking_id: bookingId,
+          purpose: 'pickup',
+          created_by: requestUserId || SYSTEM_ACTOR_ID,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('token')
+        .single();
+      
+      if (tokenError) {
+        console.error('Error creating pickup token:', tokenError);
+      } else if (tokenData) {
+        const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+        pickupLink = `${baseUrl}/select-pickup/${tokenData.token}`;
+        pickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${pickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SELECT PICKUP LOCATION</a></td></tr></table>`;
+        console.log('Generated pickup link for customer:', booking.customers.id);
+      }
+    }
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
@@ -704,6 +749,13 @@ const handler = async (req: Request): Promise<Response> => {
       travel_docs_link: travelDocsLink,
       travel_docs_button: travelDocsButton,
 
+      // Pickup location action fields
+      pickup_link: pickupLink,
+      pickup_button: pickupButton,
+      pickup_location_name: pickupLocationName,
+      pickup_location_time: pickupLocationTime,
+      pickup_location_details: pickupLocationDetails,
+
       // Computed condition fields (boolean flags for conditional template sections)
       has_passenger_2: !!booking.passenger_2,
       has_passenger_3: !!booking.passenger_3,
@@ -723,6 +775,8 @@ const handler = async (req: Request): Promise<Response> => {
       has_group_name: !!booking.group_name,
       has_extra_requests: !!booking.extra_requests,
       tour_requires_travel_docs: !!booking.tours?.travel_documents_required,
+      tour_requires_pickup: tourRequiresPickup,
+      has_pickup_selection: hasPickupSelection,
       // Hotel bookings array
       hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
         hotel_name: hb.hotels?.name || '',
@@ -1019,6 +1073,33 @@ const handler = async (req: Request): Promise<Response> => {
           
           passengerMergeData.travel_docs_link = passengerTravelDocsLink;
           passengerMergeData.travel_docs_button = passengerTravelDocsButton;
+        }
+      }
+      
+      // Generate pickup link for this passenger if tour requires it
+      if (needsPickupLink && passenger.id) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 72);
+        
+        const { data: tokenData, error: tokenError } = await supabaseClient
+          .from('customer_access_tokens')
+          .insert({
+            customer_id: passenger.id,
+            booking_id: bookingId,
+            purpose: 'pickup',
+            created_by: requestUserId || SYSTEM_ACTOR_ID,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select('token')
+          .single();
+        
+        if (!tokenError && tokenData) {
+          const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+          const passengerPickupLink = `${baseUrl}/select-pickup/${tokenData.token}`;
+          const passengerPickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${passengerPickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SELECT PICKUP LOCATION</a></td></tr></table>`;
+          
+          passengerMergeData.pickup_link = passengerPickupLink;
+          passengerMergeData.pickup_button = passengerPickupButton;
         }
       }
       
