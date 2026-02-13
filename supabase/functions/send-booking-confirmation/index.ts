@@ -340,13 +340,10 @@ const handler = async (req: Request): Promise<Response> => {
           }).join('');
         }
         
-        // For boolean/truthy values, include the content if truthy
+      // For boolean/truthy values, include the content if truthy
         if (value) {
-          // Process inner variables with root data
-          return content.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
-            const innerValue = getNestedValue(data, stripZeroWidth(innerKey).trim());
-            return innerValue !== undefined && innerValue !== null ? String(innerValue) : '';
-          });
+          // Recursively process inner content to handle nested conditionals
+          return processTemplate(content, data);
         }
         return '';
       });
@@ -356,11 +353,8 @@ const handler = async (req: Request): Promise<Response> => {
         const value = getNestedValue(data, stripZeroWidth(String(key)).trim());
         const isEmpty = !value || (Array.isArray(value) && value.length === 0);
         if (isEmpty) {
-          // Process inner variables
-          return content.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
-            const innerValue = getNestedValue(data, stripZeroWidth(innerKey).trim());
-            return innerValue !== undefined && innerValue !== null ? String(innerValue) : '';
-          });
+          // Recursively process inner content to handle nested conditionals
+          return processTemplate(content, data);
         }
         return '';
       });
