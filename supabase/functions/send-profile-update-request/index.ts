@@ -274,7 +274,7 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="text-align: center; color: #666; font-size: 14px; margin: 20px 0;">If any of the above details are incorrect or missing, please click below to update them.</p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">Update My Details</a>
+                <a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE MY PROFILE</a>
               </div>
               
               <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 20px 0;">

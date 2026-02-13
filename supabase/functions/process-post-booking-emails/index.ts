@@ -171,7 +171,7 @@ serve(async (req) => {
             .replace(/\{\{tour\.start_date\}\}/g, tourStartDate)
             .replace(/\{\{booking\.passenger_count\}\}/g, String(booking.passenger_count || 1))
             .replace(/\{\{profile_update_url\}\}/g, profileUpdateUrl)
-            .replace(/\{\{profile_update_link\}\}/g, `<a href="${profileUpdateUrl}" style="display: inline-block; padding: 12px 24px; background-color: #2563eb; color: white; text-decoration: none; border-radius: 6px;">UPDATE MY PROFILE</a>`);
+            .replace(/\{\{profile_update_link\}\}/g, `<a href="${profileUpdateUrl}" style="display: inline-block; padding: 12px 24px; background-color: #232628; color: #F5C518; text-decoration: none; border-radius: 6px; font-weight: 600;">UPDATE MY PROFILE</a>`);
 
           emailSubject = emailSubject
             .replace(/\{\{customer\.first_name\}\}/g, booking.lead_passenger?.first_name || '')
