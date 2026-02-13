@@ -28,6 +28,7 @@ export interface Booking {
   passport_country: string | null;
   nationality: string | null;
   whatsapp_group_comms: boolean;
+  selected_pickup_option_id: string | null;
 }
 
 export const useBookings = () => {

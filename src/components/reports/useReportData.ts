@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBookings } from "@/hooks/useBookings";
 import { useActivities } from "@/hooks/useActivities";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
+import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Phone, Utensils, Users, ClipboardList, Grid3X3 } from "lucide-react";
@@ -26,6 +27,7 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
   const { showAllContacts = false } = options;
   const { data: allBookings } = useBookings();
   const { data: activities } = useActivities(tourId);
+  const { data: pickupOptions } = usePickupOptions(tourId);
   
   // Fetch all hotel bookings for bookings on this tour
   const { data: hotelBookings } = useQuery({
@@ -76,17 +78,19 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
 
   // Passenger Summary Report
   const passengerSummary = tourBookings.map(booking => {
-    // Get hotel bookings for this booking, sorted by check_in_date (first hotel)
     const bookingHotelBookings = (hotelBookings || []).filter(hb => hb.booking_id === booking.id);
     const firstHotelBooking = bookingHotelBookings[0];
     const lastHotelBooking = bookingHotelBookings[bookingHotelBookings.length - 1];
     
     const bedding = firstHotelBooking?.bedding || '';
-    // Use first hotel's check-in and last hotel's check-out for overall dates
     const checkIn = firstHotelBooking?.check_in_date || booking.check_in_date;
     const checkOut = lastHotelBooking?.check_out_date || booking.check_out_date;
-    // Calculate total nights from hotel bookings
     const totalNights = bookingHotelBookings.reduce((sum, hb) => sum + (hb.nights || 0), 0) || booking.total_nights || 0;
+    
+    // Resolve pickup location name
+    const pickupName = booking.selected_pickup_option_id && pickupOptions
+      ? pickupOptions.find(p => p.id === booking.selected_pickup_option_id)?.name || ''
+      : '';
     
     return {
       leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
@@ -98,7 +102,8 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
       nights: totalNights,
       status: booking.status,
       notes: booking.extra_requests || '',
-      groupName: booking.group_name || ''
+      groupName: booking.group_name || '',
+      pickupLocation: pickupName,
     };
   });
 
