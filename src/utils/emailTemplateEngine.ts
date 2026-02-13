@@ -282,11 +282,20 @@ export interface EmailMergeData {
   has_group_name?: boolean;
   has_extra_requests?: boolean;
   tour_requires_travel_docs?: boolean;
+  tour_requires_pickup?: boolean;
+  has_pickup_selection?: boolean;
+
+  // Pickup location fields
+  pickup_location_name?: string;
+  pickup_location_time?: string;
+  pickup_location_details?: string;
 
   // Actions (handled securely server-side in edge functions)
   // Client-side previews/sends should preserve placeholders so the server can generate tokens.
   profile_update_button?: string;
   profile_update_link?: string;
+  pickup_button?: string;
+  pickup_link?: string;
 }
 
 export interface EmailTemplate {
@@ -636,12 +645,21 @@ export class EmailTemplateEngine {
       has_group_name: !!booking.group_name,
       has_extra_requests: !!booking.extra_requests,
       tour_requires_travel_docs: !!tour.travel_documents_required,
+      tour_requires_pickup: !!tour.pickup_location_required,
+      has_pickup_selection: !!booking.selected_pickup_option,
+
+      // Pickup location fields
+      pickup_location_name: booking.selected_pickup_option?.name || '',
+      pickup_location_time: booking.selected_pickup_option?.pickup_time || '',
+      pickup_location_details: booking.selected_pickup_option?.details || '',
 
       // Actions
       // IMPORTANT: Tokens/links must be generated server-side.
       // When bulk-email flows pre-process templates on the client, we MUST NOT erase these.
       profile_update_button: '{{profile_update_button}}',
       profile_update_link: '{{profile_update_link}}',
+      pickup_button: '{{pickup_button}}',
+      pickup_link: '{{pickup_link}}',
     };
   }
 }
