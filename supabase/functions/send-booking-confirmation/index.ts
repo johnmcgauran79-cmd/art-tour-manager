@@ -529,7 +529,7 @@ const handler = async (req: Request): Promise<Response> => {
       } else if (tokenData) {
         const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
         pickupLink = `${baseUrl}/select-pickup/${tokenData.token}`;
-        pickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${pickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SELECT PICKUP LOCATION</a></td></tr></table>`;
+        pickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${pickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PICKUP LOCATION</a></td></tr></table>`;
         console.log('Generated pickup link for customer:', booking.customers.id);
       }
     }
@@ -1090,7 +1090,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (!tokenError && tokenData) {
           const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
           const passengerPickupLink = `${baseUrl}/select-pickup/${tokenData.token}`;
-          const passengerPickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${passengerPickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SELECT PICKUP LOCATION</a></td></tr></table>`;
+          const passengerPickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${passengerPickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PICKUP LOCATION</a></td></tr></table>`;
           
           passengerMergeData.pickup_link = passengerPickupLink;
           passengerMergeData.pickup_button = passengerPickupButton;

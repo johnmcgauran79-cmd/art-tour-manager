@@ -124,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
     <p>Please click the button below to view the available pickup options and make your selection:</p>
     
     <div style="text-align: center; margin: 30px 0;">
-      <a href="${pickupLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SELECT PICKUP LOCATION</a>
+      <a href="${pickupLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PICKUP LOCATION</a>
     </div>
     
     <p style="color: #666; font-size: 14px;">This link will expire in 72 hours. If you have any questions, please don't hesitate to contact us.</p>
