@@ -33,6 +33,7 @@ export interface Tour {
   tour_host: string;
   url_reference: string | null;
   tour_type: 'domestic' | 'international' | null;
+  pickup_location_required: boolean;
   ops_notes: string | null;
   ops_accomm_notes: string | null;
   ops_races_notes: string | null;

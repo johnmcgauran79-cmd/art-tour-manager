@@ -721,6 +721,7 @@ export type Database = {
           passport_number: string | null
           revenue: number | null
           secondary_contact_id: string | null
+          selected_pickup_option_id: string | null
           status: Database["public"]["Enums"]["booking_status"] | null
           total_nights: number | null
           tour_id: string | null
@@ -750,6 +751,7 @@ export type Database = {
           passport_number?: string | null
           revenue?: number | null
           secondary_contact_id?: string | null
+          selected_pickup_option_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
@@ -779,6 +781,7 @@ export type Database = {
           passport_number?: string | null
           revenue?: number | null
           secondary_contact_id?: string | null
+          selected_pickup_option_id?: string | null
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
@@ -812,6 +815,13 @@ export type Database = {
             columns: ["secondary_contact_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_selected_pickup_option_id_fkey"
+            columns: ["selected_pickup_option_id"]
+            isOneToOne: false
+            referencedRelation: "tour_pickup_options"
             referencedColumns: ["id"]
           },
           {
@@ -2261,6 +2271,47 @@ export type Database = {
           },
         ]
       }
+      tour_pickup_options: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          name: string
+          pickup_time: string | null
+          sort_order: number
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          name: string
+          pickup_time?: string | null
+          sort_order?: number
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          name?: string
+          pickup_time?: string | null
+          sort_order?: number
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_pickup_options_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tours: {
         Row: {
           capacity: number | null
@@ -2291,6 +2342,7 @@ export type Database = {
           ops_transport_notes: string | null
           outbound_flight_date: string | null
           outbound_flight_number: string | null
+          pickup_location_required: boolean
           pickup_point: string | null
           price_double: number | null
           price_single: number | null
@@ -2335,6 +2387,7 @@ export type Database = {
           ops_transport_notes?: string | null
           outbound_flight_date?: string | null
           outbound_flight_number?: string | null
+          pickup_location_required?: boolean
           pickup_point?: string | null
           price_double?: number | null
           price_single?: number | null
@@ -2379,6 +2432,7 @@ export type Database = {
           ops_transport_notes?: string | null
           outbound_flight_date?: string | null
           outbound_flight_number?: string | null
+          pickup_location_required?: boolean
           pickup_point?: string | null
           price_double?: number | null
           price_single?: number | null
