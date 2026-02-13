@@ -129,6 +129,16 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           secondary_contact:customers!secondary_contact_id (
             first_name, last_name, email, phone
           ),
+          passenger_2:customers!passenger_2_id (
+            first_name, last_name, preferred_name, email, phone, dietary_requirements,
+            medical_conditions, accessibility_needs, emergency_contact_name,
+            emergency_contact_phone, emergency_contact_relationship
+          ),
+          passenger_3:customers!passenger_3_id (
+            first_name, last_name, preferred_name, email, phone, dietary_requirements,
+            medical_conditions, accessibility_needs, emergency_contact_name,
+            emergency_contact_phone, emergency_contact_relationship
+          ),
           hotel_bookings (
             check_in_date, check_out_date, nights, room_type, bedding,
             room_upgrade, room_requests, confirmation_number,
