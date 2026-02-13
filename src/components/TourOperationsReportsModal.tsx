@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import { exportReportToCSV, generateReportHTML } from "@/components/reports/Repo
 import { ReportPDFViewer } from "@/components/reports/ReportPDFViewer";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { TourAttendeesReport, useTourAttendeesData, generateTourAttendeesHTML } from "@/components/reports/TourAttendeesReport";
+import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTourOpsReview } from "@/hooks/useTourOpsReview";
@@ -33,7 +35,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null;
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
@@ -122,7 +124,7 @@ export const TourOperationsReportsModal = ({
   const attendees = useTourAttendeesData(tourId);
 
   // Get the specific report to display
-  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops' && reportType !== 'tourattendees'
+  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops' && reportType !== 'tourattendees' && reportType !== 'pickup'
     ? reports.find(r => r.type === reportType) || null 
     : null;
 
@@ -279,6 +281,28 @@ export const TourOperationsReportsModal = ({
       setIsSendingEmail(false);
     }
   };
+
+  // Handle pickup location report
+  if (reportType === 'pickup') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <MapPin className="h-5 w-5 text-sky-600" />
+                <DialogTitle>Pickup Locations - {tourName}</DialogTitle>
+              </div>
+              <DialogClose asChild>
+                <Button variant="outline" size="sm">Close</Button>
+              </DialogClose>
+            </div>
+          </DialogHeader>
+          <PickupLocationReport tourId={tourId} />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   // Handle tour attendees report
   if (reportType === 'tourattendees') {

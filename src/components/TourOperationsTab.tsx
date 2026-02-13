@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -26,10 +26,11 @@ interface TourOperationsTabProps {
   tourId: string;
   tourName: string;
   travelDocumentsRequired?: boolean;
+  pickupLocationRequired?: boolean;
   onNavigate?: (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => void;
 }
 
-export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, onNavigate }: TourOperationsTabProps) => {
+export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate }: TourOperationsTabProps) => {
   const navigate = useNavigate();
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
@@ -41,7 +42,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
-  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | null>(null);
+  const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
@@ -122,7 +123,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     return total + booking.passenger_count;
   }, 0);
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees') => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
@@ -345,6 +346,18 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 </div>
                 <p className="font-semibold text-gray-800 group-hover:text-teal-700 text-xs">Passport Details</p>
                 <p className="text-xs text-gray-600">Travel Documents</p>
+              </div>
+            )}
+            {pickupLocationRequired && (
+              <div 
+                className="text-center p-3 border-2 border-sky-200 rounded-lg cursor-pointer hover:bg-sky-50 hover:border-sky-300 hover:shadow-md transition-all duration-200 group"
+                onClick={() => handleReportClick('pickup')}
+              >
+                <div className="bg-sky-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-sky-200 transition-colors">
+                  <MapPin className="h-5 w-5 text-sky-600" />
+                </div>
+                <p className="font-semibold text-gray-800 group-hover:text-sky-700 text-xs">Pickup Locations</p>
+                <p className="text-xs text-gray-600">By Location</p>
               </div>
             )}
           </div>
