@@ -112,7 +112,7 @@ serve(async (req) => {
 
       for (const xeroContact of xeroContacts) {
         try {
-          const email = xeroContact.EmailAddress;
+          const email = xeroContact.EmailAddress?.trim() || null;
           const firstName = xeroContact.FirstName || xeroContact.Name?.split(' ')[0] || '';
           const lastName = xeroContact.LastName || xeroContact.Name?.split(' ').slice(1).join(' ') || '';
           
@@ -144,7 +144,7 @@ serve(async (req) => {
             country = addr.Country || null;
           }
 
-          // Check if contact exists by email
+          // Check if contact exists - first by email, then by name
           let existingContact = null;
           if (email) {
             const { data } = await supabase
@@ -154,20 +154,32 @@ serve(async (req) => {
               .maybeSingle();
             existingContact = data;
           }
+          
+          // Fallback: match by first + last name if no email match
+          if (!existingContact && firstName && lastName) {
+            const { data } = await supabase
+              .from('customers')
+              .select('id')
+              .ilike('first_name', firstName)
+              .ilike('last_name', lastName)
+              .maybeSingle();
+            existingContact = data;
+          }
 
           if (existingContact) {
-            // Update existing contact
+            // Update existing contact - only set non-null values
+            const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+            if (firstName) updateData.first_name = firstName;
+            if (lastName) updateData.last_name = lastName;
+            if (email) updateData.email = email;
+            if (phone) updateData.phone = phone;
+            if (city) updateData.city = city;
+            if (state) updateData.state = state;
+            if (country) updateData.country = country;
+
             await supabase
               .from('customers')
-              .update({
-                first_name: firstName || undefined,
-                last_name: lastName || undefined,
-                phone: phone || undefined,
-                city: city || undefined,
-                state: state || undefined,
-                country: country || undefined,
-                updated_at: new Date().toISOString(),
-              })
+              .update(updateData)
               .eq('id', existingContact.id);
 
             await supabase.from('xero_sync_log').insert({
@@ -182,13 +194,13 @@ serve(async (req) => {
 
             totalUpdated++;
           } else if (firstName && lastName) {
-            // Create new contact
+            // Create new contact - use null for empty email to avoid unique constraint
             const { data: newContact, error: insertError } = await supabase
               .from('customers')
               .insert({
                 first_name: firstName,
                 last_name: lastName,
-                email,
+                email: email || null,
                 phone,
                 city,
                 state,
@@ -214,7 +226,7 @@ serve(async (req) => {
             totalSkipped++;
           }
         } catch (contactError) {
-          console.error('Error processing Xero contact:', contactError);
+          console.error('Error processing Xero contact:', xeroContact.Name, contactError);
           totalErrors++;
           
           await supabase.from('xero_sync_log').insert({
