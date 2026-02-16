@@ -447,24 +447,32 @@ export const useBulkDeleteCustomers = () => {
       const results = { deleted: 0, skipped: 0, errors: [] as string[] };
 
       for (const id of ids) {
-        // Check for bookings
-        const { data: bookings } = await supabase
-          .from('bookings')
-          .select('id')
-          .or(`lead_passenger_id.eq.${id},passenger_2_id.eq.${id},passenger_3_id.eq.${id},secondary_contact_id.eq.${id}`)
-          .limit(1);
+        // Check for bookings (as lead, passenger 2/3, or secondary contact)
+        const { data: leadBookings } = await supabase.from('bookings').select('id').eq('lead_passenger_id', id).limit(1);
+        const { data: p2Bookings } = await supabase.from('bookings').select('id').eq('passenger_2_id', id).limit(1);
+        const { data: p3Bookings } = await supabase.from('bookings').select('id').eq('passenger_3_id', id).limit(1);
+        const { data: secBookings } = await supabase.from('bookings').select('id').eq('secondary_contact_id', id).limit(1);
 
-        if (bookings && bookings.length > 0) {
+        const hasBookings = (leadBookings?.length || 0) > 0 || (p2Bookings?.length || 0) > 0 || 
+                           (p3Bookings?.length || 0) > 0 || (secBookings?.length || 0) > 0;
+
+        if (hasBookings) {
           results.skipped++;
           const { data: cust } = await supabase.from('customers').select('first_name, last_name').eq('id', id).single();
           results.errors.push(`${cust?.first_name} ${cust?.last_name} has bookings`);
           continue;
         }
 
+        // Clean up related records that reference this customer (non-booking FKs)
+        await supabase.from('customer_access_tokens').delete().eq('customer_id', id);
+        await supabase.from('customer_profile_updates').delete().eq('customer_id', id);
+        await supabase.from('booking_travel_docs').delete().eq('customer_id', id);
+        await supabase.from('booking_waivers').delete().eq('customer_id', id);
+
         const { error } = await supabase.from('customers').delete().eq('id', id);
         if (error) {
           results.skipped++;
-          results.errors.push(error.message);
+          results.errors.push(`${error.message}`);
         } else {
           results.deleted++;
         }
