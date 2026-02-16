@@ -483,7 +483,7 @@ export default function BookingDetail() {
               <div className="pt-4 border-t space-y-2">
                 <InfoRow label="WhatsApp Group Comms" value={booking.whatsapp_group_comms ? 'Yes' : 'No'} />
                 {booking.invoice_reference && (
-                  <InfoRow label="Invoice Reference (Xero)" value={booking.invoice_reference} />
+                  <InfoRow label="Invoice Reference (Xero)" value={`INV-${booking.invoice_reference}`} />
                 )}
                 {booking.invoice_notes && (
                   <InfoRow label="Invoice Notes" value={booking.invoice_notes} />
