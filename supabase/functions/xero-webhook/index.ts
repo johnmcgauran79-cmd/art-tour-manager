@@ -16,12 +16,10 @@ async function getValidAccessToken(supabase: any): Promise<{ token: string; tena
 
   if (!settings) return null;
 
-  // Check if token is expired or about to expire (within 5 min)
   const expiresAt = new Date(settings.token_expires_at).getTime();
   const now = Date.now();
   
   if (now >= expiresAt - 300000) {
-    // Refresh the token
     const XERO_CLIENT_ID = Deno.env.get('XERO_CLIENT_ID');
     const XERO_CLIENT_SECRET = Deno.env.get('XERO_CLIENT_SECRET');
     
@@ -61,8 +59,6 @@ async function getValidAccessToken(supabase: any): Promise<{ token: string; tena
 }
 
 // Map Xero invoice status to booking status
-// instalmentRequired: whether the tour has instalment_required turned on
-// currentStatus: the booking's current status, used to detect second payments
 function mapXeroStatusToBookingStatus(
   xeroStatus: string,
   amountDue: number,
@@ -71,24 +67,94 @@ function mapXeroStatusToBookingStatus(
   instalmentRequired: boolean,
   currentStatus: string | null
 ): string | null {
-  // Fully paid
   if (xeroStatus === 'PAID' || (amountDue === 0 && amountPaid > 0)) {
     return 'fully_paid';
   }
-  // Partial payment
   if (amountPaid > 0 && amountDue > 0) {
-    // If deposit already paid and tour requires instalments, this is an instalment payment
     if (instalmentRequired && currentStatus === 'deposit_paid') {
       return 'instalment_paid';
     }
-    // Otherwise it's just a deposit (first partial payment, or self-spreading payments)
     return 'deposit_paid';
   }
-  // Authorised but no payment yet
   if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
     return 'invoiced';
   }
   return null;
+}
+
+// Fetch invoice data from Xero for all bookings with invoice references
+async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenantId: string }) {
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, tours!bookings_tour_id_fkey(instalment_required, name), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
+    .not('invoice_reference', 'is', null)
+    .neq('invoice_reference', '');
+
+  if (!bookings || bookings.length === 0) {
+    return { proposals: [], total_checked: 0 };
+  }
+
+  const proposals: any[] = [];
+
+  for (const booking of bookings) {
+    try {
+      const invoiceResponse = await fetch(
+        `https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${booking.invoice_reference}"`,
+        {
+          headers: {
+            'Authorization': `Bearer ${auth.token}`,
+            'Xero-Tenant-Id': auth.tenantId,
+            'Accept': 'application/json',
+          },
+        }
+      );
+
+      if (!invoiceResponse.ok) {
+        console.error(`Failed to fetch invoice for ref ${booking.invoice_reference}:`, await invoiceResponse.text());
+        continue;
+      }
+
+      const invoiceData = await invoiceResponse.json();
+      const invoices = invoiceData.Invoices || [];
+
+      if (invoices.length === 0) continue;
+
+      const invoice = invoices[0];
+      const amountDue = invoice.AmountDue || 0;
+      const amountPaid = invoice.AmountPaid || 0;
+      const total = invoice.Total || 0;
+
+      const instalmentRequired = !!(booking as any).tours?.instalment_required;
+      const newStatus = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
+
+      if (newStatus && newStatus !== booking.status) {
+        const customerName = booking.customers
+          ? `${booking.customers.first_name} ${booking.customers.last_name}`
+          : booking.group_name || 'Unknown';
+
+        proposals.push({
+          booking_id: booking.id,
+          invoice_reference: booking.invoice_reference,
+          invoice_number: invoice.InvoiceNumber,
+          xero_invoice_id: invoice.InvoiceID,
+          customer_name: customerName,
+          tour_name: booking.tours?.name || 'Unknown Tour',
+          current_status: booking.status,
+          proposed_status: newStatus,
+          amount_paid: amountPaid,
+          amount_due: amountDue,
+          total_amount: total,
+          xero_status: invoice.Status,
+          currency_code: invoice.CurrencyCode || 'AUD',
+          last_payment_date: invoice.FullyPaidOnDate || null,
+        });
+      }
+    } catch (err) {
+      console.error(`Error fetching invoice for booking ${booking.id}:`, err);
+    }
+  }
+
+  return { proposals, total_checked: bookings.length };
 }
 
 serve(async (req) => {
@@ -105,8 +171,8 @@ serve(async (req) => {
   const action = url.searchParams.get('action');
 
   try {
-    // Manual sync: fetch invoices from Xero and update bookings
-    if (action === 'sync-invoices') {
+    // Preview mode: fetch proposals without applying
+    if (action === 'preview-invoices') {
       const auth = await getValidAccessToken(supabase);
       if (!auth) {
         return new Response(JSON.stringify({ error: 'Xero not connected or token expired' }), {
@@ -115,145 +181,129 @@ serve(async (req) => {
         });
       }
 
-      // Get all bookings that have an invoice_reference, including tour's instalment_required
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('id, invoice_reference, status, tour_id, tours!bookings_tour_id_fkey(instalment_required)')
-        .not('invoice_reference', 'is', null)
-        .neq('invoice_reference', '');
+      const result = await fetchInvoiceProposals(supabase, auth);
 
-      if (!bookings || bookings.length === 0) {
-        return new Response(JSON.stringify({ message: 'No bookings with invoice references found', synced: 0 }), {
+      return new Response(JSON.stringify({
+        success: true,
+        ...result,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Apply approved changes
+    if (action === 'apply-invoice-changes') {
+      const body = await req.json();
+      const changes: Array<{
+        booking_id: string;
+        new_status: string;
+        xero_invoice_id: string;
+        invoice_number?: string;
+        invoice_reference?: string;
+        amount_paid?: number;
+        amount_due?: number;
+        total_amount?: number;
+        currency_code?: string;
+        xero_status?: string;
+        last_payment_date?: string;
+        current_status?: string;
+      }> = body.changes || [];
+
+      if (changes.length === 0) {
+        return new Response(JSON.stringify({ success: true, applied: 0 }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
 
-      let syncedCount = 0;
-      let errorCount = 0;
-      const results: any[] = [];
+      let applied = 0;
+      let errors = 0;
 
-      for (const booking of bookings) {
+      for (const change of changes) {
         try {
-          // Search Xero for invoice by reference
-          const invoiceResponse = await fetch(
-            `https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${booking.invoice_reference}"`,
-            {
-              headers: {
-                'Authorization': `Bearer ${auth.token}`,
-                'Xero-Tenant-Id': auth.tenantId,
-                'Accept': 'application/json',
-              },
-            }
-          );
-
-          if (!invoiceResponse.ok) {
-            console.error(`Failed to fetch invoice for ref ${booking.invoice_reference}:`, await invoiceResponse.text());
-            errorCount++;
-            continue;
-          }
-
-          const invoiceData = await invoiceResponse.json();
-          const invoices = invoiceData.Invoices || [];
-
-          if (invoices.length === 0) {
-            results.push({ booking_id: booking.id, ref: booking.invoice_reference, status: 'no_match' });
-            continue;
-          }
-
-          const invoice = invoices[0];
-          const amountDue = invoice.AmountDue || 0;
-          const amountPaid = invoice.AmountPaid || 0;
-          const total = invoice.Total || 0;
+          // Update booking status
+          await supabase
+            .from('bookings')
+            .update({ status: change.new_status, updated_at: new Date().toISOString() })
+            .eq('id', change.booking_id);
 
           // Upsert invoice mapping
-          await supabase
-            .from('xero_invoice_mappings')
-            .upsert({
-              booking_id: booking.id,
-              xero_invoice_id: invoice.InvoiceID,
-              xero_invoice_number: invoice.InvoiceNumber,
-              invoice_reference: booking.invoice_reference,
-              amount_due: amountDue,
-              amount_paid: amountPaid,
-              total_amount: total,
-              currency_code: invoice.CurrencyCode || 'AUD',
-              xero_status: invoice.Status,
-              last_payment_date: invoice.FullyPaidOnDate || null,
-              updated_at: new Date().toISOString(),
-            }, { onConflict: 'xero_invoice_id' });
-
-          // Determine if booking status should update
-          const instalmentRequired = !!(booking as any).tours?.instalment_required;
-          const newStatus = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
-          
-          if (newStatus && newStatus !== booking.status) {
-            const oldStatus = booking.status;
-            
-            // Update booking status
+          if (change.xero_invoice_id) {
             await supabase
-              .from('bookings')
-              .update({ status: newStatus, updated_at: new Date().toISOString() })
-              .eq('id', booking.id);
-
-            // Log the sync action
-            await supabase.from('xero_sync_log').insert({
-              sync_type: 'invoice_payment',
-              entity_type: 'invoice',
-              entity_id: invoice.InvoiceID,
-              booking_id: booking.id,
-              action: 'status_updated',
-              old_value: oldStatus,
-              new_value: newStatus,
-              details: {
-                invoice_number: invoice.InvoiceNumber,
-                amount_paid: amountPaid,
-                amount_due: amountDue,
-                total: total,
-                xero_status: invoice.Status,
-              },
-              status: 'success',
-            });
-
-            results.push({ booking_id: booking.id, ref: booking.invoice_reference, old_status: oldStatus, new_status: newStatus });
-            syncedCount++;
-          } else {
-            // Still update the mapping but no status change
-            results.push({ booking_id: booking.id, ref: booking.invoice_reference, status: 'no_change', xero_status: invoice.Status });
+              .from('xero_invoice_mappings')
+              .upsert({
+                booking_id: change.booking_id,
+                xero_invoice_id: change.xero_invoice_id,
+                xero_invoice_number: change.invoice_number,
+                invoice_reference: change.invoice_reference,
+                amount_due: change.amount_due || 0,
+                amount_paid: change.amount_paid || 0,
+                total_amount: change.total_amount || 0,
+                currency_code: change.currency_code || 'AUD',
+                xero_status: change.xero_status,
+                last_payment_date: change.last_payment_date || null,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'xero_invoice_id' });
           }
-        } catch (bookingError) {
-          console.error(`Error processing booking ${booking.id}:`, bookingError);
-          errorCount++;
-          
+
+          // Log the sync action
           await supabase.from('xero_sync_log').insert({
             sync_type: 'invoice_payment',
             entity_type: 'invoice',
-            booking_id: booking.id,
+            entity_id: change.xero_invoice_id,
+            booking_id: change.booking_id,
+            action: 'status_updated',
+            old_value: change.current_status,
+            new_value: change.new_status,
+            details: {
+              invoice_number: change.invoice_number,
+              amount_paid: change.amount_paid,
+              amount_due: change.amount_due,
+              total: change.total_amount,
+              xero_status: change.xero_status,
+              approved_manually: true,
+            },
+            status: 'success',
+          });
+
+          applied++;
+        } catch (err) {
+          console.error(`Error applying change for booking ${change.booking_id}:`, err);
+          errors++;
+
+          await supabase.from('xero_sync_log').insert({
+            sync_type: 'invoice_payment',
+            entity_type: 'invoice',
+            booking_id: change.booking_id,
             action: 'status_updated',
             status: 'failed',
-            error_message: bookingError.message,
+            error_message: err.message,
           });
         }
       }
 
       return new Response(JSON.stringify({
         success: true,
-        message: `Synced ${syncedCount} bookings, ${errorCount} errors`,
-        total_checked: bookings.length,
-        synced: syncedCount,
-        errors: errorCount,
-        results,
+        applied,
+        errors,
+        message: `Applied ${applied} status changes${errors > 0 ? `, ${errors} errors` : ''}`,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Xero webhook handler (for future real-time updates)
+    // Legacy: direct sync (kept for backward compatibility but shouldn't be used)
+    if (action === 'sync-invoices') {
+      return new Response(JSON.stringify({ error: 'Direct sync disabled. Use preview-invoices + apply-invoice-changes instead.' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Xero webhook handler
     if (req.method === 'POST' && !action) {
       const body = await req.json();
       console.log('Xero webhook received:', JSON.stringify(body));
 
-      // Xero webhook validation: respond with intent to receive
-      // When Xero first sets up webhook, it sends a validation request
       await supabase.from('xero_sync_log').insert({
         sync_type: 'webhook',
         entity_type: 'webhook_event',

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link2, Unlink, RefreshCw, Users, FileText, CheckCircle2, XCircle, Clock, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { InvoiceSyncReviewModal } from "./InvoiceSyncReviewModal";
 
 interface XeroSettings {
   id: string;
@@ -24,6 +25,9 @@ export const XeroIntegrationSettings = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncingType, setSyncingType] = useState<string | null>(null);
   const [syncLog, setSyncLog] = useState<any[]>([]);
+  const [invoiceProposals, setInvoiceProposals] = useState<any[]>([]);
+  const [totalChecked, setTotalChecked] = useState(0);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const { toast } = useToast();
 
   const loadSettings = async () => {
@@ -109,7 +113,7 @@ export const XeroIntegrationSettings = () => {
     setSyncingType('invoices');
     try {
       const response = await fetch(
-        `https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/xero-webhook?action=sync-invoices`,
+        `https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/xero-webhook?action=preview-invoices`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -118,20 +122,22 @@ export const XeroIntegrationSettings = () => {
 
       const result = await response.json();
       
-      if (!response.ok) throw new Error(result.error || 'Sync failed');
+      if (!response.ok) throw new Error(result.error || 'Preview failed');
 
-      toast({
-        title: "Invoice Sync Complete",
-        description: result.message,
-      });
-      loadRecentSyncLog();
+      setInvoiceProposals(result.proposals || []);
+      setTotalChecked(result.total_checked || 0);
+      setShowReviewModal(true);
     } catch (error: any) {
-      console.error('Error syncing invoices:', error);
-      toast({ title: "Sync Failed", description: error.message, variant: "destructive" });
+      console.error('Error previewing invoices:', error);
+      toast({ title: "Preview Failed", description: error.message, variant: "destructive" });
     } finally {
       setIsSyncing(false);
       setSyncingType(null);
     }
+  };
+
+  const handleApplyComplete = () => {
+    loadRecentSyncLog();
   };
 
   const handleSyncContacts = async () => {
@@ -256,7 +262,7 @@ export const XeroIntegrationSettings = () => {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Invoice sync matches bookings by their Invoice Reference field. Contact sync imports/updates contacts by email.
+                  Invoice sync fetches changes from Xero and shows a review screen before applying. Contact sync imports new contacts automatically.
                 </p>
               </div>
 
@@ -304,6 +310,14 @@ export const XeroIntegrationSettings = () => {
           </CardContent>
         </Card>
       )}
+
+      <InvoiceSyncReviewModal
+        open={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        proposals={invoiceProposals}
+        totalChecked={totalChecked}
+        onApplyComplete={handleApplyComplete}
+      />
     </div>
   );
 };
