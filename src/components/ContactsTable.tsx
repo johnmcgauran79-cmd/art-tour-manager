@@ -339,23 +339,21 @@ export const ContactsTable = () => {
                 ? "Deleting Contacts..." 
                 : `Delete ${selectedIds.size} Contact${selectedIds.size !== 1 ? 's' : ''}?`}
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              {bulkDeleteMutation.isPending && deleteProgress ? (
-                <div className="space-y-3 pt-2">
-                  <Progress value={(deleteProgress.processed / deleteProgress.total) * 100} className="h-2" />
-                  <div className="text-sm text-muted-foreground">
-                    Processing {deleteProgress.processed} of {deleteProgress.total}
-                    {deleteProgress.deleted > 0 && <span className="text-green-600 ml-2">· {deleteProgress.deleted} deleted</span>}
-                    {deleteProgress.skipped > 0 && <span className="text-amber-600 ml-2">· {deleteProgress.skipped} skipped</span>}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  This will permanently delete {selectedIds.size} selected contact{selectedIds.size !== 1 ? 's' : ''}. 
-                  Contacts with existing bookings will be skipped. This action cannot be undone.
-                </>
-              )}
-            </AlertDialogDescription>
+            {bulkDeleteMutation.isPending && deleteProgress ? (
+              <div className="space-y-3 pt-2">
+                <Progress value={(deleteProgress.processed / deleteProgress.total) * 100} className="h-2" />
+                <p className="text-sm text-muted-foreground">
+                  Processing {deleteProgress.processed} of {deleteProgress.total}
+                  {deleteProgress.deleted > 0 && <span className="text-green-600 ml-2">· {deleteProgress.deleted} deleted</span>}
+                  {deleteProgress.skipped > 0 && <span className="text-amber-600 ml-2">· {deleteProgress.skipped} skipped</span>}
+                </p>
+              </div>
+            ) : (
+              <AlertDialogDescription>
+                This will permanently delete {selectedIds.size} selected contact{selectedIds.size !== 1 ? 's' : ''}. 
+                Contacts with existing bookings will be skipped. This action cannot be undone.
+              </AlertDialogDescription>
+            )}
           </AlertDialogHeader>
           {!bulkDeleteMutation.isPending && (
             <AlertDialogFooter>
