@@ -73,9 +73,26 @@ serve(async (req) => {
       });
     }
 
-    console.log('Fetching contacts from Xero...');
+    // Fetch settings to get last sync time
+    const { data: settings } = await supabase
+      .from('xero_integration_settings')
+      .select('last_contact_sync_at')
+      .eq('id', auth.settingsId)
+      .maybeSingle();
 
-    // Fetch ALL existing customers in bulk for matching (much faster than per-contact queries)
+    // Build date filter - only fetch contacts created since last sync
+    let dateFilter = '';
+    if (settings?.last_contact_sync_at) {
+      // Convert last sync time to UTC for Xero API filter
+      const lastSync = new Date(settings.last_contact_sync_at);
+      const isoDate = lastSync.toISOString().replace('Z', '');
+      dateFilter = ` AND CreatedDateUTC >= DateTime(${lastSync.getFullYear()},${lastSync.getMonth()+1},${lastSync.getDate()},${lastSync.getHours()},${lastSync.getMinutes()},${lastSync.getSeconds()})`;
+      console.log(`Fetching Xero contacts created since ${lastSync.toISOString()}...`);
+    } else {
+      console.log('No previous sync - fetching all Xero contacts...');
+    }
+
+    // Load existing customers for duplicate matching
     const allCustomers: any[] = [];
     let from = 0;
     const batchSize = 1000;
@@ -110,7 +127,7 @@ serve(async (req) => {
 
     while (hasMore) {
       const contactsResponse = await fetch(
-        `https://api.xero.com/api.xro/2.0/Contacts?page=${page}&where=ContactStatus=="ACTIVE"`,
+        `https://api.xero.com/api.xro/2.0/Contacts?page=${page}&where=ContactStatus=="ACTIVE"${dateFilter}`,
         {
           headers: {
             'Authorization': `Bearer ${auth.token}`,
