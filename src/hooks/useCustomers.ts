@@ -458,6 +458,8 @@ export const useBulkDeleteCustomers = (onProgress?: (progress: BulkDeleteProgres
         const id = ids[i];
 
         onProgress?.({ total, processed: i, deleted: results.deleted, skipped: results.skipped });
+        // Yield to UI thread so React can repaint the progress bar
+        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
 
         // Check for bookings (as lead, passenger 2/3, or secondary contact)
         const { data: leadBookings } = await supabase.from('bookings').select('id').eq('lead_passenger_id', id).limit(1);
