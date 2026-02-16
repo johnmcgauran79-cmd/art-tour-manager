@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Utensils, UserPlus, Mail, Bell } from "lucide-react";
+import { Plus, Users, Utensils, UserPlus, Mail, Bell, FileText } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
 import { BulkBookingStatusModal } from "@/components/BulkBookingStatusModal";
 import { BulkDietaryModal } from "@/components/BulkDietaryModal";
@@ -16,6 +16,7 @@ import { useBookings } from "@/hooks/useBookings";
 import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
 import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 import { PaymentStatusModal } from "@/components/PaymentStatusModal";
+import { BulkInvoiceReferenceModal } from "@/components/BulkInvoiceReferenceModal";
 
 interface TourBookingsTabProps {
   tourId: string;
@@ -33,6 +34,7 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
   const [bulkEmailModalOpen, setBulkEmailModalOpen] = useState(false);
   const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);
+  const [invoiceRefModalOpen, setInvoiceRefModalOpen] = useState(false);
   
   const { data: tours } = useTours();
   const { data: allBookings } = useBookings();
@@ -98,6 +100,15 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
               >
                 <Users className="h-4 w-4" />
                 <span className="hidden md:inline">Bulk Status</span>
+              </Button>
+              <Button
+                onClick={() => setInvoiceRefModalOpen(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1.5 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="hidden md:inline">Invoice Ref</span>
               </Button>
               <Button
                 onClick={() => setBulkDietaryModalOpen(true)}
@@ -172,6 +183,12 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
         onOpenChange={setPaymentStatusModalOpen}
         bookings={tourBookings as any}
         activeLevel={activeLevel}
+      />
+
+      <BulkInvoiceReferenceModal
+        open={invoiceRefModalOpen}
+        onOpenChange={setInvoiceRefModalOpen}
+        tourId={tourId}
       />
     </>
   );
