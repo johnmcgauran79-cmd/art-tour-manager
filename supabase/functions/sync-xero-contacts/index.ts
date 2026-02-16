@@ -3,10 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
 
-// Helper: get valid access token, refreshing if needed
 async function getValidAccessToken(supabase: any): Promise<{ token: string; tenantId: string; settingsId: string } | null> {
   const { data: settings } = await supabase
     .from('xero_integration_settings')
@@ -76,10 +75,35 @@ serve(async (req) => {
 
     console.log('Fetching contacts from Xero...');
 
-    // Fetch contacts from Xero (paginated, up to 100 at a time)
+    // Fetch ALL existing customers in bulk for matching (much faster than per-contact queries)
+    const allCustomers: any[] = [];
+    let from = 0;
+    const batchSize = 1000;
+    while (true) {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id, email, first_name, last_name')
+        .range(from, from + batchSize - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      allCustomers.push(...data);
+      if (data.length < batchSize) break;
+      from += batchSize;
+    }
+    console.log(`Loaded ${allCustomers.length} existing customers for matching`);
+
+    // Build lookup maps
+    const emailMap = new Map<string, any>();
+    const nameMap = new Map<string, any>();
+    for (const c of allCustomers) {
+      if (c.email) emailMap.set(c.email.toLowerCase(), c);
+      if (c.first_name && c.last_name) {
+        nameMap.set(`${c.first_name.toLowerCase()}|${c.last_name.toLowerCase()}`, c);
+      }
+    }
+
     let page = 1;
     let totalCreated = 0;
-    let totalUpdated = 0;
     let totalSkipped = 0;
     let totalErrors = 0;
     let hasMore = true;
@@ -110,113 +134,102 @@ serve(async (req) => {
         break;
       }
 
+      // Process contacts in this page - collect new ones for batch insert
+      const toInsert: any[] = [];
+      const insertMeta: any[] = []; // parallel array for sync log
+
       for (const xeroContact of xeroContacts) {
         try {
           const email = xeroContact.EmailAddress?.trim() || null;
           const firstName = xeroContact.FirstName || xeroContact.Name?.split(' ')[0] || '';
           const lastName = xeroContact.LastName || xeroContact.Name?.split(' ').slice(1).join(' ') || '';
           
-          // Skip contacts without a name
           if (!firstName && !lastName) {
             totalSkipped++;
             continue;
           }
 
-          // Extract phone number
-          let phone = null;
-          if (xeroContact.Phones?.length > 0) {
-            const mobilePhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'MOBILE');
-            const defaultPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DEFAULT');
-            const phoneObj = mobilePhone || defaultPhone;
-            if (phoneObj?.PhoneNumber) {
-              phone = phoneObj.PhoneCountryCode 
-                ? `+${phoneObj.PhoneCountryCode}${phoneObj.PhoneAreaCode || ''}${phoneObj.PhoneNumber}`
-                : phoneObj.PhoneNumber;
-            }
+          // Check existing via in-memory maps
+          let exists = false;
+          if (email && emailMap.has(email.toLowerCase())) {
+            exists = true;
+          } else if (firstName && lastName && nameMap.has(`${firstName.toLowerCase()}|${lastName.toLowerCase()}`)) {
+            exists = true;
           }
 
-          // Extract address
-          let city = null, state = null, country = null;
-          if (xeroContact.Addresses?.length > 0) {
-            const addr = xeroContact.Addresses.find((a: any) => a.AddressType === 'STREET') || xeroContact.Addresses[0];
-            city = addr.City || null;
-            state = addr.Region || null;
-            country = addr.Country || null;
-          }
-
-          // Check if contact exists - first by email, then by name
-          let existingContact = null;
-          if (email) {
-            const { data } = await supabase
-              .from('customers')
-              .select('id')
-              .eq('email', email)
-              .maybeSingle();
-            existingContact = data;
-          }
-          
-          // Fallback: match by first + last name if no email match
-          if (!existingContact && firstName && lastName) {
-            const { data } = await supabase
-              .from('customers')
-              .select('id')
-              .ilike('first_name', firstName)
-              .ilike('last_name', lastName)
-              .maybeSingle();
-            existingContact = data;
-          }
-
-          if (existingContact) {
-            // Skip existing contacts - we only import new ones
+          if (exists) {
             totalSkipped++;
           } else if (firstName && lastName) {
-            // Create new contact - use null for empty email to avoid unique constraint
-            const { data: newContact, error: insertError } = await supabase
-              .from('customers')
-              .insert({
-                first_name: firstName,
-                last_name: lastName,
-                email: email || null,
-                phone,
-                city,
-                state,
-                country,
-              })
-              .select('id')
-              .single();
+            let phone = null;
+            if (xeroContact.Phones?.length > 0) {
+              const mobilePhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'MOBILE');
+              const defaultPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DEFAULT');
+              const phoneObj = mobilePhone || defaultPhone;
+              if (phoneObj?.PhoneNumber) {
+                phone = phoneObj.PhoneCountryCode 
+                  ? `+${phoneObj.PhoneCountryCode}${phoneObj.PhoneAreaCode || ''}${phoneObj.PhoneNumber}`
+                  : phoneObj.PhoneNumber;
+              }
+            }
 
-            if (insertError) throw insertError;
+            let city = null, state = null, country = null;
+            if (xeroContact.Addresses?.length > 0) {
+              const addr = xeroContact.Addresses.find((a: any) => a.AddressType === 'STREET') || xeroContact.Addresses[0];
+              city = addr.City || null;
+              state = addr.Region || null;
+              country = addr.Country || null;
+            }
 
-            await supabase.from('xero_sync_log').insert({
-              sync_type: 'contact_sync',
-              entity_type: 'contact',
-              entity_id: xeroContact.ContactID,
-              customer_id: newContact.id,
-              action: 'contact_created',
-              details: { xero_name: xeroContact.Name, email },
-              status: 'success',
+            toInsert.push({
+              first_name: firstName,
+              last_name: lastName,
+              email: email || null,
+              phone,
+              city,
+              state,
+              country,
             });
+            insertMeta.push({ contactId: xeroContact.ContactID, name: xeroContact.Name, email });
 
-            totalCreated++;
+            // Add to maps so duplicates within same sync are caught
+            if (email) emailMap.set(email.toLowerCase(), { id: 'pending' });
+            nameMap.set(`${firstName.toLowerCase()}|${lastName.toLowerCase()}`, { id: 'pending' });
           } else {
             totalSkipped++;
           }
         } catch (contactError) {
           console.error('Error processing Xero contact:', xeroContact.Name, contactError);
           totalErrors++;
-          
-          await supabase.from('xero_sync_log').insert({
-            sync_type: 'contact_sync',
-            entity_type: 'contact',
-            entity_id: xeroContact.ContactID,
-            action: 'contact_sync_failed',
-            status: 'failed',
-            error_message: contactError.message,
-          });
         }
       }
 
-      // Xero returns 100 contacts per page
+      // Batch insert new contacts
+      if (toInsert.length > 0) {
+        const { data: inserted, error: insertError } = await supabase
+          .from('customers')
+          .insert(toInsert)
+          .select('id');
+
+        if (insertError) {
+          console.error('Batch insert error:', insertError);
+          totalErrors += toInsert.length;
+        } else if (inserted) {
+          totalCreated += inserted.length;
+
+          // Batch insert sync logs
+          const syncLogs = inserted.map((row: any, idx: number) => ({
+            sync_type: 'contact_sync',
+            entity_type: 'contact',
+            entity_id: insertMeta[idx].contactId,
+            customer_id: row.id,
+            action: 'contact_created',
+            details: { xero_name: insertMeta[idx].name, email: insertMeta[idx].email },
+            status: 'success',
+          }));
+          await supabase.from('xero_sync_log').insert(syncLogs);
+        }
+      }
+
       if (xeroContacts.length < 100) {
         hasMore = false;
       } else {
@@ -232,9 +245,8 @@ serve(async (req) => {
 
     const response = {
       success: true,
-      message: `Contact sync complete: ${totalCreated} created, ${totalUpdated} updated, ${totalSkipped} skipped, ${totalErrors} errors`,
+      message: `Contact sync complete: ${totalCreated} created, ${totalSkipped} skipped, ${totalErrors} errors`,
       created: totalCreated,
-      updated: totalUpdated,
       skipped: totalSkipped,
       errors: totalErrors,
     };
