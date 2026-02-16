@@ -68,6 +68,7 @@ export default function BookingEdit() {
     status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'complimentary' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice',
     extra_requests: '',
     invoice_notes: '',
+    invoice_reference: '',
     accommodation_required: true,
     check_in_date: '',
     check_out_date: '',
@@ -117,6 +118,7 @@ export default function BookingEdit() {
         status: booking.status,
         extra_requests: booking.extra_requests || '',
         invoice_notes: booking.invoice_notes || '',
+        invoice_reference: booking.invoice_reference || '',
         accommodation_required: booking.accommodation_required || false,
         check_in_date: booking.check_in_date || '',
         check_out_date: booking.check_out_date || '',
@@ -279,6 +281,7 @@ export default function BookingEdit() {
       status: formData.status,
       extra_requests: formData.extra_requests,
       invoice_notes: formData.invoice_notes,
+      invoice_reference: formData.invoice_reference || null,
       accommodation_required: formData.accommodation_required,
       check_in_date: formData.check_in_date,
       check_out_date: formData.check_out_date,
@@ -724,6 +727,16 @@ export default function BookingEdit() {
                   id="extra_requests"
                   value={formData.extra_requests}
                   onChange={(e) => setFormData(prev => ({ ...prev, extra_requests: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="invoice_reference">Invoice Reference (Xero)</Label>
+                <Input
+                  id="invoice_reference"
+                  value={formData.invoice_reference || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, invoice_reference: e.target.value }))}
+                  placeholder="e.g. INV-001234"
                 />
               </div>
 
