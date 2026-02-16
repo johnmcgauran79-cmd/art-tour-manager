@@ -9,6 +9,7 @@ import { Link2, Unlink, RefreshCw, Users, FileText, CheckCircle2, XCircle, Clock
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceSyncReviewModal } from "./InvoiceSyncReviewModal";
+import { PhoneSyncReviewModal } from "./PhoneSyncReviewModal";
 
 interface XeroSettings {
   id: string;
@@ -28,6 +29,9 @@ export const XeroIntegrationSettings = () => {
   const [invoiceProposals, setInvoiceProposals] = useState<any[]>([]);
   const [totalChecked, setTotalChecked] = useState(0);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [phoneProposals, setPhoneProposals] = useState<any[]>([]);
+  const [phoneTotalChecked, setPhoneTotalChecked] = useState(0);
+  const [showPhoneReviewModal, setShowPhoneReviewModal] = useState(false);
   const { toast } = useToast();
 
   const loadSettings = async () => {
@@ -171,6 +175,34 @@ export const XeroIntegrationSettings = () => {
     }
   };
 
+  const handleSyncPhones = async () => {
+    setIsSyncing(true);
+    setSyncingType('phones');
+    try {
+      const response = await fetch(
+        `https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/sync-xero-phones`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'preview' }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Preview failed');
+
+      setPhoneProposals(result.proposals || []);
+      setPhoneTotalChecked(result.total_checked || 0);
+      setShowPhoneReviewModal(true);
+    } catch (error: any) {
+      console.error('Error previewing phones:', error);
+      toast({ title: "Preview Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSyncing(false);
+      setSyncingType(null);
+    }
+  };
+
   if (isLoading) {
     return <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Loading Xero settings...</div>;
   }
@@ -235,7 +267,7 @@ export const XeroIntegrationSettings = () => {
               {/* Sync Actions */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Sync Actions</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Button
                     variant="outline"
                     onClick={handleSyncInvoices}
@@ -260,9 +292,21 @@ export const XeroIntegrationSettings = () => {
                     )}
                     Sync Contacts from Xero
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleSyncPhones}
+                    disabled={isSyncing}
+                  >
+                    {syncingType === 'phones' ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Sync Phone Numbers
+                  </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Invoice sync fetches changes from Xero and shows a review screen before applying. Contact sync imports new contacts automatically.
+                  Invoice sync fetches changes from Xero and shows a review screen before applying. Contact sync imports new contacts automatically. Phone sync compares and updates phone numbers.
                 </p>
               </div>
 
@@ -317,6 +361,14 @@ export const XeroIntegrationSettings = () => {
         proposals={invoiceProposals}
         totalChecked={totalChecked}
         onApplyComplete={handleApplyComplete}
+      />
+
+      <PhoneSyncReviewModal
+        open={showPhoneReviewModal}
+        onClose={() => setShowPhoneReviewModal(false)}
+        proposals={phoneProposals}
+        totalChecked={phoneTotalChecked}
+        onApplyComplete={() => loadRecentSyncLog()}
       />
     </div>
   );

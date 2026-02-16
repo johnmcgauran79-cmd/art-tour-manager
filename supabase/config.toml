@@ -104,3 +104,6 @@ verify_jwt = false
 
 [functions.sync-xero-contacts]
 verify_jwt = false
+
+[functions.sync-xero-phones]
+verify_jwt = false
