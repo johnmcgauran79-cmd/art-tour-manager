@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Plus, Search, ChevronLeft, ChevronRight, Upload, Download, Trash2 } from "lucide-react";
-import { useCustomers, useDeleteCustomer, useBulkDeleteCustomers } from "@/hooks/useCustomers";
+import { useCustomers, useDeleteCustomer, useBulkDeleteCustomers, BulkDeleteProgress } from "@/hooks/useCustomers";
 import { ContactTableRow } from "./ContactTableRow";
 import { AddContactModal } from "./AddContactModal";
 import { ContactExportModal } from "./ContactExportModal";
@@ -36,6 +37,7 @@ export const ContactsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteProgress, setDeleteProgress] = useState<BulkDeleteProgress | null>(null);
   const pageSize = 50;
 
   const isAdmin = userRole === 'admin';
@@ -54,7 +56,8 @@ export const ContactsTable = () => {
     isLoading
   } = useCustomers(currentPage, pageSize, debouncedSearch);
   const deleteCustomerMutation = useDeleteCustomer();
-  const bulkDeleteMutation = useBulkDeleteCustomers();
+  const handleProgress = useCallback((p: BulkDeleteProgress) => setDeleteProgress(p), []);
+  const bulkDeleteMutation = useBulkDeleteCustomers(handleProgress);
 
   const customers = customersData?.customers || [];
   const totalCount = customersData?.totalCount || 0;
@@ -91,10 +94,12 @@ export const ContactsTable = () => {
   };
 
   const handleBulkDelete = () => {
+    setDeleteProgress({ total: selectedIds.size, processed: 0, deleted: 0, skipped: 0 });
     bulkDeleteMutation.mutate(Array.from(selectedIds), {
       onSuccess: () => {
         setSelectedIds(new Set());
         setShowDeleteConfirm(false);
+        setDeleteProgress(null);
       },
     });
   };
@@ -321,25 +326,48 @@ export const ContactsTable = () => {
       </Card>
 
       {/* Bulk Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+      <AlertDialog open={showDeleteConfirm} onOpenChange={(open) => {
+        if (!bulkDeleteMutation.isPending) {
+          setShowDeleteConfirm(open);
+          if (!open) setDeleteProgress(null);
+        }
+      }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedIds.size} Contact{selectedIds.size !== 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {bulkDeleteMutation.isPending 
+                ? "Deleting Contacts..." 
+                : `Delete ${selectedIds.size} Contact${selectedIds.size !== 1 ? 's' : ''}?`}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {selectedIds.size} selected contact{selectedIds.size !== 1 ? 's' : ''}. 
-              Contacts with existing bookings will be skipped. This action cannot be undone.
+              {bulkDeleteMutation.isPending && deleteProgress ? (
+                <div className="space-y-3 pt-2">
+                  <Progress value={(deleteProgress.processed / deleteProgress.total) * 100} className="h-2" />
+                  <div className="text-sm text-muted-foreground">
+                    Processing {deleteProgress.processed} of {deleteProgress.total}
+                    {deleteProgress.deleted > 0 && <span className="text-green-600 ml-2">· {deleteProgress.deleted} deleted</span>}
+                    {deleteProgress.skipped > 0 && <span className="text-amber-600 ml-2">· {deleteProgress.skipped} skipped</span>}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  This will permanently delete {selectedIds.size} selected contact{selectedIds.size !== 1 ? 's' : ''}. 
+                  Contacts with existing bookings will be skipped. This action cannot be undone.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleBulkDelete}
-              disabled={bulkDeleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {bulkDeleteMutation.isPending ? "Deleting..." : `Delete ${selectedIds.size} Contact${selectedIds.size !== 1 ? 's' : ''}`}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {!bulkDeleteMutation.isPending && (
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleBulkDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete {selectedIds.size} Contact{selectedIds.size !== 1 ? 's' : ''}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          )}
         </AlertDialogContent>
       </AlertDialog>
 
