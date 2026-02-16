@@ -438,15 +438,27 @@ export const useDeleteCustomer = () => {
   });
 };
 
-export const useBulkDeleteCustomers = () => {
+export interface BulkDeleteProgress {
+  total: number;
+  processed: number;
+  deleted: number;
+  skipped: number;
+}
+
+export const useBulkDeleteCustomers = (onProgress?: (progress: BulkDeleteProgress) => void) => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (ids: string[]) => {
       const results = { deleted: 0, skipped: 0, errors: [] as string[] };
+      const total = ids.length;
 
-      for (const id of ids) {
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+
+        onProgress?.({ total, processed: i, deleted: results.deleted, skipped: results.skipped });
+
         // Check for bookings (as lead, passenger 2/3, or secondary contact)
         const { data: leadBookings } = await supabase.from('bookings').select('id').eq('lead_passenger_id', id).limit(1);
         const { data: p2Bookings } = await supabase.from('bookings').select('id').eq('passenger_2_id', id).limit(1);
@@ -479,6 +491,7 @@ export const useBulkDeleteCustomers = () => {
         }
       }
 
+      onProgress?.({ total, processed: total, deleted: results.deleted, skipped: results.skipped });
       return results;
     },
     onSuccess: (results) => {
