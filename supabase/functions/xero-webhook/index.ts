@@ -82,6 +82,27 @@ function mapXeroStatusToBookingStatus(
   return null;
 }
 
+// Pick the best invoice when multiple match the same Reference
+function pickBestInvoice(invoices: any[]): any {
+  if (invoices.length === 1) return invoices[0];
+  
+  // Priority: PAID > AUTHORISED > SUBMITTED > DRAFT, then newest Date
+  const statusPriority: Record<string, number> = {
+    'PAID': 4,
+    'AUTHORISED': 3,
+    'SUBMITTED': 2,
+    'DRAFT': 1,
+  };
+  
+  return invoices.sort((a, b) => {
+    const aPriority = statusPriority[a.Status] || 0;
+    const bPriority = statusPriority[b.Status] || 0;
+    if (aPriority !== bPriority) return bPriority - aPriority;
+    // Tie-break by Date descending
+    return new Date(b.Date || 0).getTime() - new Date(a.Date || 0).getTime();
+  })[0];
+}
+
 // Fetch invoice data from Xero for all bookings with invoice references
 async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenantId: string }) {
   const { data: bookings } = await supabase
@@ -119,7 +140,12 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
       if (invoices.length === 0) continue;
 
-      const invoice = invoices[0];
+      // Handle multiple matches: pick best invoice by status priority then date
+      if (invoices.length > 1) {
+        console.warn(`Multiple invoices (${invoices.length}) found for Reference "${booking.invoice_reference}" — using best match`);
+      }
+      const invoice = pickBestInvoice(invoices);
+      
       const amountDue = invoice.AmountDue || 0;
       const amountPaid = invoice.AmountPaid || 0;
       const total = invoice.Total || 0;
@@ -135,7 +161,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         proposals.push({
           booking_id: booking.id,
           invoice_reference: booking.invoice_reference,
-          invoice_number: invoice.InvoiceNumber,
+          invoice_number: invoice.InvoiceNumber || '',
           xero_invoice_id: invoice.InvoiceID,
           customer_name: customerName,
           tour_name: booking.tours?.name || 'Unknown Tour',
@@ -147,6 +173,8 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
           xero_status: invoice.Status,
           currency_code: invoice.CurrencyCode || 'AUD',
           last_payment_date: invoice.FullyPaidOnDate || null,
+          multiple_matches: invoices.length > 1,
+          matches_count: invoices.length,
         });
       }
     } catch (err) {

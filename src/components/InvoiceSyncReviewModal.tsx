@@ -214,7 +214,7 @@ export const InvoiceSyncReviewModal = ({
                         <div className="text-xs text-muted-foreground">{item.tour_name}</div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-sm">{item.invoice_reference ? `INV-${item.invoice_reference}` : '—'}</div>
+                        <div className="text-sm">{item.invoice_reference || '—'}</div>
                         <div className="text-xs text-muted-foreground">{item.invoice_number}</div>
                       </TableCell>
                       <TableCell>

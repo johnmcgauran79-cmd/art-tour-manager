@@ -41,8 +41,7 @@ export const BulkInvoiceReferenceModal = ({ open, onOpenChange, tourId }: BulkIn
         const name = `${(b as any).customers?.first_name || ''} ${(b as any).customers?.last_name || ''}`.toLowerCase();
         const tour = ((b as any).tours?.name || '').toLowerCase();
         const ref = (b.invoice_reference || '').toLowerCase();
-        const refFormatted = ref ? `inv-${ref}` : '';
-        return name.includes(q) || tour.includes(q) || ref.includes(q) || refFormatted.includes(q);
+        return name.includes(q) || tour.includes(q) || ref.includes(q);
       });
     }
 
@@ -160,7 +159,6 @@ export const BulkInvoiceReferenceModal = ({ open, onOpenChange, tourId }: BulkIn
                     </TableCell>
                     <TableCell>
                       <Input
-                        type="number"
                         value={getCurrentRef(booking)}
                         onChange={(e) => handleRefChange(booking.id, e.target.value)}
                         placeholder="e.g. 1234"

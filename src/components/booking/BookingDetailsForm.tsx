@@ -266,13 +266,12 @@ export const BookingDetailsForm = ({
         </div>
         
         <div>
-          <Label htmlFor="invoice_reference">Invoice Reference Number</Label>
+          <Label htmlFor="invoice_reference">Invoice Reference (Xero)</Label>
           <Input
             id="invoice_reference"
-            type="number"
             value={formData.invoice_reference || ''}
             onChange={(e) => setFormData('invoice_reference', e.target.value)}
-            placeholder="e.g. 1234"
+            placeholder="e.g. 1234 or INV-1234"
           />
         </div>
 
