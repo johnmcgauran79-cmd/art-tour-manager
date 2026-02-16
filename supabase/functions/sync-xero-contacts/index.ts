@@ -80,17 +80,10 @@ serve(async (req) => {
       .eq('id', auth.settingsId)
       .maybeSingle();
 
-    // Build date filter - only fetch contacts created since last sync
-    let dateFilter = '';
-    if (settings?.last_contact_sync_at) {
-      // Convert last sync time to UTC for Xero API filter
-      const lastSync = new Date(settings.last_contact_sync_at);
-      const isoDate = lastSync.toISOString().replace('Z', '');
-      dateFilter = ` AND CreatedDateUTC >= DateTime(${lastSync.getFullYear()},${lastSync.getMonth()+1},${lastSync.getDate()},${lastSync.getHours()},${lastSync.getMinutes()},${lastSync.getSeconds()})`;
-      console.log(`Fetching Xero contacts created since ${lastSync.toISOString()}...`);
-    } else {
-      console.log('No previous sync - fetching all Xero contacts...');
-    }
+    // Note: Xero doesn't support filtering contacts by CreatedDateUTC.
+    // We fetch all active contacts and rely on in-memory dedup to skip existing ones.
+    const dateFilter = '';
+    console.log('Fetching all active Xero contacts (dedup handled in-memory)...');
 
     // Load existing customers for duplicate matching
     const allCustomers: any[] = [];
