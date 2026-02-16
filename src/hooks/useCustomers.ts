@@ -438,6 +438,65 @@ export const useDeleteCustomer = () => {
   });
 };
 
+export const useBulkDeleteCustomers = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = { deleted: 0, skipped: 0, errors: [] as string[] };
+
+      for (const id of ids) {
+        // Check for bookings
+        const { data: bookings } = await supabase
+          .from('bookings')
+          .select('id')
+          .or(`lead_passenger_id.eq.${id},passenger_2_id.eq.${id},passenger_3_id.eq.${id},secondary_contact_id.eq.${id}`)
+          .limit(1);
+
+        if (bookings && bookings.length > 0) {
+          results.skipped++;
+          const { data: cust } = await supabase.from('customers').select('first_name, last_name').eq('id', id).single();
+          results.errors.push(`${cust?.first_name} ${cust?.last_name} has bookings`);
+          continue;
+        }
+
+        const { error } = await supabase.from('customers').delete().eq('id', id);
+        if (error) {
+          results.skipped++;
+          results.errors.push(error.message);
+        } else {
+          results.deleted++;
+        }
+      }
+
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.removeQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      
+      let description = `${results.deleted} contact(s) deleted.`;
+      if (results.skipped > 0) {
+        description += ` ${results.skipped} skipped (have bookings or errors).`;
+      }
+      
+      toast({
+        title: "Bulk Delete Complete",
+        description,
+        variant: results.skipped > 0 ? "destructive" : "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Bulk Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 // New mutation to merge duplicate contacts
 export const useMergeDuplicateContacts = () => {
   const queryClient = useQueryClient();
