@@ -179,13 +179,19 @@ serve(async (req) => {
           } else if (firstName && lastName) {
             let phone = null;
             if (xeroContact.Phones?.length > 0) {
+              // Check all useful phone types in priority order
               const mobilePhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'MOBILE');
               const defaultPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DEFAULT');
-              const phoneObj = mobilePhone || defaultPhone;
-              if (phoneObj?.PhoneNumber) {
-                phone = phoneObj.PhoneCountryCode 
-                  ? `+${phoneObj.PhoneCountryCode}${phoneObj.PhoneAreaCode || ''}${phoneObj.PhoneNumber}`
-                  : phoneObj.PhoneNumber;
+              const ddiPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DDI');
+              const phoneObj = mobilePhone || defaultPhone || ddiPhone;
+              // Build phone from parts - Xero splits into CountryCode, AreaCode, PhoneNumber
+              if (phoneObj && (phoneObj.PhoneNumber || phoneObj.PhoneAreaCode)) {
+                const parts = [
+                  phoneObj.PhoneCountryCode ? `+${phoneObj.PhoneCountryCode}` : '',
+                  phoneObj.PhoneAreaCode || '',
+                  phoneObj.PhoneNumber || '',
+                ].filter(Boolean).join('');
+                if (parts) phone = parts;
               }
             }
 
