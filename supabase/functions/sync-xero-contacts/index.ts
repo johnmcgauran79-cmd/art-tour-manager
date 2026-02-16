@@ -172,17 +172,19 @@ serve(async (req) => {
           } else if (firstName && lastName) {
             let phone = null;
             if (xeroContact.Phones?.length > 0) {
-              // Check all useful phone types in priority order
-              const mobilePhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'MOBILE');
-              const defaultPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DEFAULT');
-              const ddiPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DDI');
-              const phoneObj = mobilePhone || defaultPhone || ddiPhone;
-              // Build phone from parts - Xero splits into CountryCode, AreaCode, PhoneNumber
-              if (phoneObj && (phoneObj.PhoneNumber || phoneObj.PhoneAreaCode)) {
+              // Filter to phones that actually have data, then prioritize
+              const phonesWithData = xeroContact.Phones.filter((p: any) =>
+                p.PhoneNumber?.trim() || p.PhoneAreaCode?.trim()
+              );
+              if (phonesWithData.length > 0) {
+                const mobilePhone = phonesWithData.find((p: any) => p.PhoneType === 'MOBILE');
+                const defaultPhone = phonesWithData.find((p: any) => p.PhoneType === 'DEFAULT');
+                const ddiPhone = phonesWithData.find((p: any) => p.PhoneType === 'DDI');
+                const phoneObj = mobilePhone || defaultPhone || ddiPhone || phonesWithData[0];
                 const parts = [
-                  phoneObj.PhoneCountryCode ? `+${phoneObj.PhoneCountryCode}` : '',
-                  phoneObj.PhoneAreaCode || '',
-                  phoneObj.PhoneNumber || '',
+                  phoneObj.PhoneCountryCode?.trim() ? `+${phoneObj.PhoneCountryCode.trim()}` : '',
+                  phoneObj.PhoneAreaCode?.trim() || '',
+                  phoneObj.PhoneNumber?.trim() || '',
                 ].filter(Boolean).join('');
                 if (parts) phone = parts;
               }
