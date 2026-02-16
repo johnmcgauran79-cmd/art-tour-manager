@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, TrendingUp } from "lucide-react";
+import { Plus, Search, TrendingUp, FileText } from "lucide-react";
 import { useBookings, useFilterCounts } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
@@ -15,6 +15,7 @@ import { BookingCard } from "@/components/cards/BookingCard";
 import { ViewToggle } from "@/components/ViewToggle";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
+import { BulkInvoiceReferenceModal } from "@/components/BulkInvoiceReferenceModal";
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -28,6 +29,7 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const [view, setView] = useState<'grid' | 'table'>('table');
   const { data: allBookings = [], isLoading } = useBookings();
   const { isViewOnly, hasEditAccess } = usePermissions();
+  const [invoiceRefModalOpen, setInvoiceRefModalOpen] = useState(false);
   const { data: filterCounts } = useFilterCounts();
   
   // Calculate combined count for deposits owing and final payments due
@@ -120,6 +122,20 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                       {statusUpdateCount}
                     </Badge>
                   )}
+                </PermissionButton>
+              )}
+              {!isViewOnly && (
+                <PermissionButton
+                  resource="booking"
+                  action="edit"
+                  onClick={() => setInvoiceRefModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5 text-xs sm:text-sm"
+                >
+                  <FileText className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline">Update Invoice</span>
+                  <span className="sm:hidden">Invoice</span>
                 </PermissionButton>
               )}
               {!isViewOnly && (
@@ -260,6 +276,11 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
           )}
         </CardContent>
       </Card>
+
+      <BulkInvoiceReferenceModal
+        open={invoiceRefModalOpen}
+        onOpenChange={setInvoiceRefModalOpen}
+      />
     </>
   );
 };
