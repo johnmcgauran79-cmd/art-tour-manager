@@ -358,12 +358,12 @@ export const ContactsTable = () => {
           {!bulkDeleteMutation.isPending && (
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
+              <Button
                 onClick={handleBulkDelete}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
                 Delete {selectedIds.size} Contact{selectedIds.size !== 1 ? 's' : ''}
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           )}
         </AlertDialogContent>
