@@ -6,7 +6,7 @@ import { Settings, Database, Mail, Shield, Users, FileText, Upload } from "lucid
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
-import { CRMIntegrationSettings } from "./CRMIntegrationSettings";
+
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 
 interface SystemSettingsProps {
@@ -175,11 +175,6 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
         </div>
       </div>
 
-      {/* CRM Integration Settings */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">CRM Integration</h2>
-        <CRMIntegrationSettings />
-      </div>
 
       {/* System Status */}
       <Card>

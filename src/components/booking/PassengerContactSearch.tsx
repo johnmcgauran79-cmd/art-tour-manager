@@ -113,8 +113,6 @@ export const PassengerContactSearch = ({
         spouse_name: null,
         dietary_requirements: null,
         notes: null,
-        crm_id: null,
-        last_synced_at: null,
         emergency_contact_name: null,
         emergency_contact_phone: null,
         emergency_contact_relationship: null,

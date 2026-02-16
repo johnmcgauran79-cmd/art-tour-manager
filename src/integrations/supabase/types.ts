@@ -869,86 +869,6 @@ export type Database = {
         }
         Relationships: []
       }
-      crm_integration_settings: {
-        Row: {
-          api_key_configured: boolean
-          created_at: string
-          error_message: string | null
-          id: string
-          is_enabled: boolean
-          last_sync_at: string | null
-          provider_name: string
-          settings: Json | null
-          sync_status: string | null
-          updated_at: string
-          webhook_url: string | null
-        }
-        Insert: {
-          api_key_configured?: boolean
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          is_enabled?: boolean
-          last_sync_at?: string | null
-          provider_name?: string
-          settings?: Json | null
-          sync_status?: string | null
-          updated_at?: string
-          webhook_url?: string | null
-        }
-        Update: {
-          api_key_configured?: boolean
-          created_at?: string
-          error_message?: string | null
-          id?: string
-          is_enabled?: boolean
-          last_sync_at?: string | null
-          provider_name?: string
-          settings?: Json | null
-          sync_status?: string | null
-          updated_at?: string
-          webhook_url?: string | null
-        }
-        Relationships: []
-      }
-      crm_sync_log: {
-        Row: {
-          contact_id: string | null
-          created_at: string | null
-          crm_contact_id: string | null
-          error_message: string | null
-          id: string
-          sync_action: string | null
-          sync_status: string | null
-        }
-        Insert: {
-          contact_id?: string | null
-          created_at?: string | null
-          crm_contact_id?: string | null
-          error_message?: string | null
-          id?: string
-          sync_action?: string | null
-          sync_status?: string | null
-        }
-        Update: {
-          contact_id?: string | null
-          created_at?: string | null
-          crm_contact_id?: string | null
-          error_message?: string | null
-          id?: string
-          sync_action?: string | null
-          sync_status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "crm_sync_log_contact_id_fkey"
-            columns: ["contact_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       customer_access_tokens: {
         Row: {
           booking_id: string | null
@@ -1055,7 +975,6 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
-          crm_id: string | null
           dietary_requirements: string | null
           email: string | null
           emergency_contact_email: string | null
@@ -1065,7 +984,6 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
-          last_synced_at: string | null
           medical_conditions: string | null
           notes: string | null
           phone: string | null
@@ -1080,7 +998,6 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
-          crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
           emergency_contact_email?: string | null
@@ -1090,7 +1007,6 @@ export type Database = {
           first_name: string
           id?: string
           last_name: string
-          last_synced_at?: string | null
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null
@@ -1105,7 +1021,6 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
-          crm_id?: string | null
           dietary_requirements?: string | null
           email?: string | null
           emergency_contact_email?: string | null
@@ -1115,7 +1030,6 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
-          last_synced_at?: string | null
           medical_conditions?: string | null
           notes?: string | null
           phone?: string | null

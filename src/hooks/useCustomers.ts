@@ -17,8 +17,6 @@ export interface Customer {
   spouse_name: string | null;
   dietary_requirements: string | null;
   notes: string | null;
-  crm_id: string | null;
-  last_synced_at: string | null;
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relationship: string | null;
@@ -59,7 +57,7 @@ const mergeContactData = (contacts: Customer[]): Customer => {
     if (!merged.country && contact.country) merged.country = contact.country;
     if (!merged.spouse_name && contact.spouse_name) merged.spouse_name = contact.spouse_name;
     if (!merged.dietary_requirements && contact.dietary_requirements) merged.dietary_requirements = contact.dietary_requirements;
-    if (!merged.crm_id && contact.crm_id) merged.crm_id = contact.crm_id;
+    
     
     // For notes, concatenate if both exist
     if (contact.notes && contact.notes !== merged.notes) {
@@ -483,7 +481,7 @@ export const useMergeDuplicateContacts = () => {
             spouse_name: mergedContact.spouse_name,
             dietary_requirements: mergedContact.dietary_requirements,
             notes: mergedContact.notes,
-            crm_id: mergedContact.crm_id,
+            
             updated_at: new Date().toISOString()
           })
           .eq('id', primaryContact.id);
