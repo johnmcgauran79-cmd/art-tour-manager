@@ -54,19 +54,87 @@ async function getValidAccessToken(supabase: any): Promise<{ token: string; tena
   return { token: settings.access_token, tenantId: settings.tenant_id, settingsId: settings.id };
 }
 
+/** Normalize a phone number to digits only (strip +, spaces, dashes, parens) */
+function normalizePhone(phone: string | null): string {
+  if (!phone) return '';
+  return phone.replace(/[^\d]/g, '');
+}
+
+/** Check if two phone numbers are effectively the same */
+function phonesMatch(a: string | null, b: string | null): boolean {
+  const na = normalizePhone(a);
+  const nb = normalizePhone(b);
+  if (!na || !nb) return false;
+  // Check if one ends with the other (handles country code differences)
+  // e.g. "61417866194" ends with "417866194", or "0417866194" vs "417866194"
+  if (na === nb) return true;
+  if (na.endsWith(nb) || nb.endsWith(na)) return true;
+  // Strip leading 0 and compare
+  const sa = na.replace(/^0+/, '');
+  const sb = nb.replace(/^0+/, '');
+  if (sa === sb) return true;
+  // Strip country code 61 and compare
+  const stripAu = (n: string) => n.startsWith('61') ? n.substring(2) : n;
+  if (stripAu(sa) === stripAu(sb)) return true;
+  return false;
+}
+
 function extractPhone(xeroContact: any): string | null {
   if (!xeroContact.Phones?.length) return null;
-  const mobilePhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'MOBILE');
-  const defaultPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DEFAULT');
-  const ddiPhone = xeroContact.Phones.find((p: any) => p.PhoneType === 'DDI');
-  const phoneObj = mobilePhone || defaultPhone || ddiPhone;
-  if (!phoneObj || (!phoneObj.PhoneNumber && !phoneObj.PhoneAreaCode)) return null;
+  
+  // Filter to phones that actually have data, then prioritize
+  const phonesWithData = xeroContact.Phones.filter((p: any) => 
+    p.PhoneNumber?.trim() || p.PhoneAreaCode?.trim()
+  );
+  
+  if (phonesWithData.length === 0) return null;
+  
+  const mobilePhone = phonesWithData.find((p: any) => p.PhoneType === 'MOBILE');
+  const defaultPhone = phonesWithData.find((p: any) => p.PhoneType === 'DEFAULT');
+  const ddiPhone = phonesWithData.find((p: any) => p.PhoneType === 'DDI');
+  const phoneObj = mobilePhone || defaultPhone || ddiPhone || phonesWithData[0];
+  
+  const countryCode = phoneObj.PhoneCountryCode?.trim() || '';
+  const areaCode = phoneObj.PhoneAreaCode?.trim() || '';
+  const number = phoneObj.PhoneNumber?.trim() || '';
+  
   const parts = [
-    phoneObj.PhoneCountryCode ? `+${phoneObj.PhoneCountryCode}` : '',
-    phoneObj.PhoneAreaCode || '',
-    phoneObj.PhoneNumber || '',
+    countryCode ? `+${countryCode}` : '',
+    areaCode,
+    number,
   ].filter(Boolean).join('');
+  
   return parts || null;
+}
+
+/** Extract all possible name variations from a Xero contact for matching */
+function getXeroNameKeys(xc: any): string[] {
+  const keys: string[] = [];
+  const firstName = xc.FirstName?.trim() || '';
+  const lastName = xc.LastName?.trim() || '';
+  const fullName = xc.Name?.trim() || '';
+  
+  // Direct FirstName + LastName
+  if (firstName && lastName) {
+    keys.push(`${firstName.toLowerCase()}|${lastName.toLowerCase()}`);
+  }
+  
+  // Split full Name field
+  if (fullName) {
+    const parts = fullName.split(/\s+/);
+    if (parts.length >= 2) {
+      // "Michael Ware" -> michael|ware
+      keys.push(`${parts[0].toLowerCase()}|${parts.slice(1).join(' ').toLowerCase()}`);
+      // Also try last word as surname: "Ian & Tanya Gillespie" -> tanya|gillespie won't work but
+      // for "Michael Ware" it gives same result
+      if (parts.length > 2) {
+        // Try second word as first name, rest as last: "Mr Michael Ware" -> michael|ware
+        keys.push(`${parts[1].toLowerCase()}|${parts.slice(2).join(' ').toLowerCase()}`);
+      }
+    }
+  }
+  
+  return [...new Set(keys)];
 }
 
 serve(async (req) => {
@@ -119,7 +187,6 @@ serve(async (req) => {
     }
 
     // PREVIEW action: fetch all Xero contacts and compare phones
-    // Load all customers
     const allCustomers: any[] = [];
     let from = 0;
     const batchSize = 1000;
@@ -139,9 +206,9 @@ serve(async (req) => {
     const emailMap = new Map<string, any>();
     const nameMap = new Map<string, any>();
     for (const c of allCustomers) {
-      if (c.email) emailMap.set(c.email.toLowerCase(), c);
+      if (c.email) emailMap.set(c.email.toLowerCase().trim(), c);
       if (c.first_name && c.last_name) {
-        nameMap.set(`${c.first_name.toLowerCase()}|${c.last_name.toLowerCase()}`, c);
+        nameMap.set(`${c.first_name.toLowerCase().trim()}|${c.last_name.toLowerCase().trim()}`, c);
       }
     }
 
@@ -149,6 +216,8 @@ serve(async (req) => {
     let page = 1;
     let hasMore = true;
     let totalXeroContacts = 0;
+    let matchedCount = 0;
+    let unmatchedWithPhone = 0;
 
     while (hasMore) {
       const contactsResponse = await fetch(
@@ -175,23 +244,34 @@ serve(async (req) => {
 
       for (const xc of xeroContacts) {
         const email = xc.EmailAddress?.trim() || null;
-        const firstName = xc.FirstName || xc.Name?.split(' ')[0] || '';
-        const lastName = xc.LastName || xc.Name?.split(' ').slice(1).join(' ') || '';
 
-        // Match to existing customer
+        // Match to existing customer - try email first, then name variations
         let customer = null;
         if (email) customer = emailMap.get(email.toLowerCase());
-        if (!customer && firstName && lastName) {
-          customer = nameMap.get(`${firstName.toLowerCase()}|${lastName.toLowerCase()}`);
+        
+        if (!customer) {
+          const nameKeys = getXeroNameKeys(xc);
+          for (const key of nameKeys) {
+            customer = nameMap.get(key);
+            if (customer) break;
+          }
         }
-        if (!customer) continue;
+        
+        if (!customer) {
+          const xeroPhone = extractPhone(xc);
+          if (xeroPhone) unmatchedWithPhone++;
+          continue;
+        }
 
+        matchedCount++;
         const xeroPhone = extractPhone(xc);
+
         if (!xeroPhone) continue;
 
         const currentPhone = customer.phone?.trim() || null;
-        // Only propose if Xero has a phone and it differs from current
-        if (currentPhone === xeroPhone) continue;
+        
+        // Use smart comparison - skip if phones are effectively the same
+        if (phonesMatch(currentPhone, xeroPhone)) continue;
 
         proposals.push({
           customer_id: customer.id,
@@ -207,11 +287,13 @@ serve(async (req) => {
       if (xeroContacts.length < 100) { hasMore = false; } else { page++; }
     }
 
-    console.log(`Phone sync preview: ${totalXeroContacts} Xero contacts checked, ${proposals.length} phone updates proposed`);
+    console.log(`Phone sync preview: ${totalXeroContacts} Xero contacts, ${matchedCount} matched, ${proposals.length} phone updates proposed, ${unmatchedWithPhone} unmatched with phone`);
 
     return new Response(JSON.stringify({
       success: true,
       total_checked: totalXeroContacts,
+      matched: matchedCount,
+      unmatched_with_phone: unmatchedWithPhone,
       proposals,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
