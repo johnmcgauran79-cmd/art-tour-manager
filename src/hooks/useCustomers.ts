@@ -464,6 +464,7 @@ export const useBulkDeleteCustomers = () => {
         }
 
         // Clean up related records that reference this customer (non-booking FKs)
+        await supabase.from('xero_sync_log').delete().eq('customer_id', id);
         await supabase.from('customer_access_tokens').delete().eq('customer_id', id);
         await supabase.from('customer_profile_updates').delete().eq('customer_id', id);
         await supabase.from('booking_travel_docs').delete().eq('customer_id', id);
