@@ -61,17 +61,30 @@ async function getValidAccessToken(supabase: any): Promise<{ token: string; tena
 }
 
 // Map Xero invoice status to booking status
-function mapXeroStatusToBookingStatus(xeroStatus: string, amountDue: number, amountPaid: number, totalAmount: number): string | null {
+// instalmentRequired: whether the tour has instalment_required turned on
+// currentStatus: the booking's current status, used to detect second payments
+function mapXeroStatusToBookingStatus(
+  xeroStatus: string,
+  amountDue: number,
+  amountPaid: number,
+  _totalAmount: number,
+  instalmentRequired: boolean,
+  currentStatus: string | null
+): string | null {
+  // Fully paid
   if (xeroStatus === 'PAID' || (amountDue === 0 && amountPaid > 0)) {
     return 'fully_paid';
   }
+  // Partial payment
   if (amountPaid > 0 && amountDue > 0) {
-    // Partial payment - check if it's roughly a deposit (less than 50% of total)
-    if (amountPaid < totalAmount * 0.5) {
-      return 'deposit_paid';
+    // If deposit already paid and tour requires instalments, this is an instalment payment
+    if (instalmentRequired && currentStatus === 'deposit_paid') {
+      return 'instalment_paid';
     }
-    return 'instalment_paid';
+    // Otherwise it's just a deposit (first partial payment, or self-spreading payments)
+    return 'deposit_paid';
   }
+  // Authorised but no payment yet
   if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
     return 'invoiced';
   }
@@ -102,10 +115,10 @@ serve(async (req) => {
         });
       }
 
-      // Get all bookings that have an invoice_reference
+      // Get all bookings that have an invoice_reference, including tour's instalment_required
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('id, invoice_reference, status')
+        .select('id, invoice_reference, status, tour_id, tours!bookings_tour_id_fkey(instalment_required)')
         .not('invoice_reference', 'is', null)
         .neq('invoice_reference', '');
 
@@ -170,7 +183,8 @@ serve(async (req) => {
             }, { onConflict: 'xero_invoice_id' });
 
           // Determine if booking status should update
-          const newStatus = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total);
+          const instalmentRequired = !!(booking as any).tours?.instalment_required;
+          const newStatus = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
           
           if (newStatus && newStatus !== booking.status) {
             const oldStatus = booking.status;
