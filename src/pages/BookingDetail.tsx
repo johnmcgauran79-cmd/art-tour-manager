@@ -480,9 +480,14 @@ export default function BookingDetail() {
                 </div>
               )}
 
-              {booking.invoice_notes && (
-                <div className="pt-4 border-t">
-                  <InfoRow label="Invoice Notes" value={booking.invoice_notes} />
+              {(booking.invoice_reference || booking.invoice_notes) && (
+                <div className="pt-4 border-t space-y-2">
+                  {booking.invoice_reference && (
+                    <InfoRow label="Invoice Reference (Xero)" value={booking.invoice_reference} />
+                  )}
+                  {booking.invoice_notes && (
+                    <InfoRow label="Invoice Notes" value={booking.invoice_notes} />
+                  )}
                 </div>
               )}
             </div>

@@ -53,6 +53,7 @@ export interface BookingFormData {
   check_in_date: string;
   check_out_date: string;
   invoice_notes: string;
+  invoice_reference: string;
   secondary_contact_id: string;
   secondary_contact_search: string;
   passport_number: string;
@@ -109,6 +110,7 @@ export const useBookingFormState = ({
     check_in_date: '',
     check_out_date: '',
     invoice_notes: '',
+    invoice_reference: '',
     secondary_contact_id: '',
     secondary_contact_search: '',
     passport_number: '',
@@ -157,6 +159,7 @@ export const useBookingFormState = ({
         check_in_date: initialCheckIn,
         check_out_date: initialCheckOut,
         invoice_notes: '',
+        invoice_reference: '',
         secondary_contact_id: '',
         secondary_contact_search: '',
         passport_number: '',

@@ -88,12 +88,19 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.validate-waiver-token]
-
-[functions.validate-waiver-token]
 verify_jwt = false
 
 [functions.submit-waiver]
 verify_jwt = false
 
 [functions.send-waiver-request]
+verify_jwt = false
+
+[functions.xero-oauth-callback]
+verify_jwt = false
+
+[functions.xero-webhook]
+verify_jwt = false
+
+[functions.sync-xero-contacts]
 verify_jwt = false

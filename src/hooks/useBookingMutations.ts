@@ -100,6 +100,7 @@ export const useCreateBooking = () => {
       check_in_date?: string | null;
       check_out_date?: string | null;
       invoice_notes?: string;
+      invoice_reference?: string;
       passport_number?: string;
       passport_expiry_date?: string | null;
       passport_country?: string;
@@ -186,6 +187,7 @@ export const useCreateBooking = () => {
           check_out_date: bookingData.accommodation_required ? (bookingData.check_out_date || null) : null,
           total_nights: totalNights,
           invoice_notes: bookingData.invoice_notes || null,
+          invoice_reference: bookingData.invoice_reference || null,
           passport_number: bookingData.passport_number || null,
           passport_expiry_date: bookingData.passport_expiry_date || null,
           passport_country: bookingData.passport_country || null,
@@ -247,7 +249,7 @@ export const useUpdateBooking = () => {
   const { logOperation } = useAuditLog();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string; passenger_2_id?: string | null; passenger_3_id?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string; passenger_2_id?: string | null; passenger_3_id?: string | null; invoice_reference?: string | null }) => {
       const finalUpdates: Record<string, any> = { ...updates };
 
       // Normalize empty date strings

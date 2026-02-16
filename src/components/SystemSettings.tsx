@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Settings, Database, Mail, Shield, Users, FileText, Upload } from "lucide-react";
+import { XeroIntegrationSettings } from "./XeroIntegrationSettings";
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
@@ -175,6 +176,11 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
         </div>
       </div>
 
+      {/* Xero Integration */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Accounting Integration</h2>
+        <XeroIntegrationSettings />
+      </div>
 
       {/* System Status */}
       <Card>
