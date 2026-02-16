@@ -167,32 +167,8 @@ serve(async (req) => {
           }
 
           if (existingContact) {
-            // Update existing contact - only set non-null values
-            const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
-            if (firstName) updateData.first_name = firstName;
-            if (lastName) updateData.last_name = lastName;
-            if (email) updateData.email = email;
-            if (phone) updateData.phone = phone;
-            if (city) updateData.city = city;
-            if (state) updateData.state = state;
-            if (country) updateData.country = country;
-
-            await supabase
-              .from('customers')
-              .update(updateData)
-              .eq('id', existingContact.id);
-
-            await supabase.from('xero_sync_log').insert({
-              sync_type: 'contact_sync',
-              entity_type: 'contact',
-              entity_id: xeroContact.ContactID,
-              customer_id: existingContact.id,
-              action: 'contact_updated',
-              details: { xero_name: xeroContact.Name, email },
-              status: 'success',
-            });
-
-            totalUpdated++;
+            // Skip existing contacts - we only import new ones
+            totalSkipped++;
           } else if (firstName && lastName) {
             // Create new contact - use null for empty email to avoid unique constraint
             const { data: newContact, error: insertError } = await supabase
