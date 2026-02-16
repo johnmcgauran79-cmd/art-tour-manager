@@ -709,6 +709,7 @@ export type Database = {
           id: string
           id_number: string | null
           invoice_notes: string | null
+          invoice_reference: string | null
           lead_passenger_id: string | null
           nationality: string | null
           passenger_2_id: string | null
@@ -739,6 +740,7 @@ export type Database = {
           id?: string
           id_number?: string | null
           invoice_notes?: string | null
+          invoice_reference?: string | null
           lead_passenger_id?: string | null
           nationality?: string | null
           passenger_2_id?: string | null
@@ -769,6 +771,7 @@ export type Database = {
           id?: string
           id_number?: string | null
           invoice_notes?: string | null
+          invoice_reference?: string | null
           lead_passenger_id?: string | null
           nationality?: string | null
           passenger_2_id?: string | null
@@ -2487,6 +2490,167 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      xero_integration_settings: {
+        Row: {
+          access_token: string | null
+          created_at: string | null
+          id: string
+          is_connected: boolean | null
+          last_contact_sync_at: string | null
+          refresh_token: string | null
+          tenant_id: string | null
+          tenant_name: string | null
+          token_expires_at: string | null
+          updated_at: string | null
+          webhook_key: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_contact_sync_at?: string | null
+          refresh_token?: string | null
+          tenant_id?: string | null
+          tenant_name?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          webhook_key?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_contact_sync_at?: string | null
+          refresh_token?: string | null
+          tenant_id?: string | null
+          tenant_name?: string | null
+          token_expires_at?: string | null
+          updated_at?: string | null
+          webhook_key?: string | null
+        }
+        Relationships: []
+      }
+      xero_invoice_mappings: {
+        Row: {
+          amount_due: number | null
+          amount_paid: number | null
+          booking_id: string
+          created_at: string | null
+          currency_code: string | null
+          id: string
+          invoice_reference: string | null
+          last_payment_date: string | null
+          total_amount: number | null
+          updated_at: string | null
+          xero_invoice_id: string
+          xero_invoice_number: string | null
+          xero_status: string | null
+        }
+        Insert: {
+          amount_due?: number | null
+          amount_paid?: number | null
+          booking_id: string
+          created_at?: string | null
+          currency_code?: string | null
+          id?: string
+          invoice_reference?: string | null
+          last_payment_date?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          xero_invoice_id: string
+          xero_invoice_number?: string | null
+          xero_status?: string | null
+        }
+        Update: {
+          amount_due?: number | null
+          amount_paid?: number | null
+          booking_id?: string
+          created_at?: string | null
+          currency_code?: string | null
+          id?: string
+          invoice_reference?: string | null
+          last_payment_date?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          xero_invoice_id?: string
+          xero_invoice_number?: string | null
+          xero_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xero_invoice_mappings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      xero_sync_log: {
+        Row: {
+          action: string | null
+          booking_id: string | null
+          created_at: string | null
+          customer_id: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          error_message: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          status: string | null
+          sync_type: string
+        }
+        Insert: {
+          action?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          status?: string | null
+          sync_type: string
+        }
+        Update: {
+          action?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          error_message?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          status?: string | null
+          sync_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "xero_sync_log_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "xero_sync_log_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
