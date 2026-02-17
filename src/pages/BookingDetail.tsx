@@ -22,6 +22,7 @@ import { useTours } from "@/hooks/useTours";
 import { BookingCommentsSection } from "@/components/BookingCommentsSection";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useBookingAuditLog } from "@/hooks/useBookingAuditLog";
 import { BookingAuditTrail } from "@/components/BookingAuditTrail";
 import { Separator } from "@/components/ui/separator";
@@ -48,6 +49,7 @@ export default function BookingDetail() {
   const { goBack, navigateWithContext, getReturnPath, currentState } = useNavigationContext();
   const { toast } = useToast();
   const { userRole } = useAuth();
+  const { isViewOnly } = usePermissions();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
   
@@ -59,8 +61,8 @@ export default function BookingDetail() {
   const updateBooking = useUpdateBooking();
   const isMobile = useIsMobile();
   
-  // Agent users have view-only access
-  const isAgent = userRole === 'agent';
+  // View-only roles (agent, host, booking_agent) cannot edit
+  const isAgent = isViewOnly;
 
   const { data: hotelBookings = [] } = useHotelBookings(booking?.id || '');
   const { data: activityBookings = [] } = useActivityBookings(booking?.id || '');
