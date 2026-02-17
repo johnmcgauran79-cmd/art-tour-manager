@@ -119,7 +119,8 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   for (const booking of bookings) {
     try {
-      const invoiceResponse = await fetch(
+      // First try matching by Reference field
+      const refResponse = await fetch(
         `https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${booking.invoice_reference}"`,
         {
           headers: {
@@ -130,15 +131,43 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         }
       );
 
-      if (!invoiceResponse.ok) {
-        console.error(`Failed to fetch invoice for ref ${booking.invoice_reference}:`, await invoiceResponse.text());
-        continue;
+      let invoices: any[] = [];
+
+      if (refResponse.ok) {
+        const refData = await refResponse.json();
+        invoices = refData.Invoices || [];
+      } else {
+        console.error(`Failed to fetch invoice by Reference "${booking.invoice_reference}":`, await refResponse.text());
       }
 
-      const invoiceData = await invoiceResponse.json();
-      const invoices = invoiceData.Invoices || [];
+      // Fallback: search by InvoiceNumber if no Reference match
+      if (invoices.length === 0) {
+        const numResponse = await fetch(
+          `https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${booking.invoice_reference}"`,
+          {
+            headers: {
+              'Authorization': `Bearer ${auth.token}`,
+              'Xero-Tenant-Id': auth.tenantId,
+              'Accept': 'application/json',
+            },
+          }
+        );
 
-      if (invoices.length === 0) continue;
+        if (numResponse.ok) {
+          const numData = await numResponse.json();
+          invoices = numData.Invoices || [];
+          if (invoices.length > 0) {
+            console.log(`Matched booking ${booking.id} by InvoiceNumber "${booking.invoice_reference}" (no Reference match)`);
+          }
+        } else {
+          console.error(`Failed to fetch invoice by InvoiceNumber "${booking.invoice_reference}":`, await numResponse.text());
+        }
+      }
+
+      if (invoices.length === 0) {
+        console.log(`No Xero invoice found for ref/number "${booking.invoice_reference}" (booking ${booking.id})`);
+        continue;
+      }
 
       // Handle multiple matches: pick best invoice by status priority then date
       if (invoices.length > 1) {
