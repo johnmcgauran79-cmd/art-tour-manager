@@ -272,11 +272,11 @@ export const InvoiceSyncReviewModal = ({
             Cancel
           </Button>
           {proposals.length > 0 && (
-            <Button onClick={handleApply} disabled={isApplying || approvedCount === 0}>
+          <Button onClick={handleApply} disabled={isApplying}>
               {isApplying ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : null}
-              Apply {approvedCount} {approvedCount === 1 ? 'Change' : 'Changes'}
+              {approvedCount === 0 ? 'Close (No Changes)' : `Apply ${approvedCount} ${approvedCount === 1 ? 'Change' : 'Changes'}`}
             </Button>
           )}
         </DialogFooter>
