@@ -87,6 +87,56 @@ export const BulkInvoiceReferenceModal = ({ open, onOpenChange, tourId }: BulkIn
   const hasEdited = (bookingId: string) => editedRefs[bookingId] !== undefined;
   const isSaving = (bookingId: string) => savingIds.has(bookingId);
   const isSaved = (bookingId: string) => savedIds.has(bookingId);
+  const hasAnyEdits = Object.keys(editedRefs).length > 0;
+  const isBulkSaving = savingIds.size > 1;
+
+  const handleSaveAll = async () => {
+    const idsToSave = Object.keys(editedRefs);
+    if (idsToSave.length === 0) return;
+
+    for (const id of idsToSave) {
+      setSavingIds(prev => new Set(prev).add(id));
+    }
+
+    const results = await Promise.allSettled(
+      idsToSave.map(async (bookingId) => {
+        const newRef = editedRefs[bookingId];
+        await updateBooking.mutateAsync({
+          id: bookingId,
+          invoice_reference: newRef.trim() || null,
+        });
+        return bookingId;
+      })
+    );
+
+    const succeeded: string[] = [];
+    const failed: string[] = [];
+    results.forEach((r, i) => {
+      if (r.status === 'fulfilled') succeeded.push(idsToSave[i]);
+      else failed.push(idsToSave[i]);
+    });
+
+    if (succeeded.length > 0) {
+      setSavedIds(prev => {
+        const next = new Set(prev);
+        succeeded.forEach(id => next.add(id));
+        return next;
+      });
+      setEditedRefs(prev => {
+        const next = { ...prev };
+        succeeded.forEach(id => delete next[id]);
+        return next;
+      });
+    }
+
+    setSavingIds(new Set());
+
+    if (failed.length > 0) {
+      toast({ title: "Some updates failed", description: `${failed.length} failed, ${succeeded.length} succeeded`, variant: "destructive" });
+    } else {
+      toast({ title: "All saved", description: `Updated ${succeeded.length} invoice reference${succeeded.length > 1 ? 's' : ''}` });
+    }
+  };
 
   const getCurrentRef = (booking: any) => {
     if (editedRefs[booking.id] !== undefined) return editedRefs[booking.id];
@@ -188,6 +238,23 @@ export const BulkInvoiceReferenceModal = ({ open, onOpenChange, tourId }: BulkIn
             </TableBody>
           </Table>
         </ScrollArea>
+
+        <div className="flex justify-between items-center pt-2 border-t">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+          <Button
+            onClick={handleSaveAll}
+            disabled={!hasAnyEdits || savingIds.size > 0}
+            className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
+          >
+            {savingIds.size > 0 ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+            ) : (
+              <><Save className="mr-2 h-4 w-4" /> Save All ({Object.keys(editedRefs).length})</>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
