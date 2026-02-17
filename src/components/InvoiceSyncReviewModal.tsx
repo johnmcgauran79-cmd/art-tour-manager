@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,11 +55,15 @@ export const InvoiceSyncReviewModal = ({
   totalChecked,
   onApplyComplete,
 }: InvoiceSyncReviewModalProps) => {
-  const [items, setItems] = useState<ReviewItem[]>(() =>
-    proposals.map((p) => ({ ...p, action: 'approve', override_status: null }))
-  );
+  const [items, setItems] = useState<ReviewItem[]>([]);
   const [isApplying, setIsApplying] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (proposals.length > 0) {
+      setItems(proposals.map((p) => ({ ...p, action: 'approve', override_status: null })));
+    }
+  }, [proposals]);
 
   const formatCurrency = (amount: number, currency: string) => {
     return new Intl.NumberFormat('en-AU', { style: 'currency', currency }).format(amount);
