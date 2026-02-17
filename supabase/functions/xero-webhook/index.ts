@@ -80,10 +80,11 @@ function mapXeroStatusToBookingStatus(
   if (xeroStatus === 'PAID' || (amountDue === 0 && amountPaid > 0)) {
     proposedStatus = 'fully_paid';
   } else if (amountPaid > 0 && amountDue > 0) {
-    if (instalmentRequired) {
-      // If instalment is required, partial payment means at least instalment_paid
+    if (instalmentRequired && currentStatus === 'deposited') {
+      // Already deposited + instalment required = next step is instalment_paid
       proposedStatus = 'instalment_paid';
     } else {
+      // First partial payment defaults to deposited (user can adjust in review)
       proposedStatus = 'deposited';
     }
   } else if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
