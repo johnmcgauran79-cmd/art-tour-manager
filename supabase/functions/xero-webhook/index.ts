@@ -61,6 +61,7 @@ async function getValidAccessToken(supabase: any): Promise<{ token: string; tena
 // Status progression order — higher number = further along, never go backwards
 const STATUS_ORDER: Record<string, number> = {
   'invoiced': 1,
+  'racing_breaks_invoice': 1,
   'deposited': 2,
   'instalment_paid': 3,
   'fully_paid': 4,
