@@ -36,7 +36,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
     }
     
     // Otherwise determine from the route
-    if (path === '/') return 'dashboard';
+    if (path === '/') return isHost ? 'tours' : 'dashboard';
     if (path.startsWith('/tours')) return 'tours';
     if (path.startsWith('/bookings')) return 'bookings';
     if (path.startsWith('/tasks')) return 'tasks';

@@ -54,17 +54,24 @@ const Index = () => {
   
   // Agent users can only access bookings tab
   const isAgent = userRole === 'agent';
+  
+  // Host users can only access tours tab
+  const isHost = userRole === 'host';
 
   // Update tab when URL changes
   useEffect(() => {
+    // Redirect hosts to tours - they should only see their assigned tours
+    if (isHost && tabFromUrl !== 'tours') {
+      setSearchParams({ tab: 'tours' });
+      setActiveTab('tours');
     // Redirect agents to tours if they try to access restricted tabs
-    if (isAgent && !['tours', 'bookings'].includes(tabFromUrl)) {
+    } else if (isAgent && !['tours', 'bookings'].includes(tabFromUrl)) {
       setSearchParams({ tab: 'tours' });
       setActiveTab('tours');
     } else {
       setActiveTab(tabFromUrl);
     }
-  }, [tabFromUrl, isAgent, setSearchParams]);
+  }, [tabFromUrl, isAgent, isHost, setSearchParams]);
 
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();
