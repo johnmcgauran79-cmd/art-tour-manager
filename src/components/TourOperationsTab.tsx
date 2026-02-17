@@ -17,6 +17,7 @@ import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksMo
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
 import { usePickupReportData } from "@/components/reports/PickupLocationReport";
 import { HostFlightsSection } from "@/components/HostFlightsSection";
+import { usePassportReport } from "@/hooks/usePassportReport";
 
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
@@ -51,6 +52,8 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const { changeCount: tourOpsChangeCount } = useTourOpsReview(tourId);
   const { data: pickupReportData } = usePickupReportData(tourId);
   const pickupPendingCount = pickupLocationRequired ? (pickupReportData?.pendingCount || 0) : 0;
+  const { data: passportData } = usePassportReport(travelDocumentsRequired ? tourId : '');
+  const passportMissingCount = travelDocumentsRequired ? (passportData?.filter(p => !p.hasDocuments).length || 0) : 0;
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -344,8 +347,13 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 className="text-center p-3 border-2 border-teal-200 rounded-lg cursor-pointer hover:bg-teal-50 hover:border-teal-300 hover:shadow-md transition-all duration-200 group"
                 onClick={() => handleReportClick('passport')}
               >
-                <div className="bg-teal-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-teal-200 transition-colors">
+                <div className="bg-teal-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-teal-200 transition-colors relative">
                   <BookUser className="h-5 w-5 text-teal-600" />
+                  {passportMissingCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 min-w-5 px-1 text-xs flex items-center justify-center">
+                      {passportMissingCount}
+                    </Badge>
+                  )}
                 </div>
                 <p className="font-semibold text-gray-800 group-hover:text-teal-700 text-xs">Passport Details</p>
                 <p className="text-xs text-gray-600">Travel Documents</p>

@@ -52,7 +52,18 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
     }
   };
 
+  const missingCount = data.filter(p => !p.hasDocuments).length;
+
   return (
+    <div>
+      {missingCount > 0 && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <AlertCircle className="h-5 w-5 text-destructive" />
+          <span className="text-sm font-medium text-destructive">
+            {missingCount} passenger{missingCount !== 1 ? 's' : ''} ha{missingCount !== 1 ? 've' : 's'} not submitted passport details
+          </span>
+        </div>
+      )}
     <Table>
       <TableHeader>
         <TableRow>
@@ -108,5 +119,6 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
         ))}
       </TableBody>
     </Table>
+    </div>
   );
 };
