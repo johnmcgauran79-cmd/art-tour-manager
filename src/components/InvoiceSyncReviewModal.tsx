@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ export const InvoiceSyncReviewModal = ({
 }: InvoiceSyncReviewModalProps) => {
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [isApplying, setIsApplying] = useState(false);
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -135,6 +137,8 @@ export const InvoiceSyncReviewModal = ({
         description: result.message,
       });
 
+      // Invalidate bookings queries so the UI refreshes
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       onApplyComplete();
       onClose();
     } catch (error: any) {
