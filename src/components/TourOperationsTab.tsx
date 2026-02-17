@@ -292,7 +292,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 <UserCheck className="h-5 w-5 text-emerald-600" />
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-emerald-700 text-xs">Tour Attendees</p>
-              <p className="text-xs text-gray-600">External Report</p>
+              <p className="text-xs text-gray-600">Guest Information</p>
             </div>
             <div 
               className="text-center p-3 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
