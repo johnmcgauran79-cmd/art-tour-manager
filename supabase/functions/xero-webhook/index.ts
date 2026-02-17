@@ -58,7 +58,15 @@ async function getValidAccessToken(supabase: any): Promise<{ token: string; tena
   return { token: settings.access_token, tenantId: settings.tenant_id };
 }
 
-// Map Xero invoice status to booking status
+// Status progression order — higher number = further along, never go backwards
+const STATUS_ORDER: Record<string, number> = {
+  'invoiced': 1,
+  'deposited': 2,
+  'instalment_paid': 3,
+  'fully_paid': 4,
+};
+
+// Map Xero invoice status to booking status (never downgrades)
 function mapXeroStatusToBookingStatus(
   xeroStatus: string,
   amountDue: number,
@@ -67,19 +75,32 @@ function mapXeroStatusToBookingStatus(
   instalmentRequired: boolean,
   currentStatus: string | null
 ): string | null {
+  let proposedStatus: string | null = null;
+
   if (xeroStatus === 'PAID' || (amountDue === 0 && amountPaid > 0)) {
-    return 'fully_paid';
-  }
-  if (amountPaid > 0 && amountDue > 0) {
-    if (instalmentRequired && currentStatus === 'deposited') {
-      return 'instalment_paid';
+    proposedStatus = 'fully_paid';
+  } else if (amountPaid > 0 && amountDue > 0) {
+    if (instalmentRequired) {
+      // If instalment is required, partial payment means at least instalment_paid
+      proposedStatus = 'instalment_paid';
+    } else {
+      proposedStatus = 'deposited';
     }
-    return 'deposited';
+  } else if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
+    proposedStatus = 'invoiced';
   }
-  if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
-    return 'invoiced';
+
+  if (!proposedStatus) return null;
+
+  // Never downgrade: only propose if the new status is strictly higher
+  const currentOrder = STATUS_ORDER[currentStatus || ''] || 0;
+  const proposedOrder = STATUS_ORDER[proposedStatus] || 0;
+
+  if (proposedOrder <= currentOrder) {
+    return null; // Would be a downgrade or no change — skip
   }
-  return null;
+
+  return proposedStatus;
 }
 
 // Pick the best invoice when multiple match the same Reference
