@@ -71,10 +71,10 @@ function mapXeroStatusToBookingStatus(
     return 'fully_paid';
   }
   if (amountPaid > 0 && amountDue > 0) {
-    if (instalmentRequired && currentStatus === 'deposit_paid') {
+    if (instalmentRequired && currentStatus === 'deposited') {
       return 'instalment_paid';
     }
-    return 'deposit_paid';
+    return 'deposited';
   }
   if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
     return 'invoiced';
