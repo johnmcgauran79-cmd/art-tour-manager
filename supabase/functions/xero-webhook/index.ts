@@ -117,8 +117,28 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   const proposals: any[] = [];
 
+  // DIAGNOSTIC: On first booking, fetch recent invoices to discover format
+  let diagnosticLogged = false;
+
   for (const booking of bookings) {
     try {
+      if (!diagnosticLogged) {
+        diagnosticLogged = true;
+        const diagResponse = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?order=UpdatedDateUTC DESC&page=1`, {
+          headers: { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' },
+        });
+        if (diagResponse.ok) {
+          const diagData = await diagResponse.json();
+          const sample = (diagData.Invoices || []).slice(0, 5).map((i: any) => ({
+            InvoiceNumber: i.InvoiceNumber, Reference: i.Reference, Status: i.Status, Total: i.Total, AmountPaid: i.AmountPaid
+          }));
+          console.log('DIAGNOSTIC - Recent Xero invoices format:', JSON.stringify(sample));
+        } else {
+          console.error('DIAGNOSTIC - Failed to fetch recent invoices:', diagResponse.status, await diagResponse.text());
+        }
+        await new Promise(r => setTimeout(r, 300));
+      }
+
       // First try matching by Reference field
       const refResponse = await fetch(
         `https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${booking.invoice_reference}"`,
@@ -260,6 +280,53 @@ serve(async (req) => {
   const action = url.searchParams.get('action');
 
   try {
+    // Diagnostic: fetch a few recent invoices to see format
+    if (action === 'diagnose-format') {
+      const auth = await getValidAccessToken(supabase);
+      if (!auth) {
+        return new Response(JSON.stringify({ error: 'Xero not connected' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      const testRef = url.searchParams.get('ref') || '4137';
+      const results: any = { ref_searched: testRef, queries: {} };
+
+      // Query 1: by Reference
+      const r1 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${testRef}"`, {
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' },
+      });
+      const d1 = r1.ok ? await r1.json() : { error: await r1.text(), status: r1.status };
+      results.queries.by_reference = { status: r1.status, count: d1.Invoices?.length || 0, invoices: (d1.Invoices || []).map((i: any) => ({ InvoiceNumber: i.InvoiceNumber, Reference: i.Reference, Status: i.Status, Total: i.Total, AmountPaid: i.AmountPaid, AmountDue: i.AmountDue })) };
+
+      // Query 2: by InvoiceNumber exact
+      const r2 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${testRef}"`, {
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' },
+      });
+      const d2 = r2.ok ? await r2.json() : { error: await r2.text(), status: r2.status };
+      results.queries.by_invoice_number = { status: r2.status, count: d2.Invoices?.length || 0, invoices: (d2.Invoices || []).map((i: any) => ({ InvoiceNumber: i.InvoiceNumber, Reference: i.Reference, Status: i.Status, Total: i.Total, AmountPaid: i.AmountPaid, AmountDue: i.AmountDue })) };
+
+      // Query 3: by InvoiceNumber with INV- prefix
+      const r3 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="INV-${testRef}"`, {
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' },
+      });
+      const d3 = r3.ok ? await r3.json() : { error: await r3.text(), status: r3.status };
+      results.queries.by_invoice_number_inv_prefix = { status: r3.status, count: d3.Invoices?.length || 0, invoices: (d3.Invoices || []).map((i: any) => ({ InvoiceNumber: i.InvoiceNumber, Reference: i.Reference, Status: i.Status, Total: i.Total, AmountPaid: i.AmountPaid, AmountDue: i.AmountDue })) };
+
+      // Query 4: fetch 5 most recent invoices to see format
+      const r4 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?order=UpdatedDateUTC DESC&page=1`, {
+        headers: { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' },
+      });
+      const d4 = r4.ok ? await r4.json() : { error: await r4.text() };
+      results.queries.recent_invoices = { count: d4.Invoices?.length || 0, sample: (d4.Invoices || []).slice(0, 5).map((i: any) => ({ InvoiceNumber: i.InvoiceNumber, Reference: i.Reference, Status: i.Status, Total: i.Total, AmountPaid: i.AmountPaid, AmountDue: i.AmountDue })) };
+
+      console.log('Diagnostic results:', JSON.stringify(results));
+
+      return new Response(JSON.stringify(results), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Preview mode: fetch proposals without applying
     if (action === 'preview-invoices') {
       const auth = await getValidAccessToken(supabase);
