@@ -126,6 +126,45 @@ function pickBestInvoice(invoices: any[]): any {
   })[0];
 }
 
+// Fetch a single invoice ref from Xero (tries Reference, InvoiceNumber, INV- prefix)
+async function fetchInvoicesForRef(ref: string, auth: { token: string; tenantId: string }): Promise<any[]> {
+  const headers = { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' };
+  const trimmed = ref.trim();
+
+  // Try Reference field
+  const r1 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${trimmed}"`, { headers });
+  if (r1.ok) {
+    const d1 = await r1.json();
+    if ((d1.Invoices || []).length > 0) return d1.Invoices;
+  }
+
+  await new Promise(r => setTimeout(r, 200));
+
+  // Try InvoiceNumber exact
+  const r2 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${trimmed}"`, { headers });
+  if (r2.ok) {
+    const d2 = await r2.json();
+    if ((d2.Invoices || []).length > 0) {
+      console.log(`Matched ref "${trimmed}" by InvoiceNumber`);
+      return d2.Invoices;
+    }
+  }
+
+  await new Promise(r => setTimeout(r, 200));
+
+  // Try INV- prefix
+  const r3 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="INV-${trimmed}"`, { headers });
+  if (r3.ok) {
+    const d3 = await r3.json();
+    if ((d3.Invoices || []).length > 0) {
+      console.log(`Matched ref "${trimmed}" by INV-${trimmed}`);
+      return d3.Invoices;
+    }
+  }
+
+  return [];
+}
+
 // Fetch invoice data from Xero for all bookings with invoice references
 async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenantId: string }) {
   const { data: bookings } = await supabase
@@ -140,124 +179,49 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   const proposals: any[] = [];
 
-  // DIAGNOSTIC: On first booking, fetch recent invoices to discover format
-  let diagnosticLogged = false;
-
   for (const booking of bookings) {
     try {
-      if (!diagnosticLogged) {
-        diagnosticLogged = true;
-        const diagResponse = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?order=UpdatedDateUTC DESC&page=1`, {
-          headers: { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' },
-        });
-        if (diagResponse.ok) {
-          const diagData = await diagResponse.json();
-          const sample = (diagData.Invoices || []).slice(0, 5).map((i: any) => ({
-            InvoiceNumber: i.InvoiceNumber, Reference: i.Reference, Status: i.Status, Total: i.Total, AmountPaid: i.AmountPaid
-          }));
-          console.log('DIAGNOSTIC - Recent Xero invoices format:', JSON.stringify(sample));
-        } else {
-          console.error('DIAGNOSTIC - Failed to fetch recent invoices:', diagResponse.status, await diagResponse.text());
-        }
-        await new Promise(r => setTimeout(r, 300));
-      }
-
-      // First try matching by Reference field
-      const refResponse = await fetch(
-        `https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${booking.invoice_reference}"`,
-        {
-          headers: {
-            'Authorization': `Bearer ${auth.token}`,
-            'Xero-Tenant-Id': auth.tenantId,
-            'Accept': 'application/json',
-          },
-        }
-      );
-
-      let invoices: any[] = [];
-
-      if (refResponse.ok) {
-        const refData = await refResponse.json();
-        invoices = refData.Invoices || [];
-      } else {
-        console.error(`Failed to fetch invoice by Reference "${booking.invoice_reference}":`, await refResponse.text());
-      }
-
-      // Fallback: search by InvoiceNumber if no Reference match
-      if (invoices.length === 0) {
-        await new Promise(r => setTimeout(r, 200));
-        const numResponse = await fetch(
-          `https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${booking.invoice_reference}"`,
-          {
-            headers: {
-              'Authorization': `Bearer ${auth.token}`,
-              'Xero-Tenant-Id': auth.tenantId,
-              'Accept': 'application/json',
-            },
-          }
-        );
-
-        if (numResponse.ok) {
-          const numData = await numResponse.json();
-          invoices = numData.Invoices || [];
-          if (invoices.length > 0) {
-            console.log(`Matched booking ${booking.id} by InvoiceNumber "${booking.invoice_reference}" (no Reference match)`);
-          }
-        } else {
-          console.error(`Failed to fetch invoice by InvoiceNumber "${booking.invoice_reference}":`, await numResponse.text());
-        }
-      }
-
-      // Fallback: try with common prefixes (e.g. INV-4137)
-      if (invoices.length === 0) {
-        const prefixes = ['INV-'];
-        for (const prefix of prefixes) {
-          await new Promise(r => setTimeout(r, 200));
-          const prefixedRef = `${prefix}${booking.invoice_reference}`;
-          const prefixResponse = await fetch(
-            `https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${prefixedRef}"`,
-            {
-              headers: {
-                'Authorization': `Bearer ${auth.token}`,
-                'Xero-Tenant-Id': auth.tenantId,
-                'Accept': 'application/json',
-              },
-            }
-          );
-
-          if (prefixResponse.ok) {
-            const prefixData = await prefixResponse.json();
-            invoices = prefixData.Invoices || [];
-            if (invoices.length > 0) {
-              console.log(`Matched booking ${booking.id} by prefixed InvoiceNumber "${prefixedRef}"`);
-              break;
-            }
-          }
-        }
-      }
-
-      if (invoices.length === 0) {
-        console.log(`No Xero invoice found for ref/number "${booking.invoice_reference}" (booking ${booking.id})`);
-        continue;
-      }
-
-      // Rate limit between bookings
-      await new Promise(r => setTimeout(r, 150));
-
-      // Handle multiple matches: pick best invoice by status priority then date
-      if (invoices.length > 1) {
-        console.warn(`Multiple invoices (${invoices.length}) found for Reference "${booking.invoice_reference}" — using best match`);
-      }
-      const invoice = pickBestInvoice(invoices);
-      
-      const amountDue = invoice.AmountDue || 0;
-      const amountPaid = invoice.AmountPaid || 0;
-      const total = invoice.Total || 0;
-
+      // Split comma-separated references
+      const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean);
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
-      const newStatus = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
 
-      if (newStatus && newStatus !== booking.status) {
+      // Collect invoice data for each ref
+      const invoiceResults: Array<{ invoice: any; ref: string }> = [];
+
+      for (const ref of refs) {
+        const invoices = await fetchInvoicesForRef(ref, auth);
+        if (invoices.length > 0) {
+          const best = pickBestInvoice(invoices);
+          invoiceResults.push({ invoice: best, ref });
+        } else {
+          console.log(`No Xero invoice found for ref "${ref}" (booking ${booking.id})`);
+        }
+        await new Promise(r => setTimeout(r, 150));
+      }
+
+      if (invoiceResults.length === 0) continue;
+
+      // For each matched invoice, compute proposed status
+      const statusProposals: Array<{ status: string; order: number; invoice: any; ref: string }> = [];
+
+      for (const { invoice, ref } of invoiceResults) {
+        const amountDue = invoice.AmountDue || 0;
+        const amountPaid = invoice.AmountPaid || 0;
+        const total = invoice.Total || 0;
+        const proposed = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
+        if (proposed) {
+          statusProposals.push({ status: proposed, order: STATUS_ORDER[proposed] || 0, invoice, ref });
+        }
+      }
+
+      if (statusProposals.length === 0) continue;
+
+      // Use LOWEST status across all invoices (least-progressed)
+      statusProposals.sort((a, b) => a.order - b.order);
+      const chosen = statusProposals[0];
+      const invoice = chosen.invoice;
+
+      if (chosen.status !== booking.status) {
         const customerName = booking.customers
           ? `${booking.customers.first_name} ${booking.customers.last_name}`
           : booking.group_name || 'Unknown';
@@ -270,15 +234,17 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
           customer_name: customerName,
           tour_name: booking.tours?.name || 'Unknown Tour',
           current_status: booking.status,
-          proposed_status: newStatus,
-          amount_paid: amountPaid,
-          amount_due: amountDue,
-          total_amount: total,
+          proposed_status: chosen.status,
+          amount_paid: invoice.AmountPaid || 0,
+          amount_due: invoice.AmountDue || 0,
+          total_amount: invoice.Total || 0,
           xero_status: invoice.Status,
           currency_code: invoice.CurrencyCode || 'AUD',
           last_payment_date: invoice.FullyPaidOnDate || null,
-          multiple_matches: invoices.length > 1,
-          matches_count: invoices.length,
+          multiple_invoices: refs.length > 1,
+          invoice_count: refs.length,
+          matched_count: invoiceResults.length,
+          all_statuses: statusProposals.map(s => ({ ref: s.ref, status: s.status, invoice_number: s.invoice.InvoiceNumber })),
         });
       }
     } catch (err) {
