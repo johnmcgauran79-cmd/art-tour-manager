@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,9 @@ import {
 
 export default function BookingEdit() {
   const { id } = useParams();
+  const { isViewOnly } = usePermissions();
   const { goBack, navigateWithContext } = useNavigationContext();
+
   const { toast } = useToast();
   const { data: allBookings, isLoading } = useBookings();
   const booking = allBookings?.find(b => b.id === id);
@@ -357,6 +360,11 @@ export default function BookingEdit() {
     setSecondaryContactName(`${newContact.first_name} ${newContact.last_name}`);
     setFormData(prev => ({ ...prev, secondary_contact_id: newContact.id }));
   };
+
+  // Redirect view-only users (agents, hosts, booking agents) away from edit page
+  if (isViewOnly) {
+    return <Navigate to={`/bookings/${id}`} replace />;
+  }
 
   if (isLoading) {
     return (

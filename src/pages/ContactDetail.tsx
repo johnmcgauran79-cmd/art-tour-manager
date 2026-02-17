@@ -1,4 +1,5 @@
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, Navigate } from "react-router-dom";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,6 +33,7 @@ export default function ContactDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: contactData, isLoading } = useCustomerById(id || null);
+  const { isViewOnly } = usePermissions();
   const contact = contactData;
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -148,63 +150,67 @@ export default function ContactDetail() {
             Back
           </Button>
           
-          <SendProfileUpdateButton
-            customerId={contact.id}
-            customerName={fullName}
-            customerEmail={contact.email || null}
-            size="sm"
-          />
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigateWithContext(`/contacts/${id}/edit`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </Button>
-          
-          <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
-            if (!open) {
-              setDeleteError(null);
-            }
-            setShowDeleteDialog(open);
-          }}>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" onClick={async () => {
-                setDeleteError(null);
-                const hasBookings = await checkForBookings();
-                setShowDeleteDialog(true);
-              }}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
+          {!isViewOnly && (
+            <>
+              <SendProfileUpdateButton
+                customerId={contact.id}
+                customerName={fullName}
+                customerEmail={contact.email || null}
+                size="sm"
+              />
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateWithContext(`/contacts/${id}/edit`)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                Edit
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                <AlertDialogDescription asChild>
-                  <div>
-                    {deleteError ? (
-                      <div className="text-destructive font-semibold text-base">
-                        {deleteError}
-                      </div>
-                    ) : (
-                      <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
-                    )}
-                  </div>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                {!deleteError && (
-                  <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              
+              <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+                if (!open) {
+                  setDeleteError(null);
+                }
+                setShowDeleteDialog(open);
+              }}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" onClick={async () => {
+                    setDeleteError(null);
+                    const hasBookings = await checkForBookings();
+                    setShowDeleteDialog(true);
+                  }}>
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Delete
-                  </AlertDialogAction>
-                )}
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div>
+                        {deleteError ? (
+                          <div className="text-destructive font-semibold text-base">
+                            {deleteError}
+                          </div>
+                        ) : (
+                          <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
+                        )}
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    {!deleteError && (
+                      <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Delete
+                      </AlertDialogAction>
+                    )}
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
+          )}
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -234,62 +240,66 @@ export default function ContactDetail() {
               Back
             </Button>
             
-            <SendProfileUpdateButton
-              customerId={contact.id}
-              customerName={fullName}
-              customerEmail={contact.email || null}
-            />
-            
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigateWithContext(`/contacts/${id}/edit`)}
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              Edit
-            </Button>
-            
-            <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
-              if (!open) {
-                setDeleteError(null);
-              }
-              setShowDeleteDialog(open);
-            }}>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" onClick={async () => {
-                  setDeleteError(null);
-                  const hasBookings = await checkForBookings();
-                  setShowDeleteDialog(true);
-                }}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+            {!isViewOnly && (
+              <>
+                <SendProfileUpdateButton
+                  customerId={contact.id}
+                  customerName={fullName}
+                  customerEmail={contact.email || null}
+                />
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigateWithContext(`/contacts/${id}/edit`)}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
                 </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                  <AlertDialogDescription asChild>
-                    <div>
-                      {deleteError ? (
-                        <div className="text-destructive font-semibold text-base">
-                          {deleteError}
-                        </div>
-                      ) : (
-                        <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
-                      )}
-                    </div>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  {!deleteError && (
-                    <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                
+                <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+                  if (!open) {
+                    setDeleteError(null);
+                  }
+                  setShowDeleteDialog(open);
+                }}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" onClick={async () => {
+                      setDeleteError(null);
+                      const hasBookings = await checkForBookings();
+                      setShowDeleteDialog(true);
+                    }}>
+                      <Trash2 className="mr-2 h-4 w-4" />
                       Delete
-                    </AlertDialogAction>
-                  )}
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+                      <AlertDialogDescription asChild>
+                        <div>
+                          {deleteError ? (
+                            <div className="text-destructive font-semibold text-base">
+                              {deleteError}
+                            </div>
+                          ) : (
+                            <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
+                          )}
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      {!deleteError && (
+                        <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Delete
+                        </AlertDialogAction>
+                      )}
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </>
+            )}
           </div>
         </div>
       </div>

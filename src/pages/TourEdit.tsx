@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,9 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 
 export default function TourEdit() {
   const { id } = useParams();
+  const { isViewOnly } = usePermissions();
   const { goBack } = useNavigationContext();
+
   const { toast } = useToast();
   const { data: tours, isLoading } = useTours();
   const tour = tours?.find(t => t.id === id);
@@ -188,6 +191,10 @@ export default function TourEdit() {
       return updated;
     });
   };
+
+  if (isViewOnly) {
+    return <Navigate to={`/tours/${id}`} replace />;
+  }
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;

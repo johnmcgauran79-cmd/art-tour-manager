@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
+import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 export default function ContactEdit() {
   const { id } = useParams();
   const { goBack } = useNavigationContext();
+  const { isViewOnly } = usePermissions();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: contact, isLoading } = useCustomerById(id || null);
@@ -71,6 +73,10 @@ export default function ContactEdit() {
       });
     }
   };
+
+  if (isViewOnly) {
+    return <Navigate to={`/contacts/${id}`} replace />;
+  }
 
   if (isLoading) {
     return (
