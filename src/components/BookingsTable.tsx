@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, TrendingUp, FileText } from "lucide-react";
+import { Plus, Search, TrendingUp, FileText, RefreshCw, Loader2 } from "lucide-react";
 import { useBookings, useFilterCounts } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
@@ -16,6 +16,8 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { BulkInvoiceReferenceModal } from "@/components/BulkInvoiceReferenceModal";
+import { InvoiceSyncReviewModal } from "@/components/InvoiceSyncReviewModal";
+import { useToast } from "@/hooks/use-toast";
 
 interface BookingsTableProps {
   onAddBooking: () => void;
@@ -30,6 +32,11 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const { data: allBookings = [], isLoading } = useBookings();
   const { isViewOnly, hasEditAccess } = usePermissions();
   const [invoiceRefModalOpen, setInvoiceRefModalOpen] = useState(false);
+  const [isSyncingInvoices, setIsSyncingInvoices] = useState(false);
+  const [showSyncReviewModal, setShowSyncReviewModal] = useState(false);
+  const [invoiceProposals, setInvoiceProposals] = useState<any[]>([]);
+  const [totalChecked, setTotalChecked] = useState(0);
+  const { toast } = useToast();
   const { data: filterCounts } = useFilterCounts();
   
   // Calculate combined count for deposits owing and final payments due
@@ -66,6 +73,29 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
 
   const handleBookingClick = (booking: any) => {
     navigateWithContext(`/bookings/${booking.id}`);
+  };
+
+  const handleSyncInvoices = async () => {
+    setIsSyncingInvoices(true);
+    try {
+      const response = await fetch(
+        `https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/xero-webhook?action=preview-invoices`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Preview failed');
+      setInvoiceProposals(result.proposals || []);
+      setTotalChecked(result.total_checked || 0);
+      setShowSyncReviewModal(true);
+    } catch (error: any) {
+      console.error('Error previewing invoices:', error);
+      toast({ title: "Sync Failed", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSyncingInvoices(false);
+    }
   };
 
   if (isLoading) {
@@ -136,6 +166,25 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                   <FileText className="h-4 w-4 sm:mr-1.5" />
                   <span className="hidden sm:inline">Update Invoice</span>
                   <span className="sm:hidden">Invoice</span>
+                </PermissionButton>
+              )}
+              {!isViewOnly && (
+                <PermissionButton
+                  resource="booking"
+                  action="edit"
+                  onClick={handleSyncInvoices}
+                  variant="outline"
+                  size="sm"
+                  disabled={isSyncingInvoices}
+                  className="border-green-600/30 text-green-700 hover:bg-green-500/5 text-xs sm:text-sm"
+                >
+                  {isSyncingInvoices ? (
+                    <Loader2 className="h-4 w-4 animate-spin sm:mr-1.5" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 sm:mr-1.5" />
+                  )}
+                  <span className="hidden sm:inline">Sync Invoice</span>
+                  <span className="sm:hidden">Sync</span>
                 </PermissionButton>
               )}
               {!isViewOnly && (
@@ -280,6 +329,14 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
       <BulkInvoiceReferenceModal
         open={invoiceRefModalOpen}
         onOpenChange={setInvoiceRefModalOpen}
+      />
+
+      <InvoiceSyncReviewModal
+        open={showSyncReviewModal}
+        onClose={() => setShowSyncReviewModal(false)}
+        proposals={invoiceProposals}
+        totalChecked={totalChecked}
+        onApplyComplete={() => {}}
       />
     </>
   );
