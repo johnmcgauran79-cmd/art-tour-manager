@@ -127,39 +127,48 @@ function pickBestInvoice(invoices: any[]): any {
 }
 
 // Fetch a single invoice ref from Xero (tries Reference, InvoiceNumber, INV- prefix)
+// Normalises refs like "INV-4141" to also try "4141" and vice versa
 async function fetchInvoicesForRef(ref: string, auth: { token: string; tenantId: string }): Promise<any[]> {
   const headers = { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' };
   const trimmed = ref.trim();
 
-  // Try Reference field
-  const r1 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${trimmed}"`, { headers });
-  if (r1.ok) {
-    const d1 = await r1.json();
-    if ((d1.Invoices || []).length > 0) return d1.Invoices;
+  // Strip common prefixes to get the numeric core
+  const numericCore = trimmed.replace(/^(INV-|inv-)/i, '');
+  const hasPrefix = numericCore !== trimmed;
+
+  // Build a unique set of search terms to try
+  const searchTerms: string[] = [trimmed];
+  if (hasPrefix && numericCore) {
+    // Input was "INV-4141" → also try "4141"
+    searchTerms.push(numericCore);
+  }
+  if (!hasPrefix && /^\d+$/.test(trimmed)) {
+    // Input was "4141" → also try "INV-4141"
+    searchTerms.push(`INV-${trimmed}`);
   }
 
-  await new Promise(r => setTimeout(r, 200));
-
-  // Try InvoiceNumber exact
-  const r2 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${trimmed}"`, { headers });
-  if (r2.ok) {
-    const d2 = await r2.json();
-    if ((d2.Invoices || []).length > 0) {
-      console.log(`Matched ref "${trimmed}" by InvoiceNumber`);
-      return d2.Invoices;
+  for (const term of searchTerms) {
+    // Try Reference field
+    const r1 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${term}"`, { headers });
+    if (r1.ok) {
+      const d1 = await r1.json();
+      if ((d1.Invoices || []).length > 0) {
+        console.log(`Matched ref "${trimmed}" by Reference="${term}"`);
+        return d1.Invoices;
+      }
     }
-  }
+    await new Promise(r => setTimeout(r, 200));
 
-  await new Promise(r => setTimeout(r, 200));
-
-  // Try INV- prefix
-  const r3 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="INV-${trimmed}"`, { headers });
-  if (r3.ok) {
-    const d3 = await r3.json();
-    if ((d3.Invoices || []).length > 0) {
-      console.log(`Matched ref "${trimmed}" by INV-${trimmed}`);
-      return d3.Invoices;
+    // Try InvoiceNumber exact
+    const r2 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${term}"`, { headers });
+    if (r2.ok) {
+      const d2 = await r2.json();
+      if ((d2.Invoices || []).length > 0) {
+        console.log(`Matched ref "${trimmed}" by InvoiceNumber="${term}"`);
+        return d2.Invoices;
+      }
     }
+    await new Promise(r => setTimeout(r, 200));
   }
 
   return [];
