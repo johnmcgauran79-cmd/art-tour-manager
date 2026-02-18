@@ -39,8 +39,8 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
   const { toast } = useToast();
   const { data: filterCounts } = useFilterCounts();
   
-  // Calculate combined count for deposits owing and final payments due
-  const statusUpdateCount = (filterCounts?.depositsOwing || 0) + (filterCounts?.paymentDue || 0);
+  // Calculate combined count for deposits owing, instalments owing, and final payments due
+  const statusUpdateCount = (filterCounts?.depositsOwing || 0) + (filterCounts?.instalmentsOwing || 0) + (filterCounts?.paymentDue || 0);
 
   // Calculate bookings this month
   const currentMonth = new Date().getMonth();
