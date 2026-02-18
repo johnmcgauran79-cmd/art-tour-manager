@@ -259,6 +259,17 @@ export const AddBookingModal = ({
       return;
     }
 
+    // Validate invoice reference is provided
+    if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
+      toast({
+        title: "Invoice Reference Required",
+        description: "Please enter an invoice reference number. Use 0 for host or complimentary bookings.",
+        variant: "destructive",
+      });
+      setActiveTab("details");
+      return;
+    }
+
     // Validate bedding types match passenger count for allocated hotels
     if (formData.accommodation_required) {
       const allocatedHotels = Object.entries(hotelAllocations).filter(([_, allocation]) => allocation.allocated);
