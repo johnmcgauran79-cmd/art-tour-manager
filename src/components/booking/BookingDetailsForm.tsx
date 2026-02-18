@@ -266,13 +266,17 @@ export const BookingDetailsForm = ({
         </div>
         
         <div>
-          <Label htmlFor="invoice_reference">Invoice Reference (Xero)</Label>
+          <Label htmlFor="invoice_reference">Invoice Reference (Xero) *</Label>
           <Input
             id="invoice_reference"
             value={formData.invoice_reference || ''}
             onChange={(e) => setFormData('invoice_reference', e.target.value)}
             placeholder="e.g. 1234 or INV-1234"
+            required
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Required — enter <strong>0</strong> for host or complimentary bookings. Separate multiple invoices with commas (e.g. 1234, 5678).
+          </p>
         </div>
 
         <div>
