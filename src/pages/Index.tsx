@@ -24,6 +24,7 @@ import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmail
 import { EmailIssuesWidget } from "@/components/dashboard/EmailIssuesWidget";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
 import { PendingEmailApprovals } from "@/components/operations/PendingEmailApprovals";
+import { PendingStatusChangeApprovals } from "@/components/operations/PendingStatusChangeApprovals";
 import { useBookings } from "@/hooks/useBookings";
 import { useTours } from "@/hooks/useTours";
 import { useTasks } from "@/hooks/useTasks";
@@ -174,6 +175,7 @@ const Index = () => {
       
       <TabsContent value="bookings" className="space-y-4 mt-0">
         {!isAgent && <PendingEmailApprovals />}
+        {!isAgent && <PendingStatusChangeApprovals />}
         <BookingsTable 
           onAddBooking={handleAddBooking} 
           onViewAnalytics={() => setCustomerAnalyticsOpen(true)}
