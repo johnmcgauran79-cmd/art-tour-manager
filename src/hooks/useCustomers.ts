@@ -89,7 +89,7 @@ export const countFilledFields = (contact: Customer): number => {
 };
 
 // Function to find duplicate contacts
-export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] => {
+export const findDuplicateContacts = (customers: Customer[], customerIdsWithBookings?: Set<string>): DuplicateGroup[] => {
   const duplicateMap = new Map<string, Customer[]>();
   
   customers.forEach(customer => {
@@ -105,8 +105,13 @@ export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] =
   const duplicateGroups: DuplicateGroup[] = [];
   duplicateMap.forEach((contacts, key) => {
     if (contacts.length > 1) {
-      // Sort so the contact with the most info is first (primary)
-      const sorted = [...contacts].sort((a, b) => countFilledFields(b) - countFilledFields(a));
+      // Sort: contacts with bookings first, then by most filled fields
+      const sorted = [...contacts].sort((a, b) => {
+        const aHasBookings = customerIdsWithBookings?.has(a.id) ? 1 : 0;
+        const bHasBookings = customerIdsWithBookings?.has(b.id) ? 1 : 0;
+        if (bHasBookings !== aHasBookings) return bHasBookings - aHasBookings;
+        return countFilledFields(b) - countFilledFields(a);
+      });
       duplicateGroups.push({
         key,
         contacts: sorted,

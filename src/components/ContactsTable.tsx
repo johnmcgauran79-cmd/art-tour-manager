@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,7 +64,26 @@ export const ContactsTable = () => {
   const bulkDeleteMutation = useBulkDeleteCustomers(handleProgress);
 
   const { data: allCustomers } = useAllCustomers();
-  const duplicateGroups = allCustomers ? findDuplicateContacts(allCustomers) : [];
+
+  // Fetch customer IDs that have bookings to prioritize them as primary in duplicate groups
+  const { data: customerIdsWithBookings } = useQuery({
+    queryKey: ['customer-ids-with-bookings'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('bookings')
+        .select('lead_passenger_id, passenger_2_id, passenger_3_id');
+      const ids = new Set<string>();
+      data?.forEach(b => {
+        if (b.lead_passenger_id) ids.add(b.lead_passenger_id);
+        if (b.passenger_2_id) ids.add(b.passenger_2_id);
+        if (b.passenger_3_id) ids.add(b.passenger_3_id);
+      });
+      return ids;
+    },
+    enabled: !!allCustomers,
+  });
+
+  const duplicateGroups = allCustomers ? findDuplicateContacts(allCustomers, customerIdsWithBookings) : [];
 
   const customers = customersData?.customers || [];
   const totalCount = customersData?.totalCount || 0;
