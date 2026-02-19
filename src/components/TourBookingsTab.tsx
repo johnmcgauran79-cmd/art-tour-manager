@@ -108,7 +108,7 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
                 className="flex items-center gap-1.5 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
               >
                 <FileText className="h-4 w-4" />
-                <span className="hidden md:inline">Invoice Ref</span>
+                <span className="hidden md:inline">Update Invoice #</span>
               </Button>
               <Button
                 onClick={() => setBulkDietaryModalOpen(true)}
