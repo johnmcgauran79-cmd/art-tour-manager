@@ -536,10 +536,33 @@ export const useMergeDuplicateContacts = () => {
         // Keep the oldest contact (first one) and update it with merged data
         const primaryContact = contacts[0];
         const contactsToDelete = contacts.slice(1);
+        const duplicateIds = contactsToDelete.map(c => c.id);
         
         console.log(`Merging ${contacts.length} contacts for ${mergedContact.first_name} ${mergedContact.last_name}`);
         
-        // First, delete the duplicate contacts to avoid unique constraint violations
+        // Reassign all booking references from duplicates to the primary contact
+        for (const dupId of duplicateIds) {
+          // Reassign lead_passenger_id
+          await supabase.from('bookings').update({ lead_passenger_id: primaryContact.id }).eq('lead_passenger_id', dupId);
+          // Reassign passenger_2_id
+          await supabase.from('bookings').update({ passenger_2_id: primaryContact.id }).eq('passenger_2_id', dupId);
+          // Reassign passenger_3_id
+          await supabase.from('bookings').update({ passenger_3_id: primaryContact.id }).eq('passenger_3_id', dupId);
+          // Reassign secondary_contact_id
+          await supabase.from('bookings').update({ secondary_contact_id: primaryContact.id }).eq('secondary_contact_id', dupId);
+          // Reassign booking_travel_docs
+          await supabase.from('booking_travel_docs').update({ customer_id: primaryContact.id }).eq('customer_id', dupId);
+          // Reassign booking_waivers
+          await supabase.from('booking_waivers').update({ customer_id: primaryContact.id }).eq('customer_id', dupId);
+          // Delete access tokens for duplicate (can't reassign)
+          await supabase.from('customer_access_tokens').delete().eq('customer_id', dupId);
+          // Delete profile updates for duplicate
+          await supabase.from('customer_profile_updates').delete().eq('customer_id', dupId);
+          // Delete xero sync log entries
+          await supabase.from('xero_sync_log').delete().eq('customer_id', dupId);
+        }
+
+        // Delete the duplicate contacts
         for (const contact of contactsToDelete) {
           const { error: deleteError } = await supabase
             .from('customers')
@@ -552,7 +575,7 @@ export const useMergeDuplicateContacts = () => {
           }
         }
         
-        // Then update the primary contact with merged data
+        // Update the primary contact with merged data
         const { error: updateError } = await supabase
           .from('customers')
           .update({
@@ -564,7 +587,6 @@ export const useMergeDuplicateContacts = () => {
             spouse_name: mergedContact.spouse_name,
             dietary_requirements: mergedContact.dietary_requirements,
             notes: mergedContact.notes,
-            
             updated_at: new Date().toISOString()
           })
           .eq('id', primaryContact.id);
