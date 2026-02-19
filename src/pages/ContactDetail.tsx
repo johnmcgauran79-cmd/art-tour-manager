@@ -341,16 +341,14 @@ export default function ContactDetail() {
             </CardContent>
           </Card>
 
-          {contact.notes && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <InfoRow label="Notes" value={contact.notes} />
-              </CardContent>
-            </Card>
-          )}
+          <Card>
+            <CardHeader>
+              <CardTitle>Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm whitespace-pre-wrap">{contact.notes || "—"}</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-4 mt-6">
