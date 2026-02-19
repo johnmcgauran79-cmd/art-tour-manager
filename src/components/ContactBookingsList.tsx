@@ -62,26 +62,40 @@ export const ContactBookingsList = ({ contactId }: ContactBookingsListProps) => 
   const { data: bookings, isLoading, error } = useQuery({
     queryKey: ['contact-bookings', contactId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
+      const selectFields = `
+        id,
+        status,
+        passenger_count,
+        created_at,
+        tours (
           id,
-          status,
-          passenger_count,
-          created_at,
-          tours (
-            id,
-            name,
-            start_date,
-            end_date,
-            location
-          )
-        `)
-        .eq('lead_passenger_id', contactId)
-        .order('created_at', { ascending: false });
+          name,
+          start_date,
+          end_date,
+          location
+        )
+      `;
 
-      if (error) throw error;
-      return data as ContactBooking[];
+      const [leadRes, p2Res, p3Res] = await Promise.all([
+        supabase.from('bookings').select(selectFields).eq('lead_passenger_id', contactId).order('created_at', { ascending: false }),
+        supabase.from('bookings').select(selectFields).eq('passenger_2_id', contactId).order('created_at', { ascending: false }),
+        supabase.from('bookings').select(selectFields).eq('passenger_3_id', contactId).order('created_at', { ascending: false }),
+      ]);
+
+      if (leadRes.error) throw leadRes.error;
+      if (p2Res.error) throw p2Res.error;
+      if (p3Res.error) throw p3Res.error;
+
+      // Deduplicate by booking id
+      const seen = new Set<string>();
+      const all: ContactBooking[] = [];
+      for (const booking of [...(leadRes.data || []), ...(p2Res.data || []), ...(p3Res.data || [])]) {
+        if (!seen.has(booking.id)) {
+          seen.add(booking.id);
+          all.push(booking as ContactBooking);
+        }
+      }
+      return all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     },
   });
 
