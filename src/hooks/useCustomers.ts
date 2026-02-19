@@ -600,7 +600,7 @@ export const useMergeDuplicateContacts = () => {
         totalMerged += contactsToDelete.length;
       }
       
-      return { groupsProcessed: duplicateGroups.length, contactsMerged: totalMerged };
+  return { groupsProcessed: duplicateGroups.length, contactsMerged: totalMerged };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
@@ -614,6 +614,80 @@ export const useMergeDuplicateContacts = () => {
       toast({
         title: "Error Merging Duplicates",
         description: error.message || "Failed to merge duplicate contacts. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Delete duplicate contacts (keep primary, delete the rest without merging data)
+export const useDeleteDuplicateContacts = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (duplicateGroups: DuplicateGroup[]) => {
+      let totalDeleted = 0;
+      let totalSkipped = 0;
+
+      for (const group of duplicateGroups) {
+        const { contacts } = group;
+        const primaryContact = contacts[0];
+        const contactsToDelete = contacts.slice(1);
+
+        console.log(`Deleting ${contactsToDelete.length} duplicates for ${primaryContact.first_name} ${primaryContact.last_name}, keeping primary`);
+
+        for (const dup of contactsToDelete) {
+          // Check if this duplicate has bookings
+          const { data: leadBookings } = await supabase.from('bookings').select('id').eq('lead_passenger_id', dup.id).limit(1);
+          const { data: p2Bookings } = await supabase.from('bookings').select('id').eq('passenger_2_id', dup.id).limit(1);
+          const { data: p3Bookings } = await supabase.from('bookings').select('id').eq('passenger_3_id', dup.id).limit(1);
+          const { data: secBookings } = await supabase.from('bookings').select('id').eq('secondary_contact_id', dup.id).limit(1);
+
+          const hasBookings = (leadBookings?.length || 0) > 0 || (p2Bookings?.length || 0) > 0 ||
+                             (p3Bookings?.length || 0) > 0 || (secBookings?.length || 0) > 0;
+
+          if (hasBookings) {
+            console.log(`Skipping ${dup.first_name} ${dup.last_name} - has bookings`);
+            totalSkipped++;
+            continue;
+          }
+
+          // Clean up related records
+          await supabase.from('customer_access_tokens').delete().eq('customer_id', dup.id);
+          await supabase.from('customer_profile_updates').delete().eq('customer_id', dup.id);
+          await supabase.from('booking_travel_docs').delete().eq('customer_id', dup.id);
+          await supabase.from('booking_waivers').delete().eq('customer_id', dup.id);
+          // Keep xero_sync_log to prevent re-import
+
+          const { error } = await supabase.from('customers').delete().eq('id', dup.id);
+          if (error) {
+            console.error('Error deleting duplicate:', error);
+            totalSkipped++;
+          } else {
+            totalDeleted++;
+          }
+        }
+      }
+
+      return { groupsProcessed: duplicateGroups.length, contactsDeleted: totalDeleted, contactsSkipped: totalSkipped };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      let desc = `Deleted ${result.contactsDeleted} duplicate contacts from ${result.groupsProcessed} groups.`;
+      if (result.contactsSkipped > 0) {
+        desc += ` ${result.contactsSkipped} skipped (have bookings).`;
+      }
+      toast({
+        title: "Duplicates Deleted",
+        description: desc,
+        variant: result.contactsSkipped > 0 ? "destructive" : "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Deleting Duplicates",
+        description: error.message || "Failed to delete duplicate contacts.",
         variant: "destructive",
       });
     },
