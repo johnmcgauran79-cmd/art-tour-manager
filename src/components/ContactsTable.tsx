@@ -5,8 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { Plus, Search, ChevronLeft, ChevronRight, Upload, Download, Trash2 } from "lucide-react";
-import { useCustomers, useDeleteCustomer, useBulkDeleteCustomers, BulkDeleteProgress } from "@/hooks/useCustomers";
+import { Plus, Search, ChevronLeft, ChevronRight, Upload, Download, Trash2, Merge } from "lucide-react";
+import { useCustomers, useDeleteCustomer, useBulkDeleteCustomers, useAllCustomers, findDuplicateContacts, BulkDeleteProgress } from "@/hooks/useCustomers";
+import { MergeDuplicatesModal } from "./MergeDuplicatesModal";
 import { ContactTableRow } from "./ContactTableRow";
 import { AddContactModal } from "./AddContactModal";
 import { ContactExportModal } from "./ContactExportModal";
@@ -37,6 +38,7 @@ export const ContactsTable = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showMergeDuplicates, setShowMergeDuplicates] = useState(false);
   const [deleteProgress, setDeleteProgress] = useState<BulkDeleteProgress | null>(null);
   const pageSize = 50;
 
@@ -58,6 +60,9 @@ export const ContactsTable = () => {
   const deleteCustomerMutation = useDeleteCustomer();
   const handleProgress = useCallback((p: BulkDeleteProgress) => setDeleteProgress(p), []);
   const bulkDeleteMutation = useBulkDeleteCustomers(handleProgress);
+
+  const { data: allCustomers } = useAllCustomers();
+  const duplicateGroups = allCustomers ? findDuplicateContacts(allCustomers) : [];
 
   const customers = customersData?.customers || [];
   const totalCount = customersData?.totalCount || 0;
@@ -140,6 +145,17 @@ export const ContactsTable = () => {
                   <Trash2 className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Delete ({selectedIds.size})</span>
                   <span className="sm:hidden">{selectedIds.size}</span>
+                </Button>
+              )}
+              {isAdmin && duplicateGroups.length > 0 && (
+                <Button 
+                  onClick={() => setShowMergeDuplicates(true)} 
+                  variant="outline" 
+                  size="sm"
+                >
+                  <Merge className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Merge Duplicates ({duplicateGroups.length})</span>
+                  <span className="sm:hidden">{duplicateGroups.length}</span>
                 </Button>
               )}
               <Button onClick={() => setShowExport(true)} variant="outline" size="sm">
@@ -372,5 +388,6 @@ export const ContactsTable = () => {
       <AddContactModal open={showAddContact} onOpenChange={setShowAddContact} />
       <ContactExportModal open={showExport} onOpenChange={setShowExport} searchQuery={debouncedSearch} filteredCount={totalCount} />
       <ContactImportModal open={showImport} onOpenChange={setShowImport} />
+      <MergeDuplicatesModal open={showMergeDuplicates} onOpenChange={setShowMergeDuplicates} duplicateGroups={duplicateGroups} />
     </>;
 };
