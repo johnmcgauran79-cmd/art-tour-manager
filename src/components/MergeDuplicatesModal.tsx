@@ -102,7 +102,6 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
         onSuccess: () => {
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
-          onOpenChange(false);
         },
         onSettled: () => setConfirmAction(null),
       });
