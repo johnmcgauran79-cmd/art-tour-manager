@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
@@ -52,20 +52,25 @@ export default function ContactDetail() {
     if (!contact) return false;
 
     try {
-      const { data: bookings, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('id, tours(name)')
-        .eq('lead_passenger_id', contact.id)
-        .limit(1);
+      // Check all booking references: lead, passenger_2, passenger_3, secondary_contact
+      const [leadRes, p2Res, p3Res, secRes] = await Promise.all([
+        supabase.from('bookings').select('id, tours(name)').eq('lead_passenger_id', contact.id).limit(1),
+        supabase.from('bookings').select('id').eq('passenger_2_id', contact.id).limit(1),
+        supabase.from('bookings').select('id').eq('passenger_3_id', contact.id).limit(1),
+        supabase.from('bookings').select('id').eq('secondary_contact_id', contact.id).limit(1),
+      ]);
 
-      if (bookingsError) {
+      if (leadRes.error || p2Res.error || p3Res.error || secRes.error) {
         setDeleteError('Unable to verify if contact has bookings. Please try again.');
         return true;
       }
 
-      if (bookings && bookings.length > 0) {
-        const tourName = bookings[0]?.tours?.name || 'a tour';
-        setDeleteError(`This contact cannot be deleted as they have an existing booking for ${tourName}. Please cancel or remove their bookings first.`);
+      const hasBookings = (leadRes.data?.length || 0) > 0 || (p2Res.data?.length || 0) > 0 ||
+                          (p3Res.data?.length || 0) > 0 || (secRes.data?.length || 0) > 0;
+
+      if (hasBookings) {
+        const tourName = leadRes.data?.[0]?.tours?.name || 'a tour';
+        setDeleteError(`This contact cannot be deleted as they have existing bookings${leadRes.data?.length ? ` (including ${tourName})` : ''}. Please cancel or remove their bookings first.`);
         return true;
       }
 
@@ -80,6 +85,14 @@ export default function ContactDetail() {
     if (!contact) return;
 
     try {
+      // Clean up related records before deleting the customer
+      // xero_sync_log has NO ACTION delete rule, must clean up manually
+      await supabase.from('xero_sync_log').delete().eq('customer_id', contact.id);
+      // booking_travel_docs and booking_waivers SET NULL on customer_id, but clean up anyway
+      await supabase.from('booking_travel_docs').update({ customer_id: null }).eq('customer_id', contact.id);
+      await supabase.from('booking_waivers').update({ customer_id: null }).eq('customer_id', contact.id);
+      // customer_access_tokens and customer_profile_updates CASCADE, no action needed
+
       const { error, count } = await supabase
         .from('customers')
         .delete({ count: 'exact' })
@@ -100,6 +113,7 @@ export default function ContactDetail() {
       });
       goBack("/?tab=contacts");
     } catch (error: any) {
+      console.error('Delete contact error:', error);
       setDeleteError(error.message || "Failed to delete contact. Please try again.");
     }
   };
@@ -168,22 +182,21 @@ export default function ContactDetail() {
                 Edit
               </Button>
               
+              <Button variant="destructive" size="sm" onClick={async () => {
+                    setDeleteError(null);
+                    await checkForBookings();
+                    setShowDeleteDialog(true);
+                  }}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+              
               <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
                 if (!open) {
                   setDeleteError(null);
                 }
                 setShowDeleteDialog(open);
               }}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" onClick={async () => {
-                    setDeleteError(null);
-                    const hasBookings = await checkForBookings();
-                    setShowDeleteDialog(true);
-                  }}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
-                </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Contact</AlertDialogTitle>
@@ -202,9 +215,9 @@ export default function ContactDetail() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     {!deleteError && (
-                      <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      <Button onClick={handleDeleteClick} variant="destructive">
                         Delete
-                      </AlertDialogAction>
+                      </Button>
                     )}
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -257,47 +270,14 @@ export default function ContactDetail() {
                   Edit
                 </Button>
                 
-                <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
-                  if (!open) {
+                <Button variant="destructive" size="sm" onClick={async () => {
                     setDeleteError(null);
-                  }
-                  setShowDeleteDialog(open);
-                }}>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm" onClick={async () => {
-                      setDeleteError(null);
-                      const hasBookings = await checkForBookings();
-                      setShowDeleteDialog(true);
-                    }}>
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Delete Contact</AlertDialogTitle>
-                      <AlertDialogDescription asChild>
-                        <div>
-                          {deleteError ? (
-                            <div className="text-destructive font-semibold text-base">
-                              {deleteError}
-                            </div>
-                          ) : (
-                            <span>Are you sure you want to delete this contact? This action cannot be undone.</span>
-                          )}
-                        </div>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      {!deleteError && (
-                        <AlertDialogAction onClick={handleDeleteClick} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                          Delete
-                        </AlertDialogAction>
-                      )}
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                    await checkForBookings();
+                    setShowDeleteDialog(true);
+                  }}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
               </>
             )}
           </div>
