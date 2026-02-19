@@ -496,9 +496,7 @@ export const useBulkDeleteCustomers = (onProgress?: (progress: BulkDeleteProgres
         }
 
         // Clean up related records that reference this customer (non-booking FKs)
-        // Delete xero_sync_log to avoid FK constraint on customer delete
-        // (sync log entries prevent re-import, but we must remove them to allow deletion)
-        await supabase.from('xero_sync_log').delete().eq('customer_id', id);
+        // xero_sync_log FK is ON DELETE SET NULL — entries stay to prevent re-import
         await supabase.from('customer_access_tokens').delete().eq('customer_id', id);
         await supabase.from('customer_profile_updates').delete().eq('customer_id', id);
         await supabase.from('booking_travel_docs').delete().eq('customer_id', id);
@@ -578,8 +576,7 @@ export const useMergeDuplicateContacts = () => {
           await supabase.from('customer_access_tokens').delete().eq('customer_id', dupId);
           // Delete profile updates for duplicate
           await supabase.from('customer_profile_updates').delete().eq('customer_id', dupId);
-          // Delete xero sync log entries for duplicate to avoid FK constraint on delete
-          await supabase.from('xero_sync_log').delete().eq('customer_id', dupId);
+          // xero_sync_log FK is ON DELETE SET NULL — entries stay to prevent re-import
         }
 
         // Delete the duplicate contacts
