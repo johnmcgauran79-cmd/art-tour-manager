@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Utensils, UserPlus, Mail, Bell, FileText } from "lucide-react";
+import { Plus, StickyNote, Utensils, UserPlus, Mail, Bell, FileText } from "lucide-react";
 import { TourBookingsList } from "@/components/TourBookingsList";
-import { BulkBookingStatusModal } from "@/components/BulkBookingStatusModal";
+import { BulkContactNotesModal } from "@/components/BulkContactNotesModal";
 import { BulkDietaryModal } from "@/components/BulkDietaryModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { useTours } from "@/hooks/useTours";
@@ -28,7 +28,7 @@ interface TourBookingsTabProps {
 }
 
 export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, currentTab, onOpenAlerts }: TourBookingsTabProps) => {
-  const [bulkStatusModalOpen, setBulkStatusModalOpen] = useState(false);
+  const [bulkNotesModalOpen, setBulkNotesModalOpen] = useState(false);
   const [bulkDietaryModalOpen, setBulkDietaryModalOpen] = useState(false);
   const [addWaitlistModalOpen, setAddWaitlistModalOpen] = useState(false);
   const [addBookingModalOpen, setAddBookingModalOpen] = useState(false);
@@ -93,13 +93,13 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
                 <span className="hidden sm:inline">Send Email</span>
               </Button>
               <Button
-                onClick={() => setBulkStatusModalOpen(true)}
+                onClick={() => setBulkNotesModalOpen(true)}
                 variant="outline"
                 size="sm"
                 className="flex items-center gap-1.5 border-brand-navy/30 text-brand-navy hover:bg-brand-navy/5"
               >
-                <Users className="h-4 w-4" />
-                <span className="hidden md:inline">Bulk Status</span>
+                <StickyNote className="h-4 w-4" />
+                <span className="hidden md:inline">Update Notes</span>
               </Button>
               <Button
                 onClick={() => setInvoiceRefModalOpen(true)}
@@ -143,9 +143,9 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
         <TourBookingsList tourId={tourId} tourName={tourName} currentTab={currentTab} />
       </div>
 
-      <BulkBookingStatusModal
-        open={bulkStatusModalOpen}
-        onOpenChange={setBulkStatusModalOpen}
+      <BulkContactNotesModal
+        open={bulkNotesModalOpen}
+        onOpenChange={setBulkNotesModalOpen}
         tourId={tourId}
       />
 
