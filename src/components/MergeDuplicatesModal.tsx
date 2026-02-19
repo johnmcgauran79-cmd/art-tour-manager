@@ -3,14 +3,14 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DuplicateGroup, useMergeDuplicateContacts, useDeleteDuplicateContacts } from "@/hooks/useCustomers";
-import { Merge, Trash2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { DuplicateGroup, useMergeDuplicateContacts, useDeleteSelectedContacts, countFilledFields } from "@/hooks/useCustomers";
+import { Merge, Trash2, Crown, User, ChevronDown, ChevronUp } from "lucide-react";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -25,40 +25,82 @@ interface MergeDuplicatesModalProps {
   duplicateGroups: DuplicateGroup[];
 }
 
+const ContactInfoGrid = ({ contact, compact = false }: { contact: any; compact?: boolean }) => {
+  const textSize = compact ? "text-xs" : "text-sm";
+  return (
+    <div className={`grid grid-cols-2 gap-x-4 gap-y-1 ${textSize}`}>
+      <div><span className="text-muted-foreground">Email:</span> {contact.email || "—"}</div>
+      <div><span className="text-muted-foreground">Phone:</span> {contact.phone || "—"}</div>
+      <div><span className="text-muted-foreground">City:</span> {contact.city || "—"}</div>
+      <div><span className="text-muted-foreground">State:</span> {contact.state || "—"}</div>
+      {contact.spouse_name && <div><span className="text-muted-foreground">Spouse:</span> {contact.spouse_name}</div>}
+      {contact.dietary_requirements && <div><span className="text-muted-foreground">Dietary:</span> {contact.dietary_requirements}</div>}
+      {contact.notes && (
+        <div className="col-span-2 truncate"><span className="text-muted-foreground">Notes:</span> {contact.notes}</div>
+      )}
+    </div>
+  );
+};
+
 export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: MergeDuplicatesModalProps) => {
-  const [selectedGroups, setSelectedGroups] = useState<Set<string>>(new Set());
+  // Track individual selected duplicate contact IDs
+  const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(duplicateGroups.slice(0, 3).map(g => g.key)));
   const [confirmAction, setConfirmAction] = useState<'merge' | 'delete' | null>(null);
   const mergeDuplicates = useMergeDuplicateContacts();
-  const deleteDuplicates = useDeleteDuplicateContacts();
+  const deleteSelected = useDeleteSelectedContacts();
 
-  const isPending = mergeDuplicates.isPending || deleteDuplicates.isPending;
+  const isPending = mergeDuplicates.isPending || deleteSelected.isPending;
 
-  const handleSelectGroup = (groupKey: string, checked: boolean) => {
-    const newSelected = new Set(selectedGroups);
-    if (checked) {
-      newSelected.add(groupKey);
-    } else {
-      newSelected.delete(groupKey);
-    }
-    setSelectedGroups(newSelected);
+  const toggleExpand = (key: string) => {
+    const next = new Set(expandedGroups);
+    if (next.has(key)) next.delete(key); else next.add(key);
+    setExpandedGroups(next);
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedGroups(new Set(duplicateGroups.map(group => group.key)));
-    } else {
-      setSelectedGroups(new Set());
-    }
+  const toggleDuplicate = (id: string) => {
+    const next = new Set(selectedDuplicateIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedDuplicateIds(next);
   };
 
-  const getSelectedGroups = () => duplicateGroups.filter(group => selectedGroups.has(group.key));
+  const selectAllDuplicatesInGroup = (group: DuplicateGroup, checked: boolean) => {
+    const next = new Set(selectedDuplicateIds);
+    // Skip index 0 (primary), select/deselect the rest
+    group.contacts.slice(1).forEach(c => {
+      if (checked) next.add(c.id); else next.delete(c.id);
+    });
+    setSelectedDuplicateIds(next);
+  };
+
+  const selectAllDuplicates = (checked: boolean) => {
+    const next = new Set<string>();
+    if (checked) {
+      duplicateGroups.forEach(group => {
+        group.contacts.slice(1).forEach(c => next.add(c.id));
+      });
+    }
+    setSelectedDuplicateIds(next);
+  };
+
+  // For merge: we need to identify which groups have selected duplicates
+  const getGroupsWithSelectedDuplicates = (): DuplicateGroup[] => {
+    return duplicateGroups.filter(group =>
+      group.contacts.slice(1).some(c => selectedDuplicateIds.has(c.id))
+    );
+  };
 
   const handleMerge = () => {
-    const groupsToMerge = getSelectedGroups();
-    if (groupsToMerge.length > 0) {
-      mergeDuplicates.mutate(groupsToMerge, {
+    const groups = getGroupsWithSelectedDuplicates();
+    if (groups.length > 0) {
+      // Filter each group to only include selected duplicates + primary
+      const filteredGroups: DuplicateGroup[] = groups.map(group => ({
+        ...group,
+        contacts: [group.contacts[0], ...group.contacts.slice(1).filter(c => selectedDuplicateIds.has(c.id))],
+      }));
+      mergeDuplicates.mutate(filteredGroups, {
         onSuccess: () => {
-          setSelectedGroups(new Set());
+          setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
           onOpenChange(false);
         },
@@ -68,11 +110,11 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
   };
 
   const handleDelete = () => {
-    const groupsToDelete = getSelectedGroups();
-    if (groupsToDelete.length > 0) {
-      deleteDuplicates.mutate(groupsToDelete, {
+    const ids = Array.from(selectedDuplicateIds);
+    if (ids.length > 0) {
+      deleteSelected.mutate(ids, {
         onSuccess: () => {
-          setSelectedGroups(new Set());
+          setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
           onOpenChange(false);
         },
@@ -81,119 +123,157 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
     }
   };
 
-  const totalDuplicates = getSelectedGroups()
-    .reduce((total, group) => total + (group.contacts.length - 1), 0);
+  const totalAllDuplicates = duplicateGroups.reduce((t, g) => t + (g.contacts.length - 1), 0);
+  const allSelected = totalAllDuplicates > 0 && selectedDuplicateIds.size === totalAllDuplicates;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogContent className="max-w-4xl max-h-[85vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Merge className="h-5 w-5" />
               Manage Duplicate Contacts
             </DialogTitle>
             <DialogDescription>
-              Found {duplicateGroups.length} groups of duplicate contacts. Select groups then choose to merge (combine data) or delete duplicates (keep primary only).
-              {selectedGroups.size > 0 && (
-                <span className="block mt-2 font-medium text-foreground">
-                  {selectedGroups.size} groups selected ({totalDuplicates} duplicate contacts)
-                </span>
-              )}
+              {duplicateGroups.length} groups with {totalAllDuplicates} duplicate contacts.
+              Select individual duplicates to delete or merge into the primary contact.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          {/* Actions bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 py-2 border-b">
             <div className="flex items-center gap-2">
               <Checkbox
-                id="select-all"
-                checked={selectedGroups.size === duplicateGroups.length && duplicateGroups.length > 0}
-                onCheckedChange={handleSelectAll}
+                id="select-all-dupes"
+                checked={allSelected}
+                onCheckedChange={selectAllDuplicates}
               />
-              <label htmlFor="select-all" className="text-sm font-medium">
-                Select all groups
+              <label htmlFor="select-all-dupes" className="text-sm font-medium">
+                Select all duplicates ({totalAllDuplicates})
               </label>
             </div>
+            <div className="flex items-center gap-2">
+              {selectedDuplicateIds.size > 0 && (
+                <span className="text-sm text-muted-foreground mr-2">
+                  {selectedDuplicateIds.size} selected
+                </span>
+              )}
+              <Button
+                onClick={() => setConfirmAction('delete')}
+                variant="destructive"
+                size="sm"
+                disabled={selectedDuplicateIds.size === 0 || isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete
+              </Button>
+              <Button
+                onClick={() => setConfirmAction('merge')}
+                size="sm"
+                disabled={selectedDuplicateIds.size === 0 || isPending}
+              >
+                <Merge className="h-4 w-4 mr-1" />
+                Merge
+              </Button>
+            </div>
+          </div>
 
-            <ScrollArea className="h-[400px] pr-4">
-              <div className="space-y-4">
-                {duplicateGroups.map((group) => (
-                  <Card key={group.key} className="relative">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start gap-3">
+          <ScrollArea className="h-[450px] pr-4">
+            <div className="space-y-3">
+              {duplicateGroups.map((group) => {
+                const primary = group.contacts[0];
+                const duplicates = group.contacts.slice(1);
+                const primaryFields = countFilledFields(primary);
+                const isExpanded = expandedGroups.has(group.key);
+                const allGroupDupesSelected = duplicates.every(c => selectedDuplicateIds.has(c.id));
+                const someGroupDupesSelected = duplicates.some(c => selectedDuplicateIds.has(c.id));
+
+                return (
+                  <Card key={group.key}>
+                    {/* Group header with primary contact */}
+                    <div
+                      className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => toggleExpand(group.key)}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Crown className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="font-semibold text-base">
+                            {primary.first_name} {primary.last_name}
+                          </span>
+                          <Badge variant="outline" className="text-xs">
+                            Primary · {primaryFields} fields
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {duplicates.length} duplicate{duplicates.length !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
+                        <ContactInfoGrid contact={primary} />
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 pt-1">
                         <Checkbox
-                          checked={selectedGroups.has(group.key)}
-                          onCheckedChange={(checked) => handleSelectGroup(group.key, !!checked)}
+                          checked={allGroupDupesSelected}
+                          onCheckedChange={(checked) => {
+                            // Prevent card toggle
+                            selectAllDuplicatesInGroup(group, !!checked);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Select all duplicates in ${primary.first_name} ${primary.last_name} group`}
                         />
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">
-                            {group.mergedContact.first_name} {group.mergedContact.last_name}
-                          </CardTitle>
-                          <CardDescription>
-                            {group.contacts.length} duplicate contacts found
-                          </CardDescription>
-                        </div>
-                        <Badge variant="secondary">
-                          {group.contacts.length - 1} duplicates
-                        </Badge>
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        )}
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div>
-                        <h4 className="font-medium text-sm mb-2">Merged Result (if merging):</h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm bg-muted p-3 rounded">
-                          <div><strong>Email:</strong> {group.mergedContact.email || "None"}</div>
-                          <div><strong>Phone:</strong> {group.mergedContact.phone || "None"}</div>
-                          <div><strong>City:</strong> {group.mergedContact.city || "None"}</div>
-                          <div><strong>State:</strong> {group.mergedContact.state || "None"}</div>
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium text-sm mb-2">Original Contacts:</h4>
-                        <div className="space-y-2">
-                          {group.contacts.map((contact, index) => (
-                            <div key={contact.id} className="grid grid-cols-2 gap-2 text-xs p-2 border rounded">
-                              <div><strong>Email:</strong> {contact.email || "None"}</div>
-                              <div><strong>Phone:</strong> {contact.phone || "None"}</div>
-                              <div><strong>City:</strong> {contact.city || "None"}</div>
-                              <div><strong>State:</strong> {contact.state || "None"}</div>
-                              {index === 0 && (
-                                <div className="col-span-2">
-                                  <Badge variant="outline" className="text-xs">Primary (will be kept)</Badge>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+                    </div>
 
-          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => setConfirmAction('delete')}
-              variant="destructive"
-              disabled={selectedGroups.size === 0 || isPending}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {isPending ? "Processing..." : `Delete Duplicates (${selectedGroups.size})`}
-            </Button>
-            <Button 
-              onClick={() => setConfirmAction('merge')}
-              disabled={selectedGroups.size === 0 || isPending}
-            >
-              <Merge className="h-4 w-4 mr-2" />
-              {isPending ? "Processing..." : `Merge Selected (${selectedGroups.size})`}
-            </Button>
-          </div>
+                    {/* Duplicates list (expanded) */}
+                    {isExpanded && (
+                      <CardContent className="pt-0 pb-4">
+                        <Separator className="mb-3" />
+                        <p className="text-xs text-muted-foreground mb-2 uppercase tracking-wide font-medium">Duplicates</p>
+                        <div className="space-y-2">
+                          {duplicates.map((dup) => {
+                            const dupFields = countFilledFields(dup);
+                            const isSelected = selectedDuplicateIds.has(dup.id);
+                            return (
+                              <div
+                                key={dup.id}
+                                className={`flex items-start gap-3 p-3 rounded-md border transition-colors ${
+                                  isSelected ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-muted/20'
+                                }`}
+                              >
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={() => toggleDuplicate(dup.id)}
+                                  className="mt-0.5"
+                                  aria-label={`Select duplicate ${dup.first_name} ${dup.last_name}`}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <User className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span className="text-sm font-medium">
+                                      {dup.first_name} {dup.last_name}
+                                    </span>
+                                    <Badge variant="outline" className="text-xs">
+                                      {dupFields} fields
+                                    </Badge>
+                                  </div>
+                                  <ContactInfoGrid contact={dup} compact />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 
@@ -201,14 +281,14 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction === 'delete' 
-                ? `Delete ${totalDuplicates} Duplicate Contacts?`
-                : `Merge ${selectedGroups.size} Duplicate Groups?`}
+              {confirmAction === 'delete'
+                ? `Delete ${selectedDuplicateIds.size} Duplicate Contact${selectedDuplicateIds.size !== 1 ? 's' : ''}?`
+                : `Merge ${selectedDuplicateIds.size} Duplicate${selectedDuplicateIds.size !== 1 ? 's' : ''} into Primary?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'delete'
-                ? `This will permanently delete ${totalDuplicates} duplicate contacts and keep only the primary contact in each group. The primary contact's data will NOT be updated. Duplicates with bookings will be skipped.`
-                : `This will merge data from ${totalDuplicates} duplicate contacts into the primary contact and then delete the duplicates. Booking references will be reassigned to the primary contact.`}
+                ? `This will permanently delete ${selectedDuplicateIds.size} selected contact${selectedDuplicateIds.size !== 1 ? 's' : ''}. Primary contacts are never deleted. Contacts with bookings will be skipped.`
+                : `This will merge data from ${selectedDuplicateIds.size} selected duplicate${selectedDuplicateIds.size !== 1 ? 's' : ''} into their primary contact and then delete the duplicates. Booking references will be reassigned.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -218,7 +298,7 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
               disabled={isPending}
               variant={confirmAction === 'delete' ? 'destructive' : 'default'}
             >
-              {isPending ? "Processing..." : confirmAction === 'delete' ? 'Delete Duplicates' : 'Merge Contacts'}
+              {isPending ? "Processing..." : confirmAction === 'delete' ? 'Delete Selected' : 'Merge Selected'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -77,6 +77,17 @@ const mergeContactData = (contacts: Customer[]): Customer => {
   return merged;
 };
 
+// Count how many useful fields a contact has filled
+export const countFilledFields = (contact: Customer): number => {
+  const fields = [
+    contact.email, contact.phone, contact.city, contact.state, contact.country,
+    contact.spouse_name, contact.dietary_requirements, contact.notes,
+    contact.emergency_contact_name, contact.emergency_contact_phone,
+    contact.medical_conditions, contact.accessibility_needs, contact.preferred_name,
+  ];
+  return fields.filter(f => f && f.trim() !== '').length;
+};
+
 // Function to find duplicate contacts
 export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] => {
   const duplicateMap = new Map<string, Customer[]>();
@@ -94,10 +105,12 @@ export const findDuplicateContacts = (customers: Customer[]): DuplicateGroup[] =
   const duplicateGroups: DuplicateGroup[] = [];
   duplicateMap.forEach((contacts, key) => {
     if (contacts.length > 1) {
+      // Sort so the contact with the most info is first (primary)
+      const sorted = [...contacts].sort((a, b) => countFilledFields(b) - countFilledFields(a));
       duplicateGroups.push({
         key,
-        contacts,
-        mergedContact: mergeContactData(contacts)
+        contacts: sorted,
+        mergedContact: mergeContactData(sorted)
       });
     }
   });
@@ -688,6 +701,73 @@ export const useDeleteDuplicateContacts = () => {
       toast({
         title: "Error Deleting Duplicates",
         description: error.message || "Failed to delete duplicate contacts.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Delete specific individual contacts by ID (for selecting specific duplicates to remove)
+export const useDeleteSelectedContacts = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (contactIds: string[]) => {
+      let totalDeleted = 0;
+      let totalSkipped = 0;
+
+      for (const contactId of contactIds) {
+        // Check if this contact has bookings
+        const [leadRes, p2Res, p3Res, secRes] = await Promise.all([
+          supabase.from('bookings').select('id').eq('lead_passenger_id', contactId).limit(1),
+          supabase.from('bookings').select('id').eq('passenger_2_id', contactId).limit(1),
+          supabase.from('bookings').select('id').eq('passenger_3_id', contactId).limit(1),
+          supabase.from('bookings').select('id').eq('secondary_contact_id', contactId).limit(1),
+        ]);
+
+        const hasBookings = (leadRes.data?.length || 0) > 0 || (p2Res.data?.length || 0) > 0 ||
+                           (p3Res.data?.length || 0) > 0 || (secRes.data?.length || 0) > 0;
+
+        if (hasBookings) {
+          totalSkipped++;
+          continue;
+        }
+
+        // Clean up related records
+        await supabase.from('xero_sync_log').delete().eq('customer_id', contactId);
+        await supabase.from('customer_access_tokens').delete().eq('customer_id', contactId);
+        await supabase.from('customer_profile_updates').delete().eq('customer_id', contactId);
+        await supabase.from('booking_travel_docs').update({ customer_id: null }).eq('customer_id', contactId);
+        await supabase.from('booking_waivers').update({ customer_id: null }).eq('customer_id', contactId);
+
+        const { error } = await supabase.from('customers').delete().eq('id', contactId);
+        if (error) {
+          console.error('Error deleting contact:', error);
+          totalSkipped++;
+        } else {
+          totalDeleted++;
+        }
+      }
+
+      return { contactsDeleted: totalDeleted, contactsSkipped: totalSkipped };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      let desc = `Deleted ${result.contactsDeleted} contacts.`;
+      if (result.contactsSkipped > 0) {
+        desc += ` ${result.contactsSkipped} skipped (have bookings).`;
+      }
+      toast({
+        title: "Contacts Deleted",
+        description: desc,
+        variant: result.contactsSkipped > 0 ? "destructive" : "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error Deleting Contacts",
+        description: error.message || "Failed to delete contacts.",
         variant: "destructive",
       });
     },
