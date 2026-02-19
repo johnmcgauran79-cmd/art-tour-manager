@@ -25,6 +25,7 @@ serve(async (req) => {
       .from('automated_email_rules')
       .select('*, email_templates(*)')
       .eq('is_active', true)
+      .eq('trigger_type', 'days_before_tour') // Only process scheduled rules, not on_status_change
       .order('days_before_tour', { ascending: true });
 
     if (rulesError) {
