@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { DuplicateGroup, useMergeDuplicateContacts, useDeleteSelectedContacts, countFilledFields } from "@/hooks/useCustomers";
-import { Merge, Trash2, Crown, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Merge, Trash2, Crown, User, ChevronDown, ChevronUp, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -116,7 +116,6 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
         onSuccess: () => {
           setSelectedDuplicateIds(new Set());
           setConfirmAction(null);
-          onOpenChange(false);
         },
         onSettled: () => setConfirmAction(null),
       });
@@ -130,6 +129,13 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-4xl max-h-[85vh]">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute right-4 top-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </button>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Merge className="h-5 w-5" />
