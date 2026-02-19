@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { DuplicateGroup, useMergeDuplicateContacts, useDeleteSelectedContacts, countFilledFields } from "@/hooks/useCustomers";
-import { Merge, Trash2, Crown, User, ChevronDown, ChevronUp, X } from "lucide-react";
+import { Merge, Trash2, Crown, User, ChevronDown, ChevronUp, X, Zap } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -46,7 +46,7 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
   // Track individual selected duplicate contact IDs
   const [selectedDuplicateIds, setSelectedDuplicateIds] = useState<Set<string>>(new Set());
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set(duplicateGroups.slice(0, 3).map(g => g.key)));
-  const [confirmAction, setConfirmAction] = useState<'merge' | 'delete' | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'merge' | 'delete' | 'merge-empty' | null>(null);
   const mergeDuplicates = useMergeDuplicateContacts();
   const deleteSelected = useDeleteSelectedContacts();
 
@@ -124,6 +124,24 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
   const totalAllDuplicates = duplicateGroups.reduce((t, g) => t + (g.contacts.length - 1), 0);
   const allSelected = totalAllDuplicates > 0 && selectedDuplicateIds.size === totalAllDuplicates;
 
+  // Find groups where ALL contacts (including primary) have no filled fields — auto-merge candidates
+  const emptyDuplicateGroups = duplicateGroups.filter(group =>
+    group.contacts.every(c => countFilledFields(c) === 0)
+  );
+  const totalEmptyDuplicates = emptyDuplicateGroups.reduce((t, g) => t + (g.contacts.length - 1), 0);
+
+  const handleMergeAllEmpty = () => {
+    if (emptyDuplicateGroups.length > 0) {
+      mergeDuplicates.mutate(emptyDuplicateGroups, {
+        onSuccess: () => {
+          setSelectedDuplicateIds(new Set());
+          setConfirmAction(null);
+        },
+        onSettled: () => setConfirmAction(null),
+      });
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,6 +181,17 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
                 <span className="text-sm text-muted-foreground mr-2">
                   {selectedDuplicateIds.size} selected
                 </span>
+              )}
+              {totalEmptyDuplicates > 0 && (
+                <Button
+                  onClick={() => setConfirmAction('merge-empty')}
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                >
+                  <Zap className="h-4 w-4 mr-1" />
+                  Merge All Empty ({totalEmptyDuplicates})
+                </Button>
               )}
               <Button
                 onClick={() => setConfirmAction('delete')}
@@ -288,22 +317,26 @@ export const MergeDuplicatesModal = ({ open, onOpenChange, duplicateGroups }: Me
             <AlertDialogTitle>
               {confirmAction === 'delete'
                 ? `Delete ${selectedDuplicateIds.size} Duplicate Contact${selectedDuplicateIds.size !== 1 ? 's' : ''}?`
+                : confirmAction === 'merge-empty'
+                ? `Merge All ${totalEmptyDuplicates} Empty Duplicates?`
                 : `Merge ${selectedDuplicateIds.size} Duplicate${selectedDuplicateIds.size !== 1 ? 's' : ''} into Primary?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'delete'
                 ? `This will permanently delete ${selectedDuplicateIds.size} selected contact${selectedDuplicateIds.size !== 1 ? 's' : ''}. Primary contacts are never deleted. Contacts with bookings will be skipped.`
+                : confirmAction === 'merge-empty'
+                ? `This will automatically merge ${totalEmptyDuplicates} duplicate contacts across ${emptyDuplicateGroups.length} groups where no contact has any details filled in. The primary contact will be kept in each group.`
                 : `This will merge data from ${selectedDuplicateIds.size} selected duplicate${selectedDuplicateIds.size !== 1 ? 's' : ''} into their primary contact and then delete the duplicates. Booking references will be reassigned.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <Button
-              onClick={confirmAction === 'delete' ? handleDelete : handleMerge}
+              onClick={confirmAction === 'delete' ? handleDelete : confirmAction === 'merge-empty' ? handleMergeAllEmpty : handleMerge}
               disabled={isPending}
               variant={confirmAction === 'delete' ? 'destructive' : 'default'}
             >
-              {isPending ? "Processing..." : confirmAction === 'delete' ? 'Delete Selected' : 'Merge Selected'}
+              {isPending ? "Processing..." : confirmAction === 'delete' ? 'Delete Selected' : confirmAction === 'merge-empty' ? 'Merge All Empty' : 'Merge Selected'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
