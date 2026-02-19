@@ -85,6 +85,23 @@ serve(async (req) => {
     const dateFilter = '';
     console.log('Fetching all active Xero contacts (dedup handled in-memory)...');
 
+    // Load already-synced Xero ContactIDs to avoid re-importing deleted/merged contacts
+    const syncedXeroIds = new Set<string>();
+    let syncFrom = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('xero_sync_log')
+        .select('entity_id')
+        .eq('entity_type', 'contact')
+        .range(syncFrom, syncFrom + batchSize - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      data.forEach((row: any) => syncedXeroIds.add(row.entity_id));
+      if (data.length < batchSize) break;
+      syncFrom += batchSize;
+    }
+    console.log(`Loaded ${syncedXeroIds.size} already-synced Xero ContactIDs`);
+
     // Load existing customers for duplicate matching
     const allCustomers: any[] = [];
     let from = 0;
@@ -155,6 +172,12 @@ serve(async (req) => {
           const lastName = xeroContact.LastName || xeroContact.Name?.split(' ').slice(1).join(' ') || '';
           
           if (!firstName && !lastName) {
+            totalSkipped++;
+            continue;
+          }
+
+          // Skip if this Xero ContactID was already synced (prevents re-importing merged/deleted contacts)
+          if (syncedXeroIds.has(xeroContact.ContactID)) {
             totalSkipped++;
             continue;
           }

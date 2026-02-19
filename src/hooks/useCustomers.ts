@@ -558,8 +558,8 @@ export const useMergeDuplicateContacts = () => {
           await supabase.from('customer_access_tokens').delete().eq('customer_id', dupId);
           // Delete profile updates for duplicate
           await supabase.from('customer_profile_updates').delete().eq('customer_id', dupId);
-          // Delete xero sync log entries
-          await supabase.from('xero_sync_log').delete().eq('customer_id', dupId);
+          // Reassign xero sync log entries to primary (keeps Xero ContactID tracked to prevent re-import)
+          await supabase.from('xero_sync_log').update({ customer_id: primaryContact.id }).eq('customer_id', dupId);
         }
 
         // Delete the duplicate contacts
