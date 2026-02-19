@@ -80,10 +80,12 @@ serve(async (req) => {
       .eq('id', auth.settingsId)
       .maybeSingle();
 
-    // Note: Xero doesn't support filtering contacts by CreatedDateUTC.
-    // We fetch all active contacts and rely on in-memory dedup to skip existing ones.
-    const dateFilter = '';
-    console.log('Fetching all active Xero contacts (dedup handled in-memory)...');
+    // Use If-Modified-Since header to only fetch contacts modified since last sync
+    const lastSyncAt = settings?.last_contact_sync_at;
+    const ifModifiedSince = lastSyncAt ? new Date(lastSyncAt).toUTCString() : null;
+    console.log(`Syncing Xero contacts${ifModifiedSince ? ` modified since ${ifModifiedSince}` : ' (full sync)'}...`);
+
+    const batchSize = 1000;
 
     // Load already-synced Xero ContactIDs to avoid re-importing deleted/merged contacts
     const syncedXeroIds = new Set<string>();
@@ -105,7 +107,6 @@ serve(async (req) => {
     // Load existing customers for duplicate matching
     const allCustomers: any[] = [];
     let from = 0;
-    const batchSize = 1000;
     while (true) {
       const { data, error } = await supabase
         .from('customers')
@@ -136,15 +137,19 @@ serve(async (req) => {
     let hasMore = true;
 
     while (hasMore) {
+      const fetchHeaders: Record<string, string> = {
+        'Authorization': `Bearer ${auth.token}`,
+        'Xero-Tenant-Id': auth.tenantId,
+        'Accept': 'application/json',
+      };
+      // Only fetch contacts modified since last sync (Xero supports If-Modified-Since header)
+      if (ifModifiedSince) {
+        fetchHeaders['If-Modified-Since'] = ifModifiedSince;
+      }
+
       const contactsResponse = await fetch(
-        `https://api.xero.com/api.xro/2.0/Contacts?page=${page}&where=ContactStatus=="ACTIVE"${dateFilter}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${auth.token}`,
-            'Xero-Tenant-Id': auth.tenantId,
-            'Accept': 'application/json',
-          },
-        }
+        `https://api.xero.com/api.xro/2.0/Contacts?page=${page}&where=ContactStatus=="ACTIVE"`,
+        { headers: fetchHeaders }
       );
 
       if (!contactsResponse.ok) {
