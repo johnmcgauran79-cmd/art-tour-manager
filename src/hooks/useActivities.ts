@@ -2,6 +2,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+export interface ActivityJourney {
+  id: string;
+  activity_id: string;
+  journey_number: number;
+  pickup_time: string | null;
+  pickup_location: string | null;
+  destination: string | null;
+  sort_order: number;
+}
+
 export interface Activity {
   id: string;
   tour_id: string;
@@ -11,11 +21,6 @@ export interface Activity {
   start_time: string | null;
   end_time: string | null;
   depart_for_activity: string | null;
-  pickup_time: string | null;
-  collection_time: string | null;
-  pickup_location: string | null;
-  collection_location: string | null;
-  dropoff_location: string | null;
   spots_available: number | null;
   spots_booked: number | null;
   activity_status: string;
@@ -36,6 +41,8 @@ export interface Activity {
   transport_notes: string | null;
   created_at: string;
   updated_at: string;
+  // Joined journeys
+  activity_journeys?: ActivityJourney[];
 }
 
 export const useActivities = (tourId: string) => {
@@ -51,7 +58,7 @@ export const useActivities = (tourId: string) => {
       
       const { data, error } = await supabase
         .from('activities')
-        .select('*')
+        .select('*, activity_journeys(*)')
         .eq('tour_id', tourId)
         .order('activity_date', { ascending: true, nullsFirst: false })
         .order('start_time', { ascending: true, nullsFirst: false })
@@ -62,10 +69,15 @@ export const useActivities = (tourId: string) => {
         throw error;
       }
       
-      console.log('Activities fetched successfully for tour', tourId, ':', data?.length, 'activities');
-      console.log('Activity details:', data);
-      return data as Activity[];
+      // Sort journeys within each activity
+      const activities = (data || []).map((a: any) => ({
+        ...a,
+        activity_journeys: (a.activity_journeys || []).sort((x: any, y: any) => x.journey_number - y.journey_number),
+      }));
+      
+      console.log('Activities fetched successfully for tour', tourId, ':', activities.length, 'activities');
+      return activities as Activity[];
     },
-    enabled: !!tourId, // Only run query if tourId is provided
+    enabled: !!tourId,
   });
 };

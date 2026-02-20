@@ -9,6 +9,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
 import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
+import { JourneysEditor } from "./JourneysEditor";
 interface ActivityBookingInfo {
   id: string;
   passengers_attending: number;
@@ -215,15 +216,6 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                 <InfoRow label="Driver Name" value={activity.driver_name} />
                 <InfoRow label="Driver Phone" value={activity.driver_phone} />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <InfoRow label="Pickup Time" value={formatTime(activity.pickup_time)} />
-                <InfoRow label="Collection Time" value={formatTime(activity.collection_time)} />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <InfoRow label="Pickup Location" value={activity.pickup_location} />
-                <InfoRow label="Collection Location" value={activity.collection_location} />
-              </div>
-              <InfoRow label="Drop Off" value={activity.dropoff_location} />
               {activity.transport_notes && (
                 <div className="mt-2 pt-2 border-t">
                   <span className="text-xs text-muted-foreground uppercase">Transport Notes</span>
@@ -232,6 +224,28 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
               )}
             </div>
           </details>
+
+          {/* Journeys */}
+          {activity.activity_journeys && activity.activity_journeys.length > 0 && (
+            <details className="group" open>
+              <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
+                Journeys ({activity.activity_journeys.length})
+              </summary>
+              <div className="mt-1">
+                <JourneysEditor
+                  journeys={activity.activity_journeys.map(j => ({
+                    id: j.id,
+                    journey_number: j.journey_number,
+                    pickup_time: j.pickup_time || "",
+                    pickup_location: j.pickup_location || "",
+                    destination: j.destination || "",
+                  }))}
+                  onChange={() => {}}
+                  readOnly
+                />
+              </div>
+            </details>
+          )}
 
           {/* Notes */}
           {(activity.notes || activity.operations_notes) && (

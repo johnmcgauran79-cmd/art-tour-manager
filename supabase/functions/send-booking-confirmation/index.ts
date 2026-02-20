@@ -202,11 +202,11 @@ const handler = async (req: Request): Promise<Response> => {
           passengers_attending,
           activities (
             name, activity_date, activity_status, start_time, end_time, location,
-            pickup_time, pickup_location, collection_time, collection_location, dropoff_location,
             depart_for_activity, transport_mode, driver_name, driver_phone,
             transport_company, transport_contact_name, transport_phone, transport_email,
             contact_name, contact_phone, contact_email, hospitality_inclusions, notes,
-            spots_available, spots_booked
+            spots_available, spots_booked,
+            activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order)
           )
         )
       `)
@@ -796,11 +796,11 @@ const handler = async (req: Request): Promise<Response> => {
         activity_start_time: ab.activities?.start_time || '',
         activity_end_time: ab.activities?.end_time || '',
         activity_location: ab.activities?.location || '',
-        activity_pickup_time: ab.activities?.pickup_time || '',
-        activity_pickup_location: ab.activities?.pickup_location || '',
-        activity_collection_time: ab.activities?.collection_time || '',
-        activity_collection_location: ab.activities?.collection_location || '',
-        activity_dropoff_location: ab.activities?.dropoff_location || '',
+        activity_pickup_time: (ab.activities?.activity_journeys || [])[0]?.pickup_time || '',
+        activity_pickup_location: (ab.activities?.activity_journeys || [])[0]?.pickup_location || '',
+        activity_collection_time: (ab.activities?.activity_journeys || []).length > 1 ? (ab.activities?.activity_journeys || [])[1]?.pickup_time || '' : '',
+        activity_collection_location: (ab.activities?.activity_journeys || []).length > 1 ? (ab.activities?.activity_journeys || [])[1]?.pickup_location || '' : '',
+        activity_dropoff_location: (ab.activities?.activity_journeys || [])[0]?.destination || '',
         activity_depart_for_activity: ab.activities?.depart_for_activity || '',
         activity_transport_mode: ab.activities?.transport_mode || '',
         activity_driver_name: ab.activities?.driver_name || '',

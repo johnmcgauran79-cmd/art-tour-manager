@@ -129,52 +129,63 @@ export const useDuplicateTour = () => {
       // Fetch and duplicate activities
       const { data: originalActivities, error: activitiesError } = await supabase
         .from('activities')
-        .select('*')
+        .select('*, activity_journeys(*)')
         .eq('tour_id', originalTourId);
 
       if (activitiesError) throw activitiesError;
 
       if (originalActivities && originalActivities.length > 0) {
-        const newActivities = originalActivities.map(activity => ({
-          tour_id: newTour.id,
-          name: activity.name,
-          location: activity.location,
-          activity_date: activity.activity_date ? 
-            new Date(new Date(activity.activity_date).getFullYear() + 1, 
-                     new Date(activity.activity_date).getMonth(), 
-                     new Date(activity.activity_date).getDate()).toISOString().split('T')[0] : null,
-          start_time: activity.start_time,
-          end_time: activity.end_time,
-          depart_for_activity: activity.depart_for_activity,
-          pickup_time: activity.pickup_time,
-          collection_time: activity.collection_time,
-          pickup_location: activity.pickup_location,
-          collection_location: activity.collection_location,
-          dropoff_location: activity.dropoff_location,
-          spots_available: activity.spots_available,
-          activity_status: 'pending' as const,
-          transport_status: 'pending' as const,
-          transport_mode: activity.transport_mode,
-          contact_name: activity.contact_name,
-          contact_phone: activity.contact_phone,
-          contact_email: activity.contact_email,
-          transport_company: activity.transport_company,
-          transport_contact_name: activity.transport_contact_name,
-          transport_phone: activity.transport_phone,
-          transport_email: activity.transport_email,
-          driver_name: activity.driver_name,
-          driver_phone: activity.driver_phone,
-          hospitality_inclusions: activity.hospitality_inclusions,
-          notes: activity.notes,
-          operations_notes: activity.operations_notes,
-          transport_notes: activity.transport_notes,
-        }));
+        for (const activity of originalActivities) {
+          const { data: newActivity, error: actInsertErr } = await supabase
+            .from('activities')
+            .insert({
+              tour_id: newTour.id,
+              name: activity.name,
+              location: activity.location,
+              activity_date: activity.activity_date ? 
+                new Date(new Date(activity.activity_date).getFullYear() + 1, 
+                         new Date(activity.activity_date).getMonth(), 
+                         new Date(activity.activity_date).getDate()).toISOString().split('T')[0] : null,
+              start_time: activity.start_time,
+              end_time: activity.end_time,
+              depart_for_activity: activity.depart_for_activity,
+              spots_available: activity.spots_available,
+              activity_status: 'pending' as const,
+              transport_status: 'pending' as const,
+              transport_mode: activity.transport_mode,
+              contact_name: activity.contact_name,
+              contact_phone: activity.contact_phone,
+              contact_email: activity.contact_email,
+              transport_company: activity.transport_company,
+              transport_contact_name: activity.transport_contact_name,
+              transport_phone: activity.transport_phone,
+              transport_email: activity.transport_email,
+              driver_name: activity.driver_name,
+              driver_phone: activity.driver_phone,
+              hospitality_inclusions: activity.hospitality_inclusions,
+              notes: activity.notes,
+              operations_notes: activity.operations_notes,
+              transport_notes: activity.transport_notes,
+            })
+            .select('id')
+            .single();
 
-        const { error: activitiesInsertError } = await supabase
-          .from('activities')
-          .insert(newActivities);
+          if (actInsertErr) throw actInsertErr;
 
-        if (activitiesInsertError) throw activitiesInsertError;
+          // Duplicate journeys
+          const journeys = (activity as any).activity_journeys || [];
+          if (newActivity && journeys.length > 0) {
+            const newJourneys = journeys.map((j: any) => ({
+              activity_id: newActivity.id,
+              journey_number: j.journey_number,
+              pickup_time: j.pickup_time,
+              pickup_location: j.pickup_location,
+              destination: j.destination,
+              sort_order: j.sort_order,
+            }));
+            await supabase.from('activity_journeys').insert(newJourneys);
+          }
+        }
       }
 
       return newTour;

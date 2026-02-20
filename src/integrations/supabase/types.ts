@@ -18,8 +18,6 @@ export type Database = {
         Row: {
           activity_date: string | null
           activity_status: Database["public"]["Enums"]["activity_status"] | null
-          collection_location: string | null
-          collection_time: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
@@ -27,7 +25,6 @@ export type Database = {
           depart_for_activity: string | null
           driver_name: string | null
           driver_phone: string | null
-          dropoff_location: string | null
           end_time: string | null
           hospitality_inclusions: string | null
           id: string
@@ -35,9 +32,7 @@ export type Database = {
           name: string
           notes: string | null
           operations_notes: string | null
-          pickup_location: string | null
           pickup_location_transport: string | null
-          pickup_time: string | null
           spots_available: number | null
           spots_booked: number | null
           spots_remaining: number | null
@@ -59,8 +54,6 @@ export type Database = {
           activity_status?:
             | Database["public"]["Enums"]["activity_status"]
             | null
-          collection_location?: string | null
-          collection_time?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -68,7 +61,6 @@ export type Database = {
           depart_for_activity?: string | null
           driver_name?: string | null
           driver_phone?: string | null
-          dropoff_location?: string | null
           end_time?: string | null
           hospitality_inclusions?: string | null
           id?: string
@@ -76,9 +68,7 @@ export type Database = {
           name: string
           notes?: string | null
           operations_notes?: string | null
-          pickup_location?: string | null
           pickup_location_transport?: string | null
-          pickup_time?: string | null
           spots_available?: number | null
           spots_booked?: number | null
           spots_remaining?: number | null
@@ -100,8 +90,6 @@ export type Database = {
           activity_status?:
             | Database["public"]["Enums"]["activity_status"]
             | null
-          collection_location?: string | null
-          collection_time?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -109,7 +97,6 @@ export type Database = {
           depart_for_activity?: string | null
           driver_name?: string | null
           driver_phone?: string | null
-          dropoff_location?: string | null
           end_time?: string | null
           hospitality_inclusions?: string | null
           id?: string
@@ -117,9 +104,7 @@ export type Database = {
           name?: string
           notes?: string | null
           operations_notes?: string | null
-          pickup_location?: string | null
           pickup_location_transport?: string | null
-          pickup_time?: string | null
           spots_available?: number | null
           spots_booked?: number | null
           spots_remaining?: number | null
@@ -225,6 +210,50 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_journeys: {
+        Row: {
+          activity_id: string
+          created_at: string
+          destination: string | null
+          id: string
+          journey_number: number
+          pickup_location: string | null
+          pickup_time: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          destination?: string | null
+          id?: string
+          journey_number: number
+          pickup_location?: string | null
+          pickup_time?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          destination?: string | null
+          id?: string
+          journey_number?: number
+          pickup_location?: string | null
+          pickup_time?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_journeys_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
             referencedColumns: ["id"]
           },
         ]
