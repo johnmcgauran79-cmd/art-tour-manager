@@ -43,7 +43,7 @@ export const JourneysEditor = ({ journeys, onChange, readOnly = false }: Journey
         {journeys.map((journey, index) => (
           <div key={index} className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
             <h5 className="font-medium text-sm mb-2">Journey {index + 1}</h5>
-            <div className="grid grid-cols-3 gap-2 text-xs sm:text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 sm:gap-2 text-xs sm:text-sm">
               <div>
                 <span className="text-muted-foreground">Pickup Time</span>
                 <p className="font-medium">{journey.pickup_time ? formatTime(journey.pickup_time) : '-'}</p>
