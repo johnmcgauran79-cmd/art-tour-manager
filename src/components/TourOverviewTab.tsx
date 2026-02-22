@@ -362,7 +362,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                   </div>
                 )}
                 <div>
-                  <span className="font-medium">Travel Documents Required:</span>{" "}
+                  <span className="font-medium">Passport Details Required:</span>{" "}
                   <span className={tour.travelDocumentsRequired ? "text-green-600" : "text-muted-foreground"}>
                     {tour.travelDocumentsRequired ? "Yes" : "No"}
                   </span>

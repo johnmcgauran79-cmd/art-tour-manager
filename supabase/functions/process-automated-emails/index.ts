@@ -198,11 +198,11 @@ serve(async (req) => {
       }
     }
 
-    // Also process travel documents request rules
+    // Also process passport details request rules
     let travelDocsBatches = 0;
     let travelDocsEmails = 0;
     try {
-      console.log('--- Processing travel documents request rules ---');
+      console.log('--- Processing passport details request rules ---');
       const travelDocsResult = await processTravelDocsRules(supabase, errors);
       travelDocsBatches = travelDocsResult.batchesCreated;
       travelDocsEmails = travelDocsResult.emailsSent;
@@ -245,7 +245,7 @@ serve(async (req) => {
   }
 });
 
-// Process travel documents request rules
+// Process passport details request rules
 async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ batchesCreated: number; emailsSent: number }> {
   let batchesCreated = 0;
   let emailsSent = 0;
@@ -274,7 +274,7 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
 
-  // Get tours requiring travel documents
+  // Get tours requiring passport details
   const { data: tours, error: toursError } = await supabase
     .from('tours')
     .select('id, name, start_date, end_date')
@@ -287,7 +287,7 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
     throw toursError;
   }
 
-  console.log(`Found ${tours?.length || 0} tours requiring travel documents`);
+  console.log(`Found ${tours?.length || 0} tours requiring passport details`);
 
   for (const tour of tours || []) {
     try {
@@ -400,8 +400,8 @@ async function processTravelDocsRules(supabase: any, errors: any[]): Promise<{ b
       }
 
     } catch (tourError) {
-      console.error(`Error processing tour ${tour.name} for travel docs:`, tourError);
-      errors.push({ tour: tour.name, type: 'travel_docs', error: tourError });
+      console.error(`Error processing tour ${tour.name} for passport details:`, tourError);
+      errors.push({ tour: tour.name, type: 'passport_details', error: tourError });
     }
   }
 
