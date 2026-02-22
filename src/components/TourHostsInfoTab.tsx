@@ -4,15 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText } from "lucide-react";
+import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays } from "lucide-react";
 import { useReportData } from "@/components/reports/useReportData";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
 import { PassengerSummaryReport } from "@/components/reports/PassengerSummaryReport";
 import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
 import { useHotels } from "@/hooks/useHotels";
+import { useActivities } from "@/hooks/useActivities";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { exportReportToCSV } from "@/components/reports/ReportExportUtils";
+import { HostActivitiesSection } from "@/components/hosts/HostActivitiesSection";
 
 interface TourHostsInfoTabProps {
   tourId: string;
@@ -70,6 +72,7 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
   const [showAllContacts, setShowAllContacts] = useState(false);
   const reports = useReportData(tourId, { showAllContacts });
   const { data: hotels } = useHotels(tourId);
+  const { data: activities } = useActivities(tourId);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
 
@@ -210,6 +213,19 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
           </div>
         </CollapsibleReportSection>
       )}
+
+      {/* Activities */}
+      <CollapsibleReportSection
+        title="Activities"
+        icon={<CalendarDays className="h-5 w-5 text-orange-600" />}
+        count={activities?.length || 0}
+        countLabel="activities"
+        defaultOpen
+      >
+        <div className="p-4">
+          <HostActivitiesSection tourId={tourId} />
+        </div>
+      </CollapsibleReportSection>
 
       {/* Rooming List Modal */}
       {roomingListModalOpen && selectedHotel && (
