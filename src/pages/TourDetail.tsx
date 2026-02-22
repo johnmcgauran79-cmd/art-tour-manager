@@ -71,6 +71,7 @@ export default function TourDetail() {
   }, [searchParams]);
 
   const { userRole } = useAuth();
+  const isHost = userRole === 'host';
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const secureDeleteTour = useSecureDeleteTour();
@@ -242,44 +243,61 @@ export default function TourDetail() {
       {/* Tabs */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <div className="sticky top-[52px] z-30 bg-background -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-2 border-b shadow-sm">
-          <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-9 md:w-auto h-auto p-1 gap-1">
-            <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Overview</span>
-            </TabsTrigger>
-            <TabsTrigger value="hotels" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Hotels</span>
-            </TabsTrigger>
-            <TabsTrigger value="bookings" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Bookings</span>
-            </TabsTrigger>
-            <TabsTrigger value="activities" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Activities</span>
-            </TabsTrigger>
-            <TabsTrigger value="pickup" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <Bus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Pickup</span>
-            </TabsTrigger>
-            <TabsTrigger value="hostsinfo" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Hosts Info</span>
-            </TabsTrigger>
-            <TabsTrigger value="operations" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Operations</span>
-            </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Tasks</span>
-            </TabsTrigger>
-            <TabsTrigger value="itinerary" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Itinerary</span>
-            </TabsTrigger>
-          </TabsList>
+          {isHost ? (
+            <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-3 md:max-w-md h-auto p-1 gap-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="bookings" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Bookings</span>
+              </TabsTrigger>
+              <TabsTrigger value="hostsinfo" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Hosts Info</span>
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-9 md:w-auto h-auto p-1 gap-1">
+              <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="hotels" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Building className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Hotels</span>
+              </TabsTrigger>
+              <TabsTrigger value="bookings" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Bookings</span>
+              </TabsTrigger>
+              <TabsTrigger value="activities" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Activities</span>
+              </TabsTrigger>
+              <TabsTrigger value="pickup" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Bus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Pickup</span>
+              </TabsTrigger>
+              <TabsTrigger value="hostsinfo" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Hosts Info</span>
+              </TabsTrigger>
+              <TabsTrigger value="operations" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Operations</span>
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Tasks</span>
+              </TabsTrigger>
+              <TabsTrigger value="itinerary" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Itinerary</span>
+              </TabsTrigger>
+            </TabsList>
+          )}
         </div>
 
         <TabsContent value="overview" className="space-y-4 mt-6">
