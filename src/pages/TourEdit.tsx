@@ -485,7 +485,7 @@ export default function TourEdit() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="travel_documents_required">Travel Documents Required</Label>
+            <Label htmlFor="travel_documents_required">Passport Details Required</Label>
             <Select 
               value={formData.travel_documents_required ? "yes" : "no"} 
               onValueChange={(value) => {
@@ -504,7 +504,7 @@ export default function TourEdit() {
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              When enabled, bookings will show travel documents section (passport, ID, etc.)
+              When enabled, bookings will show passport details section (passport, ID, etc.)
             </p>
           </div>
 

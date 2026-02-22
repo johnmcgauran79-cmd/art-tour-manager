@@ -176,7 +176,7 @@ export const AutomatedEmailRulesManagement = () => {
               )}
               {isTravelDocs && (
                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
-                  Travel Docs
+                  Passport Details
                 </Badge>
               )}
               {!rule.requires_approval && !isStatusChange && (
@@ -192,7 +192,7 @@ export const AutomatedEmailRulesManagement = () => {
               )}
             </CardTitle>
             <CardDescription>
-              {isTravelDocs ? "Sends travel document request emails with unique links" : rule.email_templates?.name || "No template selected"}
+              {isTravelDocs ? "Sends passport details request emails with unique links" : rule.email_templates?.name || "No template selected"}
             </CardDescription>
           </div>
           <div className="flex gap-2">
@@ -226,7 +226,7 @@ export const AutomatedEmailRulesManagement = () => {
             )}
             <div className="flex items-center gap-1">
               <Mail className="h-4 w-4" />
-              <span>Type: {isTravelDocs ? 'Travel Documents Request' : rule.rule_type}</span>
+              <span>Type: {isTravelDocs ? 'Passport Details Request' : rule.rule_type}</span>
             </div>
             <Badge variant="outline">
               {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
@@ -262,7 +262,7 @@ export const AutomatedEmailRulesManagement = () => {
         <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="rules">Before Tour</TabsTrigger>
           <TabsTrigger value="status-change">Status Change</TabsTrigger>
-          <TabsTrigger value="travel-docs">Travel Documents</TabsTrigger>
+          <TabsTrigger value="travel-docs">Passport Details</TabsTrigger>
           <TabsTrigger value="post-booking">Post-Booking</TabsTrigger>
           <TabsTrigger value="history">Email History</TabsTrigger>
         </TabsList>
@@ -347,13 +347,13 @@ export const AutomatedEmailRulesManagement = () => {
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-purple-600 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-medium text-purple-900">Travel Documents Request Emails</h4>
+                <h4 className="font-medium text-purple-900">Passport Details Request Emails</h4>
                 <p className="text-sm text-purple-700 mt-1">
-                  Send automated requests for passport details to customers on tours that require travel documents.
+                  Send automated requests for passport details to customers on tours that require passport details.
                   Each customer receives a unique secure link to submit their passport information.
                 </p>
                 <p className="text-sm text-purple-600 mt-2">
-                  <strong>Note:</strong> Only applies to tours with "Travel Documents Required" enabled. Passport data is automatically purged 30 days after tour ends.
+                  <strong>Note:</strong> Only applies to tours with "Passport Details Required" enabled. Passport data is automatically purged 30 days after tour ends.
                 </p>
                 <div className="mt-3">
                   <Button 
@@ -748,7 +748,7 @@ export const AutomatedEmailRulesManagement = () => {
                       alt="Australian Racing Tours" 
                       className="h-10 mx-auto mb-2"
                     />
-                    <h2 className="text-white text-xl font-semibold">Travel Documents Required</h2>
+                    <h2 className="text-white text-xl font-semibold">Passport Details Required</h2>
                   </div>
                   
                   {/* Email body preview */}

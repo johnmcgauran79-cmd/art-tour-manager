@@ -368,7 +368,7 @@ async function processTravelDocsBatch(
       const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PASSPORT DETAILS</a></div>`;
 
       // Process template content if we have one
-      let emailSubject = `Travel Documents Required - ${tour.name}`;
+      let emailSubject = `Passport Details Required - ${tour.name}`;
       let emailContent = '';
 
       if (template) {
@@ -425,7 +425,7 @@ async function processTravelDocsBatch(
             </p>
           </div>
           ${existingDetailsHtml}
-          <p>Please click the button below to provide or update your travel document details:</p>
+          <p>Please click the button below to provide or update your passport details:</p>
           ${travelDocsButton}
           <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px; color: #1565c0;">
@@ -448,7 +448,7 @@ async function processTravelDocsBatch(
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
             <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
-            <h1 style="color: #fff; margin: 0; font-size: 24px;">Travel Documents Required</h1>
+            <h1 style="color: #fff; margin: 0; font-size: 24px;">Passport Details Required</h1>
           </div>
           
           <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
@@ -479,7 +479,7 @@ async function processTravelDocsBatch(
           message_id: emailResponse.data.id,
           recipient_email: customer.email,
           recipient_name: `${customer.first_name} ${customer.last_name}`,
-          subject: `Travel Documents Required - ${tour.name}`,
+          subject: `Passport Details Required - ${tour.name}`,
           template_name: 'travel_documents_request',
           booking_id: booking.id,
           tour_id: tour.id,
