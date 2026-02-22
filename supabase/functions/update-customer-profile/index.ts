@@ -22,6 +22,7 @@ interface UpdateProfilePayload {
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
     emergency_contact_relationship?: string;
+    emergency_contact_email?: string;
     medical_conditions?: string;
     accessibility_needs?: string;
   };
@@ -82,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
       'email', 'phone', 'city', 'state', 'country',
       'dietary_requirements', 'emergency_contact_name', 
       'emergency_contact_phone', 'emergency_contact_relationship',
-      'medical_conditions', 'accessibility_needs'
+      'emergency_contact_email', 'medical_conditions', 'accessibility_needs'
     ];
 
     // Build update object and track changes

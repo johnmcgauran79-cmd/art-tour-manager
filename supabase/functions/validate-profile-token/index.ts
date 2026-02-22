@@ -83,6 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
           emergency_contact_name: customer.emergency_contact_name,
           emergency_contact_phone: customer.emergency_contact_phone,
           emergency_contact_relationship: customer.emergency_contact_relationship,
+          emergency_contact_email: customer.emergency_contact_email,
           medical_conditions: customer.medical_conditions,
           accessibility_needs: customer.accessibility_needs,
         },

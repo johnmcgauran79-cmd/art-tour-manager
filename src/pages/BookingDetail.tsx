@@ -588,10 +588,11 @@ export default function BookingDetail() {
 
               <div className="border-t pt-6">
                 <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <InfoRow label="Name" value={booking.customers?.emergency_contact_name} />
                   <InfoRow label="Phone" value={booking.customers?.emergency_contact_phone} />
                   <InfoRow label="Relationship" value={booking.customers?.emergency_contact_relationship} />
+                  <InfoRow label="Email" value={booking.customers?.emergency_contact_email} />
                 </div>
               </div>
             </div>

@@ -18,6 +18,7 @@ export interface MedicalFormData {
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
+  emergency_contact_email: string;
 }
 
 export interface PassengerContactData {
@@ -32,6 +33,7 @@ export interface PassengerContactData {
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relationship: string | null;
+  emergency_contact_email: string | null;
   preferred_name?: string | null;
 }
 
@@ -129,6 +131,7 @@ export const useBookingFormState = ({
     emergency_contact_name: '',
     emergency_contact_phone: '',
     emergency_contact_relationship: '',
+    emergency_contact_email: '',
   });
 
   const handleFormChange = (field: string, value: any) => {
@@ -177,6 +180,7 @@ export const useBookingFormState = ({
         emergency_contact_name: '',
         emergency_contact_phone: '',
         emergency_contact_relationship: '',
+        emergency_contact_email: '',
       });
     }
   }, [isOpen, preSelectedTourId, defaultStatus, preSelectedTourStartDate, preSelectedTourEndDate]);
@@ -258,12 +262,13 @@ export const useBookingFormState = ({
 
   // Pre-fill medical form data from contact
   const prefillMedicalFromContact = (contact: {
-    dietary_requirements: string | null;
-    medical_conditions: string | null;
-    accessibility_needs: string | null;
-    emergency_contact_name: string | null;
-    emergency_contact_phone: string | null;
-    emergency_contact_relationship: string | null;
+    dietary_requirements?: string | null;
+    medical_conditions?: string | null;
+    accessibility_needs?: string | null;
+    emergency_contact_name?: string | null;
+    emergency_contact_phone?: string | null;
+    emergency_contact_relationship?: string | null;
+    emergency_contact_email?: string | null;
   }) => {
     setMedicalFormData({
       dietary_requirements: contact.dietary_requirements || '',
@@ -272,6 +277,7 @@ export const useBookingFormState = ({
       emergency_contact_name: contact.emergency_contact_name || '',
       emergency_contact_phone: contact.emergency_contact_phone || '',
       emergency_contact_relationship: contact.emergency_contact_relationship || '',
+      emergency_contact_email: contact.emergency_contact_email || '',
     });
   };
 

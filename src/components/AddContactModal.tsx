@@ -28,6 +28,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
     emergency_contact_name: "",
     emergency_contact_phone: "",
     emergency_contact_relationship: "",
+    emergency_contact_email: "",
     dietary_requirements: "",
     medical_conditions: "",
     accessibility_needs: "",
@@ -52,7 +53,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
       emergency_contact_name: formData.emergency_contact_name || null,
       emergency_contact_phone: formData.emergency_contact_phone || null,
       emergency_contact_relationship: formData.emergency_contact_relationship || null,
-      emergency_contact_email: null,
+      emergency_contact_email: formData.emergency_contact_email || null,
       dietary_requirements: formData.dietary_requirements || null,
       medical_conditions: formData.medical_conditions || null,
       accessibility_needs: formData.accessibility_needs || null,
@@ -82,6 +83,7 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
           emergency_contact_name: "",
           emergency_contact_phone: "",
           emergency_contact_relationship: "",
+          emergency_contact_email: "",
           dietary_requirements: "",
           medical_conditions: "",
           accessibility_needs: "",
@@ -217,6 +219,17 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
                   id="emergency_contact_relationship"
                   value={formData.emergency_contact_relationship}
                   onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_email">Email</Label>
+                <Input
+                  id="emergency_contact_email"
+                  type="email"
+                  value={formData.emergency_contact_email}
+                  onChange={(e) => handleInputChange("emergency_contact_email", e.target.value)}
                 />
               </div>
             </div>

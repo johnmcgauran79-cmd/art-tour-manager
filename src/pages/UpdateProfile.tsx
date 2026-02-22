@@ -24,6 +24,7 @@ interface CustomerData {
   emergency_contact_name: string | null;
   emergency_contact_phone: string | null;
   emergency_contact_relationship: string | null;
+  emergency_contact_email: string | null;
   medical_conditions: string | null;
   accessibility_needs: string | null;
 }
@@ -100,6 +101,7 @@ export default function UpdateProfile() {
             emergency_contact_name: formData.emergency_contact_name,
             emergency_contact_phone: formData.emergency_contact_phone,
             emergency_contact_relationship: formData.emergency_contact_relationship,
+            emergency_contact_email: formData.emergency_contact_email,
             medical_conditions: formData.medical_conditions,
             accessibility_needs: formData.accessibility_needs,
           }
@@ -328,13 +330,23 @@ export default function UpdateProfile() {
                     />
                   </div>
 
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2">
                     <Label htmlFor="emergency_contact_relationship">Relationship</Label>
                     <Input
                       id="emergency_contact_relationship"
                       value={formData.emergency_contact_relationship || ""}
                       onChange={(e) => handleInputChange("emergency_contact_relationship", e.target.value)}
                       placeholder="e.g., Spouse, Parent, Friend"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergency_contact_email">Contact Email</Label>
+                    <Input
+                      id="emergency_contact_email"
+                      type="email"
+                      value={formData.emergency_contact_email || ""}
+                      onChange={(e) => handleInputChange("emergency_contact_email", e.target.value)}
+                      placeholder="e.g., jane@example.com"
                     />
                   </div>
                 </div>

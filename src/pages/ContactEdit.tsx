@@ -40,6 +40,7 @@ export default function ContactEdit() {
         emergency_contact_name: contact.emergency_contact_name || '',
         emergency_contact_phone: contact.emergency_contact_phone || '',
         emergency_contact_relationship: contact.emergency_contact_relationship || '',
+        emergency_contact_email: contact.emergency_contact_email || '',
         medical_conditions: contact.medical_conditions || '',
         accessibility_needs: contact.accessibility_needs || '',
         notes: contact.notes || ''
@@ -262,6 +263,18 @@ export default function ContactEdit() {
                   value={editedContact.emergency_contact_relationship || ''}
                   onChange={(e) => setEditedContact({ ...editedContact, emergency_contact_relationship: e.target.value })}
                   placeholder="e.g., Spouse, Parent"
+                />
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_email">Email</Label>
+                <Input
+                  id="emergency_contact_email"
+                  type="email"
+                  value={editedContact.emergency_contact_email || ''}
+                  onChange={(e) => setEditedContact({ ...editedContact, emergency_contact_email: e.target.value })}
+                  placeholder="Emergency contact email"
                 />
               </div>
             </div>

@@ -323,10 +323,11 @@ export default function ContactDetail() {
             <CardHeader>
               <CardTitle>Emergency Contact</CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CardContent className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <InfoRow label="Name" value={contact.emergency_contact_name} />
               <InfoRow label="Phone" value={contact.emergency_contact_phone} />
               <InfoRow label="Relationship" value={contact.emergency_contact_relationship} />
+              <InfoRow label="Email" value={contact.emergency_contact_email} />
             </CardContent>
           </Card>
 
