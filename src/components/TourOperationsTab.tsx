@@ -108,21 +108,45 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     });
   });
 
-  // Get all dietary requirements
-  const dietaryRequirements = tourBookings
-    .map(booking => ({
-      name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-      dietary: booking.customers?.dietary_requirements || ''
-    }))
-    .filter(item => item.dietary && item.dietary.trim() !== '');
+  // Get all dietary requirements - includes pax 2 & 3 from linked contacts
+  const dietaryRequirements = tourBookings.flatMap(booking => {
+    const items = [];
+    if (booking.customers?.dietary_requirements?.trim()) {
+      items.push({ name: `${booking.customers.first_name} ${booking.customers.last_name}`, dietary: booking.customers.dietary_requirements });
+    }
+    const p2 = (booking as any).passenger_2;
+    if (p2?.dietary_requirements?.trim()) {
+      items.push({ name: `${p2.first_name} ${p2.last_name}`, dietary: p2.dietary_requirements });
+    }
+    const p3 = (booking as any).passenger_3;
+    if (p3?.dietary_requirements?.trim()) {
+      items.push({ name: `${p3.first_name} ${p3.last_name}`, dietary: p3.dietary_requirements });
+    }
+    return items;
+  });
 
-  // Get contact list for WhatsApp export - Only include bookings with WhatsApp group comms enabled
+  // Get contact list - includes all passengers (lead, pax 2, pax 3)
   const contactList = tourBookings
     .filter(booking => booking.whatsapp_group_comms === true)
-    .map(booking => ({
-      name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-      phone: booking.customers?.phone || ''
-    }));
+    .flatMap(booking => {
+      const contacts = [];
+      if (booking.customers) {
+        contacts.push({ name: `${booking.customers.first_name} ${booking.customers.last_name}`, phone: booking.customers.phone || '' });
+      }
+      const p2 = (booking as any).passenger_2;
+      if (p2) {
+        contacts.push({ name: `${p2.first_name} ${p2.last_name}`, phone: p2.phone || '' });
+      } else if (booking.passenger_2_name) {
+        contacts.push({ name: booking.passenger_2_name, phone: '' });
+      }
+      const p3 = (booking as any).passenger_3;
+      if (p3) {
+        contacts.push({ name: `${p3.first_name} ${p3.last_name}`, phone: p3.phone || '' });
+      } else if (booking.passenger_3_name) {
+        contacts.push({ name: booking.passenger_3_name, phone: '' });
+      }
+      return contacts;
+    });
 
   // Calculate total individual passengers
   const totalPassengers = tourBookings.reduce((total, booking) => {
