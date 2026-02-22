@@ -354,8 +354,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                           </Badge>
                         </td>
                         <td className="p-3 max-w-xs">
-                          <div className="truncate" title={booking.extra_requests || ''}>
-                            {booking.extra_requests || '-'}
+                          <div className="truncate" title={(booking as any).booking_notes || ''}>
+                            {(booking as any).booking_notes || '-'}
                           </div>
                         </td>
                         <td className="p-3">

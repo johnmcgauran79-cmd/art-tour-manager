@@ -199,10 +199,10 @@ export const BookingCard = ({ booking, onView }: BookingCardProps) => {
           )}
 
           {/* Notes */}
-          {booking.extra_requests && (
+          {(booking as any).booking_notes && (
             <div className="pt-2 border-t">
               <div className="text-xs text-muted-foreground mb-1">Notes</div>
-              <div className="text-sm line-clamp-2">{booking.extra_requests}</div>
+              <div className="text-sm line-clamp-2">{(booking as any).booking_notes}</div>
             </div>
           )}
 

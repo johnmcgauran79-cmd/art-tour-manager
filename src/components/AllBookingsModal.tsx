@@ -110,8 +110,8 @@ export const AllBookingsModal = ({ open, onOpenChange, onBookingClick }: AllBook
                       </Badge>
                     </TableCell>
                     <TableCell className="w-[100px]">
-                      <div className="truncate" title={booking.extra_requests || ''}>
-                        {booking.extra_requests || '-'}
+                      <div className="truncate" title={(booking as any).booking_notes || ''}>
+                        {(booking as any).booking_notes || '-'}
                       </div>
                     </TableCell>
                   </TableRow>

@@ -1,0 +1,1 @@
+ALTER TABLE public.bookings RENAME COLUMN extra_requests TO booking_notes;

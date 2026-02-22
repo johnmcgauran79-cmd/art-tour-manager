@@ -95,7 +95,7 @@ export const useCreateBooking = () => {
       group_name?: string;
       booking_agent?: string;
       status: string;
-      extra_requests?: string;
+      booking_notes?: string;
       accommodation_required: boolean;
       check_in_date?: string | null;
       check_out_date?: string | null;
@@ -181,7 +181,7 @@ export const useCreateBooking = () => {
           group_name: bookingData.group_name || null,
           booking_agent: bookingData.booking_agent || null,
           status: bookingData.status as any,
-          extra_requests: bookingData.extra_requests || null,
+          booking_notes: bookingData.booking_notes || null,
           accommodation_required: bookingData.accommodation_required,
           check_in_date: bookingData.accommodation_required ? (bookingData.check_in_date || null) : null,
           check_out_date: bookingData.accommodation_required ? (bookingData.check_out_date || null) : null,

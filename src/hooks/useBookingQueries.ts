@@ -14,7 +14,7 @@ export interface Booking {
   group_name: string | null;
   booking_agent: string | null;
   status: 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'complimentary' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice';
-  extra_requests: string | null;
+  booking_notes: string | null;
   invoice_notes: string | null;
   accommodation_required: boolean;
   check_in_date: string | null;

@@ -476,9 +476,9 @@ export default function BookingDetail() {
                 </div>
               )}
 
-              {booking.extra_requests && (
+              {(booking as any).booking_notes && (
                 <div className="pt-4 border-t">
-                  <InfoRow label="Extra Requests" value={booking.extra_requests} />
+                  <InfoRow label="Booking Notes & Requests" value={(booking as any).booking_notes} />
                 </div>
               )}
 

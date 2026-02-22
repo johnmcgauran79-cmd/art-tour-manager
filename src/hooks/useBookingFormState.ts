@@ -48,7 +48,7 @@ export interface BookingFormData {
   group_name: string;
   booking_agent: string;
   status: string;
-  extra_requests: string;
+  booking_notes: string;
   accommodation_required: boolean;
   check_in_date: string;
   check_out_date: string;
@@ -105,7 +105,7 @@ export const useBookingFormState = ({
     group_name: '',
     booking_agent: '',
     status: defaultStatus || 'invoiced',
-    extra_requests: '',
+    booking_notes: '',
     accommodation_required: true,
     check_in_date: '',
     check_out_date: '',
@@ -154,7 +154,7 @@ export const useBookingFormState = ({
         group_name: '',
         booking_agent: '',
         status: defaultStatus || 'invoiced',
-        extra_requests: '',
+        booking_notes: '',
         accommodation_required: true,
         check_in_date: initialCheckIn,
         check_out_date: initialCheckOut,

@@ -312,8 +312,8 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
                           {formatDateToDDMMYYYY(booking.created_at)}
                         </TableCell>
                         <TableCell>
-                          <div className="truncate max-w-[150px]" title={booking.extra_requests || ''}>
-                            {booking.extra_requests || '-'}
+                          <div className="truncate max-w-[150px]" title={(booking as any).booking_notes || ''}>
+                            {(booking as any).booking_notes || '-'}
                           </div>
                         </TableCell>
                       </TableRow>
