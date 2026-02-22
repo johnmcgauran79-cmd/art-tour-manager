@@ -32,7 +32,7 @@ export const useDuplicateTour = () => {
       // Create new tour with updated dates
       const newTourData = {
         name: tourName,
-        tour_host: originalTour.tour_host,
+        tour_host: 'TBC',
         start_date: newStartDate.toISOString().split('T')[0],
         end_date: newEndDate.toISOString().split('T')[0],
         days: originalTour.days,
