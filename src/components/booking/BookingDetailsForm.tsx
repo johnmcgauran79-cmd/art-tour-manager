@@ -255,11 +255,11 @@ export const BookingDetailsForm = ({
         </div>
         
         <div>
-          <Label htmlFor="extra_requests">Extra Requests</Label>
+          <Label htmlFor="booking_notes">Booking Notes & Requests</Label>
           <Textarea
-            id="extra_requests"
-            value={formData.extra_requests}
-            onChange={(e) => setFormData('extra_requests', e.target.value)}
+            id="booking_notes"
+            value={formData.booking_notes}
+            onChange={(e) => setFormData('booking_notes', e.target.value)}
             placeholder="Any special requests or notes..."
             rows={3}
           />

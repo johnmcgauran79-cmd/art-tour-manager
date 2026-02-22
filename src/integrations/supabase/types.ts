@@ -730,10 +730,10 @@ export type Database = {
         Row: {
           accommodation_required: boolean | null
           booking_agent: string | null
+          booking_notes: string | null
           check_in_date: string | null
           check_out_date: string | null
           created_at: string | null
-          extra_requests: string | null
           group_name: string | null
           id: string
           id_number: string | null
@@ -761,10 +761,10 @@ export type Database = {
         Insert: {
           accommodation_required?: boolean | null
           booking_agent?: string | null
+          booking_notes?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
-          extra_requests?: string | null
           group_name?: string | null
           id?: string
           id_number?: string | null
@@ -792,10 +792,10 @@ export type Database = {
         Update: {
           accommodation_required?: boolean | null
           booking_agent?: string | null
+          booking_notes?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
-          extra_requests?: string | null
           group_name?: string | null
           id?: string
           id_number?: string | null

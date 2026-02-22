@@ -101,7 +101,7 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
       checkOut: formatDateToDDMMYYYY(checkOut),
       nights: totalNights,
       status: booking.status,
-      notes: booking.extra_requests || '',
+      notes: (booking as any).booking_notes || '',
       groupName: booking.group_name || '',
       pickupLocation: pickupName,
     };

@@ -69,7 +69,7 @@ export default function BookingEdit() {
     group_name: '',
     booking_agent: '',
     status: 'pending' as 'pending' | 'invoiced' | 'deposited' | 'instalment_paid' | 'fully_paid' | 'complimentary' | 'cancelled' | 'waitlisted' | 'host' | 'racing_breaks_invoice',
-    extra_requests: '',
+    booking_notes: '',
     invoice_notes: '',
     invoice_reference: '',
     accommodation_required: true,
@@ -119,7 +119,7 @@ export default function BookingEdit() {
         group_name: booking.group_name || '',
         booking_agent: booking.booking_agent || '',
         status: booking.status,
-        extra_requests: booking.extra_requests || '',
+        booking_notes: (booking as any).booking_notes || '',
         invoice_notes: booking.invoice_notes || '',
         invoice_reference: booking.invoice_reference || '',
         accommodation_required: booking.accommodation_required || false,
@@ -282,7 +282,7 @@ export default function BookingEdit() {
       group_name: formData.group_name,
       booking_agent: formData.booking_agent,
       status: formData.status,
-      extra_requests: formData.extra_requests,
+      booking_notes: formData.booking_notes,
       invoice_notes: formData.invoice_notes,
       invoice_reference: formData.invoice_reference || null,
       accommodation_required: formData.accommodation_required,
@@ -730,11 +730,11 @@ export default function BookingEdit() {
               </div>
 
               <div>
-                <Label htmlFor="extra_requests">Extra Requests</Label>
+                <Label htmlFor="booking_notes">Booking Notes & Requests</Label>
                 <Textarea
-                  id="extra_requests"
-                  value={formData.extra_requests}
-                  onChange={(e) => setFormData(prev => ({ ...prev, extra_requests: e.target.value }))}
+                  id="booking_notes"
+                  value={formData.booking_notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, booking_notes: e.target.value }))}
                 />
               </div>
 
