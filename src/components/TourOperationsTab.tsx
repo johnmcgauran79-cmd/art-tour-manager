@@ -301,16 +301,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Passenger Summary</p>
               <p className="text-xs text-gray-600">{tourBookings.length} bookings</p>
             </div>
-            <div 
-              className="text-center p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('passengerlist')}
-            >
-              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-orange-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-orange-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">Passenger List</p>
-              <p className="text-xs text-gray-600">{totalPassengers} passengers</p>
-            </div>
+            {/* Passenger List report hidden - kept for potential future use */}
             <div 
               className="text-center p-3 border-2 border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('tourattendees')}
