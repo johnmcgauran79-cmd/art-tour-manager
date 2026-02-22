@@ -69,7 +69,7 @@ const MERGE_FIELDS = {
   booking: [
     '{{booking_passenger_count}}', '{{booking_status}}', '{{booking_check_in_date}}', '{{booking_check_out_date}}',
     '{{booking_total_nights}}', '{{booking_passenger_2_name}}', '{{booking_passenger_3_name}}',
-    '{{booking_group_name}}', '{{booking_booking_agent}}', '{{booking_extra_requests}}', '{{booking_invoice_notes}}',
+    '{{booking_group_name}}', '{{booking_booking_agent}}', '{{booking_notes_requests}}', '{{booking_invoice_notes}}',
     '{{booking_passport_number}}', '{{booking_passport_country}}', '{{booking_passport_expiry_date}}',
     '{{booking_nationality}}', '{{booking_revenue}}',
     '{{booking_accommodation_required}}', '{{booking_whatsapp_group_comms}}'

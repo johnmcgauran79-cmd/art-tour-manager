@@ -90,7 +90,7 @@ export interface EmailMergeData {
   booking_passenger_3_name?: string;
   booking_group_name?: string;
   booking_booking_agent?: string;
-  booking_extra_requests?: string;
+  booking_notes_requests?: string;
   booking_invoice_notes?: string;
   booking_passport_number?: string;
   booking_passport_country?: string;
@@ -521,7 +521,7 @@ export class EmailTemplateEngine {
       booking_passenger_3_name: booking.passenger_3_name,
       booking_group_name: booking.group_name,
       booking_booking_agent: booking.booking_agent,
-      booking_extra_requests: booking.booking_notes,
+      booking_notes_requests: booking.booking_notes,
       booking_invoice_notes: booking.invoice_notes,
       booking_passport_number: booking.passport_number,
       booking_passport_country: booking.passport_country,

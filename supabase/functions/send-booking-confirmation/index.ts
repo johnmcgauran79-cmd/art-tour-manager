@@ -671,7 +671,7 @@ const handler = async (req: Request): Promise<Response> => {
       booking_passenger_count: booking.passenger_count || '',
       booking_group_name: booking.group_name || '',
       booking_accommodation_required: booking.accommodation_required ? 'Yes' : 'No',
-      booking_extra_requests: booking.booking_notes || '',
+      booking_notes_requests: booking.booking_notes || '',
       booking_check_in_date: formatDate(booking.check_in_date),
       booking_check_out_date: formatDate(booking.check_out_date),
       booking_total_nights: booking.total_nights || '',
