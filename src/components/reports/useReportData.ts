@@ -58,14 +58,53 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
       booking.status !== 'waitlisted';
   });
 
-  // Contact List Report - Only include bookings with WhatsApp group comms enabled (unless showAllContacts is true)
+  // Contacts List Report - All passengers on tour with phone numbers
   const contactList = tourBookings
     .filter(booking => showAllContacts || booking.whatsapp_group_comms === true)
-    .map(booking => ({
-      firstName: booking.customers?.first_name || '',
-      lastName: booking.customers?.last_name || '',
-      phone: booking.customers?.phone || ''
-    }));
+    .flatMap(booking => {
+      const contacts = [];
+      // Lead passenger
+      if (booking.customers) {
+        contacts.push({
+          firstName: booking.customers.first_name || '',
+          lastName: booking.customers.last_name || '',
+          phone: booking.customers.phone || ''
+        });
+      }
+      // Passenger 2 (linked contact)
+      if ((booking as any).passenger_2) {
+        const p2 = (booking as any).passenger_2;
+        contacts.push({
+          firstName: p2.first_name || '',
+          lastName: p2.last_name || '',
+          phone: p2.phone || ''
+        });
+      } else if (booking.passenger_2_name) {
+        const nameParts = booking.passenger_2_name.split(' ');
+        contacts.push({
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          phone: ''
+        });
+      }
+      // Passenger 3 (linked contact)
+      if ((booking as any).passenger_3) {
+        const p3 = (booking as any).passenger_3;
+        contacts.push({
+          firstName: p3.first_name || '',
+          lastName: p3.last_name || '',
+          phone: p3.phone || ''
+        });
+      } else if (booking.passenger_3_name) {
+        const nameParts = booking.passenger_3_name.split(' ');
+        contacts.push({
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          phone: ''
+        });
+      }
+      return contacts;
+    });
 
   // Dietary Requirements Report
   const dietaryRequirements = tourBookings
@@ -165,8 +204,8 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
     {
       id: 'contacts',
       type: 'contacts',
-      title: 'Contact List for WhatsApp',
-      description: 'Contact information for all passengers',
+      title: 'Contacts List',
+      description: 'All passengers on tour with phone numbers',
       icon: React.createElement(Phone, { className: "h-5 w-5 text-blue-600" }),
       count: contactList.length,
       data: contactList
