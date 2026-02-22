@@ -106,14 +106,45 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
       return contacts;
     });
 
-  // Dietary Requirements Report
-  const dietaryRequirements = tourBookings
-    .map(booking => ({
-      leadPassenger: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-      additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean),
-      dietaryRequirements: booking.customers?.dietary_requirements || ''
-    }))
-    .filter(item => item.dietaryRequirements && item.dietaryRequirements.trim() !== '');
+  // Dietary Requirements Report - includes all passengers with dietary requirements
+  const dietaryRequirements = tourBookings.flatMap(booking => {
+    const items = [];
+    const leadName = `${booking.customers?.first_name} ${booking.customers?.last_name}`;
+    
+    // Lead passenger dietary
+    if (booking.customers?.dietary_requirements?.trim()) {
+      items.push({
+        leadPassenger: leadName,
+        passengerName: leadName,
+        additionalPassengers: [booking.passenger_2_name, booking.passenger_3_name].filter(Boolean),
+        dietaryRequirements: booking.customers.dietary_requirements
+      });
+    }
+    
+    // Passenger 2 dietary (from linked contact)
+    const p2 = (booking as any).passenger_2;
+    if (p2?.dietary_requirements?.trim()) {
+      items.push({
+        leadPassenger: leadName,
+        passengerName: `${p2.first_name} ${p2.last_name}`,
+        additionalPassengers: [],
+        dietaryRequirements: p2.dietary_requirements
+      });
+    }
+    
+    // Passenger 3 dietary (from linked contact)
+    const p3 = (booking as any).passenger_3;
+    if (p3?.dietary_requirements?.trim()) {
+      items.push({
+        leadPassenger: leadName,
+        passengerName: `${p3.first_name} ${p3.last_name}`,
+        additionalPassengers: [],
+        dietaryRequirements: p3.dietary_requirements
+      });
+    }
+    
+    return items;
+  });
 
   // Passenger Summary Report
   const passengerSummary = tourBookings.map(booking => {

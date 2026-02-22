@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface DietaryReportProps {
   data: Array<{
     leadPassenger: string;
+    passengerName?: string;
     additionalPassengers: string[];
     dietaryRequirements: string;
   }>;
@@ -14,16 +15,16 @@ export const DietaryReport = ({ data }: DietaryReportProps) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Lead Passenger</TableHead>
-          <TableHead>Additional Passengers</TableHead>
+          <TableHead>Passenger</TableHead>
+          <TableHead>Booking (Lead)</TableHead>
           <TableHead>Dietary Requirements</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {data.map((item, index) => (
           <TableRow key={index}>
+            <TableCell>{item.passengerName || item.leadPassenger}</TableCell>
             <TableCell>{item.leadPassenger}</TableCell>
-            <TableCell>{item.additionalPassengers.join(', ') || '-'}</TableCell>
             <TableCell>{item.dietaryRequirements}</TableCell>
           </TableRow>
         ))}
