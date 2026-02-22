@@ -36,7 +36,7 @@ const MERGE_FIELDS = {
     '{{customer_first_name}}', '{{customer_last_name}}', '{{customer_preferred_name}}', '{{customer_email}}', '{{customer_phone}}',
     '{{customer_city}}', '{{customer_state}}', '{{customer_country}}', '{{customer_spouse_name}}',
     '{{customer_dietary_requirements}}', '{{customer_medical_conditions}}', '{{customer_accessibility_needs}}',
-    '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}',
+    '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}', '{{customer_emergency_contact_email}}',
     '{{customer_notes}}'
   ],
   lead_passenger: [
@@ -44,19 +44,19 @@ const MERGE_FIELDS = {
     '{{lead_passenger_email}}', '{{lead_passenger_phone}}',
     '{{lead_passenger_city}}', '{{lead_passenger_state}}', '{{lead_passenger_country}}', '{{lead_passenger_spouse_name}}',
     '{{lead_passenger_dietary_requirements}}', '{{lead_passenger_medical_conditions}}', '{{lead_passenger_accessibility_needs}}',
-    '{{lead_passenger_emergency_contact_name}}', '{{lead_passenger_emergency_contact_phone}}', '{{lead_passenger_emergency_contact_relationship}}'
+    '{{lead_passenger_emergency_contact_name}}', '{{lead_passenger_emergency_contact_phone}}', '{{lead_passenger_emergency_contact_relationship}}', '{{lead_passenger_emergency_contact_email}}'
   ],
   passenger_2: [
     '{{passenger_2_first_name}}', '{{passenger_2_last_name}}', '{{passenger_2_preferred_name}}', 
     '{{passenger_2_email}}', '{{passenger_2_phone}}',
     '{{passenger_2_dietary_requirements}}', '{{passenger_2_medical_conditions}}', '{{passenger_2_accessibility_needs}}',
-    '{{passenger_2_emergency_contact_name}}', '{{passenger_2_emergency_contact_phone}}', '{{passenger_2_emergency_contact_relationship}}'
+    '{{passenger_2_emergency_contact_name}}', '{{passenger_2_emergency_contact_phone}}', '{{passenger_2_emergency_contact_relationship}}', '{{passenger_2_emergency_contact_email}}'
   ],
   passenger_3: [
     '{{passenger_3_first_name}}', '{{passenger_3_last_name}}', '{{passenger_3_preferred_name}}', 
     '{{passenger_3_email}}', '{{passenger_3_phone}}',
     '{{passenger_3_dietary_requirements}}', '{{passenger_3_medical_conditions}}', '{{passenger_3_accessibility_needs}}',
-    '{{passenger_3_emergency_contact_name}}', '{{passenger_3_emergency_contact_phone}}', '{{passenger_3_emergency_contact_relationship}}'
+    '{{passenger_3_emergency_contact_name}}', '{{passenger_3_emergency_contact_phone}}', '{{passenger_3_emergency_contact_relationship}}', '{{passenger_3_emergency_contact_email}}'
   ],
   tour: [
     '{{tour_name}}', '{{tour_location}}', '{{tour_type}}', '{{tour_start_date}}', '{{tour_end_date}}',

@@ -63,6 +63,7 @@ export default function BookingEdit() {
     lead_passenger_emergency_contact_name: '',
     lead_passenger_emergency_contact_phone: '',
     lead_passenger_emergency_contact_relationship: '',
+    lead_passenger_emergency_contact_email: '',
     passenger_count: 1,
     passenger_2_name: '',
     passenger_3_name: '',
@@ -113,6 +114,7 @@ export default function BookingEdit() {
         lead_passenger_emergency_contact_name: booking.customers?.emergency_contact_name || '',
         lead_passenger_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
         lead_passenger_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
+        lead_passenger_emergency_contact_email: booking.customers?.emergency_contact_email || '',
         passenger_count: booking.passenger_count,
         passenger_2_name: booking.passenger_2_name || '',
         passenger_3_name: booking.passenger_3_name || '',
@@ -262,6 +264,9 @@ export default function BookingEdit() {
       }
       if (formData.lead_passenger_emergency_contact_relationship !== (booking.customers?.emergency_contact_relationship || '')) {
         customerUpdates.emergency_contact_relationship = formData.lead_passenger_emergency_contact_relationship || null;
+      }
+      if (formData.lead_passenger_emergency_contact_email !== (booking.customers?.emergency_contact_email || '')) {
+        customerUpdates.emergency_contact_email = formData.lead_passenger_emergency_contact_email || null;
       }
 
       if (Object.keys(customerUpdates).length > 0) {
@@ -910,6 +915,16 @@ export default function BookingEdit() {
                   value={formData.lead_passenger_emergency_contact_relationship}
                   onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_emergency_contact_relationship: e.target.value }))}
                   placeholder="e.g., Spouse, Partner, Parent, Child..."
+                />
+              </div>
+              <div>
+                <Label htmlFor="emergency_contact_email">Email</Label>
+                <Input
+                  id="emergency_contact_email"
+                  type="email"
+                  value={formData.lead_passenger_emergency_contact_email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lead_passenger_emergency_contact_email: e.target.value }))}
+                  placeholder="Emergency contact email"
                 />
               </div>
             </div>

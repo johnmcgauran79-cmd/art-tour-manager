@@ -16,6 +16,7 @@ export interface EmailMergeData {
   customer_emergency_contact_name?: string;
   customer_emergency_contact_phone?: string;
   customer_emergency_contact_relationship?: string;
+  customer_emergency_contact_email?: string;
   customer_notes?: string;
 
   // Lead passenger fields (static - always the lead passenger regardless of recipient)
@@ -34,6 +35,7 @@ export interface EmailMergeData {
   lead_passenger_emergency_contact_name?: string;
   lead_passenger_emergency_contact_phone?: string;
   lead_passenger_emergency_contact_relationship?: string;
+  lead_passenger_emergency_contact_email?: string;
 
   // Nested objects for dot-notation templates (backwards compatibility)
   customer?: {
@@ -52,6 +54,7 @@ export interface EmailMergeData {
     emergency_contact_name?: string;
     emergency_contact_phone?: string;
     emergency_contact_relationship?: string;
+    emergency_contact_email?: string;
     notes?: string;
   };
   
@@ -112,6 +115,7 @@ export interface EmailMergeData {
   passenger_2_emergency_contact_name?: string;
   passenger_2_emergency_contact_phone?: string;
   passenger_2_emergency_contact_relationship?: string;
+  passenger_2_emergency_contact_email?: string;
 
   // Passenger 3 fields (static - always passenger 3)
   passenger_3_first_name?: string;
@@ -125,6 +129,7 @@ export interface EmailMergeData {
   passenger_3_emergency_contact_name?: string;
   passenger_3_emergency_contact_phone?: string;
   passenger_3_emergency_contact_relationship?: string;
+  passenger_3_emergency_contact_email?: string;
 
   // Travel document fields (dynamic - changes per recipient for multi-passenger emails)
   passport_first_name?: string;
@@ -421,6 +426,7 @@ export class EmailTemplateEngine {
       customer_emergency_contact_name: customer.emergency_contact_name,
       customer_emergency_contact_phone: customer.emergency_contact_phone,
       customer_emergency_contact_relationship: customer.emergency_contact_relationship,
+      customer_emergency_contact_email: customer.emergency_contact_email,
       customer_notes: customer.notes,
 
       // Lead passenger fields (static - always the lead passenger regardless of recipient)
@@ -439,6 +445,7 @@ export class EmailTemplateEngine {
       lead_passenger_emergency_contact_name: customer.emergency_contact_name,
       lead_passenger_emergency_contact_phone: customer.emergency_contact_phone,
       lead_passenger_emergency_contact_relationship: customer.emergency_contact_relationship,
+      lead_passenger_emergency_contact_email: customer.emergency_contact_email,
 
       // Nested objects for dot notation templates
       customer: {
@@ -457,6 +464,7 @@ export class EmailTemplateEngine {
         emergency_contact_name: customer.emergency_contact_name,
         emergency_contact_phone: customer.emergency_contact_phone,
         emergency_contact_relationship: customer.emergency_contact_relationship,
+        emergency_contact_email: customer.emergency_contact_email,
         notes: customer.notes,
       },
       
@@ -543,6 +551,7 @@ export class EmailTemplateEngine {
       passenger_2_emergency_contact_name: booking.passenger_2?.emergency_contact_name,
       passenger_2_emergency_contact_phone: booking.passenger_2?.emergency_contact_phone,
       passenger_2_emergency_contact_relationship: booking.passenger_2?.emergency_contact_relationship,
+      passenger_2_emergency_contact_email: booking.passenger_2?.emergency_contact_email,
 
       // Passenger 3 fields (from linked contact record)
       passenger_3_first_name: booking.passenger_3?.first_name,
@@ -556,6 +565,7 @@ export class EmailTemplateEngine {
       passenger_3_emergency_contact_name: booking.passenger_3?.emergency_contact_name,
       passenger_3_emergency_contact_phone: booking.passenger_3?.emergency_contact_phone,
       passenger_3_emergency_contact_relationship: booking.passenger_3?.emergency_contact_relationship,
+      passenger_3_emergency_contact_email: booking.passenger_3?.emergency_contact_email,
 
       booking: {
         passenger_count: booking.passenger_count,

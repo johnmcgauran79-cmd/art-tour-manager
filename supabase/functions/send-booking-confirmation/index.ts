@@ -174,8 +174,8 @@ const handler = async (req: Request): Promise<Response> => {
         selected_pickup_option:tour_pickup_options!bookings_selected_pickup_option_id_fkey (id, name, pickup_time, details),
         customers:lead_passenger_id (id, first_name, last_name, preferred_name, email, phone, city, state, country, spouse_name, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs, notes),
         secondary_contact:customers!secondary_contact_id (first_name, last_name, email, phone),
-        passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
-        passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, medical_conditions, accessibility_needs),
+        passenger_2:customers!passenger_2_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs),
+        passenger_3:customers!passenger_3_id (id, first_name, last_name, preferred_name, email, phone, dietary_requirements, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, emergency_contact_email, medical_conditions, accessibility_needs),
         booking_travel_docs (
           passenger_slot,
           customer_id,
@@ -561,6 +561,7 @@ const handler = async (req: Request): Promise<Response> => {
       customer_emergency_contact_name: booking.customers?.emergency_contact_name || '',
       customer_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
       customer_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
+      customer_emergency_contact_email: booking.customers?.emergency_contact_email || '',
       customer_notes: booking.customers?.notes || '',
 
       // Travel docs fields (dynamic - changes per recipient)
@@ -592,6 +593,7 @@ const handler = async (req: Request): Promise<Response> => {
       lead_passenger_emergency_contact_name: booking.customers?.emergency_contact_name || '',
       lead_passenger_emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
       lead_passenger_emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
+      lead_passenger_emergency_contact_email: booking.customers?.emergency_contact_email || '',
 
       // Nested objects (backwards-compatible with older templates using dot notation,
       // e.g. {{customer.preferred_name}} or {{tour.name}})
@@ -611,6 +613,7 @@ const handler = async (req: Request): Promise<Response> => {
         emergency_contact_name: booking.customers?.emergency_contact_name || '',
         emergency_contact_phone: booking.customers?.emergency_contact_phone || '',
         emergency_contact_relationship: booking.customers?.emergency_contact_relationship || '',
+        emergency_contact_email: booking.customers?.emergency_contact_email || '',
         notes: booking.customers?.notes || '',
       },
       
@@ -697,6 +700,7 @@ const handler = async (req: Request): Promise<Response> => {
       passenger_2_emergency_contact_name: booking.passenger_2?.emergency_contact_name || '',
       passenger_2_emergency_contact_phone: booking.passenger_2?.emergency_contact_phone || '',
       passenger_2_emergency_contact_relationship: booking.passenger_2?.emergency_contact_relationship || '',
+      passenger_2_emergency_contact_email: booking.passenger_2?.emergency_contact_email || '',
 
       // Passenger 3 fields (from linked contact record)
       passenger_3_first_name: booking.passenger_3?.first_name || '',
@@ -710,6 +714,7 @@ const handler = async (req: Request): Promise<Response> => {
       passenger_3_emergency_contact_name: booking.passenger_3?.emergency_contact_name || '',
       passenger_3_emergency_contact_phone: booking.passenger_3?.emergency_contact_phone || '',
       passenger_3_emergency_contact_relationship: booking.passenger_3?.emergency_contact_relationship || '',
+      passenger_3_emergency_contact_email: booking.passenger_3?.emergency_contact_email || '',
 
       booking: {
         id: booking.id || '',
@@ -983,6 +988,7 @@ const handler = async (req: Request): Promise<Response> => {
         customer_emergency_contact_name: passenger.emergency_contact_name || '',
         customer_emergency_contact_phone: passenger.emergency_contact_phone || '',
         customer_emergency_contact_relationship: passenger.emergency_contact_relationship || '',
+        customer_emergency_contact_email: passenger.emergency_contact_email || '',
 
         // Travel docs fields (dynamic)
         passport_first_name: passengerDocs?.passport_first_name || '',
@@ -1009,6 +1015,7 @@ const handler = async (req: Request): Promise<Response> => {
           emergency_contact_name: passenger.emergency_contact_name || '',
           emergency_contact_phone: passenger.emergency_contact_phone || '',
           emergency_contact_relationship: passenger.emergency_contact_relationship || '',
+          emergency_contact_email: passenger.emergency_contact_email || '',
         },
       };
       

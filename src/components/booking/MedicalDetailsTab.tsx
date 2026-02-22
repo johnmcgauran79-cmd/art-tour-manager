@@ -11,6 +11,7 @@ interface MedicalFormData {
   emergency_contact_name: string;
   emergency_contact_phone: string;
   emergency_contact_relationship: string;
+  emergency_contact_email: string;
 }
 
 interface MedicalDetailsTabProps {
@@ -137,6 +138,16 @@ export const MedicalDetailsTab = ({
               value={medicalFormData.emergency_contact_relationship}
               onChange={(e) => handleChange('emergency_contact_relationship', e.target.value)}
               placeholder="e.g., Spouse, Partner, Parent, Child..."
+            />
+          </div>
+          <div>
+            <Label htmlFor="emergency_contact_email">Email</Label>
+            <Input
+              id="emergency_contact_email"
+              type="email"
+              value={medicalFormData.emergency_contact_email}
+              onChange={(e) => handleChange('emergency_contact_email', e.target.value)}
+              placeholder="Emergency contact email"
             />
           </div>
         </CardContent>
