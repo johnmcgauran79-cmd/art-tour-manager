@@ -9,6 +9,7 @@ import { Link2, Unlink, RefreshCw, Users, FileText, CheckCircle2, XCircle, Clock
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { InvoiceSyncReviewModal } from "./InvoiceSyncReviewModal";
+import { InvoiceSyncProgressModal } from "./InvoiceSyncProgressModal";
 import { PhoneSyncReviewModal } from "./PhoneSyncReviewModal";
 
 interface XeroSettings {
@@ -354,6 +355,8 @@ export const XeroIntegrationSettings = () => {
           </CardContent>
         </Card>
       )}
+
+      <InvoiceSyncProgressModal open={isSyncing} syncType={syncingType || 'invoices'} />
 
       <InvoiceSyncReviewModal
         open={showReviewModal}
