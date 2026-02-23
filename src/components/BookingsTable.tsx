@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, TrendingUp, FileText, RefreshCw, Loader2 } from "lucide-react";
+import { InvoiceSyncProgressModal } from "@/components/InvoiceSyncProgressModal";
 import { useBookings, useFilterCounts } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getBookingStatusColor, formatStatusText } from "@/lib/statusColors";
@@ -330,6 +331,8 @@ export const BookingsTable = ({ onAddBooking, onViewAnalytics, onBulkStatusUpdat
         open={invoiceRefModalOpen}
         onOpenChange={setInvoiceRefModalOpen}
       />
+
+      <InvoiceSyncProgressModal open={isSyncingInvoices} />
 
       <InvoiceSyncReviewModal
         open={showSyncReviewModal}
