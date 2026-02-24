@@ -180,7 +180,8 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
     .from('bookings')
     .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, tours!bookings_tour_id_fkey(instalment_required, name), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
     .not('invoice_reference', 'is', null)
-    .neq('invoice_reference', '');
+    .neq('invoice_reference', '')
+    .not('invoice_reference', 'in', '("0","TBC","tbc","N/A","n/a")');
 
   if (!bookings || bookings.length === 0) {
     return { proposals: [], total_checked: 0 };
@@ -190,9 +191,12 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   for (const booking of bookings) {
     try {
-      // Split comma-separated references
-      const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean);
+      // Split comma-separated references, skip placeholder values
+      const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean)
+        .filter((r: string) => !['0', 'TBC', 'tbc', 'N/A', 'n/a'].includes(r));
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
+
+      if (refs.length === 0) continue;
 
       // Collect invoice data for each ref
       const invoiceResults: Array<{ invoice: any; ref: string }> = [];
@@ -205,7 +209,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         } else {
           console.log(`No Xero invoice found for ref "${ref}" (booking ${booking.id})`);
         }
-        await new Promise(r => setTimeout(r, 150));
+        await new Promise(r => setTimeout(r, 100));
       }
 
       if (invoiceResults.length === 0) continue;
