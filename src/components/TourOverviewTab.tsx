@@ -295,9 +295,6 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
         )}
       </div>
 
-      {/* Tour Hosts Notes - Editable by admins, managers, and hosts */}
-      <TourHostsNotesSection tourId={tour.id} />
-
       {/* Additional Notes - hidden for hosts */}
       {!isHost && tour.notes && (
         <Card>
@@ -309,6 +306,9 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardContent>
         </Card>
       )}
+
+      {/* Tour Hosts Notes - Editable by admins, managers, and hosts */}
+      <TourHostsNotesSection tourId={tour.id} />
 
       {/* Pricing Information - hidden for hosts */}
       {!isHost && (
