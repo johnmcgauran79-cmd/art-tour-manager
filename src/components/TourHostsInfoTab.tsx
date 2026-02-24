@@ -148,8 +148,7 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
         <CollapsibleReportSection
           title="Hotel Reports"
           icon={<Hotel className="h-5 w-5 text-indigo-600" />}
-          count={hotels.length}
-          countLabel="hotels"
+
         >
           <div className="p-4 space-y-2">
             {hotels.map((hotel) => (
