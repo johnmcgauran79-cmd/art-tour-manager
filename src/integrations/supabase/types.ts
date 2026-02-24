@@ -1512,6 +1512,47 @@ export type Database = {
           },
         ]
       }
+      invoice_sync_dismissals: {
+        Row: {
+          booking_id: string
+          current_status_at_dismissal: string
+          dismissed_at: string
+          dismissed_by: string
+          id: string
+          proposed_status: string
+          reason: string | null
+          xero_invoice_id: string
+        }
+        Insert: {
+          booking_id: string
+          current_status_at_dismissal: string
+          dismissed_at?: string
+          dismissed_by: string
+          id?: string
+          proposed_status: string
+          reason?: string | null
+          xero_invoice_id: string
+        }
+        Update: {
+          booking_id?: string
+          current_status_at_dismissal?: string
+          dismissed_at?: string
+          dismissed_by?: string
+          id?: string
+          proposed_status?: string
+          reason?: string | null
+          xero_invoice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_sync_dismissals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_booking_email_log: {
         Row: {
           booking_id: string
