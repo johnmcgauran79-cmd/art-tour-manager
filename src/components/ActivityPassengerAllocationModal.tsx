@@ -97,9 +97,8 @@ export const ActivityPassengerAllocationModal = ({
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Create activity_bookings for all allocations > 0
+      // Upsert ALL allocations (including 0) so adjusted values are saved
       const activityBookings = Object.entries(allocations)
-        .filter(([_, passengers]) => passengers > 0)
         .map(([bookingId, passengers]) => ({
           booking_id: bookingId,
           activity_id: activityId,
