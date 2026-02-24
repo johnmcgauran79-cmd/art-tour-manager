@@ -340,14 +340,15 @@ serve(async (req) => {
       // Filter out dismissed proposals
       const { data: dismissals } = await supabase
         .from('invoice_sync_dismissals')
-        .select('booking_id, xero_invoice_id, proposed_status');
+        .select('booking_id, xero_invoice_id, amount_paid_at_dismissal');
 
       const dismissalSet = new Set(
-        (dismissals || []).map((d: any) => `${d.booking_id}|${d.xero_invoice_id}|${d.proposed_status}`)
+        (dismissals || []).map((d: any) => `${d.booking_id}|${d.xero_invoice_id}|${d.amount_paid_at_dismissal}`)
       );
 
       const filteredProposals = result.proposals.filter((p: any) => {
-        const key = `${p.booking_id}|${p.xero_invoice_id}|${p.proposed_status}`;
+        // Key on amount_paid: if Xero amount_paid has changed since dismissal, it's a new payment scenario
+        const key = `${p.booking_id}|${p.xero_invoice_id}|${p.amount_paid}`;
         return !dismissalSet.has(key);
       });
 
@@ -384,9 +385,11 @@ serve(async (req) => {
         proposed_status: string;
         current_status: string;
         dismissed_by: string;
+        amount_paid: number;
+        xero_status: string;
       }> = body.dismissals || [];
 
-      // Save dismissals so they don't reappear
+      // Save dismissals keyed on amount_paid so new payments clear the dismissal
       for (const d of dismissals) {
         await supabase
           .from('invoice_sync_dismissals')
@@ -397,7 +400,9 @@ serve(async (req) => {
             current_status_at_dismissal: d.current_status,
             dismissed_by: d.dismissed_by,
             dismissed_at: new Date().toISOString(),
-          }, { onConflict: 'booking_id,xero_invoice_id,proposed_status' });
+            amount_paid_at_dismissal: d.amount_paid,
+            xero_status_at_dismissal: d.xero_status,
+          }, { onConflict: 'booking_id,xero_invoice_id,amount_paid_at_dismissal' });
       }
 
       if (changes.length === 0) {
