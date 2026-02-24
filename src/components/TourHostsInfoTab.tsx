@@ -25,8 +25,8 @@ interface TourHostsInfoTabProps {
 interface CollapsibleReportSectionProps {
   title: string;
   icon: React.ReactNode;
-  count: number;
-  countLabel: string;
+  count?: number;
+  countLabel?: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
   actions?: React.ReactNode;
@@ -45,7 +45,9 @@ const CollapsibleReportSection = ({ title, icon, count, countLabel, children, de
           <div className="flex items-center gap-3">
             {icon}
             <CardTitle className="text-base">{title}</CardTitle>
-            <Badge variant="secondary">{count} {countLabel}</Badge>
+            {count !== undefined && countLabel && (
+              <Badge variant="secondary">{count} {countLabel}</Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {isOpen && actions && (
@@ -92,8 +94,6 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
         <CollapsibleReportSection
           title="Contacts List"
           icon={<Phone className="h-5 w-5 text-blue-600" />}
-          count={contactsReport.count}
-          countLabel="contacts"
           actions={
             <div className="flex items-center gap-3">
               <div className="flex items-center space-x-2">
@@ -146,8 +146,6 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
         <CollapsibleReportSection
           title="Passenger Summary"
           icon={<Users className="h-5 w-5 text-purple-600" />}
-          count={summaryReport.count}
-          countLabel="bookings"
           actions={
             <Button
               onClick={() => exportReportToCSV(summaryReport, tourName)}
@@ -218,8 +216,6 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
       <CollapsibleReportSection
         title="Activities"
         icon={<CalendarDays className="h-5 w-5 text-orange-600" />}
-        count={activities?.length || 0}
-        countLabel="activities"
         defaultOpen
       >
         <div className="p-4">
