@@ -426,15 +426,6 @@ export default function BookingEdit() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSubmit}
-              disabled={updateBooking.isPending}
-            >
-              <Save className="mr-2 h-4 w-4" />
-              {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
-            </Button>
           </div>
         </div>
       </div>
