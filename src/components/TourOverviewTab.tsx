@@ -16,6 +16,7 @@ import { TourHostsNotesSection } from "@/components/TourHostsNotesSection";
 import { getTourStatusColor, formatStatusText } from "@/lib/statusColors";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { useTourHostAssignments, useHostUsers } from "@/hooks/useTourHostAssignments";
+import { usePermissions } from "@/hooks/usePermissions";
 
 interface TourOverviewTabProps {
   tour: {
@@ -58,6 +59,8 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: hostAssignments = [] } = useTourHostAssignments(tour.id);
   const { data: hostUsers = [] } = useHostUsers();
   const { unacknowledgedCount } = useTourAlerts(tour.id);
+  const { userRole } = usePermissions();
+  const isHost = userRole === 'host';
 
   // Calculate booking statistics for this tour
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tour.id);
@@ -95,16 +98,18 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
     <div className="space-y-6">
       {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Dates</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold">{tour.dates}</div>
-            <p className="text-sm text-muted-foreground mt-1">{tour.duration}</p>
-          </CardContent>
-        </Card>
+        {!isHost && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Dates</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-semibold">{tour.dates}</div>
+              <p className="text-sm text-muted-foreground mt-1">{tour.duration}</p>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -119,50 +124,51 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-            <Badge className={getTourStatusColor(tour.status)}>
-              {formatStatusText(tour.status)}
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-sm font-medium text-muted-foreground">Tour Host</div>
-            <p className="text-base font-semibold mt-1">{tour.tourHost || 'Not specified'}</p>
-            
-            {/* Assigned Host Users */}
-            {hostAssignments.length > 0 && (
-              <div className="mt-3 pt-3 border-t">
-                <div className="text-sm font-medium text-muted-foreground mb-1">Assigned Host Users</div>
-                <div className="flex flex-wrap gap-1">
-                  {hostAssignments.map(assignment => {
-                    const hostProfile = hostUsers.find(h => h.id === assignment.host_user_id);
-                    const displayName = hostProfile 
-                      ? `${hostProfile.first_name || ''} ${hostProfile.last_name || ''}`.trim() || hostProfile.email
-                      : 'Unknown';
-                    return (
-                      <Badge key={assignment.id} variant="secondary" className="text-xs">
-                        {displayName}
-                      </Badge>
-                    );
-                  })}
+        {!isHost && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Status</CardTitle>
+              <Badge className={getTourStatusColor(tour.status)}>
+                {formatStatusText(tour.status)}
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm font-medium text-muted-foreground">Tour Host</div>
+              <p className="text-base font-semibold mt-1">{tour.tourHost || 'Not specified'}</p>
+              
+              {hostAssignments.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <div className="text-sm font-medium text-muted-foreground mb-1">Assigned Host Users</div>
+                  <div className="flex flex-wrap gap-1">
+                    {hostAssignments.map(assignment => {
+                      const hostProfile = hostUsers.find(h => h.id === assignment.host_user_id);
+                      const displayName = hostProfile 
+                        ? `${hostProfile.first_name || ''} ${hostProfile.last_name || ''}`.trim() || hostProfile.email
+                        : 'Unknown';
+                      return (
+                        <Badge key={assignment.id} variant="secondary" className="text-xs">
+                          {displayName}
+                        </Badge>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
-            
-            {isAdminOrManager && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3 w-full"
-                onClick={() => setHostAssignmentModalOpen(true)}
-              >
-                <UserPlus className="h-3 w-3 mr-1" />
-                Manage Host Users
-              </Button>
-            )}
-          </CardContent>
-        </Card>
+              )}
+              
+              {isAdminOrManager && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={() => setHostAssignmentModalOpen(true)}
+                >
+                  <UserPlus className="h-3 w-3 mr-1" />
+                  Manage Host Users
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Host Assignment Modal */}
@@ -174,7 +180,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
       />
 
       {/* Capacity and Waitlist Information */}
-      <div className="grid grid-cols-1 md:grid-cols-5 lg:grid-cols-6 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${isHost ? 'md:grid-cols-2' : 'md:grid-cols-5 lg:grid-cols-6'}`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Confirmed Passengers</CardTitle>
@@ -199,97 +205,101 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </Card>
         )}
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {tour.totalCapacity > 0 ? tour.totalCapacity : "NA"}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {tour.minimumPassengers ? `Min: ${tour.minimumPassengers}` : "No minimum"}
-            </p>
-          </CardContent>
-        </Card>
+        {!isHost && (
+          <>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {tour.totalCapacity > 0 ? tour.totalCapacity : "NA"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {tour.minimumPassengers ? `Min: ${tour.minimumPassengers}` : "No minimum"}
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Availability</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {tour.totalCapacity > 0 ? Math.max(0, tour.totalCapacity - totalConfirmedPassengers) : "NA"}
-            </div>
-            <p className="text-xs text-muted-foreground">Spots remaining</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Availability</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {tour.totalCapacity > 0 ? Math.max(0, tour.totalCapacity - totalConfirmedPassengers) : "NA"}
+                </div>
+                <p className="text-xs text-muted-foreground">Spots remaining</p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Rooms Booked</CardTitle>
-            <Hotel className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {totalRoomsReserved > 0 ? `${totalRoomsBooked} of ${totalRoomsReserved}` : "NA"}
-            </div>
-            <p className="text-xs text-muted-foreground">rooms booked</p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Rooms Booked</CardTitle>
+                <Hotel className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {totalRoomsReserved > 0 ? `${totalRoomsBooked} of ${totalRoomsReserved}` : "NA"}
+                </div>
+                <p className="text-xs text-muted-foreground">rooms booked</p>
+              </CardContent>
+            </Card>
 
-        <Card 
-          className="border-2 border-yellow-200 cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200"
-          onClick={() => setSelectedTourForAlerts(tour.id)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tour Alerts</CardTitle>
-            <div className="relative">
-              <Bell className="h-4 w-4 text-yellow-600" />
-              {unacknowledgedCount > 0 && (
-                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+            <Card 
+              className="border-2 border-yellow-200 cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200"
+              onClick={() => setSelectedTourForAlerts(tour.id)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tour Alerts</CardTitle>
+                <div className="relative">
+                  <Bell className="h-4 w-4 text-yellow-600" />
+                  {unacknowledgedCount > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                      {unacknowledgedCount}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-yellow-600">
                   {unacknowledgedCount}
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {unacknowledgedCount}
-            </div>
-            <p className="text-xs text-muted-foreground">pending alerts</p>
-          </CardContent>
-        </Card>
+                </div>
+                <p className="text-xs text-muted-foreground">pending alerts</p>
+              </CardContent>
+            </Card>
 
-        <Card 
-          className="border-2 border-blue-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200"
-          onClick={() => setPaymentStatusModalOpen(true)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
-            <PaymentStatusTracker 
-              activeLevel={activeLevel}
-              level1Count={level1Count}
-              level2Count={level2Count}
-              level3Count={level3Count}
-            />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {activeLevel?.count ?? 0}
-            </div>
-            <p className="text-xs text-muted-foreground">{activeLevel?.label ?? "Deposits Due"}</p>
-          </CardContent>
-        </Card>
+            <Card 
+              className="border-2 border-blue-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200"
+              onClick={() => setPaymentStatusModalOpen(true)}
+            >
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
+                <PaymentStatusTracker 
+                  activeLevel={activeLevel}
+                  level1Count={level1Count}
+                  level2Count={level2Count}
+                  level3Count={level3Count}
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {activeLevel?.count ?? 0}
+                </div>
+                <p className="text-xs text-muted-foreground">{activeLevel?.label ?? "Deposits Due"}</p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
 
       {/* Tour Hosts Notes - Editable by admins, managers, and hosts */}
       <TourHostsNotesSection tourId={tour.id} />
 
-      {/* Additional Notes */}
-      {tour.notes && (
+      {/* Additional Notes - hidden for hosts */}
+      {!isHost && tour.notes && (
         <Card>
           <CardHeader>
             <CardTitle>Additional Notes</CardTitle>
@@ -300,78 +310,80 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
         </Card>
       )}
 
-      {/* Pricing Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Pricing Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <h4 className="font-medium">Single Occupancy</h4>
-              <p className="text-2xl font-bold text-green-600">
-                ${tour.pricing.single || 0}
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium">Double Occupancy</h4>
-              <p className="text-2xl font-bold text-green-600">
-                ${tour.pricing.double || 0}
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium">Twin Share</h4>
-              <p className="text-2xl font-bold text-green-600">
-                ${tour.pricing.twin || 0}
-              </p>
-            </div>
-          </div>
-          
-          {(tour.deposit > 0 || tour.instalmentRequired) && (
-            <div className="mt-4 pt-4 border-t">
-              <h4 className="font-medium mb-2">Payment Structure</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {tour.deposit > 0 && (
-                  <div>
-                    <span className="font-medium">Deposit Required:</span> ${tour.deposit}
-                  </div>
-                )}
-                <div>
-                  <span className="font-medium">Instalment Required:</span>{" "}
-                  <span className={tour.instalmentRequired ? "text-green-600" : "text-muted-foreground"}>
-                    {tour.instalmentRequired ? "Yes" : "No"}
-                  </span>
-                </div>
-                {tour.instalmentRequired && tour.instalmentAmount > 0 && (
-                  <div>
-                    <span className="font-medium">Instalment Amount:</span> ${tour.instalmentAmount}
-                    {tour.instalmentDate && (
-                      <span className="text-muted-foreground ml-1">
-                        (Due: {new Date(tour.instalmentDate).toLocaleDateString('en-AU')})
-                      </span>
-                    )}
-                  </div>
-                )}
-                {tour.finalPaymentDate && (
-                  <div>
-                    <span className="font-medium">Final Payment Due:</span>{" "}
-                    {new Date(tour.finalPaymentDate).toLocaleDateString('en-AU')}
-                  </div>
-                )}
-                <div>
-                  <span className="font-medium">Passport Details Required:</span>{" "}
-                  <span className={tour.travelDocumentsRequired ? "text-green-600" : "text-muted-foreground"}>
-                    {tour.travelDocumentsRequired ? "Yes" : "No"}
-                  </span>
-                </div>
+      {/* Pricing Information - hidden for hosts */}
+      {!isHost && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              Pricing Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <h4 className="font-medium">Single Occupancy</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  ${tour.pricing.single || 0}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium">Double Occupancy</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  ${tour.pricing.double || 0}
+                </p>
+              </div>
+              <div>
+                <h4 className="font-medium">Twin Share</h4>
+                <p className="text-2xl font-bold text-green-600">
+                  ${tour.pricing.twin || 0}
+                </p>
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            
+            {(tour.deposit > 0 || tour.instalmentRequired) && (
+              <div className="mt-4 pt-4 border-t">
+                <h4 className="font-medium mb-2">Payment Structure</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  {tour.deposit > 0 && (
+                    <div>
+                      <span className="font-medium">Deposit Required:</span> ${tour.deposit}
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">Instalment Required:</span>{" "}
+                    <span className={tour.instalmentRequired ? "text-green-600" : "text-muted-foreground"}>
+                      {tour.instalmentRequired ? "Yes" : "No"}
+                    </span>
+                  </div>
+                  {tour.instalmentRequired && tour.instalmentAmount > 0 && (
+                    <div>
+                      <span className="font-medium">Instalment Amount:</span> ${tour.instalmentAmount}
+                      {tour.instalmentDate && (
+                        <span className="text-muted-foreground ml-1">
+                          (Due: {new Date(tour.instalmentDate).toLocaleDateString('en-AU')})
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {tour.finalPaymentDate && (
+                    <div>
+                      <span className="font-medium">Final Payment Due:</span>{" "}
+                      {new Date(tour.finalPaymentDate).toLocaleDateString('en-AU')}
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-medium">Passport Details Required:</span>{" "}
+                    <span className={tour.travelDocumentsRequired ? "text-green-600" : "text-muted-foreground"}>
+                      {tour.travelDocumentsRequired ? "Yes" : "No"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tour Details */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
