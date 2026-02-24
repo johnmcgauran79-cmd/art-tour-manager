@@ -44,9 +44,10 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "bookings");
   const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, currentTour);
   
-  // Agent users have view-only access
+  // Agent and host users have view-only access
   const isAgent = userRole === 'agent';
-
+  const isHost = userRole === 'host';
+  const isViewOnly = isAgent || isHost;
   return (
     <>
       <div className="space-y-4">
@@ -54,7 +55,7 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
           <div className="flex items-center gap-3">
             <h3 className="text-lg font-semibold text-brand-navy">Tour Bookings</h3>
             <div className="flex items-center gap-2">
-              {alertCount > 0 && (
+              {!isHost && alertCount > 0 && (
                 <button 
                   onClick={onOpenAlerts}
                   className="relative cursor-pointer hover:opacity-80 transition-opacity"
@@ -68,20 +69,22 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
                   </Badge>
                 </button>
               )}
-              <button 
-                onClick={() => setPaymentStatusModalOpen(true)}
-                className="relative cursor-pointer hover:opacity-80 transition-opacity"
-              >
-                <PaymentStatusTracker
-                  activeLevel={activeLevel}
-                  level1Count={level1Count}
-                  level2Count={level2Count}
-                  level3Count={level3Count}
-                />
-              </button>
+              {!isHost && (
+                <button 
+                  onClick={() => setPaymentStatusModalOpen(true)}
+                  className="relative cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <PaymentStatusTracker
+                    activeLevel={activeLevel}
+                    level1Count={level1Count}
+                    level2Count={level2Count}
+                    level3Count={level3Count}
+                  />
+                </button>
+              )}
             </div>
           </div>
-          {!isAgent && (
+          {!isViewOnly && (
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 onClick={() => setBulkEmailModalOpen(true)}
