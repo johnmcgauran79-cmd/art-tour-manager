@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
@@ -91,6 +91,20 @@ export default function BookingEdit() {
   const [selectedPassenger3, setSelectedPassenger3] = useState<PassengerContactData | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
+  const hotelSaveAllRef = useRef<(() => Promise<void>) | null>(null);
+
+  const handleRegisterHotelSaveAll = useCallback((saveFn: () => Promise<void>) => {
+    hotelSaveAllRef.current = saveFn;
+  }, []);
+
+  const handleSaveAll = async () => {
+    // Save any pending hotel changes first
+    if (hotelSaveAllRef.current) {
+      await hotelSaveAllRef.current();
+    }
+    // Then save booking form data
+    handleSubmit();
+  };
 
   const updateBooking = useUpdateBooking();
   const cancelBooking = useCancelBooking();
@@ -426,6 +440,15 @@ export default function BookingEdit() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSaveAll}
+              disabled={updateBooking.isPending}
+            >
+              <Save className="mr-2 h-4 w-4" />
+              {updateBooking.isPending ? 'Saving...' : 'Save All Changes'}
+            </Button>
           </div>
         </div>
       </div>
@@ -759,11 +782,12 @@ export default function BookingEdit() {
                 Cancel
               </Button>
               <Button 
-                type="submit" 
+                type="button"
+                onClick={handleSaveAll}
                 disabled={updateBooking.isPending}
               >
                 <Save className="mr-2 h-4 w-4" />
-                {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
+                {updateBooking.isPending ? 'Saving...' : 'Save All Changes'}
               </Button>
             </div>
           </form>
@@ -785,17 +809,18 @@ export default function BookingEdit() {
                     check_out_date: checkOut,
                   }));
                 }}
+                onRegisterSaveAll={handleRegisterHotelSaveAll}
               />
               <div className="flex justify-end gap-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => goBack(`/bookings/${booking.id}`)}>
                   Cancel
                 </Button>
                 <Button 
-                  onClick={() => handleSubmit()}
+                  onClick={handleSaveAll}
                   disabled={updateBooking.isPending}
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateBooking.isPending ? 'Saving...' : 'Save All Changes'}
                 </Button>
               </div>
             </div>
@@ -815,11 +840,11 @@ export default function BookingEdit() {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={() => handleSubmit()}
+                  onClick={handleSaveAll}
                   disabled={updateBooking.isPending}
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
+                  {updateBooking.isPending ? 'Saving...' : 'Save All Changes'}
                 </Button>
               </div>
             </div>
@@ -925,11 +950,11 @@ export default function BookingEdit() {
               Cancel
             </Button>
             <Button 
-              onClick={() => handleSubmit()}
+              onClick={handleSaveAll}
               disabled={updateBooking.isPending}
             >
               <Save className="mr-2 h-4 w-4" />
-              {updateBooking.isPending ? 'Saving...' : 'Save Changes'}
+              {updateBooking.isPending ? 'Saving...' : 'Save All Changes'}
             </Button>
           </div>
         </TabsContent>

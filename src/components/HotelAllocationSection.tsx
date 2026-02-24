@@ -20,6 +20,7 @@ interface HotelAllocationSectionProps {
   autoEnableHotels?: boolean;
   onUpdate?: () => void;
   onDatesChange?: (checkIn: string, checkOut: string) => void;
+  onRegisterSaveAll?: (saveFn: () => Promise<void>) => void;
 }
 
 export const HotelAllocationSection = ({ 
@@ -30,7 +31,8 @@ export const HotelAllocationSection = ({
   defaultCheckOut,
   autoEnableHotels = false,
   onUpdate,
-  onDatesChange
+  onDatesChange,
+  onRegisterSaveAll
 }: HotelAllocationSectionProps) => {
   const { data: hotels = [] } = useHotels(tourId);
   const { data: hotelBookings = [], refetch: refetchHotelBookings } = useHotelBookings(bookingId);
@@ -43,6 +45,20 @@ export const HotelAllocationSection = ({
   const [editingFields, setEditingFields] = useState<{[key: string]: any}>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<{[key: string]: boolean}>({});
   const [autoEnabledHotels, setAutoEnabledHotels] = useState<Set<string>>(new Set());
+
+  // Register a save-all function so parent can trigger saving all pending hotel changes
+  useEffect(() => {
+    if (onRegisterSaveAll) {
+      onRegisterSaveAll(async () => {
+        const unsavedIds = Object.entries(hasUnsavedChanges)
+          .filter(([_, hasChanges]) => hasChanges)
+          .map(([id]) => id);
+        for (const id of unsavedIds) {
+          await saveAllChanges(id);
+        }
+      });
+    }
+  }, [onRegisterSaveAll, hasUnsavedChanges, editingFields]);
 
   // Auto-enable hotels when the prop is set and hotels are loaded
   useEffect(() => {
