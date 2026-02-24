@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, FileText, CalendarDays } from "lucide-react";
+import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays } from "lucide-react";
 import { useReportData } from "@/components/reports/useReportData";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
@@ -13,7 +13,7 @@ import { PickupLocationReport } from "@/components/reports/PickupLocationReport"
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
 import { RoomingListModal } from "@/components/RoomingListModal";
-// ... keep existing code
+import { exportReportToCSV } from "@/components/reports/ReportExportUtils";
 import { HostActivitiesSection } from "@/components/hosts/HostActivitiesSection";
 
 interface TourHostsInfoTabProps {
@@ -95,13 +95,23 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
           title="Contacts List"
           icon={<Phone className="h-5 w-5 text-blue-600" />}
           actions={
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="hosts-show-all"
-                checked={showAllContacts}
-                onCheckedChange={(checked) => setShowAllContacts(checked === true)}
-              />
-              <Label htmlFor="hosts-show-all" className="text-sm cursor-pointer">Show All</Label>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hosts-show-all"
+                  checked={showAllContacts}
+                  onCheckedChange={(checked) => setShowAllContacts(checked === true)}
+                />
+                <Label htmlFor="hosts-show-all" className="text-sm cursor-pointer">Show All</Label>
+              </div>
+              <Button
+                onClick={() => exportReportToCSV(contactsReport, tourName)}
+                variant="outline"
+                size="sm"
+              >
+                <Download className="h-3.5 w-3.5 mr-1" />
+                CSV
+              </Button>
             </div>
           }
         >
