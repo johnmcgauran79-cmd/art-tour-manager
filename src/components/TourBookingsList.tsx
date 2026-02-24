@@ -207,16 +207,18 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant={showWaitlistOnly ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setShowWaitlistOnly(!showWaitlistOnly)}
-                  className="flex items-center gap-1.5 whitespace-nowrap"
-                >
-                  <Users className="h-4 w-4" />
-                  <span className="hidden sm:inline">{showWaitlistOnly ? "Show All" : "Waitlist Only"}</span>
-                  <span className="sm:hidden">{showWaitlistOnly ? "All" : "Waitlist"}</span>
-                </Button>
+                {!isHost && (
+                  <Button
+                    variant={showWaitlistOnly ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowWaitlistOnly(!showWaitlistOnly)}
+                    className="flex items-center gap-1.5 whitespace-nowrap"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">{showWaitlistOnly ? "Show All" : "Waitlist Only"}</span>
+                    <span className="sm:hidden">{showWaitlistOnly ? "All" : "Waitlist"}</span>
+                  </Button>
+                )}
                 {searchQuery && (
                   <Button
                     variant="outline"
