@@ -275,27 +275,31 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                             )}
                           </div>
                         </div>
-                        <Badge className={`text-xs flex-shrink-0 ${getStatusColor(booking.status || 'pending')}`}>
-                          {(booking.status || 'pending').replace("_", " ").toUpperCase()}
-                        </Badge>
+                        {!isHost && (
+                          <Badge className={`text-xs flex-shrink-0 ${getStatusColor(booking.status || 'pending')}`}>
+                            {(booking.status || 'pending').replace("_", " ").toUpperCase()}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{booking.passenger_count} pax</span>
                         <span>{booking.accommodation_required ? `${booking.total_nights || 0} nights` : 'No accom'}</span>
-                        <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => handleEditBooking(e, booking)} disabled={isAgent || isHost}>
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-7 w-7 p-0 text-blue-600"
-                            onClick={(e) => { e.stopPropagation(); setEmailBookingId(booking.id); setEmailPreviewOpen(true); }}
-                            disabled={!booking.customers?.email || isAgent || isHost}
-                          >
-                            <Mail className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        {!isHost && (
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => handleEditBooking(e, booking)} disabled={isAgent}>
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="ghost" 
+                              className="h-7 w-7 p-0 text-blue-600"
+                              onClick={(e) => { e.stopPropagation(); setEmailBookingId(booking.id); setEmailPreviewOpen(true); }}
+                              disabled={!booking.customers?.email || isAgent}
+                            >
+                              <Mail className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -313,9 +317,9 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                       <th className="text-left p-3 font-medium">Check In</th>
                       <th className="text-left p-3 font-medium">Check Out</th>
                       <th className="text-left p-3 font-medium">Nights</th>
-                      <th className="text-left p-3 font-medium">Status</th>
+                      {!isHost && <th className="text-left p-3 font-medium">Status</th>}
                       <th className="text-left p-3 font-medium">Notes</th>
-                      <th className="text-left p-3 font-medium">Actions</th>
+                      {!isHost && <th className="text-left p-3 font-medium">Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -353,54 +357,58 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                         <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_in_date) : 'NA'}</td>
                         <td className="p-3">{booking.accommodation_required ? formatDateToDDMMYYYY(booking.check_out_date) : 'NA'}</td>
                         <td className="p-3">{booking.total_nights || '-'}</td>
-                        <td className="p-3">
-                          <Badge className={getStatusColor(booking.status || 'pending')}>
-                            {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
-                          </Badge>
-                        </td>
+                        {!isHost && (
+                          <td className="p-3">
+                            <Badge className={getStatusColor(booking.status || 'pending')}>
+                              {(booking.status || 'pending').replace("_", " ").replace("fully paid", "FULLY PAID").toUpperCase()}
+                            </Badge>
+                          </td>
+                        )}
                         <td className="p-3 max-w-xs">
                           <div className="truncate" title={(booking as any).booking_notes || ''}>
                             {(booking as any).booking_notes || '-'}
                           </div>
                         </td>
-                        <td className="p-3">
-                          <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={(e) => handleEditBooking(e, booking)}
-                              disabled={isAgent || isHost}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="text-blue-600 hover:text-blue-700"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEmailBookingId(booking.id);
-                                setEmailPreviewOpen(true);
-                              }}
-                              disabled={!booking.customers?.email || isAgent || isHost}
-                              title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
-                            >
-                              <Mail className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="text-red-600 hover:text-red-700"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteBooking(booking);
-                              }}
-                              disabled={deleteBookingMutation.isPending || isAgent}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
+                        {!isHost && (
+                          <td className="p-3">
+                            <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => handleEditBooking(e, booking)}
+                                disabled={isAgent}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                className="text-blue-600 hover:text-blue-700"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEmailBookingId(booking.id);
+                                  setEmailPreviewOpen(true);
+                                }}
+                                disabled={!booking.customers?.email || isAgent}
+                                title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
+                              >
+                                <Mail className="h-3 w-3" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-red-600 hover:text-red-700"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteBooking(booking);
+                                }}
+                                disabled={deleteBookingMutation.isPending || isAgent}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
