@@ -62,6 +62,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
+  const isHost = userRole === 'host';
 
   const handleViewBooking = (booking: any) => {
     console.log('[TourBookingsList] Navigating to booking with context:', {
@@ -168,7 +169,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
       ) : (
         <>
           {/* Statistics Cards */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+          {!isHost && (
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Card>
               <CardContent className="p-2 sm:p-4">
                 <div className="text-lg sm:text-2xl font-bold text-green-600">{confirmedBookings.length}</div>
@@ -190,7 +192,8 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                 <div className="text-xs text-muted-foreground hidden sm:block">{totalConfirmedPassengers + totalWaitlistedPassengers} pax</div>
               </CardContent>
             </Card>
-          </div>
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -278,7 +281,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                         <span>{booking.passenger_count} pax</span>
                         <span>{booking.accommodation_required ? `${booking.total_nights || 0} nights` : 'No accom'}</span>
                         <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => handleEditBooking(e, booking)} disabled={isAgent}>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => handleEditBooking(e, booking)} disabled={isAgent || isHost}>
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
                           <Button 
@@ -286,7 +289,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                             variant="ghost" 
                             className="h-7 w-7 p-0 text-blue-600"
                             onClick={(e) => { e.stopPropagation(); setEmailBookingId(booking.id); setEmailPreviewOpen(true); }}
-                            disabled={!booking.customers?.email || isAgent}
+                            disabled={!booking.customers?.email || isAgent || isHost}
                           >
                             <Mail className="h-3.5 w-3.5" />
                           </Button>
@@ -364,7 +367,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                               size="sm" 
                               variant="outline"
                               onClick={(e) => handleEditBooking(e, booking)}
-                              disabled={isAgent}
+                              disabled={isAgent || isHost}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
@@ -377,7 +380,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                                 setEmailBookingId(booking.id);
                                 setEmailPreviewOpen(true);
                               }}
-                              disabled={!booking.customers?.email || isAgent}
+                              disabled={!booking.customers?.email || isAgent || isHost}
                               title={!booking.customers?.email ? "No email address" : "Send confirmation email"}
                             >
                               <Mail className="h-3 w-3" />
