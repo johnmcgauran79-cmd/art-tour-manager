@@ -337,15 +337,31 @@ serve(async (req) => {
 
       const result = await fetchInvoiceProposals(supabase, auth);
 
+      // Filter out dismissed proposals
+      const { data: dismissals } = await supabase
+        .from('invoice_sync_dismissals')
+        .select('booking_id, xero_invoice_id, proposed_status');
+
+      const dismissalSet = new Set(
+        (dismissals || []).map((d: any) => `${d.booking_id}|${d.xero_invoice_id}|${d.proposed_status}`)
+      );
+
+      const filteredProposals = result.proposals.filter((p: any) => {
+        const key = `${p.booking_id}|${p.xero_invoice_id}|${p.proposed_status}`;
+        return !dismissalSet.has(key);
+      });
+
       return new Response(JSON.stringify({
         success: true,
-        ...result,
+        proposals: filteredProposals,
+        total_checked: result.total_checked,
+        dismissed_count: result.proposals.length - filteredProposals.length,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
-    // Apply approved changes
+    // Apply approved changes + save dismissals
     if (action === 'apply-invoice-changes') {
       const body = await req.json();
       const changes: Array<{
@@ -362,6 +378,27 @@ serve(async (req) => {
         last_payment_date?: string;
         current_status?: string;
       }> = body.changes || [];
+      const dismissals: Array<{
+        booking_id: string;
+        xero_invoice_id: string;
+        proposed_status: string;
+        current_status: string;
+        dismissed_by: string;
+      }> = body.dismissals || [];
+
+      // Save dismissals so they don't reappear
+      for (const d of dismissals) {
+        await supabase
+          .from('invoice_sync_dismissals')
+          .upsert({
+            booking_id: d.booking_id,
+            xero_invoice_id: d.xero_invoice_id,
+            proposed_status: d.proposed_status,
+            current_status_at_dismissal: d.current_status,
+            dismissed_by: d.dismissed_by,
+            dismissed_at: new Date().toISOString(),
+          }, { onConflict: 'booking_id,xero_invoice_id,proposed_status' });
+      }
 
       if (changes.length === 0) {
         return new Response(JSON.stringify({ success: true, applied: 0 }), {

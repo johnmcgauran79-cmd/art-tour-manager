@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,6 +105,10 @@ export const InvoiceSyncReviewModal = ({
 
     setIsApplying(true);
     try {
+      // Get current user for dismissal tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || '';
+
       const changes = approvedItems.map((item) => ({
         booking_id: item.booking_id,
         new_status: item.override_status || item.proposed_status,
@@ -119,12 +124,22 @@ export const InvoiceSyncReviewModal = ({
         last_payment_date: item.last_payment_date,
       }));
 
+      // Build dismissals for skipped items
+      const skippedItems = items.filter((i) => i.action === 'skip');
+      const dismissals = skippedItems.map((item) => ({
+        booking_id: item.booking_id,
+        xero_invoice_id: item.xero_invoice_id,
+        proposed_status: item.proposed_status,
+        current_status: item.current_status,
+        dismissed_by: userId,
+      }));
+
       const response = await fetch(
         `https://upqvgtuxfzsrwjahklij.supabase.co/functions/v1/xero-webhook?action=apply-invoice-changes`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ changes }),
+          body: JSON.stringify({ changes, dismissals }),
         }
       );
 
@@ -134,7 +149,7 @@ export const InvoiceSyncReviewModal = ({
 
       toast({
         title: "Invoice Sync Applied",
-        description: result.message,
+        description: `${result.message}${skippedItems.length > 0 ? `. ${skippedItems.length} skipped and won't reappear.` : ''}`,
       });
 
       // Invalidate bookings queries so the UI refreshes
