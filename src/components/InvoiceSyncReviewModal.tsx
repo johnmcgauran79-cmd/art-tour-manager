@@ -132,6 +132,8 @@ export const InvoiceSyncReviewModal = ({
         proposed_status: item.proposed_status,
         current_status: item.current_status,
         dismissed_by: userId,
+        amount_paid: item.amount_paid,
+        xero_status: item.xero_status,
       }));
 
       const response = await fetch(

@@ -1514,6 +1514,7 @@ export type Database = {
       }
       invoice_sync_dismissals: {
         Row: {
+          amount_paid_at_dismissal: number | null
           booking_id: string
           current_status_at_dismissal: string
           dismissed_at: string
@@ -1522,8 +1523,10 @@ export type Database = {
           proposed_status: string
           reason: string | null
           xero_invoice_id: string
+          xero_status_at_dismissal: string | null
         }
         Insert: {
+          amount_paid_at_dismissal?: number | null
           booking_id: string
           current_status_at_dismissal: string
           dismissed_at?: string
@@ -1532,8 +1535,10 @@ export type Database = {
           proposed_status: string
           reason?: string | null
           xero_invoice_id: string
+          xero_status_at_dismissal?: string | null
         }
         Update: {
+          amount_paid_at_dismissal?: number | null
           booking_id?: string
           current_status_at_dismissal?: string
           dismissed_at?: string
@@ -1542,6 +1547,7 @@ export type Database = {
           proposed_status?: string
           reason?: string | null
           xero_invoice_id?: string
+          xero_status_at_dismissal?: string | null
         }
         Relationships: [
           {
