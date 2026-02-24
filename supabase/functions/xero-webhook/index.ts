@@ -176,12 +176,18 @@ async function fetchInvoicesForRef(ref: string, auth: { token: string; tenantId:
 
 // Fetch invoice data from Xero for all bookings with invoice references
 async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenantId: string }) {
+  // Only check bookings for tours starting within the last 3 months or in the future
+  const cutoffDate = new Date();
+  cutoffDate.setMonth(cutoffDate.getMonth() - 3);
+  const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, tours!bookings_tour_id_fkey(instalment_required, name), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
+    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, tours!bookings_tour_id_fkey(instalment_required, name, start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
     .not('invoice_reference', 'is', null)
     .neq('invoice_reference', '')
-    .not('invoice_reference', 'in', '("0","TBC","tbc","N/A","n/a")');
+    .not('invoice_reference', 'in', '("0","TBC","tbc","N/A","n/a")')
+    .gte('tours.start_date', cutoffStr);
 
   if (!bookings || bookings.length === 0) {
     return { proposals: [], total_checked: 0 };
