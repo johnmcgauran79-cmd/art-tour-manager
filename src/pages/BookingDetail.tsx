@@ -416,6 +416,14 @@ export default function BookingDetail() {
                 <InfoRow label="Email" value={booking.customers?.email} />
                 <InfoRow label="Phone" value={booking.customers?.phone} />
                 <InfoRow label="Dietary Requirements" value={booking.customers?.dietary_requirements} />
+                {(booking.customers as any)?.notes && (
+                  <div className="md:col-span-2">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-sm font-medium text-muted-foreground">Contact Notes</span>
+                      <span className="text-sm whitespace-pre-wrap bg-muted/30 rounded p-2">{(booking.customers as any).notes}</span>
+                    </div>
+                  </div>
+                )}
                 {/* Secondary Contact with View/Remove */}
                 <div className="flex flex-col gap-1">
                   <span className="text-sm font-medium text-muted-foreground">Secondary Contact</span>

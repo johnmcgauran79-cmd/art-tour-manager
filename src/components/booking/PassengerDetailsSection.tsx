@@ -18,6 +18,7 @@ interface PassengerContact {
   emergency_contact_name?: string | null;
   emergency_contact_phone?: string | null;
   emergency_contact_relationship?: string | null;
+  notes?: string | null;
 }
 
 interface PassengerDetailsSectionProps {
@@ -64,7 +65,8 @@ export const PassengerDetailsSection = ({
     passenger.dietary_requirements || 
     passenger.medical_conditions || 
     passenger.accessibility_needs ||
-    passenger.emergency_contact_name
+    passenger.emergency_contact_name ||
+    passenger.notes
   );
 
   // Simple display if no linked contact or no details
@@ -117,6 +119,19 @@ export const PassengerDetailsSection = ({
               <InfoItem icon={Heart} label="Dietary" value={passenger.dietary_requirements} />
               <InfoItem icon={AlertCircle} label="Medical" value={passenger.medical_conditions} />
               <InfoItem icon={Accessibility} label="Accessibility" value={passenger.accessibility_needs} />
+            </div>
+          )}
+
+          {/* Contact Notes */}
+          {passenger.notes && (
+            <div className="pt-2 border-t">
+              <div className="flex items-start gap-2 text-sm">
+                <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5" />
+                <div>
+                  <span className="text-muted-foreground">Contact Notes:</span>
+                  <p className="mt-0.5 whitespace-pre-wrap">{passenger.notes}</p>
+                </div>
+              </div>
             </div>
           )}
 
