@@ -301,6 +301,31 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                           </div>
                         )}
                       </div>
+                      {/* Client & Passenger Notes */}
+                      {(booking.customers?.notes || booking.passenger_2?.notes || booking.passenger_3?.notes || booking.booking_notes) && (
+                        <div className="mt-2 space-y-1">
+                          {booking.customers?.notes && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                              {booking.customers.notes}
+                            </p>
+                          )}
+                          {booking.passenger_2?.notes && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                              {booking.passenger_2.notes}
+                            </p>
+                          )}
+                          {booking.passenger_3?.notes && (
+                            <p className="text-xs text-muted-foreground line-clamp-2 italic">
+                              {booking.passenger_3.notes}
+                            </p>
+                          )}
+                          {booking.booking_notes && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">
+                              {booking.booking_notes}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
