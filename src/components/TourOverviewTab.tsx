@@ -192,7 +192,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
           </CardContent>
         </Card>
 
-        {waitlistedBookings.length > 0 && (
+        {!isHost && waitlistedBookings.length > 0 && (
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Waitlisted Passengers</CardTitle>
