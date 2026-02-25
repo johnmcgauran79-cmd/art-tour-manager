@@ -152,11 +152,18 @@ export const useCustomers = (page: number = 1, pageSize: number = 50, searchQuer
     queryFn: async () => {
       console.log('Fetching customers page:', page, 'with search:', searchQuery);
       
+      const isSearching = searchQuery && searchQuery.trim().length > 0;
+      
       let query = supabase
         .from('customers')
-        .select('*', { count: 'exact' })
-        .order('last_name', { ascending: true })
-        .order('first_name', { ascending: true });
+        .select('*', { count: 'exact' });
+      
+      // Default: newest first; when searching: alphabetical
+      if (isSearching) {
+        query = query.order('last_name', { ascending: true }).order('first_name', { ascending: true });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
 
       // Add search filter if provided
       if (searchQuery && searchQuery.trim()) {
