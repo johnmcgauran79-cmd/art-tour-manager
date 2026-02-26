@@ -13,8 +13,6 @@ import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { EmailTemplateEngine, type EmailMergeData } from "@/utils/emailTemplateEngine";
-import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -31,7 +29,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [editedContent, setEditedContent] = useState("");
   const [originalSubjectTemplate, setOriginalSubjectTemplate] = useState("");
   const [originalContentTemplate, setOriginalContentTemplate] = useState("");
-  const [previewBooking, setPreviewBooking] = useState<any>(null);
+  
   const [recipientType, setRecipientType] = useState<string>("");
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const [ccEmails, setCcEmails] = useState<string>("");
@@ -45,7 +43,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     setSendProgress({ current, total });
   });
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
-  const { profile } = useAuth();
   const { data: userEmails } = useUserEmails();
 
   // Quill modules configuration
@@ -71,7 +68,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         .select(`
           id,
           accommodation_required,
-          customers:lead_passenger_id (
+          customers:customers!lead_passenger_id (
             id,
             first_name,
             last_name,
@@ -102,89 +99,34 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       return data || [];
     },
     enabled: !!tourId && open,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
-  // Get sample booking for preview
-  const { data: bookingsData, isLoading } = useQuery({
-    queryKey: ['tour-bulk-email-data', tourId],
-    queryFn: async () => {
-      if (!tourId || !allBookingsData || allBookingsData.length === 0) return { sampleBooking: null };
-      
-      // Get first booking for preview
-      const { data, error: sampleError } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          tours:tour_id (
-            name, location, start_date, end_date, days, nights, pickup_point,
-            notes, inclusions, exclusions, tour_host, price_single, price_double,
-            deposit_required, final_payment_date, instalment_date, instalment_amount
-          ),
-          customers!lead_passenger_id (
-            first_name, last_name, preferred_name, email, phone, city, state, country,
-            spouse_name, dietary_requirements, medical_conditions, accessibility_needs,
-            emergency_contact_name, emergency_contact_phone, emergency_contact_relationship,
-            notes
-          ),
-          secondary_contact:customers!secondary_contact_id (
-            first_name, last_name, email, phone
-          ),
-          passenger_2:customers!passenger_2_id (
-            first_name, last_name, preferred_name, email, phone, dietary_requirements,
-            medical_conditions, accessibility_needs, emergency_contact_name,
-            emergency_contact_phone, emergency_contact_relationship
-          ),
-          passenger_3:customers!passenger_3_id (
-            first_name, last_name, preferred_name, email, phone, dietary_requirements,
-            medical_conditions, accessibility_needs, emergency_contact_name,
-            emergency_contact_phone, emergency_contact_relationship
-          ),
-          hotel_bookings (
-            check_in_date, check_out_date, nights, room_type, bedding,
-            room_upgrade, room_requests, confirmation_number,
-            hotels (name, address, contact_name, contact_phone, contact_email)
-          ),
-          activity_bookings (
-            passengers_attending,
-            activities (name, activity_date, start_time, end_time, pickup_time, location, contact_name, contact_phone)
-          )
-        `)
-        .eq('id', allBookingsData[0].id)
-        .maybeSingle();
+  const previewBooking = allBookingsData?.find((booking: any) => selectedBookingIds.has(booking.id)) || allBookingsData?.[0] || null;
 
-      if (sampleError) {
-        console.error('Error fetching sample booking:', sampleError);
-      }
-
-      return { sampleBooking: data };
-    },
-    enabled: !!tourId && open && !!allBookingsData && allBookingsData.length > 0,
-  });
-
-  // Update preview when template changes - populate content independently of booking data
+  // Keep template content responsive even before any preview data loads
   useEffect(() => {
     if (selectedTemplateId && selectedTemplateId !== "blank" && templates) {
-      const template = templates.find(t => t.id === selectedTemplateId);
+      const template = templates.find((t) => t.id === selectedTemplateId);
       if (template) {
         setOriginalSubjectTemplate(template.subject_template);
         setOriginalContentTemplate(template.content_template);
         setEditedSubject(template.subject_template);
         setEditedContent(template.content_template);
       }
-    } else if (selectedTemplateId === "blank") {
-      setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
-      setOriginalContentTemplate(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
-      setEditedSubject(`Email for {{customer.first_name}}`);
-      setEditedContent(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
+      return;
+    }
+
+    if (selectedTemplateId === "blank") {
+      const blankSubject = `Email for {{customer.first_name}}`;
+      const blankContent = `<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
+      setOriginalSubjectTemplate(blankSubject);
+      setOriginalContentTemplate(blankContent);
+      setEditedSubject(blankSubject);
+      setEditedContent(blankContent);
     }
   }, [selectedTemplateId, templates]);
-
-  // Update preview booking when sample data becomes available
-  useEffect(() => {
-    if (bookingsData?.sampleBooking) {
-      setPreviewBooking(bookingsData.sampleBooking);
-    }
-  }, [bookingsData?.sampleBooking]);
 
   const handleRecipientTypeChange = (type: string) => {
     setRecipientType(type);
@@ -530,7 +472,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               </Button>
               <Button
                 onClick={handleSendClick}
-                disabled={bulkEmailMutation.isPending || isLoading || selectedBookingIds.size === 0 || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Send {selectedBookingIds.size} Email{selectedBookingIds.size !== 1 ? 's' : ''}

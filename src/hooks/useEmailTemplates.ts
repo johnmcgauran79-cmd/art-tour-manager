@@ -22,6 +22,8 @@ export const useEmailTemplates = (type?: string) => {
       if (error) throw error;
       return data as EmailTemplate[];
     },
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 };
 

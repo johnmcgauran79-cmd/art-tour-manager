@@ -55,6 +55,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   const [showWaitlistOnly, setShowWaitlistOnly] = useState(false);
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
   const [emailBookingId, setEmailBookingId] = useState<string | null>(null);
+  const [emailRecipient, setEmailRecipient] = useState<{ name: string; email: string } | null>(null);
   const { data: allBookings, isLoading } = useBookings();
   const deleteBookingMutation = useDeleteBooking();
   const sendBookingConfirmation = useSendBookingConfirmation();
@@ -293,7 +294,15 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                               size="sm" 
                               variant="ghost" 
                               className="h-7 w-7 p-0 text-blue-600"
-                              onClick={(e) => { e.stopPropagation(); setEmailBookingId(booking.id); setEmailPreviewOpen(true); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEmailBookingId(booking.id);
+                                setEmailRecipient({
+                                  name: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
+                                  email: booking.customers?.email || '',
+                                });
+                                setEmailPreviewOpen(true);
+                              }}
                               disabled={!booking.customers?.email || isAgent}
                             >
                               <Mail className="h-3.5 w-3.5" />
@@ -412,6 +421,10 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setEmailBookingId(booking.id);
+                                  setEmailRecipient({
+                                    name: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
+                                    email: booking.customers?.email || '',
+                                  });
                                   setEmailPreviewOpen(true);
                                 }}
                                 disabled={!booking.customers?.email || isAgent}
@@ -459,8 +472,15 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
 
       <EmailPreviewModal
         open={emailPreviewOpen}
-        onOpenChange={setEmailPreviewOpen}
+        onOpenChange={(open) => {
+          setEmailPreviewOpen(open);
+          if (!open) {
+            setEmailBookingId(null);
+            setEmailRecipient(null);
+          }
+        }}
         bookingId={emailBookingId}
+        initialRecipient={emailRecipient}
       />
     </>
   );

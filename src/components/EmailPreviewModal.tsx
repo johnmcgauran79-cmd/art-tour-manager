@@ -10,26 +10,23 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X } from "lucide-react";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
-import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
+
+interface EmailPreviewRecipient {
+  name?: string | null;
+  email?: string | null;
+}
 
 interface EmailPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   bookingId: string | null;
+  initialRecipient?: EmailPreviewRecipient | null;
 }
 
-interface BookingEmailData {
-  subject: string;
-  recipientEmail: string;
-  recipientName: string;
-  htmlContent: string;
-}
-
-export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPreviewModalProps) => {
-  const [emailData, setEmailData] = useState<BookingEmailData | null>(null);
+export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipient }: EmailPreviewModalProps) => {
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
   // Store original templates with merge fields for server-side processing
@@ -43,7 +40,6 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   const [bccEmails, setBccEmails] = useState<string>("");
   const sendEmail = useSendBookingConfirmation();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
-  const { profile } = useAuth();
   const { data: userEmails } = useUserEmails();
 
   // Quill modules configuration
@@ -58,12 +54,41 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
     ],
   };
 
-  // Fetch booking details to generate email preview
-  const { data: booking, isLoading } = useQuery({
+  // Fast recipient query for immediate "To" field hydration
+  const { data: recipientData, isLoading: isRecipientLoading, isError: hasRecipientError } = useQuery({
+    queryKey: ['booking-email-recipient', bookingId],
+    queryFn: async () => {
+      if (!bookingId) return null;
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          customers:lead_passenger_id (first_name, last_name, email)
+        `)
+        .eq('id', bookingId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      const leadPassenger = (data as any)?.customers;
+      if (!leadPassenger?.email) return null;
+
+      return {
+        recipientEmail: leadPassenger.email as string,
+        recipientName: `${leadPassenger.first_name ?? ''} ${leadPassenger.last_name ?? ''}`.trim(),
+      };
+    },
+    enabled: !!bookingId && open,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Fetch full booking details for merge-field preview generation
+  const { data: booking } = useQuery({
     queryKey: ['booking-email-preview', bookingId],
     queryFn: async () => {
       if (!bookingId) return null;
-      
+
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -96,6 +121,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
       return data;
     },
     enabled: !!bookingId && open,
+    staleTime: 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   // Auto-select blank template as default
@@ -124,12 +151,6 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
           const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
           setEditedSubject(processedSubject);
           setEditedContent(processedContent);
-          setEmailData({
-            subject: processedSubject,
-            recipientEmail: booking.customers?.email || '',
-            recipientName: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-            htmlContent: processedContent
-          });
         } else {
           setEditedSubject(template.subject_template);
           setEditedContent(template.content_template);
@@ -146,12 +167,6 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
         const defaultContent = `<p>Dear ${booking.customers?.first_name || 'Customer'},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
         setEditedSubject(defaultSubject);
         setEditedContent(defaultContent);
-        setEmailData({
-          subject: defaultSubject,
-          recipientEmail: booking.customers?.email || '',
-          recipientName: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
-          htmlContent: defaultContent
-        });
       } else {
         setEditedSubject(defaultSubjectTemplate);
         setEditedContent(defaultContentTemplate);
@@ -191,6 +206,23 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
     }
   };
 
+  const fallbackRecipient = initialRecipient?.email
+    ? {
+        recipientEmail: initialRecipient.email,
+        recipientName: initialRecipient.name?.trim() || initialRecipient.email,
+      }
+    : null;
+
+  const activeRecipient = recipientData ?? fallbackRecipient;
+
+  const recipientDisplayValue = activeRecipient
+    ? `${activeRecipient.recipientName} <${activeRecipient.recipientEmail}>`
+    : isRecipientLoading
+      ? 'Loading recipient...'
+      : hasRecipientError
+        ? 'Unable to load recipient'
+        : 'No recipient email available';
+
   if (!bookingId) return null;
 
   return (
@@ -208,12 +240,12 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
           </div>
         </DialogHeader>
 
-        {isLoading || templatesLoading ? (
+        {templatesLoading && !editedSubject && !editedContent ? (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading email preview...</span>
+            <span className="ml-2">Loading email editor...</span>
           </div>
-        ) : (editedContent || editedSubject || emailData) ? (
+        ) : (editedContent || editedSubject || booking) ? (
           <div className="flex-1 overflow-y-auto max-h-[calc(90vh-120px)]">
             <div className="space-y-4 p-1">
             <div className="grid grid-cols-3 gap-4">
@@ -258,7 +290,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                 <Label htmlFor="recipient">To:</Label>
                 <Input
                   id="recipient"
-                  value={emailData ? `${emailData.recipientName} <${emailData.recipientEmail}>` : 'Loading...'}
+                  value={recipientDisplayValue}
                   disabled
                   className="bg-gray-50"
                 />
