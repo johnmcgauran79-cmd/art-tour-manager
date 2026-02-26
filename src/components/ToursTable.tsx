@@ -11,12 +11,14 @@ import { Label } from "@/components/ui/label";
 import { Plus, Eye, Search } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
+import { useHostAssignedTours } from "@/hooks/useTourHostAssignments";
 import { AddTourModal } from "@/components/AddTourModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "@/lib/statusColors";
 import { TourCard } from "@/components/cards/TourCard";
 import { ViewToggle } from "@/components/ViewToggle";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 import { PermissionButton } from "@/components/ui/permission-button";
 
 interface ToursTableProps {
@@ -28,14 +30,25 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
   const { navigateWithContext } = useNavigationContext();
   const { data: tours, isLoading } = useTours();
   const { data: bookings } = useBookings();
-  const { isViewOnly, hasEditAccess } = usePermissions();
+  const { isViewOnly, hasEditAccess, userRole } = usePermissions();
+  const { user } = useAuth();
+  const isHost = userRole === 'host';
+  const { data: hostAssignments } = useHostAssignedTours(isHost ? user?.id : undefined);
   const [showAddTour, setShowAddTour] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [view, setView] = useState<'grid' | 'table'>('table');
   const [showArchived, setShowArchived] = useState(false);
 
+  // For host users, only show their assigned tours
+  const hostTourIds = isHost ? new Set(hostAssignments?.map(a => a.tour_id) || []) : null;
+
   // Filter tours based on archived status and showOnlyActive prop
   const filteredByStatus = tours?.filter(tour => {
+    // Host users only see their assigned tours
+    if (hostTourIds && !hostTourIds.has(tour.id)) {
+      return false;
+    }
+    
     // First, filter out archived tours unless showArchived is true
     if (!showArchived && (tour.status as string) === 'archived') {
       return false;
