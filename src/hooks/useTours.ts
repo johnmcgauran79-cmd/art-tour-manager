@@ -164,6 +164,9 @@ export const useUpdateTour = () => {
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
       // Only show toast for minor updates that don't trigger department notifications
       const hasSignificantChanges = Object.keys(variables.updates).some(field => 
         ['start_date', 'end_date', 'instalment_date', 'final_payment_date', 
