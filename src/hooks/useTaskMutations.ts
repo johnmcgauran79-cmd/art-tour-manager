@@ -296,10 +296,8 @@ export const useUpdateTask = () => {
       return updatedTask;
     },
     onSuccess: (task, variables) => {
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['tasks'] });
-        queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      }, 100);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
       
       toast({
         title: "Task Updated",

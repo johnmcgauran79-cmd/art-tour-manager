@@ -118,6 +118,7 @@ export const ActivityPassengerAllocationModal = ({
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
 
       toast({
         title: "Success",

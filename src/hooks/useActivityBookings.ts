@@ -55,6 +55,7 @@ export const useActivityBookings = (bookingId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activity-bookings', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error) => {
       console.error('Error creating activity booking:', error);
@@ -77,6 +78,7 @@ export const useActivityBookings = (bookingId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activity-bookings', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error) => {
       console.error('Error updating activity booking:', error);
@@ -95,6 +97,7 @@ export const useActivityBookings = (bookingId: string) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activity-bookings', bookingId] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error) => {
       console.error('Error deleting activity booking:', error);

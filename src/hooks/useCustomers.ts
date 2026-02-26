@@ -443,11 +443,11 @@ export const useDeleteCustomer = () => {
     },
     onSuccess: (deletedId) => {
       console.log('Delete mutation onSuccess called for:', deletedId);
-      // Aggressively clear all customer-related cache
       queryClient.removeQueries({ queryKey: ['customers'] });
       queryClient.removeQueries({ queryKey: ['customer', deletedId] });
-      // Force refetch of customer lists
       queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['all-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       toast({
         title: "Contact Deleted",

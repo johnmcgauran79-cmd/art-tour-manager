@@ -79,6 +79,9 @@ export const useCancelBooking = () => {
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({
         title: "Booking Cancelled",
         description: "The booking has been successfully cancelled and all allocations removed.",

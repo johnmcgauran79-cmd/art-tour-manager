@@ -316,6 +316,9 @@ export const useUpdateBooking = () => {
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['hotel-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['activity-bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['all-customers'] });
       toast({
         title: 'Booking Updated',
         description: 'Booking has been successfully updated.',
