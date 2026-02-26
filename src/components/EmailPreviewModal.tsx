@@ -108,60 +108,56 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
   // Generate email content when booking or template changes
   // IMPORTANT: Keep original templates with merge fields for server-side processing
   // The preview shows personalized content, but we send raw templates to the Edge Function
+  // Populate template content when template selection changes (independent of booking data)
   useEffect(() => {
-    if (booking) {
-      const recipientEmail = booking.customers?.email || '';
-      const recipientName = `${booking.customers?.first_name} ${booking.customers?.last_name}`;
+    setUserHasEdited(false);
 
-      // Reset edit flag when template changes
-      setUserHasEdited(false);
+    if (selectedTemplateId && selectedTemplateId !== "blank" && emailTemplates) {
+      const template = emailTemplates.find(t => t.id === selectedTemplateId);
+      if (template) {
+        setOriginalSubjectTemplate(template.subject_template);
+        setOriginalContentTemplate(template.content_template);
 
-      if (selectedTemplateId && selectedTemplateId !== "blank" && emailTemplates) {
-        const template = emailTemplates.find(t => t.id === selectedTemplateId);
-        if (template) {
-          // Store original templates with merge fields for server-side processing
-          setOriginalSubjectTemplate(template.subject_template);
-          setOriginalContentTemplate(template.content_template);
-
-          // Convert booking data to merge format for preview only
+        if (booking) {
           const mergeData = EmailTemplateEngine.convertBookingToMergeData(booking);
-
-          // Process template with merge data for PREVIEW display
           const processedSubject = EmailTemplateEngine.processTemplate(template.subject_template, mergeData);
           const processedContent = EmailTemplateEngine.processTemplate(template.content_template, mergeData);
-
-          setEmailData({
-            subject: processedSubject,
-            recipientEmail,
-            recipientName,
-            htmlContent: processedContent
-          });
           setEditedSubject(processedSubject);
           setEditedContent(processedContent);
+          setEmailData({
+            subject: processedSubject,
+            recipientEmail: booking.customers?.email || '',
+            recipientName: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+            htmlContent: processedContent
+          });
+        } else {
+          setEditedSubject(template.subject_template);
+          setEditedContent(template.content_template);
         }
-      } else {
-        // Default blank email template
-        const defaultSubjectTemplate = `Email for {{customer_first_name}}`;
-        const defaultContentTemplate = `<p>Dear {{customer_first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
-        
-        setOriginalSubjectTemplate(defaultSubjectTemplate);
-        setOriginalContentTemplate(defaultContentTemplate);
+      }
+    } else {
+      const defaultSubjectTemplate = `Email for {{customer_first_name}}`;
+      const defaultContentTemplate = `<p>Dear {{customer_first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
+      setOriginalSubjectTemplate(defaultSubjectTemplate);
+      setOriginalContentTemplate(defaultContentTemplate);
 
-        // Show personalized preview
+      if (booking) {
         const defaultSubject = `Email for ${booking.customers?.first_name || 'Customer'}`;
         const defaultContent = `<p>Dear ${booking.customers?.first_name || 'Customer'},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`;
-
-        setEmailData({
-          subject: defaultSubject,
-          recipientEmail,
-          recipientName,
-          htmlContent: defaultContent
-        });
         setEditedSubject(defaultSubject);
         setEditedContent(defaultContent);
+        setEmailData({
+          subject: defaultSubject,
+          recipientEmail: booking.customers?.email || '',
+          recipientName: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+          htmlContent: defaultContent
+        });
+      } else {
+        setEditedSubject(defaultSubjectTemplate);
+        setEditedContent(defaultContentTemplate);
       }
     }
-  }, [booking, selectedTemplateId, emailTemplates]);
+  }, [selectedTemplateId, emailTemplates, booking]);
 
   const handleSendEmail = async () => {
     if (!bookingId) return;

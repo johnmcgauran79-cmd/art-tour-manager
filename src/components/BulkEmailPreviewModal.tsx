@@ -161,61 +161,30 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     enabled: !!tourId && open && !!allBookingsData && allBookingsData.length > 0,
   });
 
-  // Update preview when template changes - show template syntax, not personalized content
+  // Update preview when template changes - populate content independently of booking data
   useEffect(() => {
-    if (selectedTemplateId && selectedTemplateId !== "blank" && templates && bookingsData?.sampleBooking) {
+    if (selectedTemplateId && selectedTemplateId !== "blank" && templates) {
       const template = templates.find(t => t.id === selectedTemplateId);
       if (template) {
-        // Store the original template with merge fields
         setOriginalSubjectTemplate(template.subject_template);
         setOriginalContentTemplate(template.content_template);
-        
-        // Show the template syntax in the editor (not personalized)
         setEditedSubject(template.subject_template);
         setEditedContent(template.content_template);
-        setPreviewBooking(bookingsData.sampleBooking);
       }
+    } else if (selectedTemplateId === "blank") {
+      setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
+      setOriginalContentTemplate(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
+      setEditedSubject(`Email for {{customer.first_name}}`);
+      setEditedContent(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
     }
-  }, [selectedTemplateId, templates, bookingsData?.sampleBooking]);
+  }, [selectedTemplateId, templates]);
 
-  // Reset all state when modal opens
-  useEffect(() => {
-    if (open) {
-      setSelectedBookingIds(new Set());
-      setRecipientType("");
-      setEditedSubject("");
-      setEditedContent("");
-      setOriginalSubjectTemplate("");
-      setOriginalContentTemplate("");
-      setSelectedTemplateId("blank");
-      setPreviewBooking(null);
-      setFromEmail("bookings@australianracingtours.com.au");
-      setIncludeAdditionalPassengers(true);
-    }
-  }, [open]);
-
-  // Auto-select blank template
-  useEffect(() => {
-    if (templates && !selectedTemplateId && open) {
-      setSelectedTemplateId("blank");
-    }
-  }, [templates, selectedTemplateId, open]);
-
-  // Generate content when template or booking changes
+  // Update preview booking when sample data becomes available
   useEffect(() => {
     if (bookingsData?.sampleBooking) {
-      if (selectedTemplateId === "blank") {
-        // Store template with merge fields
-        setOriginalSubjectTemplate(`Email for {{customer.first_name}}`);
-        setOriginalContentTemplate(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
-        
-        // Show template syntax in editor (not personalized)
-        setEditedSubject(`Email for {{customer.first_name}}`);
-        setEditedContent(`<p>Dear {{customer.first_name}},</p><p><br></p><p><br></p><p>Best regards,<br>Your Team</p>`);
-        setPreviewBooking(bookingsData.sampleBooking);
-      }
+      setPreviewBooking(bookingsData.sampleBooking);
     }
-  }, [selectedTemplateId, bookingsData?.sampleBooking]);
+  }, [bookingsData?.sampleBooking]);
 
   const handleRecipientTypeChange = (type: string) => {
     setRecipientType(type);
@@ -335,7 +304,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           </div>
         </DialogHeader>
 
-        {isLoading || templatesLoading || allBookingsLoading ? (
+        {templatesLoading || allBookingsLoading ? (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin" />
             <span className="ml-2">Loading email preview...</span>
