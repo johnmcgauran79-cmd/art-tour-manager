@@ -665,6 +665,10 @@ export default function BookingDetail() {
             open={showEmailPreview}
             onOpenChange={setShowEmailPreview}
             bookingId={booking.id}
+            initialRecipient={{
+              name: `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim(),
+              email: booking.customers?.email,
+            }}
           />
         )}
 
