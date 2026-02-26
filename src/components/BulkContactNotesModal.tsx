@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Save, CheckCircle } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface BulkContactNotesModalProps {
@@ -25,6 +26,7 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
   const [contactNotes, setContactNotes] = useState<ContactNote[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: allBookings, isLoading } = useBookings();
   const { toast } = useToast();
@@ -107,6 +109,9 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
         )
       );
 
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['customer', customerId] });
       toast({ title: "Saved", description: `Notes updated for ${contact.customerName}.` });
     } catch (error) {
       console.error('Error saving notes:', error);
@@ -138,6 +143,8 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
         prev.map(cn => ({ ...cn, originalNotes: cn.currentNotes, saved: true }))
       );
 
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({ title: "Success", description: `Updated notes for ${changed.length} contact${changed.length > 1 ? 's' : ''}.` });
     } catch (error) {
       console.error('Error bulk saving notes:', error);
