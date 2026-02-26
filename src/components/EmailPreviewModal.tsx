@@ -213,7 +213,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
             <Loader2 className="h-8 w-8 animate-spin" />
             <span className="ml-2">Loading email preview...</span>
           </div>
-        ) : emailData ? (
+        ) : (editedContent || editedSubject || emailData) ? (
           <div className="flex-1 overflow-y-auto max-h-[calc(90vh-120px)]">
             <div className="space-y-4 p-1">
             <div className="grid grid-cols-3 gap-4">
@@ -258,7 +258,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId }: EmailPrevie
                 <Label htmlFor="recipient">To:</Label>
                 <Input
                   id="recipient"
-                  value={`${emailData.recipientName} <${emailData.recipientEmail}>`}
+                  value={emailData ? `${emailData.recipientName} <${emailData.recipientEmail}>` : 'Loading...'}
                   disabled
                   className="bg-gray-50"
                 />
