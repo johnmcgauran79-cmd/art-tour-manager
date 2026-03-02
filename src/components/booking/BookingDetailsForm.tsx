@@ -278,6 +278,24 @@ export const BookingDetailsForm = ({
           </p>
         </div>
 
+        {formData.passenger_count > 1 && (
+          <div className="flex items-center justify-between pt-2 border-t">
+            <div className="space-y-0.5">
+              <Label htmlFor="split_invoice" className="text-sm font-medium">
+                Split Invoice (Per Passenger)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Create a separate Xero invoice for each passenger instead of one per booking
+              </p>
+            </div>
+            <Switch
+              id="split_invoice"
+              checked={formData.split_invoice ?? false}
+              onCheckedChange={(checked) => setFormData('split_invoice', checked)}
+            />
+          </div>
+        )}
+
         <div>
           <Label htmlFor="invoice_notes">Invoice Notes</Label>
           <Textarea

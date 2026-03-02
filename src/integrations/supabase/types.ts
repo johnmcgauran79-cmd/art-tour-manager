@@ -752,6 +752,7 @@ export type Database = {
           revenue: number | null
           secondary_contact_id: string | null
           selected_pickup_option_id: string | null
+          split_invoice: boolean
           status: Database["public"]["Enums"]["booking_status"] | null
           total_nights: number | null
           tour_id: string | null
@@ -783,6 +784,7 @@ export type Database = {
           revenue?: number | null
           secondary_contact_id?: string | null
           selected_pickup_option_id?: string | null
+          split_invoice?: boolean
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
@@ -814,6 +816,7 @@ export type Database = {
           revenue?: number | null
           secondary_contact_id?: string | null
           selected_pickup_option_id?: string | null
+          split_invoice?: boolean
           status?: Database["public"]["Enums"]["booking_status"] | null
           total_nights?: number | null
           tour_id?: string | null
