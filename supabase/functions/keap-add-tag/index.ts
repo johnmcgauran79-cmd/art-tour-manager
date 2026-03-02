@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
 
     const tourName = tourResult.data.name;
     const customer = bookingResult.data?.customers as any;
-    const tagName = `Tour: ${tourName}`;
+    const tagName = `Booked: ${tourName}`;
 
     // Find or create contact in Keap
     const contactId = await findOrCreateContact(
