@@ -251,7 +251,6 @@ Deno.serve(async (req) => {
       Description: tourDescription,
       Quantity: 1,
       UnitAmount: 0,
-      TaxType: 'NONE',
     });
 
     // Line 2: Product line using Xero product ID (Xero applies default price, description, account)
@@ -259,7 +258,6 @@ Deno.serve(async (req) => {
       lineItems.push({
         ItemCode: tour.xero_product_id,
         Quantity: booking.passenger_count,
-        TaxType: 'NONE',
       });
     }
 
@@ -271,7 +269,6 @@ Deno.serve(async (req) => {
           Description: `Single Supplement - ${tour.name}`,
           Quantity: 1,
           UnitAmount: singleSupplement,
-          TaxType: 'NONE',
         });
       }
     }
@@ -284,7 +281,6 @@ Deno.serve(async (req) => {
         Description: `Loyalty Discount - Returning Customer (5%)`,
         Quantity: 1,
         UnitAmount: -discountAmount,
-        TaxType: 'NONE',
       });
     }
 
@@ -340,7 +336,6 @@ Deno.serve(async (req) => {
           const extraLineItem: any = {
             Description: descParts.join('\n'),
             Quantity: extraNights,
-            TaxType: 'NONE',
           };
 
           if (extraNightPrice != null) {
