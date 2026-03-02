@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus } from "lucide-react";
+import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus, Link2 } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
@@ -46,6 +46,8 @@ interface TourOverviewTabProps {
     startDate: string;
     endDate: string;
     tourHost: string;
+    keapTagId: string;
+    xeroProductId: string;
   };
 }
 
@@ -381,6 +383,34 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Integrations */}
+      {!isHost && (tour.xeroProductId || tour.keapTagId) && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              Integrations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              {tour.xeroProductId && (
+                <div>
+                  <span className="font-medium">Xero Product Code:</span>{" "}
+                  <Badge variant="outline">{tour.xeroProductId}</Badge>
+                </div>
+              )}
+              {tour.keapTagId && (
+                <div>
+                  <span className="font-medium">Keap Tag ID:</span>{" "}
+                  <Badge variant="outline">{tour.keapTagId}</Badge>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
