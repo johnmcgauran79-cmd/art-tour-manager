@@ -145,7 +145,11 @@ Deno.serve(async (req) => {
       supabase.from('bookings').select(`
         id,
         lead_passenger_id,
-        customers:lead_passenger_id (id, first_name, last_name)
+        passenger_2_id,
+        passenger_3_id,
+        customers:lead_passenger_id (id, first_name, last_name, email),
+        passenger_2:customers!passenger_2_id (id, first_name, last_name, email),
+        passenger_3:customers!passenger_3_id (id, first_name, last_name, email)
       `).eq('id', bookingId).single(),
     ]);
 
@@ -190,10 +194,10 @@ Deno.serve(async (req) => {
       console.log(`Saved auto-created Keap tag ${tagId} to tour ${tourId}`);
     }
 
-    // Apply tag to contact
+    // Apply tag to lead passenger
     await applyTagToContact(contactId, tagId);
 
-    // Log to audit_log
+    // Log lead passenger tagging
     await supabase.from('audit_log').insert({
       user_id: customerId,
       operation_type: 'KEAP_ADD_TAG',
@@ -207,11 +211,59 @@ Deno.serve(async (req) => {
       },
     });
 
+    // Tag additional passengers (pax 2 and pax 3) if they have linked profiles with emails
+    const additionalPassengers = [
+      { data: bookingResult.data?.passenger_2 as any, id: bookingResult.data?.passenger_2_id, label: 'passenger_2' },
+      { data: bookingResult.data?.passenger_3 as any, id: bookingResult.data?.passenger_3_id, label: 'passenger_3' },
+    ];
+
+    const taggedPassengers: Array<{ label: string; contactId: number; email: string }> = [];
+
+    for (const pax of additionalPassengers) {
+      if (!pax.id || !pax.data?.email) {
+        if (pax.id) console.log(`Skipping ${pax.label}: no email on linked contact`);
+        continue;
+      }
+
+      try {
+        const paxContactId = await findOrCreateContact(
+          supabase,
+          pax.id,
+          pax.data.email,
+          pax.data.first_name,
+          pax.data.last_name
+        );
+
+        await applyTagToContact(paxContactId, tagId);
+        taggedPassengers.push({ label: pax.label, contactId: paxContactId, email: pax.data.email });
+
+        await supabase.from('audit_log').insert({
+          user_id: pax.id,
+          operation_type: 'KEAP_ADD_TAG',
+          table_name: 'bookings',
+          record_id: bookingId,
+          details: {
+            keap_contact_id: paxContactId,
+            keap_tag_id: tagId,
+            tag_name: tagName,
+            contact_email: pax.data.email,
+            passenger_role: pax.label,
+          },
+        });
+
+        console.log(`Tagged ${pax.label} (${pax.data.email}) with tag ${tagId}`);
+      } catch (paxError) {
+        console.error(`Error tagging ${pax.label}:`, paxError);
+        // Continue with other passengers even if one fails
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       contactId,
       tagId,
       tagName,
+      additionalPassengersTagged: taggedPassengers,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
