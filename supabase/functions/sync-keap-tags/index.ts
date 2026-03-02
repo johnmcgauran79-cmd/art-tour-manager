@@ -108,6 +108,12 @@ Deno.serve(async (req) => {
     const results: Array<{ tour: string; passenger: string; email: string }> = [];
 
     for (const tour of tours) {
+      // Skip tours without an existing Keap tag — tags are only created via keap-add-tag on first booking
+      if (!tour.keap_tag_id) {
+        console.log(`Skipping tour "${tour.name}" — no keap_tag_id set`);
+        continue;
+      }
+
       // Get all bookings for this tour with passenger details
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
@@ -128,8 +134,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Resolve or create the tag for this tour
-      let tagId: number | null = null;
+      const tagId = parseInt(tour.keap_tag_id, 10);
 
       for (const booking of bookings) {
         const passengers = [
@@ -139,21 +144,9 @@ Deno.serve(async (req) => {
         ];
 
         for (const pax of passengers) {
-          // Skip if no linked contact, no email, or already has keap_contact_id
           if (!pax.id || !pax.data?.email || pax.data?.keap_contact_id) continue;
 
           try {
-            // Lazily resolve the tag only when we actually need it
-            if (tagId === null) {
-              if (tour.keap_tag_id) {
-                tagId = parseInt(tour.keap_tag_id, 10);
-              } else {
-                const tagName = `Booked: ${tour.name}`;
-                tagId = await findOrCreateTag(tagName);
-                await supabase.from('tours').update({ keap_tag_id: String(tagId) }).eq('id', tour.id);
-              }
-            }
-
             const contactId = await findOrCreateContact(
               supabase, pax.id, pax.data.email, pax.data.first_name, pax.data.last_name
             );
