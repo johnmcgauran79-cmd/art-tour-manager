@@ -2321,6 +2321,7 @@ export type Database = {
           instalment_date: string | null
           instalment_details: string | null
           instalment_required: boolean
+          keap_tag_id: string | null
           location: string | null
           minimum_passengers_required: number | null
           name: string
@@ -2367,6 +2368,7 @@ export type Database = {
           instalment_date?: string | null
           instalment_details?: string | null
           instalment_required?: boolean
+          keap_tag_id?: string | null
           location?: string | null
           minimum_passengers_required?: number | null
           name: string
@@ -2413,6 +2415,7 @@ export type Database = {
           instalment_date?: string | null
           instalment_details?: string | null
           instalment_required?: boolean
+          keap_tag_id?: string | null
           location?: string | null
           minimum_passengers_required?: number | null
           name?: string

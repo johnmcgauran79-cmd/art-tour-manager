@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
 
     // Fetch tour name and customer details from Supabase
     const [tourResult, bookingResult] = await Promise.all([
-      supabase.from('tours').select('name').eq('id', tourId).single(),
+      supabase.from('tours').select('name, keap_tag_id').eq('id', tourId).single(),
       supabase.from('bookings').select(`
         id,
         customers:lead_passenger_id (first_name, last_name)
@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
     }
 
     const tourName = tourResult.data.name;
+    const existingKeapTagId = tourResult.data.keap_tag_id;
     const customer = bookingResult.data?.customers as any;
     const tagName = `Booked: ${tourName}`;
 
@@ -138,8 +139,17 @@ Deno.serve(async (req) => {
       customer?.last_name
     );
 
-    // Find or create tag
-    const tagId = await findOrCreateTag(tagName);
+    // Use existing tag ID from tour if available, otherwise find/create in Keap
+    let tagId: number;
+    if (existingKeapTagId) {
+      tagId = parseInt(existingKeapTagId, 10);
+      console.log(`Using existing Keap tag from tour: ${tagId}`);
+    } else {
+      tagId = await findOrCreateTag(tagName);
+      // Save the tag ID back to the tour for future use
+      await supabase.from('tours').update({ keap_tag_id: String(tagId) }).eq('id', tourId);
+      console.log(`Saved auto-created Keap tag ${tagId} to tour ${tourId}`);
+    }
 
     // Apply tag to contact
     await applyTagToContact(contactId, tagId);

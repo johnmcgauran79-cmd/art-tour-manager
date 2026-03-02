@@ -1,0 +1,1 @@
+ALTER TABLE public.tours ADD COLUMN keap_tag_id text;

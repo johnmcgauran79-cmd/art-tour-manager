@@ -46,7 +46,8 @@ export default function TourEdit() {
     pickup_location_required: false,
     capacity: "",
     minimum_passengers_required: "",
-    tour_type: "domestic" as "domestic" | "international"
+    tour_type: "domestic" as "domestic" | "international",
+    keap_tag_id: "",
   });
 
   const updateTourMutation = useUpdateTour();
@@ -56,7 +57,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id')
           .eq('id', id)
           .single();
         
@@ -84,7 +85,8 @@ export default function TourEdit() {
             pickup_location_required: data.pickup_location_required || false,
             capacity: tour.capacity?.toString() || "",
             minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
-            tour_type: (data.tour_type as "domestic" | "international") || "domestic"
+            tour_type: (data.tour_type as "domestic" | "international") || "domestic",
+            keap_tag_id: (data as any).keap_tag_id || "",
           });
         }
       }
@@ -146,7 +148,8 @@ export default function TourEdit() {
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
       tour_type: formData.tour_type,
-    };
+      keap_tag_id: formData.keap_tag_id || null,
+    } as any;
 
     updateTourMutation.mutate({
       tourId: id!,
@@ -529,6 +532,21 @@ export default function TourEdit() {
             </Select>
             <p className="text-xs text-muted-foreground">
               When enabled, customers will be asked to select a pickup location.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="keap_tag_id">Keap Tag ID</Label>
+            <Input
+              id="keap_tag_id"
+              value={formData.keap_tag_id}
+              onChange={(e) => handleInputChange("keap_tag_id", e.target.value)}
+              placeholder="Existing Keap tag ID (auto-created if empty)"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter an existing Keap tag ID for this tour, or leave blank to auto-create when a booking is made.
             </p>
           </div>
         </div>
