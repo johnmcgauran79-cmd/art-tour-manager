@@ -178,10 +178,8 @@ Deno.serve(async (req) => {
     const isRepeatCustomer = (previousBookingCount || 0) > 0;
     console.log(`Customer ${contactName}: repeat=${isRepeatCustomer} (${previousBookingCount} previous bookings)`);
 
-    // Determine unit price based on passenger count
-    const unitPrice = booking.passenger_count === 1
-      ? (tour.price_single || 0)
-      : (tour.price_double || 0);
+    // Base rate is always double/twin price; single supplement added separately
+    const unitPrice = tour.price_double || 0;
 
     // Build line items
     const lineItems: any[] = [];
@@ -204,9 +202,9 @@ Deno.serve(async (req) => {
 
     lineItems.push(tourLineItem);
 
-    // Line 3: Single supplement (if 1 passenger and tour has both single & double prices)
+    // Line 3: Single supplement (difference between single and double/twin price)
     if (booking.passenger_count === 1 && tour.price_single && tour.price_double) {
-      const singleSupplement = tour.price_single - tour.price_double;
+      const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
       if (singleSupplement > 0) {
         lineItems.push({
           Description: `Single Supplement - ${tour.name}`,
