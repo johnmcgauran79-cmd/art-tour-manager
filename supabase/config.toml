@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.xero-create-invoice]
 verify_jwt = false
+
+[functions.keap-add-tag]
+verify_jwt = false
