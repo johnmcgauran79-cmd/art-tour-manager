@@ -326,6 +326,27 @@ export const AddBookingModal = ({
 
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       console.log('Booking created:', newBooking);
+
+      // Trigger Xero invoice creation (fire-and-forget)
+      supabase.functions.invoke('xero-create-invoice', {
+        body: { bookingId: newBooking.id }
+      }).then(res => {
+        if (res.error) console.error('Xero invoice error:', res.error);
+        else console.log('Xero invoice triggered:', res.data);
+      });
+
+      // Trigger Keap tag (fire-and-forget)
+      supabase.functions.invoke('keap-add-tag', {
+        body: {
+          contactEmail: selectedContact?.email,
+          bookingId: newBooking.id,
+          tourId: formData.tour_id
+        }
+      }).then(res => {
+        if (res.error) console.error('Keap tag error:', res.error);
+        else console.log('Keap tag triggered:', res.data);
+      });
+
       
       // Save hotel allocations
       const hotelInserts = Object.entries(hotelAllocations)
