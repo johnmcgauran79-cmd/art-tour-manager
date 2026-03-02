@@ -178,31 +178,26 @@ Deno.serve(async (req) => {
     const isRepeatCustomer = (previousBookingCount || 0) > 0;
     console.log(`Customer ${contactName}: repeat=${isRepeatCustomer} (${previousBookingCount} previous bookings)`);
 
-    // Base rate is always double/twin price; single supplement added separately
-    const unitPrice = tour.price_double || 0;
-
     // Build line items
     const lineItems: any[] = [];
 
-    // Line 1: Client names + room type (description-only line)
-    // Line 2: Tour product line with pricing
+    // Line 1: Tour product line - uses Xero product's default price (per person, double/twin rate)
     const tourDescription = `${tour.name} - ${passengerNames} - ${roomType}`;
     const tourLineItem: any = {
       Description: tourDescription,
       Quantity: booking.passenger_count,
-      UnitAmount: unitPrice,
       AccountCode: '200',
       TaxType: 'NONE',
     };
 
-    // If tour has a Xero product ID, use it
+    // Use Xero product ID so Xero applies its default price
     if (tour.xero_product_id) {
       tourLineItem.ItemCode = tour.xero_product_id;
     }
 
     lineItems.push(tourLineItem);
 
-    // Line 3: Single supplement (difference between single and double/twin price)
+    // Line 2: Single supplement (difference between single and double/twin price)
     if (booking.passenger_count === 1 && tour.price_single && tour.price_double) {
       const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
       if (singleSupplement > 0) {
@@ -216,7 +211,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Line 4: Extra nights (check hotel bookings for additional nights beyond tour dates)
+    // Line 3: Extra nights - detailed description with hotel name, room type, dates
     const hotelBookings = booking.hotel_bookings as any[];
     if (hotelBookings && hotelBookings.length > 0) {
       const tourStart = new Date(tour.start_date);
@@ -226,10 +221,48 @@ Deno.serve(async (req) => {
       for (const hb of hotelBookings) {
         if (hb.nights && hb.nights > tourNights) {
           const extraNights = hb.nights - tourNights;
+
+          // Fetch hotel name
+          let hotelName = 'Hotel';
+          if (hb.hotel_id) {
+            const { data: hotel } = await supabase
+              .from('hotels')
+              .select('name')
+              .eq('id', hb.hotel_id)
+              .maybeSingle();
+            if (hotel) hotelName = hotel.name;
+          }
+
+          // Determine room type from bedding
+          const beddingLabel = hb.bedding
+            ? hb.bedding.charAt(0).toUpperCase() + hb.bedding.slice(1) + ' Room'
+            : '';
+
+          // Determine if extra nights are pre-tour or post-tour
+          const hbCheckIn = hb.check_in_date ? new Date(hb.check_in_date) : null;
+          const hbCheckOut = hb.check_out_date ? new Date(hb.check_out_date) : null;
+          const formatDate = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+          let dateInfo = '';
+          if (hbCheckIn && hbCheckIn < tourStart) {
+            dateInfo = `Check-in ${formatDate(hbCheckIn)}`;
+          } else if (hbCheckOut && hbCheckOut > tourEnd) {
+            dateInfo = `Check-out ${formatDate(hbCheckOut)}`;
+          }
+
+          // Build multi-line description
+          const descParts = [
+            `Extra Nights Accommodation`,
+            hotelName,
+            `Breakfast Daily`,
+          ];
+          if (beddingLabel) descParts.push(beddingLabel);
+          if (dateInfo) descParts.push(dateInfo);
+
           lineItems.push({
-            Description: `Additional Accommodation - ${extraNights} extra night(s)`,
+            Description: descParts.join('\n'),
             Quantity: extraNights,
-            UnitAmount: 0, // Price TBD - set to 0 for manual review in Xero
+            UnitAmount: 0, // Price set to 0 for manual review in Xero
             AccountCode: '200',
             TaxType: 'NONE',
           });
@@ -237,10 +270,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Line 5: Loyalty discount (5% for repeat customers)
+    // Line 4: Loyalty discount (5% for repeat customers) - applied last
     if (isRepeatCustomer) {
-      const tourTotal = unitPrice * booking.passenger_count;
-      const discountAmount = tourTotal * 0.05;
+      // Note: discount calculated on Xero product default price × quantity
+      // Since we don't send UnitAmount for the tour line, we use local price as estimate
+      const estimatedTourTotal = (tour.price_double || 0) * booking.passenger_count;
+      const discountAmount = estimatedTourTotal * 0.05;
       lineItems.push({
         Description: `Loyalty Discount - Returning Customer (5%)`,
         Quantity: 1,
