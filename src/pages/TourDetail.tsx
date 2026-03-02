@@ -105,7 +105,9 @@ export default function TourDetail() {
     minimumPassengers: tour.minimum_passengers_required || null,
     startDate: tour.start_date,
     endDate: tour.end_date,
-    tourHost: tour.tour_host || ''
+    tourHost: tour.tour_host || '',
+    keapTagId: tour.keap_tag_id || '',
+    xeroProductId: tour.xero_product_id || '',
   } : null;
 
   const handleDeleteTour = async () => {
