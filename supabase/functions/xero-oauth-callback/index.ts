@@ -31,7 +31,7 @@ serve(async (req) => {
     // Action: Generate auth URL for the user to click
     if (action === 'authorize') {
       const redirectUri = `${SUPABASE_URL}/functions/v1/xero-oauth-callback`;
-      const scopes = 'openid profile email accounting.transactions.read accounting.contacts.read accounting.contacts offline_access';
+      const scopes = 'openid profile email accounting.transactions accounting.transactions.read accounting.contacts.read accounting.contacts offline_access';
       const state = crypto.randomUUID();
       
       const authUrl = `https://login.xero.com/identity/connect/authorize?` +
