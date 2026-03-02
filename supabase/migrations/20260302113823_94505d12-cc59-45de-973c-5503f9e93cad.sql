@@ -1,0 +1,1 @@
+ALTER TABLE public.bookings ADD COLUMN split_invoice boolean NOT NULL DEFAULT false;

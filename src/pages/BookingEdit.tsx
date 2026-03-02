@@ -78,6 +78,7 @@ export default function BookingEdit() {
     check_out_date: '',
     secondary_contact_id: '',
     whatsapp_group_comms: true,
+    split_invoice: false,
     
   });
 
@@ -143,6 +144,7 @@ export default function BookingEdit() {
         check_out_date: booking.check_out_date || '',
         secondary_contact_id: booking.secondary_contact_id || '',
         whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
+        split_invoice: (booking as any).split_invoice ?? false,
         
       });
 
@@ -309,6 +311,7 @@ export default function BookingEdit() {
       check_out_date: formData.check_out_date,
       secondary_contact_id: formData.secondary_contact_id || null,
       whatsapp_group_comms: formData.whatsapp_group_comms,
+      split_invoice: formData.split_invoice,
     }, {
       onSuccess: () => {
         toast({
@@ -775,6 +778,24 @@ export default function BookingEdit() {
                   onChange={(e) => setFormData(prev => ({ ...prev, invoice_notes: e.target.value }))}
                 />
               </div>
+
+              {formData.passenger_count > 1 && (
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="split_invoice" className="text-sm font-medium">
+                      Split Invoice (Per Passenger)
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Create a separate Xero invoice for each passenger instead of one per booking
+                    </p>
+                  </div>
+                  <Switch
+                    id="split_invoice"
+                    checked={formData.split_invoice ?? false}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, split_invoice: checked }))}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">

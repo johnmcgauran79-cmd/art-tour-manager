@@ -85,6 +85,223 @@ function getRoomType(hotelBookings: any[]): string {
   }
 }
 
+async function resolveXeroContact(
+  supabase: any,
+  auth: { token: string; tenantId: string },
+  customerId: string,
+  contactName: string,
+  email: string | null
+): Promise<{ xeroContactId: string | null; xeroContactName: string }> {
+  let xeroContactId: string | null = null;
+  let xeroContactName = contactName;
+
+  // 1. Check xero_sync_log
+  const { data: syncLog } = await supabase
+    .from('xero_sync_log')
+    .select('entity_id')
+    .eq('customer_id', customerId)
+    .eq('entity_type', 'contact')
+    .eq('status', 'success')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (syncLog?.entity_id) {
+    xeroContactId = syncLog.entity_id;
+    console.log(`Found Xero contact via sync log: ${xeroContactId}`);
+    return { xeroContactId, xeroContactName };
+  }
+
+  // 2. Search Xero by email
+  if (email) {
+    console.log(`Searching Xero for contact by email: ${email}`);
+    const searchResponse = await fetch(
+      `https://api.xero.com/api.xro/2.0/Contacts?where=EmailAddress=="${encodeURIComponent(email)}"`,
+      {
+        headers: {
+          'Authorization': `Bearer ${auth.token}`,
+          'Xero-Tenant-Id': auth.tenantId,
+          'Accept': 'application/json',
+        },
+      }
+    );
+    const searchText = await searchResponse.text();
+    if (searchResponse.ok) {
+      const searchResult = JSON.parse(searchText);
+      if (searchResult.Contacts && searchResult.Contacts.length > 0) {
+        xeroContactId = searchResult.Contacts[0].ContactID;
+        xeroContactName = searchResult.Contacts[0].Name || contactName;
+        console.log(`Found Xero contact by email: ${xeroContactId} (${xeroContactName})`);
+
+        await supabase.from('xero_sync_log').insert({
+          sync_type: 'contact_match',
+          entity_type: 'contact',
+          entity_id: xeroContactId,
+          customer_id: customerId,
+          action: 'email_matched',
+          details: { email, name: xeroContactName },
+          status: 'success',
+        });
+      }
+    }
+  }
+
+  return { xeroContactId, xeroContactName };
+}
+
+async function buildLineItems(
+  supabase: any,
+  booking: any,
+  tour: any,
+  customer: any,
+  isRepeatCustomer: boolean,
+  passengerQuantity: number,
+  descriptionOverride?: string
+): Promise<any[]> {
+  const lineItems: any[] = [];
+  const passengerNames = descriptionOverride || buildPassengerDescription(booking, customer);
+  const roomType = getRoomType(booking.hotel_bookings as any[]);
+
+  // Line 1: Description line
+  const tourDescription = `${tour.name} - ${passengerNames} - ${roomType}`;
+  lineItems.push({ Description: tourDescription, Quantity: 1, UnitAmount: 0 });
+
+  // Line 2: Product line
+  if (tour.xero_product_id) {
+    lineItems.push({ ItemCode: tour.xero_product_id, Quantity: passengerQuantity });
+  }
+
+  // Line 3: Single supplement (only for single-passenger invoices with 1 pax in room)
+  if (passengerQuantity === 1 && booking.passenger_count === 1 && tour.price_single && tour.price_double) {
+    const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
+    if (singleSupplement > 0) {
+      lineItems.push({
+        Description: `Single Supplement - ${tour.name}`,
+        Quantity: 1,
+        UnitAmount: singleSupplement,
+      });
+    }
+  }
+
+  // Line 4: Loyalty discount (5% for repeat customers)
+  if (isRepeatCustomer) {
+    const perPersonPrice = tour.price_double || 0;
+    const discountAmount = perPersonPrice * passengerQuantity * 0.05;
+    lineItems.push({
+      Description: `Loyalty Discount - Returning Customer (5%)`,
+      Quantity: 1,
+      UnitAmount: -discountAmount,
+    });
+  }
+
+  // Line 5: Extra nights
+  const hotelBookings = booking.hotel_bookings as any[];
+  if (hotelBookings && hotelBookings.length > 0) {
+    const tourStart = new Date(tour.start_date);
+    const tourEnd = new Date(tour.end_date);
+    const tourNights = Math.round((tourEnd.getTime() - tourStart.getTime()) / (1000 * 60 * 60 * 24));
+
+    for (const hb of hotelBookings) {
+      if (hb.nights && hb.nights > tourNights) {
+        const extraNights = hb.nights - tourNights;
+
+        let hotelName = 'Hotel';
+        let extraNightPrice: number | null = null;
+        if (hb.hotel_id) {
+          const { data: hotel } = await supabase
+            .from('hotels')
+            .select('name, extra_night_price')
+            .eq('id', hb.hotel_id)
+            .maybeSingle();
+          if (hotel) {
+            hotelName = hotel.name;
+            extraNightPrice = hotel.extra_night_price;
+          }
+        }
+
+        const beddingLabel = hb.bedding
+          ? hb.bedding.charAt(0).toUpperCase() + hb.bedding.slice(1) + ' Room'
+          : '';
+
+        const hbCheckIn = hb.check_in_date ? new Date(hb.check_in_date) : null;
+        const hbCheckOut = hb.check_out_date ? new Date(hb.check_out_date) : null;
+        const formatDate = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+        let dateInfo = '';
+        if (hbCheckIn && hbCheckIn < tourStart) {
+          dateInfo = `Check-in ${formatDate(hbCheckIn)}`;
+        } else if (hbCheckOut && hbCheckOut > tourEnd) {
+          dateInfo = `Check-out ${formatDate(hbCheckOut)}`;
+        }
+
+        const descParts = [`Extra Nights Accommodation`, hotelName];
+        if (beddingLabel) descParts.push(beddingLabel);
+        if (dateInfo) descParts.push(dateInfo);
+
+        const extraLineItem: any = { Description: descParts.join('\n'), Quantity: extraNights };
+        if (extraNightPrice != null) {
+          extraLineItem.UnitAmount = extraNightPrice;
+        }
+
+        lineItems.push(extraLineItem);
+      }
+    }
+  }
+
+  return lineItems;
+}
+
+async function createXeroInvoice(
+  supabase: any,
+  auth: { token: string; tenantId: string },
+  xeroContact: any,
+  lineItems: any[],
+  reference: string
+): Promise<any> {
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 14);
+
+  const invoicePayload = {
+    Type: 'ACCREC',
+    Contact: xeroContact,
+    Date: new Date().toISOString().split('T')[0],
+    DueDate: dueDate.toISOString().split('T')[0],
+    LineAmountTypes: 'Inclusive',
+    LineItems: lineItems,
+    Reference: reference,
+    Status: 'DRAFT',
+  };
+
+  console.log('Creating Xero invoice with payload:', JSON.stringify(invoicePayload));
+
+  const xeroResponse = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${auth.token}`,
+      'Xero-Tenant-Id': auth.tenantId,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({ Invoices: [invoicePayload] }),
+  });
+
+  const xeroResponseText = await xeroResponse.text();
+
+  if (!xeroResponse.ok) {
+    console.error(`Xero API error [${xeroResponse.status}]:`, xeroResponseText);
+    throw new Error(`Xero API error [${xeroResponse.status}]: ${xeroResponseText}`);
+  }
+
+  const xeroResult = JSON.parse(xeroResponseText);
+  const createdInvoice = xeroResult.Invoices?.[0];
+
+  if (!createdInvoice) {
+    throw new Error('Xero returned no invoice data');
+  }
+
+  return createdInvoice;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -124,9 +341,10 @@ Deno.serve(async (req) => {
         check_in_date, check_out_date, total_nights, tour_id, lead_passenger_id,
         passenger_2_name, passenger_3_name,
         passenger_2_id, passenger_3_id,
+        split_invoice,
         customers:lead_passenger_id (id, first_name, last_name, email, phone),
-        passenger_2:customers!passenger_2_id (id, first_name, last_name),
-        passenger_3:customers!passenger_3_id (id, first_name, last_name),
+        passenger_2:customers!passenger_2_id (id, first_name, last_name, email),
+        passenger_3:customers!passenger_3_id (id, first_name, last_name, email),
         tours:tour_id (
           id, name, start_date, end_date,
           price_single, price_double, price_twin,
@@ -162,76 +380,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Build derived values
-    const contactName = `${customer.first_name} ${customer.last_name}`.trim();
-    const passengerNames = buildPassengerDescription(booking, customer);
-    const roomType = getRoomType(booking.hotel_bookings as any[]);
-
-    // --- Resolve Xero Contact ---
-    // Priority: 1) xero_sync_log entity_id, 2) email search in Xero, 3) create new
-    let xeroContactId: string | null = null;
-    let xeroContactName = contactName;
-
-    // 1. Check xero_sync_log for existing Xero ContactID
-    const { data: syncLog } = await supabase
-      .from('xero_sync_log')
-      .select('entity_id')
-      .eq('customer_id', customer.id)
-      .eq('entity_type', 'contact')
-      .eq('status', 'success')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (syncLog?.entity_id) {
-      xeroContactId = syncLog.entity_id;
-      console.log(`Found Xero contact via sync log: ${xeroContactId}`);
-    }
-
-    // 2. Fallback: search Xero by email
-    if (!xeroContactId && customer.email) {
-      console.log(`Searching Xero for contact by email: ${customer.email}`);
-      const searchResponse = await fetch(
-        `https://api.xero.com/api.xro/2.0/Contacts?where=EmailAddress=="${encodeURIComponent(customer.email)}"`,
-        {
-          headers: {
-            'Authorization': `Bearer ${auth.token}`,
-            'Xero-Tenant-Id': auth.tenantId,
-            'Accept': 'application/json',
-          },
-        }
-      );
-      const searchText = await searchResponse.text();
-      if (searchResponse.ok) {
-        const searchResult = JSON.parse(searchText);
-        if (searchResult.Contacts && searchResult.Contacts.length > 0) {
-          xeroContactId = searchResult.Contacts[0].ContactID;
-          xeroContactName = searchResult.Contacts[0].Name || contactName;
-          console.log(`Found Xero contact by email: ${xeroContactId} (${xeroContactName})`);
-
-          // Store in xero_sync_log for future lookups
-          await supabase.from('xero_sync_log').insert({
-            sync_type: 'contact_match',
-            entity_type: 'contact',
-            entity_id: xeroContactId,
-            customer_id: customer.id,
-            action: 'email_matched',
-            details: { email: customer.email, name: xeroContactName },
-            status: 'success',
-          });
-        }
-      }
-    }
-
-    // Build Xero contact object for invoice
-    const xeroContact: any = xeroContactId
-      ? { ContactID: xeroContactId }
-      : {
-          Name: contactName,
-          ...(customer.email ? { EmailAddress: customer.email } : {}),
-        };
-
-    // Check if repeat customer (has previous completed bookings)
+    // Check if repeat customer
     const { count: previousBookingCount } = await supabase
       .from('bookings')
       .select('id', { count: 'exact', head: true })
@@ -240,171 +389,204 @@ Deno.serve(async (req) => {
       .not('status', 'eq', 'cancelled');
 
     const isRepeatCustomer = (previousBookingCount || 0) > 0;
-    console.log(`Customer ${contactName}: repeat=${isRepeatCustomer} (${previousBookingCount} previous bookings)`);
+    const contactName = `${customer.first_name} ${customer.last_name}`.trim();
+    const baseReference = booking.invoice_reference || tour.xero_reference || bookingId.substring(0, 8);
 
-    // Build line items
-    const lineItems: any[] = [];
+    // ===== SPLIT INVOICE MODE =====
+    if (booking.split_invoice && booking.passenger_count > 1) {
+      console.log(`Split invoice mode: creating ${booking.passenger_count} separate invoices`);
 
-    // Line 1: Description-only line with tour name, passenger names, room type
-    const tourDescription = `${tour.name} - ${passengerNames} - ${roomType}`;
-    lineItems.push({
-      Description: tourDescription,
-      Quantity: 1,
-      UnitAmount: 0,
-    });
+      const passengers: Array<{ customerId: string; name: string; email: string | null; role: string }> = [];
 
-    // Line 2: Product line using Xero product ID (Xero applies default price, description, account)
-    if (tour.xero_product_id) {
-      lineItems.push({
-        ItemCode: tour.xero_product_id,
-        Quantity: booking.passenger_count,
+      // Lead passenger
+      passengers.push({
+        customerId: customer.id,
+        name: contactName,
+        email: customer.email,
+        role: 'lead',
       });
-    }
 
-    // Line 3: Single supplement (difference between single and double/twin price)
-    if (booking.passenger_count === 1 && tour.price_single && tour.price_double) {
-      const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
-      if (singleSupplement > 0) {
-        lineItems.push({
-          Description: `Single Supplement - ${tour.name}`,
-          Quantity: 1,
-          UnitAmount: singleSupplement,
+      // Passenger 2
+      const pax2 = booking.passenger_2 as any;
+      if (pax2?.id) {
+        passengers.push({
+          customerId: pax2.id,
+          name: `${pax2.first_name} ${pax2.last_name}`.trim(),
+          email: pax2.email,
+          role: 'passenger_2',
+        });
+      } else if (booking.passenger_2_name) {
+        // No linked contact — invoice goes to lead passenger with pax2 name in description
+        passengers.push({
+          customerId: customer.id,
+          name: booking.passenger_2_name,
+          email: customer.email,
+          role: 'passenger_2_unlinked',
         });
       }
-    }
 
-    // Line 4: Loyalty discount (5% for repeat customers)
-    if (isRepeatCustomer) {
-      const perPersonPrice = tour.price_double || 0;
-      const discountAmount = perPersonPrice * booking.passenger_count * 0.05;
-      lineItems.push({
-        Description: `Loyalty Discount - Returning Customer (5%)`,
-        Quantity: 1,
-        UnitAmount: -discountAmount,
-      });
-    }
-
-    // Line 5: Extra nights - detailed description with hotel name, room type, dates
-    const hotelBookings = booking.hotel_bookings as any[];
-    if (hotelBookings && hotelBookings.length > 0) {
-      const tourStart = new Date(tour.start_date);
-      const tourEnd = new Date(tour.end_date);
-      const tourNights = Math.round((tourEnd.getTime() - tourStart.getTime()) / (1000 * 60 * 60 * 24));
-
-      for (const hb of hotelBookings) {
-        if (hb.nights && hb.nights > tourNights) {
-          const extraNights = hb.nights - tourNights;
-
-          // Fetch hotel name and extra night price
-          let hotelName = 'Hotel';
-          let extraNightPrice: number | null = null;
-          if (hb.hotel_id) {
-            const { data: hotel } = await supabase
-              .from('hotels')
-              .select('name, extra_night_price')
-              .eq('id', hb.hotel_id)
-              .maybeSingle();
-            if (hotel) {
-              hotelName = hotel.name;
-              extraNightPrice = hotel.extra_night_price;
-            }
-          }
-
-          const beddingLabel = hb.bedding
-            ? hb.bedding.charAt(0).toUpperCase() + hb.bedding.slice(1) + ' Room'
-            : '';
-
-          const hbCheckIn = hb.check_in_date ? new Date(hb.check_in_date) : null;
-          const hbCheckOut = hb.check_out_date ? new Date(hb.check_out_date) : null;
-          const formatDate = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
-          let dateInfo = '';
-          if (hbCheckIn && hbCheckIn < tourStart) {
-            dateInfo = `Check-in ${formatDate(hbCheckIn)}`;
-          } else if (hbCheckOut && hbCheckOut > tourEnd) {
-            dateInfo = `Check-out ${formatDate(hbCheckOut)}`;
-          }
-
-          const descParts = [
-            `Extra Nights Accommodation`,
-            hotelName,
-          ];
-          if (beddingLabel) descParts.push(beddingLabel);
-          if (dateInfo) descParts.push(dateInfo);
-
-          const extraLineItem: any = {
-            Description: descParts.join('\n'),
-            Quantity: extraNights,
-          };
-
-          if (extraNightPrice != null) {
-            extraLineItem.UnitAmount = extraNightPrice;
-          }
-
-          lineItems.push(extraLineItem);
+      // Passenger 3
+      if (booking.passenger_count >= 3) {
+        const pax3 = booking.passenger_3 as any;
+        if (pax3?.id) {
+          passengers.push({
+            customerId: pax3.id,
+            name: `${pax3.first_name} ${pax3.last_name}`.trim(),
+            email: pax3.email,
+            role: 'passenger_3',
+          });
+        } else if (booking.passenger_3_name) {
+          passengers.push({
+            customerId: customer.id,
+            name: booking.passenger_3_name,
+            email: customer.email,
+            role: 'passenger_3_unlinked',
+          });
         }
       }
-    }
 
-    // Build the invoice payload
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14);
+      const invoiceNumbers: string[] = [];
+      const results: any[] = [];
 
-    const invoicePayload = {
-      Type: 'ACCREC',
-      Contact: xeroContact,
-      Date: new Date().toISOString().split('T')[0],
-      DueDate: dueDate.toISOString().split('T')[0],
-      LineAmountTypes: 'Inclusive',
-      LineItems: lineItems,
-      Reference: booking.invoice_reference || tour.xero_reference || bookingId.substring(0, 8),
-      Status: 'DRAFT',
-    };
+      for (const pax of passengers) {
+        try {
+          // Resolve Xero contact for this passenger
+          const { xeroContactId } = await resolveXeroContact(
+            supabase, auth, pax.customerId, pax.name, pax.email
+          );
 
-    console.log('Creating Xero invoice with payload:', JSON.stringify(invoicePayload));
+          const xeroContact: any = xeroContactId
+            ? { ContactID: xeroContactId }
+            : { Name: pax.name, ...(pax.email ? { EmailAddress: pax.email } : {}) };
 
-    // Create invoice in Xero
-    const xeroResponse = await fetch('https://api.xero.com/api.xro/2.0/Invoices', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${auth.token}`,
-        'Xero-Tenant-Id': auth.tenantId,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: JSON.stringify({ Invoices: [invoicePayload] }),
-    });
+          // Check repeat status for this specific passenger
+          let paxIsRepeat = isRepeatCustomer;
+          if (pax.role !== 'lead') {
+            const { count } = await supabase
+              .from('bookings')
+              .select('id', { count: 'exact', head: true })
+              .eq('lead_passenger_id', pax.customerId)
+              .neq('id', bookingId)
+              .not('status', 'eq', 'cancelled');
+            paxIsRepeat = (count || 0) > 0;
+          }
 
-    const xeroResponseText = await xeroResponse.text();
+          const lineItems = await buildLineItems(
+            supabase, booking, tour, customer, paxIsRepeat, 1, pax.name
+          );
 
-    if (!xeroResponse.ok) {
-      console.error(`Xero API error [${xeroResponse.status}]:`, xeroResponseText);
+          const createdInvoice = await createXeroInvoice(
+            supabase, auth, xeroContact, lineItems, baseReference
+          );
+
+          console.log(`Split invoice created for ${pax.name}: ${createdInvoice.InvoiceNumber}`);
+
+          // Store new Xero contact if created
+          const invoiceContactId = createdInvoice.Contact?.ContactID;
+          if (!xeroContactId && invoiceContactId) {
+            await supabase.from('xero_sync_log').insert({
+              sync_type: 'contact_auto_create',
+              entity_type: 'contact',
+              entity_id: invoiceContactId,
+              customer_id: pax.customerId,
+              action: 'auto_created_via_invoice',
+              details: { name: pax.name, email: pax.email },
+              status: 'success',
+            });
+          }
+
+          const invoiceRef = createdInvoice.InvoiceNumber || createdInvoice.InvoiceID;
+          if (invoiceRef) invoiceNumbers.push(invoiceRef);
+
+          // Log to xero_sync_log
+          await supabase.from('xero_sync_log').insert({
+            sync_type: 'invoice_create',
+            entity_type: 'invoice',
+            entity_id: createdInvoice.InvoiceID,
+            customer_id: pax.customerId,
+            action: 'split_invoice_created',
+            details: {
+              invoice_number: createdInvoice.InvoiceNumber,
+              booking_id: bookingId,
+              tour_name: tour.name,
+              total: createdInvoice.Total,
+              passenger_role: pax.role,
+              passenger_name: pax.name,
+            },
+            status: 'success',
+          });
+
+          results.push({
+            invoiceId: createdInvoice.InvoiceID,
+            invoiceNumber: createdInvoice.InvoiceNumber,
+            total: createdInvoice.Total,
+            passengerName: pax.name,
+            passengerRole: pax.role,
+          });
+        } catch (err) {
+          console.error(`Failed to create split invoice for ${pax.name}:`, err);
+          results.push({ error: err.message, passengerName: pax.name, passengerRole: pax.role });
+        }
+      }
+
+      // Update booking with all invoice numbers
+      if (invoiceNumbers.length > 0) {
+        const existingRef = booking.invoice_reference;
+        const newRef = existingRef
+          ? `${existingRef},${invoiceNumbers.join(',')}`
+          : invoiceNumbers.join(',');
+        await supabase
+          .from('bookings')
+          .update({ invoice_reference: newRef, updated_at: new Date().toISOString() })
+          .eq('id', bookingId);
+      }
+
+      // Audit log
+      await supabase.from('audit_log').insert({
+        user_id: customer.id,
+        operation_type: 'XERO_CREATE_SPLIT_INVOICES',
+        table_name: 'bookings',
+        record_id: bookingId,
+        details: {
+          invoices_created: results.filter(r => !r.error).length,
+          invoices_failed: results.filter(r => r.error).length,
+          invoice_numbers: invoiceNumbers,
+          split_mode: true,
+        },
+      });
+
       return new Response(JSON.stringify({
-        error: 'Failed to create invoice in Xero',
-        status: xeroResponse.status,
-        details: xeroResponseText,
+        success: true,
+        splitMode: true,
+        invoices: results,
+        invoiceNumbers,
       }), {
-        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const xeroResult = JSON.parse(xeroResponseText);
-    const createdInvoice = xeroResult.Invoices?.[0];
+    // ===== STANDARD SINGLE INVOICE MODE =====
+    const { xeroContactId } = await resolveXeroContact(
+      supabase, auth, customer.id, contactName, customer.email
+    );
 
-    if (!createdInvoice) {
-      return new Response(JSON.stringify({ error: 'Xero returned no invoice data' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const xeroContact: any = xeroContactId
+      ? { ContactID: xeroContactId }
+      : { Name: contactName, ...(customer.email ? { EmailAddress: customer.email } : {}) };
+
+    const lineItems = await buildLineItems(
+      supabase, booking, tour, customer, isRepeatCustomer, booking.passenger_count
+    );
+
+    const createdInvoice = await createXeroInvoice(
+      supabase, auth, xeroContact, lineItems, baseReference
+    );
 
     console.log(`Xero invoice created: ${createdInvoice.InvoiceNumber} (ID: ${createdInvoice.InvoiceID})`);
 
-    // If Xero created a new contact (we didn't have a ContactID), store the ContactID back
+    // Store new Xero contact if created
     const invoiceContactId = createdInvoice.Contact?.ContactID;
     if (!xeroContactId && invoiceContactId) {
-      console.log(`Storing newly created Xero contact ${invoiceContactId} for customer ${customer.id}`);
       await supabase.from('xero_sync_log').insert({
         sync_type: 'contact_auto_create',
         entity_type: 'contact',
@@ -416,12 +598,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update booking with the Xero invoice reference
+    // Update booking with invoice reference
     const invoiceRef = createdInvoice.InvoiceNumber || createdInvoice.InvoiceID;
     if (invoiceRef) {
       const existingRef = booking.invoice_reference;
       const newRef = existingRef ? `${existingRef},${invoiceRef}` : invoiceRef;
-
       await supabase
         .from('bookings')
         .update({ invoice_reference: newRef, updated_at: new Date().toISOString() })
@@ -443,12 +624,12 @@ Deno.serve(async (req) => {
         contact_name: contactName,
         line_items_count: lineItems.length,
         is_repeat_customer: isRepeatCustomer,
-        room_type: roomType,
+        room_type: getRoomType(booking.hotel_bookings as any[]),
       },
       status: 'success',
     });
 
-    // Log to audit_log
+    // Audit log
     await supabase.from('audit_log').insert({
       user_id: customer.id,
       operation_type: 'XERO_CREATE_INVOICE',

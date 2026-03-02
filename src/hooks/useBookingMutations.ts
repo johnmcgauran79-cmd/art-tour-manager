@@ -106,6 +106,7 @@ export const useCreateBooking = () => {
       passport_country?: string;
       nationality?: string;
       whatsapp_group_comms?: boolean;
+      split_invoice?: boolean;
       secondary_contact_id?: string | null;
     }) => {
       
@@ -193,6 +194,7 @@ export const useCreateBooking = () => {
           passport_country: bookingData.passport_country || null,
           nationality: bookingData.nationality || null,
           whatsapp_group_comms: bookingData.whatsapp_group_comms ?? true,
+          split_invoice: bookingData.split_invoice ?? false,
         }])
         .select()
         .single();
@@ -249,7 +251,7 @@ export const useUpdateBooking = () => {
   const { logOperation } = useAuditLog();
 
   return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string; passenger_2_id?: string | null; passenger_3_id?: string | null; invoice_reference?: string | null }) => {
+    mutationFn: async ({ id, ...updates }: Partial<Booking> & { id: string; passenger_2_id?: string | null; passenger_3_id?: string | null; invoice_reference?: string | null; split_invoice?: boolean }) => {
       const finalUpdates: Record<string, any> = { ...updates };
 
       // Normalize empty date strings
