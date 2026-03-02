@@ -34,12 +34,21 @@ serve(async (req) => {
       const scopes = 'openid profile email accounting.transactions accounting.transactions.read accounting.contacts.read accounting.contacts offline_access';
       const state = crypto.randomUUID();
       
+      console.log('Generating Xero auth URL with:', {
+        clientId: XERO_CLIENT_ID,
+        redirectUri,
+        scopes,
+        state,
+      });
+
       const authUrl = `https://login.xero.com/identity/connect/authorize?` +
         `response_type=code&` +
-        `client_id=${XERO_CLIENT_ID}&` +
+        `client_id=${encodeURIComponent(XERO_CLIENT_ID)}&` +
         `redirect_uri=${encodeURIComponent(redirectUri)}&` +
         `scope=${encodeURIComponent(scopes)}&` +
-        `state=${state}`;
+        `state=${encodeURIComponent(state)}`;
+
+      console.log('Generated auth URL:', authUrl);
 
       return new Response(JSON.stringify({ authUrl, state }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
