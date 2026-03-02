@@ -31,27 +31,55 @@ async function keapRequest(path: string, options: RequestInit = {}) {
   return text ? JSON.parse(text) : null;
 }
 
-async function findOrCreateContact(email: string, firstName?: string, lastName?: string): Promise<number> {
-  // Search for existing contact by email
-  const searchResult = await keapRequest(`/contacts?email=${encodeURIComponent(email)}`);
+async function findOrCreateContact(
+  supabase: any,
+  customerId: string,
+  email: string,
+  firstName?: string,
+  lastName?: string
+): Promise<number> {
+  // 1. Check if we already have a stored keap_contact_id for this customer
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('keap_contact_id')
+    .eq('id', customerId)
+    .maybeSingle();
 
-  if (searchResult.contacts && searchResult.contacts.length > 0) {
-    console.log(`Found existing Keap contact: ${searchResult.contacts[0].id}`);
-    return searchResult.contacts[0].id;
+  if (customer?.keap_contact_id) {
+    console.log(`Using stored Keap contact ID: ${customer.keap_contact_id} for customer ${customerId}`);
+    return parseInt(customer.keap_contact_id, 10);
   }
 
-  // Create new contact
-  const newContact = await keapRequest('/contacts', {
-    method: 'POST',
-    body: JSON.stringify({
-      email_addresses: [{ email, field: 'EMAIL1' }],
-      given_name: firstName || '',
-      family_name: lastName || '',
-    }),
-  });
+  // 2. Search Keap by email
+  const searchResult = await keapRequest(`/contacts?email=${encodeURIComponent(email)}`);
 
-  console.log(`Created new Keap contact: ${newContact.id}`);
-  return newContact.id;
+  let contactId: number;
+
+  if (searchResult.contacts && searchResult.contacts.length > 0) {
+    contactId = searchResult.contacts[0].id;
+    console.log(`Found existing Keap contact by email: ${contactId}`);
+  } else {
+    // 3. Create new contact in Keap
+    const newContact = await keapRequest('/contacts', {
+      method: 'POST',
+      body: JSON.stringify({
+        email_addresses: [{ email, field: 'EMAIL1' }],
+        given_name: firstName || '',
+        family_name: lastName || '',
+      }),
+    });
+    contactId = newContact.id;
+    console.log(`Created new Keap contact: ${contactId}`);
+  }
+
+  // 4. Store the keap_contact_id back to the customer record for future lookups
+  await supabase
+    .from('customers')
+    .update({ keap_contact_id: String(contactId) })
+    .eq('id', customerId);
+  console.log(`Saved keap_contact_id ${contactId} to customer ${customerId}`);
+
+  return contactId;
 }
 
 async function findOrCreateTag(tagName: string): Promise<number> {
@@ -116,7 +144,8 @@ Deno.serve(async (req) => {
       supabase.from('tours').select('name, keap_tag_id').eq('id', tourId).single(),
       supabase.from('bookings').select(`
         id,
-        customers:lead_passenger_id (first_name, last_name)
+        lead_passenger_id,
+        customers:lead_passenger_id (id, first_name, last_name)
       `).eq('id', bookingId).single(),
     ]);
 
@@ -130,10 +159,20 @@ Deno.serve(async (req) => {
     const tourName = tourResult.data.name;
     const existingKeapTagId = tourResult.data.keap_tag_id;
     const customer = bookingResult.data?.customers as any;
+    const customerId = bookingResult.data?.lead_passenger_id;
     const tagName = `Booked: ${tourName}`;
 
-    // Find or create contact in Keap
+    if (!customerId) {
+      return new Response(JSON.stringify({ error: 'Booking has no lead passenger' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Find or create contact in Keap (with stored ID check)
     const contactId = await findOrCreateContact(
+      supabase,
+      customerId,
       contactEmail,
       customer?.first_name,
       customer?.last_name
@@ -156,7 +195,7 @@ Deno.serve(async (req) => {
 
     // Log to audit_log
     await supabase.from('audit_log').insert({
-      user_id: customer?.id || bookingId,
+      user_id: customerId,
       operation_type: 'KEAP_ADD_TAG',
       table_name: 'bookings',
       record_id: bookingId,

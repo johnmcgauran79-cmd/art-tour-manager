@@ -162,10 +162,69 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Build passenger names and room type for description
-    const passengerNames = buildPassengerDescription(booking, customer);
-    const roomType = getRoomType(booking.hotel_bookings as any[]);
-    const contactName = `${customer.first_name} ${customer.last_name}`.trim();
+    // --- Resolve Xero Contact ---
+    // Priority: 1) xero_sync_log entity_id, 2) email search in Xero, 3) create new
+    let xeroContactId: string | null = null;
+    let xeroContactName = contactName;
+
+    // 1. Check xero_sync_log for existing Xero ContactID
+    const { data: syncLog } = await supabase
+      .from('xero_sync_log')
+      .select('entity_id')
+      .eq('customer_id', customer.id)
+      .eq('entity_type', 'contact')
+      .eq('status', 'success')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (syncLog?.entity_id) {
+      xeroContactId = syncLog.entity_id;
+      console.log(`Found Xero contact via sync log: ${xeroContactId}`);
+    }
+
+    // 2. Fallback: search Xero by email
+    if (!xeroContactId && customer.email) {
+      console.log(`Searching Xero for contact by email: ${customer.email}`);
+      const searchResponse = await fetch(
+        `https://api.xero.com/api.xro/2.0/Contacts?where=EmailAddress=="${encodeURIComponent(customer.email)}"`,
+        {
+          headers: {
+            'Authorization': `Bearer ${auth.token}`,
+            'Xero-Tenant-Id': auth.tenantId,
+            'Accept': 'application/json',
+          },
+        }
+      );
+      const searchText = await searchResponse.text();
+      if (searchResponse.ok) {
+        const searchResult = JSON.parse(searchText);
+        if (searchResult.Contacts && searchResult.Contacts.length > 0) {
+          xeroContactId = searchResult.Contacts[0].ContactID;
+          xeroContactName = searchResult.Contacts[0].Name || contactName;
+          console.log(`Found Xero contact by email: ${xeroContactId} (${xeroContactName})`);
+
+          // Store in xero_sync_log for future lookups
+          await supabase.from('xero_sync_log').insert({
+            sync_type: 'contact_match',
+            entity_type: 'contact',
+            entity_id: xeroContactId,
+            customer_id: customer.id,
+            action: 'email_matched',
+            details: { email: customer.email, name: xeroContactName },
+            status: 'success',
+          });
+        }
+      }
+    }
+
+    // Build Xero contact object for invoice
+    const xeroContact: any = xeroContactId
+      ? { ContactID: xeroContactId }
+      : {
+          Name: contactName,
+          ...(customer.email ? { EmailAddress: customer.email } : {}),
+        };
 
     // Check if repeat customer (has previous completed bookings)
     const { count: previousBookingCount } = await supabase
@@ -272,8 +331,6 @@ Deno.serve(async (req) => {
 
     // Line 4: Loyalty discount (5% for repeat customers) - applied last
     if (isRepeatCustomer) {
-      // Note: discount calculated on Xero product default price × quantity
-      // Since we don't send UnitAmount for the tour line, we use local price as estimate
       const estimatedTourTotal = (tour.price_double || 0) * booking.passenger_count;
       const discountAmount = estimatedTourTotal * 0.05;
       lineItems.push({
@@ -291,10 +348,7 @@ Deno.serve(async (req) => {
 
     const invoicePayload = {
       Type: 'ACCREC',
-      Contact: {
-        Name: contactName,
-        ...(customer.email ? { EmailAddress: customer.email } : {}),
-      },
+      Contact: xeroContact,
       Date: new Date().toISOString().split('T')[0],
       DueDate: dueDate.toISOString().split('T')[0],
       LineAmountTypes: 'Exclusive',
@@ -342,6 +396,21 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Xero invoice created: ${createdInvoice.InvoiceNumber} (ID: ${createdInvoice.InvoiceID})`);
+
+    // If Xero created a new contact (we didn't have a ContactID), store the ContactID back
+    const invoiceContactId = createdInvoice.Contact?.ContactID;
+    if (!xeroContactId && invoiceContactId) {
+      console.log(`Storing newly created Xero contact ${invoiceContactId} for customer ${customer.id}`);
+      await supabase.from('xero_sync_log').insert({
+        sync_type: 'contact_auto_create',
+        entity_type: 'contact',
+        entity_id: invoiceContactId,
+        customer_id: customer.id,
+        action: 'auto_created_via_invoice',
+        details: { name: contactName, email: customer.email },
+        status: 'success',
+      });
+    }
 
     // Update booking with the Xero invoice reference
     const invoiceRef = createdInvoice.InvoiceNumber || createdInvoice.InvoiceID;

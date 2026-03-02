@@ -1015,6 +1015,7 @@ export type Database = {
           emergency_contact_relationship: string | null
           first_name: string
           id: string
+          keap_contact_id: string | null
           last_name: string
           medical_conditions: string | null
           notes: string | null
@@ -1038,6 +1039,7 @@ export type Database = {
           emergency_contact_relationship?: string | null
           first_name: string
           id?: string
+          keap_contact_id?: string | null
           last_name: string
           medical_conditions?: string | null
           notes?: string | null
@@ -1061,6 +1063,7 @@ export type Database = {
           emergency_contact_relationship?: string | null
           first_name?: string
           id?: string
+          keap_contact_id?: string | null
           last_name?: string
           medical_conditions?: string | null
           notes?: string | null
