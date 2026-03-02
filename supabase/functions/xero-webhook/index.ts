@@ -126,8 +126,26 @@ function pickBestInvoice(invoices: any[]): any {
   })[0];
 }
 
-// Fetch a single invoice ref from Xero (tries Reference, InvoiceNumber, INV- prefix)
-// Normalises refs like "INV-4141" to also try "4141" and vice versa
+// Rate-limit-aware fetch with retry for 429 responses
+async function xeroFetchWithRetry(url: string, headers: Record<string, string>, retries = 3): Promise<Response> {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const response = await fetch(url, { headers });
+    if (response.status === 429) {
+      const retryAfter = parseInt(response.headers.get('Retry-After') || '5', 10);
+      const waitMs = Math.max(retryAfter * 1000, 2000) * (attempt + 1);
+      console.log(`Rate limited (429), waiting ${waitMs}ms before retry ${attempt + 1}/${retries}`);
+      await response.text(); // consume body
+      await new Promise(r => setTimeout(r, waitMs));
+      continue;
+    }
+    return response;
+  }
+  // Final attempt
+  return await fetch(url, { headers });
+}
+
+// Fetch a single invoice ref from Xero — uses a single combined OR query to minimise API calls
+// Falls back to individual queries only if combined query isn't supported
 async function fetchInvoicesForRef(ref: string, auth: { token: string; tenantId: string }): Promise<any[]> {
   const headers = { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' };
   const trimmed = ref.trim();
@@ -136,39 +154,66 @@ async function fetchInvoicesForRef(ref: string, auth: { token: string; tenantId:
   const numericCore = trimmed.replace(/^(INV-|inv-)/i, '');
   const hasPrefix = numericCore !== trimmed;
 
-  // Build a unique set of search terms to try
+  // Build all candidate terms
   const searchTerms: string[] = [trimmed];
-  if (hasPrefix && numericCore) {
-    // Input was "INV-4141" → also try "4141"
-    searchTerms.push(numericCore);
-  }
-  if (!hasPrefix && /^\d+$/.test(trimmed)) {
-    // Input was "4141" → also try "INV-4141"
-    searchTerms.push(`INV-${trimmed}`);
-  }
+  if (hasPrefix && numericCore) searchTerms.push(numericCore);
+  if (!hasPrefix && /^\d+$/.test(trimmed)) searchTerms.push(`INV-${trimmed}`);
 
-  for (const term of searchTerms) {
-    // Try Reference field
-    const r1 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${term}"`, { headers });
-    if (r1.ok) {
-      const d1 = await r1.json();
-      if ((d1.Invoices || []).length > 0) {
-        console.log(`Matched ref "${trimmed}" by Reference="${term}"`);
-        return d1.Invoices;
+  // Try a combined OR query first to use a single API call
+  const orClauses = searchTerms.flatMap(term => [
+    `Reference=="${term}"`,
+    `InvoiceNumber=="${term}"`,
+  ]);
+  const combinedWhere = orClauses.join(' OR ');
+
+  try {
+    const r = await xeroFetchWithRetry(
+      `https://api.xero.com/api.xro/2.0/Invoices?where=${encodeURIComponent(combinedWhere)}`,
+      headers
+    );
+    if (r.ok) {
+      const data = await r.json();
+      if ((data.Invoices || []).length > 0) {
+        console.log(`Matched ref "${trimmed}" via combined query (${data.Invoices.length} result(s))`);
+        return data.Invoices;
+      }
+    } else {
+      const errText = await r.text();
+      console.error(`Xero API error for ref "${trimmed}" (status ${r.status}): ${errText.substring(0, 200)}`);
+
+      // If combined query fails (e.g., syntax not supported), fall back to individual queries
+      if (r.status === 400) {
+        for (const term of searchTerms) {
+          const r1 = await xeroFetchWithRetry(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${term}"`, headers);
+          if (r1.ok) {
+            const d1 = await r1.json();
+            if ((d1.Invoices || []).length > 0) {
+              console.log(`Matched ref "${trimmed}" by InvoiceNumber="${term}"`);
+              return d1.Invoices;
+            }
+          } else {
+            const errBody = await r1.text();
+            console.error(`Xero API error for InvoiceNumber="${term}" (status ${r1.status}): ${errBody.substring(0, 200)}`);
+          }
+          await new Promise(r => setTimeout(r, 500));
+
+          const r2 = await xeroFetchWithRetry(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${term}"`, headers);
+          if (r2.ok) {
+            const d2 = await r2.json();
+            if ((d2.Invoices || []).length > 0) {
+              console.log(`Matched ref "${trimmed}" by Reference="${term}"`);
+              return d2.Invoices;
+            }
+          } else {
+            const errBody = await r2.text();
+            console.error(`Xero API error for Reference="${term}" (status ${r2.status}): ${errBody.substring(0, 200)}`);
+          }
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
     }
-    await new Promise(r => setTimeout(r, 200));
-
-    // Try InvoiceNumber exact
-    const r2 = await fetch(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${term}"`, { headers });
-    if (r2.ok) {
-      const d2 = await r2.json();
-      if ((d2.Invoices || []).length > 0) {
-        console.log(`Matched ref "${trimmed}" by InvoiceNumber="${term}"`);
-        return d2.Invoices;
-      }
-    }
-    await new Promise(r => setTimeout(r, 200));
+  } catch (err) {
+    console.error(`Network error fetching Xero invoice for ref "${trimmed}":`, err);
   }
 
   return [];
@@ -215,7 +260,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         } else {
           console.log(`No Xero invoice found for ref "${ref}" (booking ${booking.id})`);
         }
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise(r => setTimeout(r, 300));
       }
 
       if (invoiceResults.length === 0) continue;
