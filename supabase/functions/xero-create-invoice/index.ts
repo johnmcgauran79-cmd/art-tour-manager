@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
       Contact: xeroContact,
       Date: new Date().toISOString().split('T')[0],
       DueDate: dueDate.toISOString().split('T')[0],
-      LineAmountTypes: 'Exclusive',
+      LineAmountTypes: 'Inclusive',
       LineItems: lineItems,
       Reference: booking.invoice_reference || bookingId.substring(0, 8),
       Status: 'DRAFT',
