@@ -2355,6 +2355,7 @@ export type Database = {
           updated_at: string | null
           url_reference: string | null
           xero_product_id: string | null
+          xero_reference: string | null
         }
         Insert: {
           capacity?: number | null
@@ -2402,6 +2403,7 @@ export type Database = {
           updated_at?: string | null
           url_reference?: string | null
           xero_product_id?: string | null
+          xero_reference?: string | null
         }
         Update: {
           capacity?: number | null
@@ -2449,6 +2451,7 @@ export type Database = {
           updated_at?: string | null
           url_reference?: string | null
           xero_product_id?: string | null
+          xero_reference?: string | null
         }
         Relationships: []
       }

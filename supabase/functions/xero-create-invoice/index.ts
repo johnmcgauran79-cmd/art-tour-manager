@@ -130,7 +130,7 @@ Deno.serve(async (req) => {
         tours:tour_id (
           id, name, start_date, end_date,
           price_single, price_double, price_twin,
-          xero_product_id, tour_type
+          xero_product_id, xero_reference, tour_type
         ),
         hotel_bookings (id, bedding, nights, check_in_date, check_out_date, hotel_id)
       `)
@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
       DueDate: dueDate.toISOString().split('T')[0],
       LineAmountTypes: 'Inclusive',
       LineItems: lineItems,
-      Reference: booking.invoice_reference || bookingId.substring(0, 8),
+      Reference: booking.invoice_reference || tour.xero_reference || bookingId.substring(0, 8),
       Status: 'DRAFT',
     };
 

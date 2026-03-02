@@ -1,0 +1,1 @@
+ALTER TABLE tours ADD COLUMN xero_reference text;
