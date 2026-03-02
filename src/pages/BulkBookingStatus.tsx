@@ -509,7 +509,13 @@ export default function BulkBookingStatus() {
                         />
                       </TableCell>
                       <TableCell className="font-medium">
-                        {booking.customers?.first_name} {booking.customers?.last_name}
+                        <button
+                          type="button"
+                          className="text-left text-primary hover:underline cursor-pointer"
+                          onClick={() => window.open(`/bookings/${booking.id}`, '_blank')}
+                        >
+                          {booking.customers?.first_name} {booking.customers?.last_name}
+                        </button>
                         {booking.group_name && (
                           <div className="text-sm text-muted-foreground">
                             {booking.group_name}
