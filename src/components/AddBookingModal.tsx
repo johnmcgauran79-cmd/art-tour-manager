@@ -318,13 +318,17 @@ export const AddBookingModal = ({
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       console.log('Booking created:', newBooking);
 
-      // Trigger Xero invoice creation (fire-and-forget)
-      supabase.functions.invoke('xero-create-invoice', {
-        body: { bookingId: newBooking.id }
-      }).then(res => {
-        if (res.error) console.error('Xero invoice error:', res.error);
-        else console.log('Xero invoice triggered:', res.data);
-      });
+      // Only trigger Xero invoice creation if no invoice reference was manually provided
+      if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
+        supabase.functions.invoke('xero-create-invoice', {
+          body: { bookingId: newBooking.id }
+        }).then(res => {
+          if (res.error) console.error('Xero invoice error:', res.error);
+          else console.log('Xero invoice triggered:', res.data);
+        });
+      } else {
+        console.log('Skipping Xero invoice creation - invoice reference already provided:', formData.invoice_reference);
+      }
 
       // Trigger Keap tag (fire-and-forget)
       supabase.functions.invoke('keap-add-tag', {
