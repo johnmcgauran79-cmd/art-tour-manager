@@ -48,6 +48,7 @@ interface TourOverviewTabProps {
     tourHost: string;
     keapTagId: string;
     xeroProductId: string;
+    xeroReference: string;
   };
 }
 
@@ -388,20 +389,26 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
       )}
 
       {/* Integrations */}
-      {!isHost && (tour.xeroProductId || tour.keapTagId) && (
+      {!isHost && (tour.xeroProductId || tour.xeroReference || tour.keapTagId) && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
               <Link2 className="h-5 w-5" />
               Integrations
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               {tour.xeroProductId && (
                 <div>
                   <span className="font-medium">Xero Product Code:</span>{" "}
                   <Badge variant="outline">{tour.xeroProductId}</Badge>
+                </div>
+              )}
+              {tour.xeroReference && (
+                <div>
+                  <span className="font-medium">Xero Reference:</span>{" "}
+                  <Badge variant="outline">{tour.xeroReference}</Badge>
                 </div>
               )}
               {tour.keapTagId && (

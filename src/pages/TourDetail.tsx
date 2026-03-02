@@ -108,6 +108,7 @@ export default function TourDetail() {
     tourHost: tour.tour_host || '',
     keapTagId: tour.keap_tag_id || '',
     xeroProductId: tour.xero_product_id || '',
+    xeroReference: (tour as any).xero_reference || '',
   } : null;
 
   const handleDeleteTour = async () => {

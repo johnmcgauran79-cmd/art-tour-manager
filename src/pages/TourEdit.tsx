@@ -49,6 +49,7 @@ export default function TourEdit() {
     tour_type: "domestic" as "domestic" | "international",
     keap_tag_id: "",
     xero_product_id: "",
+    xero_reference: "",
   });
 
   const updateTourMutation = useUpdateTour();
@@ -58,7 +59,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference')
           .eq('id', id)
           .single();
         
@@ -89,6 +90,7 @@ export default function TourEdit() {
             tour_type: (data.tour_type as "domestic" | "international") || "domestic",
             keap_tag_id: (data as any).keap_tag_id || "",
             xero_product_id: (data as any).xero_product_id || "",
+            xero_reference: (data as any).xero_reference || "",
           });
         }
       }
@@ -152,6 +154,7 @@ export default function TourEdit() {
       tour_type: formData.tour_type,
       keap_tag_id: formData.keap_tag_id || null,
       xero_product_id: formData.xero_product_id || null,
+      xero_reference: formData.xero_reference || null,
     } as any;
 
     updateTourMutation.mutate({
@@ -539,7 +542,7 @@ export default function TourEdit() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="xero_product_id">Xero Product Code</Label>
             <Input
@@ -550,6 +553,19 @@ export default function TourEdit() {
             />
             <p className="text-xs text-muted-foreground">
               The Xero product/service ItemCode used for invoicing this tour.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="xero_reference">Xero Reference</Label>
+            <Input
+              id="xero_reference"
+              value={formData.xero_reference}
+              onChange={(e) => handleInputChange("xero_reference", e.target.value)}
+              placeholder="e.g., MILLIONS"
+            />
+            <p className="text-xs text-muted-foreground">
+              Short reference used on Xero invoices (e.g., MILLIONS, QUOKKA).
             </p>
           </div>
 
