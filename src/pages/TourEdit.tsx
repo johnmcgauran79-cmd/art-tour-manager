@@ -48,6 +48,7 @@ export default function TourEdit() {
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
     keap_tag_id: "",
+    xero_product_id: "",
   });
 
   const updateTourMutation = useUpdateTour();
@@ -57,7 +58,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id')
           .eq('id', id)
           .single();
         
@@ -87,6 +88,7 @@ export default function TourEdit() {
             minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
             tour_type: (data.tour_type as "domestic" | "international") || "domestic",
             keap_tag_id: (data as any).keap_tag_id || "",
+            xero_product_id: (data as any).xero_product_id || "",
           });
         }
       }
@@ -149,6 +151,7 @@ export default function TourEdit() {
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
       tour_type: formData.tour_type,
       keap_tag_id: formData.keap_tag_id || null,
+      xero_product_id: formData.xero_product_id || null,
     } as any;
 
     updateTourMutation.mutate({
@@ -537,6 +540,19 @@ export default function TourEdit() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="xero_product_id">Xero Product Code</Label>
+            <Input
+              id="xero_product_id"
+              value={formData.xero_product_id}
+              onChange={(e) => handleInputChange("xero_product_id", e.target.value)}
+              placeholder="e.g., TOUR-2026-MEL"
+            />
+            <p className="text-xs text-muted-foreground">
+              The Xero product/service ItemCode used for invoicing this tour.
+            </p>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="keap_tag_id">Keap Tag ID</Label>
             <Input
