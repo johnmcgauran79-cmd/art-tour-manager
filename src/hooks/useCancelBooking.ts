@@ -72,6 +72,17 @@ export const useCancelBooking = () => {
       }
 
       console.log('Booking cancelled successfully');
+
+      // 4. Remove Keap tags for all passengers on this booking (fire-and-forget)
+      try {
+        await supabase.functions.invoke('keap-remove-tag', {
+          body: { bookingId },
+        });
+        console.log('Keap tag removal triggered for cancelled booking');
+      } catch (keapError) {
+        console.error('Non-blocking: Failed to remove Keap tags:', keapError);
+      }
+
       return { bookingId, cancellationReason };
     },
     onSuccess: () => {
