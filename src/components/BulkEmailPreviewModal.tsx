@@ -188,7 +188,9 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       const subjectTemplate = editedSubject;
       const contentTemplate = editedContent;
       
-      await bulkEmailMutation.mutateAsync({
+      console.log(`[Bulk Email UI] Starting bulk send for tour ${tourId} to ${selectedBookingIds.size} bookings`);
+      
+      const result = await bulkEmailMutation.mutateAsync({
         tourId,
         recipientType: 'selected',
         subjectTemplate,
@@ -199,12 +201,19 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         selectedBookingIds: Array.from(selectedBookingIds),
         includeAdditionalPassengers
       });
+      
+      console.log(`[Bulk Email UI] Send complete:`, result);
+      
+      // Brief delay so user sees completion before modal closes
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       setShowConfirmDialog(false);
       setSendProgress(null);
       onOpenChange(false);
       setSelectedBookingIds(new Set());
       setRecipientType("");
     } catch (error) {
+      console.error('[Bulk Email UI] Send error:', error);
       // Error handling is done in the hook
       setShowConfirmDialog(false);
       setSendProgress(null);

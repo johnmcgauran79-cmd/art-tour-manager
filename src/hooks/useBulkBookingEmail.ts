@@ -153,12 +153,16 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
       // Process each booking sequentially with delay to avoid Resend rate limit (2 req/sec)
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
       const results: PromiseSettledResult<any>[] = [];
+      const failedDetails: string[] = [];
       
       // Report initial progress
       onProgress?.(0, bookings.length);
       
+      console.log(`[Bulk Email] Starting send to ${bookings.length} bookings`);
+      
       for (let i = 0; i < bookings.length; i++) {
         const booking = bookings[i];
+        const recipientName = `${booking.customers?.first_name} ${booking.customers?.last_name}`;
         
         // Report progress before sending each email
         onProgress?.(i + 1, bookings.length);
@@ -187,7 +191,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               undefined;
           }
           
-          const { error } = await supabase.functions.invoke('send-booking-confirmation', {
+          const { data, error } = await supabase.functions.invoke('send-booking-confirmation', {
             body: { 
               bookingId: booking.id,
               customSubject: personalizedSubject,
@@ -199,9 +203,23 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             }
           });
           
-          if (error) throw error;
+          if (error) {
+            console.error(`[Bulk Email] Edge function error for ${recipientName}:`, error);
+            failedDetails.push(`${recipientName}: ${error.message || 'Unknown error'}`);
+            throw error;
+          }
+          
+          if (!data?.success) {
+            const errMsg = data?.error || 'No success response from server';
+            console.error(`[Bulk Email] Send failed for ${recipientName}:`, errMsg);
+            failedDetails.push(`${recipientName}: ${errMsg}`);
+            throw new Error(errMsg);
+          }
+          
+          console.log(`[Bulk Email] ✓ Sent to ${recipientName} (${data.sentTo})`);
           results.push({ status: 'fulfilled', value: booking });
-        } catch (error) {
+        } catch (error: any) {
+          console.error(`[Bulk Email] ✗ Failed for ${recipientName}:`, error);
           results.push({ status: 'rejected', reason: error });
         }
         
@@ -213,28 +231,41 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
 
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
+      
+      console.log(`[Bulk Email] Complete: ${successful} sent, ${failed} failed out of ${bookings.length}`);
+      if (failedDetails.length > 0) {
+        console.error('[Bulk Email] Failed details:', failedDetails);
+      }
 
-      return { successful, failed, total: bookings.length };
-    },
-    onMutate: () => {
-      toast({
-        title: "Processing...",
-        description: "Preparing and sending bulk emails. This may take a few moments.",
-      });
+      return { successful, failed, total: bookings.length, failedDetails };
     },
     onSuccess: (data) => {
-      toast({
-        title: "Bulk Emails Sent",
-        description: `Successfully sent ${data.successful} emails. ${data.failed > 0 ? `${data.failed} failed.` : ''}`,
-      });
+      if (data.successful === 0) {
+        toast({
+          title: "⚠️ No Emails Sent",
+          description: `All ${data.total} emails failed to send. Check your connection and try again.`,
+          variant: "destructive",
+        });
+      } else if (data.failed > 0) {
+        toast({
+          title: "⚠️ Partially Sent",
+          description: `${data.successful} of ${data.total} emails sent. ${data.failed} failed.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "✅ All Emails Sent Successfully",
+          description: `${data.successful} email${data.successful !== 1 ? 's' : ''} sent successfully.`,
+        });
+      }
     },
     onError: (error: any) => {
       toast({
-        title: "Error",
+        title: "❌ Email Send Failed",
         description: error.message || "Failed to send bulk emails. Please try again.",
         variant: "destructive",
       });
-      console.error('Error sending bulk emails:', error);
+      console.error('[Bulk Email] Critical error:', error);
     },
   });
 };
