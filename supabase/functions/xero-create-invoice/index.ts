@@ -156,7 +156,8 @@ async function buildLineItems(
   customer: any,
   isRepeatCustomer: boolean,
   passengerQuantity: number,
-  descriptionOverride?: string
+  descriptionOverride?: string,
+  extraNightSplitCount?: number
 ): Promise<any[]> {
   const lineItems: any[] = [];
   const passengerNames = descriptionOverride || buildPassengerDescription(booking, customer);
@@ -238,9 +239,10 @@ async function buildLineItems(
         if (beddingLabel) descParts.push(beddingLabel);
         if (dateInfo) descParts.push(dateInfo);
 
+        const splitDivisor = extraNightSplitCount || 1;
         const extraLineItem: any = { Description: descParts.join('\n'), Quantity: extraNights };
         if (extraNightPrice != null) {
-          extraLineItem.UnitAmount = extraNightPrice;
+          extraLineItem.UnitAmount = Math.round((extraNightPrice / splitDivisor) * 100) / 100;
         }
 
         lineItems.push(extraLineItem);
@@ -472,7 +474,7 @@ Deno.serve(async (req) => {
           }
 
           const lineItems = await buildLineItems(
-            supabase, booking, tour, customer, paxIsRepeat, 1, pax.name
+            supabase, booking, tour, customer, paxIsRepeat, 1, pax.name, passengers.length
           );
 
           const createdInvoice = await createXeroInvoice(
