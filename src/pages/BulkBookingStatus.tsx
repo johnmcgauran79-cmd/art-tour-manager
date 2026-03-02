@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,11 +44,13 @@ const PROBLEMATIC_TRANSITIONS: Record<string, string[]> = {
 
 export default function BulkBookingStatus() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialFilter = (searchParams.get('filter') as FilterType) || 'all';
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
-  const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [activeFilter, setActiveFilter] = useState<FilterType>(initialFilter);
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
