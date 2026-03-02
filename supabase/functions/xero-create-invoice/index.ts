@@ -328,7 +328,6 @@ Deno.serve(async (req) => {
           const descParts = [
             `Extra Nights Accommodation`,
             hotelName,
-            `Breakfast Daily`,
           ];
           if (beddingLabel) descParts.push(beddingLabel);
           if (dateInfo) descParts.push(dateInfo);
