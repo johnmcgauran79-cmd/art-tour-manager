@@ -162,6 +162,11 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Build derived values
+    const contactName = `${customer.first_name} ${customer.last_name}`.trim();
+    const passengerNames = buildPassengerDescription(booking, customer);
+    const roomType = getRoomType(booking.hotel_bookings as any[]);
+
     // --- Resolve Xero Contact ---
     // Priority: 1) xero_sync_log entity_id, 2) email search in Xero, 3) create new
     let xeroContactId: string | null = null;
