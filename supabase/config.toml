@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.sync-xero-phones]
 verify_jwt = false
+
+[functions.xero-create-invoice]
+verify_jwt = false
