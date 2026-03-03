@@ -119,3 +119,9 @@ verify_jwt = false
 
 [functions.keap-remove-tag]
 verify_jwt = false
+
+[functions.validate-custom-form-token]
+verify_jwt = false
+
+[functions.submit-custom-form]
+verify_jwt = false

@@ -2074,6 +2074,168 @@ export type Database = {
           },
         ]
       }
+      tour_custom_form_fields: {
+        Row: {
+          created_at: string
+          field_label: string
+          field_options: Json | null
+          field_type: string
+          form_id: string
+          id: string
+          is_required: boolean
+          placeholder: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          field_label: string
+          field_options?: Json | null
+          field_type: string
+          form_id: string
+          id?: string
+          is_required?: boolean
+          placeholder?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          field_label?: string
+          field_options?: Json | null
+          field_type?: string
+          form_id?: string
+          id?: string
+          is_required?: boolean
+          placeholder?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_custom_form_fields_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "tour_custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_custom_form_responses: {
+        Row: {
+          booking_id: string
+          customer_id: string | null
+          form_id: string
+          id: string
+          ip_address: string | null
+          passenger_slot: number
+          response_data: Json
+          submitted_at: string
+          token_id: string | null
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          booking_id: string
+          customer_id?: string | null
+          form_id: string
+          id?: string
+          ip_address?: string | null
+          passenger_slot?: number
+          response_data?: Json
+          submitted_at?: string
+          token_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          booking_id?: string
+          customer_id?: string | null
+          form_id?: string
+          id?: string
+          ip_address?: string | null
+          passenger_slot?: number
+          response_data?: Json
+          submitted_at?: string
+          token_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_custom_form_responses_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_custom_form_responses_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_custom_form_responses_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "tour_custom_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_custom_form_responses_token_id_fkey"
+            columns: ["token_id"]
+            isOneToOne: false
+            referencedRelation: "customer_access_tokens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_custom_forms: {
+        Row: {
+          created_at: string
+          created_by: string
+          form_description: string | null
+          form_title: string
+          id: string
+          is_published: boolean
+          response_mode: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          form_description?: string | null
+          form_title?: string
+          id?: string
+          is_published?: boolean
+          response_mode?: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          form_description?: string | null
+          form_title?: string
+          id?: string
+          is_published?: boolean
+          response_mode?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_custom_forms_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: true
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_external_links: {
         Row: {
           created_at: string
