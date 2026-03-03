@@ -167,7 +167,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   isViewOnly: boolean;
   onDelete: () => void;
 }) {
-  const { form, fields, responses, updateForm, addField, deleteField } = useCustomFormDetail(formId);
+  const { form, fields, responses, updateForm, addField, updateField, deleteField } = useCustomFormDetail(formId);
   const { toast } = useToast();
 
   const [showAddField, setShowAddField] = useState(false);
@@ -177,6 +177,16 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+
+  const [editingField, setEditingField] = useState<CustomFormField | null>(null);
+  const [editFieldState, setEditFieldState] = useState({
+    field_label: '',
+    field_type: 'text' as CustomFormField['field_type'],
+    is_required: false,
+    placeholder: '',
+    field_options: [] as string[],
+  });
+  const [editOptionInput, setEditOptionInput] = useState('');
 
   const [newField, setNewField] = useState({
     field_label: '',
@@ -380,23 +390,38 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                         </div>
                       </div>
                       {!isViewOnly && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="flex-shrink-0">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Field</AlertDialogTitle>
-                              <AlertDialogDescription>Remove "{field.field_label}" from the form?</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteField.mutate(field.id)}>Delete</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Button variant="ghost" size="icon" onClick={() => {
+                            setEditingField(field);
+                            setEditFieldState({
+                              field_label: field.field_label,
+                              field_type: field.field_type,
+                              is_required: field.is_required,
+                              placeholder: field.placeholder || '',
+                              field_options: [...field.field_options],
+                            });
+                            setEditOptionInput('');
+                          }}>
+                            <Pencil className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Field</AlertDialogTitle>
+                                <AlertDialogDescription>Remove "{field.field_label}" from the form?</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteField.mutate(field.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -456,6 +481,79 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddField(false)}>Cancel</Button>
             <Button onClick={handleAddField} disabled={!newField.field_label.trim() || addField.isPending}>Add Field</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Field Dialog */}
+      <Dialog open={!!editingField} onOpenChange={(open) => { if (!open) setEditingField(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Field</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Field Label *</Label>
+              <Input value={editFieldState.field_label} onChange={e => setEditFieldState(prev => ({ ...prev, field_label: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Field Type</Label>
+              <Select value={editFieldState.field_type} onValueChange={(v: any) => setEditFieldState(prev => ({ ...prev, field_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {FIELD_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {(editFieldState.field_type === 'select' || editFieldState.field_type === 'radio') && (
+              <div className="space-y-2">
+                <Label>{editFieldState.field_type === 'radio' ? 'Choice Options' : 'Dropdown Options'}</Label>
+                <div className="flex gap-2">
+                  <Input value={editOptionInput} onChange={e => setEditOptionInput(e.target.value)} placeholder="Add an option..." onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); if (editOptionInput.trim()) { setEditFieldState(prev => ({ ...prev, field_options: [...prev.field_options, editOptionInput.trim()] })); setEditOptionInput(''); } } }} />
+                  <Button type="button" variant="outline" onClick={() => { if (editOptionInput.trim()) { setEditFieldState(prev => ({ ...prev, field_options: [...prev.field_options, editOptionInput.trim()] })); setEditOptionInput(''); } }}>Add</Button>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {editFieldState.field_options.map((opt, i) => (
+                    <Badge key={i} variant="secondary" className="gap-1">
+                      {opt}
+                      <button onClick={() => setEditFieldState(prev => ({ ...prev, field_options: prev.field_options.filter((_, j) => j !== i) }))} className="ml-1 hover:text-destructive">×</button>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label>Placeholder Text</Label>
+              <Input value={editFieldState.placeholder} onChange={e => setEditFieldState(prev => ({ ...prev, placeholder: e.target.value }))} placeholder="Hint text shown inside the field" />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox id={`edit-required-${formId}`} checked={editFieldState.is_required} onCheckedChange={(c) => setEditFieldState(prev => ({ ...prev, is_required: !!c }))} />
+              <Label htmlFor={`edit-required-${formId}`}>Required field</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingField(null)}>Cancel</Button>
+            <Button
+              disabled={!editFieldState.field_label.trim() || updateForm.isPending}
+              onClick={() => {
+                if (!editingField) return;
+                updateField.mutate({
+                  id: editingField.id,
+                  field_label: editFieldState.field_label,
+                  field_type: editFieldState.field_type,
+                  is_required: editFieldState.is_required,
+                  placeholder: editFieldState.placeholder || null,
+                  field_options: (editFieldState.field_type === 'select' || editFieldState.field_type === 'radio') ? editFieldState.field_options : [],
+                } as any, {
+                  onSuccess: () => {
+                    setEditingField(null);
+                    toast({ title: "Field updated" });
+                  }
+                });
+              }}
+            >
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
