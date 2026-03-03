@@ -1,46 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, AlertCircle, Grid3X3, FileText } from "lucide-react";
+import { ClipboardCheck, Hotel, Grid3X3, FileText } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const OperationsQuickActions = () => {
   const navigate = useNavigate();
-
-  // Bedding Type Review count
-  const { data: beddingIssuesCount = 0 } = useQuery({
-    queryKey: ['bedding-issues-count'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          passenger_count,
-          status,
-          hotel_bookings (bedding, allocated)
-        `)
-        .neq('status', 'cancelled');
-
-      if (error) throw error;
-
-      const mismatches = data?.filter(booking => {
-        const allocatedHotels = booking.hotel_bookings?.filter(hb => hb.allocated) || [];
-        if (allocatedHotels.length === 0) return false;
-
-        if (booking.passenger_count === 1) {
-          return allocatedHotels.some(hb => hb.bedding !== 'single');
-        } else if (booking.passenger_count >= 2) {
-          return allocatedHotels.some(hb => hb.bedding === 'single');
-        }
-        return false;
-      });
-
-      return mismatches?.length || 0;
-    },
-  });
-
 
   // Hotel Allocation Check count
   const { data: hotelIssuesCount = 0 } = useQuery({
@@ -146,13 +113,6 @@ export const OperationsQuickActions = () => {
   });
 
   const checkActions = [
-    {
-      icon: AlertCircle,
-      label: "Bedding Type Review",
-      description: "Review pax/bedding mismatches",
-      count: beddingIssuesCount,
-      onClick: () => navigate("/operations/bedding-review"),
-    },
     {
       icon: Grid3X3,
       label: "Non-standard Activity Bookings",
