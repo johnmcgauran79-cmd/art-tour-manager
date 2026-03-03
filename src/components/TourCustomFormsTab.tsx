@@ -12,9 +12,10 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
+import { BulkCustomFormSendModal } from "@/components/BulkCustomFormSendModal";
 
 interface Props {
   tourId: string;
@@ -173,6 +174,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
+  const [showBulkSend, setShowBulkSend] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -357,7 +359,13 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                 </AlertDialog>
               )}
             </div>
-
+              {!isViewOnly && form.is_published && (
+                <Button variant="outline" size="sm" onClick={() => setShowBulkSend(true)}
+                  className="border-blue-500/30 text-blue-600 hover:bg-blue-500/5">
+                  <Send className="h-4 w-4 mr-2" /> Send Form Requests
+                </Button>
+              )}
+              
             {/* Fields list */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -645,6 +653,19 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
           form={form}
           fields={fields}
           responses={responses}
+        />
+      )}
+
+      {/* Bulk Send Modal */}
+      {form && (
+        <BulkCustomFormSendModal
+          open={showBulkSend}
+          onOpenChange={setShowBulkSend}
+          tourId={tourId}
+          tourName={tourName}
+          formId={form.id}
+          formTitle={form.form_title}
+          responseMode={form.response_mode}
         />
       )}
     </>
