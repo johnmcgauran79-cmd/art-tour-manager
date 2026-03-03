@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,8 @@ export default function BookingDetail() {
   const booking = allBookings?.find(b => b.id === id);
   
   const [showEmailPreview, setShowEmailPreview] = useState(false);
-  const [currentTab, setCurrentTab] = useState("details");
+  const [searchParams] = useSearchParams();
+  const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRemoveSecondaryContactDialog, setShowRemoveSecondaryContactDialog] = useState(false);
   const deleteBooking = useDeleteBooking();
