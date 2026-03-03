@@ -1,9 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Download, FileSpreadsheet } from "lucide-react";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import html2pdf from "html2pdf.js";
 
 interface Props {
   open: boolean;
@@ -16,7 +20,6 @@ interface Props {
 }
 
 export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, form, fields, responses }: Props) {
-  // Fetch booking/customer info for responses
   const { data: bookingsMap } = useQuery({
     queryKey: ['custom-form-bookings', tourId],
     queryFn: async () => {
@@ -51,11 +54,127 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     return `Passenger ${response.passenger_slot}`;
   };
 
+  const getFieldValue = (response: CustomFormResponse, field: CustomFormField): string => {
+    const val = response.response_data[field.id];
+    if (val === undefined || val === null) return '';
+    if (field.field_type === 'checkbox') return val ? 'Yes' : 'No';
+    return String(val);
+  };
+
+  const handleDownloadCSV = () => {
+    if (responses.length === 0) return;
+
+    const headers = ['Passenger', 'Booking', ...fields.map(f => f.field_label), 'Submitted'];
+    const rows = responses.map(resp => {
+      const passengerName = getPassengerName(resp);
+      const bookingName = bookingsMap?.[resp.booking_id]?.group_name || resp.booking_id.slice(0, 8);
+      const fieldValues = fields.map(f => getFieldValue(resp, f));
+      const submitted = new Date(resp.submitted_at).toLocaleDateString('en-AU');
+      return [passengerName, bookingName, ...fieldValues, submitted];
+    });
+
+    const csvContent = [
+      headers.map(h => `"${h.replace(/"/g, '""')}"`).join(','),
+      ...rows.map(row => row.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${tourName.replace(/[^a-zA-Z0-9]/g, '_')}_${form.form_title.replace(/[^a-zA-Z0-9]/g, '_')}_Responses.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    toast.success('CSV downloaded');
+  };
+
+  const handleDownloadPDF = () => {
+    if (responses.length === 0) return;
+
+    const tableRows = responses.map(resp => {
+      const passengerName = getPassengerName(resp);
+      const bookingName = bookingsMap?.[resp.booking_id]?.group_name || resp.booking_id.slice(0, 8);
+      const fieldCells = fields.map(f => `<td style="border: 1px solid #ddd; padding: 8px; font-size: 12px;">${getFieldValue(resp, f) || '—'}</td>`).join('');
+      const submitted = new Date(resp.submitted_at).toLocaleDateString('en-AU');
+      return `<tr>
+        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; font-weight: 500;">${passengerName}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${bookingName}</td>
+        ${fieldCells}
+        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${submitted}</td>
+      </tr>`;
+    }).join('');
+
+    const fieldHeaders = fields.map(f => `<th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">${f.field_label}</th>`).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+          .tour-name { font-size: 24px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; }
+          .report-title { font-size: 18px; color: #666; margin-bottom: 10px; }
+          .report-date { font-size: 14px; color: #888; }
+          .summary { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #1e3a8a; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="tour-name">${tourName}</div>
+          <div class="report-title">${form.form_title} — Responses</div>
+          <div class="report-date">Generated on ${new Date().toLocaleDateString('en-AU')}</div>
+        </div>
+        <div class="summary">
+          <strong>Total Responses:</strong> ${responses.length}
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Passenger</th>
+              <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Booking</th>
+              ${fieldHeaders}
+              <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Submitted</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const element = document.createElement('div');
+    element.innerHTML = htmlContent;
+
+    const opt = {
+      margin: 0.5,
+      filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${form.form_title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_responses.pdf`,
+      image: { type: 'jpeg' as const, quality: 1 },
+      html2canvas: { scale: 3 },
+      jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'landscape' as const }
+    };
+
+    html2pdf().set(opt).from(element).save();
+    toast.success('PDF download started');
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
         <DialogHeader>
-          <DialogTitle>Form Responses — {form.form_title}</DialogTitle>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Form Responses — {form.form_title}</span>
+            {responses.length > 0 && (
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
+                  <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                  <Download className="h-4 w-4 mr-2" /> PDF
+                </Button>
+              </div>
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         {responses.length === 0 ? (
