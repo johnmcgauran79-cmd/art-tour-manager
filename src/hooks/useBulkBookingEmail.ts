@@ -47,7 +47,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             ),
             activity_bookings (
               passengers_attending,
-              activities (name, activity_date, start_time, end_time, pickup_time, location, contact_name, contact_phone)
+              activities (name, activity_date, start_time, end_time, location, contact_name, contact_phone, depart_for_activity, transport_mode, driver_name, driver_phone, transport_company, transport_contact_name, transport_phone, transport_email, activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order))
             )
           `)
           .in('id', selectedBookingIds)
@@ -82,7 +82,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             ),
             activity_bookings (
               passengers_attending,
-              activities (name, activity_date, start_time, end_time, pickup_time, location, contact_name, contact_phone)
+              activities (name, activity_date, start_time, end_time, location, contact_name, contact_phone, depart_for_activity, transport_mode, driver_name, driver_phone, transport_company, transport_contact_name, transport_phone, transport_email, activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order))
             )
           `)
           .eq('tour_id', tourId)
@@ -122,7 +122,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             ),
             activity_bookings (
               passengers_attending,
-              activities (name, activity_date, start_time, end_time, pickup_time, location, contact_name, contact_phone)
+              activities (name, activity_date, start_time, end_time, location, contact_name, contact_phone, depart_for_activity, transport_mode, driver_name, driver_phone, transport_company, transport_contact_name, transport_phone, transport_email, activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order))
             )
           `)
           .eq('tour_id', tourId)
