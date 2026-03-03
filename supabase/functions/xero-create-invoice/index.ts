@@ -258,10 +258,23 @@ async function createXeroInvoice(
   auth: { token: string; tenantId: string },
   xeroContact: any,
   lineItems: any[],
-  reference: string
+  reference: string,
+  tourStartDate?: string
 ): Promise<any> {
-  const dueDate = new Date();
-  dueDate.setDate(dueDate.getDate() + 14);
+  let dueDate: Date;
+  if (tourStartDate) {
+    // Set due date to 90 days before tour start date
+    dueDate = new Date(tourStartDate);
+    dueDate.setDate(dueDate.getDate() - 90);
+    // If the calculated due date is in the past, use today + 14 days as fallback
+    if (dueDate <= new Date()) {
+      dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 14);
+    }
+  } else {
+    dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 14);
+  }
 
   const invoicePayload = {
     Type: 'ACCREC',
@@ -478,7 +491,7 @@ Deno.serve(async (req) => {
           );
 
           const createdInvoice = await createXeroInvoice(
-            supabase, auth, xeroContact, lineItems, baseReference
+            supabase, auth, xeroContact, lineItems, baseReference, tour.start_date
           );
 
           console.log(`Split invoice created for ${pax.name}: ${createdInvoice.InvoiceNumber}`);
@@ -581,7 +594,7 @@ Deno.serve(async (req) => {
     );
 
     const createdInvoice = await createXeroInvoice(
-      supabase, auth, xeroContact, lineItems, baseReference
+      supabase, auth, xeroContact, lineItems, baseReference, tour.start_date
     );
 
     console.log(`Xero invoice created: ${createdInvoice.InvoiceNumber} (ID: ${createdInvoice.InvoiceID})`);
