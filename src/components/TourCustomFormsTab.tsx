@@ -39,6 +39,9 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [expandedFormId, setExpandedFormId] = useState<string | null>(null);
+  const [showBulkSend, setShowBulkSend] = useState(false);
+
+  const publishedForms = forms.filter(f => f.is_published);
 
   // Create form state
   const [formTitle, setFormTitle] = useState('');
@@ -74,9 +77,17 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
           </p>
         </div>
         {!isViewOnly && (
-          <Button onClick={() => setShowCreateForm(true)}>
-            <Plus className="h-4 w-4 mr-2" /> New Form
-          </Button>
+          <div className="flex items-center gap-2">
+            {publishedForms.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setShowBulkSend(true)}
+                className="border-blue-500/30 text-blue-600 hover:bg-blue-500/5">
+                <Send className="h-4 w-4 mr-2" /> Send Form Requests
+              </Button>
+            )}
+            <Button onClick={() => setShowCreateForm(true)}>
+              <Plus className="h-4 w-4 mr-2" /> New Form
+            </Button>
+          </div>
         )}
       </div>
 
@@ -154,6 +165,17 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Global Bulk Send Modal */}
+      {publishedForms.length > 0 && (
+        <BulkCustomFormSendModal
+          open={showBulkSend}
+          onOpenChange={setShowBulkSend}
+          tourId={tourId}
+          tourName={tourName}
+          publishedForms={publishedForms.map(f => ({ id: f.id, form_title: f.form_title, response_mode: f.response_mode }))}
+        />
+      )}
     </div>
   );
 }
@@ -174,7 +196,6 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
-  const [showBulkSend, setShowBulkSend] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -359,12 +380,8 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                 </AlertDialog>
               )}
             </div>
-              {!isViewOnly && form.is_published && (
-                <Button variant="outline" size="sm" onClick={() => setShowBulkSend(true)}
-                  className="border-blue-500/30 text-blue-600 hover:bg-blue-500/5">
-                  <Send className="h-4 w-4 mr-2" /> Send Form Requests
-                </Button>
-              )}
+
+
               
             {/* Fields list */}
             <div>
@@ -656,18 +673,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
         />
       )}
 
-      {/* Bulk Send Modal */}
-      {form && (
-        <BulkCustomFormSendModal
-          open={showBulkSend}
-          onOpenChange={setShowBulkSend}
-          tourId={tourId}
-          tourName={tourName}
-          formId={form.id}
-          formTitle={form.form_title}
-          responseMode={form.response_mode}
-        />
-      )}
+
     </>
   );
 }
