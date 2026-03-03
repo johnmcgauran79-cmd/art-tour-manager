@@ -207,16 +207,26 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
       // Brief delay so user sees completion before modal closes
       await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Close dialogs sequentially to prevent Radix from leaving pointer-events:none on body
       setShowConfirmDialog(false);
       setSendProgress(null);
+      await new Promise(resolve => setTimeout(resolve, 150));
       onOpenChange(false);
       setSelectedBookingIds(new Set());
       setRecipientType("");
+      
+      // Safety: ensure body isn't stuck with pointer-events:none from Radix
+      setTimeout(() => {
+        document.body.style.pointerEvents = '';
+      }, 300);
     } catch (error) {
       console.error('[Bulk Email UI] Send error:', error);
-      // Error handling is done in the hook
       setShowConfirmDialog(false);
       setSendProgress(null);
+      // Safety: ensure body isn't stuck with pointer-events:none from Radix
+      setTimeout(() => {
+        document.body.style.pointerEvents = '';
+      }, 300);
     }
   };
 
@@ -528,7 +538,10 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           <AlertDialogFooter>
             <AlertDialogCancel disabled={bulkEmailMutation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleConfirmSend}
+              onClick={(e) => {
+                e.preventDefault();
+                handleConfirmSend();
+              }}
               disabled={bulkEmailMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700"
             >
