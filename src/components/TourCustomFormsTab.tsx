@@ -375,45 +375,107 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Preview Dialog */}
+      {/* Full Customer Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto p-0">
+          <DialogHeader className="sr-only">
             <DialogTitle>Form Preview</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
-            <h3 className="font-bold text-lg">{form.form_title}</h3>
-            {form.form_description && <p className="text-sm text-muted-foreground">{form.form_description}</p>}
-            {fields.map(field => (
-              <div key={field.id} className="space-y-1.5">
-                <Label>
-                  {field.field_label} {field.is_required && <span className="text-destructive">*</span>}
-                </Label>
-                {field.field_type === 'text' && <Input placeholder={field.placeholder || ''} disabled />}
-                {field.field_type === 'textarea' && <Textarea placeholder={field.placeholder || ''} disabled />}
-                {field.field_type === 'number' && <Input type="number" placeholder={field.placeholder || ''} disabled />}
-                {field.field_type === 'date' && <Input type="date" disabled />}
-                {field.field_type === 'select' && (
-                  <Select disabled>
-                    <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                    <SelectContent>
-                      {field.field_options.map((opt, i) => (
-                        <SelectItem key={i} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                {field.field_type === 'checkbox' && (
-                  <div className="flex items-center gap-2">
-                    <Checkbox disabled />
-                    <span className="text-sm">Yes</span>
+          <div className="min-h-[60vh] bg-muted/30">
+            <div className="max-w-3xl mx-auto">
+              <Card className="overflow-hidden border-0 shadow-none rounded-none">
+                <CardHeader className="bg-brand-navy text-white p-6">
+                  <div className="flex items-center justify-center gap-4">
+                    <img
+                      src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png"
+                      alt="Australian Racing Tours"
+                      className="h-12"
+                    />
+                    <CardTitle className="text-2xl text-white">{form.form_title}</CardTitle>
                   </div>
-                )}
-              </div>
-            ))}
-            {fields.length === 0 && (
-              <p className="text-muted-foreground text-sm text-center py-4">Add fields to see a preview.</p>
-            )}
+                  <CardDescription className="text-center text-white/80 mt-2">
+                    Hi Customer! {form.form_description || `Please fill in the details below for ${tourName}.`}
+                  </CardDescription>
+                  <div className="flex items-center justify-center gap-2 text-sm text-white/70 mt-2">
+                    <span>⏰ This link expires in 72 hours</span>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-6 pt-6 p-6">
+                  {form.response_mode === 'per_passenger' && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                      <p className="text-sm text-amber-800">
+                        Please fill in details for all passengers on the booking.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Sample passenger sections */}
+                  {(form.response_mode === 'per_passenger' ? [
+                    { slot: 1, label: 'Lead Passenger', name: 'John Smith', isOwner: true },
+                    { slot: 2, label: 'Passenger 2', name: 'Jane Smith', isOwner: false },
+                  ] : [
+                    { slot: 1, label: 'Lead Passenger', name: 'John Smith', isOwner: true },
+                  ]).map(pax => (
+                    <div key={pax.slot} className="space-y-4 p-4 rounded-lg border bg-white border-border">
+                      {form.response_mode === 'per_passenger' && (
+                        <div className="flex items-center gap-2 border-b pb-2">
+                          <User className="h-5 w-5 text-primary" />
+                          <h3 className="font-semibold text-lg">
+                            {pax.label}: {pax.name}
+                          </h3>
+                          {pax.isOwner && (
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">You</span>
+                          )}
+                        </div>
+                      )}
+
+                      {fields.map(field => (
+                        <div key={field.id} className="space-y-1.5">
+                          <Label>
+                            {field.field_label}
+                            {field.is_required && <span className="text-destructive ml-1">*</span>}
+                          </Label>
+                          {field.field_type === 'text' && <Input placeholder={field.placeholder || ''} disabled />}
+                          {field.field_type === 'textarea' && <Textarea placeholder={field.placeholder || ''} disabled />}
+                          {field.field_type === 'number' && <Input type="number" placeholder={field.placeholder || ''} disabled />}
+                          {field.field_type === 'date' && <Input type="date" disabled />}
+                          {field.field_type === 'select' && (
+                            <Select disabled>
+                              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                              <SelectContent>
+                                {field.field_options.map((opt, i) => (
+                                  <SelectItem key={i} value={opt}>{opt}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {field.field_type === 'checkbox' && (
+                            <div className="flex items-center gap-4">
+                              <label className="flex items-center gap-2">
+                                <Checkbox disabled />
+                                <span className="text-sm">Yes</span>
+                              </label>
+                              <label className="flex items-center gap-2">
+                                <Checkbox disabled />
+                                <span className="text-sm">No</span>
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {fields.length === 0 && (
+                        <p className="text-muted-foreground text-sm text-center py-4">Add fields to see a preview.</p>
+                      )}
+                    </div>
+                  ))}
+
+                  <Button className="w-full" disabled>
+                    Submit
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
