@@ -100,18 +100,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>{template ? 'Edit Task Template' : 'Create Task Template'}</DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="flex items-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              Close
-            </Button>
-          </div>
+          <DialogTitle>{template ? 'Edit Task Template' : 'Create Task Template'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">

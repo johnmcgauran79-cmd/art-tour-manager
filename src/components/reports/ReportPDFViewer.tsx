@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Printer, X } from "lucide-react";
+import { Download, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 
 interface ReportPDFViewerProps {
@@ -70,15 +70,6 @@ export const ReportPDFViewer = ({
               >
                 <Download className="h-4 w-4" />
                 Download PDF
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="flex items-center gap-2"
-              >
-                <X className="h-4 w-4" />
-                Close
               </Button>
             </div>
           </DialogTitle>

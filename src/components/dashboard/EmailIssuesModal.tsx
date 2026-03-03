@@ -86,8 +86,8 @@ export const EmailIssuesModal = ({
               {issues.length}
             </Badge>
           </DialogTitle>
-          <div className="flex items-center gap-2">
-            {issues.length > 0 && (
+          {issues.length > 0 && (
+            <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -98,14 +98,8 @@ export const EmailIssuesModal = ({
                 <CheckCheck className="h-4 w-4" />
                 Acknowledge All
               </Button>
-            )}
-            <DialogClose asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <X className="h-4 w-4" />
-                <span className="sr-only">Close</span>
-              </Button>
-            </DialogClose>
-          </div>
+            </div>
+          )}
         </DialogHeader>
 
         <ScrollArea className="max-h-[60vh]">

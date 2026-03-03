@@ -172,16 +172,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle>Add New Task</DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-            >
-              Close
-            </Button>
-          </div>
+          <DialogTitle>Add New Task</DialogTitle>
           <DialogDescription>
             Create a new task with details, priority, and assignments.
           </DialogDescription>

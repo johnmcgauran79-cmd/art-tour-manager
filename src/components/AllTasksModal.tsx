@@ -84,18 +84,7 @@ export const AllTasksModal = ({ open, onOpenChange, onTaskClick }: AllTasksModal
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle>All My Tasks</DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="flex items-center gap-2"
-            >
-              <X className="h-4 w-4" />
-              Close
-            </Button>
-          </div>
+          <DialogTitle>All My Tasks</DialogTitle>
           <DialogDescription>
             Browse and search through all your assigned tasks.
           </DialogDescription>
