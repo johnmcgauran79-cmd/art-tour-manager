@@ -17,38 +17,29 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
-    if (!resendApiKey) {
-      throw new Error("RESEND_API_KEY is not configured");
-    }
+    if (!resendApiKey) throw new Error("RESEND_API_KEY is not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    // Verify user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Authorization required" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Authorization required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Invalid authorization" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Invalid authorization" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { bookingId } = await req.json();
+    const { bookingId, formId } = await req.json();
 
     if (!bookingId) {
-      return new Response(
-        JSON.stringify({ error: "Booking ID is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Booking ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Get booking with passengers and tour
@@ -65,32 +56,44 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (bookingError || !booking) {
-      return new Response(
-        JSON.stringify({ error: "Booking not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Booking not found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const tour = booking.tours;
 
-    // Check if tour has a published custom form
-    const { data: form, error: formError } = await supabase
-      .from("tour_custom_forms")
-      .select("*")
-      .eq("tour_id", tour.id)
-      .eq("is_published", true)
-      .single();
-
-    if (formError || !form) {
-      return new Response(
-        JSON.stringify({ error: "No published custom form found for this tour" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Get the specific form, or fall back to the single published form for backward compatibility
+    let form: any;
+    if (formId) {
+      const { data, error } = await supabase
+        .from("tour_custom_forms")
+        .select("*")
+        .eq("id", formId)
+        .eq("is_published", true)
+        .single();
+      if (error || !data) {
+        return new Response(JSON.stringify({ error: "Form not found or not published" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      form = data;
+    } else {
+      // Legacy: find single published form
+      const { data, error } = await supabase
+        .from("tour_custom_forms")
+        .select("*")
+        .eq("tour_id", tour.id)
+        .eq("is_published", true)
+        .limit(1)
+        .single();
+      if (error || !data) {
+        return new Response(JSON.stringify({ error: "No published custom form found for this tour" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      form = data;
     }
 
     const baseUrl = Deno.env.get("PUBLIC_SITE_URL") || Deno.env.get("SITE_URL") || "https://art-tour-manager.lovable.app";
 
-    // Collect passengers with emails
     interface PassengerInfo {
       id: string;
       first_name: string;
@@ -112,7 +115,6 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // For per_booking mode, only send to lead passenger
     if (form.response_mode === "per_passenger") {
       if (booking.passenger_2?.email) {
         passengers.push({
@@ -124,7 +126,6 @@ const handler = async (req: Request): Promise<Response> => {
           slot: 2,
         });
       }
-
       if (booking.passenger_3?.email) {
         passengers.push({
           id: booking.passenger_3.id,
@@ -138,19 +139,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (passengers.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No passengers with email addresses found" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "No passengers with email addresses found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const formatDate = (dateStr: string) => {
       const date = new Date(dateStr);
       return date.toLocaleDateString("en-AU", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
+        weekday: "long", day: "numeric", month: "long", year: "numeric",
       });
     };
 
@@ -159,7 +155,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const passenger of passengers) {
       try {
-        // Create custom form access token (72-hour expiry)
         const expiresAt = new Date();
         expiresAt.setHours(expiresAt.getHours() + 72);
 
@@ -171,6 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
             purpose: "custom_form",
             created_by: user.id,
             expires_at: expiresAt.toISOString(),
+            form_id: form.id,
           })
           .select()
           .single();
@@ -184,10 +180,8 @@ const handler = async (req: Request): Promise<Response> => {
         const formLink = `${baseUrl}/custom-form/${tokenData.token}`;
         const displayName = passenger.preferred_name || passenger.first_name;
 
-        // Note about per_passenger mode: if passenger doesn't have email,
-        // lead pax fills in for them - the form handles this via token permissions
-        const perPassengerNote = form.response_mode === "per_passenger" 
-          ? "<p style=\"color: #666; font-size: 14px;\">If other passengers on your booking don't have an email address, you'll be able to fill in their details as well.</p>"
+        const perPassengerNote = form.response_mode === "per_passenger"
+          ? `<p style="color: #666; font-size: 14px;">If other passengers on your booking don't have an email address, you'll be able to fill in their details as well.</p>`
           : "";
 
         const emailHtml = `<!DOCTYPE html>
@@ -198,25 +192,17 @@ const handler = async (req: Request): Promise<Response> => {
     <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
     <h1 style="color: #fff; margin: 0; font-size: 24px;">${form.form_title}</h1>
   </div>
-  
   <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
     <p>Dear ${displayName},</p>
-    
     <p>As part of your booking for <strong>${tour.name}</strong> (${formatDate(tour.start_date)} - ${formatDate(tour.end_date)}), we need you to complete a short form.</p>
-    
     ${form.form_description ? `<p>${form.form_description}</p>` : ""}
-    
     <p>Please click the button below to fill in the required information:</p>
-    
     <div style="text-align: center; margin: 30px 0;">
       <a href="${formLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">COMPLETE FORM</a>
     </div>
-    
     ${perPassengerNote}
-    
     <p style="color: #666; font-size: 14px;">This link will expire in 72 hours. If you have any questions, please don't hesitate to contact us.</p>
   </div>
-  
   <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
     <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
     <p style="margin: 5px 0; word-break: break-all;">${formLink}</p>
@@ -237,7 +223,6 @@ const handler = async (req: Request): Promise<Response> => {
           continue;
         }
 
-        // Log the email
         if (emailResult?.id) {
           await supabase.from("email_logs").insert({
             booking_id: bookingId,
@@ -258,21 +243,14 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        sentTo: sentEmails,
-        failed: failedEmails,
-        message: `Custom form request sent to ${sentEmails.length} recipient(s)`,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({
+      success: true, sentTo: sentEmails, failed: failedEmails,
+      message: `Custom form request sent to ${sentEmails.length} recipient(s)`,
+    }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error: any) {
     console.error("Error in send-custom-form-request:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 };
 

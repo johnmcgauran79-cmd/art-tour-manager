@@ -4,20 +4,21 @@ import { FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 interface PassengerInfo {
   name: string;
   email: string | null;
+}
+
+interface PublishedForm {
+  id: string;
+  form_title: string;
+  response_mode: string;
 }
 
 interface SendCustomFormRequestButtonProps {
@@ -32,29 +33,27 @@ interface SendCustomFormRequestButtonProps {
 }
 
 export function SendCustomFormRequestButton({
-  bookingId,
-  tourName,
-  tourId,
-  leadPassenger,
-  passenger2,
-  passenger3,
-  variant = "outline",
-  size = "sm",
+  bookingId, tourName, tourId, leadPassenger, passenger2, passenger3,
+  variant = "outline", size = "sm",
 }: SendCustomFormRequestButtonProps) {
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(false);
-  const [hasForm, setHasForm] = useState<boolean | null>(null);
+  const [publishedForms, setPublishedForms] = useState<PublishedForm[]>([]);
+  const [selectedFormId, setSelectedFormId] = useState<string>('');
+  const [loaded, setLoaded] = useState(false);
 
-  // Check if tour has a published custom form
   useEffect(() => {
     supabase
       .from("tour_custom_forms")
-      .select("id")
+      .select("id, form_title, response_mode")
       .eq("tour_id", tourId)
       .eq("is_published", true)
-      .maybeSingle()
+      .order("created_at")
       .then(({ data }) => {
-        setHasForm(!!data);
+        const forms = (data || []) as PublishedForm[];
+        setPublishedForms(forms);
+        if (forms.length === 1) setSelectedFormId(forms[0].id);
+        setLoaded(true);
       });
   }, [tourId]);
 
@@ -69,13 +68,17 @@ export function SendCustomFormRequestButton({
       toast.error("No passengers have email addresses");
       return;
     }
+    if (!selectedFormId) {
+      toast.error("Please select a form");
+      return;
+    }
 
     setSending(true);
     setOpen(false);
 
     try {
       const { data, error } = await supabase.functions.invoke("send-custom-form-request", {
-        body: { bookingId },
+        body: { bookingId, formId: selectedFormId },
       });
 
       if (error) {
@@ -102,16 +105,11 @@ export function SendCustomFormRequestButton({
     setSending(false);
   };
 
-  // Don't render if no published form exists
-  if (hasForm === false || hasForm === null) {
-    return null;
-  }
-
+  if (!loaded || publishedForms.length === 0) return null;
   if (passengersWithEmail.length === 0) {
     return (
       <Button variant={variant} size={size} disabled title="No passengers have email addresses">
-        <FileText className="h-4 w-4 mr-2" />
-        Send Custom Form
+        <FileText className="h-4 w-4 mr-2" /> Send Custom Form
       </Button>
     );
   }
@@ -120,40 +118,45 @@ export function SendCustomFormRequestButton({
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>
         <Button variant={variant} size={size} disabled={sending}>
-          {sending ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <FileText className="h-4 w-4 mr-2" />
-          )}
+          {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
           {sending ? "Sending..." : "Send Custom Form"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Send Custom Form Request</AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <p>
-              This will send {passengersWithEmail.length === 1 ? "an email" : "individual emails"} to{" "}
-              {passengersWithEmail.length === 1
-                ? "the following passenger"
-                : `${passengersWithEmail.length} passengers`}{" "}
-              requesting them to complete the custom form for <strong>{tourName}</strong>:
-            </p>
-            <ul className="list-disc list-inside mt-2 space-y-1">
-              {passengersWithEmail.map((p, i) => (
-                <li key={i}>
-                  <strong>{p.name}</strong> ({p.email})
-                </li>
-              ))}
-            </ul>
-            <p className="text-sm text-muted-foreground mt-3">
-              Each passenger will receive a unique link that expires in 72 hours.
-            </p>
+          <AlertDialogDescription asChild>
+            <div className="space-y-3">
+              {publishedForms.length > 1 && (
+                <div className="space-y-2">
+                  <Label className="text-foreground">Select Form</Label>
+                  <Select value={selectedFormId} onValueChange={setSelectedFormId}>
+                    <SelectTrigger><SelectValue placeholder="Choose a form..." /></SelectTrigger>
+                    <SelectContent>
+                      {publishedForms.map(f => (
+                        <SelectItem key={f.id} value={f.id}>{f.form_title}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <p>
+                This will send {passengersWithEmail.length === 1 ? "an email" : "individual emails"} to{" "}
+                {passengersWithEmail.length === 1 ? "the following passenger" : `${passengersWithEmail.length} passengers`}{" "}
+                requesting them to complete <strong>{publishedForms.find(f => f.id === selectedFormId)?.form_title || 'the form'}</strong> for <strong>{tourName}</strong>:
+              </p>
+              <ul className="list-disc list-inside space-y-1">
+                {passengersWithEmail.map((p, i) => (
+                  <li key={i}><strong>{p.name}</strong> ({p.email})</li>
+                ))}
+              </ul>
+              <p className="text-sm text-muted-foreground">Each passenger will receive a unique link that expires in 72 hours.</p>
+            </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleSend}>Send Request</AlertDialogAction>
+          <AlertDialogAction onClick={handleSend} disabled={!selectedFormId}>Send Request</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

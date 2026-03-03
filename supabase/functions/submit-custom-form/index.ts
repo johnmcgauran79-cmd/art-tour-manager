@@ -22,7 +22,7 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { token, submissions } = await req.json() as { token: string; submissions: Submission[] };
+    const { token, submissions, formId: requestFormId } = await req.json() as { token: string; submissions: Submission[]; formId?: string };
 
     if (!token) {
       return new Response(JSON.stringify({ error: "Token is required" }),
@@ -59,28 +59,39 @@ const handler = async (req: Request): Promise<Response> => {
 
     const bookingId = tokenData.booking_id;
 
-    // Get the form for this tour
-    const { data: booking } = await supabase
-      .from("bookings")
-      .select("tour_id")
-      .eq("id", bookingId)
-      .single();
+    // Determine form ID: from token, from request body, or from tour lookup
+    let resolvedFormId: string;
 
-    if (!booking) {
-      return new Response(JSON.stringify({ error: "Booking not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    if (tokenData.form_id) {
+      resolvedFormId = tokenData.form_id;
+    } else if (requestFormId) {
+      resolvedFormId = requestFormId;
+    } else {
+      // Legacy fallback: find single published form for the tour
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("tour_id")
+        .eq("id", bookingId)
+        .single();
 
-    const { data: form } = await supabase
-      .from("tour_custom_forms")
-      .select("id")
-      .eq("tour_id", booking.tour_id)
-      .eq("is_published", true)
-      .single();
+      if (!booking) {
+        return new Response(JSON.stringify({ error: "Booking not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
 
-    if (!form) {
-      return new Response(JSON.stringify({ error: "No active form for this tour" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const { data: form } = await supabase
+        .from("tour_custom_forms")
+        .select("id")
+        .eq("tour_id", booking.tour_id)
+        .eq("is_published", true)
+        .limit(1)
+        .single();
+
+      if (!form) {
+        return new Response(JSON.stringify({ error: "No active form for this tour" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      resolvedFormId = form.id;
     }
 
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
@@ -91,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: existing } = await supabase
         .from("tour_custom_form_responses")
         .select("id")
-        .eq("form_id", form.id)
+        .eq("form_id", resolvedFormId)
         .eq("booking_id", bookingId)
         .eq("passenger_slot", sub.slot)
         .single();
@@ -111,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
         await supabase
           .from("tour_custom_form_responses")
           .insert({
-            form_id: form.id,
+            form_id: resolvedFormId,
             booking_id: bookingId,
             passenger_slot: sub.slot,
             customer_id: sub.customer_id,

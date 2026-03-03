@@ -35,54 +35,23 @@ export interface CustomFormResponse {
   submitted_at: string;
 }
 
-export function useCustomForm(tourId: string) {
+// Multi-form hook: returns ALL forms for a tour
+export function useCustomForms(tourId: string) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const formQuery = useQuery({
-    queryKey: ['custom-form', tourId],
+  const formsQuery = useQuery({
+    queryKey: ['custom-forms', tourId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tour_custom_forms' as any)
         .select('*')
         .eq('tour_id', tourId)
-        .maybeSingle();
+        .order('created_at');
       if (error) throw error;
-      return data as unknown as CustomForm | null;
+      return (data || []) as unknown as CustomForm[];
     },
     enabled: !!tourId,
-  });
-
-  const fieldsQuery = useQuery({
-    queryKey: ['custom-form-fields', formQuery.data?.id],
-    queryFn: async () => {
-      if (!formQuery.data?.id) return [];
-      const { data, error } = await supabase
-        .from('tour_custom_form_fields' as any)
-        .select('*')
-        .eq('form_id', formQuery.data.id)
-        .order('sort_order');
-      if (error) throw error;
-      return (data || []).map((f: any) => ({
-        ...f,
-        field_options: Array.isArray(f.field_options) ? f.field_options : [],
-      })) as CustomFormField[];
-    },
-    enabled: !!formQuery.data?.id,
-  });
-
-  const responsesQuery = useQuery({
-    queryKey: ['custom-form-responses', formQuery.data?.id],
-    queryFn: async () => {
-      if (!formQuery.data?.id) return [];
-      const { data, error } = await supabase
-        .from('tour_custom_form_responses' as any)
-        .select('*')
-        .eq('form_id', formQuery.data.id);
-      if (error) throw error;
-      return (data || []) as unknown as CustomFormResponse[];
-    },
-    enabled: !!formQuery.data?.id,
   });
 
   const createForm = useMutation({
@@ -104,37 +73,112 @@ export function useCustomForm(tourId: string) {
       return data as unknown as CustomForm;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-form', tourId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-forms', tourId] });
       toast({ title: "Form created" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
-  const updateForm = useMutation({
-    mutationFn: async (params: Partial<CustomForm>) => {
-      if (!formQuery.data?.id) throw new Error('No form');
-      const { error } = await supabase
-        .from('tour_custom_forms' as any)
-        .update(params as any)
-        .eq('id', formQuery.data.id);
+  const deleteForm = useMutation({
+    mutationFn: async (formId: string) => {
+      // Delete fields first, then the form
+      await supabase.from('tour_custom_form_fields' as any).delete().eq('form_id', formId);
+      const { error } = await supabase.from('tour_custom_forms' as any).delete().eq('id', formId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-form', tourId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-forms', tourId] });
+      toast({ title: "Form deleted" });
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  return {
+    forms: formsQuery.data || [],
+    isLoading: formsQuery.isLoading,
+    createForm,
+    deleteForm,
+  };
+}
+
+// Single form hook: for editing a specific form
+export function useCustomFormDetail(formId: string | null) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const formQuery = useQuery({
+    queryKey: ['custom-form-detail', formId],
+    queryFn: async () => {
+      if (!formId) return null;
+      const { data, error } = await supabase
+        .from('tour_custom_forms' as any)
+        .select('*')
+        .eq('id', formId)
+        .single();
+      if (error) throw error;
+      return data as unknown as CustomForm;
+    },
+    enabled: !!formId,
+  });
+
+  const fieldsQuery = useQuery({
+    queryKey: ['custom-form-fields', formId],
+    queryFn: async () => {
+      if (!formId) return [];
+      const { data, error } = await supabase
+        .from('tour_custom_form_fields' as any)
+        .select('*')
+        .eq('form_id', formId)
+        .order('sort_order');
+      if (error) throw error;
+      return (data || []).map((f: any) => ({
+        ...f,
+        field_options: Array.isArray(f.field_options) ? f.field_options : [],
+      })) as CustomFormField[];
+    },
+    enabled: !!formId,
+  });
+
+  const responsesQuery = useQuery({
+    queryKey: ['custom-form-responses', formId],
+    queryFn: async () => {
+      if (!formId) return [];
+      const { data, error } = await supabase
+        .from('tour_custom_form_responses' as any)
+        .select('*')
+        .eq('form_id', formId);
+      if (error) throw error;
+      return (data || []) as unknown as CustomFormResponse[];
+    },
+    enabled: !!formId,
+  });
+
+  const updateForm = useMutation({
+    mutationFn: async (params: Partial<CustomForm>) => {
+      if (!formId) throw new Error('No form');
+      const { error } = await supabase
+        .from('tour_custom_forms' as any)
+        .update(params as any)
+        .eq('id', formId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['custom-form-detail', formId] });
+      queryClient.invalidateQueries({ queryKey: ['custom-forms'] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   const addField = useMutation({
     mutationFn: async (field: Omit<CustomFormField, 'id' | 'form_id'> & { form_id?: string }) => {
-      if (!formQuery.data?.id) throw new Error('No form');
+      if (!formId) throw new Error('No form');
       const { error } = await supabase
         .from('tour_custom_form_fields' as any)
-        .insert({ ...field, form_id: formQuery.data.id } as any);
+        .insert({ ...field, form_id: formId } as any);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-form-fields'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-form-fields', formId] });
       toast({ title: "Field added" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -150,7 +194,7 @@ export function useCustomForm(tourId: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-form-fields'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-form-fields', formId] });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
@@ -164,21 +208,39 @@ export function useCustomForm(tourId: string) {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-form-fields'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-form-fields', formId] });
       toast({ title: "Field removed" });
     },
     onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
   });
 
   return {
-    form: formQuery.data,
+    form: formQuery.data || null,
     fields: fieldsQuery.data || [],
     responses: responsesQuery.data || [],
     isLoading: formQuery.isLoading,
-    createForm,
     updateForm,
     addField,
     updateField,
     deleteField,
+  };
+}
+
+// Keep backward-compatible hook (returns first form)
+export function useCustomForm(tourId: string) {
+  const { forms, isLoading, createForm } = useCustomForms(tourId);
+  const firstForm = forms[0] || null;
+  const detail = useCustomFormDetail(firstForm?.id || null);
+
+  return {
+    form: firstForm,
+    fields: detail.fields,
+    responses: detail.responses,
+    isLoading: isLoading || detail.isLoading,
+    createForm,
+    updateForm: detail.updateForm,
+    addField: detail.addField,
+    updateField: detail.updateField,
+    deleteField: detail.deleteField,
   };
 }
