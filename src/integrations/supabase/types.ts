@@ -911,6 +911,7 @@ export type Database = {
           created_by: string
           customer_id: string
           expires_at: string
+          form_id: string | null
           id: string
           last_used_at: string | null
           purpose: string | null
@@ -923,6 +924,7 @@ export type Database = {
           created_by: string
           customer_id: string
           expires_at?: string
+          form_id?: string | null
           id?: string
           last_used_at?: string | null
           purpose?: string | null
@@ -935,6 +937,7 @@ export type Database = {
           created_by?: string
           customer_id?: string
           expires_at?: string
+          form_id?: string | null
           id?: string
           last_used_at?: string | null
           purpose?: string | null
@@ -954,6 +957,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_access_tokens_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "tour_custom_forms"
             referencedColumns: ["id"]
           },
         ]

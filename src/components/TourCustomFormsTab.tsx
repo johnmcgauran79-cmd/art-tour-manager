@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useCustomForm, CustomFormField } from "@/hooks/useCustomForms";
+import { useCustomForms, useCustomFormDetail, CustomFormField } from "@/hooks/useCustomForms";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, GripVertical, Eye, Link, Users, User, FileText, Copy, Check } from "lucide-react";
+import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
 
@@ -32,24 +32,12 @@ const FIELD_TYPES = [
 ] as const;
 
 export function TourCustomFormsTab({ tourId, tourName }: Props) {
-  const { form, fields, responses, isLoading, createForm, updateForm, addField, updateField, deleteField } = useCustomForm(tourId);
+  const { forms, isLoading, createForm, deleteForm } = useCustomForms(tourId);
   const { isViewOnly } = usePermissions();
   const { toast } = useToast();
 
-  const [showAddField, setShowAddField] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showResponses, setShowResponses] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-
-  // New field form state
-  const [newField, setNewField] = useState({
-    field_label: '',
-    field_type: 'text' as CustomFormField['field_type'],
-    is_required: false,
-    placeholder: '',
-    field_options: [] as string[],
-  });
-  const [optionInput, setOptionInput] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [expandedFormId, setExpandedFormId] = useState<string | null>(null);
 
   // Create form state
   const [formTitle, setFormTitle] = useState('');
@@ -60,89 +48,143 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
   }
 
-  // No form yet — show creation UI
-  if (!form) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+  const handleCreateForm = () => {
+    createForm.mutate({ title: formTitle, description: formDescription, responseMode }, {
+      onSuccess: () => {
+        setShowCreateForm(false);
+        setFormTitle('');
+        setFormDescription('');
+        setResponseMode('per_passenger');
+      }
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header with Add button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Custom Data Collection Form
-          </CardTitle>
-          <CardDescription>
-            Create a custom form to collect specific information from passengers, like membership numbers, badge names, or preferences.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>Form Title *</Label>
-            <Input
-              value={formTitle}
-              onChange={e => setFormTitle(e.target.value)}
-              placeholder="e.g., Royal Ascot Details"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Textarea
-              value={formDescription}
-              onChange={e => setFormDescription(e.target.value)}
-              placeholder="Brief instructions for the customer..."
-            />
-          </div>
-          <div className="space-y-3">
-            <Label>Response Mode</Label>
-            <div className="flex flex-col gap-3">
-              <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${responseMode === 'per_passenger' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                <input
-                  type="radio"
-                  checked={responseMode === 'per_passenger'}
-                  onChange={() => setResponseMode('per_passenger')}
-                  className="mt-1"
-                />
-                <div>
-                  <div className="flex items-center gap-2 font-medium">
-                    <Users className="h-4 w-4" />
-                    Per Passenger
+            Custom Forms ({forms.length})
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Create forms to collect specific information from passengers. Use <code className="bg-muted px-1 rounded text-xs">{`{{custom_form_button:Form Title}}`}</code> in email templates.
+          </p>
+        </div>
+        {!isViewOnly && (
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="h-4 w-4 mr-2" /> New Form
+          </Button>
+        )}
+      </div>
+
+      {/* Forms list */}
+      {forms.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No custom forms yet. Create one to start collecting data from passengers.
+          </CardContent>
+        </Card>
+      ) : (
+        forms.map(form => (
+          <FormCard
+            key={form.id}
+            formId={form.id}
+            tourId={tourId}
+            tourName={tourName}
+            isExpanded={expandedFormId === form.id}
+            onToggle={() => setExpandedFormId(expandedFormId === form.id ? null : form.id)}
+            isViewOnly={isViewOnly}
+            onDelete={() => deleteForm.mutate(form.id)}
+          />
+        ))
+      )}
+
+      {/* Create Form Dialog */}
+      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Create Custom Form</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Form Title *</Label>
+              <Input
+                value={formTitle}
+                onChange={e => setFormTitle(e.target.value)}
+                placeholder="e.g., Meal Pre-Order, Royal Ascot Details"
+              />
+              <p className="text-xs text-muted-foreground">
+                This title is used as the merge field reference: <code className="bg-muted px-1 rounded">{`{{custom_form_button:${formTitle || 'Form Title'}}}`}</code>
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formDescription}
+                onChange={e => setFormDescription(e.target.value)}
+                placeholder="Brief instructions for the customer..."
+              />
+            </div>
+            <div className="space-y-3">
+              <Label>Response Mode</Label>
+              <div className="flex flex-col gap-3">
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${responseMode === 'per_passenger' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <input type="radio" checked={responseMode === 'per_passenger'} onChange={() => setResponseMode('per_passenger')} className="mt-1" />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" /> Per Passenger</div>
+                    <p className="text-sm text-muted-foreground mt-1">Each passenger fills out individually.</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Each passenger on the booking fills out the form individually (like passport details). If a passenger doesn't have an email, the lead passenger fills it in for them.
-                  </p>
-                </div>
-              </label>
-              <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${responseMode === 'per_booking' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                <input
-                  type="radio"
-                  checked={responseMode === 'per_booking'}
-                  onChange={() => setResponseMode('per_booking')}
-                  className="mt-1"
-                />
-                <div>
-                  <div className="flex items-center gap-2 font-medium">
-                    <User className="h-4 w-4" />
-                    Per Booking
+                </label>
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${responseMode === 'per_booking' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <input type="radio" checked={responseMode === 'per_booking'} onChange={() => setResponseMode('per_booking')} className="mt-1" />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium"><User className="h-4 w-4" /> Per Booking</div>
+                    <p className="text-sm text-muted-foreground mt-1">One submission per booking by lead passenger.</p>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    One form submission per booking, filled out by the lead passenger.
-                  </p>
-                </div>
-              </label>
+                </label>
+              </div>
             </div>
           </div>
-          {!isViewOnly && (
-            <Button
-              onClick={() => createForm.mutate({ title: formTitle, description: formDescription, responseMode })}
-              disabled={!formTitle.trim() || createForm.isPending}
-            >
-              Create Form
-            </Button>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
+            <Button onClick={handleCreateForm} disabled={!formTitle.trim() || createForm.isPending}>Create Form</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
 
-  const formLink = `${window.location.origin}/custom-form/TOKEN_PLACEHOLDER`;
+// Individual form card with expand/collapse
+function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, onDelete }: {
+  formId: string;
+  tourId: string;
+  tourName: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  isViewOnly: boolean;
+  onDelete: () => void;
+}) {
+  const { form, fields, responses, updateForm, addField, deleteField } = useCustomFormDetail(formId);
+  const { toast } = useToast();
+
+  const [showAddField, setShowAddField] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showResponses, setShowResponses] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const [newField, setNewField] = useState({
+    field_label: '',
+    field_type: 'text' as CustomFormField['field_type'],
+    is_required: false,
+    placeholder: '',
+    field_options: [] as string[],
+  });
+  const [optionInput, setOptionInput] = useState('');
+
+  if (!form) return null;
 
   const handleAddField = () => {
     addField.mutate({
@@ -163,165 +205,170 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
 
   const handleAddOption = () => {
     if (optionInput.trim()) {
-      setNewField(prev => ({
-        ...prev,
-        field_options: [...prev.field_options, optionInput.trim()],
-      }));
+      setNewField(prev => ({ ...prev, field_options: [...prev.field_options, optionInput.trim()] }));
       setOptionInput('');
     }
   };
 
   const handleCopyMergeField = () => {
-    navigator.clipboard.writeText('{{custom_form_button}}');
+    const tag = `{{custom_form_button:${form.form_title}}}`;
+    navigator.clipboard.writeText(tag);
     setLinkCopied(true);
-    toast({ title: "Copied!", description: "Paste {{custom_form_button}} into your email template." });
+    toast({ title: "Copied!", description: `Paste ${tag} into your email template.` });
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
   return (
-    <div className="space-y-4">
-      {/* Form Header */}
+    <>
       <Card>
-        <CardHeader>
+        <CardHeader className="cursor-pointer" onClick={onToggle}>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                {form.form_title}
-              </CardTitle>
-              {form.form_description && (
-                <CardDescription className="mt-1">{form.form_description}</CardDescription>
-              )}
-            </div>
             <div className="flex items-center gap-3">
-              <Badge variant={form.response_mode === 'per_passenger' ? 'default' : 'secondary'}>
-                {form.response_mode === 'per_passenger' ? (
-                  <><Users className="h-3 w-3 mr-1" /> Per Passenger</>
-                ) : (
-                  <><User className="h-3 w-3 mr-1" /> Per Booking</>
+              <FileText className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <CardTitle className="text-base">{form.form_title}</CardTitle>
+                {form.form_description && (
+                  <CardDescription className="mt-0.5">{form.form_description}</CardDescription>
                 )}
+              </div>
+            </div>
+            <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
+              <Badge variant="outline" className="text-xs">{fields.length} fields</Badge>
+              <Badge variant="outline" className="text-xs">{responses.length} responses</Badge>
+              <Badge variant={form.response_mode === 'per_passenger' ? 'default' : 'secondary'}>
+                {form.response_mode === 'per_passenger' ? <><Users className="h-3 w-3 mr-1" /> Per Pax</> : <><User className="h-3 w-3 mr-1" /> Per Booking</>}
               </Badge>
+              <Badge variant={form.is_published ? 'default' : 'outline'}>
+                {form.is_published ? 'Published' : 'Draft'}
+              </Badge>
+              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </div>
+          </div>
+        </CardHeader>
+
+        {isExpanded && (
+          <CardContent className="space-y-4 border-t pt-4">
+            {/* Action bar */}
+            <div className="flex flex-wrap gap-2">
               {!isViewOnly && (
                 <div className="flex items-center gap-2">
-                  <Label htmlFor="published" className="text-sm">Published</Label>
+                  <Label htmlFor={`published-${formId}`} className="text-sm">Published</Label>
                   <Switch
-                    id="published"
+                    id={`published-${formId}`}
                     checked={form.is_published}
                     onCheckedChange={(checked) => updateForm.mutate({ is_published: checked } as any)}
                   />
                 </div>
               )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
-              <Eye className="h-4 w-4 mr-2" /> Preview
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowResponses(true)}>
-              <FileText className="h-4 w-4 mr-2" /> View Responses ({responses.length})
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleCopyMergeField}>
-              {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-              {linkCopied ? 'Copied!' : 'Copy Email Merge Field'}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Fields */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Form Fields ({fields.length})</CardTitle>
-            {!isViewOnly && (
-              <Button size="sm" onClick={() => setShowAddField(true)}>
-                <Plus className="h-4 w-4 mr-2" /> Add Field
+              <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
+                <Eye className="h-4 w-4 mr-2" /> Preview
               </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {fields.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No fields yet. Add fields to build your form.
+              <Button variant="outline" size="sm" onClick={() => setShowResponses(true)}>
+                <FileText className="h-4 w-4 mr-2" /> Responses ({responses.length})
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleCopyMergeField}>
+                {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                {linkCopied ? 'Copied!' : 'Copy Merge Field'}
+              </Button>
+              {!isViewOnly && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/30">
+                      <Trash2 className="h-4 w-4 mr-2" /> Delete Form
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Form</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Delete "{form.form_title}" and all its fields? Existing responses will be kept but the form will no longer be accessible.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card">
-                  <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium truncate">{field.field_label}</span>
-                      {field.is_required && <Badge variant="destructive" className="text-xs">Required</Badge>}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
-                        {FIELD_TYPES.find(t => t.value === field.field_type)?.label}
-                      </Badge>
-                      {(field.field_type === 'select' || field.field_type === 'radio') && field.field_options.length > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {field.field_options.length} options
-                        </span>
+
+            {/* Fields list */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-sm">Fields ({fields.length})</h4>
+                {!isViewOnly && (
+                  <Button size="sm" variant="outline" onClick={() => setShowAddField(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Add Field
+                  </Button>
+                )}
+              </div>
+              {fields.length === 0 ? (
+                <p className="text-center py-4 text-sm text-muted-foreground">No fields yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {fields.map(field => (
+                    <div key={field.id} className="flex items-center gap-3 p-3 border rounded-lg bg-card">
+                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium truncate">{field.field_label}</span>
+                          {field.is_required && <Badge variant="destructive" className="text-xs">Required</Badge>}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {FIELD_TYPES.find(t => t.value === field.field_type)?.label}
+                          </Badge>
+                          {(field.field_type === 'select' || field.field_type === 'radio') && field.field_options.length > 0 && (
+                            <span className="text-xs text-muted-foreground">{field.field_options.length} options</span>
+                          )}
+                        </div>
+                      </div>
+                      {!isViewOnly && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="flex-shrink-0">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Field</AlertDialogTitle>
+                              <AlertDialogDescription>Remove "{field.field_label}" from the form?</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteField.mutate(field.id)}>Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       )}
                     </div>
-                  </div>
-                  {!isViewOnly && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0">
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Field</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Remove "{field.field_label}" from the form? This will not delete existing responses.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => deleteField.mutate(field.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </CardContent>
+          </CardContent>
+        )}
       </Card>
 
       {/* Add Field Dialog */}
       <Dialog open={showAddField} onOpenChange={setShowAddField}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Form Field</DialogTitle>
+            <DialogTitle>Add Field to "{form.form_title}"</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Field Label *</Label>
-              <Input
-                value={newField.field_label}
-                onChange={e => setNewField(prev => ({ ...prev, field_label: e.target.value }))}
-                placeholder="e.g., VRC Member Number"
-              />
+              <Input value={newField.field_label} onChange={e => setNewField(prev => ({ ...prev, field_label: e.target.value }))} placeholder="e.g., VRC Member Number" />
             </div>
             <div className="space-y-2">
               <Label>Field Type</Label>
-              <Select
-                value={newField.field_type}
-                onValueChange={(v: any) => setNewField(prev => ({ ...prev, field_type: v }))}
-              >
+              <Select value={newField.field_type} onValueChange={(v: any) => setNewField(prev => ({ ...prev, field_type: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {FIELD_TYPES.map(t => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
+                  {FIELD_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -329,12 +376,7 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
               <div className="space-y-2">
                 <Label>{newField.field_type === 'radio' ? 'Choice Options' : 'Dropdown Options'}</Label>
                 <div className="flex gap-2">
-                  <Input
-                    value={optionInput}
-                    onChange={e => setOptionInput(e.target.value)}
-                    placeholder="Add an option..."
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddOption(); } }}
-                  />
+                  <Input value={optionInput} onChange={e => setOptionInput(e.target.value)} placeholder="Add an option..." onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddOption(); } }} />
                   <Button type="button" variant="outline" onClick={handleAddOption}>Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-1">
@@ -349,34 +391,21 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
             )}
             <div className="space-y-2">
               <Label>Placeholder Text</Label>
-              <Input
-                value={newField.placeholder}
-                onChange={e => setNewField(prev => ({ ...prev, placeholder: e.target.value }))}
-                placeholder="Hint text shown inside the field"
-              />
+              <Input value={newField.placeholder} onChange={e => setNewField(prev => ({ ...prev, placeholder: e.target.value }))} placeholder="Hint text shown inside the field" />
             </div>
             <div className="flex items-center gap-2">
-              <Checkbox
-                id="required"
-                checked={newField.is_required}
-                onCheckedChange={(c) => setNewField(prev => ({ ...prev, is_required: !!c }))}
-              />
-              <Label htmlFor="required">Required field</Label>
+              <Checkbox id={`required-${formId}`} checked={newField.is_required} onCheckedChange={(c) => setNewField(prev => ({ ...prev, is_required: !!c }))} />
+              <Label htmlFor={`required-${formId}`}>Required field</Label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddField(false)}>Cancel</Button>
-            <Button
-              onClick={handleAddField}
-              disabled={!newField.field_label.trim() || addField.isPending}
-            >
-              Add Field
-            </Button>
+            <Button onClick={handleAddField} disabled={!newField.field_label.trim() || addField.isPending}>Add Field</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Full Customer Preview Dialog */}
+      {/* Preview Dialog */}
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto p-0">
           <DialogHeader className="sr-only">
@@ -387,11 +416,7 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
               <Card className="overflow-hidden border-0 shadow-none rounded-none">
                 <CardHeader className="bg-brand-navy text-white p-6">
                   <div className="flex items-center justify-center gap-4">
-                    <img
-                      src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png"
-                      alt="Australian Racing Tours"
-                      className="h-12"
-                    />
+                    <img src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" className="h-12" />
                     <CardTitle className="text-2xl text-white">{form.form_title}</CardTitle>
                   </div>
                   <CardDescription className="text-center text-white/80 mt-2">
@@ -401,17 +426,12 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                     <span>⏰ This link expires in 72 hours</span>
                   </div>
                 </CardHeader>
-
                 <CardContent className="space-y-6 pt-6 p-6">
                   {form.response_mode === 'per_passenger' && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                      <p className="text-sm text-amber-800">
-                        Please fill in details for all passengers on the booking.
-                      </p>
+                      <p className="text-sm text-amber-800">Please fill in details for all passengers on the booking.</p>
                     </div>
                   )}
-
-                  {/* Sample passenger sections */}
                   {(form.response_mode === 'per_passenger' ? [
                     { slot: 1, label: 'Lead Passenger', name: 'John Smith', isOwner: true },
                     { slot: 2, label: 'Passenger 2', name: 'Jane Smith', isOwner: false },
@@ -422,68 +442,39 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                       {form.response_mode === 'per_passenger' && (
                         <div className="flex items-center gap-2 border-b pb-2">
                           <User className="h-5 w-5 text-primary" />
-                          <h3 className="font-semibold text-lg">
-                            {pax.label}: {pax.name}
-                          </h3>
-                          {pax.isOwner && (
-                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">You</span>
-                          )}
+                          <h3 className="font-semibold text-lg">{pax.label}: {pax.name}</h3>
+                          {pax.isOwner && <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">You</span>}
                         </div>
                       )}
-
                       {fields.map(field => (
                         <div key={field.id} className="space-y-1.5">
-                          <Label>
-                            {field.field_label}
-                            {field.is_required && <span className="text-destructive ml-1">*</span>}
-                          </Label>
+                          <Label>{field.field_label}{field.is_required && <span className="text-destructive ml-1">*</span>}</Label>
                           {field.field_type === 'text' && <Input placeholder={field.placeholder || ''} disabled />}
                           {field.field_type === 'textarea' && <Textarea placeholder={field.placeholder || ''} disabled />}
                           {field.field_type === 'number' && <Input type="number" placeholder={field.placeholder || ''} disabled />}
                           {field.field_type === 'date' && <Input type="date" disabled />}
                           {field.field_type === 'select' && (
-                            <Select disabled>
-                              <SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
-                              <SelectContent>
-                                {field.field_options.map((opt, i) => (
-                                  <SelectItem key={i} value={opt}>{opt}</SelectItem>
-                                ))}
-                              </SelectContent>
+                            <Select disabled><SelectTrigger><SelectValue placeholder="Select..." /></SelectTrigger>
+                              <SelectContent>{field.field_options.map((opt, i) => <SelectItem key={i} value={opt}>{opt}</SelectItem>)}</SelectContent>
                             </Select>
                           )}
                           {field.field_type === 'radio' && (
-                            <div className="space-y-2">
-                              {field.field_options.map((opt, i) => (
-                                <label key={i} className="flex items-center gap-2">
-                                  <input type="radio" name={`preview-${field.id}`} disabled className="h-4 w-4 accent-primary" />
-                                  <span className="text-sm">{opt}</span>
-                                </label>
-                              ))}
-                            </div>
+                            <div className="space-y-2">{field.field_options.map((opt, i) => (
+                              <label key={i} className="flex items-center gap-2"><input type="radio" name={`preview-${field.id}-${pax.slot}`} disabled className="h-4 w-4 accent-primary" /><span className="text-sm">{opt}</span></label>
+                            ))}</div>
                           )}
                           {field.field_type === 'checkbox' && (
                             <div className="flex items-center gap-4">
-                              <label className="flex items-center gap-2">
-                                <Checkbox disabled />
-                                <span className="text-sm">Yes</span>
-                              </label>
-                              <label className="flex items-center gap-2">
-                                <Checkbox disabled />
-                                <span className="text-sm">No</span>
-                              </label>
+                              <label className="flex items-center gap-2"><Checkbox disabled /><span className="text-sm">Yes</span></label>
+                              <label className="flex items-center gap-2"><Checkbox disabled /><span className="text-sm">No</span></label>
                             </div>
                           )}
                         </div>
                       ))}
-                      {fields.length === 0 && (
-                        <p className="text-muted-foreground text-sm text-center py-4">Add fields to see a preview.</p>
-                      )}
+                      {fields.length === 0 && <p className="text-muted-foreground text-sm text-center py-4">Add fields to see a preview.</p>}
                     </div>
                   ))}
-
-                  <Button className="w-full" disabled>
-                    Submit
-                  </Button>
+                  <Button className="w-full" disabled>Submit</Button>
                 </CardContent>
               </Card>
             </div>
@@ -492,7 +483,7 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
       </Dialog>
 
       {/* Responses View */}
-      {showResponses && (
+      {showResponses && form && (
         <CustomFormResponsesView
           open={showResponses}
           onOpenChange={setShowResponses}
@@ -503,6 +494,6 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
           responses={responses}
         />
       )}
-    </div>
+    </>
   );
 }

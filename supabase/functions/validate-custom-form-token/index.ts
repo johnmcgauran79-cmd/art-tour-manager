@@ -63,17 +63,33 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Get custom form for this tour
-    const { data: form, error: formError } = await supabase
-      .from("tour_custom_forms")
-      .select("*")
-      .eq("tour_id", booking.tour_id)
-      .eq("is_published", true)
-      .single();
-
-    if (formError || !form) {
-      return new Response(JSON.stringify({ valid: false, error: "No active form for this tour" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    // Get custom form - use form_id from token if available, otherwise fall back to tour lookup
+    let form: any;
+    if (tokenData.form_id) {
+      const { data, error } = await supabase
+        .from("tour_custom_forms")
+        .select("*")
+        .eq("id", tokenData.form_id)
+        .single();
+      if (error || !data) {
+        return new Response(JSON.stringify({ valid: false, error: "Form no longer available" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      form = data;
+    } else {
+      // Legacy tokens without form_id - find single published form
+      const { data, error } = await supabase
+        .from("tour_custom_forms")
+        .select("*")
+        .eq("tour_id", booking.tour_id)
+        .eq("is_published", true)
+        .limit(1)
+        .single();
+      if (error || !data) {
+        return new Response(JSON.stringify({ valid: false, error: "No active form for this tour" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      form = data;
     }
 
     // Get form fields
@@ -83,7 +99,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("form_id", form.id)
       .order("sort_order");
 
-    // Get existing responses for this booking
+    // Get existing responses for this booking + form
     const { data: existingResponses } = await supabase
       .from("tour_custom_form_responses")
       .select("*")
@@ -116,11 +132,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (booking.passenger_count >= 2 && booking.passenger_2) addPassenger(2, booking.passenger_2);
     if (booking.passenger_count >= 3 && booking.passenger_3) addPassenger(3, booking.passenger_3);
 
-    // For per_booking mode, only slot 1 is editable by anyone
-    // For per_passenger mode, same logic as travel docs
     let editableSlots: number[];
     if (form.response_mode === 'per_booking') {
-      editableSlots = [1]; // Only lead passenger fills it in
+      editableSlots = [1];
     } else {
       editableSlots = passengers
         .filter(p => p.is_token_owner || !p.has_email)
@@ -140,15 +154,11 @@ const handler = async (req: Request): Promise<Response> => {
       customer: { id: customer.id, first_name: customer.first_name, last_name: customer.last_name },
       booking: { id: booking.id, passenger_count: booking.passenger_count },
       tour: booking.tours,
-      form: { form_title: form.form_title, form_description: form.form_description, response_mode: form.response_mode },
+      form: { id: form.id, form_title: form.form_title, form_description: form.form_description, response_mode: form.response_mode },
       fields: (fields || []).map((f: any) => ({
-        id: f.id,
-        field_label: f.field_label,
-        field_type: f.field_type,
-        field_options: f.field_options || [],
-        is_required: f.is_required,
-        placeholder: f.placeholder,
-        sort_order: f.sort_order,
+        id: f.id, field_label: f.field_label, field_type: f.field_type,
+        field_options: f.field_options || [], is_required: f.is_required,
+        placeholder: f.placeholder, sort_order: f.sort_order,
       })),
       passengers,
       editableSlots,
