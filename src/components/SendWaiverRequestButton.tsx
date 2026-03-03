@@ -3,6 +3,17 @@ import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SendWaiverRequestButtonProps {
   bookingId: string;
@@ -20,6 +31,7 @@ export const SendWaiverRequestButton = ({
   size = "sm",
 }: SendWaiverRequestButtonProps) => {
   const [sending, setSending] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleSend = async () => {
     if (!customerEmail) {
@@ -28,6 +40,7 @@ export const SendWaiverRequestButton = ({
     }
 
     setSending(true);
+    setOpen(false);
     try {
       const { data, error } = await supabase.functions.invoke("send-waiver-request", {
         body: { bookingId },
@@ -53,20 +66,52 @@ export const SendWaiverRequestButton = ({
     setSending(false);
   };
 
-  return (
-    <Button
-      variant="outline"
-      size={size}
-      onClick={handleSend}
-      disabled={sending || !customerEmail}
-      title={!customerEmail ? "No email address available" : `Send waiver form to ${customerName}`}
-    >
-      {sending ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
+  if (!customerEmail) {
+    return (
+      <Button variant="outline" size={size} disabled title="No email address available">
         <FileText className="mr-2 h-4 w-4" />
-      )}
-      Send Waiver
-    </Button>
+        Send Waiver
+      </Button>
+    );
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size={size} disabled={sending}>
+          {sending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <FileText className="mr-2 h-4 w-4" />
+          )}
+          {sending ? "Sending..." : "Send Waiver"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Send Waiver Request</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              This will send a waiver form email to:
+            </p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>
+                <strong>{customerName}</strong> ({customerEmail})
+              </li>
+            </ul>
+            <p className="text-sm mt-3">
+              The email contains a secure link for the passenger to review and sign the waiver for <strong>{tourName}</strong>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The link will expire in 72 hours.
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSend}>Send Request</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };

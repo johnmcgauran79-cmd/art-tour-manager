@@ -3,6 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Bus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SendPickupRequestButtonProps {
   bookingId: string;
@@ -20,6 +31,7 @@ export const SendPickupRequestButton = ({
   size = "sm",
 }: SendPickupRequestButtonProps) => {
   const [sending, setSending] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleSend = async () => {
     if (!customerEmail) {
@@ -28,6 +40,7 @@ export const SendPickupRequestButton = ({
     }
 
     setSending(true);
+    setOpen(false);
     try {
       const { data, error } = await supabase.functions.invoke("send-pickup-request", {
         body: { bookingId },
@@ -53,20 +66,52 @@ export const SendPickupRequestButton = ({
     setSending(false);
   };
 
-  return (
-    <Button
-      variant="outline"
-      size={size}
-      onClick={handleSend}
-      disabled={sending || !customerEmail}
-      title={!customerEmail ? "No email address available" : `Send pickup location request to ${customerName}`}
-    >
-      {sending ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      ) : (
+  if (!customerEmail) {
+    return (
+      <Button variant="outline" size={size} disabled title="No email address available">
         <Bus className="mr-2 h-4 w-4" />
-      )}
-      Send Pickup Request
-    </Button>
+        Send Pickup Request
+      </Button>
+    );
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size={size} disabled={sending}>
+          {sending ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Bus className="mr-2 h-4 w-4" />
+          )}
+          {sending ? "Sending..." : "Send Pickup Request"}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Send Pickup Location Request</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              This will send a pickup location selection email to:
+            </p>
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>
+                <strong>{customerName}</strong> ({customerEmail})
+              </li>
+            </ul>
+            <p className="text-sm mt-3">
+              The email contains a secure link for the passenger to select their preferred pickup location for <strong>{tourName}</strong>.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              The link will expire in 72 hours.
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleSend}>Send Request</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 };
