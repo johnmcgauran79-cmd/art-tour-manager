@@ -6,10 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, MapPin, Clock, Save } from "lucide-react";
+import { Plus, Trash2, MapPin, Clock, Save, Send } from "lucide-react";
 import { usePickupOptions, useCreatePickupOption, useUpdatePickupOption, useDeletePickupOption } from "@/hooks/usePickupOptions";
 import { useUpdateTour } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
+import { BulkPickupSendModal } from "./BulkPickupSendModal";
 
 interface TourPickupLocationsTabProps {
   tourId: string;
@@ -36,6 +37,7 @@ export const TourPickupLocationsTab = ({
   const [newOption, setNewOption] = useState({ name: "", pickup_time: "", details: "" });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ name: "", pickup_time: "", details: "" });
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
 
   const handleToggle = (checked: boolean) => {
     updateTour.mutate({
@@ -106,6 +108,15 @@ export const TourPickupLocationsTab = ({
 
   return (
     <div className="space-y-6">
+      {/* Header with Send button */}
+      {pickupLocationRequired && options.length > 0 && !isViewOnly && (
+        <div className="flex justify-end">
+          <Button onClick={() => setBulkSendOpen(true)} size="sm">
+            <Send className="h-4 w-4 mr-2" />
+            Send Pickup Requests
+          </Button>
+        </div>
+      )}
       {/* Toggle Card */}
       <Card>
         <CardHeader>
@@ -273,6 +284,13 @@ export const TourPickupLocationsTab = ({
           </CardContent>
         </Card>
       )}
+      {/* Bulk send modal */}
+      <BulkPickupSendModal
+        open={bulkSendOpen}
+        onOpenChange={setBulkSendOpen}
+        tourId={tourId}
+        tourName={tourName}
+      />
     </div>
   );
 };
