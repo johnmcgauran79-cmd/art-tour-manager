@@ -296,7 +296,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                   <SelectItem value="shuttle_bus">Shuttle Bus</SelectItem>
                   <SelectItem value="taxi">Taxi</SelectItem>
                   <SelectItem value="ferry">Ferry</SelectItem>
-                  <SelectItem value="train">Train</SelectItem>
+                  <SelectItem value="train">Public Transport</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
