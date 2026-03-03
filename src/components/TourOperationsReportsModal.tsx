@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -72,9 +72,6 @@ const TourOpsReportModal = ({ tourId, tourName, hotels, activities, open, onOpen
                 <Badge variant="destructive">{changeCount} change{changeCount !== 1 ? 's' : ''}</Badge>
               )}
             </div>
-            <DialogClose asChild>
-              <Button variant="outline" size="sm">Close</Button>
-            </DialogClose>
           </div>
         </DialogHeader>
         <div className="space-y-4">
@@ -293,9 +290,6 @@ export const TourOperationsReportsModal = ({
                 <MapPin className="h-5 w-5 text-sky-600" />
                 <DialogTitle>Pickup Locations - {tourName}</DialogTitle>
               </div>
-              <DialogClose asChild>
-                <Button variant="outline" size="sm">Close</Button>
-              </DialogClose>
             </div>
           </DialogHeader>
           <PickupLocationReport tourId={tourId} />
@@ -340,11 +334,6 @@ export const TourOperationsReportsModal = ({
                   <Download className="h-4 w-4" />
                   Download PDF
                 </Button>
-                <DialogClose asChild>
-                  <Button variant="outline" size="sm">
-                    Close
-                  </Button>
-                </DialogClose>
               </div>
             </div>
           </DialogHeader>
@@ -412,11 +401,6 @@ export const TourOperationsReportsModal = ({
                     <Mail className="h-4 w-4" />
                     Email Report
                   </Button>
-                  <DialogClose asChild>
-                    <Button variant="outline" size="sm">
-                      Close
-                    </Button>
-                  </DialogClose>
                 </div>
               </div>
             </DialogHeader>
@@ -468,11 +452,6 @@ export const TourOperationsReportsModal = ({
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Email Tracking - {tourName}</DialogTitle>
-              <DialogClose asChild>
-                <Button variant="outline" size="sm">
-                  Close
-                </Button>
-              </DialogClose>
             </div>
           </DialogHeader>
           
@@ -565,11 +544,6 @@ export const TourOperationsReportsModal = ({
                       </Button>
                     </>
                   )}
-                  <DialogClose asChild>
-                    <Button variant="outline" size="sm">
-                      Close
-                    </Button>
-                  </DialogClose>
                 </div>
               </div>
             </DialogHeader>
@@ -617,11 +591,6 @@ export const TourOperationsReportsModal = ({
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Tour Operations Reports - {tourName}</DialogTitle>
-              <DialogClose asChild>
-                <Button variant="outline" size="sm">
-                  Close
-                </Button>
-              </DialogClose>
             </div>
           </DialogHeader>
           <div className="space-y-4">
