@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
 
@@ -174,6 +174,9 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [isEditingMeta, setIsEditingMeta] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
 
   const [newField, setNewField] = useState({
     field_label: '',
@@ -248,6 +251,49 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
 
         {isExpanded && (
           <CardContent className="space-y-4 border-t pt-4">
+            {/* Edit title/description inline */}
+            {isEditingMeta && (
+              <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
+                <div className="space-y-2">
+                  <Label>Form Title *</Label>
+                  <Input
+                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    placeholder="Form title"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Merge field will update to: <code className="bg-muted px-1 rounded">{`{{custom_form_button:${editTitle || 'Form Title'}}}`}</code>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={editDescription}
+                    onChange={e => setEditDescription(e.target.value)}
+                    placeholder="Brief instructions for the customer..."
+                    rows={2}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={!editTitle.trim() || updateForm.isPending}
+                    onClick={() => {
+                      updateForm.mutate({ form_title: editTitle.trim(), form_description: editDescription.trim() || null } as any, {
+                        onSuccess: () => {
+                          setIsEditingMeta(false);
+                          toast({ title: "Form updated" });
+                        }
+                      });
+                    }}
+                  >
+                    Save Changes
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setIsEditingMeta(false)}>Cancel</Button>
+                </div>
+              </div>
+            )}
+
             {/* Action bar */}
             <div className="flex flex-wrap gap-2">
               {!isViewOnly && (
@@ -259,6 +305,15 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                     onCheckedChange={(checked) => updateForm.mutate({ is_published: checked } as any)}
                   />
                 </div>
+              )}
+              {!isViewOnly && !isEditingMeta && (
+                <Button variant="outline" size="sm" onClick={() => {
+                  setEditTitle(form.form_title);
+                  setEditDescription(form.form_description || '');
+                  setIsEditingMeta(true);
+                }}>
+                  <Pencil className="h-4 w-4 mr-2" /> Edit Details
+                </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
                 <Eye className="h-4 w-4 mr-2" /> Preview
