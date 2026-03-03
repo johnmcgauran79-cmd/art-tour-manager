@@ -226,6 +226,24 @@ export default function CustomForm() {
             </SelectContent>
           </Select>
         );
+      case 'radio':
+        return (
+          <div className="space-y-2">
+            {field.field_options.map((opt, i) => (
+              <label key={i} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`field-${field.id}-slot-${slot}`}
+                  checked={value === opt}
+                  onChange={() => onChange(opt)}
+                  disabled={disabled}
+                  className="h-4 w-4 accent-primary"
+                />
+                <span className="text-sm">{opt}</span>
+              </label>
+            ))}
+          </div>
+        );
       case 'checkbox':
         return (
           <div className="flex items-center gap-4">

@@ -6,7 +6,7 @@ export interface CustomFormField {
   id: string;
   form_id: string;
   field_label: string;
-  field_type: 'text' | 'number' | 'date' | 'select' | 'checkbox' | 'textarea';
+  field_type: 'text' | 'number' | 'date' | 'select' | 'radio' | 'checkbox' | 'textarea';
   field_options: string[];
   is_required: boolean;
   sort_order: number;

@@ -27,6 +27,7 @@ const FIELD_TYPES = [
   { value: 'number', label: 'Number' },
   { value: 'date', label: 'Date' },
   { value: 'select', label: 'Dropdown' },
+  { value: 'radio', label: 'Multiple Choice' },
   { value: 'checkbox', label: 'Yes / No' },
 ] as const;
 
@@ -149,7 +150,7 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
       field_type: newField.field_type,
       is_required: newField.is_required,
       placeholder: newField.placeholder || null,
-      field_options: newField.field_type === 'select' ? newField.field_options : [],
+      field_options: (newField.field_type === 'select' || newField.field_type === 'radio') ? newField.field_options : [],
       sort_order: fields.length,
     }, {
       onSuccess: () => {
@@ -260,7 +261,7 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                       <Badge variant="outline" className="text-xs">
                         {FIELD_TYPES.find(t => t.value === field.field_type)?.label}
                       </Badge>
-                      {field.field_type === 'select' && field.field_options.length > 0 && (
+                      {(field.field_type === 'select' || field.field_type === 'radio') && field.field_options.length > 0 && (
                         <span className="text-xs text-muted-foreground">
                           {field.field_options.length} options
                         </span>
@@ -324,9 +325,9 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            {newField.field_type === 'select' && (
+            {(newField.field_type === 'select' || newField.field_type === 'radio') && (
               <div className="space-y-2">
-                <Label>Dropdown Options</Label>
+                <Label>{newField.field_type === 'radio' ? 'Choice Options' : 'Dropdown Options'}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={optionInput}
@@ -449,6 +450,16 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                                 ))}
                               </SelectContent>
                             </Select>
+                          )}
+                          {field.field_type === 'radio' && (
+                            <div className="space-y-2">
+                              {field.field_options.map((opt, i) => (
+                                <label key={i} className="flex items-center gap-2">
+                                  <input type="radio" name={`preview-${field.id}`} disabled className="h-4 w-4 accent-primary" />
+                                  <span className="text-sm">{opt}</span>
+                                </label>
+                              ))}
+                            </div>
                           )}
                           {field.field_type === 'checkbox' && (
                             <div className="flex items-center gap-4">
