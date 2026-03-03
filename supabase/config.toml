@@ -125,3 +125,6 @@ verify_jwt = false
 
 [functions.submit-custom-form]
 verify_jwt = false
+
+[functions.send-custom-form-request]
+verify_jwt = false
