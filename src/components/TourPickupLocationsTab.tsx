@@ -108,22 +108,21 @@ export const TourPickupLocationsTab = ({
 
   return (
     <div className="space-y-6">
-      {/* Header with Send button */}
-      {pickupLocationRequired && options.length > 0 && !isViewOnly && (
-        <div className="flex justify-end">
-          <Button onClick={() => setBulkSendOpen(true)} size="sm">
-            <Send className="h-4 w-4 mr-2" />
-            Send Pickup Requests
-          </Button>
-        </div>
-      )}
       {/* Toggle Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="h-5 w-5" />
-            Pickup Location Settings
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Pickup Location Settings
+            </CardTitle>
+            {pickupLocationRequired && options.length > 0 && !isViewOnly && (
+              <Button onClick={() => setBulkSendOpen(true)} size="sm">
+                <Send className="h-4 w-4 mr-2" />
+                Send Pickup Requests
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
