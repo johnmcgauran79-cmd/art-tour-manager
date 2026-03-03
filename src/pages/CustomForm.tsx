@@ -89,7 +89,7 @@ export default function CustomForm() {
       data.passengers.forEach((p: PassengerInfo) => {
         initial[p.slot] = {};
         data.fields.forEach((f: FormField) => {
-          initial[p.slot][f.id] = p.existing_response?.[f.id] ?? (f.field_type === 'checkbox' ? false : '');
+          initial[p.slot][f.id] = p.existing_response?.[f.id] ?? (f.field_type === 'checkbox' ? null : '');
         });
       });
       setFormData(initial);
@@ -228,9 +228,15 @@ export default function CustomForm() {
         );
       case 'checkbox':
         return (
-          <div className="flex items-center gap-2">
-            <Checkbox checked={!!value} onCheckedChange={onChange} disabled={disabled} />
-            <span className="text-sm">Yes</span>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox checked={value === true} onCheckedChange={() => onChange(true)} disabled={disabled} />
+              <span className="text-sm">Yes</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox checked={value === false && value !== null} onCheckedChange={() => onChange(false)} disabled={disabled} />
+              <span className="text-sm">No</span>
+            </label>
           </div>
         );
       default:
