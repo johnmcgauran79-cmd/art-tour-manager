@@ -3,7 +3,7 @@ import Cropper, { Area, Point } from "react-easy-crop";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { ZoomIn, ZoomOut, RotateCw, Check, X } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCw, Check } from "lucide-react";
 
 interface ImageCropperProps {
   imageSrc: string;
@@ -134,16 +134,8 @@ export const ImageCropper = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="w-[calc(100vw-1rem)] max-w-lg p-0 overflow-hidden rounded-xl">
-        <DialogTitle className="px-4 py-3 text-center border-b bg-muted/30 font-medium text-sm flex items-center justify-between">
-          <span>Adjust Photo</span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={handleClose}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+        <DialogTitle className="px-4 py-3 text-center border-b bg-muted/30 font-medium text-sm">
+          Adjust Photo
         </DialogTitle>
 
         {/* Cropper Area */}

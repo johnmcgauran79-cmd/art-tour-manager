@@ -231,13 +231,7 @@ export const EditContactModal = ({ contact, open, onOpenChange, onContactUpdated
                   </AlertDialogContent>
                 </AlertDialog>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-              >
-                Close
-              </Button>
+              
             </div>
             </div>
           </div>

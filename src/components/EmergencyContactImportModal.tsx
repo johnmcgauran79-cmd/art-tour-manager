@@ -563,19 +563,14 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
       }
     }}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader className="flex flex-row items-start justify-between flex-shrink-0">
-          <div>
-            <DialogTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Import Emergency Contact Details
-            </DialogTitle>
-            <DialogDescription>
-              Upload a CSV file to bulk update emergency contact information for existing contacts.
-            </DialogDescription>
-          </div>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => onOpenChange(false)} disabled={isProcessing}>
-            <X className="h-4 w-4" />
-          </Button>
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Import Emergency Contact Details
+          </DialogTitle>
+          <DialogDescription>
+            Upload a CSV file to bulk update emergency contact information for existing contacts.
+          </DialogDescription>
         </DialogHeader>
 
         {/* Step Indicator */}

@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Printer, X, Mail } from "lucide-react";
+import { Download, Printer, Mail } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useState } from "react";
 import { EmailItineraryModal } from "./EmailItineraryModal";
@@ -85,15 +85,6 @@ export const ItineraryPDFViewer = ({
                 >
                   <Download className="h-4 w-4" />
                   Download PDF
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onOpenChange(false)}
-                  className="flex items-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  Close
                 </Button>
               </div>
             </DialogTitle>

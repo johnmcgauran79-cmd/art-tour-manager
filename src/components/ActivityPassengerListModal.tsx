@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer, Download, X } from "lucide-react";
+import { Printer, Download } from "lucide-react";
 import { useActivityPassengers } from "@/hooks/useActivityPassengers";
 import html2pdf from 'html2pdf.js';
 
@@ -160,9 +160,7 @@ export const ActivityPassengerListModal = ({
                 <Printer className="h-4 w-4 mr-2" />
                 Print
               </Button>
-              <Button onClick={() => onOpenChange(false)} size="sm" variant="ghost">
-                <X className="h-4 w-4" />
-              </Button>
+              
             </div>
           </DialogTitle>
         </DialogHeader>

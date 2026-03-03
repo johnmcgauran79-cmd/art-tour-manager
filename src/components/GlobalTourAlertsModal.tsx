@@ -162,22 +162,12 @@ export const GlobalTourAlertsModal = ({ open, onOpenChange }: GlobalTourAlertsMo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh]">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              All Tour Alerts
-              {unacknowledgedCount > 0 && (
-                <Badge variant="destructive">{unacknowledgedCount}</Badge>
-              )}
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onOpenChange(false)}
-              className="h-8 w-8 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            All Tour Alerts
+            {unacknowledgedCount > 0 && (
+              <Badge variant="destructive">{unacknowledgedCount}</Badge>
+            )}
+          </DialogTitle>
           <div className="flex items-center gap-2 pt-2">
             <Checkbox
               id="show-resolved"
