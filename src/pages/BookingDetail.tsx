@@ -36,6 +36,7 @@ import { SendWaiverRequestButton } from "@/components/SendWaiverRequestButton";
 import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
+import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -231,6 +232,24 @@ export default function BookingDetail() {
                   size="sm"
                 />
               )}
+              <SendCustomFormRequestButton
+                bookingId={booking.id}
+                tourId={booking.tour_id || ''}
+                tourName={tour?.name || 'Unknown Tour'}
+                size="sm"
+                leadPassenger={booking.customers ? {
+                  name: `${booking.customers.first_name} ${booking.customers.last_name}`,
+                  email: booking.customers.email || null,
+                } : undefined}
+                passenger2={booking.passenger_2 ? {
+                  name: `${booking.passenger_2.first_name} ${booking.passenger_2.last_name}`,
+                  email: booking.passenger_2.email || null,
+                } : null}
+                passenger3={booking.passenger_3 ? {
+                  name: `${booking.passenger_3.first_name} ${booking.passenger_3.last_name}`,
+                  email: booking.passenger_3.email || null,
+                } : null}
+              />
             </>
           )}
           
@@ -351,6 +370,23 @@ export default function BookingDetail() {
                     tourName={tour?.name || 'Unknown Tour'}
                   />
                 )}
+                <SendCustomFormRequestButton
+                  bookingId={booking.id}
+                  tourId={booking.tour_id || ''}
+                  tourName={tour?.name || 'Unknown Tour'}
+                  leadPassenger={booking.customers ? {
+                    name: `${booking.customers.first_name} ${booking.customers.last_name}`,
+                    email: booking.customers.email || null,
+                  } : undefined}
+                  passenger2={booking.passenger_2 ? {
+                    name: `${booking.passenger_2.first_name} ${booking.passenger_2.last_name}`,
+                    email: booking.passenger_2.email || null,
+                  } : null}
+                  passenger3={booking.passenger_3 ? {
+                    name: `${booking.passenger_3.first_name} ${booking.passenger_3.last_name}`,
+                    email: booking.passenger_3.email || null,
+                  } : null}
+                />
               </>
             )}
             
