@@ -197,7 +197,7 @@ export const TourOperationsReport = ({
                       <ChangedCell isChanged={isChanged(`${key}.end_time`)}>{formatTime(activity.end_time)}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.transport_mode`)}>
                         {activity.transport_mode ? (
-                          <Badge variant="outline" className="capitalize">{activity.transport_mode}</Badge>
+                          <Badge variant="outline" className="capitalize">{activity.transport_mode === 'train' ? 'Public Transport' : activity.transport_mode.replace(/_/g, ' ')}</Badge>
                         ) : '-'}
                       </ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.hospitality_inclusions`)} className="max-w-[250px]">
