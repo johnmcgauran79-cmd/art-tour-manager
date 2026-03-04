@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Activity } from "@/hooks/useActivities";
 import { JourneysEditor, Journey } from "./JourneysEditor";
+import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
 
 interface EditActivityModalProps {
   activity: Activity | null;
@@ -388,6 +389,13 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             <Label htmlFor="operations_notes">Operations Notes</Label>
             <Textarea id="operations_notes" value={formData.operations_notes} onChange={(e) => handleInputChange("operations_notes", e.target.value)} rows={3} />
           </div>
+
+          {/* Attachments */}
+          {activity && (
+            <div className="border-t pt-4">
+              <ActivityAttachmentsSection activityId={activity.id} />
+            </div>
+          )}
 
           <div className="flex justify-between pt-4 border-t">
             <Button type="button" variant="destructive" onClick={() => setDeleteDialogOpen(true)} disabled={deleteActivity.isPending}>
