@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useCustomForms, useCustomFormDetail, CustomFormField } from "@/hooks/useCustomForms";
 import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
@@ -193,6 +195,21 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const { form, fields, responses, updateForm, addField, updateField, deleteField } = useCustomFormDetail(formId);
   const { toast } = useToast();
 
+  // Query active bookings to calculate outstanding responses
+  const { data: tourBookings } = useQuery({
+    queryKey: ['tour-bookings-for-form', tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('id, passenger_count')
+        .eq('tour_id', tourId)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tourId,
+  });
+
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
@@ -221,6 +238,20 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [optionInput, setOptionInput] = useState('');
 
   if (!form) return null;
+
+  // Calculate outstanding (expected - received)
+  const expectedResponses = (() => {
+    if (!tourBookings) return 0;
+    if (form.response_mode === 'per_booking') {
+      return tourBookings.length;
+    }
+    // per_passenger: sum of passenger_count across all bookings
+    return tourBookings.reduce((sum, b) => sum + (b.passenger_count || 1), 0);
+  })();
+
+  // Count unique booking+slot combos that have responded
+  const uniqueResponses = new Set(responses.map(r => `${r.booking_id}_${r.passenger_slot}`)).size;
+  const outstanding = Math.max(0, expectedResponses - uniqueResponses);
 
   const handleAddField = () => {
     addField.mutate({
@@ -271,6 +302,9 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
             <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
               <Badge variant="outline" className="text-xs">{fields.length} fields</Badge>
               <Badge variant="outline" className="text-xs">{responses.length} responses</Badge>
+              {outstanding > 0 && (
+                <Badge variant="destructive" className="text-xs">{outstanding} outstanding</Badge>
+              )}
               <Badge variant={form.response_mode === 'per_passenger' ? 'default' : 'secondary'}>
                 {form.response_mode === 'per_passenger' ? <><Users className="h-3 w-3 mr-1" /> Per Pax</> : <><User className="h-3 w-3 mr-1" /> Per Booking</>}
               </Badge>
