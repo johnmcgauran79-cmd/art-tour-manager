@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +40,22 @@ export const TourPickupLocationsTab = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ name: "", pickup_time: "", details: "" });
   const [bulkSendOpen, setBulkSendOpen] = useState(false);
+
+  // Count bookings without a pickup selection
+  const { data: outstandingCount = 0 } = useQuery({
+    queryKey: ['pickup-outstanding', tourId],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('tour_id', tourId)
+        .is('selected_pickup_option_id', null)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!tourId && pickupLocationRequired,
+  });
 
   const handleToggle = (checked: boolean) => {
     updateTour.mutate({
@@ -117,10 +135,15 @@ export const TourPickupLocationsTab = ({
               Pickup Location Settings
             </CardTitle>
             {pickupLocationRequired && options.length > 0 && !isViewOnly && (
-              <Button onClick={() => setBulkSendOpen(true)} size="sm">
-                <Send className="h-4 w-4 mr-2" />
-                Send Pickup Requests
-              </Button>
+              <div className="flex items-center gap-2">
+                {outstandingCount > 0 && (
+                  <Badge variant="destructive" className="text-xs">{outstandingCount} outstanding</Badge>
+                )}
+                <Button onClick={() => setBulkSendOpen(true)} size="sm">
+                  <Send className="h-4 w-4 mr-2" />
+                  Send Pickup Requests
+                </Button>
+              </div>
             )}
           </div>
         </CardHeader>
