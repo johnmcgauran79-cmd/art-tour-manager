@@ -319,17 +319,17 @@ export const AddBookingModal = ({
       console.log('Booking created:', newBooking);
 
       // Integration trigger logic:
-      // - Host status: skip both Xero and Keap entirely
-      // - Complimentary status: skip Xero, trigger Keap (unless non-full-tour)
-      // - Non-full-tour (no whatsapp or no accommodation): skip both
-      // - Otherwise: trigger both (unless invoice_reference already provided for Xero)
+      // - Host: always skip Xero, always trigger Keap (they need tour updates)
+      // - Complimentary: always skip Xero, trigger Keap only if full-tour booking
+      // - Non-full-tour (no whatsapp or no accommodation): skip both Xero and Keap
+      // - All other statuses: trigger both (unless invoice_reference already provided for Xero)
       const status = formData.status;
       const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
       const isHost = status === 'host';
       const isComplimentary = status === 'complimentary';
 
       const shouldTriggerXero = !isHost && !isComplimentary && isFullTourBooking;
-      const shouldTriggerKeap = !isHost && isFullTourBooking;
+      const shouldTriggerKeap = isHost || isFullTourBooking;
 
       if (shouldTriggerXero) {
         if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {

@@ -140,8 +140,10 @@ Deno.serve(async (req) => {
       const tagId = parseInt(tour.keap_tag_id, 10);
 
     for (const booking of bookings) {
-        // Skip host bookings and non-full-tour bookings (no whatsapp or no accommodation)
-        if (booking.status === 'host' || booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
+        // Skip non-full-tour bookings (no whatsapp or no accommodation) — but always allow host bookings
+        const isHost = booking.status === 'host';
+        const isFullTourBooking = booking.whatsapp_group_comms !== false && booking.accommodation_required !== false;
+        if (!isHost && !isFullTourBooking) {
           console.log(`Skipping booking ${booking.id} — status: ${booking.status}, whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
           continue;
         }
