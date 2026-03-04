@@ -9,6 +9,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { JourneysEditor, Journey } from "./JourneysEditor";
+import { useUploadActivityAttachment } from "@/hooks/useActivityAttachments";
+import { Input as FileInput } from "@/components/ui/input";
+import { Paperclip, X } from "lucide-react";
 
 interface AddActivityModalProps {
   tourId: string;
@@ -46,6 +49,8 @@ const initialFormData = {
 export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated }: AddActivityModalProps) => {
   const [formData, setFormData] = useState(initialFormData);
   const [journeys, setJourneys] = useState<Journey[]>([]);
+  const [queuedFiles, setQueuedFiles] = useState<File[]>([]);
+  const uploadAttachment = useUploadActivityAttachment();
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -120,7 +125,18 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
 
       return activity;
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
+      // Upload queued files
+      if (queuedFiles.length > 0) {
+        for (const file of queuedFiles) {
+          try {
+            await uploadAttachment.mutateAsync({ activityId: data.id, file });
+          } catch (err) {
+            console.error('Error uploading queued file:', err);
+          }
+        }
+        setQueuedFiles([]);
+      }
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       queryClient.invalidateQueries({ queryKey: ['activities', tourId] });
       toast({ title: "Activity Added", description: "Activity has been successfully added to the tour." });
@@ -333,6 +349,50 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
           <div className="space-y-2">
             <Label htmlFor="operations_notes">Operations Notes</Label>
             <Textarea id="operations_notes" value={formData.operations_notes} onChange={(e) => handleInputChange("operations_notes", e.target.value)} rows={3} />
+          </div>
+
+          {/* Queued Attachments */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">
+                Attachments ({queuedFiles.length})
+              </h4>
+            </div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <FileInput
+                  id="add-activity-file"
+                  type="file"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setQueuedFiles(prev => [...prev, file]);
+                      e.target.value = '';
+                    }
+                  }}
+                  className="cursor-pointer"
+                />
+              </div>
+            </div>
+            {queuedFiles.length > 0 && (
+              <div className="space-y-1">
+                {queuedFiles.map((file, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 border rounded bg-background text-sm">
+                    <span className="truncate">{file.name}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setQueuedFiles(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground">Files will be uploaded when the activity is saved.</p>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
