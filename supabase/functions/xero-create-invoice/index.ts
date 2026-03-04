@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
       .from('bookings')
       .select(`
         id, passenger_count, status, invoice_reference, invoice_notes,
-        booking_notes, group_name, revenue, accommodation_required,
+        booking_notes, group_name, revenue, accommodation_required, whatsapp_group_comms,
         check_in_date, check_out_date, total_nights, tour_id, lead_passenger_id,
         passenger_2_name, passenger_3_name,
         passenger_2_id, passenger_3_id,
@@ -374,6 +374,14 @@ Deno.serve(async (req) => {
       console.error('Booking fetch error:', bookingError);
       return new Response(JSON.stringify({ error: 'Booking not found', details: bookingError?.message }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Server-side guard: skip non-full-tour bookings
+    if (booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
+      console.log(`Skipping Xero invoice — booking ${bookingId} has whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Non-full-tour booking' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

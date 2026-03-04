@@ -318,29 +318,37 @@ export const AddBookingModal = ({
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       console.log('Booking created:', newBooking);
 
-      // Only trigger Xero invoice creation if no invoice reference was manually provided
-      if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
-        supabase.functions.invoke('xero-create-invoice', {
-          body: { bookingId: newBooking.id }
+      // Only trigger Xero/Keap integrations for full-tour bookings
+      // Skip if WhatsApp group comms is off or accommodation not required (hosts, partial attendees, etc.)
+      const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
+
+      if (isFullTourBooking) {
+        // Only trigger Xero invoice creation if no invoice reference was manually provided
+        if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
+          supabase.functions.invoke('xero-create-invoice', {
+            body: { bookingId: newBooking.id }
+          }).then(res => {
+            if (res.error) console.error('Xero invoice error:', res.error);
+            else console.log('Xero invoice triggered:', res.data);
+          });
+        } else {
+          console.log('Skipping Xero invoice creation - invoice reference already provided:', formData.invoice_reference);
+        }
+
+        // Trigger Keap tag (fire-and-forget)
+        supabase.functions.invoke('keap-add-tag', {
+          body: {
+            contactEmail: selectedContact?.email,
+            bookingId: newBooking.id,
+            tourId: formData.tour_id
+          }
         }).then(res => {
-          if (res.error) console.error('Xero invoice error:', res.error);
-          else console.log('Xero invoice triggered:', res.data);
+          if (res.error) console.error('Keap tag error:', res.error);
+          else console.log('Keap tag triggered:', res.data);
         });
       } else {
-        console.log('Skipping Xero invoice creation - invoice reference already provided:', formData.invoice_reference);
+        console.log('Skipping Xero/Keap integrations - booking has whatsapp_group_comms:', formData.whatsapp_group_comms, 'accommodation_required:', formData.accommodation_required);
       }
-
-      // Trigger Keap tag (fire-and-forget)
-      supabase.functions.invoke('keap-add-tag', {
-        body: {
-          contactEmail: selectedContact?.email,
-          bookingId: newBooking.id,
-          tourId: formData.tour_id
-        }
-      }).then(res => {
-        if (res.error) console.error('Keap tag error:', res.error);
-        else console.log('Keap tag triggered:', res.data);
-      });
 
       
       // Save hotel allocations
