@@ -378,10 +378,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Server-side guard: skip non-full-tour bookings
-    if (booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
-      console.log(`Skipping Xero invoice — booking ${bookingId} has whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Non-full-tour booking' }), {
+    // Server-side guard: skip Xero invoice for host, complimentary, or non-full-tour bookings
+    const skipStatuses = ['host', 'complimentary'];
+    if (skipStatuses.includes(booking.status) || booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
+      console.log(`Skipping Xero invoice — booking ${bookingId} status: ${booking.status}, whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: skipStatuses.includes(booking.status) ? `Status is ${booking.status}` : 'Non-full-tour booking' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

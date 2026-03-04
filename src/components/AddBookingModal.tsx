@@ -318,12 +318,20 @@ export const AddBookingModal = ({
       const newBooking = await createBooking.mutateAsync(cleanedFormData);
       console.log('Booking created:', newBooking);
 
-      // Only trigger Xero/Keap integrations for full-tour bookings
-      // Skip if WhatsApp group comms is off or accommodation not required (hosts, partial attendees, etc.)
+      // Integration trigger logic:
+      // - Host status: skip both Xero and Keap entirely
+      // - Complimentary status: skip Xero, trigger Keap (unless non-full-tour)
+      // - Non-full-tour (no whatsapp or no accommodation): skip both
+      // - Otherwise: trigger both (unless invoice_reference already provided for Xero)
+      const status = formData.status;
       const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
+      const isHost = status === 'host';
+      const isComplimentary = status === 'complimentary';
 
-      if (isFullTourBooking) {
-        // Only trigger Xero invoice creation if no invoice reference was manually provided
+      const shouldTriggerXero = !isHost && !isComplimentary && isFullTourBooking;
+      const shouldTriggerKeap = !isHost && isFullTourBooking;
+
+      if (shouldTriggerXero) {
         if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
           supabase.functions.invoke('xero-create-invoice', {
             body: { bookingId: newBooking.id }
@@ -334,8 +342,11 @@ export const AddBookingModal = ({
         } else {
           console.log('Skipping Xero invoice creation - invoice reference already provided:', formData.invoice_reference);
         }
+      } else {
+        console.log('Skipping Xero invoice - status:', status, 'isFullTourBooking:', isFullTourBooking);
+      }
 
-        // Trigger Keap tag (fire-and-forget)
+      if (shouldTriggerKeap) {
         supabase.functions.invoke('keap-add-tag', {
           body: {
             contactEmail: selectedContact?.email,
@@ -347,7 +358,7 @@ export const AddBookingModal = ({
           else console.log('Keap tag triggered:', res.data);
         });
       } else {
-        console.log('Skipping Xero/Keap integrations - booking has whatsapp_group_comms:', formData.whatsapp_group_comms, 'accommodation_required:', formData.accommodation_required);
+        console.log('Skipping Keap tag - status:', status, 'isFullTourBooking:', isFullTourBooking);
       }
 
       

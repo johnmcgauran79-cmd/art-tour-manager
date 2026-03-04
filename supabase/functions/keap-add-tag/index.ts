@@ -147,6 +147,7 @@ Deno.serve(async (req) => {
         lead_passenger_id,
         passenger_2_id,
         passenger_3_id,
+        status,
         whatsapp_group_comms,
         accommodation_required,
         customers:lead_passenger_id (id, first_name, last_name, email),
@@ -165,10 +166,14 @@ Deno.serve(async (req) => {
     const tourName = tourResult.data.name;
     const existingKeapTagId = tourResult.data.keap_tag_id;
 
-    // Server-side guard: skip non-full-tour bookings
-    if (bookingResult.data?.whatsapp_group_comms === false || bookingResult.data?.accommodation_required === false) {
-      console.log(`Skipping Keap tag — booking ${bookingId} has whatsapp_group_comms: ${bookingResult.data.whatsapp_group_comms}, accommodation_required: ${bookingResult.data.accommodation_required}`);
-      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Non-full-tour booking' }), {
+    // Server-side guard: skip host bookings entirely, skip non-full-tour bookings
+    const bookingStatus = bookingResult.data?.status;
+    const isHost = bookingStatus === 'host';
+    const isFullTourBooking = bookingResult.data?.whatsapp_group_comms !== false && bookingResult.data?.accommodation_required !== false;
+
+    if (isHost || !isFullTourBooking) {
+      console.log(`Skipping Keap tag — booking ${bookingId} status: ${bookingStatus}, whatsapp_group_comms: ${bookingResult.data?.whatsapp_group_comms}, accommodation_required: ${bookingResult.data?.accommodation_required}`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: isHost ? 'Host booking' : 'Non-full-tour booking' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
