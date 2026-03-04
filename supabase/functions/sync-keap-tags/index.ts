@@ -122,6 +122,7 @@ Deno.serve(async (req) => {
           lead_passenger_id,
           passenger_2_id,
           passenger_3_id,
+          status,
           whatsapp_group_comms,
           accommodation_required,
           customers:lead_passenger_id (id, first_name, last_name, email, keap_contact_id),
@@ -139,9 +140,9 @@ Deno.serve(async (req) => {
       const tagId = parseInt(tour.keap_tag_id, 10);
 
     for (const booking of bookings) {
-        // Skip non-full-tour bookings (hosts, partial attendees, etc.)
-        if (booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
-          console.log(`Skipping booking ${booking.id} — whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
+        // Skip host bookings and non-full-tour bookings (no whatsapp or no accommodation)
+        if (booking.status === 'host' || booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
+          console.log(`Skipping booking ${booking.id} — status: ${booking.status}, whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
           continue;
         }
 
