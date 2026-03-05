@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Plus, Eye, Search } from "lucide-react";
+import { Plus, Eye, Search, Bell, FileCheck } from "lucide-react";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
+import { useTourAlerts } from "@/hooks/useTourAlerts";
+import { useTourDocumentAlerts } from "@/hooks/useTourDocumentAlerts";
 import { useHostAssignedTours } from "@/hooks/useTourHostAssignments";
 import { AddTourModal } from "@/components/AddTourModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
@@ -25,6 +27,30 @@ interface ToursTableProps {
   showOnlyActive?: boolean;
   onViewAll?: () => void;
 }
+
+// Small cell components to use hooks per-tour
+const TourAlertsCell = ({ tourId }: { tourId: string }) => {
+  const { unacknowledgedCount } = useTourAlerts(tourId, false);
+  if (unacknowledgedCount === 0) return <span className="text-muted-foreground">-</span>;
+  return (
+    <Badge variant="destructive" className="gap-1">
+      <Bell className="h-3 w-3" />
+      {unacknowledgedCount}
+    </Badge>
+  );
+};
+
+const TourDocumentsCell = ({ tourId }: { tourId: string }) => {
+  const { total, isLoading } = useTourDocumentAlerts(tourId);
+  if (isLoading) return <span className="text-muted-foreground">-</span>;
+  if (total === 0) return <span className="text-green-600">✓</span>;
+  return (
+    <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-800">
+      <FileCheck className="h-3 w-3" />
+      {total}
+    </Badge>
+  );
+};
 
 export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProps) => {
   const { navigateWithContext } = useNavigationContext();
@@ -229,8 +255,9 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                       <TableHead className="min-w-[150px]">Tour Name</TableHead>
                       <TableHead className="min-w-[120px]">Tour Host</TableHead>
                       <TableHead className="min-w-[100px]">Start Date</TableHead>
-                      <TableHead className="min-w-[120px]">Location</TableHead>
                       <TableHead className="min-w-[80px]">Total Pax</TableHead>
+                      <TableHead className="min-w-[70px]">Alerts</TableHead>
+                      <TableHead className="min-w-[70px]">Details</TableHead>
                       <TableHead className="min-w-[100px]">Status</TableHead>
                       <TableHead className="min-w-[150px]">Notes</TableHead>
                     </TableRow>
@@ -253,8 +280,13 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                           )}
                         </TableCell>
                         <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
-                        <TableCell>{tour.location || '-'}</TableCell>
                         <TableCell>{getTotalPassengers(tour.id)}</TableCell>
+                        <TableCell>
+                          <TourAlertsCell tourId={tour.id} />
+                        </TableCell>
+                        <TableCell>
+                          <TourDocumentsCell tourId={tour.id} />
+                        </TableCell>
                         <TableCell>
                           <Badge className={getTourStatusColor(tour.status)}>
                             {formatStatusText(tour.status)}
