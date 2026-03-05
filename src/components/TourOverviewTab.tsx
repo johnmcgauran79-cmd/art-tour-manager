@@ -3,11 +3,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus, Link2 } from "lucide-react";
+import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus, Link2, FileCheck } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
+import { useTourDocumentAlerts } from "@/hooks/useTourDocumentAlerts";
 import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
 import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 import { PaymentStatusModal } from "@/components/PaymentStatusModal";
@@ -63,6 +64,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const { data: hostUsers = [] } = useHostUsers();
   const { unacknowledgedCount } = useTourAlerts(tour.id);
   const { userRole } = usePermissions();
+  const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tour.id);
   const isHost = userRole === 'host';
 
   // Calculate booking statistics for this tour
@@ -271,6 +273,39 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                   {unacknowledgedCount}
                 </div>
                 <p className="text-xs text-muted-foreground">pending alerts</p>
+              </CardContent>
+            </Card>
+
+            <Card className={`border-2 cursor-pointer hover:shadow-md transition-all duration-200 ${
+              documentAlertsTotal > 0 
+                ? 'border-amber-200 hover:bg-amber-50 hover:border-amber-300' 
+                : 'border-green-200 hover:bg-green-50 hover:border-green-300'
+            }`}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Documents Alert</CardTitle>
+                <div className="relative">
+                  <FileCheck className={`h-4 w-4 ${documentAlertsTotal > 0 ? 'text-amber-600' : 'text-green-600'}`} />
+                  {documentAlertsTotal > 0 && (
+                    <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                      {documentAlertsTotal}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${documentAlertsTotal > 0 ? 'text-amber-600' : 'text-green-600'}`}>
+                  {documentAlertsTotal > 0 ? documentAlertsTotal : '✓'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {documentAlertsTotal === 0 ? 'All complete' : 'outstanding items'}
+                </p>
+                {documentAlertsTotal > 0 && (
+                  <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+                    {missingPassports > 0 && <p>{missingPassports} passport{missingPassports !== 1 ? 's' : ''} missing</p>}
+                    {missingPickups > 0 && <p>{missingPickups} pickup{missingPickups !== 1 ? 's' : ''} missing</p>}
+                    {missingForms > 0 && <p>{missingForms} form{missingForms !== 1 ? 's' : ''} missing</p>}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
