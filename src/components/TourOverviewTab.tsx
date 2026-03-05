@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus, Link2, FileCheck } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
@@ -59,6 +60,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
   const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);
   const [hostAssignmentModalOpen, setHostAssignmentModalOpen] = useState(false);
+  const [documentAlertsModalOpen, setDocumentAlertsModalOpen] = useState(false);
   const { isAdminOrManager } = useIsAdminOrManager();
   const { data: hostAssignments = [] } = useTourHostAssignments(tour.id);
   const { data: hostUsers = [] } = useHostUsers();
@@ -185,7 +187,7 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
       />
 
       {/* Capacity and Waitlist Information */}
-      <div className={`grid grid-cols-1 gap-4 ${isHost ? 'md:grid-cols-2' : 'md:grid-cols-5 lg:grid-cols-6'}`}>
+      <div className={`grid grid-cols-1 gap-3 ${isHost ? 'md:grid-cols-2' : 'md:grid-cols-4 lg:grid-cols-8'}`}>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Confirmed Passengers</CardTitle>
@@ -276,13 +278,16 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
               </CardContent>
             </Card>
 
-            <Card className={`border-2 cursor-pointer hover:shadow-md transition-all duration-200 ${
-              documentAlertsTotal > 0 
-                ? 'border-amber-200 hover:bg-amber-50 hover:border-amber-300' 
-                : 'border-green-200 hover:bg-green-50 hover:border-green-300'
-            }`}>
+            <Card 
+              className={`border-2 cursor-pointer hover:shadow-md transition-all duration-200 ${
+                documentAlertsTotal > 0 
+                  ? 'border-amber-200 hover:bg-amber-50 hover:border-amber-300' 
+                  : 'border-green-200 hover:bg-green-50 hover:border-green-300'
+              }`}
+              onClick={() => setDocumentAlertsModalOpen(true)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Documents Alert</CardTitle>
+                <CardTitle className="text-sm font-medium">Documents</CardTitle>
                 <div className="relative">
                   <FileCheck className={`h-4 w-4 ${documentAlertsTotal > 0 ? 'text-amber-600' : 'text-green-600'}`} />
                   {documentAlertsTotal > 0 && (
@@ -299,13 +304,6 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
                 <p className="text-xs text-muted-foreground">
                   {documentAlertsTotal === 0 ? 'All complete' : 'outstanding items'}
                 </p>
-                {documentAlertsTotal > 0 && (
-                  <div className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-                    {missingPassports > 0 && <p>{missingPassports} passport{missingPassports !== 1 ? 's' : ''} missing</p>}
-                    {missingPickups > 0 && <p>{missingPickups} pickup{missingPickups !== 1 ? 's' : ''} missing</p>}
-                    {missingForms > 0 && <p>{missingForms} form{missingForms !== 1 ? 's' : ''} missing</p>}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -496,6 +494,41 @@ export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
         bookings={tourBookings as any}
         activeLevel={activeLevel}
       />
+
+      <Dialog open={documentAlertsModalOpen} onOpenChange={setDocumentAlertsModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Outstanding Documents</DialogTitle>
+          </DialogHeader>
+          {documentAlertsTotal === 0 ? (
+            <p className="text-sm text-muted-foreground">All documents are complete. ✓</p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">{documentAlertsTotal} outstanding item{documentAlertsTotal !== 1 ? 's' : ''}</p>
+              <div className="space-y-2">
+                {missingPassports > 0 && (
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <span className="text-sm font-medium">Passports missing</span>
+                    <Badge variant="destructive">{missingPassports}</Badge>
+                  </div>
+                )}
+                {missingPickups > 0 && (
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <span className="text-sm font-medium">Pickups missing</span>
+                    <Badge variant="destructive">{missingPickups}</Badge>
+                  </div>
+                )}
+                {missingForms > 0 && (
+                  <div className="flex items-center justify-between rounded-lg border p-3">
+                    <span className="text-sm font-medium">Form responses missing</span>
+                    <Badge variant="destructive">{missingForms}</Badge>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
