@@ -1,0 +1,157 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+interface DocumentAlertCounts {
+  missingPassports: number;
+  missingPickups: number;
+  missingForms: number;
+  total: number;
+  isLoading: boolean;
+}
+
+export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
+  // Get bookings for this tour (non-cancelled, non-waitlisted)
+  const { data: bookings, isLoading: bookingsLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-bookings", tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("id, passenger_count, selected_pickup_option_id, lead_passenger_id, passenger_2_id, passenger_3_id")
+        .eq("tour_id", tourId)
+        .not("status", "in", '("cancelled","waitlisted")');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tourId,
+    staleTime: 60000,
+  });
+
+  // Get tour settings
+  const { data: tour, isLoading: tourLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-tour", tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tours")
+        .select("travel_documents_required, pickup_location_required")
+        .eq("id", tourId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!tourId,
+    staleTime: 60000,
+  });
+
+  // Get travel docs submitted
+  const { data: travelDocs, isLoading: docsLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-traveldocs", tourId],
+    queryFn: async () => {
+      if (!bookings || bookings.length === 0) return [];
+      const bookingIds = bookings.map(b => b.id);
+      const { data, error } = await supabase
+        .from("booking_travel_docs")
+        .select("booking_id, passenger_slot, passport_number, passport_first_name, passport_surname")
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!bookings && bookings.length > 0 && !!tour?.travel_documents_required,
+    staleTime: 60000,
+  });
+
+  // Get custom forms for this tour
+  const { data: forms, isLoading: formsLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-forms", tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tour_custom_forms")
+        .select("id, response_mode")
+        .eq("tour_id", tourId)
+        .eq("is_published", true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!tourId,
+    staleTime: 60000,
+  });
+
+  // Get form responses
+  const { data: formResponses, isLoading: responsesLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-responses", tourId],
+    queryFn: async () => {
+      if (!forms || forms.length === 0 || !bookings || bookings.length === 0) return [];
+      const formIds = forms.map(f => f.id);
+      const bookingIds = bookings.map(b => b.id);
+      const { data, error } = await supabase
+        .from("tour_custom_form_responses")
+        .select("form_id, booking_id, passenger_slot")
+        .in("form_id", formIds)
+        .in("booking_id", bookingIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!forms && forms.length > 0 && !!bookings && bookings.length > 0,
+    staleTime: 60000,
+  });
+
+  const isLoading = bookingsLoading || tourLoading || docsLoading || formsLoading || responsesLoading;
+
+  if (isLoading || !bookings || !tour) {
+    return { missingPassports: 0, missingPickups: 0, missingForms: 0, total: 0, isLoading };
+  }
+
+  // Calculate missing passports
+  let missingPassports = 0;
+  if (tour.travel_documents_required) {
+    const docsMap = new Set(
+      (travelDocs || [])
+        .filter(d => d.passport_number || d.passport_first_name || d.passport_surname)
+        .map(d => `${d.booking_id}-${d.passenger_slot}`)
+    );
+    for (const booking of bookings) {
+      for (let slot = 1; slot <= booking.passenger_count; slot++) {
+        if (!docsMap.has(`${booking.id}-${slot}`)) {
+          missingPassports++;
+        }
+      }
+    }
+  }
+
+  // Calculate missing pickups
+  let missingPickups = 0;
+  if (tour.pickup_location_required) {
+    for (const booking of bookings) {
+      if (!booking.selected_pickup_option_id) {
+        missingPickups++;
+      }
+    }
+  }
+
+  // Calculate missing form responses
+  let missingForms = 0;
+  if (forms && forms.length > 0) {
+    const responseSet = new Set(
+      (formResponses || []).map(r => `${r.form_id}-${r.booking_id}-${r.passenger_slot}`)
+    );
+    for (const form of forms) {
+      for (const booking of bookings) {
+        if (form.response_mode === 'per_passenger') {
+          for (let slot = 1; slot <= booking.passenger_count; slot++) {
+            if (!responseSet.has(`${form.id}-${booking.id}-${slot}`)) {
+              missingForms++;
+            }
+          }
+        } else {
+          // per_booking - just need one response per booking
+          if (!responseSet.has(`${form.id}-${booking.id}-1`)) {
+            missingForms++;
+          }
+        }
+      }
+    }
+  }
+
+  const total = missingPassports + missingPickups + missingForms;
+
+  return { missingPassports, missingPickups, missingForms, total, isLoading };
+};

@@ -13,6 +13,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { GlobalTourAlertsModal } from "@/components/GlobalTourAlertsModal";
 import { TourAlertButton } from "./TourAlertButton";
+import { TourDocumentsAlertButton } from "./TourDocumentsAlertButton";
 
 
 const getDaysUntilTour = (startDate: string) => {
@@ -219,6 +220,7 @@ export const OperationsToursOverview = () => {
                         tourId={tour.id} 
                         onClick={(e) => handleAlertsClick(e, tour.id)}
                       />
+                      <TourDocumentsAlertButton tourId={tour.id} />
                     </div>
                       <div className="flex gap-4 text-xs">
                         <div className="text-center">
