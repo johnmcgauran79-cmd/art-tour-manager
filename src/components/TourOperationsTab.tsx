@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, FileCheck } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, FileCheck, ClipboardCheck } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -20,6 +20,8 @@ import { HostFlightsSection } from "@/components/HostFlightsSection";
 import { usePassportReport } from "@/hooks/usePassportReport";
 import { useTourDocumentAlerts } from "@/hooks/useTourDocumentAlerts";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { FormResponsesModal } from "@/components/operations/FormResponsesModal";
+import { useCustomForms } from "@/hooks/useCustomForms";
 
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
@@ -47,6 +49,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [documentAlertsModalOpen, setDocumentAlertsModalOpen] = useState(false);
+  const [formResponsesModalOpen, setFormResponsesModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
@@ -58,6 +61,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const { data: passportData } = usePassportReport(travelDocumentsRequired ? tourId : '');
   const passportMissingCount = travelDocumentsRequired ? (passportData?.filter(p => !p.hasDocuments).length || 0) : 0;
   const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tourId);
+  const { forms: customForms } = useCustomForms(tourId);
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -416,6 +420,29 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 <p className="text-xs text-gray-600">{pickupPendingCount > 0 ? `${pickupPendingCount} pending` : 'All selected'}</p>
               </div>
             )}
+            {customForms.length > 0 && (
+              <div 
+                className={`text-center p-3 border-2 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 group ${
+                  missingForms > 0 
+                    ? 'border-rose-200 hover:bg-rose-50 hover:border-rose-300' 
+                    : 'border-green-200 hover:bg-green-50 hover:border-green-300'
+                }`}
+                onClick={() => setFormResponsesModalOpen(true)}
+              >
+                <div className={`p-2 rounded-full mx-auto mb-2 w-fit transition-colors relative ${
+                  missingForms > 0 ? 'bg-rose-100 group-hover:bg-rose-200' : 'bg-green-100 group-hover:bg-green-200'
+                }`}>
+                  <ClipboardCheck className={`h-5 w-5 ${missingForms > 0 ? 'text-rose-600' : 'text-green-600'}`} />
+                  {missingForms > 0 && (
+                    <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                      {missingForms}
+                    </Badge>
+                  )}
+                </div>
+                <p className={`font-semibold text-gray-800 text-xs ${missingForms > 0 ? 'group-hover:text-rose-700' : 'group-hover:text-green-700'}`}>Form Responses</p>
+                <p className="text-xs text-gray-600">{missingForms > 0 ? `${missingForms} outstanding` : 'All complete'}</p>
+              </div>
+            )}
           </div>
           <div className="mt-4 p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
             <p className="text-xs text-brand-navy">
@@ -645,6 +672,13 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
           )}
         </DialogContent>
       </Dialog>
+
+      <FormResponsesModal
+        open={formResponsesModalOpen}
+        onOpenChange={setFormResponsesModalOpen}
+        tourId={tourId}
+        tourName={tourName}
+      />
     </div>
   );
 };
