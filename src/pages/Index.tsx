@@ -150,6 +150,7 @@ const Index = () => {
             <RecentBookingsWidget />
             <div className="w-full md:w-1/3 space-y-6">
               <StatusAlertWidget />
+              <InformationMissingWidget />
               <EmailIssuesWidget />
               <PendingEmailApprovalsWidget />
             </div>
