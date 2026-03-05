@@ -58,6 +58,10 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     const val = response.response_data[field.id];
     if (val === undefined || val === null) return '';
     if (field.field_type === 'checkbox') return val ? 'Yes' : 'No';
+    if (field.field_type === 'date' && typeof val === 'string' && val.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      const [y, m, d] = val.split('-');
+      return `${d}/${m}/${y}`;
+    }
     return String(val);
   };
 
