@@ -201,7 +201,7 @@ export function TourHostAssignmentModal({
                         .filter(t => t.status !== 'past')
                         .map((tour) => (
                           <SelectItem key={tour.id} value={tour.id}>
-                            {tour.name} ({new Date(tour.start_date).toLocaleDateString()})
+                            {tour.name} ({new Date(tour.start_date).toLocaleDateString('en-AU')})
                           </SelectItem>
                         ))}
                     </SelectContent>
