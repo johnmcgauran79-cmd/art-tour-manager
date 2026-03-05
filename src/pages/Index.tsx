@@ -20,6 +20,7 @@ import { DashboardQuickActions } from "@/components/dashboard/DashboardQuickActi
 import { DashboardMetrics } from "@/components/DashboardMetrics";
 import { RecentBookingsWidget } from "@/components/dashboard/RecentBookingsWidget";
 import { StatusAlertWidget } from "@/components/dashboard/StatusAlertWidget";
+import { InformationMissingWidget } from "@/components/dashboard/InformationMissingWidget";
 import { PendingEmailApprovalsWidget } from "@/components/dashboard/PendingEmailApprovalsWidget";
 import { EmailIssuesWidget } from "@/components/dashboard/EmailIssuesWidget";
 import { AlertsWidget } from "@/components/dashboard/AlertsWidget";
