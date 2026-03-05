@@ -136,7 +136,7 @@ export const EmailIssuesModal = ({
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-right text-sm text-muted-foreground whitespace-nowrap">
-                        {format(new Date(issue.sent_at), 'MMM d, yyyy')}
+                        {format(new Date(issue.sent_at), 'd MMM yyyy')}
                         <br />
                         {format(new Date(issue.sent_at), 'h:mm a')}
                       </div>

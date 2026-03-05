@@ -52,7 +52,7 @@ export const PendingEmailApprovalsWidget = () => {
                   </Badge>
                   {approval.tour?.start_date && (
                     <span className="text-xs text-muted-foreground">
-                      Tour: {format(new Date(approval.tour.start_date), 'MMM d, yyyy')}
+                      Tour: {format(new Date(approval.tour.start_date), 'd MMM yyyy')}
                     </span>
                   )}
                 </div>
