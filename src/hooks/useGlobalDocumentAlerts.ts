@@ -53,8 +53,8 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
 
       const bookingIds = bookings.map(b => b.id);
 
-      // Parallel queries
-      const [travelDocsRes, formsRes, formResponsesRes] = await Promise.all([
+      // Parallel queries - including access tokens to check what's been requested
+      const [travelDocsRes, formsRes, formResponsesRes, tokensRes] = await Promise.all([
         supabase
           .from("booking_travel_docs")
           .select("booking_id, passenger_slot, passport_number, passport_first_name, passport_surname")
@@ -68,11 +68,29 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
           .from("tour_custom_form_responses")
           .select("form_id, booking_id, passenger_slot")
           .in("booking_id", bookingIds),
+        supabase
+          .from("customer_access_tokens")
+          .select("booking_id, purpose, form_id")
+          .in("booking_id", bookingIds)
+          .in("purpose", ["travel_documents", "pickup", "custom_form"]),
       ]);
 
       const travelDocs = travelDocsRes.data || [];
       const forms = formsRes.data || [];
       const formResponses = formResponsesRes.data || [];
+      const tokens = tokensRes.data || [];
+
+      // Build sets of bookings that have been sent requests
+      const passportRequestedBookings = new Set(
+        tokens.filter(t => t.purpose === "travel_documents").map(t => t.booking_id)
+      );
+      const pickupRequestedBookings = new Set(
+        tokens.filter(t => t.purpose === "pickup").map(t => t.booking_id)
+      );
+      // For forms, track which booking+form combos have been requested
+      const formRequestedSet = new Set(
+        tokens.filter(t => t.purpose === "custom_form" && t.form_id).map(t => `${t.form_id}-${t.booking_id}`)
+      );
 
       const docsSet = new Set(
         travelDocs
@@ -106,6 +124,8 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
 
         if (tour.travel_documents_required) {
           for (const b of tourBookings) {
+            // Only count if a passport request was sent for this booking
+            if (!passportRequestedBookings.has(b.id)) continue;
             for (let slot = 1; slot <= b.passenger_count; slot++) {
               if (!docsSet.has(`${b.id}-${slot}`)) missingPassports++;
             }
@@ -114,6 +134,8 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
 
         if (tour.pickup_location_required) {
           for (const b of tourBookings) {
+            // Only count if a pickup request was sent for this booking
+            if (!pickupRequestedBookings.has(b.id)) continue;
             if (!b.selected_pickup_option_id) missingPickups++;
           }
         }
@@ -121,6 +143,8 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
         const tourForms = formsByTour.get(tour.id) || [];
         for (const form of tourForms) {
           for (const b of tourBookings) {
+            // Only count if a form request was sent for this booking+form
+            if (!formRequestedSet.has(`${form.id}-${b.id}`)) continue;
             if (form.response_mode === 'per_passenger') {
               for (let slot = 1; slot <= b.passenger_count; slot++) {
                 if (!responseSet.has(`${form.id}-${b.id}-${slot}`)) missingForms++;
