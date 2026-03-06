@@ -94,13 +94,42 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     staleTime: 60000,
   });
 
-  const isLoading = bookingsLoading || tourLoading || docsLoading || formsLoading || responsesLoading;
+  // Get access tokens to check what's been requested
+  const { data: tokens, isLoading: tokensLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-tokens", tourId],
+    queryFn: async () => {
+      if (!bookings || bookings.length === 0) return [];
+      const bookingIds = bookings.map(b => b.id);
+      const { data, error } = await supabase
+        .from("customer_access_tokens")
+        .select("booking_id, purpose, form_id")
+        .in("booking_id", bookingIds)
+        .in("purpose", ["travel_documents", "pickup", "custom_form"]);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!bookings && bookings.length > 0,
+    staleTime: 60000,
+  });
+
+  const isLoading = bookingsLoading || tourLoading || docsLoading || formsLoading || responsesLoading || tokensLoading;
 
   if (isLoading || !bookings || !tour) {
     return { missingPassports: 0, missingPickups: 0, missingForms: 0, total: 0, isLoading };
   }
 
-  // Calculate missing passports
+  // Build sets of bookings that have been sent requests
+  const passportRequestedBookings = new Set(
+    (tokens || []).filter(t => t.purpose === "travel_documents").map(t => t.booking_id)
+  );
+  const pickupRequestedBookings = new Set(
+    (tokens || []).filter(t => t.purpose === "pickup").map(t => t.booking_id)
+  );
+  const formRequestedSet = new Set(
+    (tokens || []).filter(t => t.purpose === "custom_form" && t.form_id).map(t => `${t.form_id}-${t.booking_id}`)
+  );
+
+  // Calculate missing passports (only where requested)
   let missingPassports = 0;
   if (tour.travel_documents_required) {
     const docsMap = new Set(
@@ -109,6 +138,7 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
         .map(d => `${d.booking_id}-${d.passenger_slot}`)
     );
     for (const booking of bookings) {
+      if (!passportRequestedBookings.has(booking.id)) continue;
       for (let slot = 1; slot <= booking.passenger_count; slot++) {
         if (!docsMap.has(`${booking.id}-${slot}`)) {
           missingPassports++;
@@ -117,17 +147,18 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     }
   }
 
-  // Calculate missing pickups
+  // Calculate missing pickups (only where requested)
   let missingPickups = 0;
   if (tour.pickup_location_required) {
     for (const booking of bookings) {
+      if (!pickupRequestedBookings.has(booking.id)) continue;
       if (!booking.selected_pickup_option_id) {
         missingPickups++;
       }
     }
   }
 
-  // Calculate missing form responses
+  // Calculate missing form responses (only where requested)
   let missingForms = 0;
   if (forms && forms.length > 0) {
     const responseSet = new Set(
@@ -135,6 +166,7 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     );
     for (const form of forms) {
       for (const booking of bookings) {
+        if (!formRequestedSet.has(`${form.id}-${booking.id}`)) continue;
         if (form.response_mode === 'per_passenger') {
           for (let slot = 1; slot <= booking.passenger_count; slot++) {
             if (!responseSet.has(`${form.id}-${booking.id}-${slot}`)) {
@@ -142,7 +174,6 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
             }
           }
         } else {
-          // per_booking - just need one response per booking
           if (!responseSet.has(`${form.id}-${booking.id}-1`)) {
             missingForms++;
           }
