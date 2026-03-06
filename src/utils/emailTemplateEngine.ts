@@ -289,6 +289,8 @@ export interface EmailMergeData {
   tour_requires_travel_docs?: boolean;
   tour_requires_pickup?: boolean;
   has_pickup_selection?: boolean;
+  missing_pickup_selection?: boolean;
+  needs_passport_submission?: boolean;
 
   // Pickup location fields
   pickup_location_name?: string;
@@ -657,6 +659,8 @@ export class EmailTemplateEngine {
       tour_requires_travel_docs: !!tour.travel_documents_required,
       tour_requires_pickup: !!tour.pickup_location_required,
       has_pickup_selection: !!booking.selected_pickup_option,
+      missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
+      needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient
 
       // Pickup location fields
       pickup_location_name: booking.selected_pickup_option?.name || '',
