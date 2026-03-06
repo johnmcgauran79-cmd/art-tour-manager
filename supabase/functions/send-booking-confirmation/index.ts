@@ -776,6 +776,8 @@ const handler = async (req: Request): Promise<Response> => {
       tour_requires_travel_docs: !!booking.tours?.travel_documents_required,
       tour_requires_pickup: tourRequiresPickup,
       has_pickup_selection: hasPickupSelection,
+      missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
+      needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
       hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
         hotel_name: hb.hotels?.name || '',
@@ -1001,6 +1003,7 @@ const handler = async (req: Request): Promise<Response> => {
         nationality: passengerDocs?.nationality || '',
         date_of_birth: formatDate(passengerDocs?.date_of_birth),
         has_passport_details: passengerHasPassportDetails,
+        needs_passport_submission: !!booking.tours?.travel_documents_required && !passengerHasPassportDetails,
         existing_passport_details: passengerExistingPassportDetails,
 
         customer: {

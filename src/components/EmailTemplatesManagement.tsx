@@ -129,9 +129,14 @@ const MERGE_FIELDS = {
     '--- Tour Conditions ---',
     '{{#tour_requires_travel_docs}} ... {{/tour_requires_travel_docs}}',
     '{{^tour_requires_travel_docs}} ... {{/tour_requires_travel_docs}}',
+    '{{#tour_requires_pickup}} ... {{/tour_requires_pickup}}',
     '--- Passport Conditions ---',
     '{{#has_passport_details}} ... {{/has_passport_details}}',
     '{{^has_passport_details}} ... {{/has_passport_details}}',
+    '{{#needs_passport_submission}} ... {{/needs_passport_submission}}',
+    '--- Pickup Conditions ---',
+    '{{#has_pickup_selection}} ... {{/has_pickup_selection}}',
+    '{{#missing_pickup_selection}} ... {{/missing_pickup_selection}}',
   ]
 };
 
