@@ -250,6 +250,28 @@ async function buildLineItems(
     }
   }
 
+  // Payment Schedule line (description only, no amount)
+  const formatScheduleDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  const scheduleLines: string[] = ['PAYMENT SCHEDULE', ''];
+  if (tour.deposit_required) {
+    scheduleLines.push(`$${Number(tour.deposit_required).toLocaleString()} deposit per person`);
+  }
+  if (tour.instalment_required && tour.instalment_amount) {
+    const instalmentDateStr = tour.instalment_date ? ` due ${formatScheduleDate(tour.instalment_date)}` : '';
+    scheduleLines.push(`$${Number(tour.instalment_amount).toLocaleString()} instalment per person${instalmentDateStr}`);
+  }
+  if (tour.final_payment_date) {
+    scheduleLines.push(`FINAL PAYMENT DUE ${formatScheduleDate(tour.final_payment_date)}`);
+  }
+
+  if (scheduleLines.length > 2) {
+    lineItems.push({ Description: scheduleLines.join('\n'), Quantity: 1, UnitAmount: 0 });
+  }
+
   return lineItems;
 }
 
