@@ -39,16 +39,20 @@ export const ItineraryPDFViewer = ({
   const handleDownload = () => {
     const element = document.createElement('div');
     element.innerHTML = htmlContent;
+    document.body.appendChild(element);
     
     const opt = {
-      margin: 1,
+      margin: [0.5, 0.5, 0.5, 0.5],
       filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' as const }
+      image: { type: 'png' as const, quality: 1 },
+      html2canvas: { scale: 3, useCORS: true, letterRendering: true, logging: false },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set(opt).from(element).save().then(() => {
+      document.body.removeChild(element);
+    });
   };
 
   return (
