@@ -363,7 +363,8 @@ Deno.serve(async (req) => {
         tours:tour_id (
           id, name, start_date, end_date,
           price_single, price_double, price_twin,
-          xero_product_id, xero_reference, tour_type
+          xero_product_id, xero_reference, tour_type,
+          deposit_required, instalment_required, instalment_amount, instalment_date, final_payment_date
         ),
         hotel_bookings (id, bedding, nights, check_in_date, check_out_date, hotel_id)
       `)
