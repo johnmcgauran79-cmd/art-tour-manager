@@ -42,7 +42,7 @@ export const ItineraryPDFViewer = ({
     document.body.appendChild(element);
     
     const opt = {
-      margin: [0.5, 0.5, 0.5, 0.5],
+      margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
       filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`,
       image: { type: 'png' as const, quality: 1 },
       html2canvas: { scale: 3, useCORS: true, letterRendering: true, logging: false },
