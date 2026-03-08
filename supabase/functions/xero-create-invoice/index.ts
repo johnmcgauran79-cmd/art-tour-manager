@@ -250,6 +250,28 @@ async function buildLineItems(
     }
   }
 
+  // Payment Schedule line (description only, no amount)
+  const formatScheduleDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  };
+
+  const scheduleLines: string[] = ['PAYMENT SCHEDULE', ''];
+  if (tour.deposit_required) {
+    scheduleLines.push(`$${Number(tour.deposit_required).toLocaleString()} deposit per person`);
+  }
+  if (tour.instalment_required && tour.instalment_amount) {
+    const instalmentDateStr = tour.instalment_date ? ` due ${formatScheduleDate(tour.instalment_date)}` : '';
+    scheduleLines.push(`$${Number(tour.instalment_amount).toLocaleString()} instalment per person${instalmentDateStr}`);
+  }
+  if (tour.final_payment_date) {
+    scheduleLines.push(`FINAL PAYMENT DUE ${formatScheduleDate(tour.final_payment_date)}`);
+  }
+
+  if (scheduleLines.length > 2) {
+    lineItems.push({ Description: scheduleLines.join('\n'), Quantity: 1, UnitAmount: 0 });
+  }
+
   return lineItems;
 }
 
@@ -363,7 +385,8 @@ Deno.serve(async (req) => {
         tours:tour_id (
           id, name, start_date, end_date,
           price_single, price_double, price_twin,
-          xero_product_id, xero_reference, tour_type
+          xero_product_id, xero_reference, tour_type,
+          deposit_required, instalment_required, instalment_amount, instalment_date, final_payment_date
         ),
         hotel_bookings (id, bedding, nights, check_in_date, check_out_date, hotel_id)
       `)
