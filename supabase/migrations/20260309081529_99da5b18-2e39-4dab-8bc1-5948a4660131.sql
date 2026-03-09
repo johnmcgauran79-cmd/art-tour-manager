@@ -1,0 +1,1 @@
+ALTER TABLE public.activities ADD COLUMN dress_code text DEFAULT 'not_required';
