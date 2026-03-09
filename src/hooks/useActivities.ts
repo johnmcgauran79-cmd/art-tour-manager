@@ -35,6 +35,7 @@ export interface Activity {
   transport_email: string | null;
   driver_name: string | null;
   driver_phone: string | null;
+  dress_code: string | null;
   hospitality_inclusions: string | null;
   notes: string | null;
   operations_notes: string | null;

@@ -23,6 +23,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string | null
           depart_for_activity: string | null
+          dress_code: string | null
           driver_name: string | null
           driver_phone: string | null
           end_time: string | null
@@ -59,6 +60,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           depart_for_activity?: string | null
+          dress_code?: string | null
           driver_name?: string | null
           driver_phone?: string | null
           end_time?: string | null
@@ -95,6 +97,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string | null
           depart_for_activity?: string | null
+          dress_code?: string | null
           driver_name?: string | null
           driver_phone?: string | null
           end_time?: string | null

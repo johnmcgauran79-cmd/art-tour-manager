@@ -40,6 +40,7 @@ const initialFormData = {
   transport_email: "",
   driver_name: "",
   driver_phone: "",
+  dress_code: "not_required",
   hospitality_inclusions: "",
   notes: "",
   operations_notes: "",
@@ -83,6 +84,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
           transport_email: activityData.transport_email || null,
           driver_name: activityData.driver_name || null,
           driver_phone: activityData.driver_phone || null,
+          dress_code: activityData.dress_code || 'not_required',
           hospitality_inclusions: activityData.hospitality_inclusions || null,
           notes: activityData.notes || null,
           operations_notes: activityData.operations_notes || null,
@@ -270,6 +272,25 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
               <Label htmlFor="contact_email">Contact Email</Label>
               <Input id="contact_email" type="email" value={formData.contact_email} onChange={(e) => handleInputChange("contact_email", e.target.value)} />
             </div>
+          </div>
+
+          {/* Dress Code */}
+          <div className="space-y-2">
+            <Label htmlFor="dress_code">Dress Code</Label>
+            <Select value={formData.dress_code} onValueChange={(value) => handleInputChange("dress_code", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select dress code" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_required">Not Required</SelectItem>
+                <SelectItem value="casual">Casual</SelectItem>
+                <SelectItem value="smart_casual">Smart Casual</SelectItem>
+                <SelectItem value="casual_racewear">Casual Racewear (collared shirt, no jacket or tie required)</SelectItem>
+                <SelectItem value="members_racewear">Members Racewear (Jacket & Tie)</SelectItem>
+                <SelectItem value="black_tie">Black Tie</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Hospitality */}
