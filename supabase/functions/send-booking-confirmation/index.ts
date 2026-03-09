@@ -462,9 +462,9 @@ const handler = async (req: Request): Promise<Response> => {
     let travelDocsButton = '';
     
     if (shouldGenerateTravelDocsLink && booking.customers?.id) {
-      // Generate a travel docs token (72-hour expiry, booking-specific)
+      // Generate a travel docs token (7-day expiry, booking-specific)
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 72); // 72 hour expiry for travel docs
+      expiresAt.setHours(expiresAt.getHours() + 168); // 7-day expiry for travel docs
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
