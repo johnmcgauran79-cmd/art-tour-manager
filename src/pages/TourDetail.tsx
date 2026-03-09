@@ -411,7 +411,6 @@ export default function TourDetail() {
             initialReportType={initialReportType}
             onInitialReportHandled={() => setInitialReportType(null)}
           />
-          />
           <div className="mt-6">
             <TourAttachmentsSection tourId={tour.id} />
           </div>
