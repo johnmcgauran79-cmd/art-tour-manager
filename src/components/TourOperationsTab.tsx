@@ -34,9 +34,11 @@ interface TourOperationsTabProps {
   travelDocumentsRequired?: boolean;
   pickupLocationRequired?: boolean;
   onNavigate?: (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => void;
+  initialReportType?: 'passport' | 'pickup' | 'forms' | null;
+  onInitialReportHandled?: () => void;
 }
 
-export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate }: TourOperationsTabProps) => {
+export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate, initialReportType, onInitialReportHandled }: TourOperationsTabProps) => {
   const navigate = useNavigate();
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
@@ -62,6 +64,22 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const passportMissingCount = travelDocumentsRequired ? (passportData?.filter(p => !p.hasDocuments).length || 0) : 0;
   const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tourId);
   const { forms: customForms } = useCustomForms(tourId);
+
+  // Handle initial report type from parent (e.g., navigating from Overview tab)
+  useEffect(() => {
+    if (!initialReportType) return;
+    if (initialReportType === 'forms') {
+      setFormResponsesModalOpen(true);
+    } else if (initialReportType === 'passport') {
+      setSelectedReportType('passport');
+      setReportsModalOpen(true);
+    } else if (initialReportType === 'pickup') {
+      setSelectedReportType('pickup');
+      setReportsModalOpen(true);
+    }
+    onInitialReportHandled?.();
+  }, [initialReportType]);
+
 
   const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
@@ -647,22 +665,40 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
             <p className="text-sm text-muted-foreground">All documents are complete. ✓</p>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{documentAlertsTotal} outstanding item{documentAlertsTotal !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-muted-foreground">{documentAlertsTotal} outstanding item{documentAlertsTotal !== 1 ? 's' : ''}. Click to view report.</p>
               <div className="space-y-2">
                 {missingPassports > 0 && (
-                  <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div 
+                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      setDocumentAlertsModalOpen(false);
+                      handleReportClick('passport');
+                    }}
+                  >
                     <span className="text-sm font-medium">Passports missing</span>
                     <Badge variant="destructive">{missingPassports}</Badge>
                   </div>
                 )}
                 {missingPickups > 0 && (
-                  <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div 
+                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      setDocumentAlertsModalOpen(false);
+                      handleReportClick('pickup');
+                    }}
+                  >
                     <span className="text-sm font-medium">Pickups missing</span>
                     <Badge variant="destructive">{missingPickups}</Badge>
                   </div>
                 )}
                 {missingForms > 0 && (
-                  <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div 
+                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      setDocumentAlertsModalOpen(false);
+                      setFormResponsesModalOpen(true);
+                    }}
+                  >
                     <span className="text-sm font-medium">Form responses missing</span>
                     <Badge variant="destructive">{missingForms}</Badge>
                   </div>

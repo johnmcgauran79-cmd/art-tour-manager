@@ -62,6 +62,7 @@ export default function TourDetail() {
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "overview");
   const [allocationModalOpen, setAllocationModalOpen] = useState(false);
   const [newlyCreatedActivity, setNewlyCreatedActivity] = useState<{id: string, name: string} | null>(null);
+  const [initialReportType, setInitialReportType] = useState<'passport' | 'pickup' | 'forms' | null>(null);
 
   // Update tab when URL changes
   useEffect(() => {
@@ -309,7 +310,13 @@ export default function TourDetail() {
         </div>
 
         <TabsContent value="overview" className="space-y-4 mt-6">
-          {transformedTour && <TourOverviewTab tour={transformedTour} />}
+          {transformedTour && <TourOverviewTab 
+            tour={transformedTour} 
+            onNavigateToReport={(reportType) => {
+              setInitialReportType(reportType);
+              setCurrentTab('operations');
+            }}
+          />}
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-4 mt-6">
@@ -401,6 +408,8 @@ export default function TourDetail() {
             travelDocumentsRequired={tour.travel_documents_required}
             pickupLocationRequired={tour.pickup_location_required || false}
             onNavigate={handleNavigate}
+            initialReportType={initialReportType}
+            onInitialReportHandled={() => setInitialReportType(null)}
           />
           <div className="mt-6">
             <TourAttachmentsSection tourId={tour.id} />
