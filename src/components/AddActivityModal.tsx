@@ -40,6 +40,7 @@ const initialFormData = {
   transport_email: "",
   driver_name: "",
   driver_phone: "",
+  dress_code: "not_required",
   hospitality_inclusions: "",
   notes: "",
   operations_notes: "",
