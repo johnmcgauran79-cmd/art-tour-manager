@@ -135,6 +135,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           transport_email: activityData.transport_email || null,
           driver_name: activityData.driver_name || null,
           driver_phone: activityData.driver_phone || null,
+          dress_code: activityData.dress_code || 'not_required',
           hospitality_inclusions: activityData.hospitality_inclusions || null,
           notes: activityData.notes || null,
           operations_notes: activityData.operations_notes || null,
