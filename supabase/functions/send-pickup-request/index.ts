@@ -76,9 +76,9 @@ const handler = async (req: Request): Promise<Response> => {
     const passenger = booking.customers;
     const baseUrl = Deno.env.get("PUBLIC_SITE_URL") || Deno.env.get("SITE_URL") || "https://art-tour-manager.lovable.app";
 
-    // Create pickup token (72-hour expiry)
+    // Create pickup token (7-day expiry)
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 72);
+    expiresAt.setHours(expiresAt.getHours() + 168);
 
     const { data: tokenData, error: tokenError } = await supabase
       .from("customer_access_tokens")
