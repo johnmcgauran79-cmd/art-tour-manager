@@ -493,10 +493,34 @@ export default function BookingDetail() {
                 <InfoRow label="Group Name" value={booking.group_name} />
                 <InfoRow label="Booking Agent" value={booking.booking_agent} />
                 {tour?.pickup_location_required && (
-                  <InfoRow 
-                    label="Pickup Location" 
-                    value={selectedPickup ? `${selectedPickup.name}${selectedPickup.pickup_time ? ` (${selectedPickup.pickup_time})` : ''}` : 'Not selected'} 
-                  />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-muted-foreground">Pickup Location</span>
+                    <div className="flex items-center gap-2">
+                      {isAgent ? (
+                        <span className="text-sm">
+                          {selectedPickup ? `${selectedPickup.name}${selectedPickup.pickup_time ? ` (${selectedPickup.pickup_time})` : ''}` : 'Not selected'}
+                        </span>
+                      ) : (
+                        <select
+                          className="text-sm border rounded-md px-2 py-1 bg-background"
+                          value={booking.selected_pickup_option_id || ''}
+                          onChange={(e) => {
+                            updateBooking.mutate({
+                              id: booking.id,
+                              selected_pickup_option_id: e.target.value || null,
+                            });
+                          }}
+                        >
+                          <option value="">Not selected</option>
+                          {pickupOptions.map(opt => (
+                            <option key={opt.id} value={opt.id}>
+                              {opt.name}{opt.pickup_time ? ` (${opt.pickup_time})` : ''}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
 
