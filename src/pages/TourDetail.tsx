@@ -310,7 +310,13 @@ export default function TourDetail() {
         </div>
 
         <TabsContent value="overview" className="space-y-4 mt-6">
-          {transformedTour && <TourOverviewTab tour={transformedTour} />}
+          {transformedTour && <TourOverviewTab 
+            tour={transformedTour} 
+            onNavigateToReport={(reportType) => {
+              setInitialReportType(reportType);
+              setCurrentTab('operations');
+            }}
+          />}
         </TabsContent>
 
         <TabsContent value="bookings" className="space-y-4 mt-6">
