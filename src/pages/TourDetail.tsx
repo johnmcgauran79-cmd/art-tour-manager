@@ -287,10 +287,12 @@ export default function TourDetail() {
                 <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Activities</span>
               </TabsTrigger>
-              <TabsTrigger value="pickup" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <Bus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Pickup</span>
-              </TabsTrigger>
+              {tour.pickup_location_required && (
+                <TabsTrigger value="pickup" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <Bus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Pickup</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="hostsinfo" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Hosts Info</span>
