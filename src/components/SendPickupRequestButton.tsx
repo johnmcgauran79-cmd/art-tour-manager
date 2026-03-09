@@ -103,7 +103,7 @@ export const SendPickupRequestButton = ({
               The email contains a secure link for the passenger to select their preferred pickup location for <strong>{tourName}</strong>.
             </p>
             <p className="text-sm text-muted-foreground">
-              The link will expire in 72 hours.
+              The link will expire in 7 days.
             </p>
           </AlertDialogDescription>
         </AlertDialogHeader>

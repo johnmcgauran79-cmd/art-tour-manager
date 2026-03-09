@@ -201,7 +201,7 @@ const handler = async (req: Request): Promise<Response> => {
       <a href="${formLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">COMPLETE FORM</a>
     </div>
     ${perPassengerNote}
-    <p style="color: #666; font-size: 14px;">This link will expire in 72 hours. If you have any questions, please don't hesitate to contact us.</p>
+    <p style="color: #666; font-size: 14px;">This link will expire in 7 days. If you have any questions, please don't hesitate to contact us.</p>
   </div>
   <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
     <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>

@@ -148,7 +148,7 @@ export function SendProfileUpdateButton(props: SendProfileUpdateButtonProps) {
               requirements, medical conditions, and accessibility needs.
             </p>
             <p className="text-sm text-muted-foreground">
-              Links will expire in 72 hours and can be used multiple times.
+              Links will expire in 7 days and can be used multiple times.
             </p>
           </AlertDialogDescription>
         </AlertDialogHeader>

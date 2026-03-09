@@ -279,7 +279,7 @@ const handler = async (req: Request): Promise<Response> => {
               
               <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 20px 0;">
                 <p style="margin: 0; font-size: 14px; color: #2e7d32;">
-                  <strong>Note:</strong> This link will expire in 72 hours. You can make multiple updates within this timeframe.
+                  <strong>Note:</strong> This link will expire in 7 days. You can make multiple updates within this timeframe.
                 </p>
               </div>
               

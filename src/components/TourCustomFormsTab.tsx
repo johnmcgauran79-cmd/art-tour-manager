@@ -635,7 +635,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                     Hi Customer! {form.form_description || `Please fill in the details below for ${tourName}.`}
                   </CardDescription>
                   <div className="flex items-center justify-center gap-2 text-sm text-white/70 mt-2">
-                    <span>⏰ This link expires in 72 hours</span>
+                    <span>⏰ This link expires in 7 days</span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6 p-6">
