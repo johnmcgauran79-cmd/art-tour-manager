@@ -62,13 +62,19 @@ export default function TourDetail() {
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "overview");
   const [allocationModalOpen, setAllocationModalOpen] = useState(false);
   const [newlyCreatedActivity, setNewlyCreatedActivity] = useState<{id: string, name: string} | null>(null);
-  const [initialReportType, setInitialReportType] = useState<'passport' | 'pickup' | 'forms' | null>(null);
+  const [initialReportType, setInitialReportType] = useState<'passport' | 'pickup' | 'forms' | null>(
+    (searchParams.get('report') as 'passport' | 'pickup' | 'forms') || null
+  );
 
   // Update tab when URL changes
   useEffect(() => {
     const tabFromUrl = searchParams.get('tab');
     if (tabFromUrl) {
       setCurrentTab(tabFromUrl);
+    }
+    const reportFromUrl = searchParams.get('report') as 'passport' | 'pickup' | 'forms' | null;
+    if (reportFromUrl) {
+      setInitialReportType(reportFromUrl);
     }
   }, [searchParams]);
 
