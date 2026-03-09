@@ -81,6 +81,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   }, [initialReportType]);
 
 
+  const tourBookings = (allBookings || []).filter(booking => 
     booking.tour_id === tourId && 
     booking.status !== 'cancelled' && 
     booking.status !== 'waitlisted'
