@@ -62,6 +62,7 @@ export default function TourDetail() {
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "overview");
   const [allocationModalOpen, setAllocationModalOpen] = useState(false);
   const [newlyCreatedActivity, setNewlyCreatedActivity] = useState<{id: string, name: string} | null>(null);
+  const [initialReportType, setInitialReportType] = useState<'passport' | 'pickup' | 'forms' | null>(null);
 
   // Update tab when URL changes
   useEffect(() => {
