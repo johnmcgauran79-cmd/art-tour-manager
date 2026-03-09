@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const passenger of passengers) {
       try {
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 72);
+        expiresAt.setHours(expiresAt.getHours() + 168);
 
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
