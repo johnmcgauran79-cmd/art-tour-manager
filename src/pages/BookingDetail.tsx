@@ -646,7 +646,20 @@ export default function BookingDetail() {
           {tour?.travel_documents_required && (
             <TabsContent value="travel" className="space-y-4 mt-6">
               <div className="bg-card rounded-lg border p-6">
-                <h3 className="text-lg font-semibold mb-4">Passport Details</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold">Passport Details</h3>
+                  {!isAgent && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigateWithContext(`/bookings/${booking.id}/edit?tab=travel`)}
+                      className="gap-2"
+                    >
+                      <Edit className="h-4 w-4" />
+                      Edit Passport Details
+                    </Button>
+                  )}
+                </div>
                 <BookingTravelDocsDisplay
                   bookingId={booking.id}
                   passengerCount={booking.passenger_count}
