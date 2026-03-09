@@ -163,6 +163,23 @@ export const HostActivityViewModal = ({ activity, open, onOpenChange }: HostActi
             </div>
           )}
 
+          {/* Dress Code */}
+          {activity.dress_code && activity.dress_code !== 'not_required' && (
+            <div className="space-y-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Dress Code</h4>
+              <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
+                <p className="text-xs sm:text-sm font-medium">
+                  {activity.dress_code === 'casual' ? 'Casual' :
+                   activity.dress_code === 'smart_casual' ? 'Smart Casual' :
+                   activity.dress_code === 'casual_racewear' ? 'Casual Racewear (collared shirt, no jacket or tie required)' :
+                   activity.dress_code === 'members_racewear' ? 'Members Racewear (Jacket & Tie)' :
+                   activity.dress_code === 'black_tie' ? 'Black Tie' :
+                   activity.dress_code === 'other' ? 'Other' : activity.dress_code}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Hospitality Inclusions */}
           {activity.hospitality_inclusions && (
             <div className="space-y-1">

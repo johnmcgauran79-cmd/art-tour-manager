@@ -314,6 +314,25 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             </div>
           </div>
 
+          {/* Dress Code */}
+          <div className="space-y-2">
+            <Label htmlFor="dress_code">Dress Code</Label>
+            <Select value={formData.dress_code} onValueChange={(value) => handleInputChange("dress_code", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select dress code" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_required">Not Required</SelectItem>
+                <SelectItem value="casual">Casual</SelectItem>
+                <SelectItem value="smart_casual">Smart Casual</SelectItem>
+                <SelectItem value="casual_racewear">Casual Racewear (collared shirt, no jacket or tie required)</SelectItem>
+                <SelectItem value="members_racewear">Members Racewear (Jacket & Tie)</SelectItem>
+                <SelectItem value="black_tie">Black Tie</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Hospitality */}
           <div className="space-y-2">
             <Label htmlFor="hospitality_inclusions">Hospitality Inclusions</Label>
