@@ -34,9 +34,11 @@ interface TourOperationsTabProps {
   travelDocumentsRequired?: boolean;
   pickupLocationRequired?: boolean;
   onNavigate?: (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => void;
+  initialReportType?: 'passport' | 'pickup' | 'forms' | null;
+  onInitialReportHandled?: () => void;
 }
 
-export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate }: TourOperationsTabProps) => {
+export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate, initialReportType, onInitialReportHandled }: TourOperationsTabProps) => {
   const navigate = useNavigate();
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tourId);
