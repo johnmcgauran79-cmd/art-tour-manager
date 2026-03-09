@@ -408,6 +408,9 @@ export default function TourDetail() {
             travelDocumentsRequired={tour.travel_documents_required}
             pickupLocationRequired={tour.pickup_location_required || false}
             onNavigate={handleNavigate}
+            initialReportType={initialReportType}
+            onInitialReportHandled={() => setInitialReportType(null)}
+          />
           />
           <div className="mt-6">
             <TourAttachmentsSection tourId={tour.id} />
