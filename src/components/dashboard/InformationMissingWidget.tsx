@@ -122,8 +122,9 @@ export const InformationMissingWidget = () => {
               <button
                 key={tour.tourId}
                 onClick={() => {
+                  const reportParam = detailType === "passports" ? "passport" : detailType === "pickups" ? "pickup" : "forms";
                   setDetailType(null);
-                  navigate(`/tours/${tour.tourId}`);
+                  navigate(`/tours/${tour.tourId}?tab=operations&report=${reportParam}`);
                 }}
                 className="flex items-center justify-between w-full p-3 rounded-md border hover:bg-muted/50 transition-colors text-left"
               >
