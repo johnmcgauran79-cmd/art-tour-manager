@@ -76,9 +76,9 @@ const handler = async (req: Request): Promise<Response> => {
     const passenger = booking.customers;
     const baseUrl = Deno.env.get("PUBLIC_SITE_URL") || Deno.env.get("SITE_URL") || "https://art-tour-manager.lovable.app";
 
-    // Create pickup token (72-hour expiry)
+    // Create pickup token (7-day expiry)
     const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 72);
+    expiresAt.setHours(expiresAt.getHours() + 168);
 
     const { data: tokenData, error: tokenError } = await supabase
       .from("customer_access_tokens")
@@ -127,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
       <a href="${pickupLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PICKUP LOCATION</a>
     </div>
     
-    <p style="color: #666; font-size: 14px;">This link will expire in 72 hours. If you have any questions, please don't hesitate to contact us.</p>
+    <p style="color: #666; font-size: 14px;">This link will expire in 7 days. If you have any questions, please don't hesitate to contact us.</p>
   </div>
   
   <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">

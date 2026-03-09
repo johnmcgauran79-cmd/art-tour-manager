@@ -150,7 +150,7 @@ export function SendCustomFormRequestButton({
                   <li key={i}><strong>{p.name}</strong> ({p.email})</li>
                 ))}
               </ul>
-              <p className="text-sm text-muted-foreground">Each passenger will receive a unique link that expires in 72 hours.</p>
+              <p className="text-sm text-muted-foreground">Each passenger will receive a unique link that expires in 7 days.</p>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>

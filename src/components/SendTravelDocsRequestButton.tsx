@@ -154,7 +154,7 @@ export function SendTravelDocsRequestButton(props: SendTravelDocsRequestButtonPr
               date, nationality, and additional ID.
             </p>
             <p className="text-sm text-muted-foreground">
-              Links will expire in 72 hours. Passport data is automatically purged 30 days after the tour ends.
+              Links will expire in 7 days. Passport data is automatically purged 30 days after the tour ends.
             </p>
           </AlertDialogDescription>
         </AlertDialogHeader>
