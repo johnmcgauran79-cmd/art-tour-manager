@@ -52,9 +52,10 @@ interface TourOverviewTabProps {
     xeroProductId: string;
     xeroReference: string;
   };
+  onNavigateToReport?: (reportType: 'passport' | 'pickup' | 'forms') => void;
 }
 
-export const TourOverviewTab = ({ tour }: TourOverviewTabProps) => {
+export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabProps) => {
   const { data: allBookings } = useBookings();
   const { data: hotels } = useHotels(tour.id);
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
