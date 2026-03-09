@@ -65,7 +65,22 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tourId);
   const { forms: customForms } = useCustomForms(tourId);
 
-  const tourBookings = (allBookings || []).filter(booking => 
+  // Handle initial report type from parent (e.g., navigating from Overview tab)
+  useEffect(() => {
+    if (!initialReportType) return;
+    if (initialReportType === 'forms') {
+      setFormResponsesModalOpen(true);
+    } else if (initialReportType === 'passport') {
+      setSelectedReportType('passport');
+      setReportsModalOpen(true);
+    } else if (initialReportType === 'pickup') {
+      setSelectedReportType('pickup');
+      setReportsModalOpen(true);
+    }
+    onInitialReportHandled?.();
+  }, [initialReportType]);
+
+
     booking.tour_id === tourId && 
     booking.status !== 'cancelled' && 
     booking.status !== 'waitlisted'
