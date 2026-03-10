@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface TravelDocsRequestPayload {
   bookingId: string;
+  passengerSlots?: number[]; // Optional: [1, 2, 3] to filter which passengers to send to
 }
 
 interface TravelDocsData {
