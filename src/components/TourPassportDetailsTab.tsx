@@ -184,6 +184,13 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
         onSend={handleSendEmail}
         isSending={isSending}
       />
+      {/* Bulk Send Modal */}
+      <BulkPassportSendModal
+        open={bulkSendOpen}
+        onOpenChange={setBulkSendOpen}
+        tourId={tourId}
+        tourName={tourName}
+      />
     </div>
   );
 };
