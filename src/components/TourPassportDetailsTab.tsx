@@ -136,6 +136,10 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={() => setBulkSendOpen(true)}>
+            <Send className="h-4 w-4 mr-2" />
+            Send Passport Requests
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={totalPassengers === 0}>
             <Download className="h-4 w-4 mr-2" />
             CSV
@@ -151,6 +155,7 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
           <Button variant="outline" size="sm" onClick={() => setEmailModalOpen(true)} disabled={totalPassengers === 0}>
             <Mail className="h-4 w-4 mr-2" />
             Email Report
+          </Button>
           </Button>
         </div>
       </div>
