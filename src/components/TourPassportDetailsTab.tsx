@@ -106,9 +106,6 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
     toast({ title: "CSV Downloaded", description: "Passport details exported to CSV" });
   };
 
-  const handlePrintPDF = () => {
-    printReport(buildReportItem(), tourName);
-  };
 
   const handleDownloadPDF = () => {
     const report = buildReportItem();
