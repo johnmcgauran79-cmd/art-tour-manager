@@ -221,6 +221,12 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
               {notRequiredCount} not required
             </Badge>
           )}
+          {lastSentDate && (
+            <Badge variant="outline" className="text-xs">
+              <Clock className="h-3 w-3 mr-1" />
+              Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
