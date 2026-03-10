@@ -107,6 +107,7 @@ export const useCreateBooking = () => {
       nationality?: string;
       whatsapp_group_comms?: boolean;
       split_invoice?: boolean;
+      passport_not_required?: boolean;
       secondary_contact_id?: string | null;
     }) => {
       
