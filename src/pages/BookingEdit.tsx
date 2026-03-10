@@ -146,6 +146,7 @@ export default function BookingEdit() {
         secondary_contact_id: booking.secondary_contact_id || '',
         whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
         split_invoice: (booking as any).split_invoice ?? false,
+        passport_not_required: (booking as any).passport_not_required ?? false,
         
       });
 
