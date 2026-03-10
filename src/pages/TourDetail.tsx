@@ -33,7 +33,7 @@ import { TourOperationsReportsModal } from "@/components/TourOperationsReportsMo
 import { useAuth } from "@/hooks/useAuth";
 import { useSecureDeleteTour } from "@/hooks/useSecureTours";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { supabase } from "@/integrations/supabase/client";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
