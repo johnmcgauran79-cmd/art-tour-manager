@@ -20,6 +20,7 @@ interface TourPassportDetailsTabProps {
 export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetailsTabProps) => {
   const { data: passportData, isLoading } = usePassportReport(tourId);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
