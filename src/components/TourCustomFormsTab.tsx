@@ -210,6 +210,21 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
     enabled: !!tourId,
   });
 
+  // Get last sent date for this form
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['form-last-sent', formId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at')
+        .eq('form_id', formId)
+        .eq('purpose', 'custom_form')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data && data.length > 0 ? data[0].created_at : null;
+    },
+  });
+
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
