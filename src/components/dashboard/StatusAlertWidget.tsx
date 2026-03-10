@@ -72,7 +72,7 @@ export const StatusAlertWidget = () => {
               className="w-full mt-2 text-brand-navy hover:text-brand-navy/80"
               onClick={handleClick}
             >
-              Update Status
+              View Outstanding
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </>
