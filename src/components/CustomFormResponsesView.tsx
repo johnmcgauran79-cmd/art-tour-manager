@@ -198,6 +198,21 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           </DialogTitle>
         </DialogHeader>
 
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground pb-2">
+          <span>{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
+          <span>·</span>
+          <span>{responses.length} response{responses.length !== 1 ? 's' : ''}</span>
+          {lastSentDate && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                Last sent {format(new Date(lastSentDate), "d MMM yyyy 'at' h:mm a")}
+              </span>
+            </>
+          )}
+        </div>
+
         {responses.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No responses yet.
