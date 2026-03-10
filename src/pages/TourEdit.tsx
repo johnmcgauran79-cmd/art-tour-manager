@@ -135,7 +135,7 @@ export default function TourEdit() {
       nights: nights,
       location: formData.location || null,
       pickup_point: formData.pickup_point || null,
-      status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past',
+      status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past' | 'cancelled',
       notes: formData.notes || null,
       inclusions: formData.inclusions || null,
       exclusions: formData.exclusions || null,
@@ -371,6 +371,7 @@ export default function TourEdit() {
                 <SelectItem value="limited_availability">Limited Availability</SelectItem>
                 <SelectItem value="closed">Closed</SelectItem>
                 <SelectItem value="sold_out">Sold Out</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>

@@ -44,6 +44,7 @@ export const tourStatusConfig = {
   closed: { variant: 'secondary' as const, icon: null },
   sold_out: { variant: 'destructive' as const, icon: null },
   past: { variant: 'default' as const, icon: null },
+  cancelled: { variant: 'destructive' as const, icon: null },
 }
 
 export const bookingStatusConfig = {
