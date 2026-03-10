@@ -316,6 +316,7 @@ export default function BookingEdit() {
       whatsapp_group_comms: formData.whatsapp_group_comms,
       split_invoice: formData.split_invoice,
       passport_not_required: formData.passport_not_required,
+      selected_pickup_option_id: formData.selected_pickup_option_id || null,
     }, {
       onSuccess: () => {
         toast({
