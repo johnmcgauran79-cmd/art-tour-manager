@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, MapPin, Clock, Save, Send } from "lucide-react";
+import { Plus, Trash2, MapPin, Clock, Save, Send, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { usePickupOptions, useCreatePickupOption, useUpdatePickupOption, useDeletePickupOption } from "@/hooks/usePickupOptions";
 import { useUpdateTour } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
 import { BulkPickupSendModal } from "./BulkPickupSendModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
 
 interface TourPickupLocationsTabProps {
   tourId: string;
@@ -41,6 +43,7 @@ export const TourPickupLocationsTab = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ name: "", pickup_time: "", details: "" });
   const [bulkSendOpen, setBulkSendOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Get last sent date for pickup requests
   const { data: lastSentDate } = useQuery({
@@ -169,6 +172,10 @@ export const TourPickupLocationsTab = ({
                     Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
                   </Badge>
                 )}
+                <Button variant="outline" onClick={() => setReportOpen(true)} size="sm">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  View Report
+                </Button>
                 <Button onClick={() => setBulkSendOpen(true)} size="sm">
                   <Send className="h-4 w-4 mr-2" />
                   Send Pickup Requests
@@ -343,6 +350,15 @@ export const TourPickupLocationsTab = ({
         tourId={tourId}
         tourName={tourName}
       />
+      {/* Pickup report dialog */}
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pickup Locations Report</DialogTitle>
+          </DialogHeader>
+          <PickupLocationReport tourId={tourId} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
