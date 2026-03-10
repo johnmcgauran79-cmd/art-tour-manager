@@ -245,7 +245,7 @@ export default function TourDetail() {
                   <span className="hidden sm:inline">Duplicate</span>
                 </Button>
                 
-                <AlertDialog>
+                <AlertDialog onOpenChange={(open) => { if (!open) { setDeleteStep(1); setDeleteConfirmName(''); } }}>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="flex-shrink-0">
                       <Trash2 className="h-4 w-4 sm:mr-2" />
@@ -255,15 +255,45 @@ export default function TourDetail() {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Tour</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this tour? This action cannot be undone.
+                      <AlertDialogDescription asChild>
+                        <div className="space-y-3">
+                          {activeBookingCount > 0 && (
+                            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3 text-destructive text-sm font-medium">
+                              ⚠️ This tour has {activeBookingCount} active booking{activeBookingCount !== 1 ? 's' : ''}. Deleting will permanently remove all associated bookings, hotel allocations, activities, and customer data.
+                            </div>
+                          )}
+                          {deleteStep === 1 ? (
+                            <p>Are you sure you want to delete <strong>{tour.name}</strong>? This action cannot be undone and will permanently remove all associated data.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              <p>To confirm deletion, type the tour name exactly:</p>
+                              <p className="font-mono text-sm bg-muted px-2 py-1 rounded">{tour.name}</p>
+                              <Input
+                                value={deleteConfirmName}
+                                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                                placeholder="Type tour name to confirm..."
+                                autoFocus
+                              />
+                            </div>
+                          )}
+                        </div>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteTour}>
-                        Delete
-                      </AlertDialogAction>
+                      {deleteStep === 1 ? (
+                        <Button variant="destructive" onClick={() => setDeleteStep(2)}>
+                          Continue
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteTour}
+                          disabled={deleteConfirmName !== tour.name || secureDeleteTour.isPending}
+                        >
+                          {secureDeleteTour.isPending ? 'Deleting...' : 'Permanently Delete'}
+                        </Button>
+                      )}
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
