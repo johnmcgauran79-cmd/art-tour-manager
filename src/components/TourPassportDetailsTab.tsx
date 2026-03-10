@@ -4,12 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle, Send, Ban, Clock } from "lucide-react";
+import { Download, FileText, Mail, CheckCircle2, AlertCircle, Send, Ban, Clock } from "lucide-react";
 import { PassportDetailsReport } from "@/components/reports/PassportDetailsReport";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { BulkPassportSendModal } from "@/components/BulkPassportSendModal";
 import { usePassportReport } from "@/hooks/usePassportReport";
-import { exportReportToCSV, printReport, generateReportHTML } from "@/components/reports/ReportExportUtils";
+import { exportReportToCSV, generateReportHTML } from "@/components/reports/ReportExportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -106,9 +106,6 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
     toast({ title: "CSV Downloaded", description: "Passport details exported to CSV" });
   };
 
-  const handlePrintPDF = () => {
-    printReport(buildReportItem(), tourName);
-  };
 
   const handleDownloadPDF = () => {
     const report = buildReportItem();
@@ -241,10 +238,6 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
           <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={totalRequired === 0}>
             <FileText className="h-4 w-4 mr-2" />
             PDF
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePrintPDF} disabled={totalRequired === 0}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print
           </Button>
           <Button variant="outline" size="sm" onClick={() => setEmailModalOpen(true)} disabled={totalRequired === 0}>
             <Mail className="h-4 w-4 mr-2" />
