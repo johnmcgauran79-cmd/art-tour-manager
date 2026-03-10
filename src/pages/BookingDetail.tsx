@@ -749,15 +749,37 @@ export default function BookingDetail() {
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete the booking for {leadPassengerName}. This action cannot be undone.
+              <AlertDialogTitle>Delete Booking</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3">
+                  <p>
+                    You are about to permanently delete the booking for <strong>{leadPassengerName}</strong>. This will remove all associated data including hotel allocations, activity bookings, and travel documents.
+                  </p>
+                  <div className="bg-muted border rounded-md p-3 space-y-1">
+                    <p className="text-sm font-medium text-foreground">💡 Consider cancelling instead</p>
+                    <p className="text-sm">Cancelling preserves the booking record for reporting and audit purposes. You can cancel this booking from the Edit page.</p>
+                  </div>
+                  <p className="text-sm font-medium text-destructive">This action cannot be undone.</p>
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogCancel>Keep Booking</AlertDialogCancel>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  updateBooking.mutate({ id: booking!.id, status: 'cancelled' }, {
+                    onSuccess: () => {
+                      toast({ title: "Booking cancelled", description: `Booking for ${leadPassengerName} has been cancelled.` });
+                    }
+                  });
+                }}
+              >
+                Cancel Booking Instead
+              </Button>
               <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Delete
+                Permanently Delete
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
