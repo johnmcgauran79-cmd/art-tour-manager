@@ -400,6 +400,10 @@ export default function TourDetail() {
           />
         </TabsContent>
 
+        <TabsContent value="passport" className="space-y-4 mt-6">
+          <TourPassportDetailsTab tourId={tour.id} tourName={tour.name} />
+        </TabsContent>
+
         <TabsContent value="tasks" className="space-y-4 mt-6">
           <TourTasksTab tourId={tour.id} tourName={tour.name} />
         </TabsContent>
