@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 const BOOKING_STATUSES = [
   { value: 'pending', label: 'Pending' },
   { value: 'invoiced', label: 'Invoiced' },
-  { value: 'deposit_paid', label: 'Deposit Paid' },
+  { value: 'deposited', label: 'Deposited' },
   { value: 'instalment_paid', label: 'Instalment Paid' },
   { value: 'fully_paid', label: 'Fully Paid' },
   { value: 'confirmed', label: 'Confirmed' },
