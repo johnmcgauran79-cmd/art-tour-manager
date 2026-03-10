@@ -271,7 +271,7 @@ export default function TourDetail() {
               </TabsTrigger>
             </TabsList>
           ) : (
-            <TabsList className="w-full overflow-x-auto flex justify-start md:grid md:grid-cols-10 md:w-auto h-auto p-1 gap-1">
+            <TabsList className="w-full overflow-x-auto flex justify-start md:w-auto h-auto p-1 gap-1">
               <TabsTrigger value="overview" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Overview</span>
