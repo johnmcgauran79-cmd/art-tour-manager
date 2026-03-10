@@ -64,6 +64,7 @@ export interface BookingFormData {
   nationality: string;
   whatsapp_group_comms: boolean;
   split_invoice: boolean;
+  passport_not_required: boolean;
 }
 
 interface UseBookingFormStateProps {
