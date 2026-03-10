@@ -186,7 +186,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                   htmlFor="show-archived" 
                   className="text-xs sm:text-sm font-medium leading-none cursor-pointer whitespace-nowrap"
                 >
-                  Show Archived
+                  Show Archived / Cancelled
                 </Label>
               </div>
               <ViewToggle view={view} onViewChange={setView} />
