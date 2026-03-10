@@ -81,7 +81,7 @@ export default function BookingEdit() {
     whatsapp_group_comms: true,
     split_invoice: false,
     passport_not_required: false,
-    
+    selected_pickup_option_id: '',
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
