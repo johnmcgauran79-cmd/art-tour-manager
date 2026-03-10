@@ -120,8 +120,12 @@ export default function TourDetail() {
     xeroReference: (tour as any).xero_reference || '',
   } : null;
 
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+
   const handleDeleteTour = async () => {
     if (!tour) return;
+    if (deleteConfirmName !== tour.name) return;
     
     secureDeleteTour.mutate(
       { tourId: tour.id, tourName: tour.name },
@@ -131,6 +135,8 @@ export default function TourDetail() {
             title: "Success",
             description: "Tour deleted successfully",
           });
+          setDeleteConfirmName('');
+          setDeleteStep(1);
           navigate("/");
         },
         onError: (error: any) => {
@@ -143,6 +149,8 @@ export default function TourDetail() {
       }
     );
   };
+
+  const activeBookingCount = bookings?.filter(b => b.status !== 'cancelled').length || 0;
 
   const handleNavigate = (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => {
     if (destination.type === 'tab') {
