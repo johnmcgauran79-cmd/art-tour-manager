@@ -15,7 +15,7 @@ export const StatusAlertWidget = () => {
   const totalCount = depositsOwing + instalmentsOwing + paymentDue;
 
   const handleClick = () => {
-    navigate('/bookings/bulk-status');
+    navigate('/bookings/bulk-status?filter=deposits_owing');
   };
 
   return (
@@ -72,7 +72,7 @@ export const StatusAlertWidget = () => {
               className="w-full mt-2 text-brand-navy hover:text-brand-navy/80"
               onClick={handleClick}
             >
-              Update Status
+              View Outstanding
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </>
