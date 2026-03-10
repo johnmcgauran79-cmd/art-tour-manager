@@ -3132,6 +3132,7 @@ export type Database = {
         | "past"
         | "archived"
         | "limited_availability"
+        | "cancelled"
       transport_status:
         | "pending"
         | "booked"
@@ -3334,6 +3335,7 @@ export const Constants = {
         "past",
         "archived",
         "limited_availability",
+        "cancelled",
       ],
       transport_status: [
         "pending",
