@@ -13,6 +13,7 @@ import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, User
 import { BookingTravelDocsEdit } from "@/components/booking/BookingTravelDocsEdit";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
