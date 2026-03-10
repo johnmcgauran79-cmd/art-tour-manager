@@ -156,7 +156,6 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
             <Mail className="h-4 w-4 mr-2" />
             Email Report
           </Button>
-          </Button>
         </div>
       </div>
 
