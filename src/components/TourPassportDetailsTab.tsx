@@ -239,10 +239,6 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
             <FileText className="h-4 w-4 mr-2" />
             PDF
           </Button>
-          <Button variant="outline" size="sm" onClick={handlePrintPDF} disabled={totalRequired === 0}>
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
           <Button variant="outline" size="sm" onClick={() => setEmailModalOpen(true)} disabled={totalRequired === 0}>
             <Mail className="h-4 w-4 mr-2" />
             Email Report
