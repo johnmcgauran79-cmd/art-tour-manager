@@ -350,6 +350,15 @@ export const TourPickupLocationsTab = ({
         tourId={tourId}
         tourName={tourName}
       />
+      {/* Pickup report dialog */}
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Pickup Locations Report</DialogTitle>
+          </DialogHeader>
+          <PickupLocationReport tourId={tourId} />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
