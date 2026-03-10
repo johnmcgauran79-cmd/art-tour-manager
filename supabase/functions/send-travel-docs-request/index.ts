@@ -71,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { bookingId }: TravelDocsRequestPayload = await req.json();
+    const { bookingId, passengerSlots }: TravelDocsRequestPayload = await req.json();
 
     if (!bookingId) {
       return new Response(
