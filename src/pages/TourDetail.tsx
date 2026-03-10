@@ -150,7 +150,19 @@ export default function TourDetail() {
     );
   };
 
-  const activeBookingCount = bookings?.filter(b => b.status !== 'cancelled').length || 0;
+  const { data: activeBookingCount = 0 } = useQuery({
+    queryKey: ['tour-active-booking-count', id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('tour_id', id!)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!id,
+  });
 
   const handleNavigate = (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => {
     if (destination.type === 'tab') {
