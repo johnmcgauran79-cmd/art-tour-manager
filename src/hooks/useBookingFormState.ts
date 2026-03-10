@@ -175,6 +175,7 @@ export const useBookingFormState = ({
         nationality: '',
         whatsapp_group_comms: true,
         split_invoice: false,
+        passport_not_required: false,
       });
       setHotelAllocations({});
       setActivityAllocations({});
