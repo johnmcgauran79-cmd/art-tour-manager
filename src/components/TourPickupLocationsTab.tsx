@@ -42,6 +42,29 @@ export const TourPickupLocationsTab = ({
   const [editData, setEditData] = useState({ name: "", pickup_time: "", details: "" });
   const [bulkSendOpen, setBulkSendOpen] = useState(false);
 
+  // Get last sent date for pickup requests
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['pickup-last-sent', tourId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at, booking_id')
+        .eq('purpose', 'pickup_selection')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      // Filter to tokens for bookings on this tour
+      if (!data || data.length === 0) return null;
+      const { data: tourBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('tour_id', tourId);
+      const bookingIds = new Set(tourBookings?.map(b => b.id) || []);
+      const relevant = data.filter(t => t.booking_id && bookingIds.has(t.booking_id));
+      return relevant.length > 0 ? relevant[0].created_at : null;
+    },
+    enabled: !!tourId && pickupLocationRequired,
+  });
+
   // Count bookings without a pickup selection
   const { data: outstandingCount = 0 } = useQuery({
     queryKey: ['pickup-outstanding', tourId],
