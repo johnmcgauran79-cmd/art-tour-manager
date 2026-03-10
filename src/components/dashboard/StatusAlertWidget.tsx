@@ -15,7 +15,7 @@ export const StatusAlertWidget = () => {
   const totalCount = depositsOwing + instalmentsOwing + paymentDue;
 
   const handleClick = () => {
-    navigate('/bookings/bulk-status');
+    navigate('/bookings/bulk-status?filter=deposits_owing');
   };
 
   return (
