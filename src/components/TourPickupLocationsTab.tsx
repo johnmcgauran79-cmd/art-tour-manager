@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, MapPin, Clock, Save, Send, ClipboardList } from "lucide-react";
+import { Plus, Trash2, MapPin, Clock, Save, Send, ClipboardList, Users } from "lucide-react";
 import { format } from "date-fns";
 import { usePickupOptions, useCreatePickupOption, useUpdatePickupOption, useDeletePickupOption } from "@/hooks/usePickupOptions";
 import { useUpdateTour } from "@/hooks/useTours";
@@ -80,6 +80,27 @@ export const TourPickupLocationsTab = ({
         .not('status', 'eq', 'cancelled');
       if (error) throw error;
       return count || 0;
+    },
+    enabled: !!tourId && pickupLocationRequired,
+  });
+
+  // Count bookings per pickup option
+  const { data: pickupCounts = {} } = useQuery({
+    queryKey: ['pickup-counts-by-option', tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('selected_pickup_option_id')
+        .eq('tour_id', tourId)
+        .not('selected_pickup_option_id', 'is', null)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach(b => {
+        const id = b.selected_pickup_option_id!;
+        counts[id] = (counts[id] || 0) + 1;
+      });
+      return counts;
     },
     enabled: !!tourId && pickupLocationRequired,
   });
@@ -261,6 +282,10 @@ export const TourPickupLocationsTab = ({
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">{option.name}</span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {pickupCounts[option.id] || 0}
+                            </Badge>
                           </div>
                           {option.pickup_time && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
