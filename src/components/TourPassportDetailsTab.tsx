@@ -9,7 +9,7 @@ import { PassportDetailsReport } from "@/components/reports/PassportDetailsRepor
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { BulkPassportSendModal } from "@/components/BulkPassportSendModal";
 import { usePassportReport } from "@/hooks/usePassportReport";
-import { exportReportToCSV, printReport, generateReportHTML } from "@/components/reports/ReportExportUtils";
+import { exportReportToCSV, generateReportHTML } from "@/components/reports/ReportExportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
