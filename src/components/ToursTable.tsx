@@ -75,8 +75,8 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
       return false;
     }
     
-    // First, filter out archived tours unless showArchived is true
-    if (!showArchived && (tour.status as string) === 'archived') {
+    // Filter out archived and cancelled tours unless showArchived is true
+    if (!showArchived && ((tour.status as string) === 'archived' || (tour.status as string) === 'cancelled')) {
       return false;
     }
     

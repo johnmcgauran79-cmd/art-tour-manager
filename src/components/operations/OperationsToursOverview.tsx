@@ -61,8 +61,9 @@ export const OperationsToursOverview = () => {
 
   // Filter tours by search query, exclude archived tours and tours that have already started
   const filteredTours = tours?.filter(tour => {
-    // Exclude archived tours (status can be 'past' or 'archived' in database)
-    if (tour.status === 'past' || (tour.status as string) === 'archived') {
+    // Exclude archived/cancelled/past tours
+    const status = tour.status as string;
+    if (status === 'past' || status === 'archived' || status === 'cancelled') {
       return false;
     }
     
