@@ -49,7 +49,7 @@ export const TourPickupLocationsTab = ({
       const { data } = await supabase
         .from('customer_access_tokens')
         .select('created_at, booking_id')
-        .eq('purpose', 'pickup_selection')
+        .eq('purpose', 'pickup')
         .order('created_at', { ascending: false })
         .limit(100);
       // Filter to tokens for bookings on this tour
