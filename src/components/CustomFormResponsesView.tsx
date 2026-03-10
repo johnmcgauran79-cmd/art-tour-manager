@@ -2,12 +2,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, Clock } from "lucide-react";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import html2pdf from "html2pdf.js";
+import { format } from "date-fns";
 
 interface Props {
   open: boolean;
@@ -34,6 +35,22 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
       return map;
     },
     enabled: open && responses.length > 0,
+  });
+
+  // Get last sent date from customer_access_tokens for this form
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['form-last-sent', form.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at')
+        .eq('form_id', form.id)
+        .eq('purpose', 'custom_form')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data && data.length > 0 ? data[0].created_at : null;
+    },
+    enabled: open,
   });
 
   const getPassengerName = (response: CustomFormResponse) => {
@@ -180,6 +197,21 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
             )}
           </DialogTitle>
         </DialogHeader>
+
+        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground pb-2">
+          <span>{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
+          <span>·</span>
+          <span>{responses.length} response{responses.length !== 1 ? 's' : ''}</span>
+          {lastSentDate && (
+            <>
+              <span>·</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                Last sent {format(new Date(lastSentDate), "d MMM yyyy 'at' h:mm a")}
+              </span>
+            </>
+          )}
+        </div>
 
         {responses.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
