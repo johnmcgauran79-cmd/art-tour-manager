@@ -84,6 +84,27 @@ export const TourPickupLocationsTab = ({
     enabled: !!tourId && pickupLocationRequired,
   });
 
+  // Count bookings per pickup option
+  const { data: pickupCounts = {} } = useQuery({
+    queryKey: ['pickup-counts-by-option', tourId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('selected_pickup_option_id')
+        .eq('tour_id', tourId)
+        .not('selected_pickup_option_id', 'is', null)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      (data || []).forEach(b => {
+        const id = b.selected_pickup_option_id!;
+        counts[id] = (counts[id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!tourId && pickupLocationRequired,
+  });
+
   const handleToggle = (checked: boolean) => {
     updateTour.mutate({
       tourId,
