@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { format } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCustomForms, useCustomFormDetail, CustomFormField } from "@/hooks/useCustomForms";
@@ -14,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send } from "lucide-react";
+import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
 import { BulkCustomFormSendModal } from "@/components/BulkCustomFormSendModal";
@@ -210,6 +211,21 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
     enabled: !!tourId,
   });
 
+  // Get last sent date for this form
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['form-last-sent', formId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at')
+        .eq('form_id', formId)
+        .eq('purpose', 'custom_form')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data && data.length > 0 ? data[0].created_at : null;
+    },
+  });
+
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
@@ -304,6 +320,12 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
               <Badge variant="outline" className="text-xs">{responses.length} responses</Badge>
               {outstanding > 0 && (
                 <Badge variant="destructive" className="text-xs">{outstanding} outstanding</Badge>
+              )}
+              {lastSentDate && (
+                <Badge variant="outline" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
+                </Badge>
               )}
               <Badge variant={form.response_mode === 'per_passenger' ? 'default' : 'secondary'}>
                 {form.response_mode === 'per_passenger' ? <><Users className="h-3 w-3 mr-1" /> Per Pax</> : <><User className="h-3 w-3 mr-1" /> Per Booking</>}
