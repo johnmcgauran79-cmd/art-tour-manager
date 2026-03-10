@@ -294,6 +294,12 @@ export default function TourDetail() {
                   <span className="hidden sm:inline">Pickup</span>
                 </TabsTrigger>
               )}
+              {tour.travel_documents_required && (
+                <TabsTrigger value="passport" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Passport Details</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="hostsinfo" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Hosts Info</span>
