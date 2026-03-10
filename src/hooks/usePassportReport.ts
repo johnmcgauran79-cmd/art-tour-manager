@@ -5,6 +5,7 @@ export interface PassportReportData {
   passengerName: string;
   passengerType: string;
   bookingReference: string;
+  bookingId: string;
   groupName: string;
   passportFirstName: string;
   passportMiddleName: string;
@@ -15,6 +16,7 @@ export interface PassportReportData {
   nationality: string;
   dateOfBirth: string;
   hasDocuments: boolean;
+  passportNotRequired: boolean;
 }
 
 export const usePassportReport = (tourId: string) => {
@@ -33,6 +35,7 @@ export const usePassportReport = (tourId: string) => {
           passenger_2_name,
           passenger_3_id,
           passenger_3_name,
+          passport_not_required,
           customers:lead_passenger_id (
             id,
             first_name,
@@ -68,6 +71,7 @@ export const usePassportReport = (tourId: string) => {
       for (const booking of bookings || []) {
         const customer = booking.customers as any;
         const bookingDocs = travelDocs?.filter(d => d.booking_id === booking.id) || [];
+        const passportNotRequired = !!(booking as any).passport_not_required;
         
         // Helper to get passenger type label
         const getPassengerType = (slot: number): string => {
@@ -99,6 +103,7 @@ export const usePassportReport = (tourId: string) => {
             passengerName,
             passengerType: getPassengerType(slot),
             bookingReference: booking.id.substring(0, 8).toUpperCase(),
+            bookingId: booking.id,
             groupName: booking.group_name || '',
             passportFirstName: doc?.passport_first_name || '',
             passportMiddleName: doc?.passport_middle_name || '',
@@ -109,6 +114,7 @@ export const usePassportReport = (tourId: string) => {
             nationality: doc?.nationality || '',
             dateOfBirth: doc?.date_of_birth || '',
             hasDocuments,
+            passportNotRequired,
           });
         }
       }

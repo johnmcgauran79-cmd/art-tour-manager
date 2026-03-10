@@ -79,6 +79,7 @@ export default function BookingEdit() {
     secondary_contact_id: '',
     whatsapp_group_comms: true,
     split_invoice: false,
+    passport_not_required: false,
     
   });
 
@@ -145,6 +146,7 @@ export default function BookingEdit() {
         secondary_contact_id: booking.secondary_contact_id || '',
         whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
         split_invoice: (booking as any).split_invoice ?? false,
+        passport_not_required: (booking as any).passport_not_required ?? false,
         
       });
 
@@ -312,6 +314,7 @@ export default function BookingEdit() {
       secondary_contact_id: formData.secondary_contact_id || null,
       whatsapp_group_comms: formData.whatsapp_group_comms,
       split_invoice: formData.split_invoice,
+      passport_not_required: formData.passport_not_required,
     }, {
       onSuccess: () => {
         toast({
@@ -796,6 +799,22 @@ export default function BookingEdit() {
                   />
                 </div>
               )}
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="space-y-0.5">
+                  <Label htmlFor="passport_not_required" className="text-sm font-medium">
+                    Passport Details Not Required
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable if this booking does not need passport details (e.g. meeting at destination)
+                  </p>
+                </div>
+                <Switch
+                  id="passport_not_required"
+                  checked={formData.passport_not_required ?? false}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, passport_not_required: checked }))}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">

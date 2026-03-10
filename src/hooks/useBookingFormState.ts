@@ -64,6 +64,7 @@ export interface BookingFormData {
   nationality: string;
   whatsapp_group_comms: boolean;
   split_invoice: boolean;
+  passport_not_required: boolean;
 }
 
 interface UseBookingFormStateProps {
@@ -122,6 +123,7 @@ export const useBookingFormState = ({
     nationality: '',
     whatsapp_group_comms: true,
     split_invoice: false,
+    passport_not_required: false,
   });
 
   const [hotelAllocations, setHotelAllocations] = useState<Record<string, HotelAllocation>>({});
@@ -173,6 +175,7 @@ export const useBookingFormState = ({
         nationality: '',
         whatsapp_group_comms: true,
         split_invoice: false,
+        passport_not_required: false,
       });
       setHotelAllocations({});
       setActivityAllocations({});

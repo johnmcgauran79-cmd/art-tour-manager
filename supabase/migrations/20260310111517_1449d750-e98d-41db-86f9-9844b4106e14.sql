@@ -1,0 +1,1 @@
+ALTER TABLE public.bookings ADD COLUMN passport_not_required boolean NOT NULL DEFAULT false;

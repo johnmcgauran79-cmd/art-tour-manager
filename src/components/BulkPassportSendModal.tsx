@@ -49,10 +49,11 @@ export function BulkPassportSendModal({
       const { data: bookingsData } = await supabase
         .from("bookings")
         .select(`
-          id, status, passenger_count,
+          id, status, passenger_count, passport_not_required,
           customers!lead_passenger_id (first_name, last_name, email)
         `)
         .eq("tour_id", tourId)
+        .eq("passport_not_required", false)
         .not("status", "in", '("cancelled","waitlisted")');
 
       const bookingIds = (bookingsData || []).map((b: any) => b.id);

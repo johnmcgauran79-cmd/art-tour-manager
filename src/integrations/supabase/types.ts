@@ -751,6 +751,7 @@ export type Database = {
           passenger_count: number
           passport_country: string | null
           passport_expiry_date: string | null
+          passport_not_required: boolean
           passport_number: string | null
           revenue: number | null
           secondary_contact_id: string | null
@@ -783,6 +784,7 @@ export type Database = {
           passenger_count?: number
           passport_country?: string | null
           passport_expiry_date?: string | null
+          passport_not_required?: boolean
           passport_number?: string | null
           revenue?: number | null
           secondary_contact_id?: string | null
@@ -815,6 +817,7 @@ export type Database = {
           passenger_count?: number
           passport_country?: string | null
           passport_expiry_date?: string | null
+          passport_not_required?: boolean
           passport_number?: string | null
           revenue?: number | null
           secondary_contact_id?: string | null
