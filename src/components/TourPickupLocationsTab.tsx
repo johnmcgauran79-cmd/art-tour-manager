@@ -163,6 +163,12 @@ export const TourPickupLocationsTab = ({
                 {outstandingCount > 0 && (
                   <Badge variant="destructive" className="text-xs">{outstandingCount} outstanding</Badge>
                 )}
+                {lastSentDate && (
+                  <Badge variant="outline" className="text-xs">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
+                  </Badge>
+                )}
                 <Button onClick={() => setBulkSendOpen(true)} size="sm">
                   <Send className="h-4 w-4 mr-2" />
                   Send Pickup Requests
