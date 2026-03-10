@@ -355,6 +355,22 @@ export const BookingDetailsForm = ({
           </div>
         )}
       </div>
+
+      {/* Passport Override */}
+      <div className="border rounded-lg p-4 space-y-4">
+        <h3 className="text-lg font-medium text-brand-navy">Travel Documents</h3>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="passport_not_required"
+            checked={formData.passport_not_required || false}
+            onCheckedChange={(checked) => setFormData('passport_not_required', checked)}
+          />
+          <Label htmlFor="passport_not_required">Passport Details Not Required</Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Enable this if this booking does not need to provide passport details (e.g. they are meeting at the destination independently).
+        </p>
+      </div>
     </div>
   );
 };
