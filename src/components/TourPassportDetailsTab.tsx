@@ -30,6 +30,28 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get last sent date for passport requests
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['passport-last-sent', tourId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at, booking_id')
+        .eq('purpose', 'travel_documents')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!data || data.length === 0) return null;
+      const { data: tourBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('tour_id', tourId);
+      const bookingIds = new Set(tourBookings?.map(b => b.id) || []);
+      const relevant = data.filter(t => t.booking_id && bookingIds.has(t.booking_id));
+      return relevant.length > 0 ? relevant[0].created_at : null;
+    },
+    enabled: !!tourId,
+  });
+
   // Filter out "not required" for stats (but still show them in the table)
   const requiredPassengers = passportData?.filter(p => !p.passportNotRequired) || [];
   const notRequiredPassengers = passportData?.filter(p => p.passportNotRequired) || [];
