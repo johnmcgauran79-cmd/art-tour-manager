@@ -799,6 +799,22 @@ export default function BookingEdit() {
                   />
                 </div>
               )}
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="space-y-0.5">
+                  <Label htmlFor="passport_not_required" className="text-sm font-medium">
+                    Passport Details Not Required
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Enable if this booking does not need passport details (e.g. meeting at destination)
+                  </p>
+                </div>
+                <Switch
+                  id="passport_not_required"
+                  checked={formData.passport_not_required ?? false}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, passport_not_required: checked }))}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
