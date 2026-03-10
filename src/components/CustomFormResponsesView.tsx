@@ -37,6 +37,22 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     enabled: open && responses.length > 0,
   });
 
+  // Get last sent date from customer_access_tokens for this form
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['form-last-sent', form.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at')
+        .eq('form_id', form.id)
+        .eq('purpose', 'custom_form')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data && data.length > 0 ? data[0].created_at : null;
+    },
+    enabled: open,
+  });
+
   const getPassengerName = (response: CustomFormResponse) => {
     const booking = bookingsMap?.[response.booking_id];
     if (!booking) return 'Unknown';
