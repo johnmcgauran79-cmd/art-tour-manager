@@ -24,6 +24,7 @@ import { TourTasksTab } from "@/components/TourTasksTab";
 import { TourPickupLocationsTab } from "@/components/TourPickupLocationsTab";
 import { TourHostsInfoTab } from "@/components/TourHostsInfoTab";
 import { TourCustomFormsTab } from "@/components/TourCustomFormsTab";
+import { TourPassportDetailsTab } from "@/components/TourPassportDetailsTab";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { DuplicateTourDialog } from "@/components/DuplicateTourDialog";
 import { Tour, useTours } from "@/hooks/useTours";
