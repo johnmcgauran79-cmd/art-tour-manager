@@ -1,9 +1,10 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle, Send, Ban } from "lucide-react";
+import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle, Send, Ban, Clock } from "lucide-react";
 import { PassportDetailsReport } from "@/components/reports/PassportDetailsReport";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { BulkPassportSendModal } from "@/components/BulkPassportSendModal";
@@ -28,6 +29,28 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
   const [togglingBookings, setTogglingBookings] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Get last sent date for passport requests
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['passport-last-sent', tourId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at, booking_id')
+        .eq('purpose', 'travel_documents')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!data || data.length === 0) return null;
+      const { data: tourBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('tour_id', tourId);
+      const bookingIds = new Set(tourBookings?.map(b => b.id) || []);
+      const relevant = data.filter(t => t.booking_id && bookingIds.has(t.booking_id));
+      return relevant.length > 0 ? relevant[0].created_at : null;
+    },
+    enabled: !!tourId,
+  });
 
   // Filter out "not required" for stats (but still show them in the table)
   const requiredPassengers = passportData?.filter(p => !p.passportNotRequired) || [];
@@ -196,6 +219,12 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
             <Badge variant="secondary" className="text-xs">
               <Ban className="h-3 w-3 mr-1" />
               {notRequiredCount} not required
+            </Badge>
+          )}
+          {lastSentDate && (
+            <Badge variant="outline" className="text-xs">
+              <Clock className="h-3 w-3 mr-1" />
+              Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
             </Badge>
           )}
         </div>

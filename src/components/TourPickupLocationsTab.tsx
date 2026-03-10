@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Trash2, MapPin, Clock, Save, Send } from "lucide-react";
+import { format } from "date-fns";
 import { usePickupOptions, useCreatePickupOption, useUpdatePickupOption, useDeletePickupOption } from "@/hooks/usePickupOptions";
 import { useUpdateTour } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +41,29 @@ export const TourPickupLocationsTab = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ name: "", pickup_time: "", details: "" });
   const [bulkSendOpen, setBulkSendOpen] = useState(false);
+
+  // Get last sent date for pickup requests
+  const { data: lastSentDate } = useQuery({
+    queryKey: ['pickup-last-sent', tourId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('customer_access_tokens')
+        .select('created_at, booking_id')
+        .eq('purpose', 'pickup_selection')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      // Filter to tokens for bookings on this tour
+      if (!data || data.length === 0) return null;
+      const { data: tourBookings } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('tour_id', tourId);
+      const bookingIds = new Set(tourBookings?.map(b => b.id) || []);
+      const relevant = data.filter(t => t.booking_id && bookingIds.has(t.booking_id));
+      return relevant.length > 0 ? relevant[0].created_at : null;
+    },
+    enabled: !!tourId && pickupLocationRequired,
+  });
 
   // Count bookings without a pickup selection
   const { data: outstandingCount = 0 } = useQuery({
@@ -138,6 +162,12 @@ export const TourPickupLocationsTab = ({
               <div className="flex items-center gap-2">
                 {outstandingCount > 0 && (
                   <Badge variant="destructive" className="text-xs">{outstandingCount} outstanding</Badge>
+                )}
+                {lastSentDate && (
+                  <Badge variant="outline" className="text-xs">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
+                  </Badge>
                 )}
                 <Button onClick={() => setBulkSendOpen(true)} size="sm">
                   <Send className="h-4 w-4 mr-2" />
