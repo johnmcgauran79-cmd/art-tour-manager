@@ -172,6 +172,10 @@ export const TourPickupLocationsTab = ({
                     Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
                   </Badge>
                 )}
+                <Button variant="outline" onClick={() => setReportOpen(true)} size="sm">
+                  <ClipboardList className="h-4 w-4 mr-2" />
+                  View Report
+                </Button>
                 <Button onClick={() => setBulkSendOpen(true)} size="sm">
                   <Send className="h-4 w-4 mr-2" />
                   Send Pickup Requests
