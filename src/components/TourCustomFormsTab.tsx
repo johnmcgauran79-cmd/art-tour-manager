@@ -321,6 +321,12 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
               {outstanding > 0 && (
                 <Badge variant="destructive" className="text-xs">{outstanding} outstanding</Badge>
               )}
+              {lastSentDate && (
+                <Badge variant="outline" className="text-xs">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Last sent {format(new Date(lastSentDate), "d MMM yyyy h:mm a")}
+                </Badge>
+              )}
               <Badge variant={form.response_mode === 'per_passenger' ? 'default' : 'secondary'}>
                 {form.response_mode === 'per_passenger' ? <><Users className="h-3 w-3 mr-1" /> Per Pax</> : <><User className="h-3 w-3 mr-1" /> Per Booking</>}
               </Badge>
