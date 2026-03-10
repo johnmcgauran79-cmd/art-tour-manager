@@ -282,6 +282,10 @@ export const TourPickupLocationsTab = ({
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">{option.name}</span>
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 flex items-center gap-1">
+                              <Users className="h-3 w-3" />
+                              {pickupCounts[option.id] || 0}
+                            </Badge>
                           </div>
                           {option.pickup_time && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
