@@ -9,6 +9,7 @@ const corsHeaders = {
 
 interface TravelDocsRequestPayload {
   bookingId: string;
+  passengerSlots?: number[]; // Optional: [1, 2, 3] to filter which passengers to send to
 }
 
 interface TravelDocsData {
@@ -70,7 +71,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { bookingId }: TravelDocsRequestPayload = await req.json();
+    const { bookingId, passengerSlots }: TravelDocsRequestPayload = await req.json();
 
     if (!bookingId) {
       return new Response(
@@ -206,8 +207,20 @@ const handler = async (req: Request): Promise<Response> => {
     const sentEmails: string[] = [];
     const failedEmails: string[] = [];
 
+    // Filter passengers by slot if specified
+    const targetPassengers = passengerSlots && passengerSlots.length > 0
+      ? passengers.filter(p => passengerSlots.includes(p.slotNumber))
+      : passengers;
+
+    if (targetPassengers.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No matching passengers found for the specified slots" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Send individual emails to each passenger
-    for (const passenger of passengers) {
+    for (const passenger of targetPassengers) {
       try {
         // Create access token for this specific passenger
         const { data: tokenData, error: tokenError } = await supabase
