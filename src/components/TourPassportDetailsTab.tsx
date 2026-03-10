@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle, Send, Ban } from "lucide-react";
+import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle, Send, Ban, Clock } from "lucide-react";
 import { PassportDetailsReport } from "@/components/reports/PassportDetailsReport";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { BulkPassportSendModal } from "@/components/BulkPassportSendModal";
