@@ -52,6 +52,7 @@ export default function BookingEdit() {
   const { data: tours = [] } = useTours();
   const tour = tours.find(t => t.id === booking?.tour_id);
   const isMobile = useIsMobile();
+  const { data: pickupOptions = [] } = usePickupOptions(booking?.tour_id || '');
 
   const [formData, setFormData] = useState({
     lead_passenger_first_name: '',
