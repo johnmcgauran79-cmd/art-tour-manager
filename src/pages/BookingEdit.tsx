@@ -757,6 +757,29 @@ export default function BookingEdit() {
                 </div>
               </div>
 
+              {/* Pickup Location */}
+              {tour?.pickup_location_required && pickupOptions.length > 0 && (
+                <div className="border-t pt-3">
+                  <Label htmlFor="pickup_location">Pickup Location</Label>
+                  <Select
+                    value={formData.selected_pickup_option_id || 'none'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, selected_pickup_option_id: value === 'none' ? '' : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select pickup location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not selected</SelectItem>
+                      {pickupOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.name}{option.pickup_time ? ` (${option.pickup_time})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="booking_notes">Booking Notes & Requests</Label>
                 <Textarea
