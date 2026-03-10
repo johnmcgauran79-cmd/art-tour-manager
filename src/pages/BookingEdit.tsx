@@ -13,6 +13,7 @@ import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, User
 import { BookingTravelDocsEdit } from "@/components/booking/BookingTravelDocsEdit";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
@@ -51,6 +52,7 @@ export default function BookingEdit() {
   const { data: tours = [] } = useTours();
   const tour = tours.find(t => t.id === booking?.tour_id);
   const isMobile = useIsMobile();
+  const { data: pickupOptions = [] } = usePickupOptions(booking?.tour_id || '');
 
   const [formData, setFormData] = useState({
     lead_passenger_first_name: '',
@@ -80,7 +82,7 @@ export default function BookingEdit() {
     whatsapp_group_comms: true,
     split_invoice: false,
     passport_not_required: false,
-    
+    selected_pickup_option_id: '',
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -147,7 +149,7 @@ export default function BookingEdit() {
         whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
         split_invoice: (booking as any).split_invoice ?? false,
         passport_not_required: (booking as any).passport_not_required ?? false,
-        
+        selected_pickup_option_id: booking.selected_pickup_option_id || '',
       });
 
       if (booking.secondary_contact) {
@@ -315,6 +317,7 @@ export default function BookingEdit() {
       whatsapp_group_comms: formData.whatsapp_group_comms,
       split_invoice: formData.split_invoice,
       passport_not_required: formData.passport_not_required,
+      selected_pickup_option_id: formData.selected_pickup_option_id || null,
     }, {
       onSuccess: () => {
         toast({
@@ -753,6 +756,29 @@ export default function BookingEdit() {
                   />
                 </div>
               </div>
+
+              {/* Pickup Location */}
+              {tour?.pickup_location_required && pickupOptions.length > 0 && (
+                <div className="border-t pt-3">
+                  <Label htmlFor="pickup_location">Pickup Location</Label>
+                  <Select
+                    value={formData.selected_pickup_option_id || 'none'}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, selected_pickup_option_id: value === 'none' ? '' : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select pickup location" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Not selected</SelectItem>
+                      {pickupOptions.map((option) => (
+                        <SelectItem key={option.id} value={option.id}>
+                          {option.name}{option.pickup_time ? ` (${option.pickup_time})` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="booking_notes">Booking Notes & Requests</Label>
