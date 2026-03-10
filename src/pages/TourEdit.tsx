@@ -135,7 +135,7 @@ export default function TourEdit() {
       nights: nights,
       location: formData.location || null,
       pickup_point: formData.pickup_point || null,
-      status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past',
+      status: formData.status as 'pending' | 'available' | 'sold_out' | 'closed' | 'past' | 'cancelled',
       notes: formData.notes || null,
       inclusions: formData.inclusions || null,
       exclusions: formData.exclusions || null,
