@@ -314,6 +314,7 @@ export default function BookingEdit() {
       secondary_contact_id: formData.secondary_contact_id || null,
       whatsapp_group_comms: formData.whatsapp_group_comms,
       split_invoice: formData.split_invoice,
+      passport_not_required: formData.passport_not_required,
     }, {
       onSuccess: () => {
         toast({
