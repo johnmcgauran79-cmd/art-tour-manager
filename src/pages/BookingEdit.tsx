@@ -148,7 +148,7 @@ export default function BookingEdit() {
         whatsapp_group_comms: booking.whatsapp_group_comms ?? true,
         split_invoice: (booking as any).split_invoice ?? false,
         passport_not_required: (booking as any).passport_not_required ?? false,
-        
+        selected_pickup_option_id: booking.selected_pickup_option_id || '',
       });
 
       if (booking.secondary_contact) {
