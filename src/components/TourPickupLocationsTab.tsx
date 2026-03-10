@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, MapPin, Clock, Save, Send } from "lucide-react";
+import { Plus, Trash2, MapPin, Clock, Save, Send, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { usePickupOptions, useCreatePickupOption, useUpdatePickupOption, useDeletePickupOption } from "@/hooks/usePickupOptions";
 import { useUpdateTour } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
 import { BulkPickupSendModal } from "./BulkPickupSendModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
 
 interface TourPickupLocationsTabProps {
   tourId: string;
