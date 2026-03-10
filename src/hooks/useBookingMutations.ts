@@ -195,7 +195,8 @@ export const useCreateBooking = () => {
           passport_country: bookingData.passport_country || null,
           nationality: bookingData.nationality || null,
           whatsapp_group_comms: bookingData.whatsapp_group_comms ?? true,
-          split_invoice: bookingData.split_invoice ?? false,
+           split_invoice: bookingData.split_invoice ?? false,
+           passport_not_required: bookingData.passport_not_required ?? false,
         }])
         .select()
         .single();
