@@ -43,6 +43,7 @@ export const TourPickupLocationsTab = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState({ name: "", pickup_time: "", details: "" });
   const [bulkSendOpen, setBulkSendOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Get last sent date for pickup requests
   const { data: lastSentDate } = useQuery({
