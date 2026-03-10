@@ -15,7 +15,7 @@ export interface Tour {
   location: string | null;
   pickup_point: string | null;
   notes: string | null;
-  status: 'pending' | 'available' | 'closed' | 'sold_out' | 'past';
+  status: 'pending' | 'available' | 'closed' | 'sold_out' | 'past' | 'cancelled';
   inclusions: string | null;
   exclusions: string | null;
   price_single: number | null;
