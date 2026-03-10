@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle } from "lucide-react";
+import { Download, FileText, Mail, Printer, CheckCircle2, AlertCircle, Send } from "lucide-react";
 import { PassportDetailsReport } from "@/components/reports/PassportDetailsReport";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
+import { BulkPassportSendModal } from "@/components/BulkPassportSendModal";
 import { usePassportReport, PassportReportData } from "@/hooks/usePassportReport";
 import { exportReportToCSV, printReport, generateReportHTML } from "@/components/reports/ReportExportUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +20,7 @@ interface TourPassportDetailsTabProps {
 export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetailsTabProps) => {
   const { data: passportData, isLoading } = usePassportReport(tourId);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [bulkSendOpen, setBulkSendOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const { toast } = useToast();
 
@@ -134,6 +136,10 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          <Button size="sm" onClick={() => setBulkSendOpen(true)}>
+            <Send className="h-4 w-4 mr-2" />
+            Send Passport Requests
+          </Button>
           <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={totalPassengers === 0}>
             <Download className="h-4 w-4 mr-2" />
             CSV
@@ -176,6 +182,13 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
         tourName={tourName}
         onSend={handleSendEmail}
         isSending={isSending}
+      />
+      {/* Bulk Send Modal */}
+      <BulkPassportSendModal
+        open={bulkSendOpen}
+        onOpenChange={setBulkSendOpen}
+        tourId={tourId}
+        tourName={tourName}
       />
     </div>
   );
