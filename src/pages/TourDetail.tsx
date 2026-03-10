@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
@@ -33,7 +34,7 @@ import { TourOperationsReportsModal } from "@/components/TourOperationsReportsMo
 import { useAuth } from "@/hooks/useAuth";
 import { useSecureDeleteTour } from "@/hooks/useSecureTours";
 import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { supabase } from "@/integrations/supabase/client";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
@@ -120,8 +121,12 @@ export default function TourDetail() {
     xeroReference: (tour as any).xero_reference || '',
   } : null;
 
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [deleteStep, setDeleteStep] = useState<1 | 2>(1);
+
   const handleDeleteTour = async () => {
     if (!tour) return;
+    if (deleteConfirmName !== tour.name) return;
     
     secureDeleteTour.mutate(
       { tourId: tour.id, tourName: tour.name },
@@ -131,6 +136,8 @@ export default function TourDetail() {
             title: "Success",
             description: "Tour deleted successfully",
           });
+          setDeleteConfirmName('');
+          setDeleteStep(1);
           navigate("/");
         },
         onError: (error: any) => {
@@ -143,6 +150,20 @@ export default function TourDetail() {
       }
     );
   };
+
+  const { data: activeBookingCount = 0 } = useQuery({
+    queryKey: ['tour-active-booking-count', id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('tour_id', id!)
+        .not('status', 'eq', 'cancelled');
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!id,
+  });
 
   const handleNavigate = (destination: { type: 'tab' | 'hotel'; value: string; hotelId?: string }) => {
     if (destination.type === 'tab') {
@@ -224,7 +245,7 @@ export default function TourDetail() {
                   <span className="hidden sm:inline">Duplicate</span>
                 </Button>
                 
-                <AlertDialog>
+                <AlertDialog onOpenChange={(open) => { if (!open) { setDeleteStep(1); setDeleteConfirmName(''); } }}>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="flex-shrink-0">
                       <Trash2 className="h-4 w-4 sm:mr-2" />
@@ -234,15 +255,45 @@ export default function TourDetail() {
                   <AlertDialogContent>
                     <AlertDialogHeader>
                       <AlertDialogTitle>Delete Tour</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Are you sure you want to delete this tour? This action cannot be undone.
+                      <AlertDialogDescription asChild>
+                        <div className="space-y-3">
+                          {activeBookingCount > 0 && (
+                            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3 text-destructive text-sm font-medium">
+                              ⚠️ This tour has {activeBookingCount} active booking{activeBookingCount !== 1 ? 's' : ''}. Deleting will permanently remove all associated bookings, hotel allocations, activities, and customer data.
+                            </div>
+                          )}
+                          {deleteStep === 1 ? (
+                            <p>Are you sure you want to delete <strong>{tour.name}</strong>? This action cannot be undone and will permanently remove all associated data.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              <p>To confirm deletion, type the tour name exactly:</p>
+                              <p className="font-mono text-sm bg-muted px-2 py-1 rounded">{tour.name}</p>
+                              <Input
+                                value={deleteConfirmName}
+                                onChange={(e) => setDeleteConfirmName(e.target.value)}
+                                placeholder="Type tour name to confirm..."
+                                autoFocus
+                              />
+                            </div>
+                          )}
+                        </div>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteTour}>
-                        Delete
-                      </AlertDialogAction>
+                      {deleteStep === 1 ? (
+                        <Button variant="destructive" onClick={() => setDeleteStep(2)}>
+                          Continue
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="destructive"
+                          onClick={handleDeleteTour}
+                          disabled={deleteConfirmName !== tour.name || secureDeleteTour.isPending}
+                        >
+                          {secureDeleteTour.isPending ? 'Deleting...' : 'Permanently Delete'}
+                        </Button>
+                      )}
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
