@@ -68,10 +68,7 @@ export const usePassportReport = (tourId: string) => {
       // Build the report data
       const reportData: PassportReportData[] = [];
 
-      // Filter out bookings where passport is not required
-      const filteredBookings = (bookings || []).filter(b => !(b as any).passport_not_required);
-
-      for (const booking of filteredBookings) {
+      for (const booking of bookings || []) {
         const customer = booking.customers as any;
         const bookingDocs = travelDocs?.filter(d => d.booking_id === booking.id) || [];
         const passportNotRequired = !!(booking as any).passport_not_required;
