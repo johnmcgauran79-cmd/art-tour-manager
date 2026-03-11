@@ -417,7 +417,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
               No bookings found for this tour.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="flex-1 overflow-auto min-h-0">
               <Table>
                 <TableHeader>
                   <TableRow>
