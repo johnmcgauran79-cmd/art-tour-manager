@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/utils";
 import { useUpdateTour, useTours } from "@/hooks/useTours";
 import { supabase } from "@/integrations/supabase/client";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 
 export default function TourEdit() {
   const { id } = useParams();
@@ -53,6 +54,10 @@ export default function TourEdit() {
   });
 
   const updateTourMutation = useUpdateTour();
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelCounts, setCancelCounts] = useState({ bookings: 0, activities: 0 });
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
 
   useEffect(() => {
     const fetchTourData = async () => {
@@ -157,14 +162,48 @@ export default function TourEdit() {
       xero_reference: formData.xero_reference || null,
     } as any;
 
+    // Check if status is changing TO cancelled — require confirmation
+    const isChangingToCancelled = formData.status === 'cancelled' && tour?.status !== 'cancelled';
+    if (isChangingToCancelled) {
+      // Fetch counts of active bookings and activities
+      const [bookingsRes, activitiesRes] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .not('status', 'in', '("cancelled","waitlisted")'),
+        supabase
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .neq('activity_status', 'cancelled'),
+      ]);
+      setCancelCounts({
+        bookings: bookingsRes.count || 0,
+        activities: activitiesRes.count || 0,
+      });
+      setPendingSubmitData(updateData);
+      setShowCancelDialog(true);
+      return;
+    }
+
+    executeSave(updateData);
+  };
+
+  const executeSave = (updateData: any, cascadeCancel = false) => {
     updateTourMutation.mutate({
       tourId: id!,
       updates: updateData
     }, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        if (cascadeCancel) {
+          await cascadeCancelTour();
+        }
         toast({
-          title: "Tour Updated",
-          description: "Tour details have been successfully updated.",
+          title: cascadeCancel ? "Tour Cancelled" : "Tour Updated",
+          description: cascadeCancel
+            ? "Tour, all bookings, and all activities have been cancelled."
+            : "Tour details have been successfully updated.",
           duration: 6000,
         });
         goBack(`/tours/${id}`);
@@ -177,6 +216,30 @@ export default function TourEdit() {
         });
       },
     });
+  };
+
+  const cascadeCancelTour = async () => {
+    if (!id) return;
+    // Cancel all non-cancelled bookings
+    await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' as any })
+      .eq('tour_id', id)
+      .not('status', 'eq', 'cancelled');
+
+    // Cancel all non-cancelled activities
+    await supabase
+      .from('activities')
+      .update({ activity_status: 'cancelled' as any })
+      .eq('tour_id', id)
+      .neq('activity_status', 'cancelled');
+  };
+
+  const handleConfirmCancel = () => {
+    setIsCancelling(true);
+    setShowCancelDialog(false);
+    executeSave(pendingSubmitData, true);
+    setIsCancelling(false);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -631,6 +694,52 @@ export default function TourEdit() {
           </Button>
         </div>
       </form>
+      {/* Tour Cancellation Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Cancel Tour: {tour?.name}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to cancel this tour? This will also cancel all associated bookings and activities.
+                </p>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 space-y-1">
+                  {cancelCounts.bookings > 0 && (
+                    <p className="text-sm font-medium text-destructive">
+                      • {cancelCounts.bookings} active booking{cancelCounts.bookings !== 1 ? 's' : ''} will be cancelled
+                    </p>
+                  )}
+                  {cancelCounts.activities > 0 && (
+                    <p className="text-sm font-medium text-destructive">
+                      • {cancelCounts.activities} activit{cancelCounts.activities !== 1 ? 'ies' : 'y'} will be cancelled
+                    </p>
+                  )}
+                  {cancelCounts.bookings === 0 && cancelCounts.activities === 0 && (
+                    <p className="text-sm text-muted-foreground">No active bookings or activities to cancel.</p>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  All data will be preserved — nothing will be deleted. The tour will be automatically archived after 7 days.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Tour Active</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isCancelling}
+            >
+              {isCancelling ? 'Cancelling...' : 'Yes, Cancel Tour'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
