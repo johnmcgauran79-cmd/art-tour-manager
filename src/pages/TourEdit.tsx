@@ -162,14 +162,48 @@ export default function TourEdit() {
       xero_reference: formData.xero_reference || null,
     } as any;
 
+    // Check if status is changing TO cancelled — require confirmation
+    const isChangingToCancelled = formData.status === 'cancelled' && tour?.status !== 'cancelled';
+    if (isChangingToCancelled) {
+      // Fetch counts of active bookings and activities
+      const [bookingsRes, activitiesRes] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .not('status', 'in', '("cancelled","waitlisted")'),
+        supabase
+          .from('activities')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .neq('activity_status', 'cancelled'),
+      ]);
+      setCancelCounts({
+        bookings: bookingsRes.count || 0,
+        activities: activitiesRes.count || 0,
+      });
+      setPendingSubmitData(updateData);
+      setShowCancelDialog(true);
+      return;
+    }
+
+    executeSave(updateData);
+  };
+
+  const executeSave = (updateData: any, cascadeCancel = false) => {
     updateTourMutation.mutate({
       tourId: id!,
       updates: updateData
     }, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        if (cascadeCancel) {
+          await cascadeCancelTour();
+        }
         toast({
-          title: "Tour Updated",
-          description: "Tour details have been successfully updated.",
+          title: cascadeCancel ? "Tour Cancelled" : "Tour Updated",
+          description: cascadeCancel
+            ? "Tour, all bookings, and all activities have been cancelled."
+            : "Tour details have been successfully updated.",
           duration: 6000,
         });
         goBack(`/tours/${id}`);
@@ -181,6 +215,31 @@ export default function TourEdit() {
           variant: "destructive",
         });
       },
+    });
+  };
+
+  const cascadeCancelTour = async () => {
+    if (!id) return;
+    // Cancel all non-cancelled bookings
+    await supabase
+      .from('bookings')
+      .update({ status: 'cancelled' as any })
+      .eq('tour_id', id)
+      .not('status', 'eq', 'cancelled');
+
+    // Cancel all non-cancelled activities
+    await supabase
+      .from('activities')
+      .update({ activity_status: 'cancelled' as any })
+      .eq('tour_id', id)
+      .neq('activity_status', 'cancelled');
+  };
+
+  const handleConfirmCancel = () => {
+    setIsCancelling(true);
+    setShowCancelDialog(false);
+    executeSave(pendingSubmitData, true);
+    setIsCancelling(false);
     });
   };
 
