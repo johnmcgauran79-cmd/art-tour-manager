@@ -18,34 +18,16 @@ export interface GlobalDocumentAlerts {
   isLoading: boolean;
 }
 
-/**
- * Fetch rows in chunks to avoid the Supabase 1000-row default limit.
- * Splits `ids` into batches, runs parallel queries, and merges results.
- */
-async function fetchInChunks<T>(
-  table: string,
-  column: string,
-  ids: string[],
-  select: string,
-  extraFilters?: (query: any) => any,
-  chunkSize = 500
-): Promise<T[]> {
-  if (ids.length === 0) return [];
-  const chunks: string[][] = [];
-  for (let i = 0; i < ids.length; i += chunkSize) {
-    chunks.push(ids.slice(i, i + chunkSize));
+/** Split an array into chunks */
+function chunk<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
   }
-  const results = await Promise.all(
-    chunks.map(async (chunk) => {
-      let query = supabase.from(table).select(select).in(column, chunk);
-      if (extraFilters) query = extraFilters(query);
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data || []) as T[];
-    })
-  );
-  return results.flat();
+  return result;
 }
+
+const CHUNK_SIZE = 500;
 
 export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
   const { data, isLoading } = useQuery({
@@ -62,19 +44,18 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
       const tourIds = tours.map(t => t.id);
 
       // Fetch all bookings in chunks by tour_id
-      const bookings = await fetchInChunks<{
-        id: string;
-        tour_id: string;
-        passenger_count: number;
-        selected_pickup_option_id: string | null;
-        passport_not_required: boolean;
-      }>(
-        "bookings",
-        "tour_id",
-        tourIds,
-        "id, tour_id, passenger_count, selected_pickup_option_id, passport_not_required",
-        (q: any) => q.not("status", "in", '("cancelled","waitlisted")')
+      const bookingChunks = await Promise.all(
+        chunk(tourIds, CHUNK_SIZE).map(async (ids) => {
+          const { data, error } = await supabase
+            .from("bookings")
+            .select("id, tour_id, passenger_count, selected_pickup_option_id, passport_not_required")
+            .in("tour_id", ids)
+            .not("status", "in", '("cancelled","waitlisted")');
+          if (error) throw error;
+          return data || [];
+        })
       );
+      const bookings = bookingChunks.flat();
 
       if (bookings.length === 0) {
         return tours.map(t => ({
@@ -90,27 +71,47 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
       const bookingIds = bookings.map(b => b.id);
 
       // Parallel chunked queries
-      const [travelDocs, forms, formResponses, tokens] = await Promise.all([
-        fetchInChunks<{ booking_id: string; passenger_slot: number; passport_number: string | null; passport_first_name: string | null; passport_surname: string | null }>(
-          "booking_travel_docs", "booking_id", bookingIds,
-          "booking_id, passenger_slot, passport_number, passport_first_name, passport_surname"
-        ),
+      const [travelDocs, formsRes, formResponses, tokens] = await Promise.all([
+        Promise.all(
+          chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+            const { data, error } = await supabase
+              .from("booking_travel_docs")
+              .select("booking_id, passenger_slot, passport_number, passport_first_name, passport_surname")
+              .in("booking_id", ids);
+            if (error) throw error;
+            return data || [];
+          })
+        ).then(r => r.flat()),
         supabase
           .from("tour_custom_forms")
           .select("id, tour_id, response_mode")
           .in("tour_id", tourIds)
-          .eq("is_published", true)
-          .then(({ data, error }) => { if (error) throw error; return data || []; }),
-        fetchInChunks<{ form_id: string; booking_id: string; passenger_slot: number }>(
-          "tour_custom_form_responses", "booking_id", bookingIds,
-          "form_id, booking_id, passenger_slot"
-        ),
-        fetchInChunks<{ booking_id: string; purpose: string; form_id: string | null }>(
-          "customer_access_tokens", "booking_id", bookingIds,
-          "booking_id, purpose, form_id",
-          (q: any) => q.in("purpose", ["travel_documents", "pickup", "custom_form"])
-        ),
+          .eq("is_published", true),
+        Promise.all(
+          chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+            const { data, error } = await supabase
+              .from("tour_custom_form_responses")
+              .select("form_id, booking_id, passenger_slot")
+              .in("booking_id", ids);
+            if (error) throw error;
+            return data || [];
+          })
+        ).then(r => r.flat()),
+        Promise.all(
+          chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+            const { data, error } = await supabase
+              .from("customer_access_tokens")
+              .select("booking_id, purpose, form_id")
+              .in("booking_id", ids)
+              .in("purpose", ["travel_documents", "pickup", "custom_form"]);
+            if (error) throw error;
+            return data || [];
+          })
+        ).then(r => r.flat()),
       ]);
+
+      if (formsRes.error) throw formsRes.error;
+      const forms = formsRes.data || [];
 
       // Build lookup sets
       const passportRequestedBookings = new Set(
