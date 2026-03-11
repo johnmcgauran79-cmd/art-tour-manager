@@ -352,8 +352,13 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               className="text-center p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('activitymatrix')}
             >
-              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors">
+              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors relative">
                 <Grid3X3 className="h-5 w-5 text-red-600" />
+                {bookingsWithDiscrepancies.length > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                    {bookingsWithDiscrepancies.length}
+                  </Badge>
+                )}
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Discrepancy Report</p>
               <p className="text-xs text-gray-600">{bookingsWithDiscrepancies.length} alerts</p>
