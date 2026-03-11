@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, FileCheck, ClipboardCheck } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck } from "lucide-react";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -50,7 +50,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
-  const [documentAlertsModalOpen, setDocumentAlertsModalOpen] = useState(false);
+  
   const [formResponsesModalOpen, setFormResponsesModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -296,27 +296,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               </div>
               <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Alerts</p>
               <p className="text-xs text-gray-600">{unacknowledgedCount} active</p>
-            </div>
-            <div 
-              className={`text-center p-3 border-2 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 group ${
-                documentAlertsTotal > 0 
-                  ? 'border-amber-200 hover:bg-amber-50 hover:border-amber-300' 
-                  : 'border-green-200 hover:bg-green-50 hover:border-green-300'
-              }`}
-              onClick={() => setDocumentAlertsModalOpen(true)}
-            >
-              <div className={`p-2 rounded-full mx-auto mb-2 w-fit transition-colors relative ${
-                documentAlertsTotal > 0 ? 'bg-amber-100 group-hover:bg-amber-200' : 'bg-green-100 group-hover:bg-green-200'
-              }`}>
-                <FileCheck className={`h-5 w-5 ${documentAlertsTotal > 0 ? 'text-amber-600' : 'text-green-600'}`} />
-                {documentAlertsTotal > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-                    {documentAlertsTotal}
-                  </Badge>
-                )}
-              </div>
-              <p className={`font-semibold text-gray-800 text-xs ${documentAlertsTotal > 0 ? 'group-hover:text-amber-700' : 'group-hover:text-green-700'}`}>Documents</p>
-              <p className="text-xs text-gray-600">{documentAlertsTotal === 0 ? 'All complete' : `${documentAlertsTotal} outstanding`}</p>
             </div>
             <div
               className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
@@ -656,58 +635,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         onOpenChange={setCleanupModalOpen}
       />
 
-      <Dialog open={documentAlertsModalOpen} onOpenChange={setDocumentAlertsModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Outstanding Documents</DialogTitle>
-          </DialogHeader>
-          {documentAlertsTotal === 0 ? (
-            <p className="text-sm text-muted-foreground">All documents are complete. ✓</p>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{documentAlertsTotal} outstanding item{documentAlertsTotal !== 1 ? 's' : ''}. Click to view report.</p>
-              <div className="space-y-2">
-                {missingPassports > 0 && (
-                  <div 
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setDocumentAlertsModalOpen(false);
-                      handleReportClick('passport');
-                    }}
-                  >
-                    <span className="text-sm font-medium">Passports missing</span>
-                    <Badge variant="destructive">{missingPassports}</Badge>
-                  </div>
-                )}
-                {missingPickups > 0 && (
-                  <div 
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setDocumentAlertsModalOpen(false);
-                      handleReportClick('pickup');
-                    }}
-                  >
-                    <span className="text-sm font-medium">Pickups missing</span>
-                    <Badge variant="destructive">{missingPickups}</Badge>
-                  </div>
-                )}
-                {missingForms > 0 && (
-                  <div 
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setDocumentAlertsModalOpen(false);
-                      setFormResponsesModalOpen(true);
-                    }}
-                  >
-                    <span className="text-sm font-medium">Form responses missing</span>
-                    <Badge variant="destructive">{missingForms}</Badge>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <FormResponsesModal
         open={formResponsesModalOpen}
