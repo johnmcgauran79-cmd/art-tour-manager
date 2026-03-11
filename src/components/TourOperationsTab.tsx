@@ -297,27 +297,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Alerts</p>
               <p className="text-xs text-gray-600">{unacknowledgedCount} active</p>
             </div>
-            <div 
-              className={`text-center p-3 border-2 rounded-lg cursor-pointer hover:shadow-md transition-all duration-200 group ${
-                documentAlertsTotal > 0 
-                  ? 'border-amber-200 hover:bg-amber-50 hover:border-amber-300' 
-                  : 'border-green-200 hover:bg-green-50 hover:border-green-300'
-              }`}
-              onClick={() => setDocumentAlertsModalOpen(true)}
-            >
-              <div className={`p-2 rounded-full mx-auto mb-2 w-fit transition-colors relative ${
-                documentAlertsTotal > 0 ? 'bg-amber-100 group-hover:bg-amber-200' : 'bg-green-100 group-hover:bg-green-200'
-              }`}>
-                <FileCheck className={`h-5 w-5 ${documentAlertsTotal > 0 ? 'text-amber-600' : 'text-green-600'}`} />
-                {documentAlertsTotal > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-                    {documentAlertsTotal}
-                  </Badge>
-                )}
-              </div>
-              <p className={`font-semibold text-gray-800 text-xs ${documentAlertsTotal > 0 ? 'group-hover:text-amber-700' : 'group-hover:text-green-700'}`}>Documents</p>
-              <p className="text-xs text-gray-600">{documentAlertsTotal === 0 ? 'All complete' : `${documentAlertsTotal} outstanding`}</p>
-            </div>
             <div
               className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('contacts')}
