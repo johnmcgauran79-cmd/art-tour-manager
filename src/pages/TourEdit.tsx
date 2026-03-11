@@ -694,6 +694,52 @@ export default function TourEdit() {
           </Button>
         </div>
       </form>
+      {/* Tour Cancellation Confirmation Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Cancel Tour: {tour?.name}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Are you sure you want to cancel this tour? This will also cancel all associated bookings and activities.
+                </p>
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 space-y-1">
+                  {cancelCounts.bookings > 0 && (
+                    <p className="text-sm font-medium text-destructive">
+                      • {cancelCounts.bookings} active booking{cancelCounts.bookings !== 1 ? 's' : ''} will be cancelled
+                    </p>
+                  )}
+                  {cancelCounts.activities > 0 && (
+                    <p className="text-sm font-medium text-destructive">
+                      • {cancelCounts.activities} activit{cancelCounts.activities !== 1 ? 'ies' : 'y'} will be cancelled
+                    </p>
+                  )}
+                  {cancelCounts.bookings === 0 && cancelCounts.activities === 0 && (
+                    <p className="text-sm text-muted-foreground">No active bookings or activities to cancel.</p>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  All data will be preserved — nothing will be deleted. The tour will be automatically archived after 7 days.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Tour Active</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isCancelling}
+            >
+              {isCancelling ? 'Cancelling...' : 'Yes, Cancel Tour'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
