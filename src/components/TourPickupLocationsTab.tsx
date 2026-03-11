@@ -317,7 +317,7 @@ export const TourPickupLocationsTab = ({
                 ))}
 
                 {/* Add New Option */}
-                {!isViewOnly && options.length < MAX_OPTIONS && (
+                {!isViewOnly && (
                   <div className="border-2 border-dashed rounded-lg p-4 space-y-3">
                     <p className="text-sm font-medium text-muted-foreground">Add Pickup Option</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
