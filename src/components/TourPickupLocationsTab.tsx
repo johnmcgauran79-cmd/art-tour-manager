@@ -24,7 +24,7 @@ interface TourPickupLocationsTabProps {
   isViewOnly?: boolean;
 }
 
-const MAX_OPTIONS = 5;
+
 
 export const TourPickupLocationsTab = ({
   tourId,
