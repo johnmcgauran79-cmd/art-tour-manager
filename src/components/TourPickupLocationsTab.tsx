@@ -24,7 +24,7 @@ interface TourPickupLocationsTabProps {
   isViewOnly?: boolean;
 }
 
-const MAX_OPTIONS = 5;
+
 
 export const TourPickupLocationsTab = ({
   tourId,
@@ -229,7 +229,7 @@ export const TourPickupLocationsTab = ({
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 Pickup Options
-                <Badge variant="secondary">{options.length} / {MAX_OPTIONS}</Badge>
+                <Badge variant="secondary">{options.length} option{options.length !== 1 ? 's' : ''}</Badge>
               </span>
             </CardTitle>
           </CardHeader>
@@ -317,7 +317,7 @@ export const TourPickupLocationsTab = ({
                 ))}
 
                 {/* Add New Option */}
-                {!isViewOnly && options.length < MAX_OPTIONS && (
+                {!isViewOnly && (
                   <div className="border-2 border-dashed rounded-lg p-4 space-y-3">
                     <p className="text-sm font-medium text-muted-foreground">Add Pickup Option</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -358,11 +358,6 @@ export const TourPickupLocationsTab = ({
                   </p>
                 )}
 
-                {options.length >= MAX_OPTIONS && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Maximum of {MAX_OPTIONS} pickup options reached.
-                  </p>
-                )}
               </>
             )}
           </CardContent>
