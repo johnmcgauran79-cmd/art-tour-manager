@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Download, FileSpreadsheet, Clock, Pencil } from "lucide-react";
+import { Download, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle } from "lucide-react";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,25 +27,33 @@ interface Props {
   responses: CustomFormResponse[];
 }
 
+interface PassengerRow {
+  bookingId: string;
+  slot: number;
+  customerId: string | null;
+  passengerName: string;
+  bookingName: string;
+  response: CustomFormResponse | null;
+}
+
 export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, form, fields, responses }: Props) {
   const queryClient = useQueryClient();
-  const [editingResponse, setEditingResponse] = useState<CustomFormResponse | null>(null);
+  const [editingRow, setEditingRow] = useState<PassengerRow | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
 
-  const { data: bookingsMap } = useQuery({
-    queryKey: ['custom-form-bookings', tourId],
+  // Fetch ALL bookings for this tour (not just those with responses)
+  const { data: tourBookings = [] } = useQuery({
+    queryKey: ['custom-form-tour-bookings', tourId],
     queryFn: async () => {
-      const bookingIds = [...new Set(responses.map(r => r.booking_id))];
-      if (bookingIds.length === 0) return {};
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('bookings')
-        .select('id, group_name, lead_passenger:customers!lead_passenger_id(first_name, last_name), passenger_2:customers!passenger_2_id(first_name, last_name), passenger_3:customers!passenger_3_id(first_name, last_name)')
-        .in('id', bookingIds);
-      const map: Record<string, any> = {};
-      (data || []).forEach((b: any) => { map[b.id] = b; });
-      return map;
+        .select('id, group_name, passenger_count, lead_passenger_id, passenger_2_id, passenger_3_id, lead_passenger:customers!lead_passenger_id(first_name, last_name), passenger_2:customers!passenger_2_id(first_name, last_name), passenger_3:customers!passenger_3_id(first_name, last_name)')
+        .eq('tour_id', tourId)
+        .not('status', 'in', '("cancelled","waitlisted")');
+      if (error) throw error;
+      return data || [];
     },
-    enabled: open && responses.length > 0,
+    enabled: open,
   });
 
   // Get last sent date from customer_access_tokens for this form
@@ -64,6 +72,48 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     enabled: open,
   });
 
+  // Build complete passenger list with response status
+  const allPassengers = useMemo((): PassengerRow[] => {
+    const rows: PassengerRow[] = [];
+    for (const booking of tourBookings) {
+      const b = booking as any;
+      const bookingName = b.group_name || (b.lead_passenger ? `${b.lead_passenger.first_name} ${b.lead_passenger.last_name}` : b.id.slice(0, 8));
+      const maxSlots = form.response_mode === 'per_passenger' ? b.passenger_count : 1;
+
+      for (let slot = 1; slot <= maxSlots; slot++) {
+        let passengerName = `Passenger ${slot}`;
+        let customerId: string | null = null;
+
+        if (slot === 1 && b.lead_passenger) {
+          passengerName = `${b.lead_passenger.first_name} ${b.lead_passenger.last_name}`;
+          customerId = b.lead_passenger_id;
+        } else if (slot === 2 && b.passenger_2) {
+          passengerName = `${b.passenger_2.first_name} ${b.passenger_2.last_name}`;
+          customerId = b.passenger_2_id;
+        } else if (slot === 3 && b.passenger_3) {
+          passengerName = `${b.passenger_3.first_name} ${b.passenger_3.last_name}`;
+          customerId = b.passenger_3_id;
+        }
+
+        const response = responses.find(
+          r => r.booking_id === b.id && r.passenger_slot === slot
+        ) || null;
+
+        rows.push({ bookingId: b.id, slot, customerId, passengerName, bookingName, response });
+      }
+    }
+    // Sort: outstanding first, then by booking name
+    rows.sort((a, b) => {
+      if (!a.response && b.response) return -1;
+      if (a.response && !b.response) return 1;
+      return a.bookingName.localeCompare(b.bookingName) || a.slot - b.slot;
+    });
+    return rows;
+  }, [tourBookings, responses, form.response_mode]);
+
+  const completedCount = allPassengers.filter(p => p.response).length;
+  const outstandingCount = allPassengers.length - completedCount;
+
   const updateResponse = useMutation({
     mutationFn: async ({ id, response_data }: { id: string; response_data: Record<string, any> }) => {
       const { error } = await supabase
@@ -73,29 +123,37 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['custom-form-responses', form.id] });
+      invalidateResponses();
       toast.success('Response updated');
-      setEditingResponse(null);
+      setEditingRow(null);
     },
     onError: (e: any) => toast.error(e.message),
   });
 
-  const getPassengerName = (response: CustomFormResponse) => {
-    const booking = bookingsMap?.[response.booking_id];
-    if (!booking) return 'Unknown';
-    if (response.passenger_slot === 1) {
-      const lp = booking.lead_passenger;
-      return lp ? `${lp.first_name} ${lp.last_name}` : 'Lead Passenger';
-    }
-    if (response.passenger_slot === 2) {
-      const p2 = booking.passenger_2;
-      return p2 ? `${p2.first_name} ${p2.last_name}` : 'Passenger 2';
-    }
-    if (response.passenger_slot === 3) {
-      const p3 = booking.passenger_3;
-      return p3 ? `${p3.first_name} ${p3.last_name}` : 'Passenger 3';
-    }
-    return `Passenger ${response.passenger_slot}`;
+  const createResponse = useMutation({
+    mutationFn: async ({ bookingId, slot, customerId, response_data }: { bookingId: string; slot: number; customerId: string | null; response_data: Record<string, any> }) => {
+      const { error } = await supabase
+        .from('tour_custom_form_responses' as any)
+        .insert({
+          form_id: form.id,
+          booking_id: bookingId,
+          passenger_slot: slot,
+          customer_id: customerId,
+          response_data,
+        } as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidateResponses();
+      toast.success('Response saved');
+      setEditingRow(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const invalidateResponses = () => {
+    queryClient.invalidateQueries({ queryKey: ['custom-form-responses', form.id] });
+    queryClient.invalidateQueries({ queryKey: ['all-form-responses', tourId] });
   };
 
   const getFieldValue = (response: CustomFormResponse, field: CustomFormField): string => {
@@ -109,14 +167,23 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     return String(val);
   };
 
-  const startEdit = (response: CustomFormResponse) => {
-    setEditData({ ...response.response_data });
-    setEditingResponse(response);
+  const startEdit = (row: PassengerRow) => {
+    setEditData(row.response ? { ...row.response.response_data } : {});
+    setEditingRow(row);
   };
 
   const handleSaveEdit = () => {
-    if (!editingResponse) return;
-    updateResponse.mutate({ id: editingResponse.id, response_data: editData });
+    if (!editingRow) return;
+    if (editingRow.response) {
+      updateResponse.mutate({ id: editingRow.response.id, response_data: editData });
+    } else {
+      createResponse.mutate({
+        bookingId: editingRow.bookingId,
+        slot: editingRow.slot,
+        customerId: editingRow.customerId,
+        response_data: editData,
+      });
+    }
   };
 
   const renderEditField = (field: CustomFormField) => {
@@ -205,15 +272,15 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
   };
 
   const handleDownloadCSV = () => {
-    if (responses.length === 0) return;
+    const rowsWithData = allPassengers.filter(p => p.response);
+    if (rowsWithData.length === 0) return;
 
     const headers = ['Passenger', 'Booking', ...fields.map(f => f.field_label), 'Submitted'];
-    const rows = responses.map(resp => {
-      const passengerName = getPassengerName(resp);
-      const bookingName = bookingsMap?.[resp.booking_id]?.group_name || resp.booking_id.slice(0, 8);
+    const rows = rowsWithData.map(p => {
+      const resp = p.response!;
       const fieldValues = fields.map(f => getFieldValue(resp, f));
       const submitted = new Date(resp.submitted_at).toLocaleDateString('en-AU');
-      return [passengerName, bookingName, ...fieldValues, submitted];
+      return [p.passengerName, p.bookingName, ...fieldValues, submitted];
     });
 
     const csvContent = [
@@ -231,16 +298,16 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
   };
 
   const handleDownloadPDF = () => {
-    if (responses.length === 0) return;
+    const rowsWithData = allPassengers.filter(p => p.response);
+    if (rowsWithData.length === 0) return;
 
-    const tableRows = responses.map(resp => {
-      const passengerName = getPassengerName(resp);
-      const bookingName = bookingsMap?.[resp.booking_id]?.group_name || resp.booking_id.slice(0, 8);
+    const tableRows = rowsWithData.map(p => {
+      const resp = p.response!;
       const fieldCells = fields.map(f => `<td style="border: 1px solid #ddd; padding: 8px; font-size: 12px;">${getFieldValue(resp, f) || '—'}</td>`).join('');
       const submitted = new Date(resp.submitted_at).toLocaleDateString('en-AU');
       return `<tr>
-        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; font-weight: 500;">${passengerName}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${bookingName}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; font-weight: 500;">${p.passengerName}</td>
+        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${p.bookingName}</td>
         ${fieldCells}
         <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${submitted}</td>
       </tr>`;
@@ -269,7 +336,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           <div class="report-date">Generated on ${new Date().toLocaleDateString('en-AU')}</div>
         </div>
         <div class="summary">
-          <strong>Total Responses:</strong> ${responses.length}
+          <strong>Total Responses:</strong> ${rowsWithData.length} of ${allPassengers.length}
         </div>
         <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
           <thead>
@@ -308,7 +375,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Form Responses — {form.form_title}</span>
-              {responses.length > 0 && (
+              {completedCount > 0 && (
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
                     <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
@@ -322,9 +389,18 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           </DialogHeader>
 
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground pb-2">
-            <span>{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
+            <span className="flex items-center gap-1">
+              <CheckCircle className="h-3.5 w-3.5 text-green-600" />
+              {completedCount} completed
+            </span>
+            {outstandingCount > 0 && (
+              <span className="flex items-center gap-1 text-amber-600">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {outstandingCount} outstanding
+              </span>
+            )}
             <span>·</span>
-            <span>{responses.length} response{responses.length !== 1 ? 's' : ''}</span>
+            <span>{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
             {lastSentDate && (
               <>
                 <span>·</span>
@@ -336,15 +412,16 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
             )}
           </div>
 
-          {responses.length === 0 ? (
+          {allPassengers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No responses yet.
+              No bookings found for this tour.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-8">Status</TableHead>
                     <TableHead>Passenger</TableHead>
                     <TableHead>Booking</TableHead>
                     {fields.map(f => <TableHead key={f.id}>{f.field_label}</TableHead>)}
@@ -353,27 +430,45 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {responses.map(resp => (
-                    <TableRow key={resp.id}>
-                      <TableCell className="font-medium">{getPassengerName(resp)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {bookingsMap?.[resp.booking_id]?.group_name || resp.booking_id.slice(0, 8)}
+                  {allPassengers.map(row => (
+                    <TableRow key={`${row.bookingId}-${row.slot}`} className={!row.response ? 'bg-amber-50/50' : ''}>
+                      <TableCell>
+                        {row.response ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                        )}
                       </TableCell>
+                      <TableCell className="font-medium">{row.passengerName}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{row.bookingName}</TableCell>
                       {fields.map(f => (
                         <TableCell key={f.id}>
-                          {f.field_type === 'checkbox' ? (
-                            resp.response_data[f.id] ? <Badge>Yes</Badge> : <Badge variant="outline">No</Badge>
+                          {row.response ? (
+                            f.field_type === 'checkbox' ? (
+                              row.response.response_data[f.id] ? <Badge>Yes</Badge> : <Badge variant="outline">No</Badge>
+                            ) : (
+                              getFieldValue(row.response, f) || <span className="text-muted-foreground">—</span>
+                            )
                           ) : (
-                            getFieldValue(resp, f) || <span className="text-muted-foreground">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </TableCell>
                       ))}
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(resp.submitted_at).toLocaleDateString('en-AU')}
+                        {row.response ? new Date(row.response.submitted_at).toLocaleDateString('en-AU') : '—'}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => startEdit(resp)}>
-                          <Pencil className="h-3.5 w-3.5" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEdit(row)}
+                          title={row.response ? 'Edit response' : 'Enter details'}
+                        >
+                          {row.response ? (
+                            <Pencil className="h-3.5 w-3.5" />
+                          ) : (
+                            <Plus className="h-3.5 w-3.5" />
+                          )}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -385,14 +480,18 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
         </DialogContent>
       </Dialog>
 
-      {/* Edit Response Dialog */}
-      <Dialog open={!!editingResponse} onOpenChange={(open) => { if (!open) setEditingResponse(null); }}>
+      {/* Edit / Enter Response Dialog */}
+      <Dialog open={!!editingRow} onOpenChange={(open) => { if (!open) setEditingRow(null); }}>
         <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              Edit Response — {editingResponse ? getPassengerName(editingResponse) : ''}
+              {editingRow?.response ? 'Edit' : 'Enter'} Response — {editingRow?.passengerName}
             </DialogTitle>
           </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Booking: {editingRow?.bookingName}
+            {form.response_mode === 'per_passenger' && ` · Passenger ${editingRow?.slot}`}
+          </p>
           <div className="space-y-4">
             {fields.map(field => (
               <div key={field.id} className="space-y-1.5">
@@ -403,9 +502,9 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
               </div>
             ))}
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setEditingResponse(null)}>Cancel</Button>
-              <Button onClick={handleSaveEdit} disabled={updateResponse.isPending}>
-                Save Changes
+              <Button variant="outline" onClick={() => setEditingRow(null)}>Cancel</Button>
+              <Button onClick={handleSaveEdit} disabled={updateResponse.isPending || createResponse.isPending}>
+                {editingRow?.response ? 'Save Changes' : 'Save Response'}
               </Button>
             </div>
           </div>
