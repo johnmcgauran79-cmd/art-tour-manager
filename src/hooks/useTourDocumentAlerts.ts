@@ -9,6 +9,17 @@ interface DocumentAlertCounts {
   isLoading: boolean;
 }
 
+/** Split an array into chunks */
+function chunk<T>(arr: T[], size: number): T[][] {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+}
+
+const CHUNK_SIZE = 500;
+
 export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
   // Get bookings for this tour (non-cancelled, non-waitlisted)
   const { data: bookings, isLoading: bookingsLoading } = useQuery({
@@ -16,7 +27,7 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookings")
-        .select("id, passenger_count, selected_pickup_option_id, lead_passenger_id, passenger_2_id, passenger_3_id")
+        .select("id, passenger_count, selected_pickup_option_id, lead_passenger_id, passenger_2_id, passenger_3_id, passport_not_required")
         .eq("tour_id", tourId)
         .not("status", "in", '("cancelled","waitlisted")');
       if (error) throw error;
@@ -42,20 +53,25 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     staleTime: 60000,
   });
 
-  // Get travel docs submitted
+  const bookingIds = (bookings || []).map(b => b.id);
+
+  // Get travel docs submitted (chunked)
   const { data: travelDocs, isLoading: docsLoading } = useQuery({
     queryKey: ["tour-doc-alerts-traveldocs", tourId],
     queryFn: async () => {
-      if (!bookings || bookings.length === 0) return [];
-      const bookingIds = bookings.map(b => b.id);
-      const { data, error } = await supabase
-        .from("booking_travel_docs")
-        .select("booking_id, passenger_slot, passport_number, passport_first_name, passport_surname")
-        .in("booking_id", bookingIds);
-      if (error) throw error;
-      return data || [];
+      const results = await Promise.all(
+        chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+          const { data, error } = await supabase
+            .from("booking_travel_docs")
+            .select("booking_id, passenger_slot, passport_number, passport_first_name, passport_surname")
+            .in("booking_id", ids);
+          if (error) throw error;
+          return data || [];
+        })
+      );
+      return results.flat();
     },
-    enabled: !!bookings && bookings.length > 0 && !!tour?.travel_documents_required,
+    enabled: bookingIds.length > 0 && !!tour?.travel_documents_required,
     staleTime: 60000,
   });
 
@@ -75,40 +91,45 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     staleTime: 60000,
   });
 
-  // Get form responses
+  // Get form responses (chunked)
   const { data: formResponses, isLoading: responsesLoading } = useQuery({
     queryKey: ["tour-doc-alerts-responses", tourId],
     queryFn: async () => {
-      if (!forms || forms.length === 0 || !bookings || bookings.length === 0) return [];
-      const formIds = forms.map(f => f.id);
-      const bookingIds = bookings.map(b => b.id);
-      const { data, error } = await supabase
-        .from("tour_custom_form_responses")
-        .select("form_id, booking_id, passenger_slot")
-        .in("form_id", formIds)
-        .in("booking_id", bookingIds);
-      if (error) throw error;
-      return data || [];
+      if (!forms || forms.length === 0) return [];
+      const results = await Promise.all(
+        chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+          const { data, error } = await supabase
+            .from("tour_custom_form_responses")
+            .select("form_id, booking_id, passenger_slot")
+            .in("booking_id", ids);
+          if (error) throw error;
+          return data || [];
+        })
+      );
+      return results.flat();
     },
-    enabled: !!forms && forms.length > 0 && !!bookings && bookings.length > 0,
+    enabled: !!forms && forms.length > 0 && bookingIds.length > 0,
     staleTime: 60000,
   });
 
-  // Get access tokens to check what's been requested
+  // Get access tokens (chunked)
   const { data: tokens, isLoading: tokensLoading } = useQuery({
     queryKey: ["tour-doc-alerts-tokens", tourId],
     queryFn: async () => {
-      if (!bookings || bookings.length === 0) return [];
-      const bookingIds = bookings.map(b => b.id);
-      const { data, error } = await supabase
-        .from("customer_access_tokens")
-        .select("booking_id, purpose, form_id")
-        .in("booking_id", bookingIds)
-        .in("purpose", ["travel_documents", "pickup", "custom_form"]);
-      if (error) throw error;
-      return data || [];
+      const results = await Promise.all(
+        chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+          const { data, error } = await supabase
+            .from("customer_access_tokens")
+            .select("booking_id, purpose, form_id")
+            .in("booking_id", ids)
+            .in("purpose", ["travel_documents", "pickup", "custom_form"]);
+          if (error) throw error;
+          return data || [];
+        })
+      );
+      return results.flat();
     },
-    enabled: !!bookings && bookings.length > 0,
+    enabled: bookingIds.length > 0,
     staleTime: 60000,
   });
 
@@ -129,7 +150,7 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     (tokens || []).filter(t => t.purpose === "custom_form" && t.form_id).map(t => `${t.form_id}-${t.booking_id}`)
   );
 
-  // Calculate missing passports (only where requested)
+  // Calculate missing passports (excluding passport_not_required)
   let missingPassports = 0;
   if (tour.travel_documents_required) {
     const docsMap = new Set(
@@ -138,6 +159,7 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
         .map(d => `${d.booking_id}-${d.passenger_slot}`)
     );
     for (const booking of bookings) {
+      if (booking.passport_not_required) continue;
       if (!passportRequestedBookings.has(booking.id)) continue;
       for (let slot = 1; slot <= booking.passenger_count; slot++) {
         if (!docsMap.has(`${booking.id}-${slot}`)) {
