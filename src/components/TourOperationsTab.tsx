@@ -50,7 +50,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
-  const [documentAlertsModalOpen] = useState(false); // kept for potential future use
+  
   const [formResponsesModalOpen, setFormResponsesModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null>(null);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
