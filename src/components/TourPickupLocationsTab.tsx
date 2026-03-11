@@ -229,7 +229,7 @@ export const TourPickupLocationsTab = ({
             <CardTitle className="flex items-center justify-between">
               <span className="flex items-center gap-2">
                 Pickup Options
-                <Badge variant="secondary">{options.length} / {MAX_OPTIONS}</Badge>
+                <Badge variant="secondary">{options.length} option{options.length !== 1 ? 's' : ''}</Badge>
               </span>
             </CardTitle>
           </CardHeader>
