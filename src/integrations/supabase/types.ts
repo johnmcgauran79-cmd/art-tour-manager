@@ -2980,6 +2980,10 @@ export type Database = {
         Args: { p_booking_id: string }
         Returns: undefined
       }
+      delete_tour_with_cascade: {
+        Args: { p_tour_id: string }
+        Returns: undefined
+      }
       evaluate_trigger_conditions:
         | {
             Args: {
