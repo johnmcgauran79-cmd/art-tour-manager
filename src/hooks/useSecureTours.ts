@@ -26,10 +26,7 @@ export const useSecureDeleteTour = () => {
         }
       });
 
-      const { error } = await supabase
-        .from('tours')
-        .delete()
-        .eq('id', tourId);
+      const { error } = await supabase.rpc('delete_tour_with_cascade', { p_tour_id: tourId });
 
       if (error) throw error;
 
