@@ -358,11 +358,6 @@ export const TourPickupLocationsTab = ({
                   </p>
                 )}
 
-                {options.length >= MAX_OPTIONS && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Maximum of {MAX_OPTIONS} pickup options reached.
-                  </p>
-                )}
               </>
             )}
           </CardContent>
