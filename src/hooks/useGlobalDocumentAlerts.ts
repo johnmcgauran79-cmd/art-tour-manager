@@ -37,7 +37,7 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
       const { data: tours, error: toursError } = await supabase
         .from("tours")
         .select("id, name, start_date, travel_documents_required, pickup_location_required")
-        .in("status", ["pending", "available", "limited_availability", "closed", "sold_out"]);
+        .not("status", "in", '("archived","cancelled")');
       if (toursError) throw toursError;
       if (!tours || tours.length === 0) return [];
 
