@@ -371,7 +371,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+        <DialogContent className="max-w-[90vw] w-full max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Form Responses — {form.form_title}</span>
