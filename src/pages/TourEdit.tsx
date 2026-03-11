@@ -240,7 +240,6 @@ export default function TourEdit() {
     setShowCancelDialog(false);
     executeSave(pendingSubmitData, true);
     setIsCancelling(false);
-    });
   };
 
   const handleInputChange = (field: string, value: string) => {
