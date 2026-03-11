@@ -635,58 +635,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         onOpenChange={setCleanupModalOpen}
       />
 
-      <Dialog open={documentAlertsModalOpen} onOpenChange={setDocumentAlertsModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Outstanding Documents</DialogTitle>
-          </DialogHeader>
-          {documentAlertsTotal === 0 ? (
-            <p className="text-sm text-muted-foreground">All documents are complete. ✓</p>
-          ) : (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">{documentAlertsTotal} outstanding item{documentAlertsTotal !== 1 ? 's' : ''}. Click to view report.</p>
-              <div className="space-y-2">
-                {missingPassports > 0 && (
-                  <div 
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setDocumentAlertsModalOpen(false);
-                      handleReportClick('passport');
-                    }}
-                  >
-                    <span className="text-sm font-medium">Passports missing</span>
-                    <Badge variant="destructive">{missingPassports}</Badge>
-                  </div>
-                )}
-                {missingPickups > 0 && (
-                  <div 
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setDocumentAlertsModalOpen(false);
-                      handleReportClick('pickup');
-                    }}
-                  >
-                    <span className="text-sm font-medium">Pickups missing</span>
-                    <Badge variant="destructive">{missingPickups}</Badge>
-                  </div>
-                )}
-                {missingForms > 0 && (
-                  <div 
-                    className="flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => {
-                      setDocumentAlertsModalOpen(false);
-                      setFormResponsesModalOpen(true);
-                    }}
-                  >
-                    <span className="text-sm font-medium">Form responses missing</span>
-                    <Badge variant="destructive">{missingForms}</Badge>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
 
       <FormResponsesModal
         open={formResponsesModalOpen}
