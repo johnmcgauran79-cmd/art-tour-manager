@@ -53,7 +53,10 @@ export default function TourEdit() {
     xero_reference: "",
   });
 
-  const updateTourMutation = useUpdateTour();
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelCounts, setCancelCounts] = useState({ bookings: 0, activities: 0 });
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
 
   useEffect(() => {
     const fetchTourData = async () => {
