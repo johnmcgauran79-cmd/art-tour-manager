@@ -36,6 +36,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
     initial_rooms_cutoff_date: "",
     final_rooms_cutoff_date: ""
   });
+  const [autoAllocate, setAutoAllocate] = useState(true);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
