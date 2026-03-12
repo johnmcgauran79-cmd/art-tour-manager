@@ -15,28 +15,60 @@ interface AddHotelModalProps {
   tourId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialData?: {
+    name: string;
+    address: string;
+    contact_name: string;
+    contact_phone: string;
+    contact_email: string;
+    rooms_reserved: string;
+    booking_status: string;
+    default_room_type: string;
+    default_check_in: string;
+    default_check_out: string;
+    extra_night_price: string;
+    operations_notes: string;
+    upgrade_options: string;
+    cancellation_policy: string;
+    initial_rooms_cutoff_date: string;
+    final_rooms_cutoff_date: string;
+  };
 }
 
-export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    contact_name: "",
-    contact_phone: "",
-    contact_email: "",
-    rooms_reserved: "",
-    booking_status: "pending",
-    default_room_type: "",
-    default_check_in: "",
-    default_check_out: "",
-    extra_night_price: "",
-    operations_notes: "",
-    upgrade_options: "",
-    cancellation_policy: "",
-    initial_rooms_cutoff_date: "",
-    final_rooms_cutoff_date: ""
-  });
+const emptyFormData = {
+  name: "",
+  address: "",
+  contact_name: "",
+  contact_phone: "",
+  contact_email: "",
+  rooms_reserved: "",
+  booking_status: "pending",
+  default_room_type: "",
+  default_check_in: "",
+  default_check_out: "",
+  extra_night_price: "",
+  operations_notes: "",
+  upgrade_options: "",
+  cancellation_policy: "",
+  initial_rooms_cutoff_date: "",
+  final_rooms_cutoff_date: ""
+};
+
+export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHotelModalProps) => {
+  const [formData, setFormData] = useState(initialData || emptyFormData);
   const [autoAllocate, setAutoAllocate] = useState(true);
+
+  // Reset form when modal opens with new initialData
+  const handleOpenChange = (isOpen: boolean) => {
+    if (isOpen && initialData) {
+      setFormData(initialData);
+      setAutoAllocate(false); // Default to no auto-allocate for duplicates
+    } else if (!isOpen) {
+      setFormData(emptyFormData);
+      setAutoAllocate(true);
+    }
+    onOpenChange(isOpen);
+  };
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -83,25 +115,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
         title: "Hotel Added",
         description: "Hotel has been successfully added to the tour.",
       });
-      onOpenChange(false);
-      setFormData({
-        name: "",
-        address: "",
-        contact_name: "",
-        contact_phone: "",
-        contact_email: "",
-        rooms_reserved: "",
-        booking_status: "pending",
-        default_room_type: "",
-        default_check_in: "",
-        default_check_out: "",
-        extra_night_price: "",
-        operations_notes: "",
-        upgrade_options: "",
-        cancellation_policy: "",
-        initial_rooms_cutoff_date: "",
-        final_rooms_cutoff_date: ""
-      });
+      handleOpenChange(false);
     },
     onError: (error) => {
       console.error('Hotel creation error:', error);
@@ -143,7 +157,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add Hotel</DialogTitle>
