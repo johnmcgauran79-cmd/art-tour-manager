@@ -6,6 +6,7 @@ import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, 
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
+import { AddHotelModal } from "@/components/AddHotelModal";
 import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
