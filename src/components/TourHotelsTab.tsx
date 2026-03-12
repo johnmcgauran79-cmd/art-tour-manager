@@ -100,6 +100,36 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => {
+                        setDuplicateData({
+                          name: hotel.name,
+                          address: hotel.address || "",
+                          contact_name: hotel.contact_name || "",
+                          contact_phone: hotel.contact_phone || "",
+                          contact_email: hotel.contact_email || "",
+                          rooms_reserved: hotel.rooms_reserved?.toString() || "",
+                          booking_status: "pending",
+                          default_room_type: hotel.default_room_type || "",
+                          default_check_in: "",
+                          default_check_out: "",
+                          extra_night_price: hotel.extra_night_price?.toString() || "",
+                          operations_notes: hotel.operations_notes || "",
+                          upgrade_options: hotel.upgrade_options || "",
+                          cancellation_policy: (hotel as any).cancellation_policy || "",
+                          initial_rooms_cutoff_date: "",
+                          final_rooms_cutoff_date: "",
+                        });
+                        setShowDuplicateModal(true);
+                      }}
+                      className="flex items-center gap-1"
+                      disabled={isAgent}
+                    >
+                      <Copy className="h-3 w-3" />
+                      Duplicate
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => onBulkEdit(hotel)}
                       className="flex items-center gap-1"
                       disabled={isAgent}
