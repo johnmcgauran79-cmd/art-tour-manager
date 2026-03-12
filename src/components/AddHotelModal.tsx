@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -35,6 +36,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
     initial_rooms_cutoff_date: "",
     final_rooms_cutoff_date: ""
   });
+  const [autoAllocate, setAutoAllocate] = useState(true);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -63,6 +65,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           cancellation_policy: hotelData.cancellation_policy || null,
           initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
           final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
+          auto_allocate_on_create: autoAllocate,
         }])
         .select()
         .single();
@@ -309,6 +312,22 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
               value={formData.cancellation_policy}
               onChange={(e) => handleInputChange("cancellation_policy", e.target.value)}
               rows={3}
+            />
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="auto_allocate" className="text-sm font-medium">Auto-allocate to existing bookings</Label>
+              <p className="text-sm text-muted-foreground">
+                {autoAllocate 
+                  ? "This hotel will be automatically allocated to all existing bookings requiring accommodation." 
+                  : "Hotel will be added but not allocated to any bookings. You can manually allocate later."}
+              </p>
+            </div>
+            <Switch
+              id="auto_allocate"
+              checked={autoAllocate}
+              onCheckedChange={setAutoAllocate}
             />
           </div>
 
