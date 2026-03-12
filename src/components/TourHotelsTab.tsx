@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, Bell } from "lucide-react";
+import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, Bell, Copy } from "lucide-react";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
