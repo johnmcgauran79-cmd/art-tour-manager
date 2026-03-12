@@ -65,6 +65,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange }: AddHotelModalProps
           cancellation_policy: hotelData.cancellation_policy || null,
           initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
           final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
+          auto_allocate_on_create: autoAllocate,
         }])
         .select()
         .single();
