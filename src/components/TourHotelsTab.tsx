@@ -276,6 +276,16 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
           onOpenChange={(open) => !open && setSelectedHotelForBreakdown(null)}
         />
       )}
+
+      <AddHotelModal
+        tourId={tourId}
+        open={showDuplicateModal}
+        onOpenChange={(open) => {
+          setShowDuplicateModal(open);
+          if (!open) setDuplicateData(null);
+        }}
+        initialData={duplicateData}
+      />
     </div>
   );
 };
