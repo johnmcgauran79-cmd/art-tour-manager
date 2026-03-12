@@ -1445,6 +1445,7 @@ export type Database = {
       hotels: {
         Row: {
           address: string | null
+          auto_allocate_on_create: boolean
           booking_status:
             | Database["public"]["Enums"]["hotel_booking_status"]
             | null
@@ -1472,6 +1473,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          auto_allocate_on_create?: boolean
           booking_status?:
             | Database["public"]["Enums"]["hotel_booking_status"]
             | null
@@ -1499,6 +1501,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          auto_allocate_on_create?: boolean
           booking_status?:
             | Database["public"]["Enums"]["hotel_booking_status"]
             | null
