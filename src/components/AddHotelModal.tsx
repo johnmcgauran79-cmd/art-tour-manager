@@ -115,25 +115,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
         title: "Hotel Added",
         description: "Hotel has been successfully added to the tour.",
       });
-      onOpenChange(false);
-      setFormData({
-        name: "",
-        address: "",
-        contact_name: "",
-        contact_phone: "",
-        contact_email: "",
-        rooms_reserved: "",
-        booking_status: "pending",
-        default_room_type: "",
-        default_check_in: "",
-        default_check_out: "",
-        extra_night_price: "",
-        operations_notes: "",
-        upgrade_options: "",
-        cancellation_policy: "",
-        initial_rooms_cutoff_date: "",
-        final_rooms_cutoff_date: ""
-      });
+      handleOpenChange(false);
     },
     onError: (error) => {
       console.error('Hotel creation error:', error);
