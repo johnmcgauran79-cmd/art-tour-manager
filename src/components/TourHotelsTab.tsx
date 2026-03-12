@@ -26,6 +26,8 @@ interface TourHotelsTabProps {
 export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomingList, onBulkEdit, onOpenAlerts }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
   const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
+  const [duplicateData, setDuplicateData] = useState<any>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "hotels");
   
