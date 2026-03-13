@@ -176,13 +176,23 @@ export const PendingEmailApprovals = () => {
                           {approval.rule?.rule_name} • {approval.rule?.days_before_tour} days before tour
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setExpandedId(expandedId === approval.id ? null : approval.id)}
-                      >
-                        {expandedId === approval.id ? 'Hide Details' : 'Show Details'}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPreviewApproval(approval)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedId(expandedId === approval.id ? null : approval.id)}
+                        >
+                          {expandedId === approval.id ? 'Hide Details' : 'Show Details'}
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
