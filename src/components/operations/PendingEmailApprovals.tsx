@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Mail, Check, X, Calendar, Users, Loader2 } from "lucide-react";
+import { Mail, Check, X, Calendar, Users, Loader2, Eye } from "lucide-react";
 import { usePendingEmailApprovals, useApproveEmails, useRejectEmails } from "@/hooks/usePendingEmailApprovals";
+import { PendingEmailPreviewModal } from "./PendingEmailPreviewModal";
 import { format } from "date-fns";
 import {
   AlertDialog,
