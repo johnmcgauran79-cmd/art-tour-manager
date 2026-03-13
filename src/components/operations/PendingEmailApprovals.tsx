@@ -353,6 +353,16 @@ export const PendingEmailApprovals = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Email Preview Modal */}
+      <PendingEmailPreviewModal
+        open={!!previewApproval}
+        onOpenChange={(open) => !open && setPreviewApproval(null)}
+        tourId={previewApproval?.tour?.id || ''}
+        templateSubject={previewApproval?.rule?.email_templates?.subject_template || ''}
+        templateContent={previewApproval?.rule?.email_templates?.content_template || ''}
+        templateFrom={previewApproval?.rule?.email_templates?.from_email || ''}
+        ruleName={previewApproval?.rule?.rule_name || ''}
+      />
     </>
   );
 };
