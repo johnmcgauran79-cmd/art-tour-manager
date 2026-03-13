@@ -90,7 +90,7 @@ export const PendingEmailPreviewModal = ({
     '{{waiver_link}}': '#preview-waiver',
   };
   for (const [placeholder, replacement] of Object.entries(placeholderReplacements)) {
-    processedContent = processedContent.replaceAll(placeholder, replacement);
+    processedContent = processedContent.split(placeholder).join(replacement);
   }
   // Handle custom form buttons: {{custom_form_button:Form Title}}
   processedContent = processedContent.replace(
