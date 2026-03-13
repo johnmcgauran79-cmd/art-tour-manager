@@ -31,6 +31,7 @@ export const PendingEmailApprovals = () => {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [previewApproval, setPreviewApproval] = useState<any | null>(null);
   const [isProceedingToConfirm, setIsProceedingToConfirm] = useState(false);
 
   const handleSelectAll = (checked: boolean) => {
