@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Mail, Check, X, Calendar, Users, Loader2 } from "lucide-react";
+import { Mail, Check, X, Calendar, Users, Loader2, Eye } from "lucide-react";
 import { usePendingEmailApprovals, useApproveEmails, useRejectEmails } from "@/hooks/usePendingEmailApprovals";
+import { PendingEmailPreviewModal } from "./PendingEmailPreviewModal";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -30,6 +31,7 @@ export const PendingEmailApprovals = () => {
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [previewApproval, setPreviewApproval] = useState<any | null>(null);
   const [isProceedingToConfirm, setIsProceedingToConfirm] = useState(false);
 
   const handleSelectAll = (checked: boolean) => {
@@ -174,13 +176,23 @@ export const PendingEmailApprovals = () => {
                           {approval.rule?.rule_name} • {approval.rule?.days_before_tour} days before tour
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setExpandedId(expandedId === approval.id ? null : approval.id)}
-                      >
-                        {expandedId === approval.id ? 'Hide Details' : 'Show Details'}
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPreviewApproval(approval)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setExpandedId(expandedId === approval.id ? null : approval.id)}
+                        >
+                          {expandedId === approval.id ? 'Hide Details' : 'Show Details'}
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-sm">
@@ -341,6 +353,16 @@ export const PendingEmailApprovals = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Email Preview Modal */}
+      <PendingEmailPreviewModal
+        open={!!previewApproval}
+        onOpenChange={(open) => !open && setPreviewApproval(null)}
+        tourId={previewApproval?.tour?.id || ''}
+        templateSubject={previewApproval?.rule?.email_templates?.subject_template || ''}
+        templateContent={previewApproval?.rule?.email_templates?.content_template || ''}
+        templateFrom={previewApproval?.rule?.email_templates?.from_email || ''}
+        ruleName={previewApproval?.rule?.rule_name || ''}
+      />
     </>
   );
 };
