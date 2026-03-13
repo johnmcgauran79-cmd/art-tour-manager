@@ -71,9 +71,32 @@ export const PendingEmailPreviewModal = ({
   const processedSubject = mergeData
     ? EmailTemplateEngine.processTemplate(templateSubject, mergeData)
     : templateSubject;
-  const processedContent = mergeData
+
+  // Process template then replace leftover action placeholders with styled mock buttons
+  let processedContent = mergeData
     ? EmailTemplateEngine.processTemplate(templateContent, mergeData)
     : templateContent;
+
+  // Replace raw action placeholders with visual mock buttons for preview
+  const placeholderButtonStyle = 'display:inline-block;padding:10px 24px;background:#6366f1;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;opacity:0.7;cursor:default;';
+  const placeholderReplacements: Record<string, string> = {
+    '{{profile_update_button}}': `<span style="${placeholderButtonStyle}">📝 Update My Profile (Preview)</span>`,
+    '{{profile_update_link}}': '#preview-profile-update',
+    '{{pickup_button}}': `<span style="${placeholderButtonStyle}">📍 Select Pickup Location (Preview)</span>`,
+    '{{pickup_link}}': '#preview-pickup',
+    '{{travel_docs_button}}': `<span style="${placeholderButtonStyle}">🛂 Update Passport Details (Preview)</span>`,
+    '{{travel_docs_link}}': '#preview-travel-docs',
+    '{{waiver_button}}': `<span style="${placeholderButtonStyle}">📋 Sign Waiver (Preview)</span>`,
+    '{{waiver_link}}': '#preview-waiver',
+  };
+  for (const [placeholder, replacement] of Object.entries(placeholderReplacements)) {
+    processedContent = processedContent.replaceAll(placeholder, replacement);
+  }
+  // Handle custom form buttons: {{custom_form_button:Form Title}}
+  processedContent = processedContent.replace(
+    /\{\{custom_form_button:([^}]+)\}\}/g,
+    (_, formTitle) => `<span style="${placeholderButtonStyle}">📝 ${formTitle.trim()} (Preview)</span>`
+  );
 
   const recipientName = booking?.customers
     ? `${booking.customers.first_name ?? ''} ${booking.customers.last_name ?? ''}`.trim()
