@@ -77,15 +77,24 @@ export const detectPhoneCountry = (phone: string | null): string | null => {
   }
   
   if (digitsOnly.length === 9) {
-    // New Zealand without leading 0: 21xxxxxxx, 22xxxxxxx, etc.
-    if (digitsOnly.match(/^[2-9]\d{8}$/)) {
+    // Australian mobile without leading 0: 4xxxxxxxx (e.g., 412345678)
+    if (digitsOnly.startsWith('4')) {
+      return 'AU';
+    }
+    
+    // Australian landline without leading 0: 2xxxxxxxx, 3xxxxxxxx, 7xxxxxxxx, 8xxxxxxxx
+    if (['2', '3', '7', '8'].some(prefix => digitsOnly.startsWith(prefix))) {
+      return 'AU';
+    }
+    
+    // New Zealand without leading 0: 21xxxxxxx, 22xxxxxxx, 27xxxxxxx, etc.
+    if (digitsOnly.match(/^2[1-9]\d{7}$/)) {
       return 'NZ';
     }
   }
   
   // Default patterns by length
   if (digitsOnly.length === 8 || digitsOnly.length === 9) {
-    // Could be AU without country code
     return 'AU';
   }
   
