@@ -1,3 +1,5 @@
+import { formatPhoneForWhatsApp } from '@/utils/phoneFormatter';
+
 interface ReportItem {
   id: string;
   type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'passport';
@@ -17,7 +19,7 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       csvData = report.data.map(item => ({
         firstname: item.firstName,
         lastname: item.lastName,
-        phone: item.phone
+        phone: formatPhoneForWhatsApp(item.phone, 'AU') || item.phone || ''
       }));
       break;
     case 'dietary':
