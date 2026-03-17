@@ -74,18 +74,23 @@ function mapXeroStatusToBookingStatus(
   amountPaid: number,
   _totalAmount: number,
   instalmentRequired: boolean,
-  currentStatus: string | null
+  currentStatus: string | null,
+  passengerCount: number = 1,
+  depositPerPerson: number = 0
 ): string | null {
   let proposedStatus: string | null = null;
 
   if (xeroStatus === 'PAID' || (amountDue === 0 && amountPaid > 0)) {
     proposedStatus = 'fully_paid';
   } else if (amountPaid > 0 && amountDue > 0) {
-    if (instalmentRequired && currentStatus === 'deposited') {
-      // Already deposited + instalment required = next step is instalment_paid
+    // Calculate total deposit threshold for this booking
+    const totalDepositThreshold = passengerCount * depositPerPerson;
+
+    if (instalmentRequired && currentStatus === 'deposited' && totalDepositThreshold > 0 && amountPaid > totalDepositThreshold) {
+      // Amount paid exceeds deposit (pax × deposit_per_person) = instalment_paid
       proposedStatus = 'instalment_paid';
     } else {
-      // First partial payment defaults to deposited (user can adjust in review)
+      // Payment is at or below deposit level, or no deposit info available
       proposedStatus = 'deposited';
     }
   } else if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
