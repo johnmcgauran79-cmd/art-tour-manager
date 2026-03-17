@@ -39,8 +39,8 @@ export const ReportPDFViewer = ({
     const opt = {
       margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
       filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${reportTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`,
-      image: { type: 'png' as const, quality: 1 },
-      html2canvas: { scale: 3, useCORS: true, letterRendering: true, logging: false },
+      image: { type: 'jpeg' as const, quality: 0.85 },
+      html2canvas: { scale: 1.5, useCORS: true, letterRendering: true, logging: false },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
