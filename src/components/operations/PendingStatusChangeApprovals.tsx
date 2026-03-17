@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Zap, Check, X, Calendar, Users, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Zap, Check, X, Calendar, Users, Loader2, ChevronDown, ChevronUp, RefreshCw, ArrowRightLeft } from "lucide-react";
 import { 
   usePendingStatusChangeApprovals, 
   useApproveStatusChangeEmails, 
-  useRejectStatusChangeEmails 
+  useRejectStatusChangeEmails,
+  useSwapStatusChangeTemplate
 } from "@/hooks/useStatusChangeEmailQueue";
+import { useEmailTemplates } from "@/hooks/useEmailTemplates";
+import { useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import {
   AlertDialog,
@@ -29,15 +33,19 @@ import {
 } from "@/components/ui/collapsible";
 
 export const PendingStatusChangeApprovals = () => {
-  const { data: pendingBatches, isLoading } = usePendingStatusChangeApprovals();
+  const { data: pendingBatches, isLoading, isRefetching } = usePendingStatusChangeApprovals();
   const approveEmails = useApproveStatusChangeEmails();
   const rejectEmails = useRejectStatusChangeEmails();
+  const swapTemplate = useSwapStatusChangeTemplate();
+  const { data: allTemplates } = useEmailTemplates();
+  const queryClient = useQueryClient();
   
-  // Track individually selected queue item IDs
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showConfirmRejectDialog, setShowConfirmRejectDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [showSwapDialog, setShowSwapDialog] = useState(false);
+  const [swapTemplateId, setSwapTemplateId] = useState<string>("");
   const [rejectionReason, setRejectionReason] = useState("");
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [isProceedingToConfirm, setIsProceedingToConfirm] = useState(false);
@@ -95,6 +103,27 @@ export const PendingStatusChangeApprovals = () => {
       newExpanded.add(batchKey);
     }
     setExpandedBatches(newExpanded);
+  };
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['pending-status-change-approvals'] });
+  };
+
+  const handleSwapTemplate = () => {
+    if (selectedItems.size === 0) return;
+    setSwapTemplateId("");
+    setShowSwapDialog(true);
+  };
+
+  const confirmSwapTemplate = () => {
+    if (!swapTemplateId) return;
+    const queueIds = Array.from(selectedItems);
+    swapTemplate.mutate({ queueIds, emailTemplateId: swapTemplateId }, {
+      onSuccess: () => {
+        setShowSwapDialog(false);
+        setSwapTemplateId("");
+      }
+    });
   };
 
   const handleApprove = () => {
@@ -175,6 +204,24 @@ export const PendingStatusChangeApprovals = () => {
             </div>
             <div className="flex gap-2">
               <Button
+                onClick={handleRefresh}
+                disabled={isRefetching}
+                size="sm"
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button
+                onClick={handleSwapTemplate}
+                disabled={selectedItems.size === 0 || swapTemplate.isPending}
+                size="sm"
+                variant="outline"
+              >
+                <ArrowRightLeft className="h-4 w-4 mr-1" />
+                Change Template
+              </Button>
+              <Button
                 onClick={handleApprove}
                 disabled={selectedItems.size === 0 || approveEmails.isPending}
                 size="sm"
@@ -211,6 +258,9 @@ export const PendingStatusChangeApprovals = () => {
               const batchFull = isBatchFullySelected(batch);
               const batchPartial = isBatchPartiallySelected(batch);
               const selectedInBatch = getBatchItemIds(batch).filter(id => selectedItems.has(id)).length;
+              // Check if any items in batch have a queue-level override
+              const hasOverride = batch.items.some(i => i.email_template_id);
+              const overrideItem = batch.items.find(i => i.email_template_id);
               
               return (
                 <Collapsible key={batchKey} open={isExpanded} onOpenChange={() => toggleExpanded(batchKey)}>
@@ -238,6 +288,12 @@ export const PendingStatusChangeApprovals = () => {
                                   : `${batch.items.length} booking${batch.items.length !== 1 ? 's' : ''}`
                                 }
                               </Badge>
+                              {hasOverride && (
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                                  <ArrowRightLeft className="h-3 w-3 mr-1" />
+                                  Template Changed
+                                </Badge>
+                              )}
                             </h4>
                             <p className="text-sm text-muted-foreground">
                               Template: {batch.template_name} • Queued: {format(new Date(batch.batch_date), 'd MMM yyyy')}
@@ -299,6 +355,38 @@ export const PendingStatusChangeApprovals = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Swap Template Dialog */}
+      <AlertDialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Email Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select a different template for the {selectedItems.size} selected email(s). 
+              This will override the rule's default template for these queued emails only.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Select value={swapTemplateId} onValueChange={setSwapTemplateId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select a template..." />
+            </SelectTrigger>
+            <SelectContent>
+              {allTemplates?.map((t) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name} ({t.type})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSwapTemplate} disabled={!swapTemplateId || swapTemplate.isPending}>
+              {swapTemplate.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Change Template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Approve Confirmation Dialog */}
       <AlertDialog open={showApproveDialog} onOpenChange={(open) => {

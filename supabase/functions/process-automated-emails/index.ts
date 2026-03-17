@@ -484,24 +484,45 @@ async function processBatchEmails(
   // Helper function for rate limiting delay
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Check for tour-specific template override
+  // Priority 1: Check for batch-level template override (set via "Change Template" in approval UI)
   let emailTemplate = rule.email_templates;
-  const { data: override } = await supabase
-    .from('tour_email_rule_overrides')
+  
+  // First check if the batch record has a direct template override
+  const { data: batchRecord } = await supabase
+    .from('automated_email_log')
     .select('email_template_id')
-    .eq('tour_id', tour.id)
-    .eq('rule_id', rule.id)
-    .maybeSingle();
+    .eq('id', batchId)
+    .single();
 
-  if (override?.email_template_id) {
-    console.log(`Using tour-specific template override for tour "${tour.name}", rule "${rule.rule_name}"`);
-    const { data: overrideTemplate } = await supabase
+  if (batchRecord?.email_template_id) {
+    console.log(`Using batch-level template override for batch ${batchId}`);
+    const { data: batchTemplate } = await supabase
       .from('email_templates')
       .select('*')
-      .eq('id', override.email_template_id)
+      .eq('id', batchRecord.email_template_id)
       .single();
-    if (overrideTemplate) {
-      emailTemplate = overrideTemplate;
+    if (batchTemplate) {
+      emailTemplate = batchTemplate;
+    }
+  } else {
+    // Priority 2: Check for tour-specific template override
+    const { data: override } = await supabase
+      .from('tour_email_rule_overrides')
+      .select('email_template_id')
+      .eq('tour_id', tour.id)
+      .eq('rule_id', rule.id)
+      .maybeSingle();
+
+    if (override?.email_template_id) {
+      console.log(`Using tour-specific template override for tour "${tour.name}", rule "${rule.rule_name}"`);
+      const { data: overrideTemplate } = await supabase
+        .from('email_templates')
+        .select('*')
+        .eq('id', override.email_template_id)
+        .single();
+      if (overrideTemplate) {
+        emailTemplate = overrideTemplate;
+      }
     }
   }
 

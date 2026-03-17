@@ -20,12 +20,21 @@ export const usePendingEmailApprovals = () => {
           rule:automated_email_rules(
             rule_name,
             days_before_tour,
+            email_template_id,
             email_templates:email_templates(
+              id,
               name,
               subject_template,
               content_template,
               from_email
             )
+          ),
+          override_template:email_templates(
+            id,
+            name,
+            subject_template,
+            content_template,
+            from_email
           )
         `)
         .eq('approval_status', 'pending_approval')
@@ -120,6 +129,36 @@ export const useRejectEmails = () => {
       toast({
         title: "Error",
         description: error.message || "Failed to reject emails.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useSwapEmailApprovalTemplate = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ approvalIds, emailTemplateId }: { approvalIds: string[]; emailTemplateId: string | null }) => {
+      const { error } = await supabase
+        .from('automated_email_log')
+        .update({ email_template_id: emailTemplateId })
+        .in('id', approvalIds);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
+      toast({
+        title: "Template Updated",
+        description: "The email template for the selected batch has been changed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change template.",
         variant: "destructive",
       });
     },

@@ -129,8 +129,20 @@ serve(async (req) => {
           continue;
         }
 
-        // Check for tour-specific template override
-        if (item.tour_id && item.rule?.id) {
+        // Priority 1: Queue-item-level template override (set via "Change Template" in approval UI)
+        if (item.email_template_id) {
+          console.log(`Using queue-item template override for queue item ${item.id}`);
+          const { data: queueTemplate } = await supabase
+            .from('email_templates')
+            .select('*')
+            .eq('id', item.email_template_id)
+            .single();
+          if (queueTemplate) {
+            template = queueTemplate;
+          }
+        }
+        // Priority 2: Tour-specific template override
+        else if (item.tour_id && item.rule?.id) {
           const { data: override } = await supabase
             .from('tour_email_rule_overrides')
             .select('email_template_id')
