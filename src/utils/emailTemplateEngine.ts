@@ -605,6 +605,7 @@ export class EmailTemplateEngine {
         hotel_contact_name: hb.hotels?.contact_name,
         hotel_contact_phone: hb.hotels?.contact_phone,
         hotel_contact_email: hb.hotels?.contact_email,
+        hotel_extra_night_price: hb.hotels?.extra_night_price,
       })),
       
       // Activity bookings
