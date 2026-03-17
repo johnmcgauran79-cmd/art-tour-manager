@@ -7,6 +7,7 @@ import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { SystemSettings } from "@/components/SystemSettings";
 import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRulesManagement";
 import { EmailSuppressionsManagement } from "@/components/EmailSuppressionsManagement";
+import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTemplatesManagement";
 
 interface SettingsProps {
   onBack: () => void;
@@ -18,11 +19,12 @@ export const Settings = ({ onBack }: SettingsProps) => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 mb-8">
+        <TabsList className="grid w-full grid-cols-6 mb-8">
           <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
           <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
           <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
+          <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
           <TabsTrigger value="system">System Settings</TabsTrigger>
         </TabsList>
 
@@ -50,6 +52,10 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         <TabsContent value="task-templates" className="space-y-6">
           <TaskTemplatesManagement />
+        </TabsContent>
+
+        <TabsContent value="additional-info" className="space-y-6">
+          <AdditionalInfoTemplatesManagement />
         </TabsContent>
 
         <TabsContent value="system" className="space-y-6">
