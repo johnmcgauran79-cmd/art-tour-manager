@@ -241,3 +241,33 @@ export const useRejectStatusChangeEmails = () => {
     },
   });
 };
+
+export const useSwapStatusChangeTemplate = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ queueIds, emailTemplateId }: { queueIds: string[]; emailTemplateId: string | null }) => {
+      const { error } = await supabase
+        .from('status_change_email_queue')
+        .update({ email_template_id: emailTemplateId })
+        .in('id', queueIds);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-status-change-approvals'] });
+      toast({
+        title: "Template Updated",
+        description: "The email template for the selected items has been changed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change template.",
+        variant: "destructive",
+      });
+    },
+  });
+};

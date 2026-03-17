@@ -125,3 +125,33 @@ export const useRejectEmails = () => {
     },
   });
 };
+
+export const useSwapEmailApprovalTemplate = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ approvalIds, emailTemplateId }: { approvalIds: string[]; emailTemplateId: string | null }) => {
+      const { error } = await supabase
+        .from('automated_email_log')
+        .update({ email_template_id: emailTemplateId })
+        .in('id', approvalIds);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
+      toast({
+        title: "Template Updated",
+        description: "The email template for the selected batch has been changed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to change template.",
+        variant: "destructive",
+      });
+    },
+  });
+};
