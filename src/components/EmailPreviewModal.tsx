@@ -107,7 +107,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
             bedding,
             room_requests,
             confirmation_number,
-            hotels (name, address, contact_name, contact_phone, contact_email)
+            hotels (name, address, contact_name, contact_phone, contact_email, extra_night_price)
           ),
           activity_bookings (
             passengers_attending,

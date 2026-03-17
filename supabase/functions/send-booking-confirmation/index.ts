@@ -196,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
           room_type,
           room_upgrade,
           bedding,
-          hotels (name, contact_name, contact_phone, contact_email)
+          hotels (name, contact_name, contact_phone, contact_email, address, extra_night_price)
         ),
         activity_bookings (
           passengers_attending,
@@ -793,6 +793,7 @@ const handler = async (req: Request): Promise<Response> => {
         hotel_room_upgrade: hb.room_upgrade || '',
         hotel_room_requests: hb.room_requests || '',
         hotel_confirmation_number: hb.confirmation_number || '',
+        hotel_extra_night_price: hb.hotels?.extra_night_price || '',
       })),
       
       // Activity bookings array

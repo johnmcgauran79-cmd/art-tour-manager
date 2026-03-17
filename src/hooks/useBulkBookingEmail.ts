@@ -43,7 +43,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
               room_upgrade, room_requests, confirmation_number,
-              hotels (name, address, contact_name, contact_phone, contact_email)
+              hotels (name, address, contact_name, contact_phone, contact_email, extra_night_price)
             ),
             activity_bookings (
               passengers_attending,
@@ -78,7 +78,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
               room_upgrade, room_requests, confirmation_number,
-              hotels (name, address, contact_name, contact_phone, contact_email)
+              hotels (name, address, contact_name, contact_phone, contact_email, extra_night_price)
             ),
             activity_bookings (
               passengers_attending,
@@ -118,7 +118,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
             hotel_bookings (
               check_in_date, check_out_date, nights, room_type, bedding,
               room_upgrade, room_requests, confirmation_number,
-              hotels (name, address, contact_name, contact_phone, contact_email)
+              hotels (name, address, contact_name, contact_phone, contact_email, extra_night_price)
             ),
             activity_bookings (
               passengers_attending,

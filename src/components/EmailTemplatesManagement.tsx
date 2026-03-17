@@ -78,7 +78,7 @@ const MERGE_FIELDS = {
     '{{#hotel_bookings}}', '{{hotel_name}}', '{{hotel_check_in_date}}', '{{hotel_check_out_date}}',
     '{{hotel_nights}}', '{{hotel_room_type}}', '{{hotel_bedding}}', '{{hotel_room_upgrade}}',
     '{{hotel_room_requests}}', '{{hotel_confirmation_number}}', '{{hotel_address}}',
-    '{{hotel_contact_name}}', '{{hotel_contact_phone}}', '{{hotel_contact_email}}', '{{/hotel_bookings}}'
+    '{{hotel_contact_name}}', '{{hotel_contact_phone}}', '{{hotel_contact_email}}', '{{hotel_extra_night_price}}', '{{/hotel_bookings}}'
   ],
   activity: [
     '{{#activity_bookings}}', '{{activity_name}}', '{{activity_date}}', '{{activity_status}}',
