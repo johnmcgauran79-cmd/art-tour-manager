@@ -154,12 +154,11 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'passport':
       tableHTML = `
         <table>
-          <thead><tr><th>Passenger</th><th>Type</th><th>Name as per Passport</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
+          <thead><tr><th>Passenger</th><th>Name as per Passport</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr>
                 <td>${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
-                <td>${item.passengerType}</td>
                 <td>${item.nameAsPerPassport || '-'}</td>
                 <td>${item.passportNumber || '-'}</td>
                 <td>${item.passportCountry || '-'}</td>
