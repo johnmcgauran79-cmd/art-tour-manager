@@ -368,6 +368,10 @@ export default function TourDetail() {
                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Itinerary</span>
               </TabsTrigger>
+              <TabsTrigger value="additional-info" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Additional Info</span>
+              </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Forms</span>
