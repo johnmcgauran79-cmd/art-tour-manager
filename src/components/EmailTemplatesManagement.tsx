@@ -533,7 +533,7 @@ export const EmailTemplatesManagement = () => {
                   
                   {Object.entries(MERGE_FIELDS).map(([category, fields]) => (
                     <TabsContent key={category} value={category}>
-                      <ScrollArea className="h-[500px]">
+                      <div className="h-[500px] overflow-y-auto border rounded-md p-1">
                         {category === 'conditions' && (
                           <p className="text-xs text-muted-foreground px-2 mb-2">
                             Use <code className="bg-muted px-1 rounded">{'{{#field}}'}</code> to show content when true, <code className="bg-muted px-1 rounded">{'{{^field}}'}</code> to show when false. Place your content between the opening and closing tags.
@@ -562,7 +562,7 @@ export const EmailTemplatesManagement = () => {
                             );
                           })}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </TabsContent>
                   ))}
                 </Tabs>
