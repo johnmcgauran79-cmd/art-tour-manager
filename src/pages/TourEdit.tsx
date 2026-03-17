@@ -735,6 +735,18 @@ export default function TourEdit() {
           />
         </div>
 
+        {/* Email Template Overrides */}
+        <div className="space-y-3 border-t pt-4">
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-base font-medium">Email Template Overrides</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Assign tour-specific email templates for each automated rule. If not set, the global default from Settings will be used.
+          </p>
+          <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
+        </div>
+
         <div className="flex justify-end gap-2">
           <Button
             type="button"
