@@ -83,6 +83,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     };
   };
 
+  const [commsOverrides, setCommsOverrides] = useState<CommsOverride[]>([]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -90,7 +92,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     try {
       const { days, nights } = calculateDaysAndNights(formData.start_date, formData.end_date);
 
-      const { error } = await supabase.from("tours").insert({
+      const { data: newTour, error } = await supabase.from("tours").insert({
         name: formData.name,
         tour_host: "TBD",
         location: formData.location,
@@ -116,9 +118,19 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
         tour_type: formData.tour_type,
         status: "pending",
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Save comms overrides if any were set
+      if (commsOverrides.length > 0 && newTour) {
+        const overrideRows = commsOverrides.map(o => ({
+          tour_id: newTour.id,
+          rule_id: o.ruleId,
+          email_template_id: o.emailTemplateId,
+        }));
+        await supabase.from('tour_email_rule_overrides' as any).insert(overrideRows as any);
+      }
 
       toast({
         title: "Success",
@@ -150,6 +162,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         minimum_passengers_required: "",
         tour_type: "domestic",
       });
+      setCommsOverrides([]);
 
       queryClient.invalidateQueries({ queryKey: ["tours"] });
       onOpenChange(false);
