@@ -234,7 +234,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
               <tr>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.firstName}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.lastName}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.phone}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${formatPhoneForWhatsApp(item.phone, 'AU') || item.phone || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
