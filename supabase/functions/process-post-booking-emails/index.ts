@@ -208,7 +208,7 @@ serve(async (req) => {
                 bookingId: booking.id,
                 customSubject: emailSubject,
                 customContent: emailContent,
-                fromEmail: rule.email_templates?.from_email,
+                fromEmail: emailTemplate?.from_email,
                 isAutomated: true
               }
             }
