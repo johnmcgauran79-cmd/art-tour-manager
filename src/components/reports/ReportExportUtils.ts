@@ -92,9 +92,9 @@ export const printReport = (report: ReportItem, tourName: string) => {
           <tbody>
             ${report.data.map(item => `
               <tr>
-                <td>${item.firstName}</td>
+               <td>${item.firstName}</td>
                 <td>${item.lastName}</td>
-                <td>${item.phone}</td>
+                <td>${formatPhoneForWhatsApp(item.phone, 'AU') || item.phone || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
