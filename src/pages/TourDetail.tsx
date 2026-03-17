@@ -5,7 +5,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
