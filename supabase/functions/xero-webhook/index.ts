@@ -251,6 +251,8 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
       const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean)
         .filter((r: string) => !['0', 'TBC', 'tbc', 'N/A', 'n/a'].includes(r));
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
+      const depositPerPerson = (booking as any).tours?.deposit_per_person || 0;
+      const passengerCount = booking.passenger_count || 1;
 
       if (refs.length === 0) continue;
 
@@ -277,7 +279,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         const amountDue = invoice.AmountDue || 0;
         const amountPaid = invoice.AmountPaid || 0;
         const total = invoice.Total || 0;
-        const proposed = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
+        const proposed = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status, passengerCount, depositPerPerson);
         if (proposed) {
           statusProposals.push({ status: proposed, order: STATUS_ORDER[proposed] || 0, invoice, ref });
         }
