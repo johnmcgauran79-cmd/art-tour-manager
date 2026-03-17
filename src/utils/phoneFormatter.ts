@@ -46,22 +46,21 @@ export const detectPhoneCountry = (phone: string | null): string | null => {
   
   // Pattern-based detection for common formats
   if (digitsOnly.length === 10) {
-    // New Zealand mobile: 021/022/027/028/029
-    if (digitsOnly.startsWith('021') || digitsOnly.startsWith('022') || 
-        digitsOnly.startsWith('027') || digitsOnly.startsWith('028') || 
-        digitsOnly.startsWith('029')) {
-      return 'NZ';
+    // Australian mobile: 04xx xxx xxx - check first as AU is primary market
+    if (digitsOnly.startsWith('04')) {
+      return 'AU';
+    }
+    
+    // Australian landline: 02, 03, 07, 08 - these are always AU for 10-digit numbers
+    // Note: 02x overlaps with NZ mobile prefixes (021, 022, 027, 028, 029)
+    // but 10-digit numbers starting with 0 + area code are AU format
+    if (['02', '03', '07', '08'].some(prefix => digitsOnly.startsWith(prefix))) {
+      return 'AU';
     }
     
     // US/Canada: (xxx) xxx-xxxx format typically
     if (digitsOnly.match(/^[2-9]\d{9}$/)) {
       return 'US'; // Could be CA too, but US is more common
-    }
-    
-    // Australian: 04xx xxx xxx or 0x xxxx xxxx
-    if (digitsOnly.startsWith('04') || 
-        ['02', '03', '07', '08'].some(prefix => digitsOnly.startsWith(prefix))) {
-      return 'AU';
     }
   }
   
