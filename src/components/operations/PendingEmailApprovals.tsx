@@ -139,11 +139,24 @@ export const PendingEmailApprovals = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Pending Email Approvals
-          </CardTitle>
-          <CardDescription>No email batches pending approval</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Pending Email Approvals
+              </CardTitle>
+              <CardDescription>No email batches pending approval</CardDescription>
+            </div>
+            <Button
+              onClick={handleRefresh}
+              disabled={isRefetching}
+              size="sm"
+              variant="outline"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
         </CardHeader>
       </Card>
     );
