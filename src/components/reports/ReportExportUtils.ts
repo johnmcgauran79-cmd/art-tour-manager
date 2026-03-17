@@ -1,3 +1,5 @@
+import { formatPhoneForWhatsApp } from '@/utils/phoneFormatter';
+
 interface ReportItem {
   id: string;
   type: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'passport';
@@ -17,7 +19,7 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       csvData = report.data.map(item => ({
         firstname: item.firstName,
         lastname: item.lastName,
-        phone: item.phone
+        phone: formatPhoneForWhatsApp(item.phone, 'AU') || item.phone || ''
       }));
       break;
     case 'dietary':
@@ -90,9 +92,9 @@ export const printReport = (report: ReportItem, tourName: string) => {
           <tbody>
             ${report.data.map(item => `
               <tr>
-                <td>${item.firstName}</td>
+               <td>${item.firstName}</td>
                 <td>${item.lastName}</td>
-                <td>${item.phone}</td>
+                <td>${formatPhoneForWhatsApp(item.phone, 'AU') || item.phone || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -232,7 +234,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
               <tr>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.firstName}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.lastName}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.phone}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${formatPhoneForWhatsApp(item.phone, 'AU') || item.phone || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
