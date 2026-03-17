@@ -377,6 +377,10 @@ export default function TourDetail() {
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Forms</span>
               </TabsTrigger>
+              <TabsTrigger value="comms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Comms</span>
+              </TabsTrigger>
             </TabsList>
           )}
         </div>
