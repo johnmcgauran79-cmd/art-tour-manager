@@ -49,10 +49,9 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'passport':
-      headers = ['Passenger Name', 'Type', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+      headers = ['Passenger Name', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
       csvData = report.data.map(item => ({
         passengername: item.passengerName,
-        type: item.passengerType,
         bookingref: item.bookingReference,
         group: item.groupName || '',
         nameasperpassport: item.nameAsPerPassport || '',
