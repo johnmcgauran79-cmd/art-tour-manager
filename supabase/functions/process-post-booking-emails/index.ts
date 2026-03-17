@@ -123,6 +123,29 @@ serve(async (req) => {
         try {
           console.log(`[${i + 1}/${eligibleBookings.length}] Sending post-booking email for booking ${booking.id} to ${booking.lead_passenger?.email}`);
 
+          // Check for tour-specific template override
+          let emailTemplate = rule.email_templates;
+          if (booking.tour?.id) {
+            const { data: override } = await supabase
+              .from('tour_email_rule_overrides')
+              .select('email_template_id')
+              .eq('tour_id', booking.tour.id)
+              .eq('rule_id', rule.id)
+              .maybeSingle();
+
+            if (override?.email_template_id) {
+              console.log(`Using tour-specific template override for booking ${booking.id}`);
+              const { data: overrideTemplate } = await supabase
+                .from('email_templates')
+                .select('*')
+                .eq('id', override.email_template_id)
+                .single();
+              if (overrideTemplate) {
+                emailTemplate = overrideTemplate;
+              }
+            }
+          }
+
           // Generate a profile update token for this customer
           const profileToken = crypto.randomUUID();
           const expiresAt = new Date();
@@ -153,8 +176,8 @@ serve(async (req) => {
           const profileUpdateUrl = `${baseUrl}/update-profile/${profileToken}`;
 
           // Prepare email content with profile update link
-          let emailContent = rule.email_templates?.content_template || '';
-          let emailSubject = rule.email_templates?.subject_template || 'Your Booking Confirmation';
+          let emailContent = emailTemplate?.content_template || '';
+          let emailSubject = emailTemplate?.subject_template || 'Your Booking Confirmation';
 
           // Replace placeholders
           const customerName = `${booking.lead_passenger?.first_name || ''} ${booking.lead_passenger?.last_name || ''}`.trim() || 'Valued Customer';

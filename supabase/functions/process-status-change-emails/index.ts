@@ -120,12 +120,39 @@ serve(async (req) => {
 
     for (const item of queueItems) {
       try {
-        const template = item.rule?.email_templates;
+        let template = item.rule?.email_templates;
         const booking = item.booking;
         const tour = item.tour;
 
-        if (!template || !booking || !tour) {
-          console.error(`Missing template, booking, or tour for queue item ${item.id}`);
+        if (!booking || !tour) {
+          console.error(`Missing booking or tour for queue item ${item.id}`);
+          continue;
+        }
+
+        // Check for tour-specific template override
+        if (item.tour_id && item.rule?.id) {
+          const { data: override } = await supabase
+            .from('tour_email_rule_overrides')
+            .select('email_template_id')
+            .eq('tour_id', item.tour_id)
+            .eq('rule_id', item.rule.id)
+            .maybeSingle();
+
+          if (override?.email_template_id) {
+            console.log(`Using tour-specific template override for queue item ${item.id}`);
+            const { data: overrideTemplate } = await supabase
+              .from('email_templates')
+              .select('*')
+              .eq('id', override.email_template_id)
+              .single();
+            if (overrideTemplate) {
+              template = overrideTemplate;
+            }
+          }
+        }
+
+        if (!template) {
+          console.error(`No template available for queue item ${item.id}`);
           continue;
         }
 
