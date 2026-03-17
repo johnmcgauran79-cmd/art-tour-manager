@@ -210,6 +210,42 @@ export default function TourEdit() {
     executeSave(updateData);
   };
 
+  const saveCommsOverrides = async () => {
+    if (!id || !existingOverrides) return;
+    
+    // Find overrides to delete (existed before but not in current state)
+    const currentRuleIds = new Set(commsOverrides.map(o => o.ruleId));
+    const existingRuleIds = new Set(existingOverrides.map(o => o.rule_id));
+    
+    // Delete removed overrides
+    for (const existing of existingOverrides) {
+      if (!currentRuleIds.has(existing.rule_id)) {
+        await supabase
+          .from('tour_email_rule_overrides' as any)
+          .delete()
+          .eq('tour_id', id)
+          .eq('rule_id', existing.rule_id);
+      }
+    }
+    
+    // Upsert current overrides
+    for (const override of commsOverrides) {
+      const existingOverride = existingOverrides.find(o => o.rule_id === override.ruleId);
+      if (existingOverride) {
+        if (existingOverride.email_template_id !== override.emailTemplateId) {
+          await supabase
+            .from('tour_email_rule_overrides' as any)
+            .update({ email_template_id: override.emailTemplateId } as any)
+            .eq('id', existingOverride.id);
+        }
+      } else {
+        await supabase
+          .from('tour_email_rule_overrides' as any)
+          .insert({ tour_id: id, rule_id: override.ruleId, email_template_id: override.emailTemplateId } as any);
+      }
+    }
+  };
+
   const executeSave = (updateData: any, cascadeCancel = false) => {
     updateTourMutation.mutate({
       tourId: id!,
@@ -219,6 +255,8 @@ export default function TourEdit() {
         if (cascadeCancel) {
           await cascadeCancelTour();
         }
+        // Save comms overrides
+        await saveCommsOverrides();
         toast({
           title: cascadeCancel ? "Tour Cancelled" : "Tour Updated",
           description: cascadeCancel
