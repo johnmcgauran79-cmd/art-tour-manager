@@ -336,6 +336,7 @@ export type Database = {
           booking_id: string | null
           days_before_send: number
           email_log_id: string | null
+          email_template_id: string | null
           id: string
           rejection_reason: string | null
           rule_id: string
@@ -351,6 +352,7 @@ export type Database = {
           booking_id?: string | null
           days_before_send: number
           email_log_id?: string | null
+          email_template_id?: string | null
           id?: string
           rejection_reason?: string | null
           rule_id: string
@@ -366,6 +368,7 @@ export type Database = {
           booking_id?: string | null
           days_before_send?: number
           email_log_id?: string | null
+          email_template_id?: string | null
           id?: string
           rejection_reason?: string | null
           rule_id?: string
@@ -386,6 +389,13 @@ export type Database = {
             columns: ["email_log_id"]
             isOneToOne: false
             referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automated_email_log_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
           {
@@ -1708,6 +1718,7 @@ export type Database = {
           booking_id: string
           created_at: string
           email_log_id: string | null
+          email_template_id: string | null
           id: string
           new_status: string
           previous_status: string | null
@@ -1725,6 +1736,7 @@ export type Database = {
           booking_id: string
           created_at?: string
           email_log_id?: string | null
+          email_template_id?: string | null
           id?: string
           new_status: string
           previous_status?: string | null
@@ -1742,6 +1754,7 @@ export type Database = {
           booking_id?: string
           created_at?: string
           email_log_id?: string | null
+          email_template_id?: string | null
           id?: string
           new_status?: string
           previous_status?: string | null
@@ -1764,6 +1777,13 @@ export type Database = {
             columns: ["email_log_id"]
             isOneToOne: false
             referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "status_change_email_queue_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
           {
