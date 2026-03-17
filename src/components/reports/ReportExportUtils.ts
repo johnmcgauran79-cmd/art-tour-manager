@@ -49,10 +49,9 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'passport':
-      headers = ['Passenger Name', 'Type', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+      headers = ['Passenger Name', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
       csvData = report.data.map(item => ({
         passengername: item.passengerName,
-        type: item.passengerType,
         bookingref: item.bookingReference,
         group: item.groupName || '',
         nameasperpassport: item.nameAsPerPassport || '',
@@ -155,12 +154,11 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'passport':
       tableHTML = `
         <table>
-          <thead><tr><th>Passenger</th><th>Type</th><th>Name as per Passport</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
+          <thead><tr><th>Passenger</th><th>Name as per Passport</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr>
                 <td>${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
-                <td>${item.passengerType}</td>
                 <td>${item.nameAsPerPassport || '-'}</td>
                 <td>${item.passportNumber || '-'}</td>
                 <td>${item.passportCountry || '-'}</td>
@@ -321,7 +319,6 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
           <thead>
             <tr>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passenger</th>
-              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Type</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Name as per Passport</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passport No.</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Country</th>
@@ -334,7 +331,6 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
             ${report.data.map(item => `
               <tr>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerType}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.nameAsPerPassport || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px; font-family: monospace;">${item.passportNumber || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.passportCountry || '-'}</td>
