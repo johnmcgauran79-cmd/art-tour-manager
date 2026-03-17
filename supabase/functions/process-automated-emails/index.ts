@@ -484,6 +484,27 @@ async function processBatchEmails(
   // Helper function for rate limiting delay
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+  // Check for tour-specific template override
+  let emailTemplate = rule.email_templates;
+  const { data: override } = await supabase
+    .from('tour_email_rule_overrides')
+    .select('email_template_id')
+    .eq('tour_id', tour.id)
+    .eq('rule_id', rule.id)
+    .maybeSingle();
+
+  if (override?.email_template_id) {
+    console.log(`Using tour-specific template override for tour "${tour.name}", rule "${rule.rule_name}"`);
+    const { data: overrideTemplate } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('id', override.email_template_id)
+      .single();
+    if (overrideTemplate) {
+      emailTemplate = overrideTemplate;
+    }
+  }
+
   for (let i = 0; i < eligibleBookings.length; i++) {
     const booking = eligibleBookings[i];
     try {
@@ -494,9 +515,9 @@ async function processBatchEmails(
         {
           body: {
             bookingId: booking.id,
-            customSubject: rule.email_templates?.subject_template,
-            customContent: rule.email_templates?.content_template,
-            fromEmail: rule.email_templates?.from_email,
+            customSubject: emailTemplate?.subject_template,
+            customContent: emailTemplate?.content_template,
+            fromEmail: emailTemplate?.from_email,
             isAutomated: true
           }
         }
