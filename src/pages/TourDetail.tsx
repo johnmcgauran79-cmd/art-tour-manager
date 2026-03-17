@@ -472,6 +472,10 @@ export default function TourDetail() {
           />
         </TabsContent>
 
+        <TabsContent value="additional-info" className="space-y-4 mt-6">
+          <TourAdditionalInfoTab tourId={tour.id} tourName={tour.name} />
+        </TabsContent>
+
         <TabsContent value="forms" className="space-y-4 mt-6">
           <TourCustomFormsTab tourId={tour.id} tourName={tour.name} />
         </TabsContent>
