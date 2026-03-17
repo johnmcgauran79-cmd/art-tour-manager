@@ -17,6 +17,7 @@ export interface StatusChangeQueueItem {
   approved_at: string | null;
   rejection_reason: string | null;
   email_log_id: string | null;
+  email_template_id: string | null;
   created_at: string;
   // Joined data
   rule?: {
