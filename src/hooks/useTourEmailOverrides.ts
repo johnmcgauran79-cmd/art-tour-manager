@@ -41,6 +41,7 @@ export const useUpsertTourEmailOverride = () => {
         .eq('rule_id', ruleId)
         .maybeSingle();
 
+      let result;
       if (existing) {
         const { data, error } = await supabase
           .from('tour_email_rule_overrides' as any)
@@ -49,7 +50,7 @@ export const useUpsertTourEmailOverride = () => {
           .select()
           .single();
         if (error) throw error;
-        return data;
+        result = data;
       } else {
         const { data, error } = await supabase
           .from('tour_email_rule_overrides' as any)
@@ -57,8 +58,26 @@ export const useUpsertTourEmailOverride = () => {
           .select()
           .single();
         if (error) throw error;
-        return data;
+        result = data;
       }
+
+      // Propagate to pending queue items that don't have a queue-level override
+      await Promise.all([
+        supabase
+          .from('automated_email_log')
+          .update({ email_template_id: emailTemplateId })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending_approval'),
+        supabase
+          .from('status_change_email_queue')
+          .update({ email_template_id: emailTemplateId })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending'),
+      ]);
+
+      return result;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tour-email-overrides', variables.tourId] });
