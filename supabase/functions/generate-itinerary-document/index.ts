@@ -412,7 +412,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
       <div class="tour-info">
         <h2 class="section-title">Tour Information</h2>
         <p><strong>Location:</strong> ${tour.location || 'N/A'}</p>
-        <p><strong>Pickup Point:</strong> ${tour.pickup_point || 'N/A'}</p>
+        <p><strong>Starting Point:</strong> ${tour.pickup_point || 'N/A'}</p>
         ${inclusionsList ? `<div><strong>Inclusions:</strong><ul style="margin-top: 4px;">${inclusionsList}</ul></div>` : ''}
         ${exclusionsList ? `<div><strong>Exclusions:</strong><ul style="margin-top: 4px;">${exclusionsList}</ul></div>` : ''}
         <p style="margin-top: 6px; font-style: italic; font-size: 8pt;">Itinerary subject to change</p>
@@ -435,7 +435,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           ${hotel.default_check_in && hotel.default_check_out ? 
             `<p><strong>Check-in:</strong> ${formatDate(hotel.default_check_in)} | 
              <strong>Check-out:</strong> ${formatDate(hotel.default_check_out)}</p>` : ''}
-          ${hotel.contact_phone ? `<p><strong>Phone:</strong> ${hotel.contact_phone}</p>` : ''}
+          
         </div>
       `;
     });
