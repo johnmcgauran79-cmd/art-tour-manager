@@ -74,7 +74,12 @@ serve(async (req) => {
         .eq('tour_id', tourId);
 
       if (hotelsError) throw hotelsError;
-      hotels = hotelsData || [];
+      hotels = (hotelsData || []).sort((a: any, b: any) => {
+        if (!a.default_check_in && !b.default_check_in) return 0;
+        if (!a.default_check_in) return 1;
+        if (!b.default_check_in) return -1;
+        return new Date(a.default_check_in).getTime() - new Date(b.default_check_in).getTime();
+      });
     }
 
     // Process data
