@@ -261,6 +261,42 @@ export type Database = {
           },
         ]
       }
+      additional_info_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          default_content: string | null
+          icon_name: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          default_content?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          default_content?: string | null
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           details: Json | null
@@ -1965,6 +2001,63 @@ export type Database = {
           },
           {
             foreignKeyName: "tasks_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_additional_info_sections: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string
+          icon_name: string
+          id: string
+          is_visible: boolean
+          name: string
+          sort_order: number
+          template_id: string | null
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by: string
+          icon_name?: string
+          id?: string
+          is_visible?: boolean
+          name: string
+          sort_order?: number
+          template_id?: string | null
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string
+          icon_name?: string
+          id?: string
+          is_visible?: boolean
+          name?: string
+          sort_order?: number
+          template_id?: string | null
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_additional_info_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "additional_info_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_additional_info_sections_tour_id_fkey"
             columns: ["tour_id"]
             isOneToOne: false
             referencedRelation: "tours"
