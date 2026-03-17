@@ -487,6 +487,7 @@ export default function TourDetail() {
 
         <TabsContent value="comms" className="space-y-4 mt-6">
           <TourCommsSettingsTab tourId={tour.id} tourName={tour.name} />
+        </TabsContent>
 
         <TabsContent value="operations" className="space-y-4 mt-6">
           <TourOperationsTab
