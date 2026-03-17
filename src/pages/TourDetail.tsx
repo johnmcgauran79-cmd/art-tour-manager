@@ -5,7 +5,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -26,6 +26,7 @@ import { TourPickupLocationsTab } from "@/components/TourPickupLocationsTab";
 import { TourHostsInfoTab } from "@/components/TourHostsInfoTab";
 import { TourCustomFormsTab } from "@/components/TourCustomFormsTab";
 import { TourPassportDetailsTab } from "@/components/TourPassportDetailsTab";
+import { TourAdditionalInfoTab } from "@/components/TourAdditionalInfoTab";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { DuplicateTourDialog } from "@/components/DuplicateTourDialog";
 import { Tour, useTours } from "@/hooks/useTours";
@@ -367,6 +368,10 @@ export default function TourDetail() {
                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Itinerary</span>
               </TabsTrigger>
+              <TabsTrigger value="additional-info" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Additional Info</span>
+              </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Forms</span>
@@ -465,6 +470,10 @@ export default function TourDetail() {
             tourName={tour.name}
             pickupLocationRequired={tour.pickup_location_required || false}
           />
+        </TabsContent>
+
+        <TabsContent value="additional-info" className="space-y-4 mt-6">
+          <TourAdditionalInfoTab tourId={tour.id} tourName={tour.name} />
         </TabsContent>
 
         <TabsContent value="forms" className="space-y-4 mt-6">
