@@ -2348,6 +2348,55 @@ export type Database = {
           },
         ]
       }
+      tour_email_rule_overrides: {
+        Row: {
+          created_at: string
+          email_template_id: string
+          id: string
+          rule_id: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email_template_id: string
+          id?: string
+          rule_id: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email_template_id?: string
+          id?: string
+          rule_id?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_email_rule_overrides_email_template_id_fkey"
+            columns: ["email_template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_email_rule_overrides_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "automated_email_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_email_rule_overrides_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_external_links: {
         Row: {
           created_at: string
