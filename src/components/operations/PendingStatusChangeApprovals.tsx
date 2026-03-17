@@ -33,7 +33,8 @@ export const PendingStatusChangeApprovals = () => {
   const approveEmails = useApproveStatusChangeEmails();
   const rejectEmails = useRejectStatusChangeEmails();
   
-  const [selectedBatches, setSelectedBatches] = useState<Set<string>>(new Set());
+  // Track individually selected queue item IDs
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showConfirmRejectDialog, setShowConfirmRejectDialog] = useState(false);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -41,29 +42,49 @@ export const PendingStatusChangeApprovals = () => {
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [isProceedingToConfirm, setIsProceedingToConfirm] = useState(false);
 
-  const getSelectedQueueIds = () => {
-    if (!pendingBatches) return [];
-    return pendingBatches
-      .filter(batch => selectedBatches.has(`${batch.rule_id}-${batch.batch_date}`))
-      .flatMap(batch => batch.items.map(item => item.id));
+  const allItemIds = pendingBatches?.flatMap(b => b.items.map(i => i.id)) || [];
+
+  const getBatchItemIds = (batch: NonNullable<typeof pendingBatches>[number]) => {
+    return batch.items.map(i => i.id);
+  };
+
+  const isBatchFullySelected = (batch: NonNullable<typeof pendingBatches>[number]) => {
+    return getBatchItemIds(batch).every(id => selectedItems.has(id));
+  };
+
+  const isBatchPartiallySelected = (batch: NonNullable<typeof pendingBatches>[number]) => {
+    const ids = getBatchItemIds(batch);
+    const selectedCount = ids.filter(id => selectedItems.has(id)).length;
+    return selectedCount > 0 && selectedCount < ids.length;
   };
 
   const handleSelectAll = (checked: boolean) => {
-    if (checked && pendingBatches) {
-      setSelectedBatches(new Set(pendingBatches.map(b => `${b.rule_id}-${b.batch_date}`)));
+    if (checked) {
+      setSelectedItems(new Set(allItemIds));
     } else {
-      setSelectedBatches(new Set());
+      setSelectedItems(new Set());
     }
   };
 
-  const handleSelectBatch = (batchKey: string, checked: boolean) => {
-    const newSelected = new Set(selectedBatches);
+  const handleSelectBatch = (batch: NonNullable<typeof pendingBatches>[number], checked: boolean) => {
+    const newSelected = new Set(selectedItems);
+    const ids = getBatchItemIds(batch);
     if (checked) {
-      newSelected.add(batchKey);
+      ids.forEach(id => newSelected.add(id));
     } else {
-      newSelected.delete(batchKey);
+      ids.forEach(id => newSelected.delete(id));
     }
-    setSelectedBatches(newSelected);
+    setSelectedItems(newSelected);
+  };
+
+  const handleSelectItem = (itemId: string, checked: boolean) => {
+    const newSelected = new Set(selectedItems);
+    if (checked) {
+      newSelected.add(itemId);
+    } else {
+      newSelected.delete(itemId);
+    }
+    setSelectedItems(newSelected);
   };
 
   const toggleExpanded = (batchKey: string) => {
@@ -77,15 +98,15 @@ export const PendingStatusChangeApprovals = () => {
   };
 
   const handleApprove = () => {
-    if (selectedBatches.size === 0) return;
+    if (selectedItems.size === 0) return;
     setShowApproveDialog(true);
   };
 
   const confirmApprove = () => {
-    const queueIds = getSelectedQueueIds();
+    const queueIds = Array.from(selectedItems);
     approveEmails.mutate(queueIds, {
       onSuccess: () => {
-        setSelectedBatches(new Set());
+        setSelectedItems(new Set());
         setShowApproveDialog(false);
       },
       onError: () => {
@@ -95,7 +116,7 @@ export const PendingStatusChangeApprovals = () => {
   };
 
   const handleReject = () => {
-    if (selectedBatches.size === 0) return;
+    if (selectedItems.size === 0) return;
     setShowRejectDialog(true);
   };
 
@@ -109,10 +130,10 @@ export const PendingStatusChangeApprovals = () => {
   };
 
   const confirmReject = () => {
-    const queueIds = getSelectedQueueIds();
+    const queueIds = Array.from(selectedItems);
     rejectEmails.mutate({ queueIds, reason: rejectionReason }, {
       onSuccess: () => {
-        setSelectedBatches(new Set());
+        setSelectedItems(new Set());
         setRejectionReason("");
         setShowConfirmRejectDialog(false);
       }
@@ -131,10 +152,11 @@ export const PendingStatusChangeApprovals = () => {
   }
 
   if (!pendingBatches || pendingBatches.length === 0) {
-    return null; // Don't show anything if no pending items
+    return null;
   }
 
   const totalBookings = pendingBatches.reduce((sum, b) => sum + b.items.length, 0);
+  const allSelected = allItemIds.length > 0 && allItemIds.every(id => selectedItems.has(id));
 
   return (
     <>
@@ -154,21 +176,21 @@ export const PendingStatusChangeApprovals = () => {
             <div className="flex gap-2">
               <Button
                 onClick={handleApprove}
-                disabled={selectedBatches.size === 0 || approveEmails.isPending}
+                disabled={selectedItems.size === 0 || approveEmails.isPending}
                 size="sm"
                 variant="default"
               >
                 <Check className="h-4 w-4 mr-1" />
-                Approve ({selectedBatches.size})
+                Approve ({selectedItems.size})
               </Button>
               <Button
                 onClick={handleReject}
-                disabled={selectedBatches.size === 0 || rejectEmails.isPending}
+                disabled={selectedItems.size === 0 || rejectEmails.isPending}
                 size="sm"
                 variant="destructive"
               >
                 <X className="h-4 w-4 mr-1" />
-                Reject ({selectedBatches.size})
+                Reject ({selectedItems.size})
               </Button>
             </div>
           </div>
@@ -177,23 +199,33 @@ export const PendingStatusChangeApprovals = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b">
               <Checkbox
-                checked={selectedBatches.size === pendingBatches.length && pendingBatches.length > 0}
+                checked={allSelected}
                 onCheckedChange={handleSelectAll}
               />
-              <span className="text-sm font-medium">Select All Batches</span>
+              <span className="text-sm font-medium">Select All ({totalBookings})</span>
             </div>
 
             {pendingBatches.map((batch) => {
               const batchKey = `${batch.rule_id}-${batch.batch_date}`;
               const isExpanded = expandedBatches.has(batchKey);
+              const batchFull = isBatchFullySelected(batch);
+              const batchPartial = isBatchPartiallySelected(batch);
+              const selectedInBatch = getBatchItemIds(batch).filter(id => selectedItems.has(id)).length;
               
               return (
                 <Collapsible key={batchKey} open={isExpanded} onOpenChange={() => toggleExpanded(batchKey)}>
                   <div className="border rounded-lg p-4 space-y-3 bg-background">
                     <div className="flex items-start gap-3">
                       <Checkbox
-                        checked={selectedBatches.has(batchKey)}
-                        onCheckedChange={(checked) => handleSelectBatch(batchKey, checked as boolean)}
+                        checked={batchFull}
+                        ref={(el) => {
+                          if (el) {
+                            const input = el as unknown as HTMLButtonElement;
+                            input.dataset.indeterminate = batchPartial ? "true" : "false";
+                          }
+                        }}
+                        className={batchPartial ? "opacity-70" : ""}
+                        onCheckedChange={(checked) => handleSelectBatch(batch, checked as boolean)}
                       />
                       <div className="flex-1 space-y-2">
                         <div className="flex items-start justify-between">
@@ -201,7 +233,10 @@ export const PendingStatusChangeApprovals = () => {
                             <h4 className="font-medium flex items-center gap-2">
                               {batch.rule_name}
                               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                                {batch.items.length} booking{batch.items.length !== 1 ? 's' : ''}
+                                {selectedInBatch > 0 && selectedInBatch < batch.items.length 
+                                  ? `${selectedInBatch}/${batch.items.length} selected`
+                                  : `${batch.items.length} booking${batch.items.length !== 1 ? 's' : ''}`
+                                }
                               </Badge>
                             </h4>
                             <p className="text-sm text-muted-foreground">
@@ -224,12 +259,16 @@ export const PendingStatusChangeApprovals = () => {
                     <CollapsibleContent>
                       <div className="mt-3 pl-8 space-y-2">
                         <div className="text-xs font-medium text-muted-foreground uppercase mb-2">
-                          Bookings in this batch:
+                          Select individual emails:
                         </div>
                         <div className="grid gap-2">
                           {batch.items.map((item) => (
                             <div key={item.id} className="flex items-center justify-between p-2 bg-muted rounded text-sm">
                               <div className="flex items-center gap-2">
+                                <Checkbox
+                                  checked={selectedItems.has(item.id)}
+                                  onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
+                                />
                                 <Users className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium">
                                   {item.booking?.customers?.first_name} {item.booking?.customers?.last_name}
@@ -287,7 +326,7 @@ export const PendingStatusChangeApprovals = () => {
               ) : (
                 <>
                   <p>
-                    Are you sure you want to approve and send emails for {selectedBatches.size} batch(es)?
+                    Are you sure you want to approve and send {selectedItems.size} email(s)?
                   </p>
                   <p className="text-sm text-muted-foreground">
                     All passengers with email addresses on the selected bookings will receive the email immediately.
@@ -325,7 +364,7 @@ export const PendingStatusChangeApprovals = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Reject Status Change Emails</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to reject {selectedBatches.size} batch(es). 
+              You are about to reject {selectedItems.size} email(s). 
               Optionally provide a reason for the rejection.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -357,7 +396,7 @@ export const PendingStatusChangeApprovals = () => {
                 This action is permanent and cannot be undone.
               </p>
               <p>
-                The selected {selectedBatches.size} batch(es) will be permanently rejected and emails will <strong>never</strong> be sent.
+                The selected {selectedItems.size} email(s) will be permanently rejected and will <strong>never</strong> be sent.
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
