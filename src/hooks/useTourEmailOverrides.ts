@@ -109,6 +109,22 @@ export const useDeleteTourEmailOverride = () => {
         .eq('rule_id', ruleId);
 
       if (error) throw error;
+
+      // Clear tour-level template from pending queue items so they fall back to global default
+      await Promise.all([
+        supabase
+          .from('automated_email_log')
+          .update({ email_template_id: null })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending_approval'),
+        supabase
+          .from('status_change_email_queue')
+          .update({ email_template_id: null })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending'),
+      ]);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tour-email-overrides', variables.tourId] });
