@@ -20,12 +20,21 @@ export const usePendingEmailApprovals = () => {
           rule:automated_email_rules(
             rule_name,
             days_before_tour,
+            email_template_id,
             email_templates:email_templates(
+              id,
               name,
               subject_template,
               content_template,
               from_email
             )
+          ),
+          override_template:email_templates(
+            id,
+            name,
+            subject_template,
+            content_template,
+            from_email
           )
         `)
         .eq('approval_status', 'pending_approval')
