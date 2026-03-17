@@ -130,9 +130,11 @@ export const useDeleteTourEmailOverride = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tour-email-overrides', variables.tourId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['status-change-email-queue'] });
       toast({
         title: "Override removed",
-        description: "This rule will now use the global default template.",
+        description: "Reverted to global default for this rule and all pending emails.",
       });
     },
     onError: (error: any) => {
