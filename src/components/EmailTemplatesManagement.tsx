@@ -562,7 +562,7 @@ export const EmailTemplatesManagement = () => {
                             );
                           })}
                         </div>
-                      </ScrollArea>
+                      </div>
                     </TabsContent>
                   ))}
                 </Tabs>
