@@ -181,7 +181,30 @@ export const PendingStatusChangeApprovals = () => {
   }
 
   if (!pendingBatches || pendingBatches.length === 0) {
-    return null;
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-amber-600" />
+                Status Change Email Queue
+              </CardTitle>
+              <CardDescription>No status change emails pending approval</CardDescription>
+            </div>
+            <Button
+              onClick={handleRefresh}
+              disabled={isRefetching}
+              size="sm"
+              variant="outline"
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+    );
   }
 
   const totalBookings = pendingBatches.reduce((sum, b) => sum + b.items.length, 0);
