@@ -41,6 +41,7 @@ export const useUpsertTourEmailOverride = () => {
         .eq('rule_id', ruleId)
         .maybeSingle();
 
+      let result;
       if (existing) {
         const { data, error } = await supabase
           .from('tour_email_rule_overrides' as any)
@@ -49,7 +50,7 @@ export const useUpsertTourEmailOverride = () => {
           .select()
           .single();
         if (error) throw error;
-        return data;
+        result = data;
       } else {
         const { data, error } = await supabase
           .from('tour_email_rule_overrides' as any)
@@ -57,14 +58,34 @@ export const useUpsertTourEmailOverride = () => {
           .select()
           .single();
         if (error) throw error;
-        return data;
+        result = data;
       }
+
+      // Propagate to pending queue items that don't have a queue-level override
+      await Promise.all([
+        supabase
+          .from('automated_email_log')
+          .update({ email_template_id: emailTemplateId })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending_approval'),
+        supabase
+          .from('status_change_email_queue')
+          .update({ email_template_id: emailTemplateId })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending'),
+      ]);
+
+      return result;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tour-email-overrides', variables.tourId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['status-change-email-queue'] });
       toast({
         title: "Template assigned",
-        description: "Tour-specific email template has been saved.",
+        description: "Tour-specific template saved and applied to pending emails.",
       });
     },
     onError: (error: any) => {
@@ -90,12 +111,30 @@ export const useDeleteTourEmailOverride = () => {
         .eq('rule_id', ruleId);
 
       if (error) throw error;
+
+      // Clear tour-level template from pending queue items so they fall back to global default
+      await Promise.all([
+        supabase
+          .from('automated_email_log')
+          .update({ email_template_id: null })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending_approval'),
+        supabase
+          .from('status_change_email_queue')
+          .update({ email_template_id: null })
+          .eq('tour_id', tourId)
+          .eq('rule_id', ruleId)
+          .eq('approval_status', 'pending'),
+      ]);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tour-email-overrides', variables.tourId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['status-change-email-queue'] });
       toast({
         title: "Override removed",
-        description: "This rule will now use the global default template.",
+        description: "Reverted to global default for this rule and all pending emails.",
       });
     },
     onError: (error: any) => {
