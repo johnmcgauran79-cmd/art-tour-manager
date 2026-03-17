@@ -81,9 +81,11 @@ export const useUpsertTourEmailOverride = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tour-email-overrides', variables.tourId] });
+      queryClient.invalidateQueries({ queryKey: ['pending-email-approvals'] });
+      queryClient.invalidateQueries({ queryKey: ['status-change-email-queue'] });
       toast({
         title: "Template assigned",
-        description: "Tour-specific email template has been saved.",
+        description: "Tour-specific template saved and applied to pending emails.",
       });
     },
     onError: (error: any) => {
