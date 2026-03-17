@@ -435,7 +435,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           ${hotel.default_check_in && hotel.default_check_out ? 
             `<p><strong>Check-in:</strong> ${formatDate(hotel.default_check_in)} | 
              <strong>Check-out:</strong> ${formatDate(hotel.default_check_out)}</p>` : ''}
-          ${hotel.contact_phone ? `<p><strong>Phone:</strong> ${hotel.contact_phone}</p>` : ''}
+          
         </div>
       `;
     });
