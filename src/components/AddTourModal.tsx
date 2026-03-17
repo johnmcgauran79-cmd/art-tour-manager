@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Mail } from "lucide-react";
+import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
 
 interface AddTourModalProps {
   open: boolean;
@@ -82,6 +83,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     };
   };
 
+  const [commsOverrides, setCommsOverrides] = useState<CommsOverride[]>([]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -89,7 +92,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     try {
       const { days, nights } = calculateDaysAndNights(formData.start_date, formData.end_date);
 
-      const { error } = await supabase.from("tours").insert({
+      const { data: newTour, error } = await supabase.from("tours").insert({
         name: formData.name,
         tour_host: "TBD",
         location: formData.location,
@@ -115,9 +118,19 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
         tour_type: formData.tour_type,
         status: "pending",
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Save comms overrides if any were set
+      if (commsOverrides.length > 0 && newTour) {
+        const overrideRows = commsOverrides.map(o => ({
+          tour_id: newTour.id,
+          rule_id: o.ruleId,
+          email_template_id: o.emailTemplateId,
+        }));
+        await supabase.from('tour_email_rule_overrides' as any).insert(overrideRows as any);
+      }
 
       toast({
         title: "Success",
@@ -149,6 +162,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         minimum_passengers_required: "",
         tour_type: "domestic",
       });
+      setCommsOverrides([]);
 
       queryClient.invalidateQueries({ queryKey: ["tours"] });
       onOpenChange(false);
@@ -495,6 +509,18 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 className="min-h-[80px]"
               />
             </div>
+          </div>
+
+          {/* Comms Settings */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-base font-medium">Email Template Overrides</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Optionally assign tour-specific email templates. If not set, the global default from Settings will be used.
+            </p>
+            <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
           </div>
         </form>
 
