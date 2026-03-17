@@ -74,18 +74,23 @@ function mapXeroStatusToBookingStatus(
   amountPaid: number,
   _totalAmount: number,
   instalmentRequired: boolean,
-  currentStatus: string | null
+  currentStatus: string | null,
+  passengerCount: number = 1,
+  depositPerPerson: number = 0
 ): string | null {
   let proposedStatus: string | null = null;
 
   if (xeroStatus === 'PAID' || (amountDue === 0 && amountPaid > 0)) {
     proposedStatus = 'fully_paid';
   } else if (amountPaid > 0 && amountDue > 0) {
-    if (instalmentRequired && currentStatus === 'deposited') {
-      // Already deposited + instalment required = next step is instalment_paid
+    // Calculate total deposit threshold for this booking
+    const totalDepositThreshold = passengerCount * depositPerPerson;
+
+    if (instalmentRequired && currentStatus === 'deposited' && totalDepositThreshold > 0 && amountPaid > totalDepositThreshold) {
+      // Amount paid exceeds deposit (pax × deposit_per_person) = instalment_paid
       proposedStatus = 'instalment_paid';
     } else {
-      // First partial payment defaults to deposited (user can adjust in review)
+      // Payment is at or below deposit level, or no deposit info available
       proposedStatus = 'deposited';
     }
   } else if (xeroStatus === 'AUTHORISED' && amountPaid === 0) {
@@ -228,7 +233,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, tours!bookings_tour_id_fkey(instalment_required, name, start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
+    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, passenger_count, tours!bookings_tour_id_fkey(instalment_required, name, start_date, deposit_per_person), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
     .not('invoice_reference', 'is', null)
     .neq('invoice_reference', '')
     .not('invoice_reference', 'in', '("0","TBC","tbc","N/A","n/a")')
@@ -246,6 +251,8 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
       const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean)
         .filter((r: string) => !['0', 'TBC', 'tbc', 'N/A', 'n/a'].includes(r));
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
+      const depositPerPerson = (booking as any).tours?.deposit_per_person || 0;
+      const passengerCount = booking.passenger_count || 1;
 
       if (refs.length === 0) continue;
 
@@ -272,7 +279,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         const amountDue = invoice.AmountDue || 0;
         const amountPaid = invoice.AmountPaid || 0;
         const total = invoice.Total || 0;
-        const proposed = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status);
+        const proposed = mapXeroStatusToBookingStatus(invoice.Status, amountDue, amountPaid, total, instalmentRequired, booking.status, passengerCount, depositPerPerson);
         if (proposed) {
           statusProposals.push({ status: proposed, order: STATUS_ORDER[proposed] || 0, invoice, ref });
         }
