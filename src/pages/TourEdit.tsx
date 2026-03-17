@@ -61,6 +61,24 @@ export default function TourEdit() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
 
+  // Comms overrides
+  const { data: existingOverrides } = useTourEmailOverrides(id || '');
+  const upsertOverride = useUpsertTourEmailOverride();
+  const deleteOverride = useDeleteTourEmailOverride();
+  const [commsOverrides, setCommsOverrides] = useState<CommsOverride[]>([]);
+  const [commsInitialized, setCommsInitialized] = useState(false);
+
+  // Initialize comms overrides from existing data
+  useEffect(() => {
+    if (existingOverrides && !commsInitialized) {
+      setCommsOverrides(existingOverrides.map(o => ({
+        ruleId: o.rule_id,
+        emailTemplateId: o.email_template_id,
+      })));
+      setCommsInitialized(true);
+    }
+  }, [existingOverrides, commsInitialized]);
+
   useEffect(() => {
     const fetchTourData = async () => {
       if (tour && id) {
