@@ -104,7 +104,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, options);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
