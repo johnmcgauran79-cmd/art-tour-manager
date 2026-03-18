@@ -747,7 +747,7 @@ export default function BookingDetail() {
         )}
 
         <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <AlertDialogContent>
+          <AlertDialogContent className="max-w-xl">
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Booking</AlertDialogTitle>
               <AlertDialogDescription asChild>
