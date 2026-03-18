@@ -402,16 +402,8 @@ export default function TourDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="itinerary" className="space-y-4 mt-6">
-          <TourItineraryTab tour={{
-            id: tour.id,
-            name: tour.name,
-            startDate: tour.start_date,
-            endDate: tour.end_date,
-            days: tour.days,
-            nights: tour.nights,
-            location: tour.location || ''
-          }} />
+        <TabsContent value="guest-docs" className="space-y-4 mt-6">
+          <GuestDocsSubTabs tour={tour} />
         </TabsContent>
 
         <TabsContent value="activities" className="space-y-4 mt-6">
