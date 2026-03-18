@@ -83,6 +83,20 @@ serve(async (req) => {
       });
     }
 
+    // Fetch additional info sections if included
+    let additionalInfoSections = [];
+    if (options.includeAdditionalInfo) {
+      const { data: sectionsData, error: sectionsError } = await supabase
+        .from('tour_additional_info_sections')
+        .select('*')
+        .eq('tour_id', tourId)
+        .eq('is_visible', true)
+        .order('sort_order', { ascending: true });
+
+      if (sectionsError) throw sectionsError;
+      additionalInfoSections = sectionsData || [];
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
