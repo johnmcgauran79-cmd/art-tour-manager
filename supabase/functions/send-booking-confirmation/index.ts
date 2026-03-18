@@ -534,6 +534,39 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Check if itinerary link/button is needed
+    const hasItineraryPlaceholder = /\{\{\s*itinerary_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    
+    let itineraryLink = '';
+    let itineraryButton = '';
+    
+    if (hasItineraryPlaceholder && booking.customers?.id) {
+      // Generate an itinerary token (7-day expiry, booking-specific so we can find the tour)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 168); // 7-day expiry
+      
+      const { data: tokenData, error: tokenError } = await supabaseClient
+        .from('customer_access_tokens')
+        .insert({
+          customer_id: booking.customers.id,
+          booking_id: bookingId,
+          purpose: 'itinerary',
+          created_by: requestUserId || SYSTEM_ACTOR_ID,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('token')
+        .single();
+      
+      if (tokenError) {
+        console.error('Error creating itinerary token:', tokenError);
+      } else if (tokenData) {
+        const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+        itineraryLink = `${baseUrl}/view-itinerary/${tokenData.token}`;
+        itineraryButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-itinerary="button"><tr><td><a href="${itineraryLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">VIEW TOUR ITINERARY</a></td></tr></table>`;
+        console.log('Generated itinerary link for customer:', booking.customers.id);
+      }
+    }
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
