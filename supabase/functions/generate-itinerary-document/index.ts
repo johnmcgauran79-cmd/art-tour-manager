@@ -405,6 +405,13 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           .itinerary-section {
             page-break-before: always;
           }
+          .additional-info-section {
+            page-break-before: always;
+          }
+          .additional-info-card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
         }
       </style>
     </head>
