@@ -353,19 +353,15 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
       </html>
     `;
 
-    const element = document.createElement('div');
-    element.innerHTML = htmlContent;
-
-    const opt = {
-      margin: 0.5,
-      filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${form.form_title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_responses.pdf`,
-      image: { type: 'jpeg' as const, quality: 1 },
-      html2canvas: { scale: 3 },
-      jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'landscape' as const }
-    };
-
-    html2pdf().set(opt).from(element).save();
-    toast.success('PDF download started');
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
   };
 
   return (
