@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, Mail } from "lucide-react";
+import { Download, FileText, Mail, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -311,18 +311,17 @@ export const TourOperationsReportsModal = ({
 
   // Handle tour attendees report
   if (reportType === 'tourattendees') {
-    const handleDownloadAttendeesPDF = () => {
+    const handlePrintAttendees = () => {
       const htmlContent = generateTourAttendeesHTML(attendees, tourName);
-      
-      const opt = {
-        margin: 0,
-        filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tour_attendees.pdf`,
-        image: { type: 'jpeg' as const, quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-      };
-      
-      html2pdf().set(opt).from(htmlContent).save();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
     };
 
     return (
@@ -336,14 +335,14 @@ export const TourOperationsReportsModal = ({
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleDownloadAttendeesPDF}
+                  onClick={handlePrintAttendees}
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
                   disabled={attendees.length === 0}
                 >
-                  <Download className="h-4 w-4" />
-                  Download PDF
+                  <Printer className="h-4 w-4" />
+                  Print PDF
                 </Button>
               </div>
             </div>
