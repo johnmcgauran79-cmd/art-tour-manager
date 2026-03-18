@@ -24,6 +24,7 @@ import UpdateTravelDocs from "./pages/UpdateTravelDocs";
 import SignWaiver from "./pages/SignWaiver";
 import SelectPickup from "./pages/SelectPickup";
 import CustomForm from "./pages/CustomForm";
+import ViewItinerary from "./pages/ViewItinerary";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
 
