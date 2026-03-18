@@ -32,6 +32,7 @@ export const GenerateDocumentModal = ({
 }: GenerateDocumentModalProps) => {
   const [includeHotels, setIncludeHotels] = useState(true);
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
+  const [includeAdditionalInfo, setIncludeAdditionalInfo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState('');
@@ -49,7 +50,8 @@ export const GenerateDocumentModal = ({
           format: 'html',
           options: {
             includeHotels,
-            includeTourInfo
+            includeTourInfo,
+            includeAdditionalInfo
           }
         }
       });
@@ -116,6 +118,15 @@ export const GenerateDocumentModal = ({
                     onCheckedChange={(checked) => setIncludeHotels(checked as boolean)}
                   />
                   <Label htmlFor="hotels">Hotel Information</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="additional-info"
+                    checked={includeAdditionalInfo}
+                    onCheckedChange={(checked) => setIncludeAdditionalInfo(checked as boolean)}
+                  />
+                  <Label htmlFor="additional-info">Additional Information Sections</Label>
                 </div>
               </div>
             </div>

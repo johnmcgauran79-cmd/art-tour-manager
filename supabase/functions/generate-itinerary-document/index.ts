@@ -14,6 +14,7 @@ interface RequestBody {
   options: {
     includeHotels: boolean;
     includeTourInfo: boolean;
+    includeAdditionalInfo?: boolean;
   };
 }
 
@@ -82,6 +83,20 @@ serve(async (req) => {
       });
     }
 
+    // Fetch additional info sections if included
+    let additionalInfoSections = [];
+    if (options.includeAdditionalInfo) {
+      const { data: sectionsData, error: sectionsError } = await supabase
+        .from('tour_additional_info_sections')
+        .select('*')
+        .eq('tour_id', tourId)
+        .eq('is_visible', true)
+        .order('sort_order', { ascending: true });
+
+      if (sectionsError) throw sectionsError;
+      additionalInfoSections = sectionsData || [];
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
@@ -89,7 +104,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, options);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -156,7 +171,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], options: any): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any): string {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
@@ -339,6 +354,50 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           margin-bottom: 8px;
           font-size: 1.1em;
         }
+        .additional-info-section {
+          margin-top: 16px;
+        }
+        .additional-info-card {
+          background: #fff;
+          border: 1px solid #ddd;
+          border-left: 3px solid hsl(45, 100%, 55%);
+          border-radius: 4px;
+          padding: 8px 10px;
+          margin-bottom: 8px;
+        }
+        .additional-info-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 6px;
+        }
+        .additional-info-name {
+          font-weight: 600;
+          font-size: 1em;
+          color: hsl(220, 8%, 15%);
+        }
+        .additional-info-content {
+          color: #555;
+          line-height: 1.5;
+          font-size: 9pt;
+        }
+        .additional-info-content p {
+          margin: 0.3em 0;
+        }
+        .additional-info-content ul, .additional-info-content ol {
+          margin: 0.3em 0;
+          padding-left: 1.2em;
+        }
+        .additional-info-content li {
+          margin: 0.15em 0;
+        }
+        .additional-info-content strong {
+          font-weight: 600;
+        }
+        .additional-info-content a {
+          color: hsl(220, 8%, 15%);
+          text-decoration: underline;
+        }
         @media print {
           @page {
             margin: 10mm;
@@ -389,6 +448,13 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
           }
           .itinerary-section {
             page-break-before: always;
+          }
+          .additional-info-section {
+            page-break-before: always;
+          }
+          .additional-info-card {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
         }
       </style>
@@ -482,6 +548,30 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], opt
 
   html += `
       </div>
+  `;
+
+  // Additional Information sections
+  if (options.includeAdditionalInfo && additionalInfoSections.length > 0) {
+    html += `
+      <div class="additional-info-section">
+        <h2 class="section-title">Additional Information</h2>
+    `;
+
+    additionalInfoSections.forEach((section: any) => {
+      html += `
+        <div class="additional-info-card">
+          <div class="additional-info-header">
+            <span class="additional-info-name">${section.name}</span>
+          </div>
+          ${section.content ? `<div class="additional-info-content">${section.content}</div>` : '<p style="color: #999; font-style: italic;">No content.</p>'}
+        </div>
+      `;
+    });
+
+    html += '</div>';
+  }
+
+  html += `
     </body>
     </html>
   `;
