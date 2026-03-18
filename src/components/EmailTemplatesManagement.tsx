@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2 } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2 } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
@@ -164,6 +164,9 @@ export const EmailTemplatesManagement = () => {
     is_default: false,
   });
 
+  const [customButtonText, setCustomButtonText] = useState("");
+  const [customButtonUrl, setCustomButtonUrl] = useState("");
+
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
     : templates;
@@ -260,6 +263,30 @@ export const EmailTemplatesManagement = () => {
       }
       quill.focus();
     }
+  };
+
+  const insertCustomButton = () => {
+    if (!customButtonText.trim() || !customButtonUrl.trim()) return;
+    
+    const buttonHtml = `<a href="${customButtonUrl.trim()}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 28px;background:#6366f1;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">${customButtonText.trim()}</a>`;
+    
+    if (isHtmlView) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n<p>' + buttonHtml + '</p>'
+      }));
+    } else {
+      // Insert into Quill as raw HTML via clipboard
+      if (quillRef.current) {
+        const quill = quillRef.current.getEditor();
+        const range = quill.getSelection();
+        const insertIndex = range ? range.index : quill.getLength() - 1;
+        quill.clipboard.dangerouslyPasteHTML(insertIndex, buttonHtml);
+      }
+    }
+    
+    setCustomButtonText("");
+    setCustomButtonUrl("");
   };
 
   const quillModules = {
@@ -538,6 +565,40 @@ export const EmailTemplatesManagement = () => {
                           <p className="text-xs text-muted-foreground px-2 mb-2">
                             Use <code className="bg-muted px-1 rounded">{'{{#field}}'}</code> to show content when true, <code className="bg-muted px-1 rounded">{'{{^field}}'}</code> to show when false. Place your content between the opening and closing tags.
                           </p>
+                        )}
+                        {category === 'actions' && (
+                          <div className="px-2 pb-3 mb-2 border-b border-border space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground pt-1">Custom Button</p>
+                            <p className="text-xs text-muted-foreground">
+                              Insert a styled button with your own text and link URL.
+                            </p>
+                            <div className="space-y-1.5">
+                              <Input
+                                placeholder="Button text, e.g. View Itinerary"
+                                value={customButtonText}
+                                onChange={(e) => setCustomButtonText(e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                              <Input
+                                placeholder="URL, e.g. https://example.com/itinerary.pdf"
+                                value={customButtonUrl}
+                                onChange={(e) => setCustomButtonUrl(e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="w-full text-xs"
+                                disabled={!customButtonText.trim() || !customButtonUrl.trim()}
+                                onClick={insertCustomButton}
+                              >
+                                <Link2 className="h-3 w-3 mr-1" />
+                                Insert Custom Button
+                              </Button>
+                            </div>
+                            <p className="text-xs font-semibold text-muted-foreground pt-2">Action Placeholders</p>
+                          </div>
                         )}
                         <div className="space-y-2">
                           {fields.map((field, index) => {
