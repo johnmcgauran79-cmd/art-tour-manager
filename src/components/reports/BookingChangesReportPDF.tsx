@@ -1,8 +1,6 @@
 import { format } from "date-fns";
-import { Download, Loader2 } from "lucide-react";
+import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import html2pdf from "html2pdf.js";
 
 interface WeeklyChange {
   id: string;
@@ -70,6 +68,7 @@ const formatOperationType = (type: string, details?: any): string => {
 
 const generateHTML = (changes: WeeklyChange[], period: string): string => {
   const currentDate = format(new Date(), 'dd/MM/yyyy');
+  
   
   return `
     <!DOCTYPE html>
@@ -220,53 +219,23 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
 };
 
 export const BookingChangesReportPDF = ({ changes, period }: BookingChangesReportPDFProps) => {
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleDownload = async () => {
-    setIsGenerating(true);
-    try {
-      const htmlContent = generateHTML(changes, period);
-      const filename = `booking-changes-report-${period}-days-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      
-      const opt = {
-        margin: [10, 10, 10, 10] as [number, number, number, number],
-        filename: filename,
-        image: { type: 'jpeg' as const, quality: 1.0 },
-        html2canvas: { 
-          scale: 3,
-          useCORS: true,
-          letterRendering: true,
-          logging: false
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'landscape' as const,
-          compress: false
-        }
-      };
-      
-      await html2pdf().set(opt).from(htmlContent).save();
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setIsGenerating(false);
+  const handlePrint = () => {
+    const htmlContent = generateHTML(changes, period);
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
     }
   };
 
   return (
-    <Button onClick={handleDownload} disabled={isGenerating}>
-      {isGenerating ? (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Generating PDF...
-        </>
-      ) : (
-        <>
-          <Download className="h-4 w-4" />
-          Download PDF
-        </>
-      )}
+    <Button onClick={handlePrint}>
+      <Printer className="h-4 w-4" />
+      Print PDF
     </Button>
   );
 };

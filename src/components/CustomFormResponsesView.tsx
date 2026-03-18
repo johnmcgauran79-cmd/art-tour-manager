@@ -9,12 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Download, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle } from "lucide-react";
+import { Printer, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle } from "lucide-react";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import html2pdf from "html2pdf.js";
+
 import { format } from "date-fns";
 
 interface Props {
@@ -353,19 +353,15 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
       </html>
     `;
 
-    const element = document.createElement('div');
-    element.innerHTML = htmlContent;
-
-    const opt = {
-      margin: 0.5,
-      filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${form.form_title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_responses.pdf`,
-      image: { type: 'jpeg' as const, quality: 1 },
-      html2canvas: { scale: 3 },
-      jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'landscape' as const }
-    };
-
-    html2pdf().set(opt).from(element).save();
-    toast.success('PDF download started');
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    }
   };
 
   return (
@@ -381,7 +377,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                     <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-                    <Download className="h-4 w-4 mr-2" /> PDF
+                    <Printer className="h-4 w-4 mr-2" /> Print PDF
                   </Button>
                 </div>
               )}

@@ -1,9 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer, Download } from "lucide-react";
+import { Printer } from "lucide-react";
 import { useActivityPassengers } from "@/hooks/useActivityPassengers";
-import html2pdf from 'html2pdf.js';
 
 interface ActivityPassengerListModalProps {
   open: boolean;
@@ -87,57 +86,6 @@ export const ActivityPassengerListModal = ({
     printWindow.print();
   };
 
-  const handleDownloadPDF = () => {
-    const element = document.createElement('div');
-    element.innerHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
-        <h1 style="color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 10px;">${activityName}</h1>
-        ${activityDate ? `<h2 style="color: #2d3748; margin-top: 20px;">Date: ${activityDate}</h2>` : ''}
-        <div style="background-color: #e6f3ff; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <strong>Total Passengers: ${passengers?.reduce((sum, p) => sum + p.passengers_attending, 0) || 0}</strong>
-        </div>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-          <thead>
-            <tr>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f5f5f5; font-weight: bold;">Lead Passenger</th>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f5f5f5; font-weight: bold;">Additional Passengers</th>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f5f5f5; font-weight: bold;">Tickets</th>
-              <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f5f5f5; font-weight: bold;">Dietary Requirements</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${passengers?.map((passenger, idx) => `
-              <tr style="${idx % 2 === 0 ? 'background-color: #f9f9f9;' : ''}">
-                <td style="border: 1px solid #ddd; padding: 8px;">${passenger.lead_passenger_name}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">
-                  ${[passenger.passenger_2_name, passenger.passenger_3_name]
-                    .filter(Boolean)
-                    .join(', ') || '-'}
-                </td>
-                <td style="border: 1px solid #ddd; padding: 8px;"><strong>${passenger.passengers_attending}</strong></td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${passenger.dietary_restrictions || '-'}</td>
-              </tr>
-            `).join('') || ''}
-          </tbody>
-        </table>
-        <div style="background-color: #e6f3ff; padding: 15px; border-radius: 5px; margin: 20px 0;">
-          <p><strong>Total Bookings:</strong> ${passengers?.length || 0}</p>
-          <p><strong>Total Passengers:</strong> ${passengers?.reduce((sum, p) => sum + p.passengers_attending, 0) || 0}</p>
-        </div>
-      </div>
-    `;
-
-    const opt = {
-      margin: 10,
-      filename: `${activityName.replace(/[^a-z0-9]/gi, '_')}_passenger_list.pdf`,
-      image: { type: 'jpeg' as const, quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: 'mm' as const, format: 'a4' as const, orientation: 'portrait' as const }
-    };
-
-    html2pdf().set(opt).from(element).save();
-  };
-
   const totalPassengers = passengers?.reduce((sum, p) => sum + p.passengers_attending, 0) || 0;
 
   return (
@@ -152,13 +100,9 @@ export const ActivityPassengerListModal = ({
               )}
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleDownloadPDF} size="sm" variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Download PDF
-              </Button>
               <Button onClick={handlePrint} size="sm" variant="outline">
                 <Printer className="h-4 w-4 mr-2" />
-                Print
+                Print PDF
               </Button>
               
             </div>
