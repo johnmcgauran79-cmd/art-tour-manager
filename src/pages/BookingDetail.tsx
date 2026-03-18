@@ -763,24 +763,26 @@ export default function BookingDetail() {
                 </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-              <AlertDialogCancel>Keep Booking</AlertDialogCancel>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowDeleteDialog(false);
-                  updateBooking.mutate({ id: booking!.id, status: 'cancelled' }, {
-                    onSuccess: () => {
-                      toast({ title: "Booking cancelled", description: `Booking for ${leadPassengerName} has been cancelled.` });
-                    }
-                  });
-                }}
-              >
-                Cancel Booking Instead
-              </Button>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Permanently Delete
-              </AlertDialogAction>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2 sm:justify-between">
+              <AlertDialogCancel className="sm:mr-auto">Keep Booking</AlertDialogCancel>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    updateBooking.mutate({ id: booking!.id, status: 'cancelled' }, {
+                      onSuccess: () => {
+                        toast({ title: "Booking cancelled", description: `Booking for ${leadPassengerName} has been cancelled.` });
+                      }
+                    });
+                  }}
+                >
+                  Cancel Booking Instead
+                </Button>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Permanently Delete
+                </AlertDialogAction>
+              </div>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
