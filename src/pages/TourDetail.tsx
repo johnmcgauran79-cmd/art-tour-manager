@@ -43,6 +43,38 @@ import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 
+const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
+  const [subTab, setSubTab] = useState("itinerary");
+  return (
+    <Tabs value={subTab} onValueChange={setSubTab}>
+      <TabsList className="mb-4">
+        <TabsTrigger value="itinerary" className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5" />
+          Itinerary
+        </TabsTrigger>
+        <TabsTrigger value="additional-info" className="flex items-center gap-1.5">
+          <Info className="h-3.5 w-3.5" />
+          Additional Info
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="itinerary">
+        <TourItineraryTab tour={{
+          id: tour.id,
+          name: tour.name,
+          startDate: tour.start_date,
+          endDate: tour.end_date,
+          days: tour.days,
+          nights: tour.nights,
+          location: tour.location || ''
+        }} />
+      </TabsContent>
+      <TabsContent value="additional-info">
+        <TourAdditionalInfoTab tourId={tour.id} tourName={tour.name} />
+      </TabsContent>
+    </Tabs>
+  );
+};
+
 export default function TourDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
