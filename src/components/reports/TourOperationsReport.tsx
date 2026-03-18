@@ -17,6 +17,7 @@ interface TourOperationsReportProps {
   changeCount?: number;
   onMarkReviewed?: () => void;
   isMarkingReviewed?: boolean;
+  onActivityClick?: (activity: Activity) => void;
 }
 
 const formatTime = (time: string | null) => {
