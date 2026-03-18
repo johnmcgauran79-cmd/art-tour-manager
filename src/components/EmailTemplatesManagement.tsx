@@ -566,6 +566,40 @@ export const EmailTemplatesManagement = () => {
                             Use <code className="bg-muted px-1 rounded">{'{{#field}}'}</code> to show content when true, <code className="bg-muted px-1 rounded">{'{{^field}}'}</code> to show when false. Place your content between the opening and closing tags.
                           </p>
                         )}
+                        {category === 'actions' && (
+                          <div className="px-2 pb-3 mb-2 border-b border-border space-y-2">
+                            <p className="text-xs font-semibold text-muted-foreground pt-1">Custom Button</p>
+                            <p className="text-xs text-muted-foreground">
+                              Insert a styled button with your own text and link URL.
+                            </p>
+                            <div className="space-y-1.5">
+                              <Input
+                                placeholder="Button text, e.g. View Itinerary"
+                                value={customButtonText}
+                                onChange={(e) => setCustomButtonText(e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                              <Input
+                                placeholder="URL, e.g. https://example.com/itinerary.pdf"
+                                value={customButtonUrl}
+                                onChange={(e) => setCustomButtonUrl(e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="secondary"
+                                className="w-full text-xs"
+                                disabled={!customButtonText.trim() || !customButtonUrl.trim()}
+                                onClick={insertCustomButton}
+                              >
+                                <Link2 className="h-3 w-3 mr-1" />
+                                Insert Custom Button
+                              </Button>
+                            </div>
+                            <p className="text-xs font-semibold text-muted-foreground pt-2">Action Placeholders</p>
+                          </div>
+                        )}
                         <div className="space-y-2">
                           {fields.map((field, index) => {
                             if (field.startsWith('---')) {
