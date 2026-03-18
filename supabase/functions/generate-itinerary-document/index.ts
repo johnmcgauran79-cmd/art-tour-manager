@@ -354,6 +354,50 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           margin-bottom: 8px;
           font-size: 1.1em;
         }
+        .additional-info-section {
+          margin-top: 16px;
+        }
+        .additional-info-card {
+          background: #fff;
+          border: 1px solid #ddd;
+          border-left: 3px solid hsl(45, 100%, 55%);
+          border-radius: 4px;
+          padding: 8px 10px;
+          margin-bottom: 8px;
+        }
+        .additional-info-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 6px;
+        }
+        .additional-info-name {
+          font-weight: 600;
+          font-size: 1em;
+          color: hsl(220, 8%, 15%);
+        }
+        .additional-info-content {
+          color: #555;
+          line-height: 1.5;
+          font-size: 9pt;
+        }
+        .additional-info-content p {
+          margin: 0.3em 0;
+        }
+        .additional-info-content ul, .additional-info-content ol {
+          margin: 0.3em 0;
+          padding-left: 1.2em;
+        }
+        .additional-info-content li {
+          margin: 0.15em 0;
+        }
+        .additional-info-content strong {
+          font-weight: 600;
+        }
+        .additional-info-content a {
+          color: hsl(220, 8%, 15%);
+          text-decoration: underline;
+        }
         @media print {
           @page {
             margin: 10mm;
