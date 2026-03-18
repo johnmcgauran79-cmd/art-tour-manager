@@ -5,7 +5,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail } from "lucide-react";
+import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
@@ -42,6 +42,38 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
+
+const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
+  const [subTab, setSubTab] = useState("itinerary");
+  return (
+    <Tabs value={subTab} onValueChange={setSubTab}>
+      <TabsList className="mb-4">
+        <TabsTrigger value="itinerary" className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5" />
+          Itinerary
+        </TabsTrigger>
+        <TabsTrigger value="additional-info" className="flex items-center gap-1.5">
+          <Info className="h-3.5 w-3.5" />
+          Additional Info
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="itinerary">
+        <TourItineraryTab tour={{
+          id: tour.id,
+          name: tour.name,
+          startDate: tour.start_date,
+          endDate: tour.end_date,
+          days: tour.days,
+          nights: tour.nights,
+          location: tour.location || ''
+        }} />
+      </TabsContent>
+      <TabsContent value="additional-info">
+        <TourAdditionalInfoTab tourId={tour.id} tourName={tour.name} />
+      </TabsContent>
+    </Tabs>
+  );
+};
 
 export default function TourDetail() {
   const { id } = useParams();
@@ -365,13 +397,9 @@ export default function TourDetail() {
                 <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Tasks</span>
               </TabsTrigger>
-              <TabsTrigger value="itinerary" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Itinerary</span>
-              </TabsTrigger>
-              <TabsTrigger value="additional-info" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Additional Info</span>
+              <TabsTrigger value="guest-docs" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Guest Docs</span>
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -406,16 +434,8 @@ export default function TourDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="itinerary" className="space-y-4 mt-6">
-          <TourItineraryTab tour={{
-            id: tour.id,
-            name: tour.name,
-            startDate: tour.start_date,
-            endDate: tour.end_date,
-            days: tour.days,
-            nights: tour.nights,
-            location: tour.location || ''
-          }} />
+        <TabsContent value="guest-docs" className="space-y-4 mt-6">
+          <GuestDocsSubTabs tour={tour} />
         </TabsContent>
 
         <TabsContent value="activities" className="space-y-4 mt-6">
@@ -477,9 +497,6 @@ export default function TourDetail() {
           />
         </TabsContent>
 
-        <TabsContent value="additional-info" className="space-y-4 mt-6">
-          <TourAdditionalInfoTab tourId={tour.id} tourName={tour.name} />
-        </TabsContent>
 
         <TabsContent value="forms" className="space-y-4 mt-6">
           <TourCustomFormsTab tourId={tour.id} tourName={tour.name} />
