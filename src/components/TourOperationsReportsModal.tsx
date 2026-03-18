@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Download, FileText, Mail } from "lucide-react";
+import { Download, FileText, Mail, Printer } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
