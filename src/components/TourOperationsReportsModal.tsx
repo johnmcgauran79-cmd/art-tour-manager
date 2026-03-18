@@ -88,8 +88,17 @@ const TourOpsReportModal = ({ tourId, tourName, hotels, activities, open, onOpen
             changeCount={changeCount}
             onMarkReviewed={handleMarkReviewed}
             isMarkingReviewed={markReviewed.isPending}
+            onActivityClick={(activity) => setViewActivity(activity)}
           />
         </div>
+        {viewActivity && (
+          <ViewActivityModal
+            activity={viewActivity}
+            open={!!viewActivity}
+            onOpenChange={(open) => { if (!open) setViewActivity(null); }}
+            onEdit={() => {}}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
