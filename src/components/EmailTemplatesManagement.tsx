@@ -265,6 +265,30 @@ export const EmailTemplatesManagement = () => {
     }
   };
 
+  const insertCustomButton = () => {
+    if (!customButtonText.trim() || !customButtonUrl.trim()) return;
+    
+    const buttonHtml = `<a href="${customButtonUrl.trim()}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 28px;background:#6366f1;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">${customButtonText.trim()}</a>`;
+    
+    if (isHtmlView) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n<p>' + buttonHtml + '</p>'
+      }));
+    } else {
+      // Insert into Quill as raw HTML via clipboard
+      if (quillRef.current) {
+        const quill = quillRef.current.getEditor();
+        const range = quill.getSelection();
+        const insertIndex = range ? range.index : quill.getLength() - 1;
+        quill.clipboard.dangerouslyPasteHTML(insertIndex, buttonHtml);
+      }
+    }
+    
+    setCustomButtonText("");
+    setCustomButtonUrl("");
+  };
+
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
