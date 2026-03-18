@@ -35,8 +35,6 @@ export const prepareCustomerData = (contact: CSVContact) => {
     spouse_name: contact.spouse_name || null,
     dietary_requirements: contact.dietary_requirements || null,
     notes: contact.notes || null,
-    crm_id: null,
-    last_synced_at: null,
     emergency_contact_name: null,
     emergency_contact_phone: null,
     emergency_contact_relationship: null,
