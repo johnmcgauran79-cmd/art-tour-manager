@@ -1,9 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Printer, Download } from "lucide-react";
+import { Printer } from "lucide-react";
 import { useActivityPassengers } from "@/hooks/useActivityPassengers";
-import html2pdf from 'html2pdf.js';
 
 interface ActivityPassengerListModalProps {
   open: boolean;
