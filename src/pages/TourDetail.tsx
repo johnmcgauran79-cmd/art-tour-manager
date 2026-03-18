@@ -365,13 +365,9 @@ export default function TourDetail() {
                 <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">Tasks</span>
               </TabsTrigger>
-              <TabsTrigger value="itinerary" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Itinerary</span>
-              </TabsTrigger>
-              <TabsTrigger value="additional-info" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
-                <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Additional Info</span>
+              <TabsTrigger value="guest-docs" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
+                <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Guest Docs</span>
               </TabsTrigger>
               <TabsTrigger value="forms" className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm whitespace-nowrap">
                 <FormInput className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
