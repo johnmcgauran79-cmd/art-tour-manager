@@ -50,7 +50,8 @@ export const GenerateDocumentModal = ({
           format: 'html',
           options: {
             includeHotels,
-            includeTourInfo
+            includeTourInfo,
+            includeAdditionalInfo
           }
         }
       });
