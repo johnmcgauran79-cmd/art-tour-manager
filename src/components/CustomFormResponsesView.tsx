@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Download, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle } from "lucide-react";
+import { Printer, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle } from "lucide-react";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
