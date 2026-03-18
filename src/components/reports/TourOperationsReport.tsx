@@ -187,7 +187,7 @@ export const TourOperationsReport = ({
                 {sortedActivities.map(activity => {
                   const key = `activity_${activity.id}`;
                   return (
-                    <TableRow key={activity.id}>
+                    <TableRow key={activity.id} className={onActivityClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onActivityClick?.(activity)}>
                       <ChangedCell isChanged={isChanged(`${key}.activity_date`)} className="whitespace-nowrap">
                         {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : '-'}
                       </ChangedCell>
