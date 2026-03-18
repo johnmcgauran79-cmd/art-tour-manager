@@ -51,6 +51,7 @@ export const TourOperationsReport = ({
   changeCount = 0,
   onMarkReviewed,
   isMarkingReviewed = false,
+  onActivityClick,
 }: TourOperationsReportProps) => {
   const sortedActivities = [...activities].sort((a, b) => {
     if (a.activity_date && b.activity_date) {
