@@ -46,6 +46,7 @@ const TourOpsReportModal = ({ tourId, tourName, hotels, activities, open, onOpen
 }) => {
   const { review, reviewerProfile, changedFields, changeCount, markReviewed } = useTourOpsReview(tourId);
   const { toast } = useToast();
+  const [viewActivity, setViewActivity] = useState<any | null>(null);
 
   const handleMarkReviewed = async () => {
     try {
