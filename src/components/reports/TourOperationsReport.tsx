@@ -190,6 +190,7 @@ export const TourOperationsReport = ({
                         {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : '-'}
                       </ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.name`)} className="font-medium">{activity.name}</ChangedCell>
+                      <ChangedCell isChanged={isChanged(`${key}.location`)}>{activity.location || '-'}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.activity_status`)}>
                         <Badge variant="outline" className="capitalize">{activity.activity_status?.replace('_', ' ') || '-'}</Badge>
                       </ChangedCell>
