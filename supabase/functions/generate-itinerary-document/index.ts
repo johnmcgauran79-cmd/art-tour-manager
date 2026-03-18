@@ -171,7 +171,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], options: any): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any): string {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
