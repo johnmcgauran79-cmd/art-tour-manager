@@ -17,6 +17,7 @@ interface TourOperationsReportProps {
   changeCount?: number;
   onMarkReviewed?: () => void;
   isMarkingReviewed?: boolean;
+  onActivityClick?: (activity: Activity) => void;
 }
 
 const formatTime = (time: string | null) => {
@@ -50,6 +51,7 @@ export const TourOperationsReport = ({
   changeCount = 0,
   onMarkReviewed,
   isMarkingReviewed = false,
+  onActivityClick,
 }: TourOperationsReportProps) => {
   const sortedActivities = [...activities].sort((a, b) => {
     if (a.activity_date && b.activity_date) {
@@ -185,7 +187,7 @@ export const TourOperationsReport = ({
                 {sortedActivities.map(activity => {
                   const key = `activity_${activity.id}`;
                   return (
-                    <TableRow key={activity.id}>
+                    <TableRow key={activity.id} className={onActivityClick ? "cursor-pointer hover:bg-muted/50" : ""} onClick={() => onActivityClick?.(activity)}>
                       <ChangedCell isChanged={isChanged(`${key}.activity_date`)} className="whitespace-nowrap">
                         {activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : '-'}
                       </ChangedCell>

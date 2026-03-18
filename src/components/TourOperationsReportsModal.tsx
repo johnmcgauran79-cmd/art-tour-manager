@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { MapPin } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { ReportPDFViewer } from "@/components/reports/ReportPDFViewer";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { TourAttendeesReport, useTourAttendeesData, generateTourAttendeesHTML } from "@/components/reports/TourAttendeesReport";
 import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
+import { ViewActivityModal } from "@/components/ViewActivityModal";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useTourOpsReview } from "@/hooks/useTourOpsReview";
@@ -46,6 +47,7 @@ const TourOpsReportModal = ({ tourId, tourName, hotels, activities, open, onOpen
 }) => {
   const { review, reviewerProfile, changedFields, changeCount, markReviewed } = useTourOpsReview(tourId);
   const { toast } = useToast();
+  const [viewActivity, setViewActivity] = useState<any | null>(null);
 
   const handleMarkReviewed = async () => {
     try {
@@ -87,8 +89,17 @@ const TourOpsReportModal = ({ tourId, tourName, hotels, activities, open, onOpen
             changeCount={changeCount}
             onMarkReviewed={handleMarkReviewed}
             isMarkingReviewed={markReviewed.isPending}
+            onActivityClick={(activity) => setViewActivity(activity)}
           />
         </div>
+        {viewActivity && (
+          <ViewActivityModal
+            activity={viewActivity}
+            open={!!viewActivity}
+            onOpenChange={(open) => { if (!open) setViewActivity(null); }}
+            onEdit={() => {}}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
