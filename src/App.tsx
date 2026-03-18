@@ -71,6 +71,7 @@ function App() {
               <Route path="/waiver/:token" element={<SignWaiver />} />
               <Route path="/select-pickup/:token" element={<SelectPickup />} />
               <Route path="/custom-form/:token" element={<CustomForm />} />
+              <Route path="/view-itinerary/:token" element={<ViewItinerary />} />
               <Route
                 path="/"
                 element={
