@@ -268,7 +268,7 @@ export const EmailTemplatesManagement = () => {
   const insertCustomButton = () => {
     if (!customButtonText.trim() || !customButtonUrl.trim()) return;
     
-    const buttonHtml = `<a href="${customButtonUrl.trim()}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 28px;background:#6366f1;color:#ffffff;border-radius:6px;text-decoration:none;font-weight:600;font-size:16px;">${customButtonText.trim()}</a>`;
+    const buttonHtml = `<a href="${customButtonUrl.trim()}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:12px 28px;background:#232628;color:#F5C518;border-radius:6px;text-decoration:none;font-weight:700;font-size:16px;letter-spacing:0.5px;text-transform:uppercase;">${customButtonText.trim()}</a>`;
     
     if (isHtmlView) {
       setFormData(prev => ({
