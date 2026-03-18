@@ -164,6 +164,9 @@ export const EmailTemplatesManagement = () => {
     is_default: false,
   });
 
+  const [customButtonText, setCustomButtonText] = useState("");
+  const [customButtonUrl, setCustomButtonUrl] = useState("");
+
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
     : templates;
