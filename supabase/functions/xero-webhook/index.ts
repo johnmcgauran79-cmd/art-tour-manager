@@ -233,7 +233,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, passenger_count, tours!bookings_tour_id_fkey(instalment_required, name, start_date, deposit_per_person), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
+    .select('id, invoice_reference, status, tour_id, group_name, lead_passenger_id, passenger_count, tours!bookings_tour_id_fkey(instalment_required, name, start_date, deposit_required), customers!bookings_lead_passenger_id_fkey(first_name, last_name)')
     .not('invoice_reference', 'is', null)
     .neq('invoice_reference', '')
     .not('invoice_reference', 'in', '("0","TBC","tbc","N/A","n/a")')
@@ -251,7 +251,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
       const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean)
         .filter((r: string) => !['0', 'TBC', 'tbc', 'N/A', 'n/a'].includes(r));
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
-      const depositPerPerson = (booking as any).tours?.deposit_per_person || 0;
+      const depositPerPerson = (booking as any).tours?.deposit_required || 0;
       const passengerCount = booking.passenger_count || 1;
 
       if (refs.length === 0) continue;
