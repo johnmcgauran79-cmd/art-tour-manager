@@ -14,6 +14,7 @@ interface RequestBody {
   options: {
     includeHotels: boolean;
     includeTourInfo: boolean;
+    includeAdditionalInfo?: boolean;
   };
 }
 
