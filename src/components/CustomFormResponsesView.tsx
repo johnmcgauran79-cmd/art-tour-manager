@@ -304,12 +304,9 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     const tableRows = rowsWithData.map(p => {
       const resp = p.response!;
       const fieldCells = fields.map(f => `<td style="border: 1px solid #ddd; padding: 8px; font-size: 12px;">${getFieldValue(resp, f) || '—'}</td>`).join('');
-      const submitted = new Date(resp.submitted_at).toLocaleDateString('en-AU');
       return `<tr>
         <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; font-weight: 500;">${p.passengerName}</td>
-        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${p.bookingName}</td>
         ${fieldCells}
-        <td style="border: 1px solid #ddd; padding: 8px; font-size: 12px; color: #666;">${submitted}</td>
       </tr>`;
     }).join('');
 
@@ -342,9 +339,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           <thead>
             <tr>
               <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Passenger</th>
-              <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Booking</th>
               ${fieldHeaders}
-              <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Submitted</th>
             </tr>
           </thead>
           <tbody>${tableRows}</tbody>
