@@ -311,7 +311,33 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     }).join('');
 
     const fieldHeaders = fields.map(f => `<th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">${f.field_label}</th>`).join('');
-...
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+          .tour-name { font-size: 24px; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; }
+          .report-title { font-size: 18px; color: #666; margin-bottom: 10px; }
+          .report-date { font-size: 14px; color: #888; }
+          .summary { background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid #1e3a8a; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="tour-name">${tourName}</div>
+          <div class="report-title">${form.form_title} — Responses</div>
+          <div class="report-date">Generated on ${new Date().toLocaleDateString('en-AU')}</div>
+        </div>
+        <div class="summary">
+          <strong>Total Responses:</strong> ${rowsWithData.length} of ${allPassengers.length}
+        </div>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+          <thead>
+            <tr>
               <th style="border: 1px solid #ddd; padding: 8px; background-color: #f5f5f5; text-align: left; font-weight: bold; font-size: 12px;">Passenger</th>
               ${fieldHeaders}
             </tr>
