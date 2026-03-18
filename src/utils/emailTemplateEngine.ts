@@ -303,6 +303,8 @@ export interface EmailMergeData {
   profile_update_link?: string;
   pickup_button?: string;
   pickup_link?: string;
+  itinerary_button?: string;
+  itinerary_link?: string;
 }
 
 export interface EmailTemplate {
