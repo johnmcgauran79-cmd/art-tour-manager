@@ -784,6 +784,10 @@ const handler = async (req: Request): Promise<Response> => {
       // Pickup location action fields
       pickup_link: pickupLink,
       pickup_button: pickupButton,
+      
+      // Itinerary action fields
+      itinerary_link: itineraryLink,
+      itinerary_button: itineraryButton,
       pickup_location_name: pickupLocationName,
       pickup_location_time: pickupLocationTime,
       pickup_location_details: pickupLocationDetails,
