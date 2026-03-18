@@ -58,9 +58,6 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
       medical_conditions: formData.medical_conditions || null,
       accessibility_needs: formData.accessibility_needs || null,
       notes: formData.notes || null,
-      // Add missing fields required by Customer interface
-      crm_id: null,
-      last_synced_at: null,
       avatar_url: null,
     };
 
