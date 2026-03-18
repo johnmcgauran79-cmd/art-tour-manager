@@ -146,70 +146,19 @@ serve(async (req) => {
             }
           }
 
-          // Generate a profile update token for this customer
-          const profileToken = crypto.randomUUID();
-          const expiresAt = new Date();
-          expiresAt.setHours(expiresAt.getHours() + 168); // 7 days
-
-          // Get the admin user ID for token creation
-          const { data: adminUser } = await supabase
-            .from('user_roles')
-            .select('user_id')
-            .eq('role', 'admin')
-            .limit(1)
-            .single();
-
-          if (adminUser && booking.lead_passenger?.id) {
-            // Create the profile update token
-            await supabase
-              .from('customer_access_tokens')
-              .insert({
-                customer_id: booking.lead_passenger.id,
-                token: profileToken,
-                expires_at: expiresAt.toISOString(),
-                created_by: adminUser.user_id
-              });
-          }
-
-          // Build profile update URL
-          const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
-          const profileUpdateUrl = `${baseUrl}/update-profile/${profileToken}`;
-
-          // Prepare email content with profile update link
-          let emailContent = emailTemplate?.content_template || '';
-          let emailSubject = emailTemplate?.subject_template || 'Your Booking Confirmation';
-
-          // Replace placeholders
-          const customerName = `${booking.lead_passenger?.first_name || ''} ${booking.lead_passenger?.last_name || ''}`.trim() || 'Valued Customer';
-          const tourName = booking.tour?.name || 'Your Tour';
-          const tourStartDate = booking.tour?.start_date 
-            ? new Date(booking.tour.start_date).toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' })
-            : '';
-
-          emailContent = emailContent
-            .replace(/\{\{customer\.first_name\}\}/g, booking.lead_passenger?.first_name || '')
-            .replace(/\{\{customer\.last_name\}\}/g, booking.lead_passenger?.last_name || '')
-            .replace(/\{\{customer\.name\}\}/g, customerName)
-            .replace(/\{\{tour\.name\}\}/g, tourName)
-            .replace(/\{\{tour\.start_date\}\}/g, tourStartDate)
-            .replace(/\{\{booking\.passenger_count\}\}/g, String(booking.passenger_count || 1))
-            .replace(/\{\{profile_update_url\}\}/g, profileUpdateUrl)
-            .replace(/\{\{profile_update_link\}\}/g, `<a href="${profileUpdateUrl}" style="display: inline-block; padding: 12px 24px; background-color: #232628; color: #F5C518; text-decoration: none; border-radius: 6px; font-weight: 600;">UPDATE MY PROFILE</a>`);
-
-          emailSubject = emailSubject
-            .replace(/\{\{customer\.first_name\}\}/g, booking.lead_passenger?.first_name || '')
-            .replace(/\{\{tour\.name\}\}/g, tourName);
-
-          // Send the email via send-booking-confirmation with custom content
+          // Delegate to send-booking-confirmation with RAW templates
+          // This ensures all merge fields, conditionals, and action buttons
+          // are properly resolved by the central template processor.
           const { data: emailResult, error: emailError } = await supabase.functions.invoke(
             'send-booking-confirmation',
             {
               body: {
                 bookingId: booking.id,
-                customSubject: emailSubject,
-                customContent: emailContent,
+                customSubject: emailTemplate?.subject_template,
+                customContent: emailTemplate?.content_template,
                 fromEmail: emailTemplate?.from_email,
-                isAutomated: true
+                isAutomated: true,
+                includeAdditionalPassengers: true
               }
             }
           );
