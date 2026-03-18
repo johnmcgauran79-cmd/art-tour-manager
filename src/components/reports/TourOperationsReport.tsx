@@ -171,6 +171,7 @@ export const TourOperationsReport = ({
                 <TableRow>
                    <TableHead className="font-semibold">Date</TableHead>
                    <TableHead className="font-semibold">Activity Name</TableHead>
+                   <TableHead className="font-semibold">Location</TableHead>
                    <TableHead className="font-semibold">Status</TableHead>
                    <TableHead className="font-semibold">Depart Time</TableHead>
                    <TableHead className="font-semibold">Start Time</TableHead>
