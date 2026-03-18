@@ -311,18 +311,17 @@ export const TourOperationsReportsModal = ({
 
   // Handle tour attendees report
   if (reportType === 'tourattendees') {
-    const handleDownloadAttendeesPDF = () => {
+    const handlePrintAttendees = () => {
       const htmlContent = generateTourAttendeesHTML(attendees, tourName);
-      
-      const opt = {
-        margin: 0,
-        filename: `${tourName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_tour_attendees.pdf`,
-        image: { type: 'jpeg' as const, quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-      };
-      
-      html2pdf().set(opt).from(htmlContent).save();
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      }
     };
 
     return (
