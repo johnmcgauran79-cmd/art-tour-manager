@@ -335,14 +335,14 @@ export const TourOperationsReportsModal = ({
               </div>
               <div className="flex items-center gap-2">
                 <Button
-                  onClick={handleDownloadAttendeesPDF}
+                  onClick={handlePrintAttendees}
                   variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
                   disabled={attendees.length === 0}
                 >
-                  <Download className="h-4 w-4" />
-                  Download PDF
+                  <Printer className="h-4 w-4" />
+                  Print PDF
                 </Button>
               </div>
             </div>
