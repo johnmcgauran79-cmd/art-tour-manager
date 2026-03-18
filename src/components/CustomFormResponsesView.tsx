@@ -377,7 +377,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                     <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-                    <Download className="h-4 w-4 mr-2" /> PDF
+                    <Printer className="h-4 w-4 mr-2" /> Print PDF
                   </Button>
                 </div>
               )}
