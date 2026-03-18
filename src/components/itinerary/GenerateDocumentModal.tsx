@@ -119,6 +119,15 @@ export const GenerateDocumentModal = ({
                   />
                   <Label htmlFor="hotels">Hotel Information</Label>
                 </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="additional-info"
+                    checked={includeAdditionalInfo}
+                    onCheckedChange={(checked) => setIncludeAdditionalInfo(checked as boolean)}
+                  />
+                  <Label htmlFor="additional-info">Additional Information Sections</Label>
+                </div>
               </div>
             </div>
 

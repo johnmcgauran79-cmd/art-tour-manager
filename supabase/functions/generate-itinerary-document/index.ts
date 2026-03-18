@@ -497,6 +497,30 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
 
   html += `
       </div>
+  `;
+
+  // Additional Information sections
+  if (options.includeAdditionalInfo && additionalInfoSections.length > 0) {
+    html += `
+      <div class="additional-info-section">
+        <h2 class="section-title">Additional Information</h2>
+    `;
+
+    additionalInfoSections.forEach((section: any) => {
+      html += `
+        <div class="additional-info-card">
+          <div class="additional-info-header">
+            <span class="additional-info-name">${section.name}</span>
+          </div>
+          ${section.content ? `<div class="additional-info-content">${section.content}</div>` : '<p style="color: #999; font-style: italic;">No content.</p>'}
+        </div>
+      `;
+    });
+
+    html += '</div>';
+  }
+
+  html += `
     </body>
     </html>
   `;
