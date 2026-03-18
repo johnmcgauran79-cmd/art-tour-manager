@@ -32,6 +32,7 @@ export const GenerateDocumentModal = ({
 }: GenerateDocumentModalProps) => {
   const [includeHotels, setIncludeHotels] = useState(true);
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
+  const [includeAdditionalInfo, setIncludeAdditionalInfo] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState('');
