@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,11 +9,79 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Calendar, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, X, ChevronDown } from "lucide-react";
 import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, useSendTestAutomatedReport, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserEmails } from "@/hooks/useUserEmails";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const RecipientEmailInput = ({ emailInput, setEmailInput, onAdd }: {
+  emailInput: string;
+  setEmailInput: (v: string) => void;
+  onAdd: (email: string) => void;
+}) => {
+  const { data: userEmails } = useUserEmails();
+  const [open, setOpen] = useState(false);
+  
+  const filteredEmails = (userEmails || []).filter(email => 
+    email.toLowerCase().includes(emailInput.toLowerCase()) && emailInput.length > 0
+  );
+
+  const handleAdd = () => {
+    if (emailInput && emailInput.includes('@')) {
+      onAdd(emailInput);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Popover open={open && filteredEmails.length > 0} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div className="relative flex-1">
+            <Input
+              type="email"
+              value={emailInput}
+              onChange={e => {
+                setEmailInput(e.target.value);
+                setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAdd();
+                }
+              }}
+              placeholder="Type email or select a user..."
+            />
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="p-1 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={e => e.preventDefault()}>
+          <div className="max-h-48 overflow-y-auto">
+            {filteredEmails.map(email => (
+              <button
+                key={email}
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                onMouseDown={e => {
+                  e.preventDefault();
+                  onAdd(email);
+                  setOpen(false);
+                }}
+              >
+                {email}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <Button type="button" onClick={handleAdd}>Add</Button>
+    </div>
+  );
+};
+
 const REPORT_TYPES = [{
   value: 'rooming_list',
   label: 'Rooming List'
@@ -373,10 +441,19 @@ export const AutomatedReportRulesManagement = () => {
 
               <div className="space-y-2">
                 <Label>Recipients</Label>
-                <div className="flex gap-2">
-                  <Input type="email" value={emailInput} onChange={e => setEmailInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addEmail())} placeholder="email@example.com" />
-                  <Button type="button" onClick={addEmail}>Add</Button>
-                </div>
+                <RecipientEmailInput
+                  emailInput={emailInput}
+                  setEmailInput={setEmailInput}
+                  onAdd={(email) => {
+                    if (!formData.recipient_emails?.includes(email)) {
+                      setFormData({
+                        ...formData,
+                        recipient_emails: [...(formData.recipient_emails || []), email]
+                      });
+                    }
+                    setEmailInput('');
+                  }}
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.recipient_emails?.map(email => <Badge key={email} variant="secondary" className="gap-1">
                       {email}
