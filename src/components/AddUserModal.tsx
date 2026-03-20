@@ -173,6 +173,38 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     }
   };
 
+  const handleSendWelcomeEmail = async () => {
+    setIsSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email,
+          firstName,
+          lastName,
+          role,
+          tempPassword,
+        },
+      });
+
+      if (error) throw error;
+
+      setEmailSent(true);
+      toast({
+        title: "Welcome Email Sent",
+        description: `Login details sent to ${email}.`,
+      });
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      toast({
+        title: "Email Send Failed",
+        description: "Could not send the welcome email. You can still share the password manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const handleClose = () => {
     // Reset form
     setEmail("");
@@ -181,6 +213,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     setRole("booking_agent");
     setTempPassword("");
     setUserCreated(false);
+    setEmailSent(false);
+    setIsSendingEmail(false);
     onOpenChange(false);
     // Only refresh the user list when manually closing
     if (userCreated) {
