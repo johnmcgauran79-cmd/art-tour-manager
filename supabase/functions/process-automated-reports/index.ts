@@ -162,8 +162,16 @@ serve(async (req) => {
 
     console.log('Processing automated reports:', { tour_id, report_types, recipient_emails, rule_id, schedule_type, schedule_value });
 
-    if (!tour_id || !report_types || !Array.isArray(report_types) || report_types.length === 0) {
-      throw new Error('tour_id and report_types are required');
+    // Report types that don't require a tour_id
+    const systemWideReports = ['booking_changes', 'activity_matrix'];
+    const requiresTour = report_types.some((rt: string) => !systemWideReports.includes(rt));
+
+    if (!report_types || !Array.isArray(report_types) || report_types.length === 0) {
+      throw new Error('report_types is required');
+    }
+
+    if (requiresTour && !tour_id) {
+      throw new Error('tour_id is required for the selected report types');
     }
 
     if (!recipient_emails || !Array.isArray(recipient_emails) || recipient_emails.length === 0) {
@@ -184,12 +192,11 @@ serve(async (req) => {
     if (blockedRecipients.length > 0) {
       console.warn(`Blocked sending to suppressed emails: ${blockedRecipients.join(', ')}`);
       
-      // Log the blocked attempt
       await supabase
         .from('automated_report_log')
         .insert({
           rule_id: rule_id || null,
-          tour_id: tour_id,
+          tour_id: tour_id || null,
           report_types: report_types,
           recipient_emails: blockedRecipients,
           status: 'blocked_suppressed',
@@ -212,15 +219,21 @@ serve(async (req) => {
       );
     }
 
-    // Get tour details
-    const { data: tour, error: tourError } = await supabase
-      .from('tours')
-      .select('name, start_date')
-      .eq('id', tour_id)
-      .single();
+    // Get tour details if tour_id provided
+    let tourName = '';
+    let tourStartDate = '';
+    if (tour_id) {
+      const { data: tour, error: tourError } = await supabase
+        .from('tours')
+        .select('name, start_date')
+        .eq('id', tour_id)
+        .single();
 
-    if (tourError || !tour) {
-      throw new Error(`Tour not found: ${tour_id}`);
+      if (tourError || !tour) {
+        throw new Error(`Tour not found: ${tour_id}`);
+      }
+      tourName = tour.name;
+      tourStartDate = new Date(tour.start_date).toLocaleDateString('en-AU');
     }
 
     // Generate all reports
@@ -234,8 +247,8 @@ serve(async (req) => {
       'activity_check': 'Activity Allocation Check'
     };
 
-    // Check if booking_changes is the only report type
-    const isOnlyBookingChanges = report_types.length === 1 && report_types[0] === 'booking_changes';
+    // Determine if this is a system-wide only report (no tour context needed in header)
+    const isSystemWideOnly = report_types.every((rt: string) => systemWideReports.includes(rt));
     
     // Generate report title based on schedule type
     let reportTitle = 'Automated Report';
@@ -249,14 +262,14 @@ serve(async (req) => {
     
     let emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
-        <h1 style="color: #333;">${reportTitle}${isOnlyBookingChanges ? '' : ': ' + tour.name}</h1>
-        ${!isOnlyBookingChanges ? `<p style="color: #666;">Tour Start Date: ${new Date(tour.start_date).toLocaleDateString('en-AU')}</p>` : ''}
+        <h1 style="color: #333;">${reportTitle}${!isSystemWideOnly && tourName ? ': ' + tourName : ''}</h1>
+        ${!isSystemWideOnly && tourStartDate ? `<p style="color: #666;">Tour Start Date: ${tourStartDate}</p>` : ''}
         <hr style="border: 1px solid #eee; margin: 20px 0;">
     `;
 
     // Generate each report
     for (const reportType of report_types) {
-      const reportHtml = await generateReport(reportType, tour_id, supabaseUrl, supabaseServiceKey);
+      const reportHtml = await generateReport(reportType, tour_id || null, supabaseUrl, supabaseServiceKey);
       emailHtml += `
         <div style="margin: 30px 0;">
           <h2 style="color: #1976d2; border-bottom: 2px solid #1976d2; padding-bottom: 10px;">
@@ -275,13 +288,17 @@ serve(async (req) => {
       </div>
     `;
 
-    // Send email to valid recipients only
+    // Send email
     console.log('Sending email to:', validRecipients);
+
+    const emailSubject = isSystemWideOnly
+      ? `${reportTitle}: ${report_types.map((rt: string) => reportLabels[rt] || rt).join(', ')}`
+      : `${reportTitle}: ${tourName}`;
 
     const emailResponse = await resend.emails.send({
       from: 'Australian Racing Tours <info@australianracingtours.com.au>',
       to: validRecipients,
-      subject: isOnlyBookingChanges ? `${reportTitle}: Booking Changes` : `${reportTitle}: ${tour.name}`,
+      subject: emailSubject,
       html: emailHtml,
     });
 
