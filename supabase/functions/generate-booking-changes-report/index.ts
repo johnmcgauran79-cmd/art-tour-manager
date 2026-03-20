@@ -91,6 +91,7 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     .from('audit_log')
     .select('id, timestamp, operation_type, record_id, user_id, details')
     .eq('table_name', 'bookings')
+    .neq('operation_type', 'KEAP_SYNC_TAG')
     .gte('timestamp', daysAgo.toISOString())
     .order('timestamp', { ascending: false });
 
