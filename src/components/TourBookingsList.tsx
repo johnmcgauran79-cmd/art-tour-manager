@@ -274,6 +274,11 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                                 +{[booking.passenger_2_name, booking.passenger_3_name].filter(Boolean).join(', ')}
                               </p>
                             )}
+                            {booking.group_name && (
+                              <p className="text-xs font-medium text-muted-foreground truncate">
+                                Group: {booking.group_name}
+                              </p>
+                            )}
                           </div>
                         </div>
                         {!isHost && (
