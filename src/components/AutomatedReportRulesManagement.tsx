@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -9,11 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Calendar, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, X, ChevronDown } from "lucide-react";
 import { useAutomatedReportRules, useCreateAutomatedReportRule, useUpdateAutomatedReportRule, useDeleteAutomatedReportRule, useAutomatedReportLog, useSendTestAutomatedReport, type AutomatedReportRule } from "@/hooks/useAutomatedReportRules";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserEmails } from "@/hooks/useUserEmails";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 const REPORT_TYPES = [{
   value: 'rooming_list',
   label: 'Rooming List'
