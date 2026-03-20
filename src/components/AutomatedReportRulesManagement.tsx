@@ -375,10 +375,19 @@ export const AutomatedReportRulesManagement = () => {
 
               <div className="space-y-2">
                 <Label>Recipients</Label>
-                <div className="flex gap-2">
-                  <Input type="email" value={emailInput} onChange={e => setEmailInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), addEmail())} placeholder="email@example.com" />
-                  <Button type="button" onClick={addEmail}>Add</Button>
-                </div>
+                <RecipientEmailInput
+                  emailInput={emailInput}
+                  setEmailInput={setEmailInput}
+                  onAdd={(email) => {
+                    if (!formData.recipient_emails?.includes(email)) {
+                      setFormData({
+                        ...formData,
+                        recipient_emails: [...(formData.recipient_emails || []), email]
+                      });
+                    }
+                    setEmailInput('');
+                  }}
+                />
                 <div className="flex flex-wrap gap-2 mt-2">
                   {formData.recipient_emails?.map(email => <Badge key={email} variant="secondary" className="gap-1">
                       {email}
