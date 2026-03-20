@@ -35,59 +35,32 @@ export const OperationsQuickActions = () => {
     },
   });
 
-  // Non-standard Activity Bookings count
+  // Non-standard Activity Bookings count (respects acknowledgments)
   const { data: activityMatrixIssuesCount = 0 } = useQuery({
     queryKey: ['activity-matrix-issues-count'],
     queryFn: async () => {
-      const { data: tours, error: toursError } = await supabase
-        .from('tours')
-        .select('id')
-        .neq('status', 'archived');
+      // Use the RPC to get discrepancies consistently with the report
+      const [discResult, ackResult] = await Promise.all([
+        supabase.rpc('get_activity_allocation_discrepancies'),
+        supabase.from('activity_discrepancy_acknowledgments').select('booking_id, activity_id, snapshot_passenger_count, snapshot_allocated_count')
+      ]);
 
-      if (toursError) throw toursError;
+      if (discResult.error) throw discResult.error;
+      const allDiscrepancies = discResult.data || [];
+      const acknowledgments = ackResult.data || [];
 
-      const bookingsWithIssues = new Set<string>();
+      // Filter out acknowledged items where snapshot still matches
+      const unacknowledged = allDiscrepancies.filter((disc: any) => {
+        const ack = acknowledgments.find(
+          (a: any) => a.booking_id === disc.booking_id && a.activity_id === disc.activity_id
+        );
+        if (!ack) return true;
+        return ack.snapshot_passenger_count !== disc.passenger_count ||
+               ack.snapshot_allocated_count !== disc.allocated_count;
+      });
 
-      for (const tour of tours || []) {
-        const { data: activities } = await supabase
-          .from('activities')
-          .select('id')
-          .eq('tour_id', tour.id);
-
-        if (!activities || activities.length === 0) continue;
-
-        const { data: bookings } = await supabase
-          .from('bookings')
-          .select('id, passenger_count')
-          .eq('tour_id', tour.id)
-          .neq('status', 'cancelled')
-          .neq('status', 'waitlisted');
-
-        if (!bookings || bookings.length === 0) continue;
-
-        const bookingIds = bookings.map(b => b.id);
-        const activityIds = activities.map(a => a.id);
-
-        const { data: activityBookings } = await supabase
-          .from('activity_bookings')
-          .select('booking_id, activity_id, passengers_attending')
-          .in('booking_id', bookingIds)
-          .in('activity_id', activityIds);
-
-        for (const booking of bookings) {
-          for (const activity of activities) {
-            const allocation = activityBookings?.find(
-              ab => ab.booking_id === booking.id && ab.activity_id === activity.id
-            );
-
-            if (!allocation || allocation.passengers_attending !== booking.passenger_count) {
-              bookingsWithIssues.add(booking.id);
-              break; // Stop checking activities for this booking once we found an issue
-            }
-          }
-        }
-      }
-
+      // Count unique bookings with unacknowledged discrepancies
+      const bookingsWithIssues = new Set(unacknowledged.map((d: any) => d.booking_id));
       return bookingsWithIssues.size;
     },
   });
