@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import { Mail, Loader2 } from "lucide-react";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
@@ -32,6 +33,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
   const [userCreated, setUserCreated] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const generateTempPassword = async () => {
     try {
@@ -170,6 +173,38 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     }
   };
 
+  const handleSendWelcomeEmail = async () => {
+    setIsSendingEmail(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email,
+          firstName,
+          lastName,
+          role,
+          tempPassword,
+        },
+      });
+
+      if (error) throw error;
+
+      setEmailSent(true);
+      toast({
+        title: "Welcome Email Sent",
+        description: `Login details sent to ${email}.`,
+      });
+    } catch (error) {
+      console.error('Error sending welcome email:', error);
+      toast({
+        title: "Email Send Failed",
+        description: "Could not send the welcome email. You can still share the password manually.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const handleClose = () => {
     // Reset form
     setEmail("");
@@ -178,6 +213,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
     setRole("booking_agent");
     setTempPassword("");
     setUserCreated(false);
+    setEmailSent(false);
+    setIsSendingEmail(false);
     onOpenChange(false);
     // Only refresh the user list when manually closing
     if (userCreated) {
@@ -309,7 +346,30 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={handleSendWelcomeEmail}
+                disabled={isSendingEmail || emailSent}
+                className="w-full sm:w-auto"
+              >
+                {isSendingEmail ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : emailSent ? (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email Sent ✓
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Welcome Email
+                  </>
+                )}
+              </Button>
               <DialogClose asChild>
                 <Button onClick={handleClose}>
                   Close
