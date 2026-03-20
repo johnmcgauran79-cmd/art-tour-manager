@@ -92,8 +92,8 @@ async function generateBookingChangesReport(supabaseUrl: string, supabaseService
 }
 
 // Generate Activity Matrix Report HTML by calling the dedicated edge function
-async function generateActivityMatrixReport(supabaseUrl: string, supabaseServiceKey: string, tourId: string): Promise<string> {
-  console.log('Calling generate-activity-matrix-report edge function...');
+async function generateActivityMatrixReport(supabaseUrl: string, supabaseServiceKey: string, tourId?: string): Promise<string> {
+  console.log('Calling generate-activity-matrix-report edge function...', { tourId: tourId || 'ALL TOURS' });
   
   const response = await fetch(`${supabaseUrl}/functions/v1/generate-activity-matrix-report`, {
     method: 'POST',
@@ -102,7 +102,7 @@ async function generateActivityMatrixReport(supabaseUrl: string, supabaseService
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      tour_id: tourId,
+      tour_id: tourId || null,
       format: 'html'
     }),
   });
