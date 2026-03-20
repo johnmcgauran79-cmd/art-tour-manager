@@ -87,6 +87,7 @@ export const useCreateBooking = () => {
       lead_passenger_name: string;
       lead_passenger_email: string;
       lead_passenger_phone?: string;
+      lead_passenger_id?: string;
       passenger_count: number;
       passenger_2_name?: string;
       passenger_3_name?: string;
@@ -114,58 +115,70 @@ export const useCreateBooking = () => {
       // Calculate nights
       const totalNights = calculateNights(bookingData.check_in_date, bookingData.check_out_date);
 
-      // First, create or find the customer
+      // Use pre-selected contact ID if provided (from the contact search dropdown)
       let customerId: string;
-      
-      const { data: existingCustomer } = await supabase
-        .from('customers')
-        .select('id')
-        .eq('email', bookingData.lead_passenger_email)
-        .single();
 
-      if (existingCustomer) {
-        customerId = existingCustomer.id;
-        
-        // Update the existing customer with any new information
-        const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
-        const lastName = lastNameParts.join(' ') || '';
-
-        await supabase
-          .from('customers')
-          .update({
-            first_name: firstName,
-            last_name: lastName,
-            phone: bookingData.lead_passenger_phone || null,
-          })
-          .eq('id', existingCustomer.id);
+      if (bookingData.lead_passenger_id) {
+        // Contact was already selected from the UI - use it directly
+        customerId = bookingData.lead_passenger_id;
       } else {
-        const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
-        const lastName = lastNameParts.join(' ') || '';
+        // Fallback: try to find by email (only if email is provided and non-empty)
+        const email = bookingData.lead_passenger_email?.trim();
+        let existingCustomer = null;
 
-        const { data: newCustomer, error: customerError } = await supabase
-          .from('customers')
-          .insert([{
-            first_name: firstName,
-            last_name: lastName,
-            email: bookingData.lead_passenger_email,
-            phone: bookingData.lead_passenger_phone || null,
-          }])
-          .select()
-          .single();
+        if (email) {
+          const { data } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('email', email)
+            .single();
+          existingCustomer = data;
+        }
 
-        if (customerError) throw customerError;
-        customerId = newCustomer.id;
+        if (existingCustomer) {
+          customerId = existingCustomer.id;
+        } else {
+          // No email match - try matching by exact name
+          const [firstName, ...lastNameParts] = bookingData.lead_passenger_name.split(' ');
+          const lastName = lastNameParts.join(' ') || '';
 
-        // Log customer creation
-        logOperation({
-          operation_type: 'CREATE',
-          table_name: 'customers',
-          record_id: newCustomer.id,
-          details: {
-            customer_name: `${firstName} ${lastName}`,
-            email: bookingData.lead_passenger_email
+          const { data: nameMatch } = await supabase
+            .from('customers')
+            .select('id')
+            .ilike('first_name', firstName)
+            .ilike('last_name', lastName)
+            .limit(1)
+            .maybeSingle();
+
+          if (nameMatch) {
+            customerId = nameMatch.id;
+          } else {
+            // Create new customer
+            const { data: newCustomer, error: customerError } = await supabase
+              .from('customers')
+              .insert([{
+                first_name: firstName,
+                last_name: lastName,
+                email: email || null,
+                phone: bookingData.lead_passenger_phone || null,
+              }])
+              .select()
+              .single();
+
+            if (customerError) throw customerError;
+            customerId = newCustomer.id;
+
+            logOperation({
+              operation_type: 'CREATE',
+              table_name: 'customers',
+              record_id: newCustomer.id,
+              details: {
+                customer_name: `${firstName} ${lastName}`,
+                email: email || null
+              }
+            });
           }
-        });
+        }
       }
 
       // Create the booking with all fields
