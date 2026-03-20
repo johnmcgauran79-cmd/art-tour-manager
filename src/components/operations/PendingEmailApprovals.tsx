@@ -125,6 +125,7 @@ export const PendingEmailApprovals = () => {
 
   // Helper to get the effective template for an approval item
   const getEffectiveTemplate = (approval: any) => {
+    if (!approval) return null;
     if (approval.override_template) {
       return approval.override_template;
     }
