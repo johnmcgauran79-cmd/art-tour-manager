@@ -315,9 +315,14 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                           </div>
                         )}
                       </div>
-                      {/* Client & Passenger Notes */}
-                      {(booking.customers?.notes || booking.passenger_2?.notes || booking.passenger_3?.notes || booking.booking_notes) && (
+                      {/* Group Name, Client & Passenger Notes */}
+                      {(booking.group_name || booking.customers?.notes || booking.passenger_2?.notes || booking.passenger_3?.notes || booking.booking_notes) && (
                         <div className="mt-2 space-y-1">
+                          {booking.group_name && (
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Group: {booking.group_name}
+                            </p>
+                          )}
                           {booking.customers?.notes && (
                             <p className="text-xs text-muted-foreground line-clamp-2 italic">
                               {booking.customers.notes}
