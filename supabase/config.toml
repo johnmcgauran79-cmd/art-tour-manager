@@ -131,3 +131,6 @@ verify_jwt = false
 
 [functions.validate-itinerary-token]
 verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
