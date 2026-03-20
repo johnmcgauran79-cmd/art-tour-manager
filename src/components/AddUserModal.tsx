@@ -346,7 +346,30 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={handleSendWelcomeEmail}
+                disabled={isSendingEmail || emailSent}
+                className="w-full sm:w-auto"
+              >
+                {isSendingEmail ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : emailSent ? (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Email Sent ✓
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-2" />
+                    Send Welcome Email
+                  </>
+                )}
+              </Button>
               <DialogClose asChild>
                 <Button onClick={handleClose}>
                   Close
