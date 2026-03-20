@@ -217,6 +217,42 @@ export type Database = {
           },
         ]
       }
+      activity_discrepancy_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          acknowledged_by: string
+          activity_id: string
+          booking_id: string
+          discrepancy_type: string
+          id: string
+          snapshot_allocated_count: number
+          snapshot_passenger_count: number
+          tour_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledged_by: string
+          activity_id: string
+          booking_id: string
+          discrepancy_type: string
+          id?: string
+          snapshot_allocated_count: number
+          snapshot_passenger_count: number
+          tour_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledged_by?: string
+          activity_id?: string
+          booking_id?: string
+          discrepancy_type?: string
+          id?: string
+          snapshot_allocated_count?: number
+          snapshot_passenger_count?: number
+          tour_id?: string
+        }
+        Relationships: []
+      }
       activity_journeys: {
         Row: {
           activity_id: string
