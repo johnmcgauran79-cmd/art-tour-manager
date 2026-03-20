@@ -119,7 +119,7 @@ async function generateActivityMatrixReport(supabaseUrl: string, supabaseService
 // Main report generation function
 async function generateReport(
   reportType: string, 
-  tourId: string,
+  tourId: string | null,
   supabaseUrl: string,
   supabaseServiceKey: string
 ): Promise<string> {
@@ -127,14 +127,16 @@ async function generateReport(
   
   switch (reportType) {
     case 'rooming_list':
+      if (!tourId) return '<p>Rooming List requires a specific tour.</p>';
       return await generateRoomingListReport(supabaseUrl, supabaseServiceKey, tourId);
     case 'passenger_list':
+      if (!tourId) return '<p>Passenger List requires a specific tour.</p>';
       return await generatePassengerListReport(supabaseUrl, supabaseServiceKey, tourId);
     case 'booking_changes':
-      // Booking Changes Report is system-wide, uses dedicated edge function
       return await generateBookingChangesReport(supabaseUrl, supabaseServiceKey);
     case 'activity_matrix':
-      return await generateActivityMatrixReport(supabaseUrl, supabaseServiceKey, tourId);
+      // Activity Matrix supports all-tours mode (no tour_id) like the Operations tab
+      return await generateActivityMatrixReport(supabaseUrl, supabaseServiceKey, tourId || undefined);
     case 'bedding_review':
       return '<p>Bedding Review report coming soon.</p>';
     case 'hotel_check':
