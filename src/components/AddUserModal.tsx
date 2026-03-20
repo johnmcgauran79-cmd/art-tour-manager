@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { Database } from "@/integrations/supabase/types";
+import { Mail, Loader2 } from "lucide-react";
 
 type RoleType = Database["public"]["Enums"]["app_role"];
 
