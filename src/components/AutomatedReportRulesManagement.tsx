@@ -16,6 +16,72 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
+const RecipientEmailInput = ({ emailInput, setEmailInput, onAdd }: {
+  emailInput: string;
+  setEmailInput: (v: string) => void;
+  onAdd: (email: string) => void;
+}) => {
+  const { data: userEmails } = useUserEmails();
+  const [open, setOpen] = useState(false);
+  
+  const filteredEmails = (userEmails || []).filter(email => 
+    email.toLowerCase().includes(emailInput.toLowerCase()) && emailInput.length > 0
+  );
+
+  const handleAdd = () => {
+    if (emailInput && emailInput.includes('@')) {
+      onAdd(emailInput);
+    }
+  };
+
+  return (
+    <div className="flex gap-2">
+      <Popover open={open && filteredEmails.length > 0} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <div className="relative flex-1">
+            <Input
+              type="email"
+              value={emailInput}
+              onChange={e => {
+                setEmailInput(e.target.value);
+                setOpen(true);
+              }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAdd();
+                }
+              }}
+              placeholder="Type email or select a user..."
+            />
+          </div>
+        </PopoverTrigger>
+        <PopoverContent className="p-1 w-[--radix-popover-trigger-width]" align="start" onOpenAutoFocus={e => e.preventDefault()}>
+          <div className="max-h-48 overflow-y-auto">
+            {filteredEmails.map(email => (
+              <button
+                key={email}
+                type="button"
+                className="w-full text-left px-3 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                onMouseDown={e => {
+                  e.preventDefault();
+                  onAdd(email);
+                  setOpen(false);
+                }}
+              >
+                {email}
+              </button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+      <Button type="button" onClick={handleAdd}>Add</Button>
+    </div>
+  );
+};
+
 const REPORT_TYPES = [{
   value: 'rooming_list',
   label: 'Rooming List'
