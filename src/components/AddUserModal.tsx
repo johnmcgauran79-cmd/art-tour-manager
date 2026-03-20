@@ -33,6 +33,8 @@ export function AddUserModal({ open, onOpenChange, onUserAdded }: AddUserModalPr
   const [isCreating, setIsCreating] = useState(false);
   const [tempPassword, setTempPassword] = useState("");
   const [userCreated, setUserCreated] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const generateTempPassword = async () => {
     try {
