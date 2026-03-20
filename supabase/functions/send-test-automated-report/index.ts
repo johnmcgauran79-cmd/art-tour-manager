@@ -31,9 +31,13 @@ serve(async (req) => {
       throw new Error('recipient_email is required');
     }
 
-    // Get a sample tour if not provided
-    let selectedTourId = tour_id;
-    if (!selectedTourId) {
+    // Determine if a tour is needed based on report types
+    const systemWideReports = ['booking_changes', 'activity_matrix'];
+    const needsTour = report_types.some((rt: string) => !systemWideReports.includes(rt));
+
+    // Get a sample tour if needed and not provided
+    let selectedTourId = tour_id || null;
+    if (needsTour && !selectedTourId) {
       const { data: tours } = await supabase
         .from('tours')
         .select('id')
