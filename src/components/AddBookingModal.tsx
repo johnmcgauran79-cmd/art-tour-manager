@@ -322,6 +322,7 @@ export const AddBookingModal = ({
     try {
       const cleanedFormData = {
         ...formData,
+        lead_passenger_id: selectedContact?.id || undefined,
         passport_expiry_date: formData.passport_expiry_date || null,
         secondary_contact_id: formData.secondary_contact_id || null,
         passenger_2_id: formData.passenger_2_id || null,
