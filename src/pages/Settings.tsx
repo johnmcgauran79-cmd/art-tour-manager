@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailTemplatesManagement } from "@/components/EmailTemplatesManagement";
 import { AutomatedEmailRulesManagement } from "@/components/AutomatedEmailRulesManagement";
@@ -15,17 +16,19 @@ interface SettingsProps {
 
 export const Settings = ({ onBack }: SettingsProps) => {
   const [activeTab, setActiveTab] = useState("email-templates");
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
 
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6 mb-8">
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'} mb-8`}>
           <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
           <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
           <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
-          <TabsTrigger value="system">System Settings</TabsTrigger>
+          {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="email-templates" className="space-y-6">
@@ -58,21 +61,23 @@ export const Settings = ({ onBack }: SettingsProps) => {
           <AdditionalInfoTemplatesManagement />
         </TabsContent>
 
-        <TabsContent value="system" className="space-y-6">
-          <EmailSuppressionsManagement />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Configure general system settings, integrations, and preferences.
-              </p>
-            </CardHeader>
-            <CardContent>
-            <SystemSettings />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="system" className="space-y-6">
+            <EmailSuppressionsManagement />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>System Settings</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure general system settings, integrations, and preferences.
+                </p>
+              </CardHeader>
+              <CardContent>
+              <SystemSettings />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
