@@ -149,7 +149,7 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
 
       </div>
 
-      {/* Data Import Section */}
+      {/* Data Import Section - Hidden for now, kept for potential reuse
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Data Import</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -175,6 +175,7 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
           </Card>
         </div>
       </div>
+      */}
 
       {/* Xero Integration */}
       <div className="space-y-4">
