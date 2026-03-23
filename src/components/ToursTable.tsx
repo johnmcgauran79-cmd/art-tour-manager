@@ -295,7 +295,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                         <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
                         <TableCell>{getTotalPassengers(tour.id)}</TableCell>
                         <TableCell>
-                          <TourAlertsCell tourId={tour.id} />
+                          <TourAlertsCell tourId={tour.id} alertsEnabled={(tour as any).alerts_enabled ?? true} />
                         </TableCell>
                         <TableCell>
                           <TourDocumentsCell tourId={tour.id} />
