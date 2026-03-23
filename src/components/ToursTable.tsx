@@ -30,8 +30,20 @@ interface ToursTableProps {
 }
 
 // Small cell components to use hooks per-tour
-const TourAlertsCell = ({ tourId }: { tourId: string }) => {
+const TourAlertsCell = ({ tourId, alertsEnabled }: { tourId: string; alertsEnabled: boolean }) => {
   const { unacknowledgedCount } = useTourAlerts(tourId, false);
+  
+  if (!alertsEnabled) {
+    return (
+      <Tooltip>
+        <TooltipTrigger>
+          <BellOff className="h-4 w-4 text-muted-foreground" />
+        </TooltipTrigger>
+        <TooltipContent>Alerts disabled for this tour</TooltipContent>
+      </Tooltip>
+    );
+  }
+  
   if (unacknowledgedCount === 0) return <span className="text-muted-foreground">-</span>;
   return (
     <Badge variant="destructive" className="gap-1">
