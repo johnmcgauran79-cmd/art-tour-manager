@@ -124,6 +124,15 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
         </div>
       </div>
 
+      {/* Snapshot Upload */}
+      <ItinerarySnapshotSection
+        tourId={tour.id}
+        itineraryId={itinerary.id}
+        snapshotFilePath={itinerary.snapshot_file_path}
+        snapshotFileName={itinerary.snapshot_file_name}
+        readOnly={isAgent}
+      />
+
       {/* Days List */}
       <div className="space-y-4">
         {itinerary.days.map((day, index) => (

@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays } from "lucide-react";
+import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays, FileImage } from "lucide-react";
 import { useReportData } from "@/components/reports/useReportData";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
@@ -12,9 +12,11 @@ import { PassengerSummaryReport } from "@/components/reports/PassengerSummaryRep
 import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
+import { useItinerary } from "@/hooks/useItinerary";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { exportReportToCSV } from "@/components/reports/ReportExportUtils";
 import { HostActivitiesSection } from "@/components/hosts/HostActivitiesSection";
+import { ItinerarySnapshotSection } from "@/components/itinerary/ItinerarySnapshotSection";
 
 interface TourHostsInfoTabProps {
   tourId: string;
