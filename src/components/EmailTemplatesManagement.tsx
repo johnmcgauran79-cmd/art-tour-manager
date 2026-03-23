@@ -554,6 +554,58 @@ export const EmailTemplatesManagement = () => {
                   )}
                 </div>
 
+                {/* Header Image Override */}
+                <div className="border rounded-md p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-1.5">
+                      <Image className="h-3.5 w-3.5" />
+                      Header Image Override
+                    </Label>
+                    {formData.header_image_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setFormData(prev => ({ ...prev, header_image_url: "" }))}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Use Default
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.header_image_url 
+                      ? "This template uses a custom header image." 
+                      : "Leave empty to use the default header image from General Settings."}
+                  </p>
+                  {formData.header_image_url && (
+                    <div className="border rounded bg-[#232628] p-2 flex justify-center">
+                      <img src={formData.header_image_url} alt="Header preview" className="max-h-16 object-contain" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={headerImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleHeaderImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => headerImageInputRef.current?.click()}
+                      disabled={uploadingHeaderImage}
+                    >
+                      {uploadingHeaderImage ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
+                      Upload Custom Header
+                    </Button>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-6">
                   <label className="flex items-center gap-2">
                     <input
