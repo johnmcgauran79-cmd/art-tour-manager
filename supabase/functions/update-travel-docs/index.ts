@@ -38,6 +38,9 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
+    const { data: headerSetting } = await supabase.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
+    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+
     const { token, passengers }: UpdateTravelDocsPayload = await req.json();
 
     if (!token) {
