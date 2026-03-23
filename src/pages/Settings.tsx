@@ -9,6 +9,7 @@ import { SystemSettings } from "@/components/SystemSettings";
 import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRulesManagement";
 import { EmailSuppressionsManagement } from "@/components/EmailSuppressionsManagement";
 import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTemplatesManagement";
+import { InvoiceLineTemplatesManagement } from "@/components/InvoiceLineTemplatesManagement";
 
 interface SettingsProps {
   onBack: () => void;
@@ -23,8 +24,9 @@ export const Settings = ({ onBack }: SettingsProps) => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} mb-8`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} mb-8`}>
           <TabsTrigger value="email-management">Email Management</TabsTrigger>
+          <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
           {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
@@ -60,6 +62,20 @@ export const Settings = ({ onBack }: SettingsProps) => {
               <AutomatedReportRulesManagement />
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        <TabsContent value="invoice-management" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoice Management</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configure the line items, payment schedule, and additional information that appear on Xero invoices.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <InvoiceLineTemplatesManagement />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="task-templates" className="space-y-6">
