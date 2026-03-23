@@ -1622,6 +1622,48 @@ export type Database = {
           },
         ]
       }
+      invoice_line_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description_template: string
+          id: string
+          is_active: boolean
+          line_type: string
+          name: string
+          sort_order: number
+          unit_amount_type: string
+          unit_amount_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description_template?: string
+          id?: string
+          is_active?: boolean
+          line_type: string
+          name: string
+          sort_order?: number
+          unit_amount_type?: string
+          unit_amount_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description_template?: string
+          id?: string
+          is_active?: boolean
+          line_type?: string
+          name?: string
+          sort_order?: number
+          unit_amount_type?: string
+          unit_amount_value?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_sync_dismissals: {
         Row: {
           amount_paid_at_dismissal: number | null
