@@ -163,7 +163,10 @@ export const EmailTemplatesManagement = () => {
     from_email: "info@australianracingtours.com.au",
     is_active: true,
     is_default: false,
+    header_image_url: "" as string | null,
   });
+  const [uploadingHeaderImage, setUploadingHeaderImage] = useState(false);
+  const headerImageInputRef = useRef<HTMLInputElement>(null);
 
   const [customButtonText, setCustomButtonText] = useState("");
   const [customButtonUrl, setCustomButtonUrl] = useState("");
