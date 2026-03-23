@@ -273,9 +273,11 @@ export const InvoiceLineTemplatesManagement = () => {
                     </Badge>
                     <span className="text-xs text-muted-foreground">Pos: {t.sort_order}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground font-mono truncate">
-                    {t.description_template.replace(/\\n/g, " ↵ ")}
-                  </p>
+                  {t.description_template && t.description_template.replace(/\\n/g, ' ↵ ').trim() !== t.name.trim() && (
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      {t.description_template.replace(/\\n/g, " ↵ ")}
+                    </p>
+                  )}
                 </div>
                 <Switch checked={t.is_active} onCheckedChange={() => handleToggleActive(t)} />
                 <Button variant="ghost" size="icon" onClick={() => openEdit(t)}>
