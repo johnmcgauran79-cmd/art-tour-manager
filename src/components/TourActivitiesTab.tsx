@@ -3,9 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit, Printer, Mail, Bell, Check, RefreshCw } from "lucide-react";
+import { Edit, Printer, Mail, Bell, Check, RefreshCw, Paperclip } from "lucide-react";
 import { useActivities, Activity } from "@/hooks/useActivities";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { ActivityPassengerListModal } from "./ActivityPassengerListModal";
 import { EmailActivityPassengerListModal } from "./EmailActivityPassengerListModal";
@@ -39,7 +40,27 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  // Fetch attachment counts for all activities in this tour
+  const { data: attachmentCounts } = useQuery({
+    queryKey: ['activity-attachment-counts', tourId],
+    queryFn: async () => {
+      const activityIds = activities?.map(a => a.id) || [];
+      if (activityIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from('activity_attachments')
+        .select('activity_id')
+        .in('activity_id', activityIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data?.forEach(row => {
+        counts[row.activity_id] = (counts[row.activity_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!activities && activities.length > 0,
+  });
+
   // Quick Update state
   const [quickUpdateMode, setQuickUpdateMode] = useState(false);
   const [editingData, setEditingData] = useState<Record<string, { spots_available: number; activity_status: string }>>({});
@@ -361,9 +382,14 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                         <p className="text-xs text-muted-foreground truncate">{activity.location}</p>
                       )}
                     </div>
-                    <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
-                      {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {(attachmentCounts?.[activity.id] || 0) > 0 && (
+                        <Paperclip className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
+                        {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                      </Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
@@ -455,9 +481,14 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                           </SelectContent>
                         </Select>
                       ) : (
-                        <Badge className={getActivityStatusColor(activity.activity_status || 'pending')}>
-                          {activity.activity_status.replace(/_/g, ' ').toUpperCase()}
-                        </Badge>
+                        <div className="flex items-center gap-1">
+                          {(attachmentCounts?.[activity.id] || 0) > 0 && (
+                            <Paperclip className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                          )}
+                          <Badge className={getActivityStatusColor(activity.activity_status || 'pending')}>
+                            {activity.activity_status.replace(/_/g, ' ').toUpperCase()}
+                          </Badge>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
