@@ -2701,6 +2701,8 @@ export type Database = {
       }
       tours: {
         Row: {
+          alerts_enabled: boolean
+          alerts_manually_overridden: boolean
           capacity: number | null
           created_at: string | null
           days: number
@@ -2749,6 +2751,8 @@ export type Database = {
           xero_reference: string | null
         }
         Insert: {
+          alerts_enabled?: boolean
+          alerts_manually_overridden?: boolean
           capacity?: number | null
           created_at?: string | null
           days: number
@@ -2797,6 +2801,8 @@ export type Database = {
           xero_reference?: string | null
         }
         Update: {
+          alerts_enabled?: boolean
+          alerts_manually_overridden?: boolean
           capacity?: number | null
           created_at?: string | null
           days?: number
