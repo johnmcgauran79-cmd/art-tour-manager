@@ -163,39 +163,65 @@ async function buildLineItems(
   const passengerNames = descriptionOverride || buildPassengerDescription(booking, customer);
   const roomType = getRoomType(booking.hotel_bookings as any[]);
 
-  // Line 1: Description line
-  const tourDescription = `${tour.name} - ${passengerNames} - ${roomType}`;
-  lineItems.push({ Description: tourDescription, Quantity: 1, UnitAmount: 0 });
+  // Fetch configurable line templates from database
+  const { data: lineTemplates } = await supabase
+    .from('invoice_line_templates')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order');
 
-  // Line 2: Product line
+  const templates = (lineTemplates || []) as any[];
+  const getTemplate = (type: string) => templates.find((t: any) => t.line_type === type);
+
+  // Line 1: Description line
+  const descTemplate = getTemplate('description');
+  if (descTemplate) {
+    const descText = descTemplate.description_template
+      .replace('{{tour_name}}', tour.name || '')
+      .replace('{{passenger_names}}', passengerNames)
+      .replace('{{room_type}}', roomType);
+    lineItems.push({ Description: descText, Quantity: 1, UnitAmount: 0 });
+  } else {
+    // Fallback if no template
+    lineItems.push({ Description: `${tour.name} - ${passengerNames} - ${roomType}`, Quantity: 1, UnitAmount: 0 });
+  }
+
+  // Line 2: Product line (always from tour config, not configurable via templates)
   if (tour.xero_product_id) {
     lineItems.push({ ItemCode: tour.xero_product_id, Quantity: passengerQuantity });
   }
 
-  // Line 3: Single supplement (only for single-passenger invoices with 1 pax in room)
-  if (passengerQuantity === 1 && booking.passenger_count === 1 && tour.price_single && tour.price_double) {
+  // Line 3: Single supplement
+  const singleSupTemplate = getTemplate('single_supplement');
+  if (singleSupTemplate && passengerQuantity === 1 && booking.passenger_count === 1 && tour.price_single && tour.price_double) {
     const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
     if (singleSupplement > 0) {
+      const supDesc = singleSupTemplate.description_template
+        .replace('{{tour_name}}', tour.name || '');
       lineItems.push({
-        Description: `Single Supplement - ${tour.name}`,
+        Description: supDesc,
         Quantity: 1,
         UnitAmount: singleSupplement,
       });
     }
   }
 
-  // Line 4: Loyalty discount (5% for repeat customers)
-  if (isRepeatCustomer) {
+  // Line 4: Loyalty discount
+  const loyaltyTemplate = getTemplate('loyalty_discount');
+  if (loyaltyTemplate && isRepeatCustomer) {
+    const percentage = loyaltyTemplate.unit_amount_value || 5;
     const perPersonPrice = tour.price_double || 0;
-    const discountAmount = perPersonPrice * passengerQuantity * 0.05;
+    const discountAmount = perPersonPrice * passengerQuantity * (percentage / 100);
+    const discDesc = loyaltyTemplate.description_template
+      .replace('{{percentage}}', String(percentage));
     lineItems.push({
-      Description: `Loyalty Discount - Returning Customer (5%)`,
+      Description: discDesc,
       Quantity: 1,
       UnitAmount: -discountAmount,
     });
   }
 
-  // Line 5: Extra nights
+  // Line 5: Extra nights (calculated, not template-driven)
   const hotelBookings = booking.hotel_bookings as any[];
   if (hotelBookings && hotelBookings.length > 0) {
     const tourStart = new Date(tour.start_date);
@@ -250,26 +276,73 @@ async function buildLineItems(
     }
   }
 
-  // Payment Schedule line (description only, no amount)
-  const formatScheduleDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  };
+  // Payment Schedule line (from template)
+  const paymentTemplate = getTemplate('payment_schedule');
+  if (paymentTemplate) {
+    const formatScheduleDate = (dateStr: string) => {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
 
-  const scheduleLines: string[] = ['PAYMENT SCHEDULE', ''];
-  if (tour.deposit_required) {
-    scheduleLines.push(`$${Number(tour.deposit_required).toLocaleString()} deposit per person`);
-  }
-  if (tour.instalment_required && tour.instalment_amount) {
-    const instalmentDateStr = tour.instalment_date ? ` due ${formatScheduleDate(tour.instalment_date)}` : '';
-    scheduleLines.push(`$${Number(tour.instalment_amount).toLocaleString()} instalment per person${instalmentDateStr}`);
-  }
-  if (tour.final_payment_date) {
-    scheduleLines.push(`FINAL PAYMENT DUE ${formatScheduleDate(tour.final_payment_date)}`);
+    // Build each line conditionally based on available tour data
+    let templateText = paymentTemplate.description_template;
+    
+    // Replace variables with actual values, removing lines with missing data
+    const lines = templateText.split('\\n');
+    const processedLines: string[] = [];
+    
+    for (const line of lines) {
+      let processedLine = line;
+      let hasData = true;
+      
+      if (line.includes('{{deposit_amount}}')) {
+        if (tour.deposit_required) {
+          processedLine = processedLine.replace('{{deposit_amount}}', Number(tour.deposit_required).toLocaleString());
+        } else {
+          hasData = false;
+        }
+      }
+      if (line.includes('{{instalment_amount}}')) {
+        if (tour.instalment_required && tour.instalment_amount) {
+          processedLine = processedLine.replace('{{instalment_amount}}', Number(tour.instalment_amount).toLocaleString());
+        } else {
+          hasData = false;
+        }
+      }
+      if (line.includes('{{instalment_date}}')) {
+        if (tour.instalment_date) {
+          processedLine = processedLine.replace('{{instalment_date}}', formatScheduleDate(tour.instalment_date));
+        } else {
+          hasData = false;
+        }
+      }
+      if (line.includes('{{final_payment_date}}')) {
+        if (tour.final_payment_date) {
+          processedLine = processedLine.replace('{{final_payment_date}}', formatScheduleDate(tour.final_payment_date));
+        } else {
+          hasData = false;
+        }
+      }
+      
+      if (hasData) {
+        processedLines.push(processedLine);
+      }
+    }
+    
+    if (processedLines.length > 1) { // More than just the header
+      lineItems.push({ Description: processedLines.join('\n'), Quantity: 1, UnitAmount: 0 });
+    }
   }
 
-  if (scheduleLines.length > 2) {
-    lineItems.push({ Description: scheduleLines.join('\n'), Quantity: 1, UnitAmount: 0 });
+  // Additional info lines (cancellation policy, T&Cs, etc.)
+  const infoLines = templates.filter((t: any) => t.line_type === 'info_line');
+  for (const infoLine of infoLines) {
+    const text = infoLine.description_template.replace(/\\n/g, '\n');
+    lineItems.push({
+      Description: text,
+      Quantity: 1,
+      UnitAmount: infoLine.unit_amount_type === 'fixed' ? (infoLine.unit_amount_value || 0) : 0,
+    });
   }
 
   return lineItems;
