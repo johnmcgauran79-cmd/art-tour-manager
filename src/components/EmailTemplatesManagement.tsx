@@ -230,17 +230,48 @@ export const EmailTemplatesManagement = () => {
     setIsCreateModalOpen(true);
   };
 
+  const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) return;
+
+    setUploadingHeaderImage(true);
+    try {
+      const fileName = `template-header-${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('email-assets')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('email-assets')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, header_image_url: urlData.publicUrl }));
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploadingHeaderImage(false);
+      if (headerImageInputRef.current) headerImageInputRef.current.value = '';
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      const submitData = {
+        ...formData,
+        header_image_url: formData.header_image_url || null,
+      };
       if (editingTemplate) {
         await updateTemplate.mutateAsync({
           id: editingTemplate.id,
-          ...formData,
+          ...submitData,
         });
       } else {
-        await createTemplate.mutateAsync(formData);
+        await createTemplate.mutateAsync(submitData);
       }
       setIsCreateModalOpen(false);
       resetForm();
