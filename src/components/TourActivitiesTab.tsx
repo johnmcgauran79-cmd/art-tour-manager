@@ -489,7 +489,6 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                             {activity.activity_status.replace(/_/g, ' ').toUpperCase()}
                           </Badge>
                         </div>
-                        </Badge>
                       )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
