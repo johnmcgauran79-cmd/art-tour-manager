@@ -939,7 +939,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap the processed content in the branded email wrapper
-      emailHtml = wrapBrandedEmail(emailHtml);
+      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
       const fallbackContent = `
