@@ -159,7 +159,6 @@ async function buildLineItems(
   descriptionOverride?: string,
   extraNightSplitCount?: number
 ): Promise<any[]> {
-  const lineItems: any[] = [];
   const passengerNames = descriptionOverride || buildPassengerDescription(booking, customer);
   const roomType = getRoomType(booking.hotel_bookings as any[]);
 
@@ -171,178 +170,162 @@ async function buildLineItems(
     .order('sort_order');
 
   const templates = (lineTemplates || []) as any[];
-  const getTemplate = (type: string) => templates.find((t: any) => t.line_type === type);
 
-  // Line 1: Description line
-  const descTemplate = getTemplate('description');
-  if (descTemplate) {
-    const descText = descTemplate.description_template
-      .replace('{{tour_name}}', tour.name || '')
-      .replace('{{passenger_names}}', passengerNames)
-      .replace('{{room_type}}', roomType);
-    lineItems.push({ Description: descText, Quantity: 1, UnitAmount: 0 });
-  } else {
-    // Fallback if no template
-    lineItems.push({ Description: `${tour.name} - ${passengerNames} - ${roomType}`, Quantity: 1, UnitAmount: 0 });
-  }
+  // Build a unified list with system lines injected at their positions
+  // System lines: product (sort_order 20), extra_nights (sort_order 50)
+  interface OrderedItem { sort_order: number; type: string; template?: any; }
+  const allItems: OrderedItem[] = [
+    ...templates.map((t: any) => ({ sort_order: t.sort_order, type: t.line_type, template: t })),
+    { sort_order: 20, type: 'product' },
+    { sort_order: 50, type: 'extra_nights' },
+  ];
+  allItems.sort((a, b) => a.sort_order - b.sort_order);
 
-  // Line 2: Product line (always from tour config, not configurable via templates)
-  if (tour.xero_product_id) {
-    lineItems.push({ ItemCode: tour.xero_product_id, Quantity: passengerQuantity });
-  }
+  const lineItems: any[] = [];
 
-  // Line 3: Single supplement
-  const singleSupTemplate = getTemplate('single_supplement');
-  if (singleSupTemplate && passengerQuantity === 1 && booking.passenger_count === 1 && tour.price_single && tour.price_double) {
-    const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
-    if (singleSupplement > 0) {
-      const supDesc = singleSupTemplate.description_template
-        .replace('{{tour_name}}', tour.name || '');
-      lineItems.push({
-        Description: supDesc,
-        Quantity: 1,
-        UnitAmount: singleSupplement,
-      });
-    }
-  }
+  for (const item of allItems) {
+    switch (item.type) {
+      case 'description': {
+        const t = item.template;
+        const descText = t.description_template
+          .replace('{{tour_name}}', tour.name || '')
+          .replace('{{passenger_names}}', passengerNames)
+          .replace('{{room_type}}', roomType);
+        lineItems.push({ Description: descText, Quantity: 1, UnitAmount: 0 });
+        break;
+      }
 
-  // Line 4: Loyalty discount
-  const loyaltyTemplate = getTemplate('loyalty_discount');
-  if (loyaltyTemplate && isRepeatCustomer) {
-    const percentage = loyaltyTemplate.unit_amount_value || 5;
-    const perPersonPrice = tour.price_double || 0;
-    const discountAmount = perPersonPrice * passengerQuantity * (percentage / 100);
-    const discDesc = loyaltyTemplate.description_template
-      .replace('{{percentage}}', String(percentage));
-    lineItems.push({
-      Description: discDesc,
-      Quantity: 1,
-      UnitAmount: -discountAmount,
-    });
-  }
+      case 'product': {
+        if (tour.xero_product_id) {
+          lineItems.push({ ItemCode: tour.xero_product_id, Quantity: passengerQuantity });
+        }
+        break;
+      }
 
-  // Line 5: Extra nights (calculated, not template-driven)
-  const hotelBookings = booking.hotel_bookings as any[];
-  if (hotelBookings && hotelBookings.length > 0) {
-    const tourStart = new Date(tour.start_date);
-    const tourEnd = new Date(tour.end_date);
-    const tourNights = Math.round((tourEnd.getTime() - tourStart.getTime()) / (1000 * 60 * 60 * 24));
-
-    for (const hb of hotelBookings) {
-      if (hb.nights && hb.nights > tourNights) {
-        const extraNights = hb.nights - tourNights;
-
-        let hotelName = 'Hotel';
-        let extraNightPrice: number | null = null;
-        if (hb.hotel_id) {
-          const { data: hotel } = await supabase
-            .from('hotels')
-            .select('name, extra_night_price')
-            .eq('id', hb.hotel_id)
-            .maybeSingle();
-          if (hotel) {
-            hotelName = hotel.name;
-            extraNightPrice = hotel.extra_night_price;
+      case 'single_supplement': {
+        const t = item.template;
+        if (passengerQuantity === 1 && booking.passenger_count === 1 && tour.price_single && tour.price_double) {
+          const singleSupplement = (tour.price_single || 0) - (tour.price_double || 0);
+          if (singleSupplement > 0) {
+            const supDesc = t.description_template.replace('{{tour_name}}', tour.name || '');
+            lineItems.push({ Description: supDesc, Quantity: 1, UnitAmount: singleSupplement });
           }
         }
+        break;
+      }
 
-        const beddingLabel = hb.bedding
-          ? hb.bedding.charAt(0).toUpperCase() + hb.bedding.slice(1) + ' Room'
-          : '';
-
-        const hbCheckIn = hb.check_in_date ? new Date(hb.check_in_date) : null;
-        const hbCheckOut = hb.check_out_date ? new Date(hb.check_out_date) : null;
-        const formatDate = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-
-        let dateInfo = '';
-        if (hbCheckIn && hbCheckIn < tourStart) {
-          dateInfo = `Check-in ${formatDate(hbCheckIn)}`;
-        } else if (hbCheckOut && hbCheckOut > tourEnd) {
-          dateInfo = `Check-out ${formatDate(hbCheckOut)}`;
+      case 'loyalty_discount': {
+        const t = item.template;
+        if (isRepeatCustomer) {
+          const percentage = t.unit_amount_value || 5;
+          const perPersonPrice = tour.price_double || 0;
+          const discountAmount = perPersonPrice * passengerQuantity * (percentage / 100);
+          const discDesc = t.description_template.replace('{{percentage}}', String(percentage));
+          lineItems.push({ Description: discDesc, Quantity: 1, UnitAmount: -discountAmount });
         }
+        break;
+      }
 
-        const descParts = [`Extra Nights Accommodation`, hotelName];
-        if (beddingLabel) descParts.push(beddingLabel);
-        if (dateInfo) descParts.push(dateInfo);
+      case 'extra_nights': {
+        const hotelBookings = booking.hotel_bookings as any[];
+        if (hotelBookings && hotelBookings.length > 0) {
+          const tourStart = new Date(tour.start_date);
+          const tourEnd = new Date(tour.end_date);
+          const tourNights = Math.round((tourEnd.getTime() - tourStart.getTime()) / (1000 * 60 * 60 * 24));
 
-        const splitDivisor = extraNightSplitCount || 1;
-        const extraLineItem: any = { Description: descParts.join('\n'), Quantity: extraNights };
-        if (extraNightPrice != null) {
-          extraLineItem.UnitAmount = Math.round((extraNightPrice / splitDivisor) * 100) / 100;
+          for (const hb of hotelBookings) {
+            if (hb.nights && hb.nights > tourNights) {
+              const extraNights = hb.nights - tourNights;
+              let hotelName = 'Hotel';
+              let extraNightPrice: number | null = null;
+              if (hb.hotel_id) {
+                const { data: hotel } = await supabase
+                  .from('hotels')
+                  .select('name, extra_night_price')
+                  .eq('id', hb.hotel_id)
+                  .maybeSingle();
+                if (hotel) {
+                  hotelName = hotel.name;
+                  extraNightPrice = hotel.extra_night_price;
+                }
+              }
+              const beddingLabel = hb.bedding
+                ? hb.bedding.charAt(0).toUpperCase() + hb.bedding.slice(1) + ' Room'
+                : '';
+              const hbCheckIn = hb.check_in_date ? new Date(hb.check_in_date) : null;
+              const hbCheckOut = hb.check_out_date ? new Date(hb.check_out_date) : null;
+              const formatDate = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+              let dateInfo = '';
+              if (hbCheckIn && hbCheckIn < tourStart) {
+                dateInfo = `Check-in ${formatDate(hbCheckIn)}`;
+              } else if (hbCheckOut && hbCheckOut > tourEnd) {
+                dateInfo = `Check-out ${formatDate(hbCheckOut)}`;
+              }
+              const descParts = [`Extra Nights Accommodation`, hotelName];
+              if (beddingLabel) descParts.push(beddingLabel);
+              if (dateInfo) descParts.push(dateInfo);
+              const splitDivisor = extraNightSplitCount || 1;
+              const extraLineItem: any = { Description: descParts.join('\n'), Quantity: extraNights };
+              if (extraNightPrice != null) {
+                extraLineItem.UnitAmount = Math.round((extraNightPrice / splitDivisor) * 100) / 100;
+              }
+              lineItems.push(extraLineItem);
+            }
+          }
         }
+        break;
+      }
 
-        lineItems.push(extraLineItem);
+      case 'payment_schedule': {
+        const t = item.template;
+        const formatScheduleDate = (dateStr: string) => {
+          const d = new Date(dateStr);
+          return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+        };
+        const lines = t.description_template.split('\\n');
+        const processedLines: string[] = [];
+        for (const line of lines) {
+          let processedLine = line;
+          let hasData = true;
+          if (line.includes('{{deposit_amount}}')) {
+            if (tour.deposit_required) {
+              processedLine = processedLine.replace('{{deposit_amount}}', Number(tour.deposit_required).toLocaleString());
+            } else { hasData = false; }
+          }
+          if (line.includes('{{instalment_amount}}')) {
+            if (tour.instalment_required && tour.instalment_amount) {
+              processedLine = processedLine.replace('{{instalment_amount}}', Number(tour.instalment_amount).toLocaleString());
+            } else { hasData = false; }
+          }
+          if (line.includes('{{instalment_date}}')) {
+            if (tour.instalment_date) {
+              processedLine = processedLine.replace('{{instalment_date}}', formatScheduleDate(tour.instalment_date));
+            } else { hasData = false; }
+          }
+          if (line.includes('{{final_payment_date}}')) {
+            if (tour.final_payment_date) {
+              processedLine = processedLine.replace('{{final_payment_date}}', formatScheduleDate(tour.final_payment_date));
+            } else { hasData = false; }
+          }
+          if (hasData) { processedLines.push(processedLine); }
+        }
+        if (processedLines.length > 1) {
+          lineItems.push({ Description: processedLines.join('\n'), Quantity: 1, UnitAmount: 0 });
+        }
+        break;
+      }
+
+      case 'info_line': {
+        const t = item.template;
+        const text = t.description_template.replace(/\\n/g, '\n');
+        lineItems.push({
+          Description: text,
+          Quantity: 1,
+          UnitAmount: t.unit_amount_type === 'fixed' ? (t.unit_amount_value || 0) : 0,
+        });
+        break;
       }
     }
-  }
-
-  // Payment Schedule line (from template)
-  const paymentTemplate = getTemplate('payment_schedule');
-  if (paymentTemplate) {
-    const formatScheduleDate = (dateStr: string) => {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-    };
-
-    // Build each line conditionally based on available tour data
-    let templateText = paymentTemplate.description_template;
-    
-    // Replace variables with actual values, removing lines with missing data
-    const lines = templateText.split('\\n');
-    const processedLines: string[] = [];
-    
-    for (const line of lines) {
-      let processedLine = line;
-      let hasData = true;
-      
-      if (line.includes('{{deposit_amount}}')) {
-        if (tour.deposit_required) {
-          processedLine = processedLine.replace('{{deposit_amount}}', Number(tour.deposit_required).toLocaleString());
-        } else {
-          hasData = false;
-        }
-      }
-      if (line.includes('{{instalment_amount}}')) {
-        if (tour.instalment_required && tour.instalment_amount) {
-          processedLine = processedLine.replace('{{instalment_amount}}', Number(tour.instalment_amount).toLocaleString());
-        } else {
-          hasData = false;
-        }
-      }
-      if (line.includes('{{instalment_date}}')) {
-        if (tour.instalment_date) {
-          processedLine = processedLine.replace('{{instalment_date}}', formatScheduleDate(tour.instalment_date));
-        } else {
-          hasData = false;
-        }
-      }
-      if (line.includes('{{final_payment_date}}')) {
-        if (tour.final_payment_date) {
-          processedLine = processedLine.replace('{{final_payment_date}}', formatScheduleDate(tour.final_payment_date));
-        } else {
-          hasData = false;
-        }
-      }
-      
-      if (hasData) {
-        processedLines.push(processedLine);
-      }
-    }
-    
-    if (processedLines.length > 1) { // More than just the header
-      lineItems.push({ Description: processedLines.join('\n'), Quantity: 1, UnitAmount: 0 });
-    }
-  }
-
-  // Additional info lines (cancellation policy, T&Cs, etc.)
-  const infoLines = templates.filter((t: any) => t.line_type === 'info_line');
-  for (const infoLine of infoLines) {
-    const text = infoLine.description_template.replace(/\\n/g, '\n');
-    lineItems.push({
-      Description: text,
-      Quantity: 1,
-      UnitAmount: infoLine.unit_amount_type === 'fixed' ? (infoLine.unit_amount_value || 0) : 0,
-    });
   }
 
   return lineItems;
