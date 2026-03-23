@@ -40,7 +40,27 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  // Fetch attachment counts for all activities in this tour
+  const { data: attachmentCounts } = useQuery({
+    queryKey: ['activity-attachment-counts', tourId],
+    queryFn: async () => {
+      const activityIds = activities?.map(a => a.id) || [];
+      if (activityIds.length === 0) return {};
+      const { data, error } = await supabase
+        .from('activity_attachments')
+        .select('activity_id')
+        .in('activity_id', activityIds);
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      data?.forEach(row => {
+        counts[row.activity_id] = (counts[row.activity_id] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!activities && activities.length > 0,
+  });
+
   // Quick Update state
   const [quickUpdateMode, setQuickUpdateMode] = useState(false);
   const [editingData, setEditingData] = useState<Record<string, { spots_available: number; activity_status: string }>>({});
