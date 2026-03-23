@@ -261,7 +261,7 @@ export const InvoiceLineTemplatesManagement = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium text-sm">{t.name}</span>
                     <Badge variant="outline" className={`text-xs ${LINE_TYPE_COLORS[t.line_type] || ""}`}>
-                      {LINE_TYPE_LABELS[t.line_type] || t.line_type}
+                      {t.line_type === "info_line" ? "Info Line" : t.line_type.replace(/_/g, " ")}
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       {AMOUNT_TYPE_LABELS[t.unit_amount_type] || t.unit_amount_type}
