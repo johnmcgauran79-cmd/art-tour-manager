@@ -77,6 +77,7 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
   const reports = useReportData(tourId, { showAllContacts });
   const { data: hotels } = useHotels(tourId);
   const { data: activities } = useActivities(tourId);
+  const { data: itinerary } = useItinerary(tourId);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
 
@@ -90,6 +91,25 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
         <h2 className="text-lg font-semibold">Host Information Hub</h2>
         <p className="text-sm text-muted-foreground">Key reports and information for tour hosts</p>
       </div>
+
+      {/* Itinerary Snapshot */}
+      {itinerary?.snapshot_file_path && (
+        <CollapsibleReportSection
+          title="Itinerary Snapshot"
+          icon={<FileImage className="h-5 w-5 text-amber-600" />}
+          defaultOpen
+        >
+          <div className="p-4">
+            <ItinerarySnapshotSection
+              tourId={tourId}
+              itineraryId={itinerary.id}
+              snapshotFilePath={itinerary.snapshot_file_path}
+              snapshotFileName={itinerary.snapshot_file_name}
+              readOnly
+            />
+          </div>
+        </CollapsibleReportSection>
+      )}
 
       {/* Contacts List */}
       {contactsReport && (
