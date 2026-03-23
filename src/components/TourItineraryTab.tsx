@@ -6,6 +6,7 @@ import { Calendar, Clock, Plus, FileText, Download, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { useItinerary, useCreateItinerary } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
+import { ItinerarySnapshotSection } from "./itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
 import { useAuth } from "@/hooks/useAuth";
