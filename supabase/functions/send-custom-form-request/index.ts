@@ -197,7 +197,7 @@ const handler = async (req: Request): Promise<Response> => {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-    <img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
+    <img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
     <h1 style="color: #fff; margin: 0; font-size: 24px;">${form.form_title}</h1>
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
