@@ -61,21 +61,23 @@ export const Settings = ({ onBack }: SettingsProps) => {
           <AdditionalInfoTemplatesManagement />
         </TabsContent>
 
-        <TabsContent value="system" className="space-y-6">
-          <EmailSuppressionsManagement />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>System Settings</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Configure general system settings, integrations, and preferences.
-              </p>
-            </CardHeader>
-            <CardContent>
-            <SystemSettings />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="system" className="space-y-6">
+            <EmailSuppressionsManagement />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>System Settings</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Configure general system settings, integrations, and preferences.
+                </p>
+              </CardHeader>
+              <CardContent>
+              <SystemSettings />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
