@@ -151,10 +151,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
 
+    // Fetch default email header image from settings
+    const { data: headerSetting } = await supabaseClient
+      .from('general_settings')
+      .select('setting_value')
+      .eq('setting_key', 'email_header_image_url')
+      .single();
+    const defaultHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
       .from('email_templates')
-      .select('*')
+      .select('*, header_image_url')
       .eq('type', 'booking_confirmation')
       .eq('is_active', true)
       .order('is_default', { ascending: false })
@@ -164,6 +172,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (templateError) {
       console.error('Error fetching email template:', templateError);
     }
+
+    // Use template-specific header image if set, otherwise use default
+    const emailHeaderImageUrl = template?.header_image_url || defaultHeaderImageUrl;
 
     // Fetch booking details with all related information including additional passengers
     const { data: booking, error: bookingError } = await supabaseClient
