@@ -82,7 +82,7 @@ export const ItinerarySnapshotSection = ({
 
       const { error: dbError } = await supabase
         .from("tour_itineraries")
-        .update({ snapshot_file_path: null, snapshot_file_name: null })
+        .update({ snapshot_file_path: null, snapshot_file_name: null } as any)
         .eq("id", itineraryId);
 
       if (dbError) throw dbError;
