@@ -1351,6 +1351,7 @@ export type Database = {
           created_at: string
           created_by: string
           from_email: string
+          header_image_url: string | null
           id: string
           is_active: boolean
           is_default: boolean
@@ -1364,6 +1365,7 @@ export type Database = {
           created_at?: string
           created_by: string
           from_email?: string
+          header_image_url?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -1377,6 +1379,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           from_email?: string
+          header_image_url?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
