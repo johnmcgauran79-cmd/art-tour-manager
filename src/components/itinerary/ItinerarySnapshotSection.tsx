@@ -58,7 +58,7 @@ export const ItinerarySnapshotSection = ({
         .update({
           snapshot_file_path: filePath,
           snapshot_file_name: file.name,
-        })
+        } as any)
         .eq("id", itineraryId);
 
       if (dbError) throw dbError;
