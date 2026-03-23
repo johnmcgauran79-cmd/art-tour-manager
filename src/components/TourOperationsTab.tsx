@@ -3,7 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { useBookings } from "@/hooks/useBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -267,8 +270,76 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     setFilteredTasksModalOpen(true);
   };
 
+  const { toast: toastFn } = useToast();
+  const [alertsEnabled, setAlertsEnabled] = useState(false);
+  const [alertsManuallyOverridden, setAlertsManuallyOverridden] = useState(false);
+  const [alertsToggleLoading, setAlertsToggleLoading] = useState(false);
+
+  // Fetch alerts_enabled status for this tour
+  useEffect(() => {
+    const fetchAlertsStatus = async () => {
+      const { data } = await supabase
+        .from('tours')
+        .select('alerts_enabled, alerts_manually_overridden')
+        .eq('id', tourId)
+        .single();
+      if (data) {
+        setAlertsEnabled((data as any).alerts_enabled ?? false);
+        setAlertsManuallyOverridden((data as any).alerts_manually_overridden ?? false);
+      }
+    };
+    fetchAlertsStatus();
+  }, [tourId]);
+
+  const handleAlertsToggle = async (checked: boolean) => {
+    setAlertsToggleLoading(true);
+    const { error } = await supabase
+      .from('tours')
+      .update({
+        alerts_enabled: checked,
+        alerts_manually_overridden: true,
+      } as any)
+      .eq('id', tourId);
+    
+    if (error) {
+      toastFn({ title: "Error", description: "Failed to update alerts setting", variant: "destructive" });
+    } else {
+      setAlertsEnabled(checked);
+      setAlertsManuallyOverridden(true);
+      toastFn({ title: checked ? "Alerts enabled" : "Alerts disabled", description: checked ? "Auto alerts are now active for this tour." : "Auto alerts have been turned off for this tour." });
+    }
+    setAlertsToggleLoading(false);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Alerts Toggle */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bell className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <Label htmlFor="alerts-toggle" className="text-sm font-medium cursor-pointer">
+                  Auto Alerts
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {alertsManuallyOverridden 
+                    ? "Manually controlled" 
+                    : "Auto-enables 6 months before tour start"}
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="alerts-toggle"
+              checked={alertsEnabled}
+              onCheckedChange={handleAlertsToggle}
+              disabled={alertsToggleLoading}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Operations Reports Summary Card */}
       <Card className="border-brand-navy/20 shadow-lg">
         <CardHeader>

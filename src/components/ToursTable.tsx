@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Plus, Eye, Search, Bell, FileCheck } from "lucide-react";
+import { Plus, Eye, Search, Bell, BellOff, FileCheck } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTours } from "@/hooks/useTours";
 import { useBookings } from "@/hooks/useBookings";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
@@ -29,8 +30,20 @@ interface ToursTableProps {
 }
 
 // Small cell components to use hooks per-tour
-const TourAlertsCell = ({ tourId }: { tourId: string }) => {
+const TourAlertsCell = ({ tourId, alertsEnabled }: { tourId: string; alertsEnabled: boolean }) => {
   const { unacknowledgedCount } = useTourAlerts(tourId, false);
+  
+  if (!alertsEnabled) {
+    return (
+      <Tooltip>
+        <TooltipTrigger>
+          <BellOff className="h-4 w-4 text-muted-foreground" />
+        </TooltipTrigger>
+        <TooltipContent>Alerts disabled for this tour</TooltipContent>
+      </Tooltip>
+    );
+  }
+  
   if (unacknowledgedCount === 0) return <span className="text-muted-foreground">-</span>;
   return (
     <Badge variant="destructive" className="gap-1">
@@ -282,7 +295,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                         <TableCell>{formatDateToDDMMYYYY(tour.start_date)}</TableCell>
                         <TableCell>{getTotalPassengers(tour.id)}</TableCell>
                         <TableCell>
-                          <TourAlertsCell tourId={tour.id} />
+                          <TourAlertsCell tourId={tour.id} alertsEnabled={(tour as any).alerts_enabled ?? true} />
                         </TableCell>
                         <TableCell>
                           <TourDocumentsCell tourId={tour.id} />
