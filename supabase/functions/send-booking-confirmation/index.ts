@@ -1178,7 +1178,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap in branded email template
-      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml);
+      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
       const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);
