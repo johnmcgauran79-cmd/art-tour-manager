@@ -6,6 +6,7 @@ import { Calendar, Clock, Plus, FileText, Download, Mail } from "lucide-react";
 import { format } from "date-fns";
 import { useItinerary, useCreateItinerary } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
+import { ItinerarySnapshotSection } from "./itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
 import { EmailItineraryModal } from "./itinerary/EmailItineraryModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -122,6 +123,15 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
           )}
         </div>
       </div>
+
+      {/* Snapshot Upload */}
+      <ItinerarySnapshotSection
+        tourId={tour.id}
+        itineraryId={itinerary.id}
+        snapshotFilePath={itinerary.snapshot_file_path}
+        snapshotFileName={itinerary.snapshot_file_name}
+        readOnly={isAgent}
+      />
 
       {/* Days List */}
       <div className="space-y-4">

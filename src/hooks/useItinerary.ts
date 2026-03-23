@@ -36,6 +36,8 @@ export interface Itinerary {
   is_current: boolean;
   title: string | null;
   notes: string | null;
+  snapshot_file_path: string | null;
+  snapshot_file_name: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
