@@ -65,9 +65,9 @@ export const ItinerarySnapshotSection = ({
 
       queryClient.invalidateQueries({ queryKey: ["itinerary", tourId] });
       toast({ title: "Snapshot Uploaded", description: "Itinerary snapshot has been uploaded." });
-    } catch (err) {
-      console.error("Snapshot upload error:", err);
-      toast({ title: "Upload Failed", description: "Failed to upload snapshot.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Snapshot upload error:", err, err?.message, err?.statusCode, JSON.stringify(err));
+      toast({ title: "Upload Failed", description: err?.message || "Failed to upload snapshot.", variant: "destructive" });
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
