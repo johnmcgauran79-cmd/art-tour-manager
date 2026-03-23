@@ -64,10 +64,8 @@ serve(async (req) => {
         <table cellpadding="0" cellspacing="0" style="width:100%;max-width:800px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
           <!-- Header -->
           <tr>
-            <td style="background-color:#1a2332;padding:32px 40px;text-align:center;">
-              <h1 style="color:#f5c518;margin:0;font-size:24px;font-weight:700;">
-                ${appName}
-              </h1>
+            <td style="background-color:#232628;padding:32px 40px;text-align:center;">
+              <img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height:80px;max-width:400px;width:auto;" />
             </td>
           </tr>
           <!-- Body -->
