@@ -90,8 +90,9 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
 };
 
 // Branded email wrapper - wraps content in ART header with logo
-const wrapBrandedEmail = (content: string, title?: string): string => {
+const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string): string => {
   const headerTitle = title || 'Australian Racing Tours';
+  const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -100,8 +101,7 @@ const wrapBrandedEmail = (content: string, title?: string): string => {
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-    <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
-    <h1 style="color: #fff; margin: 0; font-size: 24px;">${headerTitle}</h1>
+    <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto; margin-bottom: 10px;" />
   </div>
   
   <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
