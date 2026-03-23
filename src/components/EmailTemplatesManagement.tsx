@@ -210,6 +210,7 @@ export const EmailTemplatesManagement = () => {
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: template.is_default,
+      header_image_url: (template as any).header_image_url || "",
     });
     setIsCreateModalOpen(true);
   };
