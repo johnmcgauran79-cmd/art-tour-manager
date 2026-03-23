@@ -36,6 +36,10 @@ serve(async (req) => {
     }
 
     const appLoginUrl = loginUrl || "https://art-tour-manager.lovable.app/login";
+
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: headerSetting } = await supabaseClient.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
+    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
     const appName = "Australian Racing Tours";
 
     const roleLabel = {
