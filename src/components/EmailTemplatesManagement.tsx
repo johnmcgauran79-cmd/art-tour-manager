@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2 } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2 } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
+import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
 import ReactQuill from 'react-quill';
@@ -163,7 +164,10 @@ export const EmailTemplatesManagement = () => {
     from_email: "info@australianracingtours.com.au",
     is_active: true,
     is_default: false,
+    header_image_url: "" as string | null,
   });
+  const [uploadingHeaderImage, setUploadingHeaderImage] = useState(false);
+  const headerImageInputRef = useRef<HTMLInputElement>(null);
 
   const [customButtonText, setCustomButtonText] = useState("");
   const [customButtonUrl, setCustomButtonUrl] = useState("");
@@ -186,6 +190,7 @@ export const EmailTemplatesManagement = () => {
       from_email: "info@australianracingtours.com.au",
       is_active: true,
       is_default: false,
+      header_image_url: "",
     });
     setEditingTemplate(null);
     setIsHtmlView(false);
@@ -206,6 +211,7 @@ export const EmailTemplatesManagement = () => {
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: template.is_default,
+      header_image_url: (template as any).header_image_url || "",
     });
     setIsCreateModalOpen(true);
   };
@@ -219,22 +225,54 @@ export const EmailTemplatesManagement = () => {
       content_template: preprocessContentForEditor(template.content_template),
       from_email: template.from_email,
       is_active: template.is_active,
-      is_default: false, // Never duplicate as default
+      is_default: false,
+      header_image_url: (template as any).header_image_url || "",
     });
     setIsCreateModalOpen(true);
+  };
+
+  const handleHeaderImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 5 * 1024 * 1024) return;
+
+    setUploadingHeaderImage(true);
+    try {
+      const fileName = `template-header-${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('email-assets')
+        .upload(fileName, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('email-assets')
+        .getPublicUrl(fileName);
+
+      setFormData(prev => ({ ...prev, header_image_url: urlData.publicUrl }));
+    } catch (error) {
+      console.error('Upload failed:', error);
+    } finally {
+      setUploadingHeaderImage(false);
+      if (headerImageInputRef.current) headerImageInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
+      const submitData = {
+        ...formData,
+        header_image_url: formData.header_image_url || null,
+      };
       if (editingTemplate) {
         await updateTemplate.mutateAsync({
           id: editingTemplate.id,
-          ...formData,
+          ...submitData,
         });
       } else {
-        await createTemplate.mutateAsync(formData);
+        await createTemplate.mutateAsync(submitData);
       }
       setIsCreateModalOpen(false);
       resetForm();
@@ -514,6 +552,58 @@ export const EmailTemplatesManagement = () => {
                       />
                     </div>
                   )}
+                </div>
+
+                {/* Header Image Override */}
+                <div className="border rounded-md p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="flex items-center gap-1.5">
+                      <Image className="h-3.5 w-3.5" />
+                      Header Image Override
+                    </Label>
+                    {formData.header_image_url && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => setFormData(prev => ({ ...prev, header_image_url: "" }))}
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Use Default
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.header_image_url 
+                      ? "This template uses a custom header image." 
+                      : "Leave empty to use the default header image from General Settings."}
+                  </p>
+                  {formData.header_image_url && (
+                    <div className="border rounded bg-[#232628] p-2 flex justify-center">
+                      <img src={formData.header_image_url} alt="Header preview" className="max-h-16 object-contain" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={headerImageInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleHeaderImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => headerImageInputRef.current?.click()}
+                      disabled={uploadingHeaderImage}
+                    >
+                      {uploadingHeaderImage ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
+                      Upload Custom Header
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-6">

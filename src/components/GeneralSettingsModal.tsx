@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings, Clock, Palette, Globe, Bell } from "lucide-react";
 import { TimezoneSettingsModal } from "./TimezoneSettingsModal";
+import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 
 interface GeneralSettingsModalProps {
   open: boolean;
@@ -47,6 +48,9 @@ export const GeneralSettingsModal = ({ open, onOpenChange }: GeneralSettingsModa
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Email Header Image */}
+            <EmailHeaderSettingsCard />
 
             {/* Theme Settings */}
             <Card>

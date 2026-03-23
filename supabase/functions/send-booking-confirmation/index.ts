@@ -90,8 +90,9 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
 };
 
 // Branded email wrapper - wraps content in ART header with logo
-const wrapBrandedEmail = (content: string, title?: string): string => {
+const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string): string => {
   const headerTitle = title || 'Australian Racing Tours';
+  const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -100,8 +101,7 @@ const wrapBrandedEmail = (content: string, title?: string): string => {
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
   <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-    <img src="https://art-tour-manager.lovable.app/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png" alt="Australian Racing Tours" style="height: 50px; max-width: 200px; width: auto; margin-bottom: 10px;" />
-    <h1 style="color: #fff; margin: 0; font-size: 24px;">${headerTitle}</h1>
+    <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto; margin-bottom: 10px;" />
   </div>
   
   <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
@@ -151,10 +151,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
 
+    // Fetch default email header image from settings
+    const { data: headerSetting } = await supabaseClient
+      .from('general_settings')
+      .select('setting_value')
+      .eq('setting_key', 'email_header_image_url')
+      .single();
+    const defaultHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
       .from('email_templates')
-      .select('*')
+      .select('*, header_image_url')
       .eq('type', 'booking_confirmation')
       .eq('is_active', true)
       .order('is_default', { ascending: false })
@@ -164,6 +172,9 @@ const handler = async (req: Request): Promise<Response> => {
     if (templateError) {
       console.error('Error fetching email template:', templateError);
     }
+
+    // Use template-specific header image if set, otherwise use default
+    const emailHeaderImageUrl = template?.header_image_url || defaultHeaderImageUrl;
 
     // Fetch booking details with all related information including additional passengers
     const { data: booking, error: bookingError } = await supabaseClient
@@ -928,7 +939,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap the processed content in the branded email wrapper
-      emailHtml = wrapBrandedEmail(emailHtml);
+      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
       const fallbackContent = `
@@ -937,7 +948,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p>We will be in touch with more details soon.</p>
         <p>Best regards,<br>The Team</p>
       `;
-      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation');
+      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl);
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
@@ -1167,7 +1178,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       
       // Wrap in branded email template
-      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml);
+      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
       const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "npm:resend@2.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -35,6 +36,10 @@ serve(async (req) => {
     }
 
     const appLoginUrl = loginUrl || "https://art-tour-manager.lovable.app/login";
+
+    const supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: headerSetting } = await supabaseClient.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
+    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
     const appName = "Australian Racing Tours";
 
     const roleLabel = {
@@ -59,10 +64,8 @@ serve(async (req) => {
         <table cellpadding="0" cellspacing="0" style="width:100%;max-width:800px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
           <!-- Header -->
           <tr>
-            <td style="background-color:#1a2332;padding:32px 40px;text-align:center;">
-              <h1 style="color:#f5c518;margin:0;font-size:24px;font-weight:700;">
-                ${appName}
-              </h1>
+            <td style="background-color:#232628;padding:32px 40px;text-align:center;">
+              <img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height:80px;max-width:400px;width:auto;" />
             </td>
           </tr>
           <!-- Body -->
