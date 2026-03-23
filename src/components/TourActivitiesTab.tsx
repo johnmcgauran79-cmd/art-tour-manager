@@ -382,9 +382,14 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                         <p className="text-xs text-muted-foreground truncate">{activity.location}</p>
                       )}
                     </div>
-                    <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
-                      {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {(attachmentCounts?.[activity.id] || 0) > 0 && (
+                        <Paperclip className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      )}
+                      <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
+                        {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                      </Badge>
+                    </div>
                   </div>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
