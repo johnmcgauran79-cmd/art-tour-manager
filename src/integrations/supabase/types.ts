@@ -2528,6 +2528,8 @@ export type Database = {
           id: string
           is_current: boolean
           notes: string | null
+          snapshot_file_name: string | null
+          snapshot_file_path: string | null
           title: string | null
           tour_id: string
           updated_at: string
@@ -2539,6 +2541,8 @@ export type Database = {
           id?: string
           is_current?: boolean
           notes?: string | null
+          snapshot_file_name?: string | null
+          snapshot_file_path?: string | null
           title?: string | null
           tour_id: string
           updated_at?: string
@@ -2550,6 +2554,8 @@ export type Database = {
           id?: string
           is_current?: boolean
           notes?: string | null
+          snapshot_file_name?: string | null
+          snapshot_file_path?: string | null
           title?: string | null
           tour_id?: string
           updated_at?: string
