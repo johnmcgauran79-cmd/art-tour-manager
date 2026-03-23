@@ -15,42 +15,51 @@ interface SettingsProps {
 }
 
 export const Settings = ({ onBack }: SettingsProps) => {
-  const [activeTab, setActiveTab] = useState("email-templates");
+  const [activeTab, setActiveTab] = useState("email-management");
+  const [emailSubTab, setEmailSubTab] = useState("templates");
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
 
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-5'} mb-8`}>
-          <TabsTrigger value="email-templates">Email Templates</TabsTrigger>
-          <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
-          <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} mb-8`}>
+          <TabsTrigger value="email-management">Email Management</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
           {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="email-templates" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email Template Management</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Create and manage email templates for booking confirmations, dietary requests, and other communications.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <EmailTemplatesManagement />
-            </CardContent>
-          </Card>
-        </TabsContent>
+        <TabsContent value="email-management" className="space-y-6">
+          <Tabs value={emailSubTab} onValueChange={setEmailSubTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="templates">Email Templates</TabsTrigger>
+              <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
+              <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="automated-emails" className="space-y-6">
-          <AutomatedEmailRulesManagement />
-        </TabsContent>
+            <TabsContent value="templates" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Email Template Management</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Create and manage email templates for booking confirmations, dietary requests, and other communications.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <EmailTemplatesManagement />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="automated-reports" className="space-y-6">
-          <AutomatedReportRulesManagement />
+            <TabsContent value="automated-emails" className="space-y-6">
+              <AutomatedEmailRulesManagement />
+            </TabsContent>
+
+            <TabsContent value="automated-reports" className="space-y-6">
+              <AutomatedReportRulesManagement />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="task-templates" className="space-y-6">
@@ -73,7 +82,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
                 </p>
               </CardHeader>
               <CardContent>
-              <SystemSettings />
+                <SystemSettings />
               </CardContent>
             </Card>
           </TabsContent>
