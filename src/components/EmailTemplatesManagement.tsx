@@ -224,7 +224,8 @@ export const EmailTemplatesManagement = () => {
       content_template: preprocessContentForEditor(template.content_template),
       from_email: template.from_email,
       is_active: template.is_active,
-      is_default: false, // Never duplicate as default
+      is_default: false,
+      header_image_url: (template as any).header_image_url || "",
     });
     setIsCreateModalOpen(true);
   };
