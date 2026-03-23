@@ -948,7 +948,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p>We will be in touch with more details soon.</p>
         <p>Best regards,<br>The Team</p>
       `;
-      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation');
+      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl);
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
