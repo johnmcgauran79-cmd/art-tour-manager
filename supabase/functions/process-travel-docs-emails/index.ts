@@ -24,6 +24,14 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
+    // Fetch email header image from settings
+    const { data: headerSetting } = await supabase
+      .from('general_settings')
+      .select('setting_value')
+      .eq('setting_key', 'email_header_image_url')
+      .single();
+    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+
     // Check if called with specific batch params (from process-automated-emails)
     let body: any = {};
     try {
