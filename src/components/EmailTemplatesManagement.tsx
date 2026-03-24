@@ -394,6 +394,12 @@ export const EmailTemplatesManagement = () => {
     insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 6px 6px 0;"><p style="color:#92400e;font-weight:600;margin:0 0 4px;font-size:14px;">⚠️ Important</p><p style="color:#78350f;margin:0;font-size:14px;">Your important message here.</p></td></tr></table>');
   };
 
+  const insertSectionHeader = (headerText?: string) => {
+    const text = headerText || 'SECTION TITLE';
+    const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 16px 0;"><tr><td style="background-color:#1a2332;padding:10px 20px;border-radius:6px;"><strong style="color:#d4a017;font-size:13px;letter-spacing:1px;text-transform:uppercase;">${text}</strong></td></tr></table>`;
+    insertHtmlBlock(html);
+  };
+
   const insertImageBlock = () => {
     if (!insertImageUrl.trim()) return;
     const alt = insertImageAlt.trim() || 'Image';
