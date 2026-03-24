@@ -186,8 +186,8 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
           </Card>
         ) : (
           <div className="space-y-3">
-            {sections.map((section) => (
-              <Card key={section.id} className={!section.is_visible ? 'opacity-60' : ''}>
+            {sections.map((section, index) => (
+              <Card key={section.id} className={`${!section.is_visible ? 'opacity-60' : ''}`}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
