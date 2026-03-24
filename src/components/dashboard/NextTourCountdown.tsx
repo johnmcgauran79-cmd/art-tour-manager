@@ -10,7 +10,7 @@ export const NextTourCountdown = () => {
 
   const today = new Date();
   
-  const excludedStatuses = ['cancelled', 'past'];
+  const excludedStatuses = ['cancelled', 'past', 'archived'];
   
   // Find tours currently in progress (exclude cancelled/past)
   const activeTours = tours.filter(tour => {
