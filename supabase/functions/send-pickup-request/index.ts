@@ -178,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
       return date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     };
 
-    const pickupButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${pickupLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PICKUP LOCATION</a></div>`;
+    const pickupButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${pickupLink}" style="display: inline-block; background: ${btnBg}; color: ${btnText}; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PICKUP LOCATION</a></div>`;
 
     const replacements: Record<string, string> = {
       '{{customer_first_name}}': passenger.first_name || '',
