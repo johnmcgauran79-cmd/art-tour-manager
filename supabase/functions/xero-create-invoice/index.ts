@@ -590,7 +590,7 @@ Deno.serve(async (req) => {
               .eq('lead_passenger_id', pax.customerId)
               .neq('id', bookingId)
               .not('status', 'eq', 'cancelled');
-            paxIsRepeat = (count || 0) > 0;
+            paxIsRepeat = (count || 0) >= loyaltyMinTours;
           }
 
           const lineItems = await buildLineItems(
