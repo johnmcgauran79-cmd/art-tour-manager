@@ -15,8 +15,21 @@ import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useD
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
-import ReactQuill from 'react-quill';
+import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+
+// Register custom divider blot for HR insertion
+const BlockEmbed = Quill.import('blots/block/embed') as any;
+class DividerBlot extends BlockEmbed {
+  static blotName = 'divider';
+  static tagName = 'hr';
+  static create() {
+    const node = super.create();
+    node.setAttribute('style', 'border:none;border-top:2px solid #e5e7eb;margin:24px 0;');
+    return node;
+  }
+}
+Quill.register(DividerBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
@@ -359,7 +372,21 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertDivider = () => {
-    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="border-top:2px solid #e5e7eb;"></td></tr></table>');
+    if (isHtmlView) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n<hr style="border:none;border-top:2px solid #e5e7eb;margin:24px 0;" />\n'
+      }));
+    } else if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const insertIndex = range ? range.index : quill.getLength() - 1;
+      // Insert a new line then embed the divider
+      quill.insertText(insertIndex, '\n');
+      quill.insertEmbed(insertIndex + 1, 'divider', true);
+      quill.insertText(insertIndex + 2, '\n');
+      quill.setSelection(insertIndex + 3, 0);
+    }
   };
 
   const insertCalloutBox = () => {
@@ -389,7 +416,8 @@ export const EmailTemplatesManagement = () => {
 
   const quillFormats = [
     'header', 'bold', 'italic', 'underline', 'strike',
-    'color', 'background', 'list', 'bullet', 'align', 'link'
+    'color', 'background', 'list', 'bullet', 'align', 'link',
+    'divider', 'image'
   ];
 
   return (
