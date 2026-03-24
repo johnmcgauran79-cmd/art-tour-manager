@@ -109,7 +109,9 @@ const MERGE_FIELDS = {
   actions: [
     '{{profile_update_button}}', '{{profile_update_link}}',
     '{{travel_docs_button}}', '{{travel_docs_link}}',
-    '{{itinerary_button}}', '{{itinerary_link}}'
+    '{{itinerary_button}}', '{{itinerary_link}}',
+    '--- Tour Content ---',
+    '{{additional_info_blocks}}'
   ],
   conditions: [
     '--- Passenger Conditions ---',
