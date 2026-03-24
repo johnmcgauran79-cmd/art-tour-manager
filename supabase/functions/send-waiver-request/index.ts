@@ -199,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
       <a href="${waiverLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SIGN WAIVER FORM</a>
     </div>
     
-    <p style="color: #666; font-size: 14px;">This link will expire in 7 days. If you have any questions, please don't hesitate to contact us.</p>
+    <p style="color: #666; font-size: 14px;">This link will expire in ${Math.round(tokenExpiryHours / 24)} days. If you have any questions, please don't hesitate to contact us.</p>
   </div>
   
   <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
