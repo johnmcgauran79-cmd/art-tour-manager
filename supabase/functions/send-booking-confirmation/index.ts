@@ -564,7 +564,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (hasItineraryPlaceholder && booking.customers?.id) {
       // Generate an itinerary token (7-day expiry, booking-specific so we can find the tour)
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 168); // 7-day expiry
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
