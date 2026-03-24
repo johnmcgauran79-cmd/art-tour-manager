@@ -125,7 +125,8 @@ const MERGE_FIELDS = {
     '{{travel_docs_button}}', '{{travel_docs_link}}',
     '{{itinerary_button}}', '{{itinerary_link}}',
     '--- Tour Content ---',
-    '{{additional_info_blocks}}'
+    '{{additional_info_blocks}}',
+    '{{hotel_details}}'
   ],
   conditions: [
     '--- Passenger Conditions ---',
