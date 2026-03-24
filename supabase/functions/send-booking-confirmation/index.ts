@@ -155,7 +155,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: generalSettings } = await supabaseClient
       .from('general_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours', 'theme_email_button_color', 'theme_email_button_text']);
 
     const getGSetting = (key: string, fb: string) => {
       const row = (generalSettings || []).find((r: any) => r.setting_key === key);
@@ -168,6 +168,8 @@ const handler = async (req: Request): Promise<Response> => {
     const defaultSenderName = getGSetting('default_sender_name', 'Australian Racing Tours');
     const defaultFromEmailClient = getGSetting('default_from_email_client', 'bookings@australianracingtours.com.au');
     const tokenExpiryHours = Number(getGSetting('token_expiry_hours', '168')) || 168;
+    const btnBg = getGSetting('theme_email_button_color', '#232628');
+    const btnText = getGSetting('theme_email_button_text', '#F5C518');
 
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
