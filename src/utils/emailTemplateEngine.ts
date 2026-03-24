@@ -677,6 +677,9 @@ export class EmailTemplateEngine {
       profile_update_link: '{{profile_update_link}}',
       pickup_button: '{{pickup_button}}',
       pickup_link: '{{pickup_link}}',
+      
+      // Additional info blocks - rendered server-side with tour data
+      additional_info_blocks: '{{additional_info_blocks}}',
     };
   }
 }

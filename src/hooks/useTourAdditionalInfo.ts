@@ -11,6 +11,7 @@ export interface TourAdditionalInfoSection {
   content: string | null;
   sort_order: number;
   is_visible: boolean;
+  include_in_email_rules: string[];
   created_by: string;
   created_at: string;
   updated_at: string;
