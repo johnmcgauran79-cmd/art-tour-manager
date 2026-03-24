@@ -359,7 +359,21 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertDivider = () => {
-    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="border-top:2px solid #e5e7eb;"></td></tr></table>');
+    if (isHtmlView) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n<hr style="border:none;border-top:2px solid #e5e7eb;margin:24px 0;" />\n'
+      }));
+    } else if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const insertIndex = range ? range.index : quill.getLength() - 1;
+      // Insert a new line then embed the divider
+      quill.insertText(insertIndex, '\n');
+      quill.insertEmbed(insertIndex + 1, 'divider', true);
+      quill.insertText(insertIndex + 2, '\n');
+      quill.setSelection(insertIndex + 3, 0);
+    }
   };
 
   const insertCalloutBox = () => {
