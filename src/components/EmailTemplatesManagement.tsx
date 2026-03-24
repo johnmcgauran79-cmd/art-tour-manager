@@ -344,6 +344,37 @@ export const EmailTemplatesManagement = () => {
     setCustomButtonUrl("");
   };
 
+  const insertHtmlBlock = (html: string) => {
+    if (isHtmlView) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n' + html
+      }));
+    } else if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const insertIndex = range ? range.index : quill.getLength() - 1;
+      quill.clipboard.dangerouslyPasteHTML(insertIndex, html);
+    }
+  };
+
+  const insertDivider = () => {
+    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="border-top:2px solid #e5e7eb;"></td></tr></table>');
+  };
+
+  const insertCalloutBox = () => {
+    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 6px 6px 0;"><p style="color:#92400e;font-weight:600;margin:0 0 4px;font-size:14px;">⚠️ Important</p><p style="color:#78350f;margin:0;font-size:14px;">Your important message here.</p></td></tr></table>');
+  };
+
+  const insertImageBlock = () => {
+    if (!insertImageUrl.trim()) return;
+    const alt = insertImageAlt.trim() || 'Image';
+    insertHtmlBlock(`<p style="text-align:center;margin:16px 0;"><img src="${insertImageUrl.trim()}" alt="${alt}" style="max-width:100%;height:auto;border-radius:6px;" /></p>`);
+    setInsertImageUrl("");
+    setInsertImageAlt("");
+    setShowImageInsert(false);
+  };
+
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, 3, false] }],
