@@ -19,6 +19,7 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
+import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
@@ -151,6 +152,8 @@ const MERGE_FIELDS = {
 export const EmailTemplatesManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isHtmlView, setIsHtmlView] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
@@ -432,13 +435,16 @@ export const EmailTemplatesManagement = () => {
                     <PermissionButton resource="email_template" action="create" size="sm" variant="outline" onClick={() => handleDuplicate(template)}>
                       <Copy className="h-3 w-3" />
                     </PermissionButton>
+                    <Button size="sm" variant="outline" onClick={() => { setPreviewTemplate(template); setIsPreviewOpen(true); }}>
+                      <Eye className="h-3 w-3" />
+                    </Button>
                     <PermissionButton 
                       resource="email_template" 
                       action="delete"
                       size="sm" 
                       variant="outline" 
                       onClick={() => handleDelete(template)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-3 w-3" />
                     </PermissionButton>
@@ -734,6 +740,17 @@ export const EmailTemplatesManagement = () => {
                 Cancel
               </Button>
               <Button 
+                type="button" 
+                variant="secondary"
+                onClick={() => {
+                  setPreviewTemplate(editingTemplate || { id: '', name: formData.name, type: formData.type, subject_template: formData.subject_template, content_template: formData.content_template, from_email: formData.from_email, is_active: formData.is_active, is_default: formData.is_default });
+                  setIsPreviewOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+              <Button 
                 type="submit" 
                 disabled={createTemplate.isPending || updateTemplate.isPending}
               >
@@ -743,6 +760,15 @@ export const EmailTemplatesManagement = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Template Preview Modal */}
+      <EmailTemplatePreviewModal
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        template={previewTemplate}
+        subjectTemplate={isCreateModalOpen ? formData.subject_template : undefined}
+        contentTemplate={isCreateModalOpen ? formData.content_template : undefined}
+      />
     </div>
   );
 };
