@@ -152,6 +152,8 @@ const MERGE_FIELDS = {
 export const EmailTemplatesManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<EmailTemplate | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isHtmlView, setIsHtmlView] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
