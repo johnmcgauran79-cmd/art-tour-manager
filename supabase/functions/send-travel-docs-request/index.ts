@@ -51,8 +51,23 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    const { data: headerSetting } = await supabase.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+    // Fetch configurable settings
+    const { data: gSettings } = await supabase
+      .from('general_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+    
+    const getS = (key: string, fb: string) => {
+      const row = (gSettings || []).find((r: any) => r.setting_key === key);
+      if (!row) return fb;
+      const val = row.setting_value;
+      return typeof val === 'string' ? val : String(val);
+    };
+    
+    const emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    const senderName = getS('default_sender_name', 'Australian Racing Tours');
+    const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
+    const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
 
     // Get the authorization header to identify the user
     const authHeader = req.headers.get("Authorization");
@@ -226,6 +241,9 @@ const handler = async (req: Request): Promise<Response> => {
     for (const passenger of targetPassengers) {
       try {
         // Create access token for this specific passenger
+        const tokenExpiresAt = new Date();
+        tokenExpiresAt.setHours(tokenExpiresAt.getHours() + tokenExpiryHours);
+        
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
           .insert({
@@ -233,6 +251,7 @@ const handler = async (req: Request): Promise<Response> => {
             booking_id: bookingId,
             purpose: 'travel_documents',
             created_by: user.id,
+            expires_at: tokenExpiresAt.toISOString(),
           })
           .select()
           .single();
@@ -251,7 +270,7 @@ const handler = async (req: Request): Promise<Response> => {
         let fromEmail: string;
 
         if (template) {
-          fromEmail = template.from_email || "Australian Racing Tours <bookings@australianracingtours.com.au>";
+          fromEmail = template.from_email || `${senderName} <${fromEmailAddr}>`;
 
           // Get this passenger's travel docs
           const docs = passenger.travelDocs;
@@ -371,7 +390,7 @@ const handler = async (req: Request): Promise<Response> => {
             </html>
           `;
         } else {
-          fromEmail = "Australian Racing Tours <bookings@australianracingtours.com.au>";
+          fromEmail = `${senderName} <${fromEmailAddr}>`;
           finalSubject = `Passport Details Required - ${tour.name}`;
 
           // Get this passenger's travel docs for fallback email
@@ -454,13 +473,13 @@ const handler = async (req: Request): Promise<Response> => {
                 
           <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px; color: #1565c0;">
-              <strong>Note:</strong> This link will expire in 7 days. Your passport details are securely stored and will be automatically deleted 30 days after your tour ends.
-            </p>
+               <strong>Note:</strong> This link will expire in ${Math.round(tokenExpiryHours / 24)} days. Your passport details are securely stored and will be automatically deleted 30 days after your tour ends.
+             </p>
                 </div>
                 
                 <p>If you have any questions, please don't hesitate to contact us.</p>
                 
-                <p style="margin-bottom: 0;">Kind regards,<br><strong>Australian Racing Tours</strong></p>
+                <p style="margin-bottom: 0;">Kind regards,<br><strong>${senderName}</strong></p>
               </div>
               
               <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">

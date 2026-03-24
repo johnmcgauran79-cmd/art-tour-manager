@@ -24,13 +24,23 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    // Fetch email header image from settings
-    const { data: headerSetting } = await supabase
+    // Fetch configurable settings
+    const { data: gSettings } = await supabase
       .from('general_settings')
-      .select('setting_value')
-      .eq('setting_key', 'email_header_image_url')
-      .single();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+      .select('setting_key, setting_value')
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+    
+    const getS = (key: string, fb: string) => {
+      const row = (gSettings || []).find((r: any) => r.setting_key === key);
+      if (!row) return fb;
+      const val = row.setting_value;
+      return typeof val === 'string' ? val : String(val);
+    };
+    
+    const emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    const senderName = getS('default_sender_name', 'Australian Racing Tours');
+    const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
+    const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
 
     // Verify user
     const authHeader = req.headers.get("Authorization");
@@ -144,9 +154,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const passenger of passengers) {
       try {
-        // Create waiver token (7-day expiry)
+        // Create waiver token
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 168);
+        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
 
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
@@ -189,7 +199,7 @@ const handler = async (req: Request): Promise<Response> => {
       <a href="${waiverLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SIGN WAIVER FORM</a>
     </div>
     
-    <p style="color: #666; font-size: 14px;">This link will expire in 7 days. If you have any questions, please don't hesitate to contact us.</p>
+    <p style="color: #666; font-size: 14px;">This link will expire in ${Math.round(tokenExpiryHours / 24)} days. If you have any questions, please don't hesitate to contact us.</p>
   </div>
   
   <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
@@ -200,7 +210,7 @@ const handler = async (req: Request): Promise<Response> => {
 </html>`;
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
-          from: "Australian Racing Tours <bookings@australianracingtours.com.au>",
+          from: `${senderName} <${fromEmailAddr}>`,
           to: [passenger.email],
           subject: `Tour Waiver - ${tour.name}`,
           html: emailHtml,

@@ -485,7 +485,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (shouldGenerateTravelDocsLink && booking.customers?.id) {
       // Generate a travel docs token (7-day expiry, booking-specific)
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 168); // 7-day expiry for travel docs
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
@@ -531,7 +531,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (needsPickupLink && booking.customers?.id) {
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 168);
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
@@ -564,7 +564,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (hasItineraryPlaceholder && booking.customers?.id) {
       // Generate an itinerary token (7-day expiry, booking-specific so we can find the tour)
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 168); // 7-day expiry
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
@@ -1115,7 +1115,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       if (shouldGenerateTravelDocsLink && passenger.id) {
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 168);
+        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
         
         const { data: tokenData, error: tokenError } = await supabaseClient
           .from('customer_access_tokens')
@@ -1142,7 +1142,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Generate pickup link for this passenger if tour requires it
       if (needsPickupLink && passenger.id) {
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 168);
+        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
         
         const { data: tokenData, error: tokenError } = await supabaseClient
           .from('customer_access_tokens')

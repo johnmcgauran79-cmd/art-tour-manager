@@ -47,8 +47,23 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    const { data: headerSetting } = await supabase.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+    // Fetch configurable settings
+    const { data: gSettings } = await supabase
+      .from('general_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+    
+    const getS = (key: string, fb: string) => {
+      const row = (gSettings || []).find((r: any) => r.setting_key === key);
+      if (!row) return fb;
+      const val = row.setting_value;
+      return typeof val === 'string' ? val : String(val);
+    };
+    
+    const emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    const senderName = getS('default_sender_name', 'Australian Racing Tours');
+    const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
+    const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
 
     // Get the authorization header to identify the user
     const authHeader = req.headers.get("Authorization");
@@ -166,12 +181,16 @@ const handler = async (req: Request): Promise<Response> => {
     for (const passenger of passengers) {
       try {
         // Create access token for this specific passenger
+        const tokenExpiresAt = new Date();
+        tokenExpiresAt.setHours(tokenExpiresAt.getHours() + tokenExpiryHours);
+        
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
           .insert({
             customer_id: passenger.id,
             booking_id: bookingId || null,
             created_by: user.id,
+            expires_at: tokenExpiresAt.toISOString(),
           })
           .select()
           .single();
@@ -282,13 +301,13 @@ const handler = async (req: Request): Promise<Response> => {
               
               <div style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin: 20px 0;">
                 <p style="margin: 0; font-size: 14px; color: #2e7d32;">
-                  <strong>Note:</strong> This link will expire in 7 days. You can make multiple updates within this timeframe.
+                  <strong>Note:</strong> This link will expire in ${Math.round(tokenExpiryHours / 24)} days. You can make multiple updates within this timeframe.
                 </p>
               </div>
               
               <p>If you didn't request this email or have any questions, please contact us.</p>
               
-              <p style="margin-bottom: 0;">Kind regards,<br><strong>Australian Racing Tours</strong></p>
+              <p style="margin-bottom: 0;">Kind regards,<br><strong>${senderName}</strong></p>
             </div>
             
             <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
@@ -300,7 +319,7 @@ const handler = async (req: Request): Promise<Response> => {
         `;
 
         const emailResponse = await resend.emails.send({
-          from: "Australian Racing Tours <bookings@australianracingtours.com.au>",
+          from: `${senderName} <${fromEmailAddr}>`,
           to: [passenger.email],
           subject: "Update Your Profile Details",
           html: emailHtml,
