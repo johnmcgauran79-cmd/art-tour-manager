@@ -479,7 +479,7 @@ const handler = async (req: Request): Promise<Response> => {
                 
                 <p>If you have any questions, please don't hesitate to contact us.</p>
                 
-                <p style="margin-bottom: 0;">Kind regards,<br><strong>Australian Racing Tours</strong></p>
+                <p style="margin-bottom: 0;">Kind regards,<br><strong>${senderName}</strong></p>
               </div>
               
               <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
