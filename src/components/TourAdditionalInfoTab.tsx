@@ -253,6 +253,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
