@@ -740,6 +740,17 @@ export const EmailTemplatesManagement = () => {
                 Cancel
               </Button>
               <Button 
+                type="button" 
+                variant="secondary"
+                onClick={() => {
+                  setPreviewTemplate(editingTemplate || { id: '', name: formData.name, type: formData.type, subject_template: formData.subject_template, content_template: formData.content_template, from_email: formData.from_email, is_active: formData.is_active, is_default: formData.is_default });
+                  setIsPreviewOpen(true);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Preview
+              </Button>
+              <Button 
                 type="submit" 
                 disabled={createTemplate.isPending || updateTemplate.isPending}
               >
@@ -749,6 +760,15 @@ export const EmailTemplatesManagement = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Template Preview Modal */}
+      <EmailTemplatePreviewModal
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        template={previewTemplate}
+        subjectTemplate={isCreateModalOpen ? formData.subject_template : undefined}
+        contentTemplate={isCreateModalOpen ? formData.content_template : undefined}
+      />
     </div>
   );
 };
