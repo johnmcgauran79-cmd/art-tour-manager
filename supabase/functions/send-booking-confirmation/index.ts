@@ -889,6 +889,78 @@ const handler = async (req: Request): Promise<Response> => {
       })),
     };
 
+    // Fetch and render additional info blocks for this tour
+    const hasAdditionalInfoPlaceholder = /\{\{\s*additional_info_blocks\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
+    
+    if (hasAdditionalInfoPlaceholder && booking.tour_id) {
+      console.log('Fetching additional info blocks for tour:', booking.tour_id, 'ruleId:', ruleId);
+      
+      let infoQuery = supabaseClient
+        .from('tour_additional_info_sections')
+        .select('name, icon_name, content, include_in_email_rules')
+        .eq('tour_id', booking.tour_id)
+        .eq('is_visible', true)
+        .order('sort_order', { ascending: true });
+      
+      const { data: infoSections, error: infoError } = await infoQuery;
+      
+      if (infoError) {
+        console.error('Error fetching additional info sections:', infoError);
+      }
+      
+      // Filter sections by ruleId if provided, otherwise show all tagged sections
+      let matchingSections = (infoSections || []).filter((s: any) => {
+        const rules = s.include_in_email_rules || [];
+        if (ruleId) {
+          return rules.includes(ruleId);
+        }
+        // For manual sends without a ruleId, include sections tagged for any rule
+        return rules.length > 0;
+      });
+      
+      // Limit to 3 blocks max
+      matchingSections = matchingSections.slice(0, 3);
+      
+      console.log(`Found ${matchingSections.length} matching additional info blocks`);
+      
+      // Lucide icon name to emoji/unicode fallback mapping for email
+      const iconMap: Record<string, string> = {
+        'plane': '✈️', 'plane-takeoff': '✈️', 'plane-landing': '✈️',
+        'shirt': '👔', 'info': 'ℹ️', 'shield': '🛡️', 'shield-check': '🛡️',
+        'file-text': '📄', 'file': '📄', 'clipboard': '📋',
+        'map-pin': '📍', 'map': '🗺️', 'globe': '🌍',
+        'calendar': '📅', 'clock': '🕐', 'alarm-clock': '⏰',
+        'utensils': '🍽️', 'wine': '🍷', 'coffee': '☕',
+        'hotel': '🏨', 'building': '🏢', 'home': '🏠',
+        'car': '🚗', 'bus': '🚌', 'train': '🚂',
+        'camera': '📷', 'sun': '☀️', 'umbrella': '☂️',
+        'heart': '❤️', 'star': '⭐', 'flag': '🏁',
+        'phone': '📞', 'mail': '📧', 'message-circle': '💬',
+        'dollar-sign': '💰', 'credit-card': '💳',
+        'luggage': '🧳', 'backpack': '🎒',
+        'stethoscope': '🩺', 'pill': '💊',
+        'book': '📖', 'book-open': '📖',
+        'alert-triangle': '⚠️', 'alert-circle': '⚠️',
+        'check-circle': '✅', 'x-circle': '❌',
+      };
+      
+      if (matchingSections.length > 0) {
+        const blocksHtml = matchingSections.map((section: any) => {
+          const emoji = iconMap[section.icon_name] || 'ℹ️';
+          // Strip HTML tags for plain text content, keep for rich content
+          const contentHtml = section.content || '';
+          
+          return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;"><tr><td style="padding: 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="width: 44px; vertical-align: top; padding-right: 14px;"><div style="width: 40px; height: 40px; background-color: #f3f4f6; border-radius: 8px; text-align: center; line-height: 40px; font-size: 20px;">${emoji}</div></td><td style="vertical-align: top;"><h4 style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #1a2332;">${section.name}</h4><div style="font-size: 14px; color: #55575d; line-height: 1.5;">${contentHtml}</div></td></tr></table></td></tr></table>`;
+        }).join('');
+        
+        mergeData.additional_info_blocks = blocksHtml;
+      } else {
+        mergeData.additional_info_blocks = '';
+      }
+    } else {
+      mergeData.additional_info_blocks = '';
+    }
+
     if (template) {
       console.log('=== TEMPLATE PROCESSING DEBUG ===');
       console.log('Custom subject provided:', !!customSubject);
