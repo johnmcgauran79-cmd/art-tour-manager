@@ -485,6 +485,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch configurable invoice settings
+    const { data: invoiceSettingsRows } = await supabase
+      .from('general_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['invoice_due_date_days_before', 'invoice_due_date_fallback_days', 'loyalty_min_completed_tours']);
+
+    const getSettingNum = (key: string, fallback: number) => {
+      const row = (invoiceSettingsRows || []).find((r: any) => r.setting_key === key);
+      return row ? Number(row.setting_value) || fallback : fallback;
+    };
+
+    const invoiceSettings = {
+      daysBefore: getSettingNum('invoice_due_date_days_before', 90),
+      fallbackDays: getSettingNum('invoice_due_date_fallback_days', 14),
+    };
+    const loyaltyMinTours = getSettingNum('loyalty_min_completed_tours', 1);
+
     // Check if repeat customer
     const { count: previousBookingCount } = await supabase
       .from('bookings')
@@ -493,7 +510,7 @@ Deno.serve(async (req) => {
       .neq('id', bookingId)
       .not('status', 'eq', 'cancelled');
 
-    const isRepeatCustomer = (previousBookingCount || 0) > 0;
+    const isRepeatCustomer = (previousBookingCount || 0) >= loyaltyMinTours;
     const contactName = `${customer.first_name} ${customer.last_name}`.trim();
     const baseReference = booking.invoice_reference || tour.xero_reference || bookingId.substring(0, 8);
 
