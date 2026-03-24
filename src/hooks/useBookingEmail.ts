@@ -6,7 +6,7 @@ export const useSendBookingConfirmation = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails }: { 
+    mutationFn: async ({ bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId }: { 
       bookingId: string; 
       customSubject?: string; 
       customContent?: string; 
@@ -14,10 +14,11 @@ export const useSendBookingConfirmation = () => {
       includeItinerary?: boolean;
       ccEmails?: string[];
       bccEmails?: string[];
+      emailTemplateId?: string;
     }) => {
-      console.log('Sending booking confirmation:', { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails });
+      console.log('Sending booking confirmation:', { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId });
       const { data, error } = await supabase.functions.invoke('send-booking-confirmation', {
-        body: { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails }
+        body: { bookingId, customSubject, customContent, fromEmail, includeItinerary, ccEmails, bccEmails, emailTemplateId }
       });
 
       console.log('Edge function response:', { data, error });

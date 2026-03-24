@@ -200,7 +200,8 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               fromEmail,
               ccEmails,
               bccEmails,
-              includeAdditionalPassengers: includeAdditionalPassengers ?? true
+              includeAdditionalPassengers: includeAdditionalPassengers ?? true,
+              emailTemplateId
             }
           });
           
