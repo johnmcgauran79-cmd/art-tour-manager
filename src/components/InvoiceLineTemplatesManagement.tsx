@@ -525,6 +525,7 @@ export const InvoiceLineTemplatesManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };
