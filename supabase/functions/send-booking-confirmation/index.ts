@@ -920,7 +920,6 @@ const handler = async (req: Request): Promise<Response> => {
             .select('id')
             .eq('email_template_id', emailTemplateId)
             .eq('is_active', true)
-            .eq('trigger_type', 'days_before_tour')
             .limit(1)
             .maybeSingle();
           
