@@ -7,7 +7,8 @@ import { XeroIntegrationSettings } from "./XeroIntegrationSettings";
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
-
+import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
+import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 
 interface SystemSettingsProps {
@@ -147,6 +148,15 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
           </CardContent>
         </Card>
 
+      </div>
+
+      {/* Theme & Appearance */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Branding & Appearance</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ThemeAppearanceSettings />
+          <EmailHeaderSettingsCard />
+        </div>
       </div>
 
       {/* Data Import Section - Hidden for now, kept for potential reuse

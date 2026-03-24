@@ -155,7 +155,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: generalSettings } = await supabaseClient
       .from('general_settings')
       .select('setting_key, setting_value')
-      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours', 'theme_email_button_color', 'theme_email_button_text']);
 
     const getGSetting = (key: string, fb: string) => {
       const row = (generalSettings || []).find((r: any) => r.setting_key === key);
@@ -168,6 +168,8 @@ const handler = async (req: Request): Promise<Response> => {
     const defaultSenderName = getGSetting('default_sender_name', 'Australian Racing Tours');
     const defaultFromEmailClient = getGSetting('default_from_email_client', 'bookings@australianracingtours.com.au');
     const tokenExpiryHours = Number(getGSetting('token_expiry_hours', '168')) || 168;
+    const btnBg = getGSetting('theme_email_button_color', '#232628');
+    const btnText = getGSetting('theme_email_button_text', '#F5C518');
 
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
@@ -458,7 +460,7 @@ const handler = async (req: Request): Promise<Response> => {
         // IMPORTANT: Keep this HTML on a single line.
         // Later in the pipeline we convert any remaining "\n" to "<br>", which can break table markup.
         // data-art-profile-update marker helps us reliably detect whether the button is already present.
-        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE MY PROFILE</a></td></tr></table>`;
+        profileUpdateButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${profileUpdateLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE MY PROFILE</a></td></tr></table>`;
         console.log('Generated profile update link for customer:', booking.customers.id);
       }
     }
@@ -506,7 +508,7 @@ const handler = async (req: Request): Promise<Response> => {
         travelDocsLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
         // IMPORTANT: Keep this HTML on a single line to prevent formatting issues.
         // data-art-travel-docs marker helps us reliably detect whether the button is already present.
-        travelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${travelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PASSPORT DETAILS</a></td></tr></table>`;
+        travelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${travelDocsLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PASSPORT DETAILS</a></td></tr></table>`;
         console.log('Generated travel docs link for customer:', booking.customers.id);
       }
     }
@@ -550,7 +552,7 @@ const handler = async (req: Request): Promise<Response> => {
       } else if (tokenData) {
         const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
         pickupLink = `${baseUrl}/select-pickup/${tokenData.token}`;
-        pickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${pickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PICKUP LOCATION</a></td></tr></table>`;
+        pickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${pickupLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PICKUP LOCATION</a></td></tr></table>`;
         console.log('Generated pickup link for customer:', booking.customers.id);
       }
     }
@@ -583,7 +585,7 @@ const handler = async (req: Request): Promise<Response> => {
       } else if (tokenData) {
         const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
         itineraryLink = `${baseUrl}/view-itinerary/${tokenData.token}`;
-        itineraryButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-itinerary="button"><tr><td><a href="${itineraryLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">VIEW TOUR ITINERARY</a></td></tr></table>`;
+        itineraryButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-itinerary="button"><tr><td><a href="${itineraryLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">VIEW TOUR ITINERARY</a></td></tr></table>`;
         console.log('Generated itinerary link for customer:', booking.customers.id);
       }
     }
@@ -1102,7 +1104,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (!tokenError && tokenData) {
           const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
           passengerProfileLink = `${baseUrl}/update-profile/${tokenData.token}`;
-          passengerProfileButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${passengerProfileLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE MY PROFILE</a></td></tr></table>`;
+          passengerProfileButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-profile-update="button"><tr><td><a href="${passengerProfileLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE MY PROFILE</a></td></tr></table>`;
           
           passengerMergeData.profile_update_link = passengerProfileLink;
           passengerMergeData.profile_update_button = passengerProfileButton;
@@ -1132,7 +1134,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (!tokenError && tokenData) {
           const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
           passengerTravelDocsLink = `${baseUrl}/update-travel-docs/${tokenData.token}`;
-          passengerTravelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${passengerTravelDocsLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PASSPORT DETAILS</a></td></tr></table>`;
+          passengerTravelDocsButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-travel-docs="button"><tr><td><a href="${passengerTravelDocsLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PASSPORT DETAILS</a></td></tr></table>`;
           
           passengerMergeData.travel_docs_link = passengerTravelDocsLink;
           passengerMergeData.travel_docs_button = passengerTravelDocsButton;
@@ -1159,7 +1161,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (!tokenError && tokenData) {
           const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
           const passengerPickupLink = `${baseUrl}/select-pickup/${tokenData.token}`;
-          const passengerPickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${passengerPickupLink}" target="_blank" style="background-color: #232628; color: #F5C518; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PICKUP LOCATION</a></td></tr></table>`;
+          const passengerPickupButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-pickup="button"><tr><td><a href="${passengerPickupLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">UPDATE PICKUP LOCATION</a></td></tr></table>`;
           
           passengerMergeData.pickup_link = passengerPickupLink;
           passengerMergeData.pickup_button = passengerPickupButton;
