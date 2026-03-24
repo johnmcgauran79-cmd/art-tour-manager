@@ -209,12 +209,33 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                         </div>
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
+                    <div className="flex items-center gap-1">
+                      <div className="flex flex-col">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          disabled={index === 0}
+                          onClick={() => handleMoveSection(index, 'up')}
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
                         </Button>
-                      </DropdownMenuTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          disabled={index === sections.length - 1}
+                          onClick={() => handleMoveSection(index, 'down')}
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEdit(section)} className="gap-2">
                           <Edit className="h-4 w-4" /> Edit
