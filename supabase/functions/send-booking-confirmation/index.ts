@@ -972,17 +972,19 @@ const handler = async (req: Request): Promise<Response> => {
     if (hasHotelDetailsPlaceholder && mergeData.hotel_bookings && mergeData.hotel_bookings.length > 0) {
       const hotelCardsHtml = mergeData.hotel_bookings.map((hb: any) => {
         const rows: string[] = [];
-        rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Check In</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_check_in_date}</td></tr>`);
-        rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Check Out</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_check_out_date}</td></tr>`);
-        rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Nights</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_nights}</td></tr>`);
+        const labelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:100px;';
+        const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
+        rows.push(`<tr><td style="${labelStyle}">Check In</td><td style="${valueStyle}">${hb.hotel_check_in_date}</td></tr>`);
+        rows.push(`<tr><td style="${labelStyle}">Check Out</td><td style="${valueStyle}">${hb.hotel_check_out_date}</td></tr>`);
+        rows.push(`<tr><td style="${labelStyle}">Nights</td><td style="${valueStyle}">${hb.hotel_nights}</td></tr>`);
         if (hb.hotel_bedding) {
-          rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Bedding</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_bedding}</td></tr>`);
+          rows.push(`<tr><td style="${labelStyle}">Bedding</td><td style="${valueStyle}">${hb.hotel_bedding}</td></tr>`);
         }
         if (hb.has_hotel_room_type) {
-          rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Room Type</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_room_type}</td></tr>`);
+          rows.push(`<tr><td style="${labelStyle}">Room Type</td><td style="${valueStyle}">${hb.hotel_room_type}</td></tr>`);
         }
         if (hb.has_hotel_extra_night_price) {
-          rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Extra Nights</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">Available for $${hb.hotel_extra_night_price}</td></tr>`);
+          rows.push(`<tr><td style="${labelStyle}">Extra Nights</td><td style="${valueStyle}">Available for $${hb.hotel_extra_night_price}</td></tr>`);
         }
         return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">🏨 ${hb.hotel_name}</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
       }).join('');
