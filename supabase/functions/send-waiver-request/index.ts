@@ -154,9 +154,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const passenger of passengers) {
       try {
-        // Create waiver token (7-day expiry)
+        // Create waiver token
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 168);
+        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
 
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
