@@ -7,6 +7,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function processTemplate(content: string, replacements: Record<string, string>): string {
+  let result = content;
+  const processConditionals = (text: string): string => {
+    text = text.replace(/\{\{#(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
+      return replacements[`{{${key}}}`] ? processConditionals(inner) : '';
+    });
+    text = text.replace(/\{\{\^(\w+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_, key, inner) => {
+      return !replacements[`{{${key}}}`] ? processConditionals(inner) : '';
+    });
+    return text;
+  };
+  result = processConditionals(result);
+  for (const [key, value] of Object.entries(replacements)) {
+    const regex = new RegExp(key.replace(/[{}]/g, '\\$&'), 'g');
+    result = result.replace(regex, value);
+  }
+  return result;
+}
+
+function wrapInEmailShell(content: string, headerImageUrl: string, senderName: string, link: string): string {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+    <img src="${headerImageUrl}" alt="${senderName}" style="height: 80px; max-width: 400px; width: auto;" />
+  </div>
+  <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
+    ${content}
+  </div>
+  <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
+    <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
+    <p style="margin: 5px 0; word-break: break-all;">${link}</p>
+  </div>
+</body>
+</html>`;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -39,6 +77,15 @@ const handler = async (req: Request): Promise<Response> => {
     const senderName = getS('default_sender_name', 'Australian Racing Tours');
     const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
     const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
+
+    // Fetch email template
+    const { data: template } = await supabase
+      .from('email_templates')
+      .select('*')
+      .eq('type', 'custom_form_request')
+      .eq('is_active', true)
+      .eq('is_default', true)
+      .single();
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -80,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const tour = booking.tours;
 
-    // Get the specific form, or fall back to the single published form for backward compatibility
+    // Get the specific form, or fall back to the single published form
     let form: any;
     if (formId) {
       const { data, error } = await supabase
@@ -95,7 +142,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
       form = data;
     } else {
-      // Legacy: find single published form
       const { data, error } = await supabase
         .from("tour_custom_forms")
         .select("*")
@@ -123,36 +169,15 @@ const handler = async (req: Request): Promise<Response> => {
     const passengers: PassengerInfo[] = [];
 
     if (booking.customers?.email) {
-      passengers.push({
-        id: booking.customers.id,
-        first_name: booking.customers.first_name,
-        last_name: booking.customers.last_name,
-        email: booking.customers.email,
-        preferred_name: booking.customers.preferred_name,
-        slot: 1,
-      });
+      passengers.push({ id: booking.customers.id, first_name: booking.customers.first_name, last_name: booking.customers.last_name, email: booking.customers.email, preferred_name: booking.customers.preferred_name, slot: 1 });
     }
 
     if (form.response_mode === "per_passenger") {
       if (booking.passenger_2?.email) {
-        passengers.push({
-          id: booking.passenger_2.id,
-          first_name: booking.passenger_2.first_name,
-          last_name: booking.passenger_2.last_name,
-          email: booking.passenger_2.email,
-          preferred_name: booking.passenger_2.preferred_name,
-          slot: 2,
-        });
+        passengers.push({ id: booking.passenger_2.id, first_name: booking.passenger_2.first_name, last_name: booking.passenger_2.last_name, email: booking.passenger_2.email, preferred_name: booking.passenger_2.preferred_name, slot: 2 });
       }
       if (booking.passenger_3?.email) {
-        passengers.push({
-          id: booking.passenger_3.id,
-          first_name: booking.passenger_3.first_name,
-          last_name: booking.passenger_3.last_name,
-          email: booking.passenger_3.email,
-          preferred_name: booking.passenger_3.preferred_name,
-          slot: 3,
-        });
+        passengers.push({ id: booking.passenger_3.id, first_name: booking.passenger_3.first_name, last_name: booking.passenger_3.last_name, email: booking.passenger_3.email, preferred_name: booking.passenger_3.preferred_name, slot: 3 });
       }
     }
 
@@ -163,13 +188,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const formatDate = (dateStr: string) => {
       const date = new Date(dateStr);
-      return date.toLocaleDateString("en-AU", {
-        weekday: "long", day: "numeric", month: "long", year: "numeric",
-      });
+      return date.toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     };
 
     const sentEmails: string[] = [];
     const failedEmails: string[] = [];
+    const headerImg = template?.header_image_url || emailHeaderImageUrl;
 
     for (const passenger of passengers) {
       try {
@@ -197,42 +221,53 @@ const handler = async (req: Request): Promise<Response> => {
 
         const formLink = `${baseUrl}/custom-form/${tokenData.token}`;
         const displayName = passenger.preferred_name || passenger.first_name;
+        const customFormButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${formLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">COMPLETE FORM</a></div>`;
 
-        const perPassengerNote = form.response_mode === "per_passenger"
-          ? `<p style="color: #666; font-size: 14px;">If other passengers on your booking don't have an email address, you'll be able to fill in their details as well.</p>`
-          : "";
+        const replacements: Record<string, string> = {
+          '{{customer_first_name}}': passenger.first_name || '',
+          '{{customer_last_name}}': passenger.last_name || '',
+          '{{customer_preferred_name}}': displayName || '',
+          '{{customer_email}}': passenger.email || '',
+          '{{tour_name}}': tour.name || '',
+          '{{tour_start_date}}': tour.start_date ? formatDate(tour.start_date) : '',
+          '{{tour_end_date}}': tour.end_date ? formatDate(tour.end_date) : '',
+          '{{form_title}}': form.form_title || 'Custom Form',
+          '{{form_description}}': form.form_description || '',
+          '{{is_per_passenger}}': form.response_mode === 'per_passenger' ? 'true' : '',
+          '{{custom_form_button}}': customFormButtonHtml,
+          '{{custom_form_link}}': formLink,
+        };
 
-        const emailHtml = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-  <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-    <img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
-    <h1 style="color: #fff; margin: 0; font-size: 24px;">${form.form_title}</h1>
-  </div>
-  <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-    <p>Dear ${displayName},</p>
-    <p>As part of your booking for <strong>${tour.name}</strong> (${formatDate(tour.start_date)} - ${formatDate(tour.end_date)}), we need you to complete a short form.</p>
-    ${form.form_description ? `<p>${form.form_description}</p>` : ""}
-    <p>Please click the button below to fill in the required information:</p>
-    <div style="text-align: center; margin: 30px 0;">
-      <a href="${formLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">COMPLETE FORM</a>
-    </div>
-    ${perPassengerNote}
-    <p style="color: #666; font-size: 14px;">This link will expire in ${Math.round(tokenExpiryHours / 24)} days. If you have any questions, please don't hesitate to contact us.</p>
-  </div>
-  <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
-    <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
-    <p style="margin: 5px 0; word-break: break-all;">${formLink}</p>
-  </div>
-</body>
-</html>`;
+        let finalSubject: string;
+        let finalHtml: string;
+        let fromEmail: string;
+
+        if (template) {
+          fromEmail = template.from_email ? `${senderName} <${template.from_email}>` : `${senderName} <${fromEmailAddr}>`;
+          const processedContent = processTemplate(template.content_template || '', replacements);
+          finalSubject = processTemplate(template.subject_template || `${form.form_title} - ${tour.name}`, replacements);
+          finalHtml = wrapInEmailShell(processedContent, headerImg, senderName, formLink);
+        } else {
+          fromEmail = `${senderName} <${fromEmailAddr}>`;
+          finalSubject = `${form.form_title} - ${tour.name}`;
+          const perPassengerNote = form.response_mode === "per_passenger"
+            ? `<p style="color: #666; font-size: 14px;">If other passengers on your booking don't have an email address, you'll be able to fill in their details as well.</p>`
+            : "";
+          const fallbackContent = `<p>Dear ${displayName},</p>
+            <p>As part of your booking for <strong>${tour.name}</strong> (${formatDate(tour.start_date)} - ${formatDate(tour.end_date)}), we need you to complete a short form.</p>
+            ${form.form_description ? `<p>${form.form_description}</p>` : ""}
+            <p>Please click the button below to fill in the required information:</p>
+            ${customFormButtonHtml}
+            ${perPassengerNote}
+            <p style="color: #666; font-size: 14px;">This link will expire in ${Math.round(tokenExpiryHours / 24)} days. If you have any questions, please don't hesitate to contact us.</p>`;
+          finalHtml = wrapInEmailShell(fallbackContent, headerImg, senderName, formLink);
+        }
 
         const { data: emailResult, error: emailError } = await resend.emails.send({
-          from: `${senderName} <${fromEmailAddr}>`,
+          from: fromEmail,
           to: [passenger.email],
-          subject: `${form.form_title} - ${tour.name}`,
-          html: emailHtml,
+          subject: finalSubject,
+          html: finalHtml,
         });
 
         if (emailError) {
@@ -247,7 +282,7 @@ const handler = async (req: Request): Promise<Response> => {
             tour_id: tour.id,
             recipient_email: passenger.email,
             recipient_name: `${passenger.first_name} ${passenger.last_name}`,
-            subject: `${form.form_title} - ${tour.name}`,
+            subject: finalSubject,
             message_id: emailResult.id,
             template_name: "custom_form_request",
             sent_by: user.id,
@@ -263,8 +298,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({
       success: true, sentTo: sentEmails, failed: failedEmails,
-      message: `Custom form request sent to ${sentEmails.length} recipient(s)`,
+      message: `${form.form_title} request sent to ${sentEmails.length} passenger(s)`,
     }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
   } catch (error: any) {
     console.error("Error in send-custom-form-request:", error);
     return new Response(JSON.stringify({ error: error.message }),
