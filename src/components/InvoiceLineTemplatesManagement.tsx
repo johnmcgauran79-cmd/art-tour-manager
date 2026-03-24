@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Info, Lock } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Info, Lock, Save, Calculator } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
 import {
   useInvoiceLineTemplates,
   useCreateInvoiceLineTemplate,
