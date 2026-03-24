@@ -531,7 +531,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (needsPickupLink && booking.customers?.id) {
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 168);
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
       
       const { data: tokenData, error: tokenError } = await supabaseClient
         .from('customer_access_tokens')
