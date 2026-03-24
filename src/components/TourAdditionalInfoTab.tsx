@@ -4,11 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText, Mail } from "lucide-react";
 import { useTourAdditionalInfo, TourAdditionalInfoSection } from "@/hooks/useTourAdditionalInfo";
 import { useAdditionalInfoTemplates, AdditionalInfoTemplate } from "@/hooks/useAdditionalInfoTemplates";
+import { useAutomatedEmailRules } from "@/hooks/useAutomatedEmailRules";
+import { useTourEmailOverrides } from "@/hooks/useTourEmailOverrides";
 import { LucideIconPicker, renderLucideIcon } from "@/components/LucideIconPicker";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -21,11 +24,18 @@ interface TourAdditionalInfoTabProps {
 export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTabProps) => {
   const { sections, isLoading, addSection, updateSection, deleteSection } = useTourAdditionalInfo(tourId);
   const { templates } = useAdditionalInfoTemplates();
+  const { data: emailRules } = useAutomatedEmailRules();
+  const { data: tourOverrides } = useTourEmailOverrides(tourId);
   const activeTemplates = templates.filter(t => t.is_active);
+
+  // Get active email rules that are relevant (booking_confirmation type or have templates)
+  const activeEmailRules = (emailRules || []).filter(r => 
+    r.is_active && r.rule_type === 'booking_confirmation' && r.email_template_id
+  );
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<TourAdditionalInfoSection | null>(null);
-  const [formData, setFormData] = useState({ name: '', icon_name: 'info', content: '' });
+  const [formData, setFormData] = useState({ name: '', icon_name: 'info', content: '', include_in_email_rules: [] as string[] });
   const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingSectionId, setDeletingSectionId] = useState<string | null>(null);
@@ -36,6 +46,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
       name: template.name,
       icon_name: template.icon_name,
       content: template.default_content || '',
+      include_in_email_rules: [],
     });
     setEditModalOpen(true);
     setAddMenuOpen(false);
@@ -43,7 +54,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
 
   const handleAddCustom = () => {
     setEditingSection(null);
-    setFormData({ name: '', icon_name: 'info', content: '' });
+    setFormData({ name: '', icon_name: 'info', content: '', include_in_email_rules: [] });
     setEditModalOpen(true);
     setAddMenuOpen(false);
   };
@@ -54,6 +65,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
       name: section.name,
       icon_name: section.icon_name,
       content: section.content || '',
+      include_in_email_rules: section.include_in_email_rules || [],
     });
     setEditModalOpen(true);
   };
@@ -66,12 +78,14 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
         name: formData.name,
         icon_name: formData.icon_name,
         content: formData.content || null,
+        include_in_email_rules: formData.include_in_email_rules,
       });
     } else {
       addSection.mutate({
         name: formData.name,
         icon_name: formData.icon_name,
         content: formData.content || undefined,
+        include_in_email_rules: formData.include_in_email_rules,
       });
     }
     setEditModalOpen(false);
@@ -92,6 +106,20 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
       setDeleteConfirmOpen(false);
       setDeletingSectionId(null);
     }
+  };
+
+  const toggleEmailRule = (ruleId: string) => {
+    setFormData(p => {
+      const current = p.include_in_email_rules;
+      const updated = current.includes(ruleId)
+        ? current.filter(id => id !== ruleId)
+        : [...current, ruleId];
+      return { ...p, include_in_email_rules: updated };
+    });
+  };
+
+  const getRuleName = (ruleId: string) => {
+    return emailRules?.find(r => r.id === ruleId)?.rule_name || 'Unknown';
   };
 
   if (isLoading) {
@@ -158,9 +186,17 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                       </div>
                       <div>
                         <CardTitle className="text-base">{section.name}</CardTitle>
-                        {!section.is_visible && (
-                          <Badge variant="outline" className="text-xs mt-0.5">Hidden</Badge>
-                        )}
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {!section.is_visible && (
+                            <Badge variant="outline" className="text-xs">Hidden</Badge>
+                          )}
+                          {(section.include_in_email_rules || []).map(ruleId => (
+                            <Badge key={ruleId} variant="secondary" className="text-xs gap-1">
+                              <Mail className="h-3 w-3" />
+                              {getRuleName(ruleId)}
+                            </Badge>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <DropdownMenu>
@@ -236,6 +272,40 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                 className="font-mono text-sm"
               />
             </div>
+
+            {/* Email inclusion checkboxes */}
+            {activeEmailRules.length > 0 && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Include in Email Templates
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Select which automated emails should include this section as an info block (max 3 per email). 
+                  Use <code className="bg-muted px-1 rounded text-xs">{"{{additional_info_blocks}}"}</code> in your email template.
+                </p>
+                <div className="space-y-2 rounded-md border p-3">
+                  {activeEmailRules.map((rule) => (
+                    <div key={rule.id} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`rule-${rule.id}`}
+                        checked={formData.include_in_email_rules.includes(rule.id)}
+                        onCheckedChange={() => toggleEmailRule(rule.id)}
+                      />
+                      <label
+                        htmlFor={`rule-${rule.id}`}
+                        className="text-sm cursor-pointer flex-1"
+                      >
+                        {rule.rule_name}
+                        <span className="text-muted-foreground ml-1">
+                          ({rule.trigger_type === 'on_status_change' ? 'On status change' : `${rule.days_before_tour} days before tour`})
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>

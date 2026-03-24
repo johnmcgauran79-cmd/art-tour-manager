@@ -146,7 +146,8 @@ serve(async (req) => {
               customContent: template.content_template,
               fromEmail: template.from_email,
               isAutomated: true,
-              includeAdditionalPassengers: true
+              includeAdditionalPassengers: true,
+              ruleId: item.rule_id || item.rule?.id
             }
           }
         );

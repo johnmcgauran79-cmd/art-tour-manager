@@ -305,6 +305,9 @@ export interface EmailMergeData {
   pickup_link?: string;
   itinerary_button?: string;
   itinerary_link?: string;
+  
+  // Additional info blocks - rendered server-side
+  additional_info_blocks?: string;
 }
 
 export interface EmailTemplate {
@@ -677,6 +680,9 @@ export class EmailTemplateEngine {
       profile_update_link: '{{profile_update_link}}',
       pickup_button: '{{pickup_button}}',
       pickup_link: '{{pickup_link}}',
+      
+      // Additional info blocks - rendered server-side with tour data
+      additional_info_blocks: '{{additional_info_blocks}}',
     };
   }
 }
