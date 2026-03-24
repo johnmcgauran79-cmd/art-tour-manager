@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText, Mail } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText, Mail, ArrowUp, ArrowDown } from "lucide-react";
 import { useTourAdditionalInfo, TourAdditionalInfoSection } from "@/hooks/useTourAdditionalInfo";
 import { useAdditionalInfoTemplates, AdditionalInfoTemplate } from "@/hooks/useAdditionalInfoTemplates";
 import { useAutomatedEmailRules } from "@/hooks/useAutomatedEmailRules";
