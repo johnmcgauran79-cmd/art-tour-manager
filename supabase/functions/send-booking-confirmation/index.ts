@@ -148,7 +148,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId }: BookingConfirmationRequest = await req.json();
     
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
