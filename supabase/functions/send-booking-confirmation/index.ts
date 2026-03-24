@@ -102,11 +102,17 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Normalise all Quill-generated content */
-    .email-body p, .email-body li, .email-body div, .email-body span, .email-body td {
+    /* Normalise Quill-generated content — but exclude structured blocks */
+    .email-body p, .email-body li, .email-body div {
       font-family: Arial, Helvetica, sans-serif !important;
       font-size: 14px !important;
       line-height: 1.6 !important;
+      color: #55575d !important;
+    }
+    /* Default span/td — but NOT inside structured components */
+    .email-body > span, .email-body > div > span {
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-size: 14px !important;
       color: #55575d !important;
     }
     .email-body h1, .email-body h2, .email-body h3, .email-body h4, .email-body h5, .email-body h6 {
@@ -123,9 +129,13 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
     .email-body ul, .email-body ol { margin: 0 0 16px 0 !important; padding-left: 24px !important; }
     .email-body li { margin-bottom: 4px !important; }
     .email-body a { color: #1a6fb5 !important; }
+    /* CTA buttons — preserve their branded colours */
+    .email-body a[style*="border-radius"] { color: inherit !important; }
     .email-body hr { border: none !important; border-top: 2px solid #e5e7eb !important; margin: 24px 0 !important; }
-    /* Section header blocks - don't override their internal colours */
-    .email-body .email-section-header td { color: inherit !important; font-size: inherit !important; }
+    /* Structured table blocks — let inline styles win */
+    .email-body table[role="presentation"] td { color: inherit !important; font-size: inherit !important; line-height: inherit !important; }
+    .email-body table[role="presentation"] span { color: inherit !important; font-size: inherit !important; }
+    .email-body table[role="presentation"] strong { color: inherit !important; }
     .email-body .email-hotel-card td { font-size: inherit !important; color: inherit !important; }
     .email-body .email-hotel-card strong { color: inherit !important; }
   </style>
@@ -962,17 +972,19 @@ const handler = async (req: Request): Promise<Response> => {
     if (hasHotelDetailsPlaceholder && mergeData.hotel_bookings && mergeData.hotel_bookings.length > 0) {
       const hotelCardsHtml = mergeData.hotel_bookings.map((hb: any) => {
         const rows: string[] = [];
-        rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Check In</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_check_in_date}</td></tr>`);
-        rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Check Out</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_check_out_date}</td></tr>`);
-        rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Nights</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_nights}</td></tr>`);
+        const labelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:100px;';
+        const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
+        rows.push(`<tr><td style="${labelStyle}">Check In</td><td style="${valueStyle}">${hb.hotel_check_in_date}</td></tr>`);
+        rows.push(`<tr><td style="${labelStyle}">Check Out</td><td style="${valueStyle}">${hb.hotel_check_out_date}</td></tr>`);
+        rows.push(`<tr><td style="${labelStyle}">Nights</td><td style="${valueStyle}">${hb.hotel_nights}</td></tr>`);
         if (hb.hotel_bedding) {
-          rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Bedding</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_bedding}</td></tr>`);
+          rows.push(`<tr><td style="${labelStyle}">Bedding</td><td style="${valueStyle}">${hb.hotel_bedding}</td></tr>`);
         }
         if (hb.has_hotel_room_type) {
-          rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Room Type</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">${hb.hotel_room_type}</td></tr>`);
+          rows.push(`<tr><td style="${labelStyle}">Room Type</td><td style="${valueStyle}">${hb.hotel_room_type}</td></tr>`);
         }
         if (hb.has_hotel_extra_night_price) {
-          rows.push(`<tr><td style="padding:4px 0;color:#55575d;font-size:13px;">Extra Nights</td><td style="padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;">Available for $${hb.hotel_extra_night_price}</td></tr>`);
+          rows.push(`<tr><td style="${labelStyle}">Extra Nights</td><td style="${valueStyle}">Available for $${hb.hotel_extra_night_price}</td></tr>`);
         }
         return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin-bottom:12px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">🏨 ${hb.hotel_name}</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
       }).join('');
