@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText, Mail } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText, Mail, ArrowUp, ArrowDown } from "lucide-react";
 import { useTourAdditionalInfo, TourAdditionalInfoSection } from "@/hooks/useTourAdditionalInfo";
 import { useAdditionalInfoTemplates, AdditionalInfoTemplate } from "@/hooks/useAdditionalInfoTemplates";
 import { useAutomatedEmailRules } from "@/hooks/useAutomatedEmailRules";
@@ -95,6 +95,16 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
     updateSection.mutate({ id: section.id, is_visible: !section.is_visible });
   };
 
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= sections.length) return;
+    const current = sections[index];
+    const target = sections[swapIndex];
+    // Swap sort_order values
+    updateSection.mutate({ id: current.id, sort_order: target.sort_order });
+    updateSection.mutate({ id: target.id, sort_order: current.sort_order });
+  };
+
   const confirmDelete = (id: string) => {
     setDeletingSectionId(id);
     setDeleteConfirmOpen(true);
@@ -176,8 +186,8 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
           </Card>
         ) : (
           <div className="space-y-3">
-            {sections.map((section) => (
-              <Card key={section.id} className={!section.is_visible ? 'opacity-60' : ''}>
+            {sections.map((section, index) => (
+              <Card key={section.id} className={`${!section.is_visible ? 'opacity-60' : ''}`}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -199,12 +209,33 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                         </div>
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="h-4 w-4" />
+                    <div className="flex items-center gap-1">
+                      <div className="flex flex-col">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          disabled={index === 0}
+                          onClick={() => handleMoveSection(index, 'up')}
+                        >
+                          <ArrowUp className="h-3.5 w-3.5" />
                         </Button>
-                      </DropdownMenuTrigger>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          disabled={index === sections.length - 1}
+                          onClick={() => handleMoveSection(index, 'down')}
+                        >
+                          <ArrowDown className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => handleEdit(section)} className="gap-2">
                           <Edit className="h-4 w-4" /> Edit
@@ -222,6 +253,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
