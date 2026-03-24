@@ -701,7 +701,7 @@ Deno.serve(async (req) => {
     );
 
     const createdInvoice = await createXeroInvoice(
-      supabase, auth, xeroContact, lineItems, baseReference, tour.start_date
+      supabase, auth, xeroContact, lineItems, baseReference, tour.start_date, invoiceSettings
     );
 
     console.log(`Xero invoice created: ${createdInvoice.InvoiceNumber} (ID: ${createdInvoice.InvoiceID})`);
