@@ -526,8 +526,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         </CardContent>
       </Card>
 
-      {/* Host Flights Section */}
-      <HostFlightsSection tourId={tourId} />
 
       {/* Operations Notes Section */}
       <TourOperationsNotesSection 
