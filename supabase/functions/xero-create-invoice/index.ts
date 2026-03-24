@@ -598,7 +598,7 @@ Deno.serve(async (req) => {
           );
 
           const createdInvoice = await createXeroInvoice(
-            supabase, auth, xeroContact, lineItems, baseReference, tour.start_date
+            supabase, auth, xeroContact, lineItems, baseReference, tour.start_date, invoiceSettings
           );
 
           console.log(`Split invoice created for ${pax.name}: ${createdInvoice.InvoiceNumber}`);
