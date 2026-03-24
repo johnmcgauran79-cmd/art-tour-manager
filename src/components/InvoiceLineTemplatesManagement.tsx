@@ -114,10 +114,37 @@ export const InvoiceLineTemplatesManagement = () => {
   const updateTemplate = useUpdateInvoiceLineTemplate();
   const deleteTemplate = useDeleteInvoiceLineTemplate();
   const { user } = useAuth();
+  const { data: settings } = useGeneralSettings();
+  const updateSetting = useUpdateGeneralSetting();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(defaultForm);
+
+  // Invoice settings state
+  const [dueDateDaysBefore, setDueDateDaysBefore] = useState(90);
+  const [dueDateFallback, setDueDateFallback] = useState(14);
+  const [loyaltyMinTours, setLoyaltyMinTours] = useState(1);
+
+  useEffect(() => {
+    if (settings) {
+      const get = (key: string, fb: number) => {
+        const s = settings.find(s => s.setting_key === key);
+        return s ? Number(s.setting_value) || fb : fb;
+      };
+      setDueDateDaysBefore(get('invoice_due_date_days_before', 90));
+      setDueDateFallback(get('invoice_due_date_fallback_days', 14));
+      setLoyaltyMinTours(get('loyalty_min_completed_tours', 1));
+    }
+  }, [settings]);
+
+  const handleSaveInvoiceSettings = async () => {
+    await Promise.all([
+      updateSetting.mutateAsync({ settingKey: 'invoice_due_date_days_before', value: dueDateDaysBefore }),
+      updateSetting.mutateAsync({ settingKey: 'invoice_due_date_fallback_days', value: dueDateFallback }),
+      updateSetting.mutateAsync({ settingKey: 'loyalty_min_completed_tours', value: loyaltyMinTours }),
+    ]);
+  };
 
   // Combine templates + system lines and sort by sort_order
   const combinedLines: CombinedLine[] = [
@@ -195,7 +222,56 @@ export const InvoiceLineTemplatesManagement = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Invoice Configuration Settings */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calculator className="h-4 w-4" />
+            Invoice Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Due Date (days before tour)</Label>
+              <Input
+                type="number"
+                value={dueDateDaysBefore}
+                onChange={(e) => setDueDateDaysBefore(parseInt(e.target.value) || 90)}
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Invoice due date is set this many days before tour start</p>
+            </div>
+            <div>
+              <Label>Fallback Due Date (days)</Label>
+              <Input
+                type="number"
+                value={dueDateFallback}
+                onChange={(e) => setDueDateFallback(parseInt(e.target.value) || 14)}
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground mt-1">If calculated date is past, use today + this many days</p>
+            </div>
+            <div>
+              <Label>Loyalty Discount Eligibility</Label>
+              <Input
+                type="number"
+                value={loyaltyMinTours}
+                onChange={(e) => setLoyaltyMinTours(parseInt(e.target.value) || 1)}
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Min completed tours to qualify as returning customer</p>
+            </div>
+          </div>
+          <Button size="sm" onClick={handleSaveInvoiceSettings} disabled={updateSetting.isPending}>
+            <Save className="h-4 w-4 mr-1" /> Save Invoice Settings
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Line Items Section */}
+      <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Invoice Line Items</h3>
