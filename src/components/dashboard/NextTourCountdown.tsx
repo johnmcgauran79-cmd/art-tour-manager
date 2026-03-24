@@ -10,16 +10,17 @@ export const NextTourCountdown = () => {
 
   const today = new Date();
   
-  // Find tours currently in progress
+  // Find tours currently in progress (exclude cancelled)
   const activeTours = tours.filter(tour => {
+    if (tour.status === 'cancelled') return false;
     const startDate = parseISO(tour.start_date);
     const endDate = parseISO(tour.end_date);
     return isWithinInterval(today, { start: startDate, end: endDate });
   });
 
-  // Find the next upcoming tour
+  // Find the next upcoming tour (exclude cancelled)
   const upcomingTours = tours
-    .filter(tour => isAfter(parseISO(tour.start_date), today))
+    .filter(tour => tour.status !== 'cancelled' && isAfter(parseISO(tour.start_date), today))
     .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime());
 
   const nextTour = upcomingTours[0];
