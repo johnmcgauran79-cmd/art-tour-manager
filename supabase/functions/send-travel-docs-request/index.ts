@@ -51,8 +51,23 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const resend = new Resend(resendApiKey);
 
-    const { data: headerSetting } = await supabase.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+    // Fetch configurable settings
+    const { data: gSettings } = await supabase
+      .from('general_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+    
+    const getS = (key: string, fb: string) => {
+      const row = (gSettings || []).find((r: any) => r.setting_key === key);
+      if (!row) return fb;
+      const val = row.setting_value;
+      return typeof val === 'string' ? val : String(val);
+    };
+    
+    const emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    const senderName = getS('default_sender_name', 'Australian Racing Tours');
+    const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
+    const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
 
     // Get the authorization header to identify the user
     const authHeader = req.headers.get("Authorization");
