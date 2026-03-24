@@ -203,7 +203,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         const waiverLink = `${baseUrl}/waiver/${tokenData.token}`;
         const displayName = passenger.preferred_name || passenger.first_name;
-        const waiverButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${waiverLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SIGN WAIVER FORM</a></div>`;
+        const waiverButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${waiverLink}" style="display: inline-block; background: ${btnBg}; color: ${btnText}; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">SIGN WAIVER FORM</a></div>`;
 
         const replacements: Record<string, string> = {
           '{{customer_first_name}}': passenger.first_name || '',

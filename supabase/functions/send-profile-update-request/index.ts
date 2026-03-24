@@ -240,7 +240,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         const updateLink = `${baseUrl}/update-profile/${tokenData.token}`;
         const displayName = passenger.preferred_name || passenger.first_name;
-        const profileUpdateButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE MY PROFILE</a></div>`;
+        const profileUpdateButtonHtml = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: ${btnBg}; color: ${btnText}; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE MY PROFILE</a></div>`;
 
         // Build current details HTML
         const currentDetailsHtml = `
