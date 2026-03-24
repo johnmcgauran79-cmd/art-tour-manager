@@ -95,6 +95,16 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
     updateSection.mutate({ id: section.id, is_visible: !section.is_visible });
   };
 
+  const handleMoveSection = (index: number, direction: 'up' | 'down') => {
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= sections.length) return;
+    const current = sections[index];
+    const target = sections[swapIndex];
+    // Swap sort_order values
+    updateSection.mutate({ id: current.id, sort_order: target.sort_order });
+    updateSection.mutate({ id: target.id, sort_order: current.sort_order });
+  };
+
   const confirmDelete = (id: string) => {
     setDeletingSectionId(id);
     setDeleteConfirmOpen(true);
