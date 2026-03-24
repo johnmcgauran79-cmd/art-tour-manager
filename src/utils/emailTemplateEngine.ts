@@ -613,6 +613,9 @@ export class EmailTemplateEngine {
         hotel_contact_phone: hb.hotels?.contact_phone,
         hotel_contact_email: hb.hotels?.contact_email,
         hotel_extra_night_price: hb.hotels?.extra_night_price,
+        // Per-hotel conditional flags
+        has_hotel_room_type: !!hb.room_type,
+        has_hotel_extra_night_price: hb.hotels?.extra_night_price != null && hb.hotels.extra_night_price > 0,
       })),
       
       // Activity bookings
