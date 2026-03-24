@@ -473,8 +473,8 @@ const handler = async (req: Request): Promise<Response> => {
                 
           <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px; color: #1565c0;">
-              <strong>Note:</strong> This link will expire in 7 days. Your passport details are securely stored and will be automatically deleted 30 days after your tour ends.
-            </p>
+               <strong>Note:</strong> This link will expire in ${Math.round(tokenExpiryHours / 24)} days. Your passport details are securely stored and will be automatically deleted 30 days after your tour ends.
+             </p>
                 </div>
                 
                 <p>If you have any questions, please don't hesitate to contact us.</p>
