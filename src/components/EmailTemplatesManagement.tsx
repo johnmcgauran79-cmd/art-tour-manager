@@ -416,7 +416,8 @@ export const EmailTemplatesManagement = () => {
 
   const quillFormats = [
     'header', 'bold', 'italic', 'underline', 'strike',
-    'color', 'background', 'list', 'bullet', 'align', 'link'
+    'color', 'background', 'list', 'bullet', 'align', 'link',
+    'divider', 'image'
   ];
 
   return (
