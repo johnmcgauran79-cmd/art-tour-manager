@@ -7,7 +7,8 @@ import { XeroIntegrationSettings } from "./XeroIntegrationSettings";
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
-
+import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
+import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 
 interface SystemSettingsProps {
