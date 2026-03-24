@@ -581,6 +581,50 @@ export const EmailTemplatesManagement = () => {
                       {isHtmlView ? 'WYSIWYG View' : 'HTML View'}
                     </Button>
                   </div>
+                  {/* Insert Content Blocks toolbar */}
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground font-medium">Insert:</span>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDivider}>
+                      <Minus className="h-3 w-3" />
+                      Divider
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertCalloutBox}>
+                      <AlertTriangle className="h-3 w-3" />
+                      Callout Box
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
+                      <ImagePlus className="h-3 w-3" />
+                      Image
+                    </Button>
+                  </div>
+                  {showImageInsert && (
+                    <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Image URL</Label>
+                        <Input
+                          placeholder="https://example.com/image.jpg"
+                          value={insertImageUrl}
+                          onChange={(e) => setInsertImageUrl(e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="w-32 space-y-1">
+                        <Label className="text-xs">Alt Text</Label>
+                        <Input
+                          placeholder="Description"
+                          value={insertImageAlt}
+                          onChange={(e) => setInsertImageAlt(e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <Button type="button" size="sm" className="h-7 text-xs" disabled={!insertImageUrl.trim()} onClick={insertImageBlock}>
+                        Insert
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowImageInsert(false)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                   {isHtmlView ? (
                     <Textarea
                       id="content_template"
