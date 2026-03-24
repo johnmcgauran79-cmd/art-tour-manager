@@ -7,7 +7,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId }: { 
       tourId: string; 
       recipientType?: string;
       subjectTemplate?: string; 
@@ -17,6 +17,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
       ccEmails?: string[];
       bccEmails?: string[];
       includeAdditionalPassengers?: boolean;
+      emailTemplateId?: string;
     }) => {
       let bookings;
       
