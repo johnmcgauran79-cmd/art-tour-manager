@@ -337,21 +337,23 @@ async function createXeroInvoice(
   xeroContact: any,
   lineItems: any[],
   reference: string,
-  tourStartDate?: string
+  tourStartDate?: string,
+  invoiceSettings?: { daysBefore: number; fallbackDays: number }
 ): Promise<any> {
+  const daysBefore = invoiceSettings?.daysBefore || 90;
+  const fallbackDays = invoiceSettings?.fallbackDays || 14;
+
   let dueDate: Date;
   if (tourStartDate) {
-    // Set due date to 90 days before tour start date
     dueDate = new Date(tourStartDate);
-    dueDate.setDate(dueDate.getDate() - 90);
-    // If the calculated due date is in the past, use today + 14 days as fallback
+    dueDate.setDate(dueDate.getDate() - daysBefore);
     if (dueDate <= new Date()) {
       dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 14);
+      dueDate.setDate(dueDate.getDate() + fallbackDays);
     }
   } else {
     dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14);
+    dueDate.setDate(dueDate.getDate() + fallbackDays);
   }
 
   const invoicePayload = {
@@ -483,6 +485,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Fetch configurable invoice settings
+    const { data: invoiceSettingsRows } = await supabase
+      .from('general_settings')
+      .select('setting_key, setting_value')
+      .in('setting_key', ['invoice_due_date_days_before', 'invoice_due_date_fallback_days', 'loyalty_min_completed_tours']);
+
+    const getSettingNum = (key: string, fallback: number) => {
+      const row = (invoiceSettingsRows || []).find((r: any) => r.setting_key === key);
+      return row ? Number(row.setting_value) || fallback : fallback;
+    };
+
+    const invoiceSettings = {
+      daysBefore: getSettingNum('invoice_due_date_days_before', 90),
+      fallbackDays: getSettingNum('invoice_due_date_fallback_days', 14),
+    };
+    const loyaltyMinTours = getSettingNum('loyalty_min_completed_tours', 1);
+
     // Check if repeat customer
     const { count: previousBookingCount } = await supabase
       .from('bookings')
@@ -491,7 +510,7 @@ Deno.serve(async (req) => {
       .neq('id', bookingId)
       .not('status', 'eq', 'cancelled');
 
-    const isRepeatCustomer = (previousBookingCount || 0) > 0;
+    const isRepeatCustomer = (previousBookingCount || 0) >= loyaltyMinTours;
     const contactName = `${customer.first_name} ${customer.last_name}`.trim();
     const baseReference = booking.invoice_reference || tour.xero_reference || bookingId.substring(0, 8);
 
@@ -571,7 +590,7 @@ Deno.serve(async (req) => {
               .eq('lead_passenger_id', pax.customerId)
               .neq('id', bookingId)
               .not('status', 'eq', 'cancelled');
-            paxIsRepeat = (count || 0) > 0;
+            paxIsRepeat = (count || 0) >= loyaltyMinTours;
           }
 
           const lineItems = await buildLineItems(
@@ -579,7 +598,7 @@ Deno.serve(async (req) => {
           );
 
           const createdInvoice = await createXeroInvoice(
-            supabase, auth, xeroContact, lineItems, baseReference, tour.start_date
+            supabase, auth, xeroContact, lineItems, baseReference, tour.start_date, invoiceSettings
           );
 
           console.log(`Split invoice created for ${pax.name}: ${createdInvoice.InvoiceNumber}`);
@@ -682,7 +701,7 @@ Deno.serve(async (req) => {
     );
 
     const createdInvoice = await createXeroInvoice(
-      supabase, auth, xeroContact, lineItems, baseReference, tour.start_date
+      supabase, auth, xeroContact, lineItems, baseReference, tour.start_date, invoiceSettings
     );
 
     console.log(`Xero invoice created: ${createdInvoice.InvoiceNumber} (ID: ${createdInvoice.InvoiceID})`);

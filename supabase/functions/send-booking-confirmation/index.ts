@@ -151,13 +151,23 @@ const handler = async (req: Request): Promise<Response> => {
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
 
-    // Fetch default email header image from settings
-    const { data: headerSetting } = await supabaseClient
+    // Fetch default email header image and sender settings
+    const { data: generalSettings } = await supabaseClient
       .from('general_settings')
-      .select('setting_value')
-      .eq('setting_key', 'email_header_image_url')
-      .single();
-    const defaultHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+      .select('setting_key, setting_value')
+      .in('setting_key', ['email_header_image_url', 'default_sender_name', 'default_from_email_client', 'token_expiry_hours']);
+
+    const getGSetting = (key: string, fb: string) => {
+      const row = (generalSettings || []).find((r: any) => r.setting_key === key);
+      if (!row) return fb;
+      const val = row.setting_value;
+      return typeof val === 'string' ? val : String(val);
+    };
+
+    const defaultHeaderImageUrl = getGSetting('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    const defaultSenderName = getGSetting('default_sender_name', 'Australian Racing Tours');
+    const defaultFromEmailClient = getGSetting('default_from_email_client', 'bookings@australianracingtours.com.au');
+    const tokenExpiryHours = Number(getGSetting('token_expiry_hours', '168')) || 168;
 
     // Fetch email template for booking confirmation
     const { data: template, error: templateError } = await supabaseClient
@@ -952,7 +962,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
-    const finalFromEmail = fromEmail || template?.from_email || "bookings@australianracingtours.com.au";
+    const finalFromEmail = fromEmail || template?.from_email || `${defaultSenderName} <${defaultFromEmailClient}>`;
     
     // Prepare recipients - merge provided CC emails with secondary contact if they exist
     const ccRecipients = [...(ccEmails || [])];
