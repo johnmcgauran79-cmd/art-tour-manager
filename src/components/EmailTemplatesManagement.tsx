@@ -30,6 +30,10 @@ const EMAIL_TEMPLATE_TYPES = [
   { value: 'welcome_email', label: 'Welcome Email' },
   { value: 'tour_update', label: 'Tour Update' },
   { value: 'travel_documents_request', label: 'Travel Documents Request' },
+  { value: 'pickup_request', label: 'Pickup Location Request' },
+  { value: 'waiver_request', label: 'Waiver Request' },
+  { value: 'profile_update_request', label: 'Profile Update Request' },
+  { value: 'custom_form_request', label: 'Custom Form Request' },
 ];
 
 const MERGE_FIELDS = {
