@@ -102,11 +102,17 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* Normalise all Quill-generated content */
-    .email-body p, .email-body li, .email-body div, .email-body span, .email-body td {
+    /* Normalise Quill-generated content — but exclude structured blocks */
+    .email-body p, .email-body li, .email-body div {
       font-family: Arial, Helvetica, sans-serif !important;
       font-size: 14px !important;
       line-height: 1.6 !important;
+      color: #55575d !important;
+    }
+    /* Default span/td — but NOT inside structured components */
+    .email-body > span, .email-body > div > span {
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-size: 14px !important;
       color: #55575d !important;
     }
     .email-body h1, .email-body h2, .email-body h3, .email-body h4, .email-body h5, .email-body h6 {
@@ -123,9 +129,13 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
     .email-body ul, .email-body ol { margin: 0 0 16px 0 !important; padding-left: 24px !important; }
     .email-body li { margin-bottom: 4px !important; }
     .email-body a { color: #1a6fb5 !important; }
+    /* CTA buttons — preserve their branded colours */
+    .email-body a[style*="border-radius"] { color: inherit !important; }
     .email-body hr { border: none !important; border-top: 2px solid #e5e7eb !important; margin: 24px 0 !important; }
-    /* Section header blocks - don't override their internal colours */
-    .email-body .email-section-header td { color: inherit !important; font-size: inherit !important; }
+    /* Structured table blocks — let inline styles win */
+    .email-body table[role="presentation"] td { color: inherit !important; font-size: inherit !important; line-height: inherit !important; }
+    .email-body table[role="presentation"] span { color: inherit !important; font-size: inherit !important; }
+    .email-body table[role="presentation"] strong { color: inherit !important; }
     .email-body .email-hotel-card td { font-size: inherit !important; color: inherit !important; }
     .email-body .email-hotel-card strong { color: inherit !important; }
   </style>
