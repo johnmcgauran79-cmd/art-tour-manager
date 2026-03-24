@@ -92,6 +92,7 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
 };
 
 // Branded email wrapper - wraps content in ART header with logo
+// Includes CSS normalisation for Quill-generated content
 const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string): string => {
   const headerTitle = title || 'Australian Racing Tours';
   const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
@@ -100,20 +101,63 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Normalise all Quill-generated content */
+    .email-body p, .email-body li, .email-body div, .email-body span, .email-body td {
+      font-family: Arial, Helvetica, sans-serif !important;
+      font-size: 14px !important;
+      line-height: 1.6 !important;
+      color: #55575d !important;
+    }
+    .email-body h1, .email-body h2, .email-body h3, .email-body h4, .email-body h5, .email-body h6 {
+      font-family: Arial, Helvetica, sans-serif !important;
+      color: #1a2332 !important;
+      line-height: 1.3 !important;
+    }
+    .email-body h1 { font-size: 22px !important; }
+    .email-body h2 { font-size: 18px !important; }
+    .email-body h3 { font-size: 16px !important; }
+    .email-body h4 { font-size: 15px !important; }
+    .email-body strong, .email-body b { color: #1a2332 !important; }
+    .email-body p { margin: 0 0 12px 0 !important; }
+    .email-body ul, .email-body ol { margin: 0 0 16px 0 !important; padding-left: 24px !important; }
+    .email-body li { margin-bottom: 4px !important; }
+    .email-body a { color: #1a6fb5 !important; }
+    .email-body hr { border: none !important; border-top: 2px solid #e5e7eb !important; margin: 24px 0 !important; }
+    /* Section header blocks - don't override their internal colours */
+    .email-body .email-section-header td { color: inherit !important; font-size: inherit !important; }
+    .email-body .email-hotel-card td { font-size: inherit !important; color: inherit !important; }
+    .email-body .email-hotel-card strong { color: inherit !important; }
+  </style>
 </head>
-<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; width: 100%; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-  <div style="background: #232628; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-    <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto; margin-bottom: 10px;" />
-  </div>
-  
-  <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-    ${content}
-  </div>
-  
-  <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
-    <p style="margin: 0;">Australian Racing Tours</p>
-    <p style="margin: 5px 0;">This email was sent regarding your tour booking.</p>
-  </div>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table cellpadding="0" cellspacing="0" style="width: 100%; max-width: 800px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #232628; padding: 32px 40px; text-align: center;">
+              <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
+            </td>
+          </tr>
+          <!-- Body -->
+          <tr>
+            <td class="email-body" style="padding: 40px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
+              ${content}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">Australian Racing Tours</p>
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 5px 0 0;">This email was sent regarding your tour booking.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 };
