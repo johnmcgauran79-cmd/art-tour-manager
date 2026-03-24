@@ -395,8 +395,23 @@ const handler = async (req: Request): Promise<Response> => {
             return ''; // Empty array - don't show section
           }
           return value.map(item => {
-            // Process inner variables with the array item's data
-            return content.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
+            let itemContent = content;
+            // Process inner conditionals FIRST (per-item flags like has_hotel_room_type)
+            itemContent = itemContent.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_m: string, ck: string, cc: string) => {
+              const condKey = stripZeroWidth(String(ck)).trim();
+              let condVal = getNestedValue(item, condKey);
+              if (condVal === undefined) condVal = getNestedValue(data, condKey);
+              return condVal ? cc : '';
+            });
+            // Process inner inverted conditionals
+            itemContent = itemContent.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_m: string, ck: string, cc: string) => {
+              const condKey = stripZeroWidth(String(ck)).trim();
+              let condVal = getNestedValue(item, condKey);
+              if (condVal === undefined) condVal = getNestedValue(data, condKey);
+              return !condVal ? cc : '';
+            });
+            // Then replace simple variables
+            itemContent = itemContent.replace(/\{\{([^#\/\^}][^}]*)\}\}/g, (innerMatch: string, innerKey: string) => {
               const trimmedKey = stripZeroWidth(innerKey).trim();
               // First try to get value from the array item
               let itemValue = getNestedValue(item, trimmedKey);
@@ -406,6 +421,7 @@ const handler = async (req: Request): Promise<Response> => {
               }
               return itemValue !== undefined && itemValue !== null ? String(itemValue) : '';
             });
+            return itemContent;
           }).join('');
         }
         
