@@ -19,6 +19,7 @@ interface BookingConfirmationRequest {
   bccEmails?: string[];
   includeAdditionalPassengers?: boolean;
   ruleId?: string;
+  emailTemplateId?: string;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
