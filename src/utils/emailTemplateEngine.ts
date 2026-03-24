@@ -305,6 +305,9 @@ export interface EmailMergeData {
   pickup_link?: string;
   itinerary_button?: string;
   itinerary_link?: string;
+  
+  // Additional info blocks - rendered server-side
+  additional_info_blocks?: string;
 }
 
 export interface EmailTemplate {
