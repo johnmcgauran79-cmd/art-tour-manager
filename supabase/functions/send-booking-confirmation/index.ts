@@ -19,6 +19,7 @@ interface BookingConfirmationRequest {
   bccEmails?: string[];
   includeAdditionalPassengers?: boolean;
   ruleId?: string;
+  emailTemplateId?: string;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
@@ -147,7 +148,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId }: BookingConfirmationRequest = await req.json();
     
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
@@ -893,7 +894,44 @@ const handler = async (req: Request): Promise<Response> => {
     const hasAdditionalInfoPlaceholder = /\{\{\s*additional_info_blocks\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     
     if (hasAdditionalInfoPlaceholder && booking.tour_id) {
-      console.log('Fetching additional info blocks for tour:', booking.tour_id, 'ruleId:', ruleId);
+      // Resolve the effective ruleId: use explicit ruleId if provided,
+      // otherwise auto-match from emailTemplateId by finding an automated email rule
+      // that uses this template (directly or via tour override)
+      let effectiveRuleId = ruleId;
+      
+      if (!effectiveRuleId && emailTemplateId) {
+        console.log('No ruleId provided, auto-resolving from emailTemplateId:', emailTemplateId);
+        
+        // First check for a tour-specific override that uses this template
+        const { data: tourOverride } = await supabaseClient
+          .from('tour_email_rule_overrides')
+          .select('rule_id')
+          .eq('tour_id', booking.tour_id)
+          .eq('email_template_id', emailTemplateId)
+          .maybeSingle();
+        
+        if (tourOverride?.rule_id) {
+          effectiveRuleId = tourOverride.rule_id;
+          console.log('Resolved ruleId from tour override:', effectiveRuleId);
+        } else {
+          // Fall back to global rule that uses this template
+          const { data: matchingRule } = await supabaseClient
+            .from('automated_email_rules')
+            .select('id')
+            .eq('email_template_id', emailTemplateId)
+            .eq('is_active', true)
+            .eq('trigger_type', 'days_before_tour')
+            .limit(1)
+            .maybeSingle();
+          
+          if (matchingRule?.id) {
+            effectiveRuleId = matchingRule.id;
+            console.log('Resolved ruleId from global rule:', effectiveRuleId);
+          }
+        }
+      }
+      
+      console.log('Fetching additional info blocks for tour:', booking.tour_id, 'effectiveRuleId:', effectiveRuleId);
       
       let infoQuery = supabaseClient
         .from('tour_additional_info_sections')
@@ -908,13 +946,12 @@ const handler = async (req: Request): Promise<Response> => {
         console.error('Error fetching additional info sections:', infoError);
       }
       
-      // Only render additional info blocks for automated emails with a specific ruleId
-      // Manual/single sends should not include these blocks since they have no rule context
+      // Only render additional info blocks when we have a resolved rule context
       let matchingSections: any[] = [];
-      if (ruleId) {
+      if (effectiveRuleId) {
         matchingSections = (infoSections || []).filter((s: any) => {
           const rules = s.include_in_email_rules || [];
-          return rules.includes(ruleId);
+          return rules.includes(effectiveRuleId);
         });
       }
       

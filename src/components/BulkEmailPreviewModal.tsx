@@ -199,7 +199,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         selectedBookingIds: Array.from(selectedBookingIds),
-        includeAdditionalPassengers
+        includeAdditionalPassengers,
+        emailTemplateId: selectedTemplateId || undefined
       });
       
       console.log(`[Bulk Email UI] Send complete:`, result);

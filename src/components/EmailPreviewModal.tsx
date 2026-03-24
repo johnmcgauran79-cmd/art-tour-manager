@@ -199,6 +199,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         fromEmail,
         ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
+        emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
       });
       onOpenChange(false);
     } catch (error) {
