@@ -15,8 +15,21 @@ import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useD
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
-import ReactQuill from 'react-quill';
+import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+
+// Register custom divider blot for HR insertion
+const BlockEmbed = Quill.import('blots/block/embed') as any;
+class DividerBlot extends BlockEmbed {
+  static blotName = 'divider';
+  static tagName = 'hr';
+  static create() {
+    const node = super.create();
+    node.setAttribute('style', 'border:none;border-top:2px solid #e5e7eb;margin:24px 0;');
+    return node;
+  }
+}
+Quill.register(DividerBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
