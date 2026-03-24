@@ -286,6 +286,8 @@ export interface EmailMergeData {
   no_accommodation?: boolean;
   has_group_name?: boolean;
   has_extra_requests?: boolean;
+  has_hotel_extra_night_price?: boolean;
+  has_hotel_room_type?: boolean;
   tour_requires_travel_docs?: boolean;
   tour_requires_pickup?: boolean;
   has_pickup_selection?: boolean;
@@ -662,6 +664,8 @@ export class EmailTemplateEngine {
       no_accommodation: !booking.accommodation_required,
       has_group_name: !!booking.group_name,
       has_extra_requests: !!booking.booking_notes,
+      has_hotel_extra_night_price: hotelBookings.some((hb: any) => hb.hotels?.extra_night_price != null && hb.hotels.extra_night_price > 0),
+      has_hotel_room_type: hotelBookings.some((hb: any) => !!hb.room_type),
       tour_requires_travel_docs: !!tour.travel_documents_required,
       tour_requires_pickup: !!tour.pickup_location_required,
       has_pickup_selection: !!booking.selected_pickup_option,
