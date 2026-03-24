@@ -390,7 +390,7 @@ const handler = async (req: Request): Promise<Response> => {
             </html>
           `;
         } else {
-          fromEmail = "Australian Racing Tours <bookings@australianracingtours.com.au>";
+          fromEmail = `${senderName} <${fromEmailAddr}>`;
           finalSubject = `Passport Details Required - ${tour.name}`;
 
           // Get this passenger's travel docs for fallback email
