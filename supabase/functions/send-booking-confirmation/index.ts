@@ -904,6 +904,9 @@ const handler = async (req: Request): Promise<Response> => {
         hotel_room_requests: hb.room_requests || '',
         hotel_confirmation_number: hb.confirmation_number || '',
         hotel_extra_night_price: hb.hotels?.extra_night_price || '',
+        // Per-hotel conditional flags for use inside {{#hotel_bookings}} loops
+        has_hotel_room_type: !!hb.room_type,
+        has_hotel_extra_night_price: hb.hotels?.extra_night_price != null && hb.hotels.extra_night_price > 0,
       })),
       
       // Activity bookings array
