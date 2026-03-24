@@ -241,6 +241,9 @@ const handler = async (req: Request): Promise<Response> => {
     for (const passenger of targetPassengers) {
       try {
         // Create access token for this specific passenger
+        const tokenExpiresAt = new Date();
+        tokenExpiresAt.setHours(tokenExpiresAt.getHours() + tokenExpiryHours);
+        
         const { data: tokenData, error: tokenError } = await supabase
           .from("customer_access_tokens")
           .insert({
@@ -248,6 +251,7 @@ const handler = async (req: Request): Promise<Response> => {
             booking_id: bookingId,
             purpose: 'travel_documents',
             created_by: user.id,
+            expires_at: tokenExpiresAt.toISOString(),
           })
           .select()
           .single();
