@@ -42,6 +42,7 @@ export const useTourAdditionalInfo = (tourId: string) => {
       content?: string;
       template_id?: string;
       sort_order?: number;
+      include_in_email_rules?: string[];
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
