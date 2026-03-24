@@ -619,18 +619,22 @@ export const EmailTemplatesManagement = () => {
                   {/* Insert Content Blocks toolbar */}
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-xs text-muted-foreground font-medium">Insert:</span>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDivider}>
-                      <Minus className="h-3 w-3" />
-                      Divider
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertCalloutBox}>
-                      <AlertTriangle className="h-3 w-3" />
-                      Callout Box
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
-                      <ImagePlus className="h-3 w-3" />
-                      Image
-                    </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDivider}>
+                       <Minus className="h-3 w-3" />
+                       Divider
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertSectionHeader()}>
+                       <Type className="h-3 w-3" />
+                       Section Header
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertCalloutBox}>
+                       <AlertTriangle className="h-3 w-3" />
+                       Callout Box
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
+                       <ImagePlus className="h-3 w-3" />
+                       Image
+                     </Button>
                   </div>
                   {showImageInsert && (
                     <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">
