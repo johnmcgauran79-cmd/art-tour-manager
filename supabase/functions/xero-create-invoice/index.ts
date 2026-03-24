@@ -337,21 +337,23 @@ async function createXeroInvoice(
   xeroContact: any,
   lineItems: any[],
   reference: string,
-  tourStartDate?: string
+  tourStartDate?: string,
+  invoiceSettings?: { daysBefore: number; fallbackDays: number }
 ): Promise<any> {
+  const daysBefore = invoiceSettings?.daysBefore || 90;
+  const fallbackDays = invoiceSettings?.fallbackDays || 14;
+
   let dueDate: Date;
   if (tourStartDate) {
-    // Set due date to 90 days before tour start date
     dueDate = new Date(tourStartDate);
-    dueDate.setDate(dueDate.getDate() - 90);
-    // If the calculated due date is in the past, use today + 14 days as fallback
+    dueDate.setDate(dueDate.getDate() - daysBefore);
     if (dueDate <= new Date()) {
       dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 14);
+      dueDate.setDate(dueDate.getDate() + fallbackDays);
     }
   } else {
     dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 14);
+    dueDate.setDate(dueDate.getDate() + fallbackDays);
   }
 
   const invoicePayload = {
