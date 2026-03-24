@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2 } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -184,6 +184,9 @@ export const EmailTemplatesManagement = () => {
 
   const [customButtonText, setCustomButtonText] = useState("");
   const [customButtonUrl, setCustomButtonUrl] = useState("");
+  const [insertImageUrl, setInsertImageUrl] = useState("");
+  const [insertImageAlt, setInsertImageAlt] = useState("");
+  const [showImageInsert, setShowImageInsert] = useState(false);
 
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
@@ -339,6 +342,37 @@ export const EmailTemplatesManagement = () => {
     
     setCustomButtonText("");
     setCustomButtonUrl("");
+  };
+
+  const insertHtmlBlock = (html: string) => {
+    if (isHtmlView) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n' + html
+      }));
+    } else if (quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const insertIndex = range ? range.index : quill.getLength() - 1;
+      quill.clipboard.dangerouslyPasteHTML(insertIndex, html);
+    }
+  };
+
+  const insertDivider = () => {
+    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td style="border-top:2px solid #e5e7eb;"></td></tr></table>');
+  };
+
+  const insertCalloutBox = () => {
+    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 6px 6px 0;"><p style="color:#92400e;font-weight:600;margin:0 0 4px;font-size:14px;">⚠️ Important</p><p style="color:#78350f;margin:0;font-size:14px;">Your important message here.</p></td></tr></table>');
+  };
+
+  const insertImageBlock = () => {
+    if (!insertImageUrl.trim()) return;
+    const alt = insertImageAlt.trim() || 'Image';
+    insertHtmlBlock(`<p style="text-align:center;margin:16px 0;"><img src="${insertImageUrl.trim()}" alt="${alt}" style="max-width:100%;height:auto;border-radius:6px;" /></p>`);
+    setInsertImageUrl("");
+    setInsertImageAlt("");
+    setShowImageInsert(false);
   };
 
   const quillModules = {
@@ -547,6 +581,50 @@ export const EmailTemplatesManagement = () => {
                       {isHtmlView ? 'WYSIWYG View' : 'HTML View'}
                     </Button>
                   </div>
+                  {/* Insert Content Blocks toolbar */}
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground font-medium">Insert:</span>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDivider}>
+                      <Minus className="h-3 w-3" />
+                      Divider
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertCalloutBox}>
+                      <AlertTriangle className="h-3 w-3" />
+                      Callout Box
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
+                      <ImagePlus className="h-3 w-3" />
+                      Image
+                    </Button>
+                  </div>
+                  {showImageInsert && (
+                    <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">
+                      <div className="flex-1 space-y-1">
+                        <Label className="text-xs">Image URL</Label>
+                        <Input
+                          placeholder="https://example.com/image.jpg"
+                          value={insertImageUrl}
+                          onChange={(e) => setInsertImageUrl(e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <div className="w-32 space-y-1">
+                        <Label className="text-xs">Alt Text</Label>
+                        <Input
+                          placeholder="Description"
+                          value={insertImageAlt}
+                          onChange={(e) => setInsertImageAlt(e.target.value)}
+                          className="h-7 text-xs"
+                        />
+                      </div>
+                      <Button type="button" size="sm" className="h-7 text-xs" disabled={!insertImageUrl.trim()} onClick={insertImageBlock}>
+                        Insert
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowImageInsert(false)}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                   {isHtmlView ? (
                     <Textarea
                       id="content_template"
