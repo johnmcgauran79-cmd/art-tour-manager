@@ -279,7 +279,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       try {
         await resend.emails.send({
-          from: "Australian Racing Tours <bookings@australianracingtours.com.au>",
+          from: `${senderName} <${fromEmailAddr}>`,
           to: [customerEmail],
           subject: `Passport Details Updated - ${booking.tours?.name || 'Your Booking'}`,
           html: `
