@@ -908,15 +908,15 @@ const handler = async (req: Request): Promise<Response> => {
         console.error('Error fetching additional info sections:', infoError);
       }
       
-      // Filter sections by ruleId if provided, otherwise show all tagged sections
-      let matchingSections = (infoSections || []).filter((s: any) => {
-        const rules = s.include_in_email_rules || [];
-        if (ruleId) {
+      // Only render additional info blocks for automated emails with a specific ruleId
+      // Manual/single sends should not include these blocks since they have no rule context
+      let matchingSections: any[] = [];
+      if (ruleId) {
+        matchingSections = (infoSections || []).filter((s: any) => {
+          const rules = s.include_in_email_rules || [];
           return rules.includes(ruleId);
-        }
-        // For manual sends without a ruleId, include sections tagged for any rule
-        return rules.length > 0;
-      });
+        });
+      }
       
       // Limit to 3 blocks max
       matchingSections = matchingSections.slice(0, 3);
