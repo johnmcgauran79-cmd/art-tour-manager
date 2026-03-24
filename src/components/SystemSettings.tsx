@@ -150,6 +150,15 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
 
       </div>
 
+      {/* Theme & Appearance */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Branding & Appearance</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ThemeAppearanceSettings />
+          <EmailHeaderSettingsCard />
+        </div>
+      </div>
+
       {/* Data Import Section - Hidden for now, kept for potential reuse
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Data Import</h2>
