@@ -286,6 +286,8 @@ export interface EmailMergeData {
   no_accommodation?: boolean;
   has_group_name?: boolean;
   has_extra_requests?: boolean;
+  has_hotel_extra_night_price?: boolean;
+  has_hotel_room_type?: boolean;
   tour_requires_travel_docs?: boolean;
   tour_requires_pickup?: boolean;
   has_pickup_selection?: boolean;
