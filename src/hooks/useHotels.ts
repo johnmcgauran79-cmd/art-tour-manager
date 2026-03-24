@@ -42,7 +42,7 @@ export const useHotels = (tourId: string) => {
         .from('hotels')
         .select('*')
         .eq('tour_id', tourId)
-        .order('created_at', { ascending: true });
+        .order('default_check_in', { ascending: true, nullsFirst: false });
       
       if (hotelsError) {
         console.error('Error fetching hotels:', hotelsError);

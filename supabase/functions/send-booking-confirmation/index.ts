@@ -841,7 +841,11 @@ const handler = async (req: Request): Promise<Response> => {
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
-      hotel_bookings: (booking.hotel_bookings || []).map((hb: any) => ({
+      hotel_bookings: (booking.hotel_bookings || []).sort((a: any, b: any) => {
+        const dateA = a.check_in_date || '';
+        const dateB = b.check_in_date || '';
+        return dateA.localeCompare(dateB);
+      }).map((hb: any) => ({
         hotel_name: hb.hotels?.name || '',
         hotel_address: hb.hotels?.address || '',
         hotel_contact_name: hb.hotels?.contact_name || '',

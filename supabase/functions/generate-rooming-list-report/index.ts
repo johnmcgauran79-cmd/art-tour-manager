@@ -22,7 +22,7 @@ async function generateRoomingListData(supabase: any, tourId: string) {
     .eq('tour_id', tourId)
     .eq('hotel_bookings.allocated', true)
     .neq('hotel_bookings.bookings.status', 'cancelled')
-    .order('name');
+    .order('default_check_in', { ascending: true, nullsFirst: false });
 
   if (!hotels || hotels.length === 0) {
     return { hotels: [], count: 0 };
