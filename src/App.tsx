@@ -55,10 +55,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const ThemeApplier = () => {
+  useThemeProvider();
+  return null;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ThemeApplier />
         <TooltipProvider>
           <Toaster />
           <Sonner />
