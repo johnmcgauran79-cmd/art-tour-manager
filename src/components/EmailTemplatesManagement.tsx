@@ -435,13 +435,16 @@ export const EmailTemplatesManagement = () => {
                     <PermissionButton resource="email_template" action="create" size="sm" variant="outline" onClick={() => handleDuplicate(template)}>
                       <Copy className="h-3 w-3" />
                     </PermissionButton>
+                    <Button size="sm" variant="outline" onClick={() => { setPreviewTemplate(template); setIsPreviewOpen(true); }}>
+                      <Eye className="h-3 w-3" />
+                    </Button>
                     <PermissionButton 
                       resource="email_template" 
                       action="delete"
                       size="sm" 
                       variant="outline" 
                       onClick={() => handleDelete(template)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-3 w-3" />
                     </PermissionButton>
