@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -125,7 +125,8 @@ const MERGE_FIELDS = {
     '{{travel_docs_button}}', '{{travel_docs_link}}',
     '{{itinerary_button}}', '{{itinerary_link}}',
     '--- Tour Content ---',
-    '{{additional_info_blocks}}'
+    '{{additional_info_blocks}}',
+    '{{hotel_details}}'
   ],
   conditions: [
     '--- Passenger Conditions ---',
@@ -393,6 +394,12 @@ export const EmailTemplatesManagement = () => {
     insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 6px 6px 0;"><p style="color:#92400e;font-weight:600;margin:0 0 4px;font-size:14px;">⚠️ Important</p><p style="color:#78350f;margin:0;font-size:14px;">Your important message here.</p></td></tr></table>');
   };
 
+  const insertSectionHeader = (headerText?: string) => {
+    const text = headerText || 'SECTION TITLE';
+    const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 16px 0;"><tr><td style="background-color:#1a2332;padding:10px 20px;border-radius:6px;"><strong style="color:#d4a017;font-size:13px;letter-spacing:1px;text-transform:uppercase;">${text}</strong></td></tr></table>`;
+    insertHtmlBlock(html);
+  };
+
   const insertImageBlock = () => {
     if (!insertImageUrl.trim()) return;
     const alt = insertImageAlt.trim() || 'Image';
@@ -612,18 +619,22 @@ export const EmailTemplatesManagement = () => {
                   {/* Insert Content Blocks toolbar */}
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-xs text-muted-foreground font-medium">Insert:</span>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDivider}>
-                      <Minus className="h-3 w-3" />
-                      Divider
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertCalloutBox}>
-                      <AlertTriangle className="h-3 w-3" />
-                      Callout Box
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
-                      <ImagePlus className="h-3 w-3" />
-                      Image
-                    </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDivider}>
+                       <Minus className="h-3 w-3" />
+                       Divider
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertSectionHeader()}>
+                       <Type className="h-3 w-3" />
+                       Section Header
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertCalloutBox}>
+                       <AlertTriangle className="h-3 w-3" />
+                       Callout Box
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
+                       <ImagePlus className="h-3 w-3" />
+                       Image
+                     </Button>
                   </div>
                   {showImageInsert && (
                     <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">

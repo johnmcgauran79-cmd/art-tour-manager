@@ -341,10 +341,25 @@ export class EmailTemplateEngine {
         return value.map((item, index) => {
           console.log(`Processing item ${index}:`, Object.keys(item));
           let itemContent = content;
-          // Replace all variables within this iteration
+          // Process inner conditionals FIRST (per-item flags like has_hotel_room_type)
+          itemContent = itemContent.replace(/\{\{#([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_m: string, ck: string, cc: string) => {
+            const condKey = ck.trim();
+            let condVal = this.getNestedValue(item, condKey);
+            if (condVal === undefined) condVal = this.getNestedValue(data, condKey);
+            return condVal ? cc : '';
+          });
+          // Process inner inverted conditionals
+          itemContent = itemContent.replace(/\{\{\^([^}]+)\}\}([\s\S]*?)\{\{\/\1\}\}/g, (_m: string, ck: string, cc: string) => {
+            const condKey = ck.trim();
+            let condVal = this.getNestedValue(item, condKey);
+            if (condVal === undefined) condVal = this.getNestedValue(data, condKey);
+            return !condVal ? cc : '';
+          });
+          // Then replace simple variables
           itemContent = itemContent.replace(/\{\{([^}#^/]+)\}\}/g, (innerMatch, innerKey) => {
             const trimmedKey = innerKey.trim();
-            const itemValue = this.getNestedValue(item, trimmedKey);
+            let itemValue = this.getNestedValue(item, trimmedKey);
+            if (itemValue === undefined) itemValue = this.getNestedValue(data, trimmedKey);
             console.log(`  Replacing {{${trimmedKey}}} with:`, itemValue);
 
             // Keep empty values blank in loops
@@ -613,6 +628,9 @@ export class EmailTemplateEngine {
         hotel_contact_phone: hb.hotels?.contact_phone,
         hotel_contact_email: hb.hotels?.contact_email,
         hotel_extra_night_price: hb.hotels?.extra_night_price,
+        // Per-hotel conditional flags
+        has_hotel_room_type: !!hb.room_type,
+        has_hotel_extra_night_price: hb.hotels?.extra_night_price != null && hb.hotels.extra_night_price > 0,
       })),
       
       // Activity bookings
