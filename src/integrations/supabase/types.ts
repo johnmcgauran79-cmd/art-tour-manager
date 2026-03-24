@@ -2116,6 +2116,7 @@ export type Database = {
           created_by: string
           icon_name: string
           id: string
+          include_in_email_rules: string[]
           is_visible: boolean
           name: string
           sort_order: number
@@ -2129,6 +2130,7 @@ export type Database = {
           created_by: string
           icon_name?: string
           id?: string
+          include_in_email_rules?: string[]
           is_visible?: boolean
           name: string
           sort_order?: number
@@ -2142,6 +2144,7 @@ export type Database = {
           created_by?: string
           icon_name?: string
           id?: string
+          include_in_email_rules?: string[]
           is_visible?: boolean
           name?: string
           sort_order?: number
