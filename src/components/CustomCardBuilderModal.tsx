@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,50 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, ArrowUp, ArrowDown, Eye, Save, FolderOpen, Type, LayoutGrid, Minus, AlertTriangle, Space, GripVertical } from "lucide-react";
+import { Plus, Trash2, ArrowUp, ArrowDown, Eye, Save, FolderOpen, Type, LayoutGrid, Minus, AlertTriangle, Space, GripVertical, Bold, Italic } from "lucide-react";
+
+// Inline formatting helper: wraps selected text or full value in a tag
+function wrapWithTag(
+  inputEl: HTMLInputElement | HTMLTextAreaElement | null,
+  value: string,
+  tag: 'strong' | 'em'
+): string {
+  if (!inputEl) return value;
+  const start = inputEl.selectionStart ?? 0;
+  const end = inputEl.selectionEnd ?? value.length;
+  const selected = start !== end ? value.slice(start, end) : value;
+  const wrapped = `<${tag}>${selected}</${tag}>`;
+  if (start !== end) {
+    return value.slice(0, start) + wrapped + value.slice(end);
+  }
+  return wrapped;
+}
+
+// Small formatting toolbar for text inputs
+const FormatToolbar = ({ inputRef, value, onChange }: {
+  inputRef: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  value: string;
+  onChange: (val: string) => void;
+}) => (
+  <div className="flex items-center gap-0.5 mb-1">
+    <Button
+      type="button" variant="ghost" size="sm"
+      className="h-5 w-5 p-0"
+      title="Bold selection"
+      onClick={() => onChange(wrapWithTag(inputRef.current, value, 'strong'))}
+    >
+      <Bold className="h-3 w-3" />
+    </Button>
+    <Button
+      type="button" variant="ghost" size="sm"
+      className="h-5 w-5 p-0"
+      title="Italic selection"
+      onClick={() => onChange(wrapWithTag(inputRef.current, value, 'em'))}
+    >
+      <Italic className="h-3 w-3" />
+    </Button>
+  </div>
+);
 
 type RowType = 'free_text' | 'data_grid' | 'divider' | 'highlight' | 'spacer';
 
