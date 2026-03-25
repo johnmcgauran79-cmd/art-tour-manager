@@ -117,20 +117,20 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
     }
     .email-body h1, .email-body h2, .email-body h3, .email-body h4, .email-body h5, .email-body h6 {
       font-family: Arial, Helvetica, sans-serif !important;
-      color: #1a2332 !important;
       line-height: 1.3 !important;
+    }
+    .email-body h1:not([style]), .email-body h2:not([style]), .email-body h3:not([style]), .email-body h4:not([style]), .email-body h5:not([style]), .email-body h6:not([style]) {
+      color: #1a2332 !important;
     }
     .email-body h1 { font-size: 22px !important; }
     .email-body h2 { font-size: 18px !important; }
     .email-body h3 { font-size: 16px !important; }
     .email-body h4 { font-size: 15px !important; }
-    .email-body strong, .email-body b { color: #1a2332 !important; }
+    .email-body strong:not([style]), .email-body b:not([style]) { color: #1a2332 !important; }
     .email-body p { margin: 0 0 12px 0 !important; }
     .email-body ul, .email-body ol { margin: 0 0 16px 0 !important; padding-left: 24px !important; }
     .email-body li { margin-bottom: 4px !important; }
-    .email-body a { color: #1a6fb5 !important; }
-    /* CTA buttons — let their inline branded colours win */
-    .email-body a[style*="border-radius"] { color: unset !important; }
+    .email-body a:not([style]) { color: #1a6fb5 !important; }
     .email-body hr { border: none !important; border-top: 2px solid #e5e7eb !important; margin: 24px 0 !important; }
     /* Structured table blocks — let inline styles win */
     .email-body table[role="presentation"] td { color: inherit !important; font-size: inherit !important; line-height: inherit !important; }
