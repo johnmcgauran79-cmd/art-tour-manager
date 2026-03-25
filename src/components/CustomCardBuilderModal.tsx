@@ -378,10 +378,10 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                     </div>
 
                     {row.type === 'free_text' && (
-                      <Textarea
+                      <FormattedTextRow
                         value={row.text || ''}
-                        onChange={(e) => updateRow(row.id, { text: e.target.value })}
-                        className="min-h-[60px] text-xs"
+                        onChange={(val) => updateRow(row.id, { text: val })}
+                        multiline
                         placeholder="Enter text content. You can use merge fields like {{customer_first_name}}"
                       />
                     )}
@@ -390,20 +390,27 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-[10px]">Label</Label>
-                          <Input value={row.label || ''} onChange={(e) => updateRow(row.id, { label: e.target.value })} className="h-7 text-xs" placeholder="e.g. Check In" />
+                          <FormattedTextRow
+                            value={row.label || ''}
+                            onChange={(val) => updateRow(row.id, { label: val })}
+                            placeholder="e.g. Check In"
+                          />
                         </div>
                         <div>
                           <Label className="text-[10px]">Value (text or merge field)</Label>
-                          <Input value={row.value || ''} onChange={(e) => updateRow(row.id, { value: e.target.value })} className="h-7 text-xs" placeholder="e.g. {{tour_start_date}}" />
+                          <FormattedTextRow
+                            value={row.value || ''}
+                            onChange={(val) => updateRow(row.id, { value: val })}
+                            placeholder="e.g. {{tour_start_date}}"
+                          />
                         </div>
                       </div>
                     )}
 
                     {row.type === 'highlight' && (
-                      <Input
+                      <FormattedTextRow
                         value={row.highlightText || ''}
-                        onChange={(e) => updateRow(row.id, { highlightText: e.target.value })}
-                        className="h-7 text-xs"
+                        onChange={(val) => updateRow(row.id, { highlightText: val })}
                         placeholder="Important notice text..."
                       />
                     )}
