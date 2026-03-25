@@ -105,6 +105,38 @@ function saveCards(cards: SavedCardTemplate[]) {
   localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify(cards));
 }
 
+// Reusable row with bold/italic formatting buttons
+const FormattedTextRow = ({ value, onChange, placeholder, multiline }: {
+  value: string;
+  onChange: (val: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+}) => {
+  const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+  return (
+    <div>
+      <FormatToolbar inputRef={ref} value={value} onChange={onChange} />
+      {multiline ? (
+        <Textarea
+          ref={ref as React.RefObject<HTMLTextAreaElement>}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-h-[60px] text-xs"
+          placeholder={placeholder}
+        />
+      ) : (
+        <Input
+          ref={ref as React.RefObject<HTMLInputElement>}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-7 text-xs"
+          placeholder={placeholder}
+        />
+      )}
+    </div>
+  );
+};
+
 export interface CustomCardInsertData {
   html: string;
   title: string;
