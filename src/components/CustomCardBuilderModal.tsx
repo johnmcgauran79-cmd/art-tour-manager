@@ -35,12 +35,12 @@ interface SavedCardTemplate {
 }
 
 const ACCENT_COLORS = [
-  { value: 'grey', label: 'Grey (Default)', bg: '#f8f9fa', text: '#1a2332', border: '#e5e7eb' },
-  { value: 'gold', label: 'Gold Accent', bg: '#232628', text: '#F5C518', border: '#232628' },
-  { value: 'navy', label: 'Navy', bg: '#1a2332', text: '#ffffff', border: '#1a2332' },
-  { value: 'blue', label: 'Blue', bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
-  { value: 'green', label: 'Green', bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
-  { value: 'amber', label: 'Amber', bg: '#fffbeb', text: '#92400e', border: '#fde68a' },
+  { value: 'grey', label: 'Grey (Default)', bg: '#f8f9fa', text: '#1a2332', border: '#e5e7eb', dot: '#9ca3af' },
+  { value: 'gold', label: 'Gold Accent', bg: '#232628', text: '#F5C518', border: '#232628', dot: '#F5C518' },
+  { value: 'navy', label: 'Navy', bg: '#1a2332', text: '#ffffff', border: '#1a2332', dot: '#1a2332' },
+  { value: 'blue', label: 'Blue', bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe', dot: '#3b82f6' },
+  { value: 'green', label: 'Green', bg: '#f0fdf4', text: '#166534', border: '#bbf7d0', dot: '#22c55e' },
+  { value: 'amber', label: 'Amber', bg: '#fffbeb', text: '#92400e', border: '#fde68a', dot: '#f59e0b' },
 ];
 
 const COMMON_EMOJIS = ['📋', '📌', '✈️', '🏨', '👤', '📞', '📧', '💰', '🎫', '📄', '⚡', '🔔', '🗓️', '📍', '🎯', '✅', '⭐', '🚗', '🍽️', '💼'];
@@ -244,7 +244,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                         {ACCENT_COLORS.map(c => (
                           <SelectItem key={c.value} value={c.value}>
                             <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: c.bg }} />
+                              <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: c.dot }} />
                               {c.label}
                             </div>
                           </SelectItem>
