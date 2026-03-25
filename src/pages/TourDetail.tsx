@@ -498,7 +498,9 @@ export default function TourDetail() {
         </TabsContent>
 
 
-        <TabsContent value="forms" className="space-y-4 mt-6">
+        <TabsContent value="forms" className="space-y-6 mt-6">
+          <TourWaiverStatusSection tourId={tour.id} tourName={tour.name} />
+          <Separator />
           <TourCustomFormsTab tourId={tour.id} tourName={tour.name} />
         </TabsContent>
 
