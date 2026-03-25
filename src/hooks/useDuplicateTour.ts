@@ -257,32 +257,51 @@ async function duplicateItineraries(originalTourId: string, newTourId: string) {
         version: itin.version,
         is_current: itin.is_current,
         created_by: user.id,
-        // Don't copy snapshot - it references old tour dates
       })
       .select('id')
       .single();
 
     if (itinErr) throw itinErr;
+    if (!newItin) continue;
 
-    // Copy itinerary entries (days)
-    if (newItin) {
+    // Copy itinerary days
+    const { data: days, error: daysErr } = await supabase
+      .from('tour_itinerary_days')
+      .select('*')
+      .eq('itinerary_id', itin.id)
+      .order('day_number');
+
+    if (daysErr) throw daysErr;
+    if (!days?.length) continue;
+
+    for (const day of days) {
+      const { data: newDay, error: newDayErr } = await supabase
+        .from('tour_itinerary_days')
+        .insert({
+          itinerary_id: newItin.id,
+          day_number: day.day_number,
+          activity_date: shiftDateOneYear(day.activity_date) || day.activity_date,
+        })
+        .select('id')
+        .single();
+
+      if (newDayErr) throw newDayErr;
+      if (!newDay) continue;
+
+      // Copy entries for this day
       const { data: entries, error: entriesErr } = await supabase
         .from('tour_itinerary_entries')
         .select('*')
-        .eq('itinerary_id', itin.id)
-        .order('day_number');
+        .eq('day_id', day.id)
+        .order('sort_order');
 
       if (entriesErr) throw entriesErr;
       if (entries?.length) {
         const newEntries = entries.map(e => ({
-          itinerary_id: newItin.id,
-          day_number: e.day_number,
-          date: shiftDateOneYear(e.date),
-          title: e.title,
-          description: e.description,
-          accommodation: e.accommodation,
-          meals_included: e.meals_included,
-          transport: e.transport,
+          day_id: newDay.id,
+          subject: e.subject,
+          content: e.content,
+          time_slot: e.time_slot,
           sort_order: e.sort_order,
         }));
         await supabase.from('tour_itinerary_entries').insert(newEntries);
