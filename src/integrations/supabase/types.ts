@@ -1538,7 +1538,6 @@ export type Database = {
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
-          contract_url: string | null
           created_at: string | null
           default_check_in: string | null
           default_check_out: string | null
@@ -1566,7 +1565,6 @@ export type Database = {
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
-          contract_url?: string | null
           created_at?: string | null
           default_check_in?: string | null
           default_check_out?: string | null
@@ -1594,7 +1592,6 @@ export type Database = {
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
-          contract_url?: string | null
           created_at?: string | null
           default_check_in?: string | null
           default_check_out?: string | null

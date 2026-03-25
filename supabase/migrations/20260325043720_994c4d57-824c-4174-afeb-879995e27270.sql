@@ -1,0 +1,1 @@
+ALTER TABLE public.hotels DROP COLUMN IF EXISTS contract_url;
