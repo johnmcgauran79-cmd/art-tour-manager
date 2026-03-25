@@ -126,7 +126,10 @@ const MERGE_FIELDS = {
     '{{itinerary_button}}', '{{itinerary_link}}',
     '--- Tour Content ---',
     '{{additional_info_blocks}}',
-    '{{hotel_details}}'
+    '{{hotel_details}}',
+    '--- Smart Cards ---',
+    '{{tour_details_card}}',
+    '{{passenger_info_card}}'
   ],
   conditions: [
     '--- Passenger Conditions ---',
