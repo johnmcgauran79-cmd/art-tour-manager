@@ -48,6 +48,8 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // Fetch all bookings with passengers and their waiver status
   const { data: waiverData = [], isLoading } = useQuery({
