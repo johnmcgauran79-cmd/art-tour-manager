@@ -232,13 +232,19 @@ export const EmailTemplatesManagement = () => {
 
   // Convert card placeholder blots back to real email HTML before saving
   const resolveCardPlaceholders = (html: string): string => {
-    return html.replace(/<div[^>]*data-card-html="([^"]*)"[^>]*>[\s\S]*?<\/div>/g, (_match, encoded) => {
+    // Use DOMParser to reliably extract card HTML from nested blot structures
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(`<body>${html}</body>`, 'text/html');
+    const cardNodes = doc.querySelectorAll('[data-card-html]');
+    cardNodes.forEach(node => {
       try {
-        return decodeURIComponent(encoded);
-      } catch {
-        return _match;
-      }
+        const realHtml = decodeURIComponent(node.getAttribute('data-card-html') || '');
+        const replacement = doc.createRange().createContextualFragment(realHtml);
+        node.parentNode?.replaceChild(replacement, node);
+      } catch { /* keep original if decode fails */ }
     });
+    // Return inner HTML of body, stripping wrapper
+    return doc.body.innerHTML;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
