@@ -35,6 +35,7 @@ Quill.register(DividerBlot);
 class EmailCardBlot extends BlockEmbed {
   static blotName = 'email-card';
   static tagName = 'div';
+  static className = 'ql-email-card';
 
   static create(value: { title: string; emoji: string; accentColor: string; html: string }) {
     const node = super.create();
@@ -42,6 +43,7 @@ class EmailCardBlot extends BlockEmbed {
     node.setAttribute('data-card-html', encodeURIComponent(value.html));
     node.setAttribute('data-card-title', value.title);
     node.setAttribute('data-card-emoji', value.emoji);
+    node.setAttribute('data-card-accent', value.accentColor || 'grey');
 
     const colors: Record<string, { bg: string; text: string; border: string }> = {
       grey: { bg: '#f8f9fa', text: '#1a2332', border: '#e5e7eb' },
@@ -79,7 +81,7 @@ class EmailCardBlot extends BlockEmbed {
     return {
       title: node.getAttribute('data-card-title') || 'Card',
       emoji: node.getAttribute('data-card-emoji') || '📋',
-      accentColor: 'grey',
+      accentColor: node.getAttribute('data-card-accent') || 'grey',
       html: decodeURIComponent(node.getAttribute('data-card-html') || ''),
     };
   }
