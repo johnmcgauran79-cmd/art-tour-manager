@@ -333,9 +333,13 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
               onChange={(e) => handleInputChange("operations_notes", e.target.value)}
               rows={3}
             />
-          </div>
+          <Separator />
 
-          <div className="flex justify-between">
+          {hotel && (
+            <HotelAttachmentsSection hotelId={hotel.id} />
+          )}
+
+          <Separator />
             <Button 
               type="button" 
               variant="destructive" 
