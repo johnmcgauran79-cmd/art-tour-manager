@@ -205,6 +205,7 @@ export const EmailTemplatesManagement = () => {
   const [insertImageUrl, setInsertImageUrl] = useState("");
   const [insertImageAlt, setInsertImageAlt] = useState("");
   const [showImageInsert, setShowImageInsert] = useState(false);
+  const [showCardBuilder, setShowCardBuilder] = useState(false);
 
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
