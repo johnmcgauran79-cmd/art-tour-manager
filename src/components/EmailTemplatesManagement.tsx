@@ -106,10 +106,7 @@ const EMAIL_TEMPLATE_TYPES = [
   { value: 'custom_form_request', label: 'Custom Form Request' },
 ];
 
-const MERGE_FIELDS = {
-  customer: [
-    '{{customer_first_name}}', '{{customer_last_name}}', '{{customer_preferred_name}}', '{{customer_email}}', '{{customer_phone}}',
-    '{{customer_city}}', '{{customer_state}}', '{{customer_country}}', '{{customer_spouse_name}}',
+import { MERGE_FIELDS } from "@/utils/mergeFields";
     '{{customer_dietary_requirements}}', '{{customer_medical_conditions}}', '{{customer_accessibility_needs}}',
     '{{customer_emergency_contact_name}}', '{{customer_emergency_contact_phone}}', '{{customer_emergency_contact_relationship}}', '{{customer_emergency_contact_email}}',
     '{{customer_notes}}'
