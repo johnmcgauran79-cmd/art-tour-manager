@@ -144,7 +144,12 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
   }, [rows, headerTitle, headerEmoji, accent]);
 
   const handleInsert = () => {
-    onInsert(generateHtml());
+    onInsert({
+      html: generateHtml(),
+      title: headerTitle,
+      emoji: headerEmoji,
+      accentColor,
+    });
     onOpenChange(false);
     resetBuilder();
   };
