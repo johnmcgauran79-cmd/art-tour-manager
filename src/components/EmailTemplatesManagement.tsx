@@ -364,17 +364,14 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertHtmlBlock = (html: string) => {
-    if (isHtmlView) {
-      setFormData(prev => ({
-        ...prev,
-        content_template: prev.content_template + '\n' + html
-      }));
-    } else if (quillRef.current) {
-      const quill = quillRef.current.getEditor();
-      const range = quill.getSelection();
-      const insertIndex = range ? range.index : quill.getLength() - 1;
-      quill.clipboard.dangerouslyPasteHTML(insertIndex, html);
-    }
+    // Always append to raw HTML content to preserve complex table structures
+    // Quill's dangerouslyPasteHTML strips tables/inline styles from email-safe HTML
+    setFormData(prev => ({
+      ...prev,
+      content_template: prev.content_template + '\n' + html
+    }));
+    // If in WYSIWYG mode, switch to HTML view briefly to force Quill to re-render
+    // Actually, just update formData — the Quill editor syncs from formData via its value prop
   };
 
   const insertDivider = () => {
