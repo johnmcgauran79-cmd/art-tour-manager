@@ -1207,8 +1207,10 @@ const handler = async (req: Request): Promise<Response> => {
       emailHtml = processTemplate(contentToProcess, mergeData);
       console.log('Processed content template');
 
-      // Convert line breaks to HTML breaks
-      emailHtml = emailHtml.replace(/\n/g, '<br>');
+      // Only convert raw plain-text line breaks; doing this on HTML content breaks table-based email layouts.
+      if (!/<\/?[a-z][\s\S]*>/i.test(contentToProcess)) {
+        emailHtml = emailHtml.replace(/\n/g, '<br>');
+      }
 
       // Final safety pass: if the client-side render stripped the placeholder out of href,
       // patch the update-profile anchor/button into a working state.

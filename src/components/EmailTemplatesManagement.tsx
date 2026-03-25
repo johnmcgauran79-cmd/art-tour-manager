@@ -17,80 +17,16 @@ import { useUserEmails } from "@/hooks/useUserEmails";
 import type { EmailTemplate } from "@/utils/emailTemplateEngine";
 import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-
-// Register custom divider blot for HR insertion
-const BlockEmbed = Quill.import('blots/block/embed') as any;
-class DividerBlot extends BlockEmbed {
-  static blotName = 'divider';
-  static tagName = 'hr';
-  static create() {
-    const node = super.create();
-    node.setAttribute('style', 'border:none;border-top:2px solid #e5e7eb;margin:24px 0;');
-    return node;
-  }
-}
-Quill.register(DividerBlot);
-
-// Register custom card placeholder blot for WYSIWYG display
-class EmailCardBlot extends BlockEmbed {
-  static blotName = 'email-card';
-  static tagName = 'div';
-  static className = 'ql-email-card';
-
-  static create(value: { title: string; emoji: string; accentColor: string; html: string }) {
-    const node = super.create();
-    node.setAttribute('contenteditable', 'false');
-    node.setAttribute('data-card-html', encodeURIComponent(value.html));
-    node.setAttribute('data-card-title', value.title);
-    node.setAttribute('data-card-emoji', value.emoji);
-    node.setAttribute('data-card-accent', value.accentColor || 'grey');
-
-    const colors: Record<string, { bg: string; text: string; border: string }> = {
-      grey: { bg: '#f8f9fa', text: '#1a2332', border: '#e5e7eb' },
-      gold: { bg: '#232628', text: '#F5C518', border: '#232628' },
-      navy: { bg: '#1a2332', text: '#ffffff', border: '#1a2332' },
-      blue: { bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
-      green: { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
-      amber: { bg: '#fffbeb', text: '#92400e', border: '#fde68a' },
-    };
-    const c = colors[value.accentColor] || colors.grey;
-
-    node.setAttribute('style', `
-      border: 2px dashed ${c.border};
-      border-radius: 8px;
-      margin: 12px 0;
-      overflow: hidden;
-      cursor: default;
-      user-select: none;
-    `.replace(/\s+/g, ' ').trim());
-
-    node.innerHTML = `
-      <div style="background:${c.bg};padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${c.border};">
-        <span style="font-size:16px;">${value.emoji}</span>
-        <strong style="color:${c.text};font-size:13px;letter-spacing:0.5px;">${value.title}</strong>
-        <span style="margin-left:auto;background:${c.border};color:${c.text};font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;opacity:0.8;">CUSTOM CARD</span>
-      </div>
-      <div style="padding:10px 14px;font-size:12px;color:#6b7280;text-align:center;">
-        This card will render fully in email preview &amp; sent emails
-      </div>
-    `;
-    return node;
-  }
-
-  static value(node: HTMLElement) {
-    return {
-      title: node.getAttribute('data-card-title') || 'Card',
-      emoji: node.getAttribute('data-card-emoji') || '📋',
-      accentColor: node.getAttribute('data-card-accent') || 'grey',
-      html: decodeURIComponent(node.getAttribute('data-card-html') || ''),
-    };
-  }
-}
-Quill.register(EmailCardBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
 import { CustomCardBuilderModal, type CustomCardInsertData } from "@/components/CustomCardBuilderModal";
+import {
+  insertEmailHtmlBlockEmbed,
+  protectComplexEmailBlocksForEditor,
+  registerEmailEditorBlots,
+  resolveComplexEmailBlocksFromEditor,
+} from "@/lib/emailEditorBlocks";
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
@@ -110,6 +46,8 @@ const EMAIL_TEMPLATE_TYPES = [
 
 import { MERGE_FIELDS } from "@/utils/mergeFields";
 
+registerEmailEditorBlots(Quill);
+
 export const EmailTemplatesManagement = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<EmailTemplate | null>(null);
@@ -117,14 +55,6 @@ export const EmailTemplatesManagement = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isHtmlView, setIsHtmlView] = useState(false);
-  
-  // Detect if content has complex HTML that Quill would mangle
-  const hasComplexHtml = (html: string) => {
-    return /<table\s[^>]*role\s*=\s*["']presentation["']/i.test(html) ||
-           /class\s*=\s*["']email-hotel-card["']/i.test(html) ||
-           /class\s*=\s*["']email-section-header["']/i.test(html) ||
-           /data-card-html/i.test(html);
-  };
   const quillRef = useRef<ReactQuill>(null);
   const { hasEditAccess } = usePermissions();
   
@@ -196,10 +126,6 @@ export const EmailTemplatesManagement = () => {
       is_default: template.is_default,
       header_image_url: (template as any).header_image_url || "",
     });
-    // Auto-switch to HTML view if template has complex HTML that Quill would destroy
-    if (hasComplexHtml(content)) {
-      setIsHtmlView(true);
-    }
     setIsCreateModalOpen(true);
   };
 
@@ -216,10 +142,6 @@ export const EmailTemplatesManagement = () => {
       is_default: false,
       header_image_url: (template as any).header_image_url || "",
     });
-    // Auto-switch to HTML view if template has complex HTML
-    if (hasComplexHtml(content)) {
-      setIsHtmlView(true);
-    }
     setIsCreateModalOpen(true);
   };
 
@@ -250,28 +172,9 @@ export const EmailTemplatesManagement = () => {
     }
   };
 
-  // Convert card placeholder blots back to real email HTML before saving
+  // Convert protected WYSIWYG placeholders back to real email HTML before saving
   const resolveCardPlaceholders = (html: string): string => {
-    // Use DOMParser to reliably extract card HTML from nested blot structures
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(`<body>${html}</body>`, 'text/html');
-    // Match by data attribute OR by the ql-email-card class
-    const cardNodes = doc.querySelectorAll('[data-card-html], .ql-email-card[data-card-html]');
-    if (cardNodes.length === 0) return html; // fast path: no cards to resolve
-    cardNodes.forEach(node => {
-      try {
-        const encoded = node.getAttribute('data-card-html') || '';
-        if (!encoded) return;
-        const realHtml = decodeURIComponent(encoded);
-        if (!realHtml.trim()) return;
-        const replacement = doc.createRange().createContextualFragment(realHtml);
-        node.parentNode?.replaceChild(replacement, node);
-      } catch (e) {
-        console.error('Failed to resolve card placeholder:', e);
-      }
-    });
-    // Return inner HTML of body, stripping wrapper
-    return doc.body.innerHTML;
+    return resolveComplexEmailBlocksFromEditor(html);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -345,43 +248,23 @@ export const EmailTemplatesManagement = () => {
     setCustomButtonUrl("");
   };
 
-  const insertHtmlBlock = (html: string, forceHtmlView = false) => {
-    // Always append to raw HTML content to preserve complex table structures
-    // Quill's dangerouslyPasteHTML strips tables/inline styles from email-safe HTML
-    setFormData(prev => ({
-      ...prev,
-      content_template: prev.content_template + '\n' + html
-    }));
-    // Switch to HTML view so complex blocks (custom cards, section headers) are visible
-    if (forceHtmlView && !isHtmlView) {
-      setIsHtmlView(true);
+  const insertHtmlBlock = (html: string, label = 'Protected Email Block') => {
+    if (isHtmlView || !quillRef.current) {
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n' + html
+      }));
+      return;
     }
+
+    insertEmailHtmlBlockEmbed(quillRef.current.getEditor(), {
+      html,
+      label,
+    });
   };
 
   const insertCustomCard = (data: CustomCardInsertData) => {
-    if (isHtmlView) {
-      // In HTML view, insert raw table HTML directly
-      setFormData(prev => ({
-        ...prev,
-        content_template: prev.content_template + '\n' + data.html
-      }));
-    } else if (quillRef.current) {
-      // In WYSIWYG mode, insert a visual placeholder blot
-      // The blot stores the real card HTML in data-card-html and shows a badge
-      // On save, resolveCardPlaceholders extracts the real HTML
-      const quill = quillRef.current.getEditor();
-      const range = quill.getSelection();
-      const insertIndex = range ? range.index : quill.getLength() - 1;
-      quill.insertText(insertIndex, '\n');
-      quill.insertEmbed(insertIndex + 1, 'email-card', {
-        title: data.title,
-        emoji: data.emoji,
-        accentColor: data.accentColor,
-        html: data.html,
-      });
-      quill.insertText(insertIndex + 2, '\n');
-      quill.setSelection(insertIndex + 3, 0);
-    }
+    insertHtmlBlock(data.html, `Custom Card • ${data.title}`);
   };
 
   const insertDivider = () => {
@@ -403,13 +286,13 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertCalloutBox = () => {
-    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 6px 6px 0;"><p style="color:#92400e;font-weight:600;margin:0 0 4px;font-size:14px;">⚠️ Important</p><p style="color:#78350f;margin:0;font-size:14px;">Your important message here.</p></td></tr></table>');
+    insertHtmlBlock('<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;"><tr><td style="background-color:#fef3c7;border-left:4px solid #f59e0b;padding:16px 20px;border-radius:0 6px 6px 0;"><p style="color:#92400e;font-weight:600;margin:0 0 4px;font-size:14px;">⚠️ Important</p><p style="color:#78350f;margin:0;font-size:14px;">Your important message here.</p></td></tr></table>', 'Callout Box');
   };
 
   const insertSectionHeader = (headerText?: string) => {
     const text = headerText || 'SECTION TITLE';
     const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 16px 0;"><tr><td style="background-color:#232628;padding:12px 20px;border-radius:6px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">📌</td><td style="vertical-align:middle;"><strong style="color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">${text}</strong></td></tr></table></td></tr></table>`;
-    insertHtmlBlock(html);
+    insertHtmlBlock(html, `Section Header • ${text}`);
   };
 
   const insertInfoCard = () => {
@@ -644,15 +527,7 @@ export const EmailTemplatesManagement = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        // Warn before switching from HTML to WYSIWYG if complex HTML exists
-                        if (isHtmlView && hasComplexHtml(formData.content_template)) {
-                          if (!confirm('This template contains custom cards, section headers, or data tables. Switching to WYSIWYG view may damage their formatting. Continue?')) {
-                            return;
-                          }
-                        }
-                        setIsHtmlView(!isHtmlView);
-                      }}
+                       onClick={() => setIsHtmlView(!isHtmlView)}
                       className="flex items-center gap-2"
                     >
                       <Code2 className="h-4 w-4" />
@@ -739,8 +614,11 @@ export const EmailTemplatesManagement = () => {
                     <div className="flex-1 min-h-[400px] border border-input rounded-md overflow-hidden">
                       <ReactQuill
                         ref={quillRef}
-                        value={formData.content_template}
-                        onChange={(value) => setFormData(prev => ({ ...prev, content_template: value }))}
+                        value={protectComplexEmailBlocksForEditor(formData.content_template)}
+                        onChange={(value) => {
+                          const resolvedValue = resolveComplexEmailBlocksFromEditor(value);
+                          setFormData(prev => prev.content_template === resolvedValue ? prev : { ...prev, content_template: resolvedValue });
+                        }}
                         modules={quillModules}
                         formats={quillFormats}
                         placeholder="Dear {{customer_first_name}}, ..."

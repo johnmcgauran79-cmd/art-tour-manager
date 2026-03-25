@@ -11,8 +11,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X } from "lucide-react";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
-import ReactQuill from "react-quill";
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import {
+  protectComplexEmailBlocksForEditor,
+  registerEmailEditorBlots,
+  resolveComplexEmailBlocksFromEditor,
+} from "@/lib/emailEditorBlocks";
+
+registerEmailEditorBlots(Quill);
 
 interface EmailPreviewRecipient {
   name?: string | null;
@@ -340,13 +347,15 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
               <div className="mt-2 border rounded-md">
                 <ReactQuill
                   theme="snow"
-                  value={editedContent}
+                  value={protectComplexEmailBlocksForEditor(editedContent)}
                   onChange={(value) => {
-                    setEditedContent(value);
+                    const resolvedValue = resolveComplexEmailBlocksFromEditor(value);
+                    if (resolvedValue === editedContent) return;
+                    setEditedContent(resolvedValue);
                     setUserHasEdited(true);
                     // When user edits, update the original template as well
                     // This means user edits will be sent as-is (already personalized)
-                    setOriginalContentTemplate(value);
+                    setOriginalContentTemplate(resolvedValue);
                   }}
                   modules={quillModules}
                   className="bg-white"
