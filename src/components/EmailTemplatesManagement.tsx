@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type, LayoutGrid, List, CreditCard, Space } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Eye, HelpCircle, Code2, Link2, Upload, Image, X, Loader2, Minus, AlertTriangle, ImagePlus, Type, LayoutGrid, List, CreditCard, Space, Layers } from "lucide-react";
 import { useEmailTemplates, useCreateEmailTemplate, useUpdateEmailTemplate, useDeleteEmailTemplate } from "@/hooks/useEmailTemplates";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -33,6 +33,7 @@ Quill.register(DividerBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
+import { CustomCardBuilderModal } from "@/components/CustomCardBuilderModal";
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
@@ -204,6 +205,7 @@ export const EmailTemplatesManagement = () => {
   const [insertImageUrl, setInsertImageUrl] = useState("");
   const [insertImageAlt, setInsertImageAlt] = useState("");
   const [showImageInsert, setShowImageInsert] = useState(false);
+  const [showCardBuilder, setShowCardBuilder] = useState(false);
 
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
@@ -677,6 +679,10 @@ export const EmailTemplatesManagement = () => {
                        <Space className="h-3 w-3" />
                        Spacer
                      </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-primary/30 text-primary" onClick={() => setShowCardBuilder(true)}>
+                       <Layers className="h-3 w-3" />
+                       Custom Card
+                     </Button>
                   </div>
                   {showImageInsert && (
                     <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">
@@ -931,6 +937,13 @@ export const EmailTemplatesManagement = () => {
         template={previewTemplate}
         subjectTemplate={isCreateModalOpen ? formData.subject_template : undefined}
         contentTemplate={isCreateModalOpen ? formData.content_template : undefined}
+      />
+
+      {/* Custom Card Builder */}
+      <CustomCardBuilderModal
+        open={showCardBuilder}
+        onOpenChange={setShowCardBuilder}
+        onInsert={insertHtmlBlock}
       />
     </div>
   );
