@@ -183,16 +183,21 @@ export const EmailTemplatesManagement = () => {
 
   const handleEdit = (template: EmailTemplate) => {
     setEditingTemplate(template);
+    const content = preprocessContentForEditor(template.content_template);
     setFormData({
       name: template.name,
       type: template.type,
       subject_template: template.subject_template,
-      content_template: preprocessContentForEditor(template.content_template),
+      content_template: content,
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: template.is_default,
       header_image_url: (template as any).header_image_url || "",
     });
+    // Auto-switch to HTML view if template has complex HTML that Quill would destroy
+    if (hasComplexHtml(content)) {
+      setIsHtmlView(true);
+    }
     setIsCreateModalOpen(true);
   };
 
