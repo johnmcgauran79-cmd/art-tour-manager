@@ -115,6 +115,14 @@ export const EmailTemplatesManagement = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isHtmlView, setIsHtmlView] = useState(false);
+  
+  // Detect if content has complex HTML that Quill would mangle
+  const hasComplexHtml = (html: string) => {
+    return /<table\s[^>]*role\s*=\s*["']presentation["']/i.test(html) ||
+           /class\s*=\s*["']email-hotel-card["']/i.test(html) ||
+           /class\s*=\s*["']email-section-header["']/i.test(html) ||
+           /data-card-html/i.test(html);
+  };
   const quillRef = useRef<ReactQuill>(null);
   const { hasEditAccess } = usePermissions();
   
@@ -175,31 +183,41 @@ export const EmailTemplatesManagement = () => {
 
   const handleEdit = (template: EmailTemplate) => {
     setEditingTemplate(template);
+    const content = preprocessContentForEditor(template.content_template);
     setFormData({
       name: template.name,
       type: template.type,
       subject_template: template.subject_template,
-      content_template: preprocessContentForEditor(template.content_template),
+      content_template: content,
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: template.is_default,
       header_image_url: (template as any).header_image_url || "",
     });
+    // Auto-switch to HTML view if template has complex HTML that Quill would destroy
+    if (hasComplexHtml(content)) {
+      setIsHtmlView(true);
+    }
     setIsCreateModalOpen(true);
   };
 
   const handleDuplicate = (template: EmailTemplate) => {
     setEditingTemplate(null);
+    const content = preprocessContentForEditor(template.content_template);
     setFormData({
       name: `${template.name} (Copy)`,
       type: template.type,
       subject_template: template.subject_template,
-      content_template: preprocessContentForEditor(template.content_template),
+      content_template: content,
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: false,
       header_image_url: (template as any).header_image_url || "",
     });
+    // Auto-switch to HTML view if template has complex HTML
+    if (hasComplexHtml(content)) {
+      setIsHtmlView(true);
+    }
     setIsCreateModalOpen(true);
   };
 
@@ -332,26 +350,14 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertCustomCard = (data: CustomCardInsertData) => {
-    if (isHtmlView) {
-      // In HTML view, insert raw HTML directly
-      setFormData(prev => ({
-        ...prev,
-        content_template: prev.content_template + '\n' + data.html
-      }));
-    } else if (quillRef.current) {
-      // In WYSIWYG mode, insert a visual placeholder blot
-      const quill = quillRef.current.getEditor();
-      const range = quill.getSelection();
-      const insertIndex = range ? range.index : quill.getLength() - 1;
-      quill.insertText(insertIndex, '\n');
-      quill.insertEmbed(insertIndex + 1, 'email-card', {
-        title: data.title,
-        emoji: data.emoji,
-        accentColor: data.accentColor,
-        html: data.html,
-      });
-      quill.insertText(insertIndex + 2, '\n');
-      quill.setSelection(insertIndex + 3, 0);
+    // Always insert card as raw HTML to prevent Quill from mangling table structures
+    setFormData(prev => ({
+      ...prev,
+      content_template: prev.content_template + '\n' + data.html
+    }));
+    // Switch to HTML view - Quill WYSIWYG destroys complex table-based card HTML
+    if (!isHtmlView) {
+      setIsHtmlView(true);
     }
   };
 
@@ -615,7 +621,15 @@ export const EmailTemplatesManagement = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsHtmlView(!isHtmlView)}
+                      onClick={() => {
+                        // Warn before switching from HTML to WYSIWYG if complex HTML exists
+                        if (isHtmlView && hasComplexHtml(formData.content_template)) {
+                          if (!confirm('This template contains custom cards, section headers, or data tables. Switching to WYSIWYG view may damage their formatting. Continue?')) {
+                            return;
+                          }
+                        }
+                        setIsHtmlView(!isHtmlView);
+                      }}
                       className="flex items-center gap-2"
                     >
                       <Code2 className="h-4 w-4" />
