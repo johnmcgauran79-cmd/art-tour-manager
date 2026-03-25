@@ -3,6 +3,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+const shiftDateOneYear = (dateStr: string | null): string | null => {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()).toISOString().split('T')[0];
+};
+
 export const useDuplicateTour = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -20,21 +26,16 @@ export const useDuplicateTour = () => {
 
       if (tourError) throw tourError;
 
-      // Calculate new dates (add 1 year)
-      const startDate = new Date(originalTour.start_date);
-      const endDate = new Date(originalTour.end_date);
-      const newStartDate = new Date(startDate.getFullYear() + 1, startDate.getMonth(), startDate.getDate());
-      const newEndDate = new Date(endDate.getFullYear() + 1, endDate.getMonth(), endDate.getDate());
+      const newStartDate = shiftDateOneYear(originalTour.start_date)!;
+      const newEndDate = shiftDateOneYear(originalTour.end_date)!;
+      const tourName = newName || `${originalTour.name} ${new Date(newStartDate).getFullYear()}`;
 
-      // Use provided name or default naming convention
-      const tourName = newName || `${originalTour.name} ${newStartDate.getFullYear()}`;
-
-      // Create new tour with updated dates
+      // Create new tour
       const newTourData = {
         name: tourName,
         tour_host: 'TBC',
-        start_date: newStartDate.toISOString().split('T')[0],
-        end_date: newEndDate.toISOString().split('T')[0],
+        start_date: newStartDate,
+        end_date: newEndDate,
         days: originalTour.days,
         nights: originalTour.nights,
         location: originalTour.location,
@@ -49,20 +50,13 @@ export const useDuplicateTour = () => {
         deposit_required: originalTour.deposit_required,
         instalment_amount: originalTour.instalment_amount,
         instalment_required: originalTour.instalment_required,
-        instalment_date: originalTour.instalment_date ? 
-          new Date(new Date(originalTour.instalment_date).getFullYear() + 1, 
-                   new Date(originalTour.instalment_date).getMonth(), 
-                   new Date(originalTour.instalment_date).getDate()).toISOString().split('T')[0] : null,
-        final_payment_date: originalTour.final_payment_date ? 
-          new Date(new Date(originalTour.final_payment_date).getFullYear() + 1, 
-                   new Date(originalTour.final_payment_date).getMonth(), 
-                   new Date(originalTour.final_payment_date).getDate()).toISOString().split('T')[0] : null,
+        instalment_date: shiftDateOneYear(originalTour.instalment_date),
+        final_payment_date: shiftDateOneYear(originalTour.final_payment_date),
         capacity: originalTour.capacity,
         minimum_passengers_required: originalTour.minimum_passengers_required,
         travel_documents_required: originalTour.travel_documents_required,
         tour_type: originalTour.tour_type,
         url_reference: null,
-        // Copy operations notes
         ops_notes: originalTour.ops_notes,
         ops_accomm_notes: originalTour.ops_accomm_notes,
         ops_races_notes: originalTour.ops_races_notes,
@@ -70,7 +64,6 @@ export const useDuplicateTour = () => {
         ops_dinner_notes: originalTour.ops_dinner_notes,
         ops_activities_notes: originalTour.ops_activities_notes,
         ops_other_notes: originalTour.ops_other_notes,
-        // Reset host-specific fields
         tour_hosts_notes: null,
         host_flights_status: 'not_booked',
         outbound_flight_number: null,
@@ -87,106 +80,14 @@ export const useDuplicateTour = () => {
 
       if (createError) throw createError;
 
-      // Fetch and duplicate hotels
-      const { data: originalHotels, error: hotelsError } = await supabase
-        .from('hotels')
-        .select('*')
-        .eq('tour_id', originalTourId);
-
-      if (hotelsError) throw hotelsError;
-
-      if (originalHotels && originalHotels.length > 0) {
-        const newHotels = originalHotels.map(hotel => ({
-          tour_id: newTour.id,
-          name: hotel.name,
-          address: hotel.address,
-          contact_name: hotel.contact_name,
-          contact_phone: hotel.contact_phone,
-          contact_email: hotel.contact_email,
-          rooms_reserved: hotel.rooms_reserved,
-          booking_status: 'pending' as const,
-          default_room_type: hotel.default_room_type,
-          default_check_in: hotel.default_check_in ? 
-            new Date(new Date(hotel.default_check_in).getFullYear() + 1, 
-                     new Date(hotel.default_check_in).getMonth(), 
-                     new Date(hotel.default_check_in).getDate()).toISOString().split('T')[0] : null,
-          default_check_out: hotel.default_check_out ? 
-            new Date(new Date(hotel.default_check_out).getFullYear() + 1, 
-                     new Date(hotel.default_check_out).getMonth(), 
-                     new Date(hotel.default_check_out).getDate()).toISOString().split('T')[0] : null,
-          extra_night_price: hotel.extra_night_price,
-          operations_notes: hotel.operations_notes,
-          upgrade_options: hotel.upgrade_options,
-        }));
-
-        const { error: hotelsInsertError } = await supabase
-          .from('hotels')
-          .insert(newHotels);
-
-        if (hotelsInsertError) throw hotelsInsertError;
-      }
-
-      // Fetch and duplicate activities
-      const { data: originalActivities, error: activitiesError } = await supabase
-        .from('activities')
-        .select('*, activity_journeys(*)')
-        .eq('tour_id', originalTourId);
-
-      if (activitiesError) throw activitiesError;
-
-      if (originalActivities && originalActivities.length > 0) {
-        for (const activity of originalActivities) {
-          const { data: newActivity, error: actInsertErr } = await supabase
-            .from('activities')
-            .insert({
-              tour_id: newTour.id,
-              name: activity.name,
-              location: activity.location,
-              activity_date: activity.activity_date ? 
-                new Date(new Date(activity.activity_date).getFullYear() + 1, 
-                         new Date(activity.activity_date).getMonth(), 
-                         new Date(activity.activity_date).getDate()).toISOString().split('T')[0] : null,
-              start_time: activity.start_time,
-              end_time: activity.end_time,
-              depart_for_activity: activity.depart_for_activity,
-              spots_available: activity.spots_available,
-              activity_status: 'pending' as const,
-              transport_status: 'pending' as const,
-              transport_mode: activity.transport_mode,
-              contact_name: activity.contact_name,
-              contact_phone: activity.contact_phone,
-              contact_email: activity.contact_email,
-              transport_company: activity.transport_company,
-              transport_contact_name: activity.transport_contact_name,
-              transport_phone: activity.transport_phone,
-              transport_email: activity.transport_email,
-              driver_name: activity.driver_name,
-              driver_phone: activity.driver_phone,
-              hospitality_inclusions: activity.hospitality_inclusions,
-              notes: activity.notes,
-              operations_notes: activity.operations_notes,
-              transport_notes: activity.transport_notes,
-            })
-            .select('id')
-            .single();
-
-          if (actInsertErr) throw actInsertErr;
-
-          // Duplicate journeys
-          const journeys = (activity as any).activity_journeys || [];
-          if (newActivity && journeys.length > 0) {
-            const newJourneys = journeys.map((j: any) => ({
-              activity_id: newActivity.id,
-              journey_number: j.journey_number,
-              pickup_time: j.pickup_time,
-              pickup_location: j.pickup_location,
-              destination: j.destination,
-              sort_order: j.sort_order,
-            }));
-            await supabase.from('activity_journeys').insert(newJourneys);
-          }
-        }
-      }
+      // Run all sub-duplications in parallel where possible
+      await Promise.all([
+        duplicateHotels(originalTourId, newTour.id),
+        duplicateActivities(originalTourId, newTour.id),
+        duplicateAdditionalInfo(originalTourId, newTour.id),
+        duplicateItineraries(originalTourId, newTour.id),
+        duplicateCustomForms(originalTourId, newTour.id),
+      ]);
 
       return newTour;
     },
@@ -194,9 +95,12 @@ export const useDuplicateTour = () => {
       queryClient.invalidateQueries({ queryKey: ['tours'] });
       queryClient.invalidateQueries({ queryKey: ['hotels'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
+      queryClient.invalidateQueries({ queryKey: ['tour-additional-info'] });
+      queryClient.invalidateQueries({ queryKey: ['itineraries'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-forms'] });
       toast({
         title: "Tour Duplicated Successfully",
-        description: `"${newTour.name}" has been created with updated dates and copied hotels/activities.`,
+        description: `"${newTour.name}" has been created with updated dates and copied hotels, activities, itineraries, forms & additional info.`,
       });
     },
     onError: (error) => {
@@ -209,3 +113,231 @@ export const useDuplicateTour = () => {
     },
   });
 };
+
+async function duplicateHotels(originalTourId: string, newTourId: string) {
+  const { data: hotels, error } = await supabase
+    .from('hotels')
+    .select('*')
+    .eq('tour_id', originalTourId);
+  if (error) throw error;
+  if (!hotels?.length) return;
+
+  const newHotels = hotels.map(hotel => ({
+    tour_id: newTourId,
+    name: hotel.name,
+    address: hotel.address,
+    contact_name: hotel.contact_name,
+    contact_phone: hotel.contact_phone,
+    contact_email: hotel.contact_email,
+    rooms_reserved: 0, // Clear - starts fresh each year
+    booking_status: 'pending' as const,
+    default_room_type: hotel.default_room_type,
+    default_check_in: shiftDateOneYear(hotel.default_check_in),
+    default_check_out: shiftDateOneYear(hotel.default_check_out),
+    extra_night_price: hotel.extra_night_price,
+    operations_notes: hotel.operations_notes,
+    upgrade_options: hotel.upgrade_options,
+    cancellation_policy: hotel.cancellation_policy,
+    contract_url: hotel.contract_url,
+    // Copy cutoff dates (+1 year)
+    initial_rooms_cutoff_date: shiftDateOneYear(hotel.initial_rooms_cutoff_date),
+    final_rooms_cutoff_date: shiftDateOneYear(hotel.final_rooms_cutoff_date),
+  }));
+
+  const { error: insertError } = await supabase.from('hotels').insert(newHotels);
+  if (insertError) throw insertError;
+}
+
+async function duplicateActivities(originalTourId: string, newTourId: string) {
+  const { data: activities, error } = await supabase
+    .from('activities')
+    .select('*, activity_journeys(*)')
+    .eq('tour_id', originalTourId);
+  if (error) throw error;
+  if (!activities?.length) return;
+
+  for (const activity of activities) {
+    const { data: newActivity, error: insertErr } = await supabase
+      .from('activities')
+      .insert({
+        tour_id: newTourId,
+        name: activity.name,
+        location: activity.location,
+        activity_date: shiftDateOneYear(activity.activity_date),
+        start_time: activity.start_time,
+        end_time: activity.end_time,
+        depart_for_activity: activity.depart_for_activity,
+        spots_available: activity.spots_available,
+        activity_status: 'pending' as const,
+        transport_status: 'pending' as const,
+        transport_mode: activity.transport_mode,
+        contact_name: activity.contact_name,
+        contact_phone: activity.contact_phone,
+        contact_email: activity.contact_email,
+        transport_company: activity.transport_company,
+        transport_contact_name: activity.transport_contact_name,
+        transport_phone: activity.transport_phone,
+        transport_email: activity.transport_email,
+        driver_name: null, // Clear - changes yearly
+        driver_phone: null, // Clear - changes yearly
+        hospitality_inclusions: activity.hospitality_inclusions,
+        notes: activity.notes,
+        operations_notes: activity.operations_notes,
+        transport_notes: activity.transport_notes,
+        dress_code: activity.dress_code, // Copy across
+      })
+      .select('id')
+      .single();
+
+    if (insertErr) throw insertErr;
+
+    // Duplicate journeys
+    const journeys = (activity as any).activity_journeys || [];
+    if (newActivity && journeys.length > 0) {
+      const newJourneys = journeys.map((j: any) => ({
+        activity_id: newActivity.id,
+        journey_number: j.journey_number,
+        pickup_time: j.pickup_time,
+        pickup_location: j.pickup_location,
+        destination: j.destination,
+        sort_order: j.sort_order,
+      }));
+      await supabase.from('activity_journeys').insert(newJourneys);
+    }
+  }
+}
+
+async function duplicateAdditionalInfo(originalTourId: string, newTourId: string) {
+  const { data: sections, error } = await supabase
+    .from('tour_additional_info_sections')
+    .select('*')
+    .eq('tour_id', originalTourId);
+  if (error) throw error;
+  if (!sections?.length) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const newSections = sections.map(s => ({
+    tour_id: newTourId,
+    template_id: s.template_id,
+    name: s.name,
+    icon_name: s.icon_name,
+    content: s.content,
+    sort_order: s.sort_order,
+    is_visible: s.is_visible,
+    include_in_email_rules: s.include_in_email_rules,
+    created_by: user.id,
+  }));
+
+  const { error: insertErr } = await supabase
+    .from('tour_additional_info_sections')
+    .insert(newSections);
+  if (insertErr) throw insertErr;
+}
+
+async function duplicateItineraries(originalTourId: string, newTourId: string) {
+  const { data: itineraries, error } = await supabase
+    .from('tour_itineraries')
+    .select('*')
+    .eq('tour_id', originalTourId);
+  if (error) throw error;
+  if (!itineraries?.length) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  for (const itin of itineraries) {
+    const { data: newItin, error: itinErr } = await supabase
+      .from('tour_itineraries')
+      .insert({
+        tour_id: newTourId,
+        title: itin.title,
+        notes: itin.notes,
+        version: itin.version,
+        is_current: itin.is_current,
+        created_by: user.id,
+        // Don't copy snapshot - it references old tour dates
+      })
+      .select('id')
+      .single();
+
+    if (itinErr) throw itinErr;
+
+    // Copy itinerary entries (days)
+    if (newItin) {
+      const { data: entries, error: entriesErr } = await supabase
+        .from('tour_itinerary_entries')
+        .select('*')
+        .eq('itinerary_id', itin.id)
+        .order('day_number');
+
+      if (entriesErr) throw entriesErr;
+      if (entries?.length) {
+        const newEntries = entries.map(e => ({
+          itinerary_id: newItin.id,
+          day_number: e.day_number,
+          date: shiftDateOneYear(e.date),
+          title: e.title,
+          description: e.description,
+          accommodation: e.accommodation,
+          meals_included: e.meals_included,
+          transport: e.transport,
+          sort_order: e.sort_order,
+        }));
+        await supabase.from('tour_itinerary_entries').insert(newEntries);
+      }
+    }
+  }
+}
+
+async function duplicateCustomForms(originalTourId: string, newTourId: string) {
+  const { data: forms, error } = await supabase
+    .from('tour_custom_forms' as any)
+    .select('*')
+    .eq('tour_id', originalTourId);
+  if (error) throw error;
+  if (!forms?.length) return;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  for (const form of forms as any[]) {
+    const { data: newForm, error: formErr } = await supabase
+      .from('tour_custom_forms' as any)
+      .insert({
+        tour_id: newTourId,
+        form_title: form.form_title,
+        form_description: form.form_description,
+        response_mode: form.response_mode,
+        is_published: false, // Start unpublished
+        created_by: user.id,
+      } as any)
+      .select('id')
+      .single();
+
+    if (formErr) throw formErr;
+    if (!newForm) continue;
+
+    // Copy form fields
+    const { data: fields, error: fieldsErr } = await supabase
+      .from('tour_custom_form_fields' as any)
+      .select('*')
+      .eq('form_id', form.id)
+      .order('sort_order');
+
+    if (fieldsErr) throw fieldsErr;
+    if (fields?.length) {
+      const newFields = (fields as any[]).map(f => ({
+        form_id: (newForm as any).id,
+        field_label: f.field_label,
+        field_type: f.field_type,
+        field_options: f.field_options,
+        is_required: f.is_required,
+        sort_order: f.sort_order,
+        placeholder: f.placeholder,
+      }));
+      await supabase.from('tour_custom_form_fields' as any).insert(newFields as any);
+    }
+  }
+}
