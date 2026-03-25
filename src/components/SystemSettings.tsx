@@ -10,6 +10,7 @@ import { SystemLogModal } from "./SystemLogModal";
 import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
 import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
+import { WaiverSettingsCard } from "./WaiverSettingsCard";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -186,6 +187,12 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
         </div>
       </div>
       */}
+
+      {/* Waiver Form */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Waiver Form</h2>
+        <WaiverSettingsCard />
+      </div>
 
       {/* Xero Integration */}
       <div className="space-y-4">
