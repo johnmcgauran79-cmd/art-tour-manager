@@ -657,9 +657,25 @@ export const EmailTemplatesManagement = () => {
                        <AlertTriangle className="h-3 w-3" />
                        Callout Box
                      </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertInfoCard}>
+                       <CreditCard className="h-3 w-3" />
+                       Info Card
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertDataGrid}>
+                       <LayoutGrid className="h-3 w-3" />
+                       Data Grid
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={insertStyledList}>
+                       <List className="h-3 w-3" />
+                       Styled List
+                     </Button>
                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => setShowImageInsert(!showImageInsert)}>
                        <ImagePlus className="h-3 w-3" />
                        Image
+                     </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5" onClick={() => insertSpacer('md')}>
+                       <Space className="h-3 w-3" />
+                       Spacer
                      </Button>
                   </div>
                   {showImageInsert && (
