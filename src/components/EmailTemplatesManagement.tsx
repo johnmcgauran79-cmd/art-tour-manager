@@ -396,7 +396,7 @@ export const EmailTemplatesManagement = () => {
 
   const insertSectionHeader = (headerText?: string) => {
     const text = headerText || 'SECTION TITLE';
-    const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 16px 0;"><tr><td style="background-color:#1a2332;padding:10px 20px;border-radius:6px;"><strong style="color:#d4a017;font-size:13px;letter-spacing:1px;text-transform:uppercase;">${text}</strong></td></tr></table>`;
+    const html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 16px 0;"><tr><td style="background-color:#232628;padding:12px 20px;border-radius:6px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">📌</td><td style="vertical-align:middle;"><strong style="color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">${text}</strong></td></tr></table></td></tr></table>`;
     insertHtmlBlock(html);
   };
 
