@@ -14,8 +14,15 @@ import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
-import ReactQuill from "react-quill";
+import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
+import {
+  protectComplexEmailBlocksForEditor,
+  registerEmailEditorBlots,
+  resolveComplexEmailBlocksFromEditor,
+} from "@/lib/emailEditorBlocks";
+
+registerEmailEditorBlots(Quill);
 
 interface BulkEmailPreviewModalProps {
   open: boolean;
@@ -458,10 +465,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <div className="mt-2 border rounded-md">
                 <ReactQuill
                   theme="snow"
-                  value={editedContent}
+                  value={protectComplexEmailBlocksForEditor(editedContent)}
                   onChange={(content) => {
-                    setEditedContent(content);
-                    setOriginalContentTemplate(content);
+                    const resolvedContent = resolveComplexEmailBlocksFromEditor(content);
+                    if (resolvedContent === editedContent) return;
+                    setEditedContent(resolvedContent);
+                    setOriginalContentTemplate(resolvedContent);
                   }}
                   modules={quillModules}
                   className="bg-white"
