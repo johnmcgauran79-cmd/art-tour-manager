@@ -203,16 +203,21 @@ export const EmailTemplatesManagement = () => {
 
   const handleDuplicate = (template: EmailTemplate) => {
     setEditingTemplate(null);
+    const content = preprocessContentForEditor(template.content_template);
     setFormData({
       name: `${template.name} (Copy)`,
       type: template.type,
       subject_template: template.subject_template,
-      content_template: preprocessContentForEditor(template.content_template),
+      content_template: content,
       from_email: template.from_email,
       is_active: template.is_active,
       is_default: false,
       header_image_url: (template as any).header_image_url || "",
     });
+    // Auto-switch to HTML view if template has complex HTML
+    if (hasComplexHtml(content)) {
+      setIsHtmlView(true);
+    }
     setIsCreateModalOpen(true);
   };
 
