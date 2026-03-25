@@ -679,6 +679,10 @@ export const EmailTemplatesManagement = () => {
                        <Space className="h-3 w-3" />
                        Spacer
                      </Button>
+                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-primary/30 text-primary" onClick={() => setShowCardBuilder(true)}>
+                       <Layers className="h-3 w-3" />
+                       Custom Card
+                     </Button>
                   </div>
                   {showImageInsert && (
                     <div className="flex items-end gap-2 mb-2 p-2 border rounded-md bg-muted/30">
