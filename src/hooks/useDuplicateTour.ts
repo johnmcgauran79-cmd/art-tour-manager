@@ -138,7 +138,6 @@ async function duplicateHotels(originalTourId: string, newTourId: string) {
     operations_notes: hotel.operations_notes,
     upgrade_options: hotel.upgrade_options,
     cancellation_policy: hotel.cancellation_policy,
-    contract_url: hotel.contract_url,
     // Copy cutoff dates (+1 year)
     initial_rooms_cutoff_date: shiftDateOneYear(hotel.initial_rooms_cutoff_date),
     final_rooms_cutoff_date: shiftDateOneYear(hotel.final_rooms_cutoff_date),
