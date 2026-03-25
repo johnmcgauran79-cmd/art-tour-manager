@@ -188,6 +188,12 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
       </div>
       */}
 
+      {/* Waiver Form */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold">Waiver Form</h2>
+        <WaiverSettingsCard />
+      </div>
+
       {/* Xero Integration */}
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Accounting Integration</h2>
