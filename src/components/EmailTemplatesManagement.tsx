@@ -348,12 +348,24 @@ export const EmailTemplatesManagement = () => {
     }
   };
 
+  // Convert card placeholder blots back to real email HTML before saving
+  const resolveCardPlaceholders = (html: string): string => {
+    return html.replace(/<div[^>]*data-card-html="([^"]*)"[^>]*>[\s\S]*?<\/div>/g, (_match, encoded) => {
+      try {
+        return decodeURIComponent(encoded);
+      } catch {
+        return _match;
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       const submitData = {
         ...formData,
+        content_template: resolveCardPlaceholders(formData.content_template),
         header_image_url: formData.header_image_url || null,
       };
       if (editingTemplate) {
