@@ -995,26 +995,20 @@ const handler = async (req: Request): Promise<Response> => {
       mergeData.hotel_details = '';
     }
 
-    // Generate {{tour_details_card}} styled card
+    // Generate {{tour_details_card}} styled card (hotel-card style)
     const hasTourDetailsCard = /\{\{\s*tour_details_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     if (hasTourDetailsCard) {
-      const sectionHeaderStyle = 'background-color:#232628;padding:12px 20px;border-radius:6px;';
-      const headerTextStyle = 'color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;';
-      const labelStyle = 'padding:6px 0;color:#6b7280;font-size:13px;width:140px;vertical-align:top;';
-      const valueStyle = 'padding:6px 0 6px 12px;color:#1a2332;font-size:13px;font-weight:500;vertical-align:top;';
-      const bulletStyle = 'color:#F5C518;font-weight:bold;margin-right:8px;';
+      const labelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:140px;';
+      const valueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
       
-      let tourCardHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 12px 0;"><tr><td style="${sectionHeaderStyle}"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">✈️</td><td style="vertical-align:middle;"><strong style="${headerTextStyle}">TOUR DETAILS</strong></td></tr></table></td></tr></table>`;
+      const rows: string[] = [];
+      if (mergeData.tour_name) rows.push(`<tr><td style="${labelStyle}">Tour</td><td style="${valueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`);
+      if (mergeData.tour_location) rows.push(`<tr><td style="${labelStyle}">Location</td><td style="${valueStyle}">${mergeData.tour_location}</td></tr>`);
+      if (mergeData.tour_start_date && mergeData.tour_end_date) rows.push(`<tr><td style="${labelStyle}">Tour Dates</td><td style="${valueStyle}">${mergeData.tour_start_date} - ${mergeData.tour_end_date}</td></tr>`);
+      if (mergeData.tour_days || mergeData.tour_nights) rows.push(`<tr><td style="${labelStyle}">Duration</td><td style="${valueStyle}">${mergeData.tour_days ? mergeData.tour_days + ' days' : ''}${mergeData.tour_days && mergeData.tour_nights ? ', ' : ''}${mergeData.tour_nights ? mergeData.tour_nights + ' nights' : ''}</td></tr>`);
+      if (mergeData.tour_host) rows.push(`<tr><td style="${labelStyle}">Tour Host</td><td style="${valueStyle}">${mergeData.tour_host}</td></tr>`);
       
-      tourCardHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">`;
-      if (mergeData.tour_name) tourCardHtml += `<tr><td style="${labelStyle}">Tour</td><td style="${valueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`;
-      if (mergeData.tour_location) tourCardHtml += `<tr><td style="${labelStyle}">Location</td><td style="${valueStyle}">${mergeData.tour_location}</td></tr>`;
-      if (mergeData.tour_start_date && mergeData.tour_end_date) tourCardHtml += `<tr><td style="${labelStyle}">Tour Dates</td><td style="${valueStyle}">${mergeData.tour_start_date} - ${mergeData.tour_end_date}</td></tr>`;
-      if (mergeData.tour_days || mergeData.tour_nights) tourCardHtml += `<tr><td style="${labelStyle}">Duration</td><td style="${valueStyle}">${mergeData.tour_days ? mergeData.tour_days + ' days' : ''}${mergeData.tour_days && mergeData.tour_nights ? ', ' : ''}${mergeData.tour_nights ? mergeData.tour_nights + ' nights' : ''}</td></tr>`;
-      if (mergeData.tour_host) tourCardHtml += `<tr><td style="${labelStyle}">Tour Host</td><td style="${valueStyle}">${mergeData.tour_host}</td></tr>`;
-      tourCardHtml += `</table>`;
-      
-      mergeData.tour_details_card = tourCardHtml;
+      mergeData.tour_details_card = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin:16px 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">✈️ Tour Details</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
     } else {
       mergeData.tour_details_card = '';
     }
