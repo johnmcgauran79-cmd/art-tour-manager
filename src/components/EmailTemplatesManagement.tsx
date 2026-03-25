@@ -345,26 +345,14 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertCustomCard = (data: CustomCardInsertData) => {
-    if (isHtmlView) {
-      // In HTML view, insert raw HTML directly
-      setFormData(prev => ({
-        ...prev,
-        content_template: prev.content_template + '\n' + data.html
-      }));
-    } else if (quillRef.current) {
-      // In WYSIWYG mode, insert a visual placeholder blot
-      const quill = quillRef.current.getEditor();
-      const range = quill.getSelection();
-      const insertIndex = range ? range.index : quill.getLength() - 1;
-      quill.insertText(insertIndex, '\n');
-      quill.insertEmbed(insertIndex + 1, 'email-card', {
-        title: data.title,
-        emoji: data.emoji,
-        accentColor: data.accentColor,
-        html: data.html,
-      });
-      quill.insertText(insertIndex + 2, '\n');
-      quill.setSelection(insertIndex + 3, 0);
+    // Always insert card as raw HTML to prevent Quill from mangling table structures
+    setFormData(prev => ({
+      ...prev,
+      content_template: prev.content_template + '\n' + data.html
+    }));
+    // Switch to HTML view - Quill WYSIWYG destroys complex table-based card HTML
+    if (!isHtmlView) {
+      setIsHtmlView(true);
     }
   };
 
