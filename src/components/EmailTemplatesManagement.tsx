@@ -255,13 +255,20 @@ export const EmailTemplatesManagement = () => {
     // Use DOMParser to reliably extract card HTML from nested blot structures
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<body>${html}</body>`, 'text/html');
-    const cardNodes = doc.querySelectorAll('[data-card-html]');
+    // Match by data attribute OR by the ql-email-card class
+    const cardNodes = doc.querySelectorAll('[data-card-html], .ql-email-card[data-card-html]');
+    if (cardNodes.length === 0) return html; // fast path: no cards to resolve
     cardNodes.forEach(node => {
       try {
-        const realHtml = decodeURIComponent(node.getAttribute('data-card-html') || '');
+        const encoded = node.getAttribute('data-card-html') || '';
+        if (!encoded) return;
+        const realHtml = decodeURIComponent(encoded);
+        if (!realHtml.trim()) return;
         const replacement = doc.createRange().createContextualFragment(realHtml);
         node.parentNode?.replaceChild(replacement, node);
-      } catch { /* keep original if decode fails */ }
+      } catch (e) {
+        console.error('Failed to resolve card placeholder:', e);
+      }
     });
     // Return inner HTML of body, stripping wrapper
     return doc.body.innerHTML;
