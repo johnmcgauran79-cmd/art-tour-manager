@@ -35,6 +35,7 @@ Quill.register(DividerBlot);
 class EmailCardBlot extends BlockEmbed {
   static blotName = 'email-card';
   static tagName = 'div';
+  static className = 'ql-email-card';
 
   static create(value: { title: string; emoji: string; accentColor: string; html: string }) {
     const node = super.create();
@@ -42,6 +43,7 @@ class EmailCardBlot extends BlockEmbed {
     node.setAttribute('data-card-html', encodeURIComponent(value.html));
     node.setAttribute('data-card-title', value.title);
     node.setAttribute('data-card-emoji', value.emoji);
+    node.setAttribute('data-card-accent', value.accentColor || 'grey');
 
     const colors: Record<string, { bg: string; text: string; border: string }> = {
       grey: { bg: '#f8f9fa', text: '#1a2332', border: '#e5e7eb' },
@@ -79,7 +81,7 @@ class EmailCardBlot extends BlockEmbed {
     return {
       title: node.getAttribute('data-card-title') || 'Card',
       emoji: node.getAttribute('data-card-emoji') || '📋',
-      accentColor: 'grey',
+      accentColor: node.getAttribute('data-card-accent') || 'grey',
       html: decodeURIComponent(node.getAttribute('data-card-html') || ''),
     };
   }
@@ -253,13 +255,20 @@ export const EmailTemplatesManagement = () => {
     // Use DOMParser to reliably extract card HTML from nested blot structures
     const parser = new DOMParser();
     const doc = parser.parseFromString(`<body>${html}</body>`, 'text/html');
-    const cardNodes = doc.querySelectorAll('[data-card-html]');
+    // Match by data attribute OR by the ql-email-card class
+    const cardNodes = doc.querySelectorAll('[data-card-html], .ql-email-card[data-card-html]');
+    if (cardNodes.length === 0) return html; // fast path: no cards to resolve
     cardNodes.forEach(node => {
       try {
-        const realHtml = decodeURIComponent(node.getAttribute('data-card-html') || '');
+        const encoded = node.getAttribute('data-card-html') || '';
+        if (!encoded) return;
+        const realHtml = decodeURIComponent(encoded);
+        if (!realHtml.trim()) return;
         const replacement = doc.createRange().createContextualFragment(realHtml);
         node.parentNode?.replaceChild(replacement, node);
-      } catch { /* keep original if decode fails */ }
+      } catch (e) {
+        console.error('Failed to resolve card placeholder:', e);
+      }
     });
     // Return inner HTML of body, stripping wrapper
     return doc.body.innerHTML;
@@ -350,14 +359,28 @@ export const EmailTemplatesManagement = () => {
   };
 
   const insertCustomCard = (data: CustomCardInsertData) => {
-    // Always insert card as raw HTML to prevent Quill from mangling table structures
-    setFormData(prev => ({
-      ...prev,
-      content_template: prev.content_template + '\n' + data.html
-    }));
-    // Switch to HTML view - Quill WYSIWYG destroys complex table-based card HTML
-    if (!isHtmlView) {
-      setIsHtmlView(true);
+    if (isHtmlView) {
+      // In HTML view, insert raw table HTML directly
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n' + data.html
+      }));
+    } else if (quillRef.current) {
+      // In WYSIWYG mode, insert a visual placeholder blot
+      // The blot stores the real card HTML in data-card-html and shows a badge
+      // On save, resolveCardPlaceholders extracts the real HTML
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const insertIndex = range ? range.index : quill.getLength() - 1;
+      quill.insertText(insertIndex, '\n');
+      quill.insertEmbed(insertIndex + 1, 'email-card', {
+        title: data.title,
+        emoji: data.emoji,
+        accentColor: data.accentColor,
+        html: data.html,
+      });
+      quill.insertText(insertIndex + 2, '\n');
+      quill.setSelection(insertIndex + 3, 0);
     }
   };
 
