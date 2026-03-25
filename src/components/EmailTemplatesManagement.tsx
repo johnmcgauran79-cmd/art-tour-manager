@@ -938,6 +938,13 @@ export const EmailTemplatesManagement = () => {
         subjectTemplate={isCreateModalOpen ? formData.subject_template : undefined}
         contentTemplate={isCreateModalOpen ? formData.content_template : undefined}
       />
+
+      {/* Custom Card Builder */}
+      <CustomCardBuilderModal
+        open={showCardBuilder}
+        onOpenChange={setShowCardBuilder}
+        onInsert={insertHtmlBlock}
+      />
     </div>
   );
 };
