@@ -333,6 +333,8 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
               onChange={(e) => handleInputChange("operations_notes", e.target.value)}
               rows={3}
             />
+          </div>
+
           <Separator />
 
           {hotel && (
@@ -342,6 +344,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           <Separator />
 
           <div className="flex justify-between">
+            <Button 
               type="button" 
               variant="destructive" 
               onClick={handleDelete}
