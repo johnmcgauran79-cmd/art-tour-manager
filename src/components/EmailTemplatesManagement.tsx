@@ -363,15 +363,17 @@ export const EmailTemplatesManagement = () => {
     setCustomButtonUrl("");
   };
 
-  const insertHtmlBlock = (html: string) => {
+  const insertHtmlBlock = (html: string, forceHtmlView = false) => {
     // Always append to raw HTML content to preserve complex table structures
     // Quill's dangerouslyPasteHTML strips tables/inline styles from email-safe HTML
     setFormData(prev => ({
       ...prev,
       content_template: prev.content_template + '\n' + html
     }));
-    // If in WYSIWYG mode, switch to HTML view briefly to force Quill to re-render
-    // Actually, just update formData — the Quill editor syncs from formData via its value prop
+    // Switch to HTML view so complex blocks (custom cards, section headers) are visible
+    if (forceHtmlView && !isHtmlView) {
+      setIsHtmlView(true);
+    }
   };
 
   const insertDivider = () => {
