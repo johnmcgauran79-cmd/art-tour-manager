@@ -244,7 +244,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                         {ACCENT_COLORS.map(c => (
                           <SelectItem key={c.value} value={c.value}>
                             <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: c.bg }} />
+                              <div className="w-3 h-3 rounded-full border" style={{ backgroundColor: c.dot }} />
                               {c.label}
                             </div>
                           </SelectItem>
