@@ -292,3 +292,17 @@
   }
 }
 
+/* Protect email template section headers and hotel cards from prose/global overrides */
+.prose .email-section-header td,
+.prose .email-section-header strong {
+  color: inherit !important;
+  background-color: inherit !important;
+  font-size: inherit !important;
+  letter-spacing: inherit !important;
+}
+.prose .email-hotel-card td,
+.prose .email-hotel-card strong {
+  color: inherit !important;
+  font-size: inherit !important;
+}
+
