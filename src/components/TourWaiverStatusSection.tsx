@@ -319,7 +319,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
             {selectedBookings.size > 0 && (
               <Button
                 size="sm"
-                onClick={() => setConfirmOpen(true)}
+                onClick={handleOpenConfirm}
                 disabled={sending}
               >
                 {sending ? (
