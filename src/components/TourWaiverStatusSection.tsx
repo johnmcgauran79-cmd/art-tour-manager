@@ -8,18 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Shield, CheckCircle, AlertCircle, Clock, Send, Loader2 } from "lucide-react";
+import { Shield, CheckCircle, AlertCircle, Clock, Send, Loader2, Eye } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 interface Props {
@@ -46,6 +38,8 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
   const [selectedBookings, setSelectedBookings] = useState<Set<string>>(new Set());
   const [sending, setSending] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   // Fetch all bookings with passengers and their waiver status
   const { data: waiverData = [], isLoading } = useQuery({
@@ -158,6 +152,34 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
 
   const deselectAll = () => {
     setSelectedBookings(new Set());
+  };
+
+  // Get recipients for the selected bookings
+  const selectedRecipients = waiverData.filter(
+    (r) => selectedBookings.has(r.bookingId) && !r.signedAt && r.email
+  );
+
+  const handleOpenConfirm = async () => {
+    setConfirmOpen(true);
+    setLoadingPreview(true);
+    setPreviewHtml(null);
+
+    try {
+      // Use first selected booking to generate a sample preview
+      const firstBookingId = [...selectedBookings][0];
+      if (firstBookingId) {
+        const { data, error } = await supabase.functions.invoke("send-booking-confirmation", {
+          body: { bookingId: firstBookingId, templateType: "waiver_request", previewOnly: true },
+        });
+        if (!error && data?.html) {
+          setPreviewHtml(data.html);
+        }
+      }
+    } catch {
+      // Preview is optional, don't block the send
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
   const handleBulkSend = async () => {
@@ -287,7 +309,7 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
             {selectedBookings.size > 0 && (
               <Button
                 size="sm"
-                onClick={() => setConfirmOpen(true)}
+                onClick={handleOpenConfirm}
                 disabled={sending}
               >
                 {sending ? (
@@ -395,29 +417,98 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
           </Table>
         </div>
 
-        {/* Confirm send dialog */}
-        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Send Waiver Requests</AlertDialogTitle>
-              <AlertDialogDescription className="space-y-2">
-                <p>
-                  This will send waiver request emails to all passengers with email addresses on{" "}
-                  <strong>{selectedBookings.size}</strong> selected booking
-                  {selectedBookings.size > 1 ? "s" : ""}.
-                </p>
+        {/* Confirm & preview send dialog */}
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5" />
+                Review Waiver Request
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
                 <p className="text-sm">
-                  Each passenger will receive a personalised email with a secure link to sign the
-                  waiver for <strong>{tourName}</strong>. Links expire in 7 days.
+                  Sending waiver request emails to{" "}
+                  <strong>{selectedRecipients.length} passenger{selectedRecipients.length !== 1 ? "s" : ""}</strong>{" "}
+                  across{" "}
+                  <strong>{selectedBookings.size} booking{selectedBookings.size !== 1 ? "s" : ""}</strong>{" "}
+                  for <strong>{tourName}</strong>.
                 </p>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleBulkSend}>Send Requests</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <p className="text-xs text-muted-foreground">
+                  Each passenger will receive a personalised email with a secure link to sign the waiver. Links expire in 7 days.
+                </p>
+              </div>
+
+              {/* Recipient list */}
+              <div>
+                <h4 className="text-sm font-medium mb-2">Recipients</h4>
+                <div className="rounded-lg border max-h-36 overflow-y-auto">
+                  <Table>
+                    <TableBody>
+                      {selectedRecipients.map((r, i) => (
+                        <TableRow key={`${r.bookingId}_${r.passengerSlot}`} className="text-sm">
+                          <TableCell className="py-1.5 font-medium">
+                            {r.firstName} {r.lastName}
+                          </TableCell>
+                          <TableCell className="py-1.5 text-muted-foreground">
+                            {r.email}
+                          </TableCell>
+                          <TableCell className="py-1.5 text-muted-foreground text-right text-xs">
+                            {r.groupName || "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Email preview */}
+              <div>
+                <h4 className="text-sm font-medium mb-2 flex items-center gap-1.5">
+                  <Eye className="h-4 w-4" />
+                  Email Preview
+                </h4>
+                <div className="rounded-lg border bg-background overflow-hidden">
+                  {loadingPreview ? (
+                    <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Loading preview...
+                    </div>
+                  ) : previewHtml ? (
+                    <iframe
+                      srcDoc={previewHtml}
+                      className="w-full h-[300px] border-0"
+                      title="Email preview"
+                      sandbox="allow-same-origin"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center py-12 text-muted-foreground text-sm">
+                      Preview not available — email will use the waiver request template from Email Templates.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleBulkSend} disabled={sending}>
+                {sending ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="mr-2 h-4 w-4" />
+                )}
+                {sending ? "Sending..." : `Send to ${selectedRecipients.length} Passenger${selectedRecipients.length !== 1 ? "s" : ""}`}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
