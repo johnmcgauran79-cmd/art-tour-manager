@@ -1036,29 +1036,45 @@ const handler = async (req: Request): Promise<Response> => {
       if (mergeData.lead_passenger_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.lead_passenger_preferred_name}</td></tr>`;
       paxCardHtml += `<tr><td style="${labelStyle}">Total Passengers</td><td style="${valueStyle}">${mergeData.booking_passenger_count || 1}</td></tr>`;
       if (mergeData.lead_passenger_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone Number</td><td style="${valueStyle}">${mergeData.lead_passenger_phone}</td></tr>`;
-      if (mergeData.lead_passenger_dietary_requirements && mergeData.lead_passenger_dietary_requirements !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.lead_passenger_dietary_requirements}</td></tr>`;
-      if (mergeData.lead_passenger_accessibility_needs && mergeData.lead_passenger_accessibility_needs !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.lead_passenger_accessibility_needs}</td></tr>`;
+      // Always show dietary, accessibility, emergency for lead pax
+      paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.lead_passenger_dietary_requirements && mergeData.lead_passenger_dietary_requirements !== 'N/A' ? mergeData.lead_passenger_dietary_requirements : 'N/A'}</td></tr>`;
+      paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.lead_passenger_accessibility_needs && mergeData.lead_passenger_accessibility_needs !== 'N/A' ? mergeData.lead_passenger_accessibility_needs : 'N/A'}</td></tr>`;
+      const ecName = mergeData.lead_passenger_emergency_contact_name || '';
+      const ecPhone = mergeData.lead_passenger_emergency_contact_phone || '';
+      const ecDisplay = ecName ? `${ecName}${ecPhone ? ' ' + ecPhone : ''}` : 'Not provided';
+      paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${ecDisplay}</td></tr>`;
       
-      // Emergency contact
-      if (mergeData.lead_passenger_emergency_contact_name) {
-        const ecPhone = mergeData.lead_passenger_emergency_contact_phone ? ` ${mergeData.lead_passenger_emergency_contact_phone}` : '';
-        paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${mergeData.lead_passenger_emergency_contact_name}${ecPhone}</td></tr>`;
-      }
-      
-      // Passenger 2
+      // Passenger 2 - conditional fields except dietary always shows
       if (mergeData.passenger_2_first_name) {
         const pax2Name = [mergeData.passenger_2_first_name, mergeData.passenger_2_last_name].filter(Boolean).join(' ');
         paxCardHtml += `<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`;
         paxCardHtml += `<tr><td style="${labelStyle}">Passenger 2</td><td style="${valueStyle}"><strong>${pax2Name}</strong></td></tr>`;
-        if (mergeData.passenger_2_dietary_requirements && mergeData.passenger_2_dietary_requirements !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_2_dietary_requirements}</td></tr>`;
+        if (mergeData.passenger_2_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.passenger_2_preferred_name}</td></tr>`;
+        if (mergeData.passenger_2_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone</td><td style="${valueStyle}">${mergeData.passenger_2_phone}</td></tr>`;
+        // Dietary always shows for pax 2
+        paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_2_dietary_requirements && mergeData.passenger_2_dietary_requirements !== 'N/A' ? mergeData.passenger_2_dietary_requirements : 'N/A'}</td></tr>`;
+        if (mergeData.passenger_2_accessibility_needs && mergeData.passenger_2_accessibility_needs !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.passenger_2_accessibility_needs}</td></tr>`;
+        if (mergeData.passenger_2_medical_conditions && mergeData.passenger_2_medical_conditions !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Medical</td><td style="${valueStyle}">${mergeData.passenger_2_medical_conditions}</td></tr>`;
+        if (mergeData.passenger_2_emergency_contact_name) {
+          const ec2Phone = mergeData.passenger_2_emergency_contact_phone ? ' ' + mergeData.passenger_2_emergency_contact_phone : '';
+          paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${mergeData.passenger_2_emergency_contact_name}${ec2Phone}</td></tr>`;
+        }
       }
       
-      // Passenger 3
+      // Passenger 3 - same logic as pax 2
       if (mergeData.passenger_3_first_name) {
         const pax3Name = [mergeData.passenger_3_first_name, mergeData.passenger_3_last_name].filter(Boolean).join(' ');
         paxCardHtml += `<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`;
         paxCardHtml += `<tr><td style="${labelStyle}">Passenger 3</td><td style="${valueStyle}"><strong>${pax3Name}</strong></td></tr>`;
-        if (mergeData.passenger_3_dietary_requirements && mergeData.passenger_3_dietary_requirements !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_3_dietary_requirements}</td></tr>`;
+        if (mergeData.passenger_3_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.passenger_3_preferred_name}</td></tr>`;
+        if (mergeData.passenger_3_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone</td><td style="${valueStyle}">${mergeData.passenger_3_phone}</td></tr>`;
+        paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_3_dietary_requirements && mergeData.passenger_3_dietary_requirements !== 'N/A' ? mergeData.passenger_3_dietary_requirements : 'N/A'}</td></tr>`;
+        if (mergeData.passenger_3_accessibility_needs && mergeData.passenger_3_accessibility_needs !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.passenger_3_accessibility_needs}</td></tr>`;
+        if (mergeData.passenger_3_medical_conditions && mergeData.passenger_3_medical_conditions !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Medical</td><td style="${valueStyle}">${mergeData.passenger_3_medical_conditions}</td></tr>`;
+        if (mergeData.passenger_3_emergency_contact_name) {
+          const ec3Phone = mergeData.passenger_3_emergency_contact_phone ? ' ' + mergeData.passenger_3_emergency_contact_phone : '';
+          paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${mergeData.passenger_3_emergency_contact_name}${ec3Phone}</td></tr>`;
+        }
       }
       
       paxCardHtml += `</table>`;
