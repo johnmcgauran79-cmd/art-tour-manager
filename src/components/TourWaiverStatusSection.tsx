@@ -18,8 +18,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Shield, CheckCircle, AlertCircle, Clock, Send, Loader2 } from "lucide-react";
+import { Shield, CheckCircle, AlertCircle, Clock, Send, Loader2, Eye } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 
 interface Props {
