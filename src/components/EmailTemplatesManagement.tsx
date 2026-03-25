@@ -616,7 +616,15 @@ export const EmailTemplatesManagement = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => setIsHtmlView(!isHtmlView)}
+                      onClick={() => {
+                        // Warn before switching from HTML to WYSIWYG if complex HTML exists
+                        if (isHtmlView && hasComplexHtml(formData.content_template)) {
+                          if (!confirm('This template contains custom cards, section headers, or data tables. Switching to WYSIWYG view may damage their formatting. Continue?')) {
+                            return;
+                          }
+                        }
+                        setIsHtmlView(!isHtmlView);
+                      }}
                       className="flex items-center gap-2"
                     >
                       <Code2 className="h-4 w-4" />
