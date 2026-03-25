@@ -33,6 +33,7 @@ Quill.register(DividerBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
+import { CustomCardBuilderModal } from "@/components/CustomCardBuilderModal";
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
