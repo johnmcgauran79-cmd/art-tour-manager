@@ -10,6 +10,7 @@ import { SystemLogModal } from "./SystemLogModal";
 import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
 import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
+import { WaiverSettingsCard } from "./WaiverSettingsCard";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
