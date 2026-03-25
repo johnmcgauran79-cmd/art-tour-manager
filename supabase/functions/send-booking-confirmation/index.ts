@@ -129,8 +129,8 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
     .email-body ul, .email-body ol { margin: 0 0 16px 0 !important; padding-left: 24px !important; }
     .email-body li { margin-bottom: 4px !important; }
     .email-body a { color: #1a6fb5 !important; }
-    /* CTA buttons — preserve their branded colours */
-    .email-body a[style*="border-radius"] { color: inherit !important; }
+    /* CTA buttons — let their inline branded colours win */
+    .email-body a[style*="border-radius"] { color: unset !important; }
     .email-body hr { border: none !important; border-top: 2px solid #e5e7eb !important; margin: 24px 0 !important; }
     /* Structured table blocks — let inline styles win */
     .email-body table[role="presentation"] td { color: inherit !important; font-size: inherit !important; line-height: inherit !important; }
