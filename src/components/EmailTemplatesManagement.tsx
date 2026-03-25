@@ -942,7 +942,7 @@ export const EmailTemplatesManagement = () => {
       <CustomCardBuilderModal
         open={showCardBuilder}
         onOpenChange={setShowCardBuilder}
-        onInsert={insertHtmlBlock}
+        onInsert={(html) => insertHtmlBlock(html, true)}
       />
     </div>
   );
