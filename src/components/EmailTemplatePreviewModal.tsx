@@ -156,6 +156,11 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
     if (mergeData.lead_passenger_preferred_name) paxCardHtml += `<tr><td style="${gridLabelStyle}">Preferred Name</td><td style="${gridValueStyle}">${mergeData.lead_passenger_preferred_name}</td></tr>`;
     paxCardHtml += `<tr><td style="${gridLabelStyle}">Total Passengers</td><td style="${gridValueStyle}">${mergeData.booking_passenger_count || 1}</td></tr>`;
     if (mergeData.lead_passenger_phone) paxCardHtml += `<tr><td style="${gridLabelStyle}">Phone Number</td><td style="${gridValueStyle}">${mergeData.lead_passenger_phone}</td></tr>`;
+    paxCardHtml += `<tr><td style="${gridLabelStyle}">Dietary</td><td style="${gridValueStyle}">${mergeData.lead_passenger_dietary_requirements && mergeData.lead_passenger_dietary_requirements !== 'N/A' ? mergeData.lead_passenger_dietary_requirements : 'N/A'}</td></tr>`;
+    paxCardHtml += `<tr><td style="${gridLabelStyle}">Accessibility</td><td style="${gridValueStyle}">${mergeData.lead_passenger_accessibility_needs && mergeData.lead_passenger_accessibility_needs !== 'N/A' ? mergeData.lead_passenger_accessibility_needs : 'N/A'}</td></tr>`;
+    const ecName = mergeData.lead_passenger_emergency_contact_name || '';
+    const ecPhone2 = mergeData.lead_passenger_emergency_contact_phone || '';
+    paxCardHtml += `<tr><td style="${gridLabelStyle}">Emergency Contact</td><td style="${gridValueStyle}">${ecName ? `${ecName}${ecPhone2 ? ' ' + ecPhone2 : ''}` : 'Not provided'}</td></tr>`;
     paxCardHtml += `</table>`;
     (mergeData as any).passenger_info_card = paxCardHtml;
 
