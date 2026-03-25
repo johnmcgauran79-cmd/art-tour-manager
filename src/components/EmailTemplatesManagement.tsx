@@ -403,6 +403,29 @@ export const EmailTemplatesManagement = () => {
     insertHtmlBlock(html);
   };
 
+  const insertInfoCard = () => {
+    const html = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">📋 Card Title</strong></td></tr><tr><td style="padding:16px;"><p style="margin:0;font-size:14px;color:#55575d;">Your card content here. Add text, merge fields, or other blocks inside.</p></td></tr></table>`;
+    insertHtmlBlock(html);
+  };
+
+  const insertDataGrid = () => {
+    const labelStyle = 'padding:6px 0;color:#6b7280;font-size:13px;width:140px;vertical-align:top;';
+    const valueStyle = 'padding:6px 0 6px 12px;color:#1a2332;font-size:13px;font-weight:500;vertical-align:top;';
+    const html = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:12px 0;"><tr><td style="${labelStyle}">Label 1</td><td style="${valueStyle}">Value 1</td></tr><tr><td style="${labelStyle}">Label 2</td><td style="${valueStyle}">Value 2</td></tr><tr><td style="${labelStyle}">Label 3</td><td style="${valueStyle}">Value 3</td></tr></table>`;
+    insertHtmlBlock(html);
+  };
+
+  const insertStyledList = () => {
+    const html = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:12px 0;"><tr><td style="padding:4px 0;font-size:14px;color:#55575d;"><span style="color:#F5C518;font-weight:bold;margin-right:8px;">•</span>List item one</td></tr><tr><td style="padding:4px 0;font-size:14px;color:#55575d;"><span style="color:#F5C518;font-weight:bold;margin-right:8px;">•</span>List item two</td></tr><tr><td style="padding:4px 0;font-size:14px;color:#55575d;"><span style="color:#F5C518;font-weight:bold;margin-right:8px;">•</span>List item three</td></tr></table>`;
+    insertHtmlBlock(html);
+  };
+
+  const insertSpacer = (size: 'sm' | 'md' | 'lg' = 'md') => {
+    const heights = { sm: '12', md: '24', lg: '40' };
+    const html = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="height:${heights[size]}px;line-height:${heights[size]}px;font-size:1px;">&nbsp;</td></tr></table>`;
+    insertHtmlBlock(html);
+  };
+
   const insertImageBlock = () => {
     if (!insertImageUrl.trim()) return;
     const alt = insertImageAlt.trim() || 'Image';
