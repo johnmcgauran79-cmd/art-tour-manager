@@ -30,6 +30,61 @@ class DividerBlot extends BlockEmbed {
   }
 }
 Quill.register(DividerBlot);
+
+// Register custom card placeholder blot for WYSIWYG display
+class EmailCardBlot extends BlockEmbed {
+  static blotName = 'email-card';
+  static tagName = 'div';
+
+  static create(value: { title: string; emoji: string; accentColor: string; html: string }) {
+    const node = super.create();
+    node.setAttribute('contenteditable', 'false');
+    node.setAttribute('data-card-html', encodeURIComponent(value.html));
+    node.setAttribute('data-card-title', value.title);
+    node.setAttribute('data-card-emoji', value.emoji);
+
+    const colors: Record<string, { bg: string; text: string; border: string }> = {
+      grey: { bg: '#f8f9fa', text: '#1a2332', border: '#e5e7eb' },
+      gold: { bg: '#232628', text: '#F5C518', border: '#232628' },
+      navy: { bg: '#1a2332', text: '#ffffff', border: '#1a2332' },
+      blue: { bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
+      green: { bg: '#f0fdf4', text: '#166534', border: '#bbf7d0' },
+      amber: { bg: '#fffbeb', text: '#92400e', border: '#fde68a' },
+    };
+    const c = colors[value.accentColor] || colors.grey;
+
+    node.setAttribute('style', `
+      border: 2px dashed ${c.border};
+      border-radius: 8px;
+      margin: 12px 0;
+      overflow: hidden;
+      cursor: default;
+      user-select: none;
+    `.replace(/\s+/g, ' ').trim());
+
+    node.innerHTML = `
+      <div style="background:${c.bg};padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid ${c.border};">
+        <span style="font-size:16px;">${value.emoji}</span>
+        <strong style="color:${c.text};font-size:13px;letter-spacing:0.5px;">${value.title}</strong>
+        <span style="margin-left:auto;background:${c.border};color:${c.text};font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;opacity:0.8;">CUSTOM CARD</span>
+      </div>
+      <div style="padding:10px 14px;font-size:12px;color:#6b7280;text-align:center;">
+        This card will render fully in email preview &amp; sent emails
+      </div>
+    `;
+    return node;
+  }
+
+  static value(node: HTMLElement) {
+    return {
+      title: node.getAttribute('data-card-title') || 'Card',
+      emoji: node.getAttribute('data-card-emoji') || '📋',
+      accentColor: 'grey',
+      html: decodeURIComponent(node.getAttribute('data-card-html') || ''),
+    };
+  }
+}
+Quill.register(EmailCardBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
