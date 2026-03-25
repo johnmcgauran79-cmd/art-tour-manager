@@ -8,7 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, ArrowUp, ArrowDown, Eye, Save, FolderOpen, Type, LayoutGrid, Minus, AlertTriangle, Space, GripVertical, Bold, Italic } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Plus, Trash2, ArrowUp, ArrowDown, Eye, Save, FolderOpen, Type, LayoutGrid, Minus, AlertTriangle, Space, GripVertical, Bold, Italic, ChevronDown, ChevronRight, Filter, Zap, BookOpen } from "lucide-react";
+import { MERGE_FIELDS, MERGE_FIELD_CATEGORIES, getConditionOptions } from "@/utils/mergeFields";
 
 // Inline formatting helper: wraps selected text or full value in a tag
 function wrapWithTag(
@@ -67,6 +70,8 @@ interface CardRow {
   highlightText?: string;
   // spacer
   spacerSize?: 'sm' | 'md' | 'lg';
+  // conditional display
+  condition?: string; // e.g. "#has_passenger_2" or "^has_accommodation"
 }
 
 interface SavedCardTemplate {
@@ -105,14 +110,37 @@ function saveCards(cards: SavedCardTemplate[]) {
   localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify(cards));
 }
 
-// Reusable row with bold/italic formatting buttons
-const FormattedTextRow = ({ value, onChange, placeholder, multiline }: {
+// Reusable row with bold/italic formatting buttons and merge field insert
+const FormattedTextRow = ({ value, onChange, placeholder, multiline, onInsertField }: {
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  onInsertField?: (callback: (field: string) => void) => void;
 }) => {
   const ref = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
+
+  // Register the insert callback so parent can push a field into this input
+  if (onInsertField) {
+    onInsertField((field: string) => {
+      const el = ref.current;
+      if (!el) {
+        onChange(value + field);
+        return;
+      }
+      const start = el.selectionStart ?? value.length;
+      const end = el.selectionEnd ?? value.length;
+      const newVal = value.slice(0, start) + field + value.slice(end);
+      onChange(newVal);
+      // Restore cursor position after insert
+      requestAnimationFrame(() => {
+        el.focus();
+        const pos = start + field.length;
+        el.setSelectionRange(pos, pos);
+      });
+    });
+  }
+
   return (
     <div>
       <FormatToolbar inputRef={ref} value={value} onChange={onChange} />
@@ -137,6 +165,57 @@ const FormattedTextRow = ({ value, onChange, placeholder, multiline }: {
   );
 };
 
+// Merge field picker panel (compact version for the card builder)
+const MergeFieldPicker = ({ onInsert }: { onInsert: (field: string) => void }) => {
+  const [activeTab, setActiveTab] = useState('customer');
+  // Exclude conditions from the picker tabs - they're handled separately per-row
+  const pickerCategories = ['customer', 'lead_passenger', 'passenger_2', 'passenger_3', 'tour', 'booking', 'hotel', 'activity', 'actions'];
+
+  return (
+    <div className="space-y-2">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="flex flex-wrap h-auto gap-0.5 bg-transparent p-0">
+          {pickerCategories.map(cat => (
+            <TabsTrigger key={cat} value={cat} className="text-[10px] h-6 px-2 data-[state=active]:bg-primary/10">
+              {MERGE_FIELD_CATEGORIES[cat] || cat}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        {pickerCategories.map(category => (
+          <TabsContent key={category} value={category} className="mt-1">
+            <ScrollArea className="h-[180px] border rounded-md p-1">
+              <div className="space-y-0.5">
+                {MERGE_FIELDS[category]?.map((field, index) => {
+                  if (field.startsWith('---')) {
+                    return (
+                      <div key={index} className="text-[10px] font-semibold text-muted-foreground px-2 pt-2 pb-0.5 border-b border-border">
+                        {field.replace(/---/g, '').trim()}
+                      </div>
+                    );
+                  }
+                  return (
+                    <Button
+                      key={index}
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start font-mono text-[10px] w-full h-6 px-2"
+                      onClick={() => onInsert(field)}
+                    >
+                      {field}
+                    </Button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+};
+
 export interface CustomCardInsertData {
   html: string;
   title: string;
@@ -150,6 +229,8 @@ interface CustomCardBuilderModalProps {
   onInsert: (data: CustomCardInsertData) => void;
 }
 
+const conditionOptions = getConditionOptions();
+
 export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomCardBuilderModalProps) => {
   const [headerTitle, setHeaderTitle] = useState('Card Title');
   const [headerEmoji, setHeaderEmoji] = useState('📋');
@@ -159,6 +240,9 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
   const [saveName, setSaveName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
   const [savedCards, setSavedCards] = useState<SavedCardTemplate[]>(getSavedCards());
+  const [showMergeFields, setShowMergeFields] = useState(false);
+  // Track which row/field is "active" for merge field insertion
+  const activeInsertCallbackRef = useRef<((field: string) => void) | null>(null);
 
   const accent = ACCENT_COLORS.find(c => c.value === accentColor) || ACCENT_COLORS[0];
 
@@ -193,26 +277,36 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
 
     let innerHtml = '';
     for (const row of rows) {
+      let rowHtml = '';
       switch (row.type) {
         case 'free_text':
-          innerHtml += `<p style="margin:8px 0;font-size:14px;color:#55575d;line-height:1.6;">${row.text || ''}</p>`;
+          rowHtml = `<p style="margin:8px 0;font-size:14px;color:#55575d;line-height:1.6;">${row.text || ''}</p>`;
           break;
         case 'data_grid':
-          innerHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="${labelStyle}">${row.label || ''}</td><td style="${valueStyle}">${row.value || ''}</td></tr></table>`;
+          rowHtml = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="${labelStyle}">${row.label || ''}</td><td style="${valueStyle}">${row.value || ''}</td></tr></table>`;
           break;
         case 'divider':
-          innerHtml += `<hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0;" />`;
+          rowHtml = `<hr style="border:none;border-top:1px solid #e5e7eb;margin:12px 0;" />`;
           break;
         case 'highlight':
-          innerHtml += `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;"><tr><td style="background-color:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 4px 4px 0;font-size:13px;color:#92400e;font-weight:500;">${row.highlightText || ''}</td></tr></table>`;
+          rowHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0;"><tr><td style="background-color:#fef3c7;border-left:3px solid #f59e0b;padding:10px 14px;border-radius:0 4px 4px 0;font-size:13px;color:#92400e;font-weight:500;">${row.highlightText || ''}</td></tr></table>`;
           break;
         case 'spacer': {
           const heights = { sm: '8', md: '16', lg: '28' };
           const h = heights[row.spacerSize || 'md'];
-          innerHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="height:${h}px;line-height:${h}px;font-size:1px;">&nbsp;</td></tr></table>`;
+          rowHtml = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="height:${h}px;line-height:${h}px;font-size:1px;">&nbsp;</td></tr></table>`;
           break;
         }
       }
+
+      // Wrap in condition if set
+      if (row.condition) {
+        const prefix = row.condition.charAt(0); // # or ^
+        const key = row.condition.slice(1);
+        rowHtml = `{{${prefix}${key}}}${rowHtml}{{/${key}}}`;
+      }
+
+      innerHtml += rowHtml;
     }
 
     return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0;border:1px solid ${accent.border};border-radius:8px;overflow:hidden;"><tr><td style="background-color:${accent.bg};padding:12px 16px;border-bottom:1px solid ${accent.border};"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">${headerEmoji}</td><td style="vertical-align:middle;"><strong style="font-size:15px;color:${accent.text};letter-spacing:0.5px;">${headerTitle}</strong></td></tr></table></td></tr><tr><td style="padding:16px;">${innerHtml}</td></tr></table>`;
@@ -237,6 +331,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
     setShowSaveInput(false);
     setSaveName('');
     setShowSaved(false);
+    setShowMergeFields(false);
   };
 
   const handleSaveTemplate = () => {
@@ -263,9 +358,20 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
     setSavedCards(updated);
   };
 
+  const handleMergeFieldInsert = (field: string) => {
+    if (activeInsertCallbackRef.current) {
+      activeInsertCallbackRef.current(field);
+    }
+  };
+
+  const getConditionLabel = (condition: string) => {
+    const opt = conditionOptions.find(o => o.value === condition);
+    return opt?.label || condition;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <LayoutGrid className="h-5 w-5" />
@@ -273,7 +379,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-6 flex-1 overflow-hidden">
+        <div className="grid grid-cols-[1fr_1fr] gap-4 flex-1 overflow-hidden">
           {/* Left: Builder */}
           <ScrollArea className="pr-4" style={{ maxHeight: '65vh' }}>
             <div className="space-y-4">
@@ -359,6 +465,29 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
 
               <Separator />
 
+              {/* Merge Fields Panel */}
+              <Collapsible open={showMergeFields} onOpenChange={setShowMergeFields}>
+                <CollapsibleTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="w-full justify-between text-xs gap-2">
+                    <span className="flex items-center gap-1.5">
+                      <BookOpen className="h-3.5 w-3.5" />
+                      Available Merge Fields
+                    </span>
+                    {showMergeFields ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2">
+                  <div className="border rounded-md p-2 bg-muted/10">
+                    <p className="text-[10px] text-muted-foreground mb-2">
+                      Click a field below to insert it at the cursor position in the last-focused text input above. Focus a text field first, then click a merge field.
+                    </p>
+                    <MergeFieldPicker onInsert={handleMergeFieldInsert} />
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Separator />
+
               {/* Add Row Buttons */}
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold">Card Rows</h4>
@@ -395,6 +524,12 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                         <Badge variant="secondary" className="text-[10px]">
                           {row.type === 'free_text' ? 'Free Text' : row.type === 'data_grid' ? 'Data Grid' : row.type === 'divider' ? 'Divider' : row.type === 'highlight' ? 'Highlight' : 'Spacer'}
                         </Badge>
+                        {row.condition && (
+                          <Badge variant="outline" className="text-[9px] gap-1 bg-amber-50 text-amber-700 border-amber-200">
+                            <Filter className="h-2.5 w-2.5" />
+                            Conditional
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
                         <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={index === 0} onClick={() => moveRow(index, 'up')}>
@@ -409,12 +544,43 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                       </div>
                     </div>
 
+                    {/* Condition Selector */}
+                    <div className="flex items-center gap-2">
+                      <Label className="text-[10px] text-muted-foreground whitespace-nowrap flex items-center gap-1">
+                        <Filter className="h-3 w-3" />
+                        Show when:
+                      </Label>
+                      <Select
+                        value={row.condition || 'always'}
+                        onValueChange={(v) => updateRow(row.id, { condition: v === 'always' ? undefined : v })}
+                      >
+                        <SelectTrigger className="h-6 text-[10px] flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="always" className="text-xs">Always show</SelectItem>
+                          {conditionOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value} className="text-xs">
+                              {opt.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
                     {row.type === 'free_text' && (
                       <FormattedTextRow
                         value={row.text || ''}
                         onChange={(val) => updateRow(row.id, { text: val })}
                         multiline
-                        placeholder="Enter text content. You can use merge fields like {{customer_first_name}}"
+                        placeholder="Enter text, merge fields like {{customer_first_name}}, or action tags like {{travel_docs_button}}"
+                        onInsertField={(cb) => {
+                          // Store the callback; it will be called when a merge field is clicked
+                          const el = document.activeElement;
+                          const textareas = document.querySelectorAll(`textarea`);
+                          // We register on focus
+                          activeInsertCallbackRef.current = cb;
+                        }}
                       />
                     )}
 
@@ -426,6 +592,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                             value={row.label || ''}
                             onChange={(val) => updateRow(row.id, { label: val })}
                             placeholder="e.g. Check In"
+                            onInsertField={(cb) => { activeInsertCallbackRef.current = cb; }}
                           />
                         </div>
                         <div>
@@ -434,6 +601,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                             value={row.value || ''}
                             onChange={(val) => updateRow(row.id, { value: val })}
                             placeholder="e.g. {{tour_start_date}}"
+                            onInsertField={(cb) => { activeInsertCallbackRef.current = cb; }}
                           />
                         </div>
                       </div>
@@ -444,6 +612,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                         value={row.highlightText || ''}
                         onChange={(val) => updateRow(row.id, { highlightText: val })}
                         placeholder="Important notice text..."
+                        onInsertField={(cb) => { activeInsertCallbackRef.current = cb; }}
                       />
                     )}
 
@@ -487,22 +656,42 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
                     </p>
                   )}
                   {rows.map((row) => {
+                    const conditionBadge = row.condition ? (
+                      <div style={{ fontSize: '10px', color: '#92400e', backgroundColor: '#fef3c7', padding: '2px 6px', borderRadius: '4px', marginBottom: '4px', display: 'inline-block' }}>
+                        ⚡ {getConditionLabel(row.condition)}
+                      </div>
+                    ) : null;
+
                     switch (row.type) {
                       case 'free_text':
-                        return <p key={row.id} style={{ margin: '8px 0', fontSize: '14px', color: '#55575d', lineHeight: '1.6' }}>{row.text || ''}</p>;
+                        return (
+                          <div key={row.id}>
+                            {conditionBadge}
+                            <p style={{ margin: '8px 0', fontSize: '14px', color: '#55575d', lineHeight: '1.6' }} dangerouslySetInnerHTML={{ __html: (row.text || '').replace(/</g, '&lt;').replace(/&lt;(\/?(strong|em|b|i))>/g, '<$1>') }} />
+                          </div>
+                        );
                       case 'data_grid':
                         return (
-                          <div key={row.id} style={{ display: 'flex', padding: '6px 0' }}>
-                            <span style={{ width: '140px', color: '#6b7280', fontSize: '13px', flexShrink: 0 }}>{row.label || ''}</span>
-                            <span style={{ color: '#1a2332', fontSize: '13px', fontWeight: 500, paddingLeft: '12px' }}>{row.value || ''}</span>
+                          <div key={row.id}>
+                            {conditionBadge}
+                            <div style={{ display: 'flex', padding: '6px 0' }}>
+                              <span style={{ width: '140px', color: '#6b7280', fontSize: '13px', flexShrink: 0 }} dangerouslySetInnerHTML={{ __html: (row.label || '').replace(/</g, '&lt;').replace(/&lt;(\/?(strong|em|b|i))>/g, '<$1>') }} />
+                              <span style={{ color: '#1a2332', fontSize: '13px', fontWeight: 500, paddingLeft: '12px' }} dangerouslySetInnerHTML={{ __html: (row.value || '').replace(/</g, '&lt;').replace(/&lt;(\/?(strong|em|b|i))>/g, '<$1>') }} />
+                            </div>
                           </div>
                         );
                       case 'divider':
-                        return <hr key={row.id} style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '12px 0' }} />;
+                        return (
+                          <div key={row.id}>
+                            {conditionBadge}
+                            <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '12px 0' }} />
+                          </div>
+                        );
                       case 'highlight':
                         return (
-                          <div key={row.id} style={{ backgroundColor: '#fef3c7', borderLeft: '3px solid #f59e0b', padding: '10px 14px', borderRadius: '0 4px 4px 0', fontSize: '13px', color: '#92400e', fontWeight: 500, margin: '8px 0' }}>
-                            {row.highlightText || ''}
+                          <div key={row.id}>
+                            {conditionBadge}
+                            <div style={{ backgroundColor: '#fef3c7', borderLeft: '3px solid #f59e0b', padding: '10px 14px', borderRadius: '0 4px 4px 0', fontSize: '13px', color: '#92400e', fontWeight: 500, margin: '8px 0' }} dangerouslySetInnerHTML={{ __html: (row.highlightText || '').replace(/</g, '&lt;').replace(/&lt;(\/?(strong|em|b|i))>/g, '<$1>') }} />
                           </div>
                         );
                       case 'spacer': {
