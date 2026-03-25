@@ -1013,66 +1013,58 @@ const handler = async (req: Request): Promise<Response> => {
       mergeData.tour_details_card = '';
     }
 
-    // Generate {{passenger_info_card}} styled card
+    // Generate {{passenger_info_card}} styled card (hotel-card style)
     const hasPassengerInfoCard = /\{\{\s*passenger_info_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     if (hasPassengerInfoCard) {
-      const sectionHeaderStyle = 'background-color:#232628;padding:12px 20px;border-radius:6px;';
-      const headerTextStyle = 'color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;';
-      const labelStyle = 'padding:6px 0;color:#6b7280;font-size:13px;width:140px;vertical-align:top;';
-      const valueStyle = 'padding:6px 0 6px 12px;color:#1a2332;font-size:13px;font-weight:500;vertical-align:top;';
+      const paxLabelStyle = 'padding:4px 0;color:#55575d;font-size:13px;width:140px;';
+      const paxValueStyle = 'padding:4px 0 4px 12px;color:#1a2332;font-size:13px;font-weight:500;';
       
-      let paxCardHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 12px 0;"><tr><td style="${sectionHeaderStyle}"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">👤</td><td style="vertical-align:middle;"><strong style="${headerTextStyle}">PASSENGER INFORMATION</strong></td></tr></table></td></tr></table>`;
-      
-      paxCardHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">`;
-      
+      const rows: string[] = [];
       const leadName = [mergeData.lead_passenger_first_name, mergeData.lead_passenger_last_name].filter(Boolean).join(' ');
-      if (leadName) paxCardHtml += `<tr><td style="${labelStyle}">Lead Passenger</td><td style="${valueStyle}"><strong>${leadName}</strong></td></tr>`;
-      if (mergeData.lead_passenger_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.lead_passenger_preferred_name}</td></tr>`;
-      paxCardHtml += `<tr><td style="${labelStyle}">Total Passengers</td><td style="${valueStyle}">${mergeData.booking_passenger_count || 1}</td></tr>`;
-      if (mergeData.lead_passenger_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone Number</td><td style="${valueStyle}">${mergeData.lead_passenger_phone}</td></tr>`;
-      // Always show dietary, accessibility, emergency for lead pax
-      paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.lead_passenger_dietary_requirements && mergeData.lead_passenger_dietary_requirements !== 'N/A' ? mergeData.lead_passenger_dietary_requirements : 'N/A'}</td></tr>`;
-      paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.lead_passenger_accessibility_needs && mergeData.lead_passenger_accessibility_needs !== 'N/A' ? mergeData.lead_passenger_accessibility_needs : 'N/A'}</td></tr>`;
+      if (leadName) rows.push(`<tr><td style="${paxLabelStyle}">Lead Passenger</td><td style="${paxValueStyle}"><strong>${leadName}</strong></td></tr>`);
+      if (mergeData.lead_passenger_preferred_name) rows.push(`<tr><td style="${paxLabelStyle}">Preferred Name</td><td style="${paxValueStyle}">${mergeData.lead_passenger_preferred_name}</td></tr>`);
+      rows.push(`<tr><td style="${paxLabelStyle}">Total Passengers</td><td style="${paxValueStyle}">${mergeData.booking_passenger_count || 1}</td></tr>`);
+      if (mergeData.lead_passenger_phone) rows.push(`<tr><td style="${paxLabelStyle}">Phone Number</td><td style="${paxValueStyle}">${mergeData.lead_passenger_phone}</td></tr>`);
+      rows.push(`<tr><td style="${paxLabelStyle}">Dietary</td><td style="${paxValueStyle}">${mergeData.lead_passenger_dietary_requirements && mergeData.lead_passenger_dietary_requirements !== 'N/A' ? mergeData.lead_passenger_dietary_requirements : 'N/A'}</td></tr>`);
+      rows.push(`<tr><td style="${paxLabelStyle}">Accessibility</td><td style="${paxValueStyle}">${mergeData.lead_passenger_accessibility_needs && mergeData.lead_passenger_accessibility_needs !== 'N/A' ? mergeData.lead_passenger_accessibility_needs : 'N/A'}</td></tr>`);
       const ecName = mergeData.lead_passenger_emergency_contact_name || '';
       const ecPhone = mergeData.lead_passenger_emergency_contact_phone || '';
       const ecDisplay = ecName ? `${ecName}${ecPhone ? ' ' + ecPhone : ''}` : 'Not provided';
-      paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${ecDisplay}</td></tr>`;
+      rows.push(`<tr><td style="${paxLabelStyle}">Emergency Contact</td><td style="${paxValueStyle}">${ecDisplay}</td></tr>`);
       
-      // Passenger 2 - conditional fields except dietary always shows
+      // Passenger 2
       if (mergeData.passenger_2_first_name) {
         const pax2Name = [mergeData.passenger_2_first_name, mergeData.passenger_2_last_name].filter(Boolean).join(' ');
-        paxCardHtml += `<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`;
-        paxCardHtml += `<tr><td style="${labelStyle}">Passenger 2</td><td style="${valueStyle}"><strong>${pax2Name}</strong></td></tr>`;
-        if (mergeData.passenger_2_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.passenger_2_preferred_name}</td></tr>`;
-        if (mergeData.passenger_2_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone</td><td style="${valueStyle}">${mergeData.passenger_2_phone}</td></tr>`;
-        // Dietary always shows for pax 2
-        paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_2_dietary_requirements && mergeData.passenger_2_dietary_requirements !== 'N/A' ? mergeData.passenger_2_dietary_requirements : 'N/A'}</td></tr>`;
-        if (mergeData.passenger_2_accessibility_needs && mergeData.passenger_2_accessibility_needs !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.passenger_2_accessibility_needs}</td></tr>`;
-        if (mergeData.passenger_2_medical_conditions && mergeData.passenger_2_medical_conditions !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Medical</td><td style="${valueStyle}">${mergeData.passenger_2_medical_conditions}</td></tr>`;
+        rows.push(`<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`);
+        rows.push(`<tr><td style="${paxLabelStyle}">Passenger 2</td><td style="${paxValueStyle}"><strong>${pax2Name}</strong></td></tr>`);
+        if (mergeData.passenger_2_preferred_name) rows.push(`<tr><td style="${paxLabelStyle}">Preferred Name</td><td style="${paxValueStyle}">${mergeData.passenger_2_preferred_name}</td></tr>`);
+        if (mergeData.passenger_2_phone) rows.push(`<tr><td style="${paxLabelStyle}">Phone</td><td style="${paxValueStyle}">${mergeData.passenger_2_phone}</td></tr>`);
+        rows.push(`<tr><td style="${paxLabelStyle}">Dietary</td><td style="${paxValueStyle}">${mergeData.passenger_2_dietary_requirements && mergeData.passenger_2_dietary_requirements !== 'N/A' ? mergeData.passenger_2_dietary_requirements : 'N/A'}</td></tr>`);
+        if (mergeData.passenger_2_accessibility_needs && mergeData.passenger_2_accessibility_needs !== 'N/A') rows.push(`<tr><td style="${paxLabelStyle}">Accessibility</td><td style="${paxValueStyle}">${mergeData.passenger_2_accessibility_needs}</td></tr>`);
+        if (mergeData.passenger_2_medical_conditions && mergeData.passenger_2_medical_conditions !== 'N/A') rows.push(`<tr><td style="${paxLabelStyle}">Medical</td><td style="${paxValueStyle}">${mergeData.passenger_2_medical_conditions}</td></tr>`);
         if (mergeData.passenger_2_emergency_contact_name) {
           const ec2Phone = mergeData.passenger_2_emergency_contact_phone ? ' ' + mergeData.passenger_2_emergency_contact_phone : '';
-          paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${mergeData.passenger_2_emergency_contact_name}${ec2Phone}</td></tr>`;
+          rows.push(`<tr><td style="${paxLabelStyle}">Emergency Contact</td><td style="${paxValueStyle}">${mergeData.passenger_2_emergency_contact_name}${ec2Phone}</td></tr>`);
         }
       }
       
-      // Passenger 3 - same logic as pax 2
+      // Passenger 3
       if (mergeData.passenger_3_first_name) {
         const pax3Name = [mergeData.passenger_3_first_name, mergeData.passenger_3_last_name].filter(Boolean).join(' ');
-        paxCardHtml += `<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`;
-        paxCardHtml += `<tr><td style="${labelStyle}">Passenger 3</td><td style="${valueStyle}"><strong>${pax3Name}</strong></td></tr>`;
-        if (mergeData.passenger_3_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.passenger_3_preferred_name}</td></tr>`;
-        if (mergeData.passenger_3_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone</td><td style="${valueStyle}">${mergeData.passenger_3_phone}</td></tr>`;
-        paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_3_dietary_requirements && mergeData.passenger_3_dietary_requirements !== 'N/A' ? mergeData.passenger_3_dietary_requirements : 'N/A'}</td></tr>`;
-        if (mergeData.passenger_3_accessibility_needs && mergeData.passenger_3_accessibility_needs !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.passenger_3_accessibility_needs}</td></tr>`;
-        if (mergeData.passenger_3_medical_conditions && mergeData.passenger_3_medical_conditions !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Medical</td><td style="${valueStyle}">${mergeData.passenger_3_medical_conditions}</td></tr>`;
+        rows.push(`<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`);
+        rows.push(`<tr><td style="${paxLabelStyle}">Passenger 3</td><td style="${paxValueStyle}"><strong>${pax3Name}</strong></td></tr>`);
+        if (mergeData.passenger_3_preferred_name) rows.push(`<tr><td style="${paxLabelStyle}">Preferred Name</td><td style="${paxValueStyle}">${mergeData.passenger_3_preferred_name}</td></tr>`);
+        if (mergeData.passenger_3_phone) rows.push(`<tr><td style="${paxLabelStyle}">Phone</td><td style="${paxValueStyle}">${mergeData.passenger_3_phone}</td></tr>`);
+        rows.push(`<tr><td style="${paxLabelStyle}">Dietary</td><td style="${paxValueStyle}">${mergeData.passenger_3_dietary_requirements && mergeData.passenger_3_dietary_requirements !== 'N/A' ? mergeData.passenger_3_dietary_requirements : 'N/A'}</td></tr>`);
+        if (mergeData.passenger_3_accessibility_needs && mergeData.passenger_3_accessibility_needs !== 'N/A') rows.push(`<tr><td style="${paxLabelStyle}">Accessibility</td><td style="${paxValueStyle}">${mergeData.passenger_3_accessibility_needs}</td></tr>`);
+        if (mergeData.passenger_3_medical_conditions && mergeData.passenger_3_medical_conditions !== 'N/A') rows.push(`<tr><td style="${paxLabelStyle}">Medical</td><td style="${paxValueStyle}">${mergeData.passenger_3_medical_conditions}</td></tr>`);
         if (mergeData.passenger_3_emergency_contact_name) {
           const ec3Phone = mergeData.passenger_3_emergency_contact_phone ? ' ' + mergeData.passenger_3_emergency_contact_phone : '';
-          paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${mergeData.passenger_3_emergency_contact_name}${ec3Phone}</td></tr>`;
+          rows.push(`<tr><td style="${paxLabelStyle}">Emergency Contact</td><td style="${paxValueStyle}">${mergeData.passenger_3_emergency_contact_name}${ec3Phone}</td></tr>`);
         }
       }
       
-      paxCardHtml += `</table>`;
-      mergeData.passenger_info_card = paxCardHtml;
+      mergeData.passenger_info_card = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" class="email-hotel-card" style="margin:16px 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;"><tr><td style="background-color:#f8f9fa;padding:12px 16px;border-bottom:1px solid #e5e7eb;"><strong style="font-size:15px;color:#1a2332;">👤 Passenger Information</strong></td></tr><tr><td style="padding:12px 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">${rows.join('')}</table></td></tr></table>`;
     } else {
       mergeData.passenger_info_card = '';
     }
