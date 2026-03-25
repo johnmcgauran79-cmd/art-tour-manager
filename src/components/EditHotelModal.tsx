@@ -340,7 +340,8 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           )}
 
           <Separator />
-            <Button 
+
+          <div className="flex justify-between">
               type="button" 
               variant="destructive" 
               onClick={handleDelete}
