@@ -164,6 +164,34 @@ export function TourWaiverStatusSection({ tourId, tourName }: Props) {
     setSelectedBookings(new Set());
   };
 
+  // Get recipients for the selected bookings
+  const selectedRecipients = waiverData.filter(
+    (r) => selectedBookings.has(r.bookingId) && !r.signedAt && r.email
+  );
+
+  const handleOpenConfirm = async () => {
+    setConfirmOpen(true);
+    setLoadingPreview(true);
+    setPreviewHtml(null);
+
+    try {
+      // Use first selected booking to generate a sample preview
+      const firstBookingId = [...selectedBookings][0];
+      if (firstBookingId) {
+        const { data, error } = await supabase.functions.invoke("send-booking-confirmation", {
+          body: { bookingId: firstBookingId, templateType: "waiver_request", previewOnly: true },
+        });
+        if (!error && data?.html) {
+          setPreviewHtml(data.html);
+        }
+      }
+    } catch {
+      // Preview is optional, don't block the send
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
   const handleBulkSend = async () => {
     setConfirmOpen(false);
     setSending(true);
