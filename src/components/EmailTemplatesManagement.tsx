@@ -88,7 +88,7 @@ Quill.register(EmailCardBlot);
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
-import { CustomCardBuilderModal } from "@/components/CustomCardBuilderModal";
+import { CustomCardBuilderModal, type CustomCardInsertData } from "@/components/CustomCardBuilderModal";
 
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
@@ -431,6 +431,30 @@ export const EmailTemplatesManagement = () => {
     }
   };
 
+  const insertCustomCard = (data: CustomCardInsertData) => {
+    if (isHtmlView) {
+      // In HTML view, insert raw HTML directly
+      setFormData(prev => ({
+        ...prev,
+        content_template: prev.content_template + '\n' + data.html
+      }));
+    } else if (quillRef.current) {
+      // In WYSIWYG mode, insert a visual placeholder blot
+      const quill = quillRef.current.getEditor();
+      const range = quill.getSelection();
+      const insertIndex = range ? range.index : quill.getLength() - 1;
+      quill.insertText(insertIndex, '\n');
+      quill.insertEmbed(insertIndex + 1, 'email-card', {
+        title: data.title,
+        emoji: data.emoji,
+        accentColor: data.accentColor,
+        html: data.html,
+      });
+      quill.insertText(insertIndex + 2, '\n');
+      quill.setSelection(insertIndex + 3, 0);
+    }
+  };
+
   const insertDivider = () => {
     if (isHtmlView) {
       setFormData(prev => ({
@@ -506,7 +530,7 @@ export const EmailTemplatesManagement = () => {
   const quillFormats = [
     'header', 'bold', 'italic', 'underline', 'strike',
     'color', 'background', 'list', 'bullet', 'align', 'link',
-    'divider', 'image'
+    'divider', 'image', 'email-card'
   ];
 
   return (
