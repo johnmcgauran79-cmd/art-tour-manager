@@ -995,7 +995,78 @@ const handler = async (req: Request): Promise<Response> => {
       mergeData.hotel_details = '';
     }
 
-    // Fetch and render additional info blocks for this tour
+    // Generate {{tour_details_card}} styled card
+    const hasTourDetailsCard = /\{\{\s*tour_details_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
+    if (hasTourDetailsCard) {
+      const sectionHeaderStyle = 'background-color:#232628;padding:12px 20px;border-radius:6px;';
+      const headerTextStyle = 'color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;';
+      const labelStyle = 'padding:6px 0;color:#6b7280;font-size:13px;width:140px;vertical-align:top;';
+      const valueStyle = 'padding:6px 0 6px 12px;color:#1a2332;font-size:13px;font-weight:500;vertical-align:top;';
+      const bulletStyle = 'color:#F5C518;font-weight:bold;margin-right:8px;';
+      
+      let tourCardHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 12px 0;"><tr><td style="${sectionHeaderStyle}"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">✈️</td><td style="vertical-align:middle;"><strong style="${headerTextStyle}">TOUR DETAILS</strong></td></tr></table></td></tr></table>`;
+      
+      tourCardHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">`;
+      if (mergeData.tour_name) tourCardHtml += `<tr><td style="${labelStyle}">Tour</td><td style="${valueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`;
+      if (mergeData.tour_location) tourCardHtml += `<tr><td style="${labelStyle}">Location</td><td style="${valueStyle}">${mergeData.tour_location}</td></tr>`;
+      if (mergeData.tour_start_date && mergeData.tour_end_date) tourCardHtml += `<tr><td style="${labelStyle}">Tour Dates</td><td style="${valueStyle}">${mergeData.tour_start_date} - ${mergeData.tour_end_date}</td></tr>`;
+      if (mergeData.tour_days || mergeData.tour_nights) tourCardHtml += `<tr><td style="${labelStyle}">Duration</td><td style="${valueStyle}">${mergeData.tour_days ? mergeData.tour_days + ' days' : ''}${mergeData.tour_days && mergeData.tour_nights ? ', ' : ''}${mergeData.tour_nights ? mergeData.tour_nights + ' nights' : ''}</td></tr>`;
+      if (mergeData.tour_host) tourCardHtml += `<tr><td style="${labelStyle}">Tour Host</td><td style="${valueStyle}">${mergeData.tour_host}</td></tr>`;
+      tourCardHtml += `</table>`;
+      
+      mergeData.tour_details_card = tourCardHtml;
+    } else {
+      mergeData.tour_details_card = '';
+    }
+
+    // Generate {{passenger_info_card}} styled card
+    const hasPassengerInfoCard = /\{\{\s*passenger_info_card\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
+    if (hasPassengerInfoCard) {
+      const sectionHeaderStyle = 'background-color:#232628;padding:12px 20px;border-radius:6px;';
+      const headerTextStyle = 'color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;';
+      const labelStyle = 'padding:6px 0;color:#6b7280;font-size:13px;width:140px;vertical-align:top;';
+      const valueStyle = 'padding:6px 0 6px 12px;color:#1a2332;font-size:13px;font-weight:500;vertical-align:top;';
+      
+      let paxCardHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 12px 0;"><tr><td style="${sectionHeaderStyle}"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">👤</td><td style="vertical-align:middle;"><strong style="${headerTextStyle}">PASSENGER INFORMATION</strong></td></tr></table></td></tr></table>`;
+      
+      paxCardHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">`;
+      
+      const leadName = [mergeData.lead_passenger_first_name, mergeData.lead_passenger_last_name].filter(Boolean).join(' ');
+      if (leadName) paxCardHtml += `<tr><td style="${labelStyle}">Lead Passenger</td><td style="${valueStyle}"><strong>${leadName}</strong></td></tr>`;
+      if (mergeData.lead_passenger_preferred_name) paxCardHtml += `<tr><td style="${labelStyle}">Preferred Name</td><td style="${valueStyle}">${mergeData.lead_passenger_preferred_name}</td></tr>`;
+      paxCardHtml += `<tr><td style="${labelStyle}">Total Passengers</td><td style="${valueStyle}">${mergeData.booking_passenger_count || 1}</td></tr>`;
+      if (mergeData.lead_passenger_phone) paxCardHtml += `<tr><td style="${labelStyle}">Phone Number</td><td style="${valueStyle}">${mergeData.lead_passenger_phone}</td></tr>`;
+      if (mergeData.lead_passenger_dietary_requirements && mergeData.lead_passenger_dietary_requirements !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.lead_passenger_dietary_requirements}</td></tr>`;
+      if (mergeData.lead_passenger_accessibility_needs && mergeData.lead_passenger_accessibility_needs !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Accessibility</td><td style="${valueStyle}">${mergeData.lead_passenger_accessibility_needs}</td></tr>`;
+      
+      // Emergency contact
+      if (mergeData.lead_passenger_emergency_contact_name) {
+        const ecPhone = mergeData.lead_passenger_emergency_contact_phone ? ` ${mergeData.lead_passenger_emergency_contact_phone}` : '';
+        paxCardHtml += `<tr><td style="${labelStyle}">Emergency Contact</td><td style="${valueStyle}">${mergeData.lead_passenger_emergency_contact_name}${ecPhone}</td></tr>`;
+      }
+      
+      // Passenger 2
+      if (mergeData.passenger_2_first_name) {
+        const pax2Name = [mergeData.passenger_2_first_name, mergeData.passenger_2_last_name].filter(Boolean).join(' ');
+        paxCardHtml += `<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`;
+        paxCardHtml += `<tr><td style="${labelStyle}">Passenger 2</td><td style="${valueStyle}"><strong>${pax2Name}</strong></td></tr>`;
+        if (mergeData.passenger_2_dietary_requirements && mergeData.passenger_2_dietary_requirements !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_2_dietary_requirements}</td></tr>`;
+      }
+      
+      // Passenger 3
+      if (mergeData.passenger_3_first_name) {
+        const pax3Name = [mergeData.passenger_3_first_name, mergeData.passenger_3_last_name].filter(Boolean).join(' ');
+        paxCardHtml += `<tr><td colspan="2" style="padding:8px 0 2px;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;" /></td></tr>`;
+        paxCardHtml += `<tr><td style="${labelStyle}">Passenger 3</td><td style="${valueStyle}"><strong>${pax3Name}</strong></td></tr>`;
+        if (mergeData.passenger_3_dietary_requirements && mergeData.passenger_3_dietary_requirements !== 'N/A') paxCardHtml += `<tr><td style="${labelStyle}">Dietary</td><td style="${valueStyle}">${mergeData.passenger_3_dietary_requirements}</td></tr>`;
+      }
+      
+      paxCardHtml += `</table>`;
+      mergeData.passenger_info_card = paxCardHtml;
+    } else {
+      mergeData.passenger_info_card = '';
+    }
+
     const hasAdditionalInfoPlaceholder = /\{\{\s*additional_info_blocks\s*\}\}/.test(stripZeroWidth(customContent || template?.content_template || ''));
     
     if (hasAdditionalInfoPlaceholder && booking.tour_id) {

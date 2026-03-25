@@ -132,6 +132,33 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
     mergeData.itinerary_link = '#preview-itinerary';
     mergeData.additional_info_blocks = '<div style="padding:12px;border:1px dashed #d1d5db;border-radius:8px;text-align:center;color:#9ca3af;font-size:13px;margin:8px 0;">Additional Info Blocks will appear here (rendered server-side)</div>';
 
+    // Generate tour_details_card preview
+    const sectionHeaderStyle = 'background-color:#232628;padding:12px 20px;border-radius:6px;';
+    const headerTextStyle = 'color:#F5C518;font-size:14px;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;';
+    const gridLabelStyle = 'padding:6px 0;color:#6b7280;font-size:13px;width:140px;vertical-align:top;';
+    const gridValueStyle = 'padding:6px 0 6px 12px;color:#1a2332;font-size:13px;font-weight:500;vertical-align:top;';
+    
+    let tourCardHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 12px 0;"><tr><td style="${sectionHeaderStyle}"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">✈️</td><td style="vertical-align:middle;"><strong style="${headerTextStyle}">TOUR DETAILS</strong></td></tr></table></td></tr></table>`;
+    tourCardHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">`;
+    if (mergeData.tour_name) tourCardHtml += `<tr><td style="${gridLabelStyle}">Tour</td><td style="${gridValueStyle}"><strong>${mergeData.tour_name}</strong></td></tr>`;
+    if (mergeData.tour_location) tourCardHtml += `<tr><td style="${gridLabelStyle}">Location</td><td style="${gridValueStyle}">${mergeData.tour_location}</td></tr>`;
+    if (mergeData.tour_start_date && mergeData.tour_end_date) tourCardHtml += `<tr><td style="${gridLabelStyle}">Tour Dates</td><td style="${gridValueStyle}">${mergeData.tour_start_date} - ${mergeData.tour_end_date}</td></tr>`;
+    if (mergeData.tour_days || mergeData.tour_nights) tourCardHtml += `<tr><td style="${gridLabelStyle}">Duration</td><td style="${gridValueStyle}">${mergeData.tour_days ? mergeData.tour_days + ' days' : ''}${mergeData.tour_days && mergeData.tour_nights ? ', ' : ''}${mergeData.tour_nights ? mergeData.tour_nights + ' nights' : ''}</td></tr>`;
+    if (mergeData.tour_host) tourCardHtml += `<tr><td style="${gridLabelStyle}">Tour Host</td><td style="${gridValueStyle}">${mergeData.tour_host}</td></tr>`;
+    tourCardHtml += `</table>`;
+    (mergeData as any).tour_details_card = tourCardHtml;
+
+    // Generate passenger_info_card preview
+    let paxCardHtml = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-section-header" style="margin:28px 0 12px 0;"><tr><td style="${sectionHeaderStyle}"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">👤</td><td style="vertical-align:middle;"><strong style="${headerTextStyle}">PASSENGER INFORMATION</strong></td></tr></table></td></tr></table>`;
+    paxCardHtml += `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:0 0 16px 0;">`;
+    const leadName = [mergeData.lead_passenger_first_name, mergeData.lead_passenger_last_name].filter(Boolean).join(' ');
+    if (leadName) paxCardHtml += `<tr><td style="${gridLabelStyle}">Lead Passenger</td><td style="${gridValueStyle}"><strong>${leadName}</strong></td></tr>`;
+    if (mergeData.lead_passenger_preferred_name) paxCardHtml += `<tr><td style="${gridLabelStyle}">Preferred Name</td><td style="${gridValueStyle}">${mergeData.lead_passenger_preferred_name}</td></tr>`;
+    paxCardHtml += `<tr><td style="${gridLabelStyle}">Total Passengers</td><td style="${gridValueStyle}">${mergeData.booking_passenger_count || 1}</td></tr>`;
+    if (mergeData.lead_passenger_phone) paxCardHtml += `<tr><td style="${gridLabelStyle}">Phone Number</td><td style="${gridValueStyle}">${mergeData.lead_passenger_phone}</td></tr>`;
+    paxCardHtml += `</table>`;
+    (mergeData as any).passenger_info_card = paxCardHtml;
+
     const processedSubject = EmailTemplateEngine.processTemplate(subject, mergeData);
     const processedContent = EmailTemplateEngine.processTemplate(content, mergeData);
 
