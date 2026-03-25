@@ -363,17 +363,16 @@ export const EmailTemplatesManagement = () => {
     setCustomButtonUrl("");
   };
 
-  const insertHtmlBlock = (html: string) => {
-    if (isHtmlView) {
-      setFormData(prev => ({
-        ...prev,
-        content_template: prev.content_template + '\n' + html
-      }));
-    } else if (quillRef.current) {
-      const quill = quillRef.current.getEditor();
-      const range = quill.getSelection();
-      const insertIndex = range ? range.index : quill.getLength() - 1;
-      quill.clipboard.dangerouslyPasteHTML(insertIndex, html);
+  const insertHtmlBlock = (html: string, forceHtmlView = false) => {
+    // Always append to raw HTML content to preserve complex table structures
+    // Quill's dangerouslyPasteHTML strips tables/inline styles from email-safe HTML
+    setFormData(prev => ({
+      ...prev,
+      content_template: prev.content_template + '\n' + html
+    }));
+    // Switch to HTML view so complex blocks (custom cards, section headers) are visible
+    if (forceHtmlView && !isHtmlView) {
+      setIsHtmlView(true);
     }
   };
 
@@ -943,7 +942,7 @@ export const EmailTemplatesManagement = () => {
       <CustomCardBuilderModal
         open={showCardBuilder}
         onOpenChange={setShowCardBuilder}
-        onInsert={insertHtmlBlock}
+        onInsert={(html) => insertHtmlBlock(html, true)}
       />
     </div>
   );
