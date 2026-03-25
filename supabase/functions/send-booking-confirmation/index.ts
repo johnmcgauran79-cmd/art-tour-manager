@@ -138,6 +138,8 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
     .email-body table[role="presentation"] strong { color: inherit !important; }
     .email-body .email-hotel-card td { font-size: inherit !important; color: inherit !important; }
     .email-body .email-hotel-card strong { color: inherit !important; }
+    .email-body .email-section-header td { background-color: inherit !important; color: inherit !important; font-size: inherit !important; }
+    .email-body .email-section-header strong { color: inherit !important; font-size: inherit !important; letter-spacing: inherit !important; }
   </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, Helvetica, sans-serif;">
