@@ -62,10 +62,17 @@ function saveCards(cards: SavedCardTemplate[]) {
   localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify(cards));
 }
 
+export interface CustomCardInsertData {
+  html: string;
+  title: string;
+  emoji: string;
+  accentColor: string;
+}
+
 interface CustomCardBuilderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInsert: (html: string) => void;
+  onInsert: (data: CustomCardInsertData) => void;
 }
 
 export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomCardBuilderModalProps) => {
@@ -137,7 +144,12 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
   }, [rows, headerTitle, headerEmoji, accent]);
 
   const handleInsert = () => {
-    onInsert(generateHtml());
+    onInsert({
+      html: generateHtml(),
+      title: headerTitle,
+      emoji: headerEmoji,
+      accentColor,
+    });
     onOpenChange(false);
     resetBuilder();
   };
