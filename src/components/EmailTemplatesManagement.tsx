@@ -115,6 +115,14 @@ export const EmailTemplatesManagement = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("all");
   const [isHtmlView, setIsHtmlView] = useState(false);
+  
+  // Detect if content has complex HTML that Quill would mangle
+  const hasComplexHtml = (html: string) => {
+    return /<table\s[^>]*role\s*=\s*["']presentation["']/i.test(html) ||
+           /class\s*=\s*["']email-hotel-card["']/i.test(html) ||
+           /class\s*=\s*["']email-section-header["']/i.test(html) ||
+           /data-card-html/i.test(html);
+  };
   const quillRef = useRef<ReactQuill>(null);
   const { hasEditAccess } = usePermissions();
   
