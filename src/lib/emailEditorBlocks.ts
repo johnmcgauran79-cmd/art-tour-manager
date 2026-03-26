@@ -9,6 +9,7 @@ const BLOCK_CLASS_NAME = "ql-email-html-block";
 const BLOCK_HTML_ATTRIBUTE = "data-block-html";
 const BLOCK_LABEL_ATTRIBUTE = "data-block-label";
 const BLOCK_DESCRIPTION_ATTRIBUTE = "data-block-description";
+const BLOCK_META_ATTRIBUTE = "data-block-meta";
 
 const COMPLEX_BLOCK_REGEX = /<table\b[^>]*(role\s*=\s*["']presentation["']|class\s*=\s*["'][^"']*(email-hotel-card|email-section-header)[^"']*["']|data-art-[^=\s>]+)|<hr\b|data-card-html|data-block-html/i;
 
