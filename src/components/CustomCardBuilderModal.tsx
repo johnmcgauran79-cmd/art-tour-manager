@@ -327,6 +327,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
       title: headerTitle,
       emoji: headerEmoji,
       accentColor,
+      rows: rows.map(r => ({ ...r })),
     });
     onOpenChange(false);
     resetBuilder();
