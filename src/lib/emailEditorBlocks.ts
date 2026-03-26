@@ -282,3 +282,92 @@ export const insertEmailHtmlBlockEmbed = (quill: any, value: EmailHtmlBlockValue
   quill.insertText(insertIndex + 2, "\n", "user");
   quill.setSelection(insertIndex + 3, 0, "silent");
 };
+
+/**
+ * Sets up click-to-select, Delete-to-remove, and double-click-to-edit
+ * interactions on protected email blocks inside a Quill editor.
+ *
+ * Returns a cleanup function to remove listeners.
+ */
+export const setupBlockInteractions = (
+  quill: any,
+  onEditBlock?: (meta: string, blotNode: HTMLElement) => void,
+) => {
+  const root = quill.root as HTMLElement;
+  let selectedBlock: HTMLElement | null = null;
+
+  const clearSelection = () => {
+    if (selectedBlock) {
+      selectedBlock.style.outline = "none";
+      selectedBlock.style.boxShadow = "none";
+      selectedBlock = null;
+    }
+  };
+
+  const selectBlock = (node: HTMLElement) => {
+    clearSelection();
+    selectedBlock = node;
+    node.style.outline = "2px solid hsl(var(--primary))";
+    node.style.boxShadow = "0 0 0 4px hsl(var(--primary) / 0.15)";
+  };
+
+  const findBlockNode = (target: HTMLElement): HTMLElement | null => {
+    let el: HTMLElement | null = target;
+    while (el && el !== root) {
+      if (el.classList?.contains(BLOCK_CLASS_NAME)) return el;
+      el = el.parentElement;
+    }
+    return null;
+  };
+
+  const handleClick = (e: MouseEvent) => {
+    const block = findBlockNode(e.target as HTMLElement);
+    if (block) {
+      e.preventDefault();
+      e.stopPropagation();
+      selectBlock(block);
+    } else {
+      clearSelection();
+    }
+  };
+
+  const handleDblClick = (e: MouseEvent) => {
+    const block = findBlockNode(e.target as HTMLElement);
+    if (!block) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const meta = block.getAttribute(BLOCK_META_ATTRIBUTE);
+    if (meta && onEditBlock) {
+      onEditBlock(meta, block);
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!selectedBlock) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+      // Find the blot and remove it via Quill API
+      const blot = quill.constructor.find(selectedBlock);
+      if (blot) {
+        const index = quill.getIndex(blot);
+        quill.deleteText(index, 1, "user");
+      } else {
+        // Fallback: remove DOM node directly
+        selectedBlock.remove();
+      }
+      selectedBlock = null;
+    }
+  };
+
+  root.addEventListener("click", handleClick);
+  root.addEventListener("dblclick", handleDblClick);
+  document.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    root.removeEventListener("click", handleClick);
+    root.removeEventListener("dblclick", handleDblClick);
+    document.removeEventListener("keydown", handleKeyDown);
+    clearSelection();
+  };
+};
