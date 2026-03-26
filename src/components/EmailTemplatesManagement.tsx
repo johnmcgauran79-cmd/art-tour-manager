@@ -84,6 +84,9 @@ export const EmailTemplatesManagement = () => {
   const [insertImageAlt, setInsertImageAlt] = useState("");
   const [showImageInsert, setShowImageInsert] = useState(false);
   const [showCardBuilder, setShowCardBuilder] = useState(false);
+  const [editingCardData, setEditingCardData] = useState<CardBuilderInitialData | null>(null);
+  const editingBlockNodeRef = useRef<HTMLElement | null>(null);
+  const blockInteractionCleanupRef = useRef<(() => void) | null>(null);
 
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
