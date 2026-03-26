@@ -100,12 +100,16 @@ const createPlaceholderElement = (doc: Document, value: EmailHtmlBlockValue) => 
   const node = doc.createElement("div");
   const label = value.label?.trim() || "Protected Email Block";
   const description = value.description?.trim() || "Email-safe layout preserved while you edit surrounding content.";
+  const hasMeta = !!value.meta;
 
   node.setAttribute("contenteditable", "false");
   node.setAttribute("class", BLOCK_CLASS_NAME);
   node.setAttribute(BLOCK_HTML_ATTRIBUTE, encodeHtml(value.html));
   node.setAttribute(BLOCK_LABEL_ATTRIBUTE, label);
   node.setAttribute(BLOCK_DESCRIPTION_ATTRIBUTE, description);
+  if (value.meta) {
+    node.setAttribute(BLOCK_META_ATTRIBUTE, value.meta);
+  }
   node.setAttribute(
     "style",
     [
@@ -114,8 +118,9 @@ const createPlaceholderElement = (doc: Document, value: EmailHtmlBlockValue) => 
       "margin:12px 0",
       "overflow:hidden",
       "background:hsl(var(--card))",
-      "cursor:default",
+      "cursor:pointer",
       "user-select:none",
+      "transition:box-shadow 0.15s, border-color 0.15s",
     ].join(";")
   );
 
@@ -123,11 +128,16 @@ const createPlaceholderElement = (doc: Document, value: EmailHtmlBlockValue) => 
     <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid hsl(var(--border));background:hsl(var(--muted));">
       <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:999px;background:hsl(var(--secondary));color:hsl(var(--secondary-foreground));font-size:11px;font-weight:700;">✦</span>
       <strong style="font-size:12px;line-height:1.2;letter-spacing:0.06em;text-transform:uppercase;color:hsl(var(--foreground));">${escapeHtml(label)}</strong>
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center;">
+        ${hasMeta ? '<span style="font-size:10px;color:hsl(var(--muted-foreground));opacity:0.7;" title="Double-click to edit">✏️ editable</span>' : ''}
+        <span style="font-size:10px;color:hsl(var(--muted-foreground));opacity:0.7;" title="Click to select, then press Delete">🗑️</span>
+      </span>
     </div>
-    <div style="padding:10px 14px;font-size:12px;line-height:1.5;color:hsl(var(--muted-foreground));">${escapeHtml(description)}</div>
+    <div style="padding:10px 14px;font-size:12px;line-height:1.5;color:hsl(var(--muted-foreground));">${escapeHtml(description)}${hasMeta ? ' <em>Double-click to edit.</em>' : ' <em>Click + Delete to remove.</em>'}</div>
   `;
 
   return node;
+};
 };
 
 const unwrapSingleStructuredChildWrappers = (doc: Document) => {
