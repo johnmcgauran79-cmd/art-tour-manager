@@ -297,6 +297,32 @@ export const EmailTemplatesManagement = () => {
     insertHtmlBlock(data.html, `Custom Card • ${data.title}`, meta);
   };
 
+  // Set up block interactions (click-to-select, delete, double-click-to-edit)
+  useEffect(() => {
+    // Clean up previous listeners
+    blockInteractionCleanupRef.current?.();
+    blockInteractionCleanupRef.current = null;
+
+    if (!isHtmlView && quillRef.current && isCreateModalOpen) {
+      const quill = quillRef.current.getEditor();
+      blockInteractionCleanupRef.current = setupBlockInteractions(quill, (metaJson, blockNode) => {
+        try {
+          const meta = JSON.parse(metaJson) as CardBuilderInitialData;
+          editingBlockNodeRef.current = blockNode;
+          setEditingCardData(meta);
+          setShowCardBuilder(true);
+        } catch (e) {
+          console.warn('Could not parse block meta for editing', e);
+        }
+      });
+    }
+
+    return () => {
+      blockInteractionCleanupRef.current?.();
+      blockInteractionCleanupRef.current = null;
+    };
+  }, [isHtmlView, isCreateModalOpen]);
+
   const insertDivider = () => {
     if (isHtmlView) {
       setFormData(prev => ({
