@@ -263,6 +263,7 @@ export const registerEmailEditorBlots = (Quill: any) => {
         html: decodeHtml(node.getAttribute(BLOCK_HTML_ATTRIBUTE) || ""),
         label: node.getAttribute(BLOCK_LABEL_ATTRIBUTE) || "Protected Email Block",
         description: node.getAttribute(BLOCK_DESCRIPTION_ATTRIBUTE) || undefined,
+        meta: node.getAttribute(BLOCK_META_ATTRIBUTE) || undefined,
       };
     }
   }
