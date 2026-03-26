@@ -138,7 +138,6 @@ const createPlaceholderElement = (doc: Document, value: EmailHtmlBlockValue) => 
 
   return node;
 };
-};
 
 const unwrapSingleStructuredChildWrappers = (doc: Document) => {
   let didChange = true;
