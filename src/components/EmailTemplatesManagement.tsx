@@ -264,11 +264,38 @@ export const EmailTemplatesManagement = () => {
     insertEmailHtmlBlockEmbed(quillRef.current.getEditor(), {
       html,
       label,
+      meta: meta || undefined,
     });
   };
 
   const insertCustomCard = (data: CustomCardInsertData) => {
-    insertHtmlBlock(data.html, `Custom Card • ${data.title}`);
+    const meta = JSON.stringify({
+      headerTitle: data.title,
+      headerEmoji: data.emoji,
+      accentColor: data.accentColor,
+      rows: data.rows,
+    });
+
+    // If we're editing an existing block, replace it
+    if (editingBlockNodeRef.current && quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const Quill = quill.constructor;
+      const blot = Quill.find(editingBlockNodeRef.current);
+      if (blot) {
+        const index = quill.getIndex(blot);
+        quill.deleteText(index, 1, "silent");
+        quill.insertEmbed(index, "email-html-block", {
+          html: data.html,
+          label: `Custom Card • ${data.title}`,
+          meta,
+        }, "user");
+      }
+      editingBlockNodeRef.current = null;
+      setEditingCardData(null);
+      return;
+    }
+
+    insertHtmlBlock(data.html, `Custom Card • ${data.title}`, meta);
   };
 
   const insertDivider = () => {
