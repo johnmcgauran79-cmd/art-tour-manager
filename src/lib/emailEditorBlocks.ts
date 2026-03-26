@@ -1,7 +1,8 @@
-type EmailHtmlBlockValue = {
+export type EmailHtmlBlockValue = {
   html: string;
   label?: string;
   description?: string;
+  meta?: string; // JSON-encoded card builder state for round-trip editing
 };
 
 const BLOCK_CLASS_NAME = "ql-email-html-block";
