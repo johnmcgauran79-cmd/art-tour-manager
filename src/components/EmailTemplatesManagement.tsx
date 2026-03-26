@@ -20,12 +20,13 @@ import 'react-quill/dist/quill.snow.css';
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
-import { CustomCardBuilderModal, type CustomCardInsertData } from "@/components/CustomCardBuilderModal";
+import { CustomCardBuilderModal, type CustomCardInsertData, type CardBuilderInitialData } from "@/components/CustomCardBuilderModal";
 import {
   insertEmailHtmlBlockEmbed,
   protectComplexEmailBlocksForEditor,
   registerEmailEditorBlots,
   resolveComplexEmailBlocksFromEditor,
+  setupBlockInteractions,
 } from "@/lib/emailEditorBlocks";
 
 const EMAIL_TEMPLATE_TYPES = [
