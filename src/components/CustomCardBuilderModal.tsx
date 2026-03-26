@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -221,17 +221,26 @@ export interface CustomCardInsertData {
   title: string;
   emoji: string;
   accentColor: string;
+  rows: CardRow[];
+}
+
+export interface CardBuilderInitialData {
+  headerTitle: string;
+  headerEmoji: string;
+  accentColor: string;
+  rows: CardRow[];
 }
 
 interface CustomCardBuilderModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onInsert: (data: CustomCardInsertData) => void;
+  initialData?: CardBuilderInitialData | null;
 }
 
 const conditionOptions = getConditionOptions();
 
-export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomCardBuilderModalProps) => {
+export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialData }: CustomCardBuilderModalProps) => {
   const [headerTitle, setHeaderTitle] = useState('Card Title');
   const [headerEmoji, setHeaderEmoji] = useState('📋');
   const [accentColor, setAccentColor] = useState('grey');
@@ -243,6 +252,16 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
   const [showMergeFields, setShowMergeFields] = useState(false);
   // Track which row/field is "active" for merge field insertion
   const activeInsertCallbackRef = useRef<((field: string) => void) | null>(null);
+
+  // Load initial data when opening for edit
+  useEffect(() => {
+    if (open && initialData) {
+      setHeaderTitle(initialData.headerTitle);
+      setHeaderEmoji(initialData.headerEmoji);
+      setAccentColor(initialData.accentColor);
+      setRows(initialData.rows.map(r => ({ ...r, id: generateId() })));
+    }
+  }, [open, initialData]);
 
   const accent = ACCENT_COLORS.find(c => c.value === accentColor) || ACCENT_COLORS[0];
 
@@ -318,6 +337,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert }: CustomC
       title: headerTitle,
       emoji: headerEmoji,
       accentColor,
+      rows: rows.map(r => ({ ...r })),
     });
     onOpenChange(false);
     resetBuilder();

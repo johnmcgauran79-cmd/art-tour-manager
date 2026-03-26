@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,12 +20,13 @@ import 'react-quill/dist/quill.snow.css';
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { EmailTemplatePreviewModal } from "@/components/EmailTemplatePreviewModal";
-import { CustomCardBuilderModal, type CustomCardInsertData } from "@/components/CustomCardBuilderModal";
+import { CustomCardBuilderModal, type CustomCardInsertData, type CardBuilderInitialData } from "@/components/CustomCardBuilderModal";
 import {
   insertEmailHtmlBlockEmbed,
   protectComplexEmailBlocksForEditor,
   registerEmailEditorBlots,
   resolveComplexEmailBlocksFromEditor,
+  setupBlockInteractions,
 } from "@/lib/emailEditorBlocks";
 
 const EMAIL_TEMPLATE_TYPES = [
@@ -83,6 +84,9 @@ export const EmailTemplatesManagement = () => {
   const [insertImageAlt, setInsertImageAlt] = useState("");
   const [showImageInsert, setShowImageInsert] = useState(false);
   const [showCardBuilder, setShowCardBuilder] = useState(false);
+  const [editingCardData, setEditingCardData] = useState<CardBuilderInitialData | null>(null);
+  const editingBlockNodeRef = useRef<HTMLElement | null>(null);
+  const blockInteractionCleanupRef = useRef<(() => void) | null>(null);
 
   const filteredTemplates = selectedType && selectedType !== "all"
     ? templates.filter(t => t.type === selectedType)
@@ -248,7 +252,7 @@ export const EmailTemplatesManagement = () => {
     setCustomButtonUrl("");
   };
 
-  const insertHtmlBlock = (html: string, label = 'Protected Email Block') => {
+  const insertHtmlBlock = (html: string, label = 'Protected Email Block', meta?: string) => {
     if (isHtmlView || !quillRef.current) {
       setFormData(prev => ({
         ...prev,
@@ -260,12 +264,64 @@ export const EmailTemplatesManagement = () => {
     insertEmailHtmlBlockEmbed(quillRef.current.getEditor(), {
       html,
       label,
+      meta,
     });
   };
 
   const insertCustomCard = (data: CustomCardInsertData) => {
-    insertHtmlBlock(data.html, `Custom Card • ${data.title}`);
+    const meta = JSON.stringify({
+      headerTitle: data.title,
+      headerEmoji: data.emoji,
+      accentColor: data.accentColor,
+      rows: data.rows,
+    });
+
+    // If we're editing an existing block, replace it
+    if (editingBlockNodeRef.current && quillRef.current) {
+      const quill = quillRef.current.getEditor();
+      const blot = (Quill as any).find(editingBlockNodeRef.current);
+      if (blot) {
+        const index = quill.getIndex(blot);
+        quill.deleteText(index, 1, "silent");
+        quill.insertEmbed(index, "email-html-block", {
+          html: data.html,
+          label: `Custom Card • ${data.title}`,
+          meta,
+        }, "user");
+      }
+      editingBlockNodeRef.current = null;
+      setEditingCardData(null);
+      return;
+    }
+
+    insertHtmlBlock(data.html, `Custom Card • ${data.title}`, meta);
   };
+
+  // Set up block interactions (click-to-select, delete, double-click-to-edit)
+  useEffect(() => {
+    // Clean up previous listeners
+    blockInteractionCleanupRef.current?.();
+    blockInteractionCleanupRef.current = null;
+
+    if (!isHtmlView && quillRef.current && isCreateModalOpen) {
+      const quill = quillRef.current.getEditor();
+      blockInteractionCleanupRef.current = setupBlockInteractions(quill, (metaJson, blockNode) => {
+        try {
+          const meta = JSON.parse(metaJson) as CardBuilderInitialData;
+          editingBlockNodeRef.current = blockNode;
+          setEditingCardData(meta);
+          setShowCardBuilder(true);
+        } catch (e) {
+          console.warn('Could not parse block meta for editing', e);
+        }
+      });
+    }
+
+    return () => {
+      blockInteractionCleanupRef.current?.();
+      blockInteractionCleanupRef.current = null;
+    };
+  }, [isHtmlView, isCreateModalOpen]);
 
   const insertDivider = () => {
     if (isHtmlView) {
@@ -835,8 +891,15 @@ export const EmailTemplatesManagement = () => {
       {/* Custom Card Builder */}
       <CustomCardBuilderModal
         open={showCardBuilder}
-        onOpenChange={setShowCardBuilder}
+        onOpenChange={(open) => {
+          setShowCardBuilder(open);
+          if (!open) {
+            setEditingCardData(null);
+            editingBlockNodeRef.current = null;
+          }
+        }}
         onInsert={(data) => insertCustomCard(data)}
+        initialData={editingCardData}
       />
     </div>
   );
