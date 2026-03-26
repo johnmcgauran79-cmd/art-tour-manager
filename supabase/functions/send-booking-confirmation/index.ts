@@ -133,9 +133,11 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
     .email-body a:not([style]) { color: #1a6fb5 !important; }
     .email-body hr { border: none !important; border-top: 2px solid #e5e7eb !important; margin: 24px 0 !important; }
     /* Structured table blocks — let inline styles win */
-    .email-body table[role="presentation"] td { color: inherit !important; font-size: inherit !important; line-height: inherit !important; }
-    .email-body table[role="presentation"] span { color: inherit !important; font-size: inherit !important; }
-    .email-body table[role="presentation"] strong { color: inherit !important; }
+    .email-body table[role="presentation"] td:not([style*="color"]) { color: inherit !important; }
+    .email-body table[role="presentation"] td { font-size: inherit !important; line-height: inherit !important; }
+    .email-body table[role="presentation"] span:not([style*="color"]) { color: inherit !important; }
+    .email-body table[role="presentation"] span { font-size: inherit !important; }
+    .email-body table[role="presentation"] strong:not([style*="color"]) { color: inherit !important; }
     .email-body .email-hotel-card td { font-size: inherit !important; color: inherit !important; }
     .email-body .email-hotel-card strong { color: inherit !important; }
     .email-body .email-section-header td { background-color: inherit !important; color: inherit !important; font-size: inherit !important; }
