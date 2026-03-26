@@ -891,8 +891,15 @@ export const EmailTemplatesManagement = () => {
       {/* Custom Card Builder */}
       <CustomCardBuilderModal
         open={showCardBuilder}
-        onOpenChange={setShowCardBuilder}
+        onOpenChange={(open) => {
+          setShowCardBuilder(open);
+          if (!open) {
+            setEditingCardData(null);
+            editingBlockNodeRef.current = null;
+          }
+        }}
         onInsert={(data) => insertCustomCard(data)}
+        initialData={editingCardData}
       />
     </div>
   );
