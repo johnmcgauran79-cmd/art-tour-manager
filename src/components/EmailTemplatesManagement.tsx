@@ -252,7 +252,7 @@ export const EmailTemplatesManagement = () => {
     setCustomButtonUrl("");
   };
 
-  const insertHtmlBlock = (html: string, label = 'Protected Email Block') => {
+  const insertHtmlBlock = (html: string, label = 'Protected Email Block', meta?: string) => {
     if (isHtmlView || !quillRef.current) {
       setFormData(prev => ({
         ...prev,
@@ -264,7 +264,7 @@ export const EmailTemplatesManagement = () => {
     insertEmailHtmlBlockEmbed(quillRef.current.getEditor(), {
       html,
       label,
-      meta: meta || undefined,
+      meta,
     });
   };
 
@@ -279,8 +279,7 @@ export const EmailTemplatesManagement = () => {
     // If we're editing an existing block, replace it
     if (editingBlockNodeRef.current && quillRef.current) {
       const quill = quillRef.current.getEditor();
-      const Quill = quill.constructor;
-      const blot = Quill.find(editingBlockNodeRef.current);
+      const blot = (Quill as any).find(editingBlockNodeRef.current);
       if (blot) {
         const index = quill.getIndex(blot);
         quill.deleteText(index, 1, "silent");
