@@ -244,6 +244,19 @@ interface CustomCardBuilderModalProps {
 const conditionOptions = getConditionOptions();
 
 export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialData }: CustomCardBuilderModalProps) => {
+  const { data: settings } = useGeneralSettings();
+  const themeColors = useMemo(() => {
+    const get = (key: string, fallback: string) => {
+      const s = settings?.find(s => s.setting_key === key);
+      return (s?.setting_value as string) || fallback;
+    };
+    return {
+      gold: get('theme_secondary_color', '#d4a017'),
+      navy: get('theme_primary_color', '#0a1929'),
+    };
+  }, [settings]);
+  const ACCENT_COLORS = useMemo(() => getAccentColors(themeColors.gold, themeColors.navy), [themeColors]);
+
   const [headerTitle, setHeaderTitle] = useState('Card Title');
   const [headerEmoji, setHeaderEmoji] = useState('📋');
   const [accentColor, setAccentColor] = useState('grey');
