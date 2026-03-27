@@ -392,5 +392,21 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         </form>
       </DialogContent>
     </Dialog>
+  return (
+    <>
+      {mainDialog}
+      {hotel && pendingDateChange && (
+        <HotelDateCascadeModal
+          open={cascadeModalOpen}
+          onOpenChange={setCascadeModalOpen}
+          hotelId={hotel.id}
+          hotelName={hotel.name}
+          oldCheckIn={pendingDateChange.oldCheckIn}
+          oldCheckOut={pendingDateChange.oldCheckOut}
+          newCheckIn={pendingDateChange.newCheckIn}
+          newCheckOut={pendingDateChange.newCheckOut}
+        />
+      )}
+    </>
   );
 };
