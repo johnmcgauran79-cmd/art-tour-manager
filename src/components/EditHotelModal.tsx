@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Hotel } from "@/hooks/useHotels";
 import { HotelAttachmentsSection } from "./HotelAttachmentsSection";
+import { HotelDateCascadeModal } from "./HotelDateCascadeModal";
 
 interface EditHotelModalProps {
   hotel: Hotel | null;
@@ -38,6 +39,15 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
     initial_rooms_cutoff_date: "",
     final_rooms_cutoff_date: ""
   });
+
+  // Track cascade modal state
+  const [cascadeModalOpen, setCascadeModalOpen] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<{
+    oldCheckIn: string;
+    oldCheckOut: string;
+    newCheckIn: string;
+    newCheckOut: string;
+  } | null>(null);
 
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -100,6 +110,24 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         title: "Hotel Updated",
         description: "Hotel has been successfully updated.",
       });
+
+      // Check if dates changed — if so, open cascade modal
+      const oldCheckIn = hotel?.default_check_in || "";
+      const oldCheckOut = hotel?.default_check_out || "";
+      const datesChanged =
+        formData.default_check_in !== oldCheckIn ||
+        formData.default_check_out !== oldCheckOut;
+
+      if (datesChanged && formData.default_check_in && formData.default_check_out && oldCheckIn && oldCheckOut) {
+        setPendingDateChange({
+          oldCheckIn,
+          oldCheckOut,
+          newCheckIn: formData.default_check_in,
+          newCheckOut: formData.default_check_out,
+        });
+        setCascadeModalOpen(true);
+      }
+
       onOpenChange(false);
     },
     onError: (error) => {
@@ -156,7 +184,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
 
   if (!hotel) return null;
 
-  return (
+  const mainDialog = (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -364,5 +392,23 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         </form>
       </DialogContent>
     </Dialog>
+  );
+
+  return (
+    <>
+      {mainDialog}
+      {hotel && pendingDateChange && (
+        <HotelDateCascadeModal
+          open={cascadeModalOpen}
+          onOpenChange={setCascadeModalOpen}
+          hotelId={hotel.id}
+          hotelName={hotel.name}
+          oldCheckIn={pendingDateChange.oldCheckIn}
+          oldCheckOut={pendingDateChange.oldCheckOut}
+          newCheckIn={pendingDateChange.newCheckIn}
+          newCheckOut={pendingDateChange.newCheckOut}
+        />
+      )}
+    </>
   );
 };
