@@ -191,6 +191,7 @@ export const protectComplexEmailBlocksForEditor = (html: string) => {
           html: decodeHtml(child.getAttribute(BLOCK_HTML_ATTRIBUTE) || ""),
           label: child.getAttribute(BLOCK_LABEL_ATTRIBUTE) || undefined,
           description: child.getAttribute(BLOCK_DESCRIPTION_ATTRIBUTE) || undefined,
+          meta: child.getAttribute(BLOCK_META_ATTRIBUTE) || undefined,
         }
       : isLegacyCardPlaceholder(child)
         ? {
@@ -320,7 +321,7 @@ export const setupBlockInteractions = (
     return null;
   };
 
-  const handleClick = (e: MouseEvent) => {
+  const handlePointerDown = (e: MouseEvent) => {
     const block = findBlockNode(e.target as HTMLElement);
     if (block) {
       e.preventDefault();
@@ -360,13 +361,13 @@ export const setupBlockInteractions = (
     }
   };
 
-  root.addEventListener("click", handleClick);
-  root.addEventListener("dblclick", handleDblClick);
+  root.addEventListener("mousedown", handlePointerDown, true);
+  root.addEventListener("dblclick", handleDblClick, true);
   document.addEventListener("keydown", handleKeyDown);
 
   return () => {
-    root.removeEventListener("click", handleClick);
-    root.removeEventListener("dblclick", handleDblClick);
+    root.removeEventListener("mousedown", handlePointerDown, true);
+    root.removeEventListener("dblclick", handleDblClick, true);
     document.removeEventListener("keydown", handleKeyDown);
     clearSelection();
   };

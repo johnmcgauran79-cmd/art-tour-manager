@@ -297,31 +297,49 @@ export const EmailTemplatesManagement = () => {
     insertHtmlBlock(data.html, `Custom Card • ${data.title}`, meta);
   };
 
+  const bindBlockInteractions = useCallback(() => {
+    if (isHtmlView || !isCreateModalOpen) return false;
+
+    const quill = quillRef.current?.getEditor();
+    if (!quill) return false;
+
+    blockInteractionCleanupRef.current?.();
+    blockInteractionCleanupRef.current = setupBlockInteractions(quill, (metaJson, blockNode) => {
+      try {
+        const meta = JSON.parse(metaJson) as CardBuilderInitialData;
+        editingBlockNodeRef.current = blockNode;
+        setEditingCardData(meta);
+        setShowCardBuilder(true);
+      } catch (e) {
+        console.warn('Could not parse block meta for editing', e);
+      }
+    });
+
+    return true;
+  }, [isHtmlView, isCreateModalOpen]);
+
   // Set up block interactions (click-to-select, delete, double-click-to-edit)
   useEffect(() => {
-    // Clean up previous listeners
     blockInteractionCleanupRef.current?.();
     blockInteractionCleanupRef.current = null;
 
-    if (!isHtmlView && quillRef.current && isCreateModalOpen) {
-      const quill = quillRef.current.getEditor();
-      blockInteractionCleanupRef.current = setupBlockInteractions(quill, (metaJson, blockNode) => {
-        try {
-          const meta = JSON.parse(metaJson) as CardBuilderInitialData;
-          editingBlockNodeRef.current = blockNode;
-          setEditingCardData(meta);
-          setShowCardBuilder(true);
-        } catch (e) {
-          console.warn('Could not parse block meta for editing', e);
-        }
-      });
-    }
+    if (isHtmlView || !isCreateModalOpen) return undefined;
+
+    let frame = 0;
+    const attachWhenReady = () => {
+      if (!bindBlockInteractions()) {
+        frame = window.requestAnimationFrame(attachWhenReady);
+      }
+    };
+
+    frame = window.requestAnimationFrame(attachWhenReady);
 
     return () => {
+      window.cancelAnimationFrame(frame);
       blockInteractionCleanupRef.current?.();
       blockInteractionCleanupRef.current = null;
     };
-  }, [isHtmlView, isCreateModalOpen]);
+  }, [bindBlockInteractions, formData.content_template, showCardBuilder, isHtmlView, isCreateModalOpen]);
 
   const insertDivider = () => {
     if (isHtmlView) {
@@ -625,7 +643,11 @@ export const EmailTemplatesManagement = () => {
                        <Space className="h-3 w-3" />
                        Spacer
                      </Button>
-                     <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-primary/30 text-primary" onClick={() => setShowCardBuilder(true)}>
+                      <Button type="button" variant="outline" size="sm" className="h-7 text-xs gap-1.5 border-primary/30 text-primary" onClick={() => {
+                        setEditingCardData(null);
+                        editingBlockNodeRef.current = null;
+                        setShowCardBuilder(true);
+                      }}>
                        <Layers className="h-3 w-3" />
                        Custom Card
                      </Button>
