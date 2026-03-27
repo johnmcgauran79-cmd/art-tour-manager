@@ -39,34 +39,13 @@ export const useScheduledEmails = () => {
           booking:bookings(
             id,
             customers:customers!lead_passenger_id(first_name, last_name, email)
-          ),
-          creator:profiles!scheduled_emails_created_by_fkey(full_name)
+          )
         `)
         .in('status', ['scheduled', 'approved'])
         .order('scheduled_send_at', { ascending: true });
 
-      if (error) {
-        // If the join on profiles fails (no FK), fetch without it
-        if (error.message?.includes('scheduled_emails_created_by_fkey')) {
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('scheduled_emails')
-            .select(`
-              *,
-              tour:tours(id, name, start_date),
-              booking:bookings(
-                id,
-                customers:customers!lead_passenger_id(first_name, last_name, email)
-              )
-            `)
-            .in('status', ['scheduled', 'approved'])
-            .order('scheduled_send_at', { ascending: true });
-          
-          if (fallbackError) throw fallbackError;
-          return fallbackData as ScheduledEmail[];
-        }
-        throw error;
-      }
-      return data as ScheduledEmail[];
+      if (error) throw error;
+      return (data || []) as unknown as ScheduledEmail[];
     },
     refetchInterval: 30000,
   });
