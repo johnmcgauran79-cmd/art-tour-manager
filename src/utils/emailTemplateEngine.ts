@@ -693,6 +693,7 @@ export class EmailTemplateEngine {
       has_pickup_selection: !!booking.selected_pickup_option,
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
       has_instalment: !!tour.instalment_required,
+      waiver_not_signed: true,  // Client-side defaults to true; server overrides per-recipient with actual waiver status
       needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient
 
       // Pickup location fields
@@ -705,6 +706,8 @@ export class EmailTemplateEngine {
       // When bulk-email flows pre-process templates on the client, we MUST NOT erase these.
       profile_update_button: '{{profile_update_button}}',
       profile_update_link: '{{profile_update_link}}',
+      waiver_button: '{{waiver_button}}',
+      waiver_link: '{{waiver_link}}',
       pickup_button: '{{pickup_button}}',
       pickup_link: '{{pickup_link}}',
       
