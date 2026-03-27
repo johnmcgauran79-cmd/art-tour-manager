@@ -671,6 +671,45 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Check if waiver link/button is needed
+    const hasWaiverPlaceholder = /\{\{\s*waiver_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    const hasWaiverCondition = /\{\{[#^]waiver_not_signed\}\}/.test(normalizedContentToCheck);
+    const needsWaiverCheck = hasWaiverPlaceholder || hasWaiverCondition;
+    
+    // Check if the lead passenger has already signed the waiver for this booking
+    const leadWaiverSigned = (booking.booking_waivers || []).some(
+      (w: any) => w.customer_id === booking.customers?.id && w.signed_at
+    );
+    
+    let waiverLink = '';
+    let waiverButton = '';
+    
+    if (hasWaiverPlaceholder && !leadWaiverSigned && booking.customers?.id) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
+      
+      const { data: tokenData, error: tokenError } = await supabaseClient
+        .from('customer_access_tokens')
+        .insert({
+          customer_id: booking.customers.id,
+          booking_id: bookingId,
+          purpose: 'waiver',
+          created_by: requestUserId || SYSTEM_ACTOR_ID,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('token')
+        .single();
+      
+      if (tokenError) {
+        console.error('Error creating waiver token:', tokenError);
+      } else if (tokenData) {
+        const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+        waiverLink = `${baseUrl}/sign-waiver/${tokenData.token}`;
+        waiverButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-waiver="button"><tr><td><a href="${waiverLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SIGN WAIVER</a></td></tr></table>`;
+        console.log('Generated waiver link for customer:', booking.customers.id);
+      }
+    }
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
