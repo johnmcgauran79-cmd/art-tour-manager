@@ -318,6 +318,28 @@ export const ScheduledEmailsSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Cancel Sending Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Approved Emails</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cancel {selectedApprovedCount} approved email(s)? They will be removed from the send queue and will not be sent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Scheduled</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancel}
+              disabled={rejectEmails.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Cancel Sending
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
