@@ -23,16 +23,6 @@ import {
   registerEmailEditorBlots,
   resolveComplexEmailBlocksFromEditor,
 } from "@/lib/emailEditorBlocks";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useUserEmails } from "@/hooks/useUserEmails";
-import ReactQuill, { Quill } from "react-quill";
-import "react-quill/dist/quill.snow.css";
-import {
-  protectComplexEmailBlocksForEditor,
-  registerEmailEditorBlots,
-  resolveComplexEmailBlocksFromEditor,
-} from "@/lib/emailEditorBlocks";
 
 registerEmailEditorBlots(Quill);
 
