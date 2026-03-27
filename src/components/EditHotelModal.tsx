@@ -40,6 +40,15 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
     final_rooms_cutoff_date: ""
   });
 
+  // Track cascade modal state
+  const [cascadeModalOpen, setCascadeModalOpen] = useState(false);
+  const [pendingDateChange, setPendingDateChange] = useState<{
+    oldCheckIn: string;
+    oldCheckOut: string;
+    newCheckIn: string;
+    newCheckOut: string;
+  } | null>(null);
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
