@@ -291,8 +291,13 @@ const handler = async (req: Request): Promise<Response> => {
             spots_available, spots_booked,
             activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order)
           )
+        ),
+        booking_waivers (
+          id,
+          passenger_slot,
+          customer_id,
+          signed_at
         )
-      `)
       .eq('id', bookingId)
       .single();
 
