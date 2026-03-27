@@ -928,6 +928,10 @@ const handler = async (req: Request): Promise<Response> => {
       pickup_link: pickupLink,
       pickup_button: pickupButton,
       
+      // Waiver action fields
+      waiver_link: waiverLink,
+      waiver_button: waiverButton,
+      
       // Itinerary action fields
       itinerary_link: itineraryLink,
       itinerary_button: itineraryButton,
