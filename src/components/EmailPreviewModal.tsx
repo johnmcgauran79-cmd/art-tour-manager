@@ -379,6 +379,14 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
                 Cancel
               </Button>
               <Button
+                variant="outline"
+                onClick={() => setShowScheduleDialog(true)}
+                disabled={sendEmail.isPending || !editedContent.trim()}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Schedule
+              </Button>
+              <Button
                 onClick={handleSendEmail}
                 disabled={sendEmail.isPending || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -396,11 +404,40 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
             </div>
           </div>
         ) : (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No booking data available
           </div>
         )}
       </DialogContent>
+
+      {/* Schedule Email Dialog */}
+      <ScheduleEmailDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        emailCount={1}
+        isPending={scheduleEmailMutation.isPending}
+        onSchedule={async (scheduledAt) => {
+          if (!bookingId || !recipientData?.tourId) return;
+          const selectedTemplate = emailTemplates?.find(t => t.id === selectedTemplateId);
+          await scheduleEmailMutation.mutateAsync({
+            bookingIds: [bookingId],
+            tourId: recipientData.tourId,
+            scheduledSendAt: scheduledAt,
+            emailPayload: {
+              customSubject: originalSubjectTemplate,
+              customContent: originalContentTemplate,
+              fromEmail,
+              ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              includeAdditionalPassengers: true,
+              emailTemplateId: selectedTemplateId || undefined,
+              emailTemplateName: selectedTemplate?.name || 'Custom',
+            },
+          });
+          setShowScheduleDialog(false);
+          onOpenChange(false);
+        }}
+      />
     </Dialog>
   );
 };
