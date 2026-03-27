@@ -8,7 +8,9 @@ import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Clock } from "lucide-react";
+import { useScheduleEmail } from "@/hooks/useScheduledEmails";
+import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import ReactQuill, { Quill } from "react-quill";
@@ -45,7 +47,9 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const [ccEmails, setCcEmails] = useState<string>("");
   const [bccEmails, setBccEmails] = useState<string>("");
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const sendEmail = useSendBookingConfirmation();
+  const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
 
@@ -70,6 +74,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
       const { data, error } = await supabase
         .from('bookings')
         .select(`
+          tour_id,
           customers:lead_passenger_id (first_name, last_name, email)
         `)
         .eq('id', bookingId)
@@ -83,6 +88,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
       return {
         recipientEmail: leadPassenger.email as string,
         recipientName: `${leadPassenger.first_name ?? ''} ${leadPassenger.last_name ?? ''}`.trim(),
+        tourId: (data as any)?.tour_id as string | null,
       };
     },
     enabled: !!bookingId && open,
@@ -373,6 +379,14 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
                 Cancel
               </Button>
               <Button
+                variant="outline"
+                onClick={() => setShowScheduleDialog(true)}
+                disabled={sendEmail.isPending || !editedContent.trim()}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Schedule
+              </Button>
+              <Button
                 onClick={handleSendEmail}
                 disabled={sendEmail.isPending || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -390,11 +404,40 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
             </div>
           </div>
         ) : (
-          <div className="p-8 text-center text-gray-500">
+          <div className="p-8 text-center text-muted-foreground">
             No booking data available
           </div>
         )}
       </DialogContent>
+
+      {/* Schedule Email Dialog */}
+      <ScheduleEmailDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        emailCount={1}
+        isPending={scheduleEmailMutation.isPending}
+        onSchedule={async (scheduledAt) => {
+          if (!bookingId || !recipientData?.tourId) return;
+          const selectedTemplate = emailTemplates?.find(t => t.id === selectedTemplateId);
+          await scheduleEmailMutation.mutateAsync({
+            bookingIds: [bookingId],
+            tourId: recipientData.tourId,
+            scheduledSendAt: scheduledAt,
+            emailPayload: {
+              customSubject: originalSubjectTemplate,
+              customContent: originalContentTemplate,
+              fromEmail,
+              ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              includeAdditionalPassengers: true,
+              emailTemplateId: selectedTemplateId || undefined,
+              emailTemplateName: selectedTemplate?.name || 'Custom',
+            },
+          });
+          setShowScheduleDialog(false);
+          onOpenChange(false);
+        }}
+      />
     </Dialog>
   );
 };
