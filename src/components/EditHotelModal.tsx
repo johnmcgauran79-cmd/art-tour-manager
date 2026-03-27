@@ -184,7 +184,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
 
   if (!hotel) return null;
 
-  return (
+  const mainDialog = (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
