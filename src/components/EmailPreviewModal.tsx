@@ -47,7 +47,9 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
   const [ccEmails, setCcEmails] = useState<string>("");
   const [bccEmails, setBccEmails] = useState<string>("");
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const sendEmail = useSendBookingConfirmation();
+  const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
 
