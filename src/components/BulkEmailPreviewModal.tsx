@@ -496,6 +496,14 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 Cancel
               </Button>
               <Button
+                variant="outline"
+                onClick={() => setShowScheduleDialog(true)}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Schedule
+              </Button>
+              <Button
                 onClick={handleSendClick}
                 disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
