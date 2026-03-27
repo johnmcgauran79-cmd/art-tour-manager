@@ -31,6 +31,7 @@ export const ScheduledEmailsSection = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const timezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value || 'Australia/Melbourne';
@@ -74,6 +75,23 @@ export const ScheduledEmailsSection = () => {
       },
     });
   };
+
+  const confirmCancel = () => {
+    rejectEmails.mutate({ ids: selectedIds, reason: "Cancelled after approval" }, {
+      onSuccess: () => {
+        setSelectedIds([]);
+        setShowCancelDialog(false);
+      },
+    });
+  };
+
+  const selectedApprovedCount = selectedIds.filter(id => 
+    scheduledEmails?.find(e => e.id === id)?.status === 'approved'
+  ).length;
+
+  const selectedPendingCount = selectedIds.filter(id => 
+    scheduledEmails?.find(e => e.id === id)?.status === 'scheduled'
+  ).length;
 
   const formatScheduledTime = (isoString: string) => {
     try {
@@ -132,21 +150,30 @@ export const ScheduledEmailsSection = () => {
               </Button>
               <Button
                 onClick={() => setShowApproveDialog(true)}
-                disabled={selectedIds.length === 0 || approveEmails.isPending}
+                disabled={selectedPendingCount === 0 || approveEmails.isPending}
                 size="sm"
                 variant="default"
               >
                 <Check className="h-4 w-4 mr-1" />
-                Approve ({selectedIds.length})
+                Approve ({selectedPendingCount})
+              </Button>
+              <Button
+                onClick={() => setShowCancelDialog(true)}
+                disabled={selectedApprovedCount === 0 || rejectEmails.isPending}
+                size="sm"
+                variant="outline"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel Sending ({selectedApprovedCount})
               </Button>
               <Button
                 onClick={() => setShowRejectDialog(true)}
-                disabled={selectedIds.length === 0 || rejectEmails.isPending}
+                disabled={selectedPendingCount === 0 || rejectEmails.isPending}
                 size="sm"
                 variant="destructive"
               >
                 <X className="h-4 w-4 mr-1" />
-                Reject ({selectedIds.length})
+                Reject ({selectedPendingCount})
               </Button>
             </div>
           </div>
@@ -287,6 +314,28 @@ export const ScheduledEmailsSection = () => {
               className="bg-destructive hover:bg-destructive/90"
             >
               Reject
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cancel Sending Dialog */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Approved Emails</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cancel {selectedApprovedCount} approved email(s)? They will be removed from the send queue and will not be sent.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Scheduled</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancel}
+              disabled={rejectEmails.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Cancel Sending
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
