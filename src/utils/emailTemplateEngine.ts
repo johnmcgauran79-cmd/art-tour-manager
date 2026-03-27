@@ -294,6 +294,7 @@ export interface EmailMergeData {
   missing_pickup_selection?: boolean;
   needs_passport_submission?: boolean;
   has_instalment?: boolean;
+  waiver_not_signed?: boolean;
 
   // Pickup location fields
   pickup_location_name?: string;
@@ -304,6 +305,8 @@ export interface EmailMergeData {
   // Client-side previews/sends should preserve placeholders so the server can generate tokens.
   profile_update_button?: string;
   profile_update_link?: string;
+  waiver_button?: string;
+  waiver_link?: string;
   pickup_button?: string;
   pickup_link?: string;
   itinerary_button?: string;
