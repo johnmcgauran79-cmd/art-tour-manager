@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, Check, X, Calendar, Users, Mail, RefreshCw } from "lucide-react";
+import { Clock, Check, X, Calendar, Users, Mail, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useScheduledEmails, useApproveScheduledEmails, useRejectScheduledEmails } from "@/hooks/useScheduledEmails";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 import { useQueryClient } from "@tanstack/react-query";
@@ -161,62 +162,73 @@ export const ScheduledEmailsSection = () => {
             </div>
 
             {Object.entries(groupedByTour).map(([tourId, group]) => (
-              <div key={tourId} className="border rounded-lg p-4 space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-medium">{group.tour?.name || 'Unknown Tour'}</h4>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5" />
-                        Sends: {formatScheduledTime(group.scheduledAt)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3.5 w-3.5" />
-                        {group.emails.length} email{group.emails.length !== 1 ? 's' : ''}
-                      </span>
+              <Collapsible key={tourId}>
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-2">
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 mt-0.5">
+                          <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <div>
+                        <h4 className="font-medium">{group.tour?.name || 'Unknown Tour'}</h4>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            Sends: {formatScheduledTime(group.scheduledAt)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3.5 w-3.5" />
+                            {group.emails.length} email{group.emails.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {group.emails.some(e => e.status === 'approved') && (
+                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                          Approved
+                        </Badge>
+                      )}
+                      {group.emails.some(e => e.status === 'scheduled') && (
+                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                          Awaiting Approval
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    {group.emails.some(e => e.status === 'approved') && (
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                        Approved
-                      </Badge>
-                    )}
-                    {group.emails.some(e => e.status === 'scheduled') && (
-                      <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                        Awaiting Approval
-                      </Badge>
-                    )}
-                  </div>
-                </div>
 
-                <div className="space-y-1.5 pl-1">
-                  {group.emails.map((email) => (
-                    <div key={email.id} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={selectedIds.includes(email.id)}
-                        onCheckedChange={(checked) => handleSelectOne(email.id, checked as boolean)}
-                      />
-                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-sm">
-                        {(email as any).booking?.customers?.first_name} {(email as any).booking?.customers?.last_name}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        ({(email as any).booking?.customers?.email})
-                      </span>
-                      <Badge variant="outline" className="text-xs ml-auto">
-                        {email.status === 'approved' ? '✓ Approved' : 'Pending'}
-                      </Badge>
+                  <CollapsibleContent>
+                    <div className="space-y-1.5 pl-1 pt-2">
+                      {group.emails.map((email) => (
+                        <div key={email.id} className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedIds.includes(email.id)}
+                            onCheckedChange={(checked) => handleSelectOne(email.id, checked as boolean)}
+                          />
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-sm">
+                            {(email as any).booking?.customers?.first_name} {(email as any).booking?.customers?.last_name}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            ({(email as any).booking?.customers?.email})
+                          </span>
+                          <Badge variant="outline" className="text-xs ml-auto">
+                            {email.status === 'approved' ? '✓ Approved' : 'Pending'}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                {group.emails[0]?.email_payload?.emailTemplateName && (
-                  <p className="text-xs text-muted-foreground pt-2 border-t">
-                    Template: {group.emails[0].email_payload.emailTemplateName}
-                  </p>
-                )}
-              </div>
+                    {group.emails[0]?.email_payload?.emailTemplateName && (
+                      <p className="text-xs text-muted-foreground pt-2 border-t">
+                        Template: {group.emails[0].email_payload.emailTemplateName}
+                      </p>
+                    )}
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
             ))}
           </div>
         </CardContent>
