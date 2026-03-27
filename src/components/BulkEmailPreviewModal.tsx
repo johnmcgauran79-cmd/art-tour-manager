@@ -579,6 +579,37 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Schedule Email Dialog */}
+      <ScheduleEmailDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        emailCount={selectedBookingIds.size}
+        isPending={scheduleEmailMutation.isPending}
+        onSchedule={async (scheduledAt) => {
+          if (!tourId) return;
+          const selectedTemplate = templates?.find(t => t.id === selectedTemplateId);
+          await scheduleEmailMutation.mutateAsync({
+            bookingIds: Array.from(selectedBookingIds),
+            tourId,
+            scheduledSendAt: scheduledAt,
+            emailPayload: {
+              customSubject: editedSubject,
+              customContent: editedContent,
+              fromEmail,
+              ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              includeAdditionalPassengers,
+              emailTemplateId: selectedTemplateId || undefined,
+              emailTemplateName: selectedTemplate?.name || 'Custom',
+            },
+          });
+          setShowScheduleDialog(false);
+          onOpenChange(false);
+          setSelectedBookingIds(new Set());
+          setRecipientType("");
+        }}
+      />
     </Dialog>
   );
 };
