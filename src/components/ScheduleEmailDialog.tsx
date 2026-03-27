@@ -114,7 +114,7 @@ export const ScheduleEmailDialog = ({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Date</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -131,7 +131,10 @@ export const ScheduleEmailDialog = ({
                 <Calendar
                   mode="single"
                   selected={date}
-                  onSelect={setDate}
+                  onSelect={(d) => {
+                    setDate(d);
+                    setCalendarOpen(false);
+                  }}
                   disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
                   initialFocus
                   className={cn("p-3 pointer-events-auto")}
