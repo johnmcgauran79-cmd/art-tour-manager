@@ -74,6 +74,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
       const { data, error } = await supabase
         .from('bookings')
         .select(`
+          tour_id,
           customers:lead_passenger_id (first_name, last_name, email)
         `)
         .eq('id', bookingId)
@@ -87,6 +88,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
       return {
         recipientEmail: leadPassenger.email as string,
         recipientName: `${leadPassenger.first_name ?? ''} ${leadPassenger.last_name ?? ''}`.trim(),
+        tourId: (data as any)?.tour_id as string | null,
       };
     },
     enabled: !!bookingId && open,
