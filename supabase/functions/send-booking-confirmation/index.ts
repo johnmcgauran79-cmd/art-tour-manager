@@ -291,6 +291,12 @@ const handler = async (req: Request): Promise<Response> => {
             spots_available, spots_booked,
             activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order)
           )
+        ),
+        booking_waivers (
+          id,
+          passenger_slot,
+          customer_id,
+          signed_at
         )
       `)
       .eq('id', bookingId)
@@ -358,7 +364,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const formatField = (value: string | null | undefined, placeholder = 'Not provided') => {
         const trimmed = value ? String(value).trim() : '';
-        return trimmed ? trimmed : `<span style="color: #999; font-style: italic;">${placeholder}</span>`;
+        return trimmed ? trimmed : '<span style="color: #999; font-style: italic;">' + placeholder + '</span>';
       };
 
       const nameAsPerPassportRaw = docs?.name_as_per_passport ? String(docs.name_as_per_passport).trim() : '';
@@ -666,6 +672,45 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Check if waiver link/button is needed
+    const hasWaiverPlaceholder = /\{\{\s*waiver_(link|button)\s*\}\}/.test(normalizedContentToCheck);
+    const hasWaiverCondition = /\{\{[#^]waiver_not_signed\}\}/.test(normalizedContentToCheck);
+    const needsWaiverCheck = hasWaiverPlaceholder || hasWaiverCondition;
+    
+    // Check if the lead passenger has already signed the waiver for this booking
+    const leadWaiverSigned = (booking.booking_waivers || []).some(
+      (w: any) => w.customer_id === booking.customers?.id && w.signed_at
+    );
+    
+    let waiverLink = '';
+    let waiverButton = '';
+    
+    if (hasWaiverPlaceholder && !leadWaiverSigned && booking.customers?.id) {
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
+      
+      const { data: tokenData, error: tokenError } = await supabaseClient
+        .from('customer_access_tokens')
+        .insert({
+          customer_id: booking.customers.id,
+          booking_id: bookingId,
+          purpose: 'waiver',
+          created_by: requestUserId || SYSTEM_ACTOR_ID,
+          expires_at: expiresAt.toISOString(),
+        })
+        .select('token')
+        .single();
+      
+      if (tokenError) {
+        console.error('Error creating waiver token:', tokenError);
+      } else if (tokenData) {
+        const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+        waiverLink = `${baseUrl}/sign-waiver/${tokenData.token}`;
+        waiverButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-waiver="button"><tr><td><a href="${waiverLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SIGN WAIVER</a></td></tr></table>`;
+        console.log('Generated waiver link for customer:', booking.customers.id);
+      }
+    }
+
     // Process email template if available
     let emailSubject = `Booking Confirmation - ${booking.tours?.name || 'Your Tour'}`;
     let emailHtml = '';
@@ -884,6 +929,10 @@ const handler = async (req: Request): Promise<Response> => {
       pickup_link: pickupLink,
       pickup_button: pickupButton,
       
+      // Waiver action fields
+      waiver_link: waiverLink,
+      waiver_button: waiverButton,
+      
       // Itinerary action fields
       itinerary_link: itineraryLink,
       itinerary_button: itineraryButton,
@@ -914,6 +963,7 @@ const handler = async (req: Request): Promise<Response> => {
       has_pickup_selection: hasPickupSelection,
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
       has_instalment: !!booking.tours?.instalment_required,
+      waiver_not_signed: !leadWaiverSigned,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
       hotel_bookings: (booking.hotel_bookings || []).sort((a: any, b: any) => {
@@ -1464,6 +1514,38 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
       
+      // Generate waiver link/button for this passenger if waiver not yet signed
+      const passengerWaiverSigned = (booking.booking_waivers || []).some(
+        (w: any) => w.customer_id === passenger.id && w.signed_at
+      );
+      passengerMergeData.waiver_not_signed = !passengerWaiverSigned;
+      
+      if (hasWaiverPlaceholder && !passengerWaiverSigned && passenger.id) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
+        
+        const { data: tokenData, error: tokenError } = await supabaseClient
+          .from('customer_access_tokens')
+          .insert({
+            customer_id: passenger.id,
+            booking_id: bookingId,
+            purpose: 'waiver',
+            created_by: requestUserId || SYSTEM_ACTOR_ID,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select('token')
+          .single();
+        
+        if (!tokenError && tokenData) {
+          const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+          const passengerWaiverLink = `${baseUrl}/sign-waiver/${tokenData.token}`;
+          const passengerWaiverButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-waiver="button"><tr><td><a href="${passengerWaiverLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SIGN WAIVER</a></td></tr></table>`;
+          
+          passengerMergeData.waiver_link = passengerWaiverLink;
+          passengerMergeData.waiver_button = passengerWaiverButton;
+        }
+      }
+
       // Process template for this passenger
       const contentToProcess = customContent || template?.content_template || '';
       let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
