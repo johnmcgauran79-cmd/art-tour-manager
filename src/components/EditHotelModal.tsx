@@ -392,6 +392,8 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         </form>
       </DialogContent>
     </Dialog>
+  );
+
   return (
     <>
       {mainDialog}
