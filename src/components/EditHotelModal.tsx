@@ -110,6 +110,24 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         title: "Hotel Updated",
         description: "Hotel has been successfully updated.",
       });
+
+      // Check if dates changed — if so, open cascade modal
+      const oldCheckIn = hotel?.default_check_in || "";
+      const oldCheckOut = hotel?.default_check_out || "";
+      const datesChanged =
+        formData.default_check_in !== oldCheckIn ||
+        formData.default_check_out !== oldCheckOut;
+
+      if (datesChanged && formData.default_check_in && formData.default_check_out && oldCheckIn && oldCheckOut) {
+        setPendingDateChange({
+          oldCheckIn,
+          oldCheckOut,
+          newCheckIn: formData.default_check_in,
+          newCheckOut: formData.default_check_out,
+        });
+        setCascadeModalOpen(true);
+      }
+
       onOpenChange(false);
     },
     onError: (error) => {
