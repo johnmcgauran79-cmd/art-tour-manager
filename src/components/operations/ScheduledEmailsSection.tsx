@@ -166,6 +166,18 @@ export const ScheduledEmailsSection = () => {
                 <div className="border rounded-lg p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-2">
+                      <Checkbox
+                        checked={group.emails.every(e => selectedIds.includes(e.id))}
+                        onCheckedChange={(checked) => {
+                          const groupIds = group.emails.map(e => e.id);
+                          if (checked) {
+                            setSelectedIds(prev => [...new Set([...prev, ...groupIds])]);
+                          } else {
+                            setSelectedIds(prev => prev.filter(id => !groupIds.includes(id)));
+                          }
+                        }}
+                        className="mt-1"
+                      />
                       <CollapsibleTrigger asChild>
                         <Button variant="ghost" size="sm" className="h-6 w-6 p-0 mt-0.5">
                           <ChevronRight className="h-4 w-4 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
