@@ -1513,6 +1513,38 @@ const handler = async (req: Request): Promise<Response> => {
         }
       }
       
+      // Generate waiver link/button for this passenger if waiver not yet signed
+      const passengerWaiverSigned = (booking.booking_waivers || []).some(
+        (w: any) => w.customer_id === passenger.id && w.signed_at
+      );
+      passengerMergeData.waiver_not_signed = !passengerWaiverSigned;
+      
+      if (hasWaiverPlaceholder && !passengerWaiverSigned && passenger.id) {
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + tokenExpiryHours);
+        
+        const { data: tokenData, error: tokenError } = await supabaseClient
+          .from('customer_access_tokens')
+          .insert({
+            customer_id: passenger.id,
+            booking_id: bookingId,
+            purpose: 'waiver',
+            created_by: requestUserId || SYSTEM_ACTOR_ID,
+            expires_at: expiresAt.toISOString(),
+          })
+          .select('token')
+          .single();
+        
+        if (!tokenError && tokenData) {
+          const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
+          const passengerWaiverLink = `${baseUrl}/sign-waiver/${tokenData.token}`;
+          const passengerWaiverButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-waiver="button"><tr><td><a href="${passengerWaiverLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SIGN WAIVER</a></td></tr></table>`;
+          
+          passengerMergeData.waiver_link = passengerWaiverLink;
+          passengerMergeData.waiver_button = passengerWaiverButton;
+        }
+      }
+
       // Process template for this passenger
       const contentToProcess = customContent || template?.content_template || '';
       let passengerEmailHtml = processTemplate(contentToProcess, passengerMergeData);
