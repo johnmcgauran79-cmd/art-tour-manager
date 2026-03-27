@@ -1267,8 +1267,12 @@ const handler = async (req: Request): Promise<Response> => {
     const bccRecipients = bccEmails || [];
     
     // Send main email to lead passenger
+    // Build the from field: if finalFromEmail already contains a display name (e.g. "Name <email>"), use as-is
+    // Otherwise wrap with the configured sender name
+    const fromField = finalFromEmail.includes('<') ? finalFromEmail : `${defaultSenderName} <${finalFromEmail}>`;
+    
     const emailResponse = await resend.emails.send({
-      from: `Bookings <${finalFromEmail}>`,
+      from: fromField,
       to: [booking.customers.email],
       cc: ccRecipients.length > 0 ? ccRecipients : undefined,
       bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
@@ -1488,7 +1492,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       try {
         const passengerEmailResponse = await resend.emails.send({
-          from: `Bookings <${finalFromEmail}>`,
+          from: fromField,
           to: [passenger.email],
           subject: passengerSubject,
           html: passengerEmailHtml,
