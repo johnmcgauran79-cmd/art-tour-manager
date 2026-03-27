@@ -31,6 +31,7 @@ export const ScheduledEmailsSection = () => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
   const timezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value || 'Australia/Melbourne';
@@ -74,6 +75,23 @@ export const ScheduledEmailsSection = () => {
       },
     });
   };
+
+  const confirmCancel = () => {
+    rejectEmails.mutate({ ids: selectedIds, reason: "Cancelled after approval" }, {
+      onSuccess: () => {
+        setSelectedIds([]);
+        setShowCancelDialog(false);
+      },
+    });
+  };
+
+  const selectedApprovedCount = selectedIds.filter(id => 
+    scheduledEmails?.find(e => e.id === id)?.status === 'approved'
+  ).length;
+
+  const selectedPendingCount = selectedIds.filter(id => 
+    scheduledEmails?.find(e => e.id === id)?.status === 'scheduled'
+  ).length;
 
   const formatScheduledTime = (isoString: string) => {
     try {
