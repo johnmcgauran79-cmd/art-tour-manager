@@ -150,21 +150,30 @@ export const ScheduledEmailsSection = () => {
               </Button>
               <Button
                 onClick={() => setShowApproveDialog(true)}
-                disabled={selectedIds.length === 0 || approveEmails.isPending}
+                disabled={selectedPendingCount === 0 || approveEmails.isPending}
                 size="sm"
                 variant="default"
               >
                 <Check className="h-4 w-4 mr-1" />
-                Approve ({selectedIds.length})
+                Approve ({selectedPendingCount})
+              </Button>
+              <Button
+                onClick={() => setShowCancelDialog(true)}
+                disabled={selectedApprovedCount === 0 || rejectEmails.isPending}
+                size="sm"
+                variant="outline"
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancel Sending ({selectedApprovedCount})
               </Button>
               <Button
                 onClick={() => setShowRejectDialog(true)}
-                disabled={selectedIds.length === 0 || rejectEmails.isPending}
+                disabled={selectedPendingCount === 0 || rejectEmails.isPending}
                 size="sm"
                 variant="destructive"
               >
                 <X className="h-4 w-4 mr-1" />
-                Reject ({selectedIds.length})
+                Reject ({selectedPendingCount})
               </Button>
             </div>
           </div>
