@@ -1787,6 +1787,75 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_emails: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          booking_id: string | null
+          created_at: string | null
+          created_by: string
+          email_payload: Json
+          error_message: string | null
+          id: string
+          rejected_at: string | null
+          rejected_by: string | null
+          rejection_reason: string | null
+          scheduled_send_at: string
+          sent_at: string | null
+          status: string
+          tour_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          created_by: string
+          email_payload?: Json
+          error_message?: string | null
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          scheduled_send_at: string
+          sent_at?: string | null
+          status?: string
+          tour_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          email_payload?: Json
+          error_message?: string | null
+          id?: string
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          scheduled_send_at?: string
+          sent_at?: string | null
+          status?: string
+          tour_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_emails_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_emails_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       status_change_email_queue: {
         Row: {
           approval_status: string | null

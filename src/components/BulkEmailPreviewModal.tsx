@@ -7,13 +7,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
+import { useScheduleEmail } from "@/hooks/useScheduledEmails";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import {
@@ -45,7 +47,9 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [includeAdditionalPassengers, setIncludeAdditionalPassengers] = useState(true);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   
+  const scheduleEmailMutation = useScheduleEmail();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
     setSendProgress({ current, total });
   });
@@ -492,6 +496,14 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 Cancel
               </Button>
               <Button
+                variant="outline"
+                onClick={() => setShowScheduleDialog(true)}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
+              >
+                <Clock className="h-4 w-4 mr-1" />
+                Schedule
+              </Button>
+              <Button
                 onClick={handleSendClick}
                 disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
                 className="bg-blue-600 hover:bg-blue-700"
@@ -567,6 +579,37 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Schedule Email Dialog */}
+      <ScheduleEmailDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        emailCount={selectedBookingIds.size}
+        isPending={scheduleEmailMutation.isPending}
+        onSchedule={async (scheduledAt) => {
+          if (!tourId) return;
+          const selectedTemplate = templates?.find(t => t.id === selectedTemplateId);
+          await scheduleEmailMutation.mutateAsync({
+            bookingIds: Array.from(selectedBookingIds),
+            tourId,
+            scheduledSendAt: scheduledAt,
+            emailPayload: {
+              customSubject: editedSubject,
+              customContent: editedContent,
+              fromEmail,
+              ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
+              includeAdditionalPassengers,
+              emailTemplateId: selectedTemplateId || undefined,
+              emailTemplateName: selectedTemplate?.name || 'Custom',
+            },
+          });
+          setShowScheduleDialog(false);
+          onOpenChange(false);
+          setSelectedBookingIds(new Set());
+          setRecipientType("");
+        }}
+      />
     </Dialog>
   );
 };

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScheduledEmailsSection } from "./ScheduledEmailsSection";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -138,33 +139,37 @@ export const PendingEmailApprovals = () => {
 
   if (!pendingApprovals || pendingApprovals.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Pending Email Approvals
-              </CardTitle>
-              <CardDescription>No email batches pending approval</CardDescription>
+      <>
+        <ScheduledEmailsSection />
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Pending Email Approvals
+                </CardTitle>
+                <CardDescription>No email batches pending approval</CardDescription>
+              </div>
+              <Button
+                onClick={handleRefresh}
+                disabled={isRefetching}
+                size="sm"
+                variant="outline"
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </div>
-            <Button
-              onClick={handleRefresh}
-              disabled={isRefetching}
-              size="sm"
-              variant="outline"
-            >
-              <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
+          </CardHeader>
+        </Card>
+      </>
     );
   }
 
   return (
     <>
+      <ScheduledEmailsSection />
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
