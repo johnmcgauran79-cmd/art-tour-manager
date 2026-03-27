@@ -39,6 +39,7 @@ export const ScheduleEmailDialog = ({
 }: ScheduleEmailDialogProps) => {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState("09:00");
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const { data: settings } = useGeneralSettings();
 
   const timezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value || 'Australia/Melbourne';
