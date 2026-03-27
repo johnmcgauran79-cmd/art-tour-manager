@@ -298,6 +298,7 @@ const handler = async (req: Request): Promise<Response> => {
           customer_id,
           signed_at
         )
+      `)
       .eq('id', bookingId)
       .single();
 
