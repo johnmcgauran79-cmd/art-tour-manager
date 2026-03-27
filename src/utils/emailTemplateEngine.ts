@@ -293,6 +293,7 @@ export interface EmailMergeData {
   has_pickup_selection?: boolean;
   missing_pickup_selection?: boolean;
   needs_passport_submission?: boolean;
+  has_instalment?: boolean;
 
   // Pickup location fields
   pickup_location_name?: string;
@@ -688,6 +689,7 @@ export class EmailTemplateEngine {
       tour_requires_pickup: !!tour.pickup_location_required,
       has_pickup_selection: !!booking.selected_pickup_option,
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
+      has_instalment: !!tour.instalment_required,
       needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient
 
       // Pickup location fields

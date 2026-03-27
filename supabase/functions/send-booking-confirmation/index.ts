@@ -913,6 +913,7 @@ const handler = async (req: Request): Promise<Response> => {
       tour_requires_pickup: tourRequiresPickup,
       has_pickup_selection: hasPickupSelection,
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
+      has_instalment: !!booking.tours?.instalment_required,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
       hotel_bookings: (booking.hotel_bookings || []).sort((a: any, b: any) => {
