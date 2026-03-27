@@ -363,7 +363,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       const formatField = (value: string | null | undefined, placeholder = 'Not provided') => {
         const trimmed = value ? String(value).trim() : '';
-        return trimmed ? trimmed : `<span style="color: #999; font-style: italic;">${placeholder}</span>`;
+        return trimmed ? trimmed : '<span style="color: #999; font-style: italic;">' + placeholder + '</span>';
       };
 
       const nameAsPerPassportRaw = docs?.name_as_per_passport ? String(docs.name_as_per_passport).trim() : '';
