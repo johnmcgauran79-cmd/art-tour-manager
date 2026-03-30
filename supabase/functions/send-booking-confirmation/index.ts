@@ -705,7 +705,7 @@ const handler = async (req: Request): Promise<Response> => {
         console.error('Error creating waiver token:', tokenError);
       } else if (tokenData) {
         const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
-        waiverLink = `${baseUrl}/sign-waiver/${tokenData.token}`;
+        waiverLink = `${baseUrl}/waiver/${tokenData.token}`;
         waiverButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-waiver="button"><tr><td><a href="${waiverLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SIGN WAIVER</a></td></tr></table>`;
         console.log('Generated waiver link for customer:', booking.customers.id);
       }
@@ -1538,7 +1538,7 @@ const handler = async (req: Request): Promise<Response> => {
         
         if (!tokenError && tokenData) {
           const baseUrl = Deno.env.get('SITE_URL') || 'https://art-tour-manager.lovable.app';
-          const passengerWaiverLink = `${baseUrl}/sign-waiver/${tokenData.token}`;
+          const passengerWaiverLink = `${baseUrl}/waiver/${tokenData.token}`;
           const passengerWaiverButton = `<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;" data-art-waiver="button"><tr><td><a href="${passengerWaiverLink}" target="_blank" style="background-color: ${btnBg}; color: ${btnText}; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">SIGN WAIVER</a></td></tr></table>`;
           
           passengerMergeData.waiver_link = passengerWaiverLink;
