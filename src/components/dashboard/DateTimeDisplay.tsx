@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { NextTourCountdown } from './NextTourCountdown';
+import { useGeneralSettings } from '@/hooks/useGeneralSettings';
 
 const DEFAULT_TIMEZONES = [
   { code: 'DRW', name: 'Darwin', timezone: 'Australia/Darwin', utc: '+9:30' },
