@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { NextTourCountdown } from './NextTourCountdown';
+import { useGeneralSettings } from '@/hooks/useGeneralSettings';
 
 const DEFAULT_TIMEZONES = [
   { code: 'DRW', name: 'Darwin', timezone: 'Australia/Darwin', utc: '+9:30' },
@@ -17,6 +18,8 @@ const STORAGE_KEY = 'dashboard-timezones';
 export const DateTimeDisplay = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timezones, setTimezones] = useState([MELBOURNE_TIMEZONE, ...DEFAULT_TIMEZONES]);
+  const { data: settings } = useGeneralSettings();
+  const defaultTimezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value as string || 'Australia/Melbourne';
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -59,7 +62,7 @@ export const DateTimeDisplay = () => {
       </div>
       <div className="text-xs text-brand-yellow space-x-2">
         {timezones.map((tz, index) => (
-          <span key={tz.code}>
+          <span key={tz.code} className={tz.timezone === defaultTimezone ? 'font-bold' : ''}>
             {tz.code} {formatInTimeZone(currentTime, tz.timezone, 'HH:mm')}
             {index < timezones.length - 1 && ' '}
           </span>
