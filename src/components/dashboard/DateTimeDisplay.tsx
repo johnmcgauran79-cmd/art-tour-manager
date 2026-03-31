@@ -18,6 +18,8 @@ const STORAGE_KEY = 'dashboard-timezones';
 export const DateTimeDisplay = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [timezones, setTimezones] = useState([MELBOURNE_TIMEZONE, ...DEFAULT_TIMEZONES]);
+  const { data: settings } = useGeneralSettings();
+  const defaultTimezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value as string || 'Australia/Melbourne';
 
   useEffect(() => {
     const timer = setInterval(() => {
