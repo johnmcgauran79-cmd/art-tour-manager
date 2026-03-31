@@ -62,7 +62,7 @@ export const DateTimeDisplay = () => {
       </div>
       <div className="text-xs text-brand-yellow space-x-2">
         {timezones.map((tz, index) => (
-          <span key={tz.code}>
+          <span key={tz.code} className={tz.timezone === defaultTimezone ? 'font-bold' : ''}>
             {tz.code} {formatInTimeZone(currentTime, tz.timezone, 'HH:mm')}
             {index < timezones.length - 1 && ' '}
           </span>
