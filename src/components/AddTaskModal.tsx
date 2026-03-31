@@ -72,7 +72,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       description: sanitizeTaskInput(description),
       priority,
       category,
-      due_date: dueDate?.toISOString(),
+      due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
       depends_on_task_id: dependsOnTaskId,
       assignee_ids: selectedUsers,
     };
@@ -93,7 +93,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       description: sanitizedDescription,
       priority,
       category,
-      due_date: dueDate?.toISOString(),
+      due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : undefined,
       depends_on_task_id: dependsOnTaskId,
       url_reference: urlReference.trim() || undefined,
       assignee_ids: selectedUsers,
