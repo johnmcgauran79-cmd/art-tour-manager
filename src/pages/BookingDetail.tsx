@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield, Plane } from "lucide-react";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
-import { useBookings, useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
+import { useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
+import { useBookingById } from "@/hooks/useTourBookings";
 import { useHotelBookings } from "@/hooks/useHotelBookings";
 import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { useActivities } from "@/hooks/useActivities";
@@ -51,8 +52,7 @@ export default function BookingDetail() {
   const { toast } = useToast();
   const { userRole } = useAuth();
   const { isViewOnly } = usePermissions();
-  const { data: allBookings, isLoading } = useBookings();
-  const booking = allBookings?.find(b => b.id === id);
+  const { data: booking, isLoading } = useBookingById(id);
   
   const [showEmailPreview, setShowEmailPreview] = useState(false);
   const [searchParams] = useSearchParams();
