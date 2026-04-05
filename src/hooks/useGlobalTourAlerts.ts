@@ -14,7 +14,8 @@ export const useGlobalTourAlerts = (includeResolved: boolean = false) => {
       let query = supabase
         .from("tour_alerts")
         .select(`
-          *,
+          id, tour_id, alert_type, severity, message, details, is_acknowledged,
+          acknowledged_at, acknowledged_by, booking_id, hotel_id, activity_id, created_at,
           tours!inner(name)
         `)
         .order("created_at", { ascending: false });
