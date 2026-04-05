@@ -195,7 +195,7 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
         };
       });
     },
-    staleTime: 60000,
+    staleTime: 5 * 60 * 1000, // 5 minutes - this query is expensive
   });
 
   const breakdowns = data || [];
