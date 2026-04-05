@@ -47,7 +47,8 @@ export const useScheduledEmails = () => {
       if (error) throw error;
       return (data || []) as unknown as ScheduledEmail[];
     },
-    refetchInterval: 30000,
+    refetchInterval: 120000, // Refresh every 2 minutes (reduced from 30s)
+    staleTime: 60000,
   });
 };
 

@@ -24,8 +24,13 @@ interface Acknowledgment {
 export const useEmailIssues = () => {
   return useQuery({
     queryKey: ['email-issues'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 120000, // Refresh every 2 minutes (reduced from 30s)
+    staleTime: 60000,
     queryFn: async () => {
+      // Only fetch emails from the last 90 days to reduce egress
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
       // Fetch email logs with events and tour info
       const { data: emailLogs, error } = await supabase
         .from('email_logs')
@@ -40,6 +45,7 @@ export const useEmailIssues = () => {
           tours:tour_id (name),
           email_events (event_type, created_at)
         `)
+        .gte('sent_at', ninetyDaysAgo.toISOString())
         .order('sent_at', { ascending: false });
 
       if (error) throw error;
