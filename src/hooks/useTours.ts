@@ -65,7 +65,7 @@ export const useTours = () => {
       try {
         const { data, error } = await supabase
           .from('tours')
-          .select('id, name, start_date, end_date, days, nights, location, pickup_point, notes, status, inclusions, exclusions, price_single, price_double, price_twin, deposit_required, instalment_details, instalment_required, instalment_amount, instalment_date, final_payment_date, travel_documents_required, capacity, minimum_passengers_required, tour_host, url_reference, tour_type, xero_product_id, keap_tag_id, pickup_location_required, created_at, updated_at')
+          .select('*')
           .order('start_date', { ascending: true });
 
         console.log('[useTours] Query result:', { hasData: !!data, dataLength: data?.length, error: error?.message });
