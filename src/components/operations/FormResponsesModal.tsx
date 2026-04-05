@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { useCustomForms } from "@/hooks/useCustomForms";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";

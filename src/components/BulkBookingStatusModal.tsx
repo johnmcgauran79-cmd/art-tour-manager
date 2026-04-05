@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { useUpdateBooking } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useToast } from "@/hooks/use-toast";
 
 const getStatusColor = (status: string) => {

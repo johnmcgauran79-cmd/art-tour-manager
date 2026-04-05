@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Calendar, Users, DollarSign, Clock, AlertCircle, Hotel, Bell, UserPlus, Link2, FileCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { TourAlertsModal } from "@/components/TourAlertsModal";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
@@ -70,8 +70,7 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
   const { missingPassports, missingPickups, missingForms, total: documentAlertsTotal } = useTourDocumentAlerts(tour.id);
   const isHost = userRole === 'host';
 
-  // Calculate booking statistics for this tour
-  const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tour.id);
+  // tourBookings already fetched from useTourBookings above
   
   // Payment alerts - need to build tour object for the hook
   const tourForPaymentAlerts = {

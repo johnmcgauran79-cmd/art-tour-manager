@@ -6,7 +6,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, Save, Check, Loader2, FileText } from "lucide-react";
-import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
+import { useUpdateBooking } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useToast } from "@/hooks/use-toast";
 
 interface BulkInvoiceReferenceModalProps {
