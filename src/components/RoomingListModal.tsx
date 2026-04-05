@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { FileText, Printer, Calendar, Mail } from "lucide-react";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToAustralian } from "@/lib/utils";
@@ -31,7 +31,7 @@ interface RoomingListModalProps {
 export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingListModalProps) => {
   const [roomTypeReportOpen, setRoomTypeReportOpen] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const { data: allBookings = [] } = useBookings();
+  const { data: allBookings = [] } = useTourBookings(tourId);
   const { data: tours = [] } = useTours();
   const sendRoomingList = useSendRoomingList();
 

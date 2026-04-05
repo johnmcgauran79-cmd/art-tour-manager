@@ -43,7 +43,7 @@ interface TourOperationsTabProps {
 
 export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate, initialReportType, onInitialReportHandled }: TourOperationsTabProps) => {
   const navigate = useNavigate();
-  const { data: allBookings } = useBookings();
+  const { data: tourBookings = [] } = useTourBookings(tourId);
   const { data: hotels } = useHotels(tourId);
   const { data: activities } = useActivities(tourId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);

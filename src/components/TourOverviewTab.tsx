@@ -56,7 +56,7 @@ interface TourOverviewTabProps {
 }
 
 export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabProps) => {
-  const { data: allBookings } = useBookings();
+  const { data: tourBookings = [] } = useTourBookings(tour.id);
   const { data: hotels } = useHotels(tour.id);
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
   const [paymentStatusModalOpen, setPaymentStatusModalOpen] = useState(false);

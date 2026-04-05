@@ -15,3 +15,5 @@ export {
   useUpdateBooking, 
   useDeleteBooking 
 } from './useBookingMutations';
+
+export { useTourBookings, useBookingById } from './useTourBookings';

@@ -21,7 +21,7 @@ export const BulkInvoiceReferenceModal = ({ open, onOpenChange, tourId }: BulkIn
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   
-  const { data: allBookings } = useBookings();
+  const { data: allBookings } = useTourBookings(tourId);
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
 

@@ -30,11 +30,9 @@ export const BulkBookingStatusModal = ({ open, onOpenChange, tourId }: BulkBooki
   const [statusUpdates, setStatusUpdates] = useState<Record<string, string>>({});
   const [isUpdating, setIsUpdating] = useState(false);
   
-  const { data: allBookings, isLoading } = useBookings();
+  const { data: tourBookings = [], isLoading } = useTourBookings(tourId);
   const updateBooking = useUpdateBooking();
   const { toast } = useToast();
-
-  const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId);
 
   useEffect(() => {
     if (open && tourBookings.length > 0) {

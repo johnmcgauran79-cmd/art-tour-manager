@@ -28,10 +28,10 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
   const [savingId, setSavingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: allBookings, isLoading } = useBookings();
+  const { data: allTourBookings = [], isLoading } = useTourBookings(tourId);
   const { toast } = useToast();
 
-  const tourBookings = (allBookings || []).filter(b => b.tour_id === tourId && b.status !== 'cancelled');
+  const tourBookings = allTourBookings.filter(b => b.status !== 'cancelled');
 
   useEffect(() => {
     if (!open || tourBookings.length === 0) return;

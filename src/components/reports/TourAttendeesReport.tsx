@@ -1,4 +1,4 @@
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 
 interface TourAttendeesReportProps {
   tourId: string;
@@ -6,10 +6,9 @@ interface TourAttendeesReportProps {
 }
 
 export const useTourAttendeesData = (tourId: string) => {
-  const { data: allBookings } = useBookings();
+  const { data: allTourBookings = [] } = useTourBookings(tourId);
 
-  const tourBookings = (allBookings || []).filter(booking =>
-    booking.tour_id === tourId &&
+  const tourBookings = allTourBookings.filter(booking =>
     booking.status !== 'cancelled' &&
     booking.status !== 'waitlisted' &&
     booking.whatsapp_group_comms === true

@@ -19,11 +19,11 @@ interface FormResponsesModalProps {
 
 export function FormResponsesModal({ open, onOpenChange, tourId, tourName }: FormResponsesModalProps) {
   const { forms } = useCustomForms(tourId);
-  const { data: allBookings } = useBookings();
+  const { data: allTourBookings = [] } = useTourBookings(tourId);
   const [selectedForm, setSelectedForm] = useState<CustomForm | null>(null);
 
-  const tourBookings = (allBookings || []).filter(
-    b => b.tour_id === tourId && b.status !== 'cancelled' && b.status !== 'waitlisted'
+  const tourBookings = allTourBookings.filter(
+    b => b.status !== 'cancelled' && b.status !== 'waitlisted'
   );
 
   // Fetch all responses for all forms in this tour
