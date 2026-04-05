@@ -37,7 +37,7 @@ export const useHotels = (tourId: string) => {
         return [];
       }
       
-      // First fetch the hotels
+      // Fetch hotels with aggregated nights in a single query (avoids N+1)
       const { data: hotels, error: hotelsError } = await supabase
         .from('hotels')
         .select('*')
@@ -49,31 +49,40 @@ export const useHotels = (tourId: string) => {
         throw hotelsError;
       }
 
-      // Then fetch total nights for each hotel from hotel_bookings (only for non-cancelled bookings)
-      const hotelsWithNights = await Promise.all(
-        (hotels || []).map(async (hotel) => {
-          const { data: bookings, error: bookingsError } = await supabase
-            .from('hotel_bookings')
-            .select(`
-              nights,
-              bookings!inner(status)
-            `)
-            .eq('hotel_id', hotel.id)
-            .neq('bookings.status', 'cancelled')
-            .not('nights', 'is', null);
+      if (!hotels || hotels.length === 0) return [] as Hotel[];
 
-          if (bookingsError) {
-            console.error('Error fetching hotel bookings for hotel:', hotel.id, bookingsError);
-            return { ...hotel, total_nights: 0 };
-          }
+      // Fetch all hotel_bookings for this tour's hotels in ONE query instead of N queries
+      const hotelIds = hotels.map(h => h.id);
+      const { data: allHotelBookings, error: bookingsError } = await supabase
+        .from('hotel_bookings')
+        .select(`
+          hotel_id,
+          nights,
+          bookings!inner(status)
+        `)
+        .in('hotel_id', hotelIds)
+        .neq('bookings.status', 'cancelled')
+        .not('nights', 'is', null);
 
-          const totalNights = bookings?.reduce((sum, booking) => sum + (booking.nights || 0), 0) || 0;
-          console.log(`Hotel ${hotel.name}: Found ${bookings?.length} bookings with total nights: ${totalNights}`);
-          return { ...hotel, total_nights: totalNights };
-        })
-      );
+      if (bookingsError) {
+        console.error('Error fetching hotel bookings:', bookingsError);
+        // Fall back to zero nights if query fails
+        return hotels.map(h => ({ ...h, total_nights: 0 })) as Hotel[];
+      }
+
+      // Aggregate nights per hotel
+      const nightsByHotel = new Map<string, number>();
+      (allHotelBookings || []).forEach(hb => {
+        const current = nightsByHotel.get(hb.hotel_id) || 0;
+        nightsByHotel.set(hb.hotel_id, current + (hb.nights || 0));
+      });
+
+      const hotelsWithNights = hotels.map(hotel => ({
+        ...hotel,
+        total_nights: nightsByHotel.get(hotel.id) || 0,
+      }));
       
-      console.log('Hotels with nights fetched successfully:', hotelsWithNights);
+      console.log('Hotels with nights fetched successfully:', hotelsWithNights.length);
       return hotelsWithNights as Hotel[];
     },
     enabled: !!tourId && tourId.trim() !== '',
