@@ -12,7 +12,7 @@ import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { usePaymentAlerts } from "@/hooks/usePaymentAlerts";
 import { PaymentStatusTracker } from "@/components/PaymentStatusTracker";
 import { PaymentStatusModal } from "@/components/PaymentStatusModal";
@@ -37,9 +37,8 @@ export const TourBookingsTab = ({ tourId, tourName, alerts, onAddBooking, curren
   const [invoiceRefModalOpen, setInvoiceRefModalOpen] = useState(false);
   
   const { data: tours } = useTours();
-  const { data: allBookings } = useBookings();
+  const { data: tourBookings = [] } = useTourBookings(tourId);
   const currentTour = tours?.find(tour => tour.id === tourId);
-  const tourBookings = allBookings?.filter(b => b.tour_id === tourId) || [];
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "bookings");
   const { activeLevel, level1Count, level2Count, level3Count } = usePaymentAlerts(tourBookings, currentTour);

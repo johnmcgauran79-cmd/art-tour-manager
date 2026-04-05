@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
 import { useTasks, Task } from "@/hooks/useTasks";
@@ -43,7 +43,7 @@ interface TourOperationsTabProps {
 
 export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = false, pickupLocationRequired = false, onNavigate, initialReportType, onInitialReportHandled }: TourOperationsTabProps) => {
   const navigate = useNavigate();
-  const { data: allBookings } = useBookings();
+  const { data: tourBookings = [] } = useTourBookings(tourId);
   const { data: hotels } = useHotels(tourId);
   const { data: activities } = useActivities(tourId);
   const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
@@ -84,8 +84,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   }, [initialReportType]);
 
 
-  const tourBookings = (allBookings || []).filter(booking => 
-    booking.tour_id === tourId && 
+  const activeTourBookings = tourBookings.filter(booking => 
     booking.status !== 'cancelled' && 
     booking.status !== 'waitlisted'
   );

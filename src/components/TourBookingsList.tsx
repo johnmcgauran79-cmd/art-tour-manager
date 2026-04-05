@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Edit, Trash2, Plus, Search, Users, Mail } from "lucide-react";
-import { useBookings, useDeleteBooking } from "@/hooks/useBookings";
+import { useDeleteBooking } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { AddBookingModal } from "@/components/AddBookingModal";
@@ -56,7 +57,7 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
   const [emailPreviewOpen, setEmailPreviewOpen] = useState(false);
   const [emailBookingId, setEmailBookingId] = useState<string | null>(null);
   const [emailRecipient, setEmailRecipient] = useState<{ name: string; email: string } | null>(null);
-  const { data: allBookings, isLoading } = useBookings();
+  const { data: allBookings, isLoading } = useTourBookings(tourId);
   const deleteBookingMutation = useDeleteBooking();
   const sendBookingConfirmation = useSendBookingConfirmation();
   const { userRole } = useAuth();

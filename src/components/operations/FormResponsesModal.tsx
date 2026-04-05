@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, FileText, CheckCircle, AlertCircle } from "lucide-react";
 import { useCustomForms } from "@/hooks/useCustomForms";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
@@ -19,11 +19,11 @@ interface FormResponsesModalProps {
 
 export function FormResponsesModal({ open, onOpenChange, tourId, tourName }: FormResponsesModalProps) {
   const { forms } = useCustomForms(tourId);
-  const { data: allBookings } = useBookings();
+  const { data: allTourBookings = [] } = useTourBookings(tourId);
   const [selectedForm, setSelectedForm] = useState<CustomForm | null>(null);
 
-  const tourBookings = (allBookings || []).filter(
-    b => b.tour_id === tourId && b.status !== 'cancelled' && b.status !== 'waitlisted'
+  const tourBookings = allTourBookings.filter(
+    b => b.status !== 'cancelled' && b.status !== 'waitlisted'
   );
 
   // Fetch all responses for all forms in this tour

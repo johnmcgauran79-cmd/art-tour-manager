@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Save, CheckCircle } from "lucide-react";
-import { useBookings } from "@/hooks/useBookings";
+import { useTourBookings } from "@/hooks/useTourBookings";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,10 +28,10 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
   const [savingId, setSavingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  const { data: allBookings, isLoading } = useBookings();
+  const { data: allTourBookings = [], isLoading } = useTourBookings(tourId);
   const { toast } = useToast();
 
-  const tourBookings = (allBookings || []).filter(b => b.tour_id === tourId && b.status !== 'cancelled');
+  const tourBookings = allTourBookings.filter(b => b.status !== 'cancelled');
 
   useEffect(() => {
     if (!open || tourBookings.length === 0) return;
