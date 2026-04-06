@@ -107,161 +107,63 @@ const Login = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-brand-navy">Welcome</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              Sign in to your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin" className="flex items-center gap-2">
-                  <LogIn className="h-4 w-4" />
-                  Sign In
-                </TabsTrigger>
-                <TabsTrigger value="signup" className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4" />
-                  Sign Up
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="flex items-center gap-2 text-brand-navy">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </Label>
-                    <Input
-                      id="signin-email"
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="Enter your email"
-                      className="border-brand-navy/30 focus:border-brand-navy"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="flex items-center gap-2 text-brand-navy">
-                      <Lock className="h-4 w-4" />
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="signin-password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        placeholder="Enter your password"
-                        className="border-brand-navy/30 focus:border-brand-navy pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-gray-400" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow flex items-center gap-2"
-                    disabled={isLoading}
+            <form onSubmit={handleSignIn} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signin-email" className="flex items-center gap-2 text-brand-navy">
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Label>
+                <Input
+                  id="signin-email"
+                  name="email"
+                  type="email"
+                  required
+                  placeholder="Enter your email"
+                  className="border-brand-navy/30 focus:border-brand-navy"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signin-password" className="flex items-center gap-2 text-brand-navy">
+                  <Lock className="h-4 w-4" />
+                  Password
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="signin-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Enter your password"
+                    className="border-brand-navy/30 focus:border-brand-navy pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    <LogIn className="h-4 w-4" />
-                    {isLoading ? 'Signing In...' : 'Sign In'}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4 text-gray-400" />
+                    ) : (
+                      <Eye className="h-4 w-4 text-gray-400" />
+                    )}
                   </Button>
-                </form>
-              </TabsContent>
-              
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName" className="flex items-center gap-2 text-brand-navy">
-                        <User className="h-4 w-4" />
-                        First Name
-                      </Label>
-                      <Input
-                        id="firstName"
-                        name="firstName"
-                        type="text"
-                        required
-                        placeholder="First name"
-                        className="border-brand-navy/30 focus:border-brand-navy"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName" className="text-brand-navy">Last Name</Label>
-                      <Input
-                        id="lastName"
-                        name="lastName"
-                        type="text"
-                        required
-                        placeholder="Last name"
-                        className="border-brand-navy/30 focus:border-brand-navy"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="flex items-center gap-2 text-brand-navy">
-                      <Mail className="h-4 w-4" />
-                      Email
-                    </Label>
-                    <Input
-                      id="signup-email"
-                      name="email"
-                      type="email"
-                      required
-                      placeholder="Enter your email"
-                      className="border-brand-navy/30 focus:border-brand-navy"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="flex items-center gap-2 text-brand-navy">
-                      <Lock className="h-4 w-4" />
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="signup-password"
-                        name="password"
-                        type={showSignUpPassword ? "text" : "password"}
-                        required
-                        placeholder="Create a password"
-                        className="border-brand-navy/30 focus:border-brand-navy pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                      >
-                        {showSignUpPassword ? (
-                          <EyeOff className="h-4 w-4 text-gray-400" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-gray-400" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow flex items-center gap-2"
-                    disabled={isLoading}
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
+                </div>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow flex items-center gap-2"
+                disabled={isLoading}
+              >
+                <LogIn className="h-4 w-4" />
+                {isLoading ? 'Signing In...' : 'Sign In'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
       </div>
