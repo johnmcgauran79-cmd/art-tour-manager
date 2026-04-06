@@ -14,7 +14,6 @@ const Login = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   // Redirect if already logged in
   if (user && !loading) {
@@ -41,34 +40,6 @@ const Login = () => {
       toast({
         title: 'Welcome back!',
         description: 'You have been signed in successfully.',
-      });
-    }
-
-    setIsLoading(false);
-  };
-
-  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
-    const firstName = formData.get('firstName') as string;
-    const lastName = formData.get('lastName') as string;
-
-    const { error } = await signUp(email, password, firstName, lastName);
-
-    if (error) {
-      toast({
-        title: 'Sign Up Failed',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Account Created',
-        description: 'Please check your email to verify your account.',
       });
     }
 
