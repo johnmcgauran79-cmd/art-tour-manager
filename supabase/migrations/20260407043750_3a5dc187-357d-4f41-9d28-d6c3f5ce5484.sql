@@ -1,0 +1,1 @@
+ALTER TABLE public.activities ADD COLUMN cancellation_terms text;

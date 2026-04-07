@@ -46,6 +46,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     hospitality_inclusions: "",
     notes: "",
     operations_notes: "",
+    cancellation_terms: "",
     transport_notes: ""
   });
   const [journeys, setJourneys] = useState<Journey[]>([]);
@@ -80,6 +81,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         hospitality_inclusions: activity.hospitality_inclusions || "",
         notes: activity.notes || "",
         operations_notes: activity.operations_notes || "",
+        cancellation_terms: (activity as any).cancellation_terms || "",
         transport_notes: activity.transport_notes || ""
       });
 
@@ -139,6 +141,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           hospitality_inclusions: activityData.hospitality_inclusions || null,
           notes: activityData.notes || null,
           operations_notes: activityData.operations_notes || null,
+          cancellation_terms: activityData.cancellation_terms || null,
           transport_notes: activityData.transport_notes || null,
         })
         .eq('id', activity?.id)
@@ -410,6 +413,10 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           <div className="space-y-2">
             <Label htmlFor="operations_notes">Operations Notes</Label>
             <Textarea id="operations_notes" value={formData.operations_notes} onChange={(e) => handleInputChange("operations_notes", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cancellation_terms">Cancellation / Terms</Label>
+            <Textarea id="cancellation_terms" value={formData.cancellation_terms} onChange={(e) => handleInputChange("cancellation_terms", e.target.value)} rows={3} placeholder="Booking terms, cancellation fees, costs..." />
           </div>
 
           {/* Attachments */}
