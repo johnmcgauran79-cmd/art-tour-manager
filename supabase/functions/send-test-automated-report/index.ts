@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     // Determine if a tour is needed based on report types
-    const systemWideReports = ['booking_changes', 'activity_matrix'];
+    const systemWideReports = ['booking_changes', 'activity_matrix', 'payment_status'];
     const needsTour = report_types.some((rt: string) => !systemWideReports.includes(rt));
 
     // Get a sample tour if needed and not provided
