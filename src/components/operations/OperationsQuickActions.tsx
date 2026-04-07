@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, Grid3X3, FileText } from "lucide-react";
+import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -85,6 +85,23 @@ export const OperationsQuickActions = () => {
     },
   });
 
+  // Payment Status count
+  const { data: paymentStatusCount = 0 } = useQuery({
+    queryKey: ['payment-status-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('generate-payment-status-report', {
+        body: { format: 'json' }
+      });
+
+      if (error) {
+        console.error('Error fetching payment status count:', error);
+        return 0;
+      }
+
+      return data.count || 0;
+    },
+  });
+
   const checkActions = [
     {
       icon: Grid3X3,
@@ -106,6 +123,13 @@ export const OperationsQuickActions = () => {
       description: "Review new bookings & changes (7 days)",
       count: weeklyChangesCount,
       onClick: () => navigate("/operations/booking-changes"),
+    },
+    {
+      icon: DollarSign,
+      label: "Payment Status",
+      description: "Outstanding deposits, instalments & payments",
+      count: paymentStatusCount,
+      onClick: () => navigate("/operations/payment-status"),
     },
   ];
 

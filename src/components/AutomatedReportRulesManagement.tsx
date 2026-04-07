@@ -97,6 +97,9 @@ const REPORT_TYPES = [{
 }, {
   value: 'bedding_review',
   label: 'Bedding Type Review'
+}, {
+  value: 'payment_status',
+  label: 'Payment Status Report'
 }];
 const SCHEDULE_TYPES = [{
   value: 'weekly',

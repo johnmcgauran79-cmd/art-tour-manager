@@ -31,6 +31,7 @@ import ActivityBookings from "./pages/operations/ActivityBookings";
 
 import HotelAllocations from "./pages/operations/HotelAllocations";
 import BookingChanges from "./pages/operations/BookingChanges";
+import PaymentStatus from "./pages/operations/PaymentStatus";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -225,6 +226,16 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <BookingChanges />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/payment-status"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <PaymentStatus />
                     </AppLayout>
                   </ProtectedRoute>
                 }
