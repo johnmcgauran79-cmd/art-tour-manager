@@ -85,6 +85,23 @@ export const OperationsQuickActions = () => {
     },
   });
 
+  // Payment Status count
+  const { data: paymentStatusCount = 0 } = useQuery({
+    queryKey: ['payment-status-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('generate-payment-status-report', {
+        body: { format: 'json' }
+      });
+
+      if (error) {
+        console.error('Error fetching payment status count:', error);
+        return 0;
+      }
+
+      return data.count || 0;
+    },
+  });
+
   const checkActions = [
     {
       icon: Grid3X3,
@@ -106,6 +123,13 @@ export const OperationsQuickActions = () => {
       description: "Review new bookings & changes (7 days)",
       count: weeklyChangesCount,
       onClick: () => navigate("/operations/booking-changes"),
+    },
+    {
+      icon: DollarSign,
+      label: "Payment Status",
+      description: "Outstanding deposits, instalments & payments",
+      count: paymentStatusCount,
+      onClick: () => navigate("/operations/payment-status"),
     },
   ];
 

@@ -230,6 +230,16 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/operations/payment-status"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <PaymentStatus />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
