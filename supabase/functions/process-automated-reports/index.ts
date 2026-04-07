@@ -116,6 +116,28 @@ async function generateActivityMatrixReport(supabaseUrl: string, supabaseService
   return result.html;
 }
 
+// Generate Payment Status Report HTML by calling the dedicated edge function
+async function generatePaymentStatusReport(supabaseUrl: string, supabaseServiceKey: string): Promise<string> {
+  console.log('Calling generate-payment-status-report edge function...');
+  
+  const response = await fetch(`${supabaseUrl}/functions/v1/generate-payment-status-report`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${supabaseServiceKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ format: 'html' }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to generate payment status report: ${error}`);
+  }
+
+  const result = await response.json();
+  return result.html;
+}
+
 // Main report generation function
 async function generateReport(
   reportType: string, 
@@ -137,6 +159,8 @@ async function generateReport(
     case 'activity_matrix':
       // Activity Matrix supports all-tours mode (no tour_id) like the Operations tab
       return await generateActivityMatrixReport(supabaseUrl, supabaseServiceKey, tourId || undefined);
+    case 'payment_status':
+      return await generatePaymentStatusReport(supabaseUrl, supabaseServiceKey);
     case 'bedding_review':
       return '<p>Bedding Review report coming soon.</p>';
     case 'hotel_check':
@@ -163,7 +187,7 @@ serve(async (req) => {
     console.log('Processing automated reports:', { tour_id, report_types, recipient_emails, rule_id, schedule_type, schedule_value });
 
     // Report types that don't require a tour_id
-    const systemWideReports = ['booking_changes', 'activity_matrix'];
+    const systemWideReports = ['booking_changes', 'activity_matrix', 'payment_status'];
     const requiresTour = report_types.some((rt: string) => !systemWideReports.includes(rt));
 
     if (!report_types || !Array.isArray(report_types) || report_types.length === 0) {
@@ -244,7 +268,8 @@ serve(async (req) => {
       'activity_matrix': 'Activity Allocation Matrix',
       'bedding_review': 'Bedding Type Review',
       'hotel_check': 'Hotel Allocation Check',
-      'activity_check': 'Activity Allocation Check'
+      'activity_check': 'Activity Allocation Check',
+      'payment_status': 'Payment Status Report'
     };
 
     // Determine if this is a system-wide only report (no tour context needed in header)
