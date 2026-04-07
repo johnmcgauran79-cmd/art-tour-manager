@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           activity_date: string | null
           activity_status: Database["public"]["Enums"]["activity_status"] | null
+          cancellation_terms: string | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
@@ -55,6 +56,7 @@ export type Database = {
           activity_status?:
             | Database["public"]["Enums"]["activity_status"]
             | null
+          cancellation_terms?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           activity_status?:
             | Database["public"]["Enums"]["activity_status"]
             | null
+          cancellation_terms?: string | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null

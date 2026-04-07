@@ -44,6 +44,7 @@ const initialFormData = {
   hospitality_inclusions: "",
   notes: "",
   operations_notes: "",
+  cancellation_terms: "",
   transport_notes: ""
 };
 

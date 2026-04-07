@@ -46,6 +46,7 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     hospitality_inclusions: "",
     notes: "",
     operations_notes: "",
+    cancellation_terms: "",
     transport_notes: ""
   });
   const [journeys, setJourneys] = useState<Journey[]>([]);
