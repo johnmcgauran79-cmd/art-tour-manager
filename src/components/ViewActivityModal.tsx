@@ -265,7 +265,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
           )}
 
           {/* Notes */}
-          {(activity.notes || activity.operations_notes) && (
+          {(activity.notes || activity.operations_notes || (activity as any).cancellation_terms) && (
             <details className="group" open>
               <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
                 Notes
@@ -277,10 +277,16 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                     <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.notes}</p>
                   </div>
                 )}
-                {activity.operations_notes && (
+                {activity.operations_notes && userRole !== 'host' && (
                   <div>
                     <span className="text-xs text-muted-foreground uppercase">Operations Notes</span>
                     <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
+                  </div>
+                )}
+                {(activity as any).cancellation_terms && userRole !== 'host' && (
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase">Cancellation / Terms</span>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{(activity as any).cancellation_terms}</p>
                   </div>
                 )}
               </div>
