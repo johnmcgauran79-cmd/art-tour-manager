@@ -173,7 +173,7 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                   {hotel.contact_email && (
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>Email: {hotel.contact_email}</span>
+                      <span>Email: <a href={`mailto:${hotel.contact_email}`} className="text-primary underline hover:opacity-80">{hotel.contact_email}</a></span>
                     </div>
                   )}
                   {hotel.default_check_in && (
