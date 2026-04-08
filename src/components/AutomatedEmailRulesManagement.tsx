@@ -643,8 +643,7 @@ export const AutomatedEmailRulesManagement = () => {
             {formData.rule_type === 'travel_documents_request' ? (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <p className="text-sm text-purple-700">
-                  <strong>Travel Documents emails use a built-in template</strong> that includes the customer's name, 
-                  tour details, existing passport details (if any), and a secure link to submit their travel documents.
+                  <strong>Travel Documents emails use a dedicated template type.</strong> Select or create a "Travel Documents Request" template in Email Templates to customise the content.
                 </p>
               </div>
             ) : (
@@ -658,13 +657,22 @@ export const AutomatedEmailRulesManagement = () => {
                     <SelectValue placeholder="Select template" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bookingConfirmationTemplates?.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
+                    {filteredTemplates && filteredTemplates.length > 0 ? (
+                      filteredTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                        No templates found for this type. Create one in Email Templates first.
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-sm text-muted-foreground">
+                  Only templates of type "{RULE_TYPES.find(rt => rt.value === formData.rule_type)?.label}" are shown
+                </p>
               </div>
             )}
 
