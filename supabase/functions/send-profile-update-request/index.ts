@@ -50,10 +50,11 @@ function processTemplate(content: string, replacements: Record<string, string>):
 }
 
 function sanitizeQuillHtml(html: string): string {
-  let cleaned = html;
-  cleaned = cleaned.replace(/<h([1-6])>\s*<strong>\s*(?=<(?:p|h[1-6]|table|ul|ol|div)[\s>])/gi, '');
-  cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/div>|$)/gi, '');
-  return cleaned;
+  const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
+  return html.replace(
+    /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
+    (_match, _level, inner) => blockTags.test(inner) ? inner : _match
+  );
 }
 
 function wrapInEmailShell(content: string, headerImageUrl: string, senderName: string, link: string): string {
