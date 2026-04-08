@@ -30,7 +30,15 @@ function processTemplate(content: string, replacements: Record<string, string>):
   return result;
 }
 
+function sanitizeQuillHtml(html: string): string {
+  let cleaned = html;
+  cleaned = cleaned.replace(/<h([1-6])>\s*<strong>\s*(?=<(?:p|h[1-6]|table|ul|ol|div)[\s>])/gi, '');
+  cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/div>|$)/gi, '');
+  return cleaned;
+}
+
 function wrapInEmailShell(content: string, headerImageUrl: string, senderName: string, link: string): string {
+  const sanitizedContent = sanitizeQuillHtml(content);
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
@@ -39,7 +47,7 @@ function wrapInEmailShell(content: string, headerImageUrl: string, senderName: s
     <img src="${headerImageUrl}" alt="${senderName}" style="height: 80px; max-width: 400px; width: auto;" />
   </div>
   <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-    ${content}
+    ${sanitizedContent}
   </div>
   <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
     <p style="margin: 0;">If the button doesn't work, copy and paste this link into your browser:</p>
