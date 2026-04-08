@@ -26,10 +26,23 @@ function processTemplate(content: string, replacements: Record<string, string>):
   return result;
 }
 
+const stripZeroWidth = (v: string) => v.replace(/[\u200B-\u200D\uFEFF]/g, "");
+
+function normalizeConditionalTemplateHtml(html: string): string {
+  let n = stripZeroWidth(html);
+  n = n.replace(/<h([1-6])>(\s*(?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/h\1>/gi, (_m, l, o, i) => `${o}<h${l}>${i}</h${l}>`);
+  n = n.replace(/<h([1-6])>(\s*<strong\b[^>]*>)\s*((?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/strong>\s*<\/h\1>/gi, (_m, l, s, o, i) => `${o}<h${l}>${s}${i}</strong></h${l}>`);
+  n = n.replace(/<span[^>]*>\s*(\{\{\/[^}]+\}\})\s*<\/span>/gi, "$1");
+  n = n.replace(/<h([1-6])>\s*((?:\{\{[^}]+_button\}\}|\{\{\/[^}]+\}\}|&nbsp;|\s)+)\s*<\/h\1>/gi, (_m, _l, i) => `<p>${i.trim()}</p>`);
+  n = n.replace(/<(p|div)([^>]*)>([\s\S]*?)((?:\s*\{\{\/[^}]+\}\}\s*)+)\s*<\/\1>/gi, (_m, t, a, i, c) => `<${t}${a}>${i}</${t}>${c}`);
+  return n.replace(/<span[^>]*>\s*<\/span>/gi, "");
+}
+
 function sanitizeQuillHtml(html: string): string {
   const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
   let cleaned = html;
   let changed = false;
+  cleaned = cleaned.replace(/<(p|div)[^>]*>\s*(<table\b[\s\S]*?<\/table>|<hr\b[^>]*\/?>)\s*<\/\1>/gi, '$2');
   cleaned = cleaned.replace(
     /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
     (_match, _level, inner) => {
@@ -241,7 +254,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         if (template) {
           fromEmail = template.from_email ? `${senderName} <${template.from_email}>` : `${senderName} <${fromEmailAddr}>`;
-          const processedContent = processTemplate(template.content_template || '', replacements);
+          const processedContent = processTemplate(normalizeConditionalTemplateHtml(template.content_template || ''), replacements);
           finalSubject = processTemplate(template.subject_template || `Tour Waiver - ${tour.name}`, replacements);
           finalHtml = wrapInEmailShell(processedContent, headerImg, senderName, waiverLink);
         } else {
