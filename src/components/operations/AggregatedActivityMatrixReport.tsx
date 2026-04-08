@@ -183,6 +183,7 @@ export const AggregatedActivityMatrixReport = ({
           discrepancy_type: u.discrepancy_type,
         }))];
       });
+      queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
       toast.success('Booking acknowledged');
     } catch (error) {
       console.error('Error acknowledging booking:', error);
