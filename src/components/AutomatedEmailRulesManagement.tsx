@@ -29,6 +29,19 @@ const BOOKING_STATUSES = [
 
 const DEFAULT_POST_BOOKING_STATUSES = ['invoiced', 'host', 'fully_paid', 'complimentary', 'instalment_paid'];
 
+const RULE_TYPES = [
+  { value: 'booking_confirmation', label: 'Booking Confirmation', templateType: 'booking_confirmation' },
+  { value: 'tour_update', label: 'Tour Update', templateType: 'tour_update' },
+  { value: 'waiver_request', label: 'Waiver Request', templateType: 'waiver_request' },
+  { value: 'pickup_request', label: 'Pickup Location Request', templateType: 'pickup_request' },
+  { value: 'profile_update_request', label: 'Profile Update Request', templateType: 'profile_update_request' },
+  { value: 'custom_form_request', label: 'Custom Form Request', templateType: 'custom_form_request' },
+  { value: 'payment_reminder', label: 'Payment Reminder', templateType: 'payment_reminder' },
+  { value: 'welcome_email', label: 'Welcome Email', templateType: 'welcome_email' },
+  { value: 'dietary_request', label: 'Dietary Requirements Request', templateType: 'dietary_request' },
+  { value: 'travel_documents_request', label: 'Passport Details Request', templateType: 'travel_documents_request' },
+];
+
 export const AutomatedEmailRulesManagement = () => {
   const { user } = useAuth();
   const { data: rules, isLoading: rulesLoading } = useAutomatedEmailRules();
