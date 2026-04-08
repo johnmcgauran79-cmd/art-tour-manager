@@ -10,6 +10,7 @@ import { AlertTriangle, Grid3X3, Loader2, ChevronDown, ChevronRight, X, CheckCir
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AggregatedActivityMatrixReportProps {
   open?: boolean;
