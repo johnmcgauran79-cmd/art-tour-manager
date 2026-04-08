@@ -51,10 +51,19 @@ function processTemplate(content: string, replacements: Record<string, string>):
 
 function sanitizeQuillHtml(html: string): string {
   const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
-  return html.replace(
+  let cleaned = html;
+  let changed = false;
+  cleaned = cleaned.replace(
     /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
-    (_match, _level, inner) => blockTags.test(inner) ? inner : _match
+    (_match, _level, inner) => {
+      if (blockTags.test(inner)) { changed = true; return inner; }
+      return _match;
+    }
   );
+  if (changed) {
+    cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/tr>)/gi, '');
+  }
+  return cleaned;
 }
 
 function wrapInEmailShell(content: string, headerImageUrl: string, senderName: string, link: string): string {

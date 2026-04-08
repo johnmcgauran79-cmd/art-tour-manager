@@ -99,17 +99,20 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
 // leaving the inner content intact. Real headings (no block elements inside) are preserved.
 const sanitizeQuillHtml = (html: string): string => {
   const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
-  return html.replace(
+  let cleaned = html;
+  let changed = false;
+  cleaned = cleaned.replace(
     /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
     (_match, _level, inner) => {
-      // If inner content contains block-level elements, this is an orphaned wrapper
-      if (blockTags.test(inner)) {
-        return inner;
-      }
-      // Otherwise it's a legitimate heading — keep it
+      if (blockTags.test(inner)) { changed = true; return inner; }
       return _match;
     }
   );
+  // Only if wrappers were stripped, clean up orphaned </strong></h> closers
+  if (changed) {
+    cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/tr>)/gi, '');
+  }
+  return cleaned;
 };
 
 // Branded email wrapper - wraps content in ART header with logo
