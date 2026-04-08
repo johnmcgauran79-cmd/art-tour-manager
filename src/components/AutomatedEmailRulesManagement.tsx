@@ -148,6 +148,11 @@ export const AutomatedEmailRulesManagement = () => {
     }
   };
 
+  const filteredTemplates = templates?.filter(t => {
+    const ruleTypeDef = RULE_TYPES.find(rt => rt.value === formData.rule_type);
+    return ruleTypeDef ? t.type === ruleTypeDef.templateType : t.type === 'booking_confirmation';
+  });
+
   const bookingConfirmationTemplates = templates?.filter(t => t.type === 'booking_confirmation');
 
   // Separate rules by trigger type and rule type
