@@ -145,6 +145,10 @@ export const AggregatedActivityMatrixReport = ({
         }];
       });
       queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
+    } catch (error) {
+      console.error('Error acknowledging discrepancy:', error);
+      toast.error('Failed to acknowledge discrepancy');
+    }
   };
 
   const acknowledgeBooking = async (bookingDiscrepancies: DiscrepancyData[]) => {
