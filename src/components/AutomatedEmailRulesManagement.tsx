@@ -548,6 +548,27 @@ export const AutomatedEmailRulesManagement = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="rule_type">Email Type</Label>
+              <Select
+                value={formData.rule_type}
+                onValueChange={(value) => setFormData({ ...formData, rule_type: value, email_template_id: '' })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RULE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Determines the type of email sent and which templates are available
+              </p>
+            </div>
+
               <Label htmlFor="trigger_type">Trigger Type</Label>
               <Select
                 value={formData.trigger_type}
