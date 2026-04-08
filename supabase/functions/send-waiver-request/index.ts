@@ -27,9 +27,19 @@ function processTemplate(content: string, replacements: Record<string, string>):
 }
 
 function sanitizeQuillHtml(html: string): string {
+  const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
   let cleaned = html;
-  cleaned = cleaned.replace(/<h([1-6])>\s*<strong>\s*(?=<(?:p|h[1-6]|table|ul|ol|div)[\s>])/gi, '');
-  cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/div>|$)/gi, '');
+  let changed = false;
+  cleaned = cleaned.replace(
+    /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
+    (_match, _level, inner) => {
+      if (blockTags.test(inner)) { changed = true; return inner; }
+      return _match;
+    }
+  );
+  if (changed) {
+    cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/tr>)/gi, '');
+  }
   return cleaned;
 }
 

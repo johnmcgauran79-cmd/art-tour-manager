@@ -94,16 +94,24 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
 // Sanitise Quill-generated HTML to fix broken heading nesting.
 // Quill sometimes wraps large blocks of content inside <h2><strong>...</strong></h2>
 // when users create headings, causing all subsequent text to inherit heading styles.
+// This sanitizer detects any <h><strong>...</strong></h> wrapper whose inner content
+// contains block-level elements (p, h, table, ul, ol, div) and strips the wrapper,
+// leaving the inner content intact. Real headings (no block elements inside) are preserved.
 const sanitizeQuillHtml = (html: string): string => {
+  const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
   let cleaned = html;
-
-  // Pattern: <h2><strong> immediately followed by block-level elements (p, h, table, ul, ol, div)
-  // indicates Quill wrapped block content inside a heading — strip the wrapping tags.
-  cleaned = cleaned.replace(/<h([1-6])>\s*<strong>\s*(?=<(?:p|h[1-6]|table|ul|ol|div)[\s>])/gi, '');
-
-  // Remove the matching orphaned </strong></h2> closers at the end of content
-  cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|$)/gi, '');
-
+  let changed = false;
+  cleaned = cleaned.replace(
+    /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
+    (_match, _level, inner) => {
+      if (blockTags.test(inner)) { changed = true; return inner; }
+      return _match;
+    }
+  );
+  // Only if wrappers were stripped, clean up orphaned </strong></h> closers
+  if (changed) {
+    cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|<\/tr>)/gi, '');
+  }
   return cleaned;
 };
 
