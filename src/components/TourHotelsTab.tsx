@@ -158,6 +158,24 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                       <span>{hotel.address}</span>
                     </div>
                   )}
+                  {hotel.contact_name && (
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>Contact: {hotel.contact_name}</span>
+                    </div>
+                  )}
+                  {hotel.contact_phone && (
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>Phone: {hotel.contact_phone}</span>
+                    </div>
+                  )}
+                  {hotel.contact_email && (
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>Email: {hotel.contact_email}</span>
+                    </div>
+                  )}
                   {hotel.default_check_in && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
