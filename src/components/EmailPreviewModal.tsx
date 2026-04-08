@@ -21,6 +21,30 @@ import {
   resolveComplexEmailBlocksFromEditor,
 } from "@/lib/emailEditorBlocks";
 
+const normalizeTemplateEditorHtml = (html: string) => {
+  if (!html) return html;
+
+  return html
+    .replace(
+      /<h([1-6])>(\s*(?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/h\1>/gi,
+      (_match, level, openers, inner) => `${openers}<h${level}>${inner}</h${level}>`
+    )
+    .replace(
+      /<h([1-6])>(\s*<strong\b[^>]*>)\s*((?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
+      (_match, level, strongOpen, openers, inner) => `${openers}<h${level}>${strongOpen}${inner}</strong></h${level}>`
+    )
+    .replace(/<span[^>]*>\s*(\{\{\/[^}]+\}\})\s*<\/span>/gi, "$1")
+    .replace(
+      /<h([1-6])>\s*((?:\{\{[^}]+_button\}\}|\{\{\/[^}]+\}\}|&nbsp;|\s)+)\s*<\/h\1>/gi,
+      (_match, _level, inner) => `<p style="text-align:center;">${inner.trim()}</p>`
+    )
+    .replace(
+      /<(p|div)([^>]*)>([\s\S]*?)((?:\s*\{\{\/[^}]+\}\}\s*)+)\s*<\/\1>/gi,
+      (_match, tag, attrs, inner, closers) => `<${tag}${attrs}>${inner}</${tag}>${closers}`
+    )
+    .replace(/<span[^>]*>\s*<\/span>/gi, "");
+};
+
 registerEmailEditorBlots(Quill);
 
 interface EmailPreviewRecipient {
@@ -355,7 +379,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
                   theme="snow"
                   value={protectComplexEmailBlocksForEditor(editedContent)}
                   onChange={(value) => {
-                    const resolvedValue = resolveComplexEmailBlocksFromEditor(value);
+                    const resolvedValue = normalizeTemplateEditorHtml(resolveComplexEmailBlocksFromEditor(value));
                     if (resolvedValue === editedContent) return;
                     setEditedContent(resolvedValue);
                     setUserHasEdited(true);

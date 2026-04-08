@@ -27,6 +27,37 @@ interface BookingConfirmationRequest {
 // our placeholder detection + replacement will silently fail.
 const stripZeroWidth = (value: string) => value.replace(/[\u200B-\u200D\uFEFF]/g, "");
 
+// Normalize editor-authored template HTML before merge-field processing.
+// This prevents section markers / action-button placeholders from being stored
+// inside heading tags, which later expands into invalid HTML and causes style bleed.
+const normalizeConditionalTemplateHtml = (html: string): string => {
+  let normalized = stripZeroWidth(html);
+
+  normalized = normalized.replace(
+    /<h([1-6])>(\s*(?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/h\1>/gi,
+    (_match, level, openers, inner) => `${openers}<h${level}>${inner}</h${level}>`
+  );
+
+  normalized = normalized.replace(
+    /<h([1-6])>(\s*<strong\b[^>]*>)\s*((?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
+    (_match, level, strongOpen, openers, inner) => `${openers}<h${level}>${strongOpen}${inner}</strong></h${level}>`
+  );
+
+  normalized = normalized.replace(/<span[^>]*>\s*(\{\{\/[^}]+\}\})\s*<\/span>/gi, "$1");
+
+  normalized = normalized.replace(
+    /<h([1-6])>\s*((?:\{\{[^}]+_button\}\}|\{\{\/[^}]+\}\}|&nbsp;|\s)+)\s*<\/h\1>/gi,
+    (_match, _level, inner) => `<p style="text-align:center;">${inner.trim()}</p>`
+  );
+
+  normalized = normalized.replace(
+    /<(p|div)([^>]*)>([\s\S]*?)((?:\s*\{\{\/[^}]+\}\}\s*)+)\s*<\/\1>/gi,
+    (_match, tag, attrs, inner, closers) => `<${tag}${attrs}>${inner}</${tag}>${closers}`
+  );
+
+  return normalized.replace(/<span[^>]*>\s*<\/span>/gi, "");
+};
+
 // If client-side editors pre-render templates, placeholders like {{profile_update_link}}
 // can be replaced with an empty string, leaving <a href="">update your profile</a>.
 // This helper patches such links at send-time, so we still deliver a working URL.
@@ -101,6 +132,12 @@ const sanitizeQuillHtml = (html: string): string => {
   const blockTags = /<(?:p|h[1-6]|table|ul|ol|div)[\s>]/i;
   let cleaned = html;
   let changed = false;
+
+  cleaned = cleaned.replace(
+    /<(p|div)[^>]*>\s*(<table\b[\s\S]*?<\/table>|<hr\b[^>]*\/?>)\s*<\/\1>/gi,
+    '$2'
+  );
+
   cleaned = cleaned.replace(
     /<h([1-6])>\s*<strong>([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
     (_match, _level, inner) => {
@@ -1281,7 +1318,7 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Process content template (use custom if provided, otherwise use default template)
       // Always process the template to replace merge fields
-      const contentToProcess = customContent || template.content_template;
+      const contentToProcess = normalizeConditionalTemplateHtml(customContent || template.content_template);
       emailHtml = processTemplate(contentToProcess, mergeData);
       console.log('Processed content template');
 

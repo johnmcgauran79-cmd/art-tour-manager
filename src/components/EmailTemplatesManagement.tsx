@@ -29,6 +29,30 @@ import {
   setupBlockInteractions,
 } from "@/lib/emailEditorBlocks";
 
+const normalizeTemplateEditorHtml = (html: string) => {
+  if (!html) return html;
+
+  return html
+    .replace(
+      /<h([1-6])>(\s*(?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/h\1>/gi,
+      (_match, level, openers, inner) => `${openers}<h${level}>${inner}</h${level}>`
+    )
+    .replace(
+      /<h([1-6])>(\s*<strong\b[^>]*>)\s*((?:\{\{[#^][^}]+\}\}\s*)+)([\s\S]*?)<\/strong>\s*<\/h\1>/gi,
+      (_match, level, strongOpen, openers, inner) => `${openers}<h${level}>${strongOpen}${inner}</strong></h${level}>`
+    )
+    .replace(/<span[^>]*>\s*(\{\{\/[^}]+\}\})\s*<\/span>/gi, "$1")
+    .replace(
+      /<h([1-6])>\s*((?:\{\{[^}]+_button\}\}|\{\{\/[^}]+\}\}|&nbsp;|\s)+)\s*<\/h\1>/gi,
+      (_match, _level, inner) => `<p style="text-align:center;">${inner.trim()}</p>`
+    )
+    .replace(
+      /<(p|div)([^>]*)>([\s\S]*?)((?:\s*\{\{\/[^}]+\}\}\s*)+)\s*<\/\1>/gi,
+      (_match, tag, attrs, inner, closers) => `<${tag}${attrs}>${inner}</${tag}>${closers}`
+    )
+    .replace(/<span[^>]*>\s*<\/span>/gi, "");
+};
+
 const EMAIL_TEMPLATE_TYPES = [
   { value: 'booking_confirmation', label: 'Booking Confirmation' },
   { value: 'dietary_request', label: 'Dietary Requirements Request' },
@@ -178,7 +202,7 @@ export const EmailTemplatesManagement = () => {
 
   // Convert protected WYSIWYG placeholders back to real email HTML before saving
   const resolveCardPlaceholders = (html: string): string => {
-    return resolveComplexEmailBlocksFromEditor(html);
+    return normalizeTemplateEditorHtml(resolveComplexEmailBlocksFromEditor(html));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -694,7 +718,7 @@ export const EmailTemplatesManagement = () => {
                         ref={quillRef}
                         value={protectComplexEmailBlocksForEditor(formData.content_template)}
                         onChange={(value) => {
-                          const resolvedValue = resolveComplexEmailBlocksFromEditor(value);
+                          const resolvedValue = normalizeTemplateEditorHtml(resolveComplexEmailBlocksFromEditor(value));
                           setFormData(prev => prev.content_template === resolvedValue ? prev : { ...prev, content_template: resolvedValue });
                         }}
                         modules={quillModules}
