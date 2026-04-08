@@ -10,6 +10,7 @@ import { AlertTriangle, Grid3X3, Loader2, ChevronDown, ChevronRight, X, CheckCir
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AggregatedActivityMatrixReportProps {
   open?: boolean;
@@ -52,6 +53,7 @@ export const AggregatedActivityMatrixReport = ({
   const [showAcknowledged, setShowAcknowledged] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (open !== false) {
@@ -142,6 +144,7 @@ export const AggregatedActivityMatrixReport = ({
           discrepancy_type: disc.discrepancyType,
         }];
       });
+      queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
     } catch (error) {
       console.error('Error acknowledging discrepancy:', error);
       toast.error('Failed to acknowledge discrepancy');
@@ -180,6 +183,7 @@ export const AggregatedActivityMatrixReport = ({
           discrepancy_type: u.discrepancy_type,
         }))];
       });
+      queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
       toast.success('Booking acknowledged');
     } catch (error) {
       console.error('Error acknowledging booking:', error);
@@ -220,6 +224,7 @@ export const AggregatedActivityMatrixReport = ({
           discrepancy_type: u.discrepancy_type,
         }))];
       });
+      queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
       toast.success('Tour acknowledged');
     } catch (error) {
       console.error('Error acknowledging tour:', error);
@@ -239,6 +244,7 @@ export const AggregatedActivityMatrixReport = ({
 
       const keys = new Set(bookingDiscrepancies.map(d => `${d.bookingId}-${d.activityId}`));
       setAcknowledgments(prev => prev.filter(a => !keys.has(`${a.booking_id}-${a.activity_id}`)));
+      queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
       toast.success('Acknowledgment removed');
     } catch (error) {
       console.error('Error removing acknowledgment:', error);
