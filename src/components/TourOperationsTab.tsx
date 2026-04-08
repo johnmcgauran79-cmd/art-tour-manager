@@ -126,13 +126,38 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     fetchActivityBookings();
   }, [tourBookings, activities]);
 
-  // Calculate bookings with discrepancies
-  const bookingsWithDiscrepancies = tourBookings.filter(booking => {
+  // Calculate bookings with discrepancies (match the report: exclude cancelled/waitlisted, respect acknowledgments)
+  const [discrepancyAcknowledgments, setDiscrepancyAcknowledgments] = useState<any[]>([]);
+
+  // Fetch acknowledgments for this tour
+  useEffect(() => {
+    const fetchAcknowledgments = async () => {
+      if (!tourId) return;
+      const { data } = await supabase
+        .from('activity_discrepancy_acknowledgments')
+        .select('booking_id, activity_id, snapshot_passenger_count, snapshot_allocated_count')
+        .eq('tour_id', tourId);
+      setDiscrepancyAcknowledgments(data || []);
+    };
+    fetchAcknowledgments();
+  }, [tourId]);
+
+  const bookingsWithDiscrepancies = activeTourBookings.filter(booking => {
     if (!activities?.length || !activityBookingsData[booking.id]) return false;
     
+    // Check if booking has any unacknowledged discrepancies
     return activities.some(activity => {
-      const allocation = activityBookingsData[booking.id][activity.id] || 0;
-      return allocation === 0 || allocation !== booking.passenger_count;
+      const allocation = activityBookingsData[booking.id]?.[activity.id] ?? 0;
+      if (allocation === booking.passenger_count) return false; // no discrepancy
+      
+      // Check if this specific discrepancy is acknowledged with matching snapshot
+      const ack = discrepancyAcknowledgments.find(
+        (a: any) => a.booking_id === booking.id && a.activity_id === activity.id
+      );
+      if (ack && ack.snapshot_passenger_count === booking.passenger_count && ack.snapshot_allocated_count === allocation) {
+        return false; // acknowledged and snapshot still matches
+      }
+      return true;
     });
   });
 
