@@ -57,7 +57,7 @@ export const AutomatedEmailRulesManagement = () => {
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState({
     rule_name: "",
-    rule_type: "booking_confirmation" as "booking_confirmation" | "travel_documents_request",
+    rule_type: "booking_confirmation",
     trigger_type: "days_before_tour" as "days_before_tour" | "days_after_booking" | "on_status_change",
     days_before_tour: 100,
     email_template_id: "",
