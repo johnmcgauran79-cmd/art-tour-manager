@@ -29,6 +29,19 @@ const BOOKING_STATUSES = [
 
 const DEFAULT_POST_BOOKING_STATUSES = ['invoiced', 'host', 'fully_paid', 'complimentary', 'instalment_paid'];
 
+const RULE_TYPES = [
+  { value: 'booking_confirmation', label: 'Booking Confirmation', templateType: 'booking_confirmation' },
+  { value: 'tour_update', label: 'Tour Update', templateType: 'tour_update' },
+  { value: 'waiver_request', label: 'Waiver Request', templateType: 'waiver_request' },
+  { value: 'pickup_request', label: 'Pickup Location Request', templateType: 'pickup_request' },
+  { value: 'profile_update_request', label: 'Profile Update Request', templateType: 'profile_update_request' },
+  { value: 'custom_form_request', label: 'Custom Form Request', templateType: 'custom_form_request' },
+  { value: 'payment_reminder', label: 'Payment Reminder', templateType: 'payment_reminder' },
+  { value: 'welcome_email', label: 'Welcome Email', templateType: 'welcome_email' },
+  { value: 'dietary_request', label: 'Dietary Requirements Request', templateType: 'dietary_request' },
+  { value: 'travel_documents_request', label: 'Passport Details Request', templateType: 'travel_documents_request' },
+];
+
 export const AutomatedEmailRulesManagement = () => {
   const { user } = useAuth();
   const { data: rules, isLoading: rulesLoading } = useAutomatedEmailRules();
@@ -44,7 +57,7 @@ export const AutomatedEmailRulesManagement = () => {
   const [editingRule, setEditingRule] = useState<any>(null);
   const [formData, setFormData] = useState({
     rule_name: "",
-    rule_type: "booking_confirmation" as "booking_confirmation" | "travel_documents_request",
+    rule_type: "booking_confirmation",
     trigger_type: "days_before_tour" as "days_before_tour" | "days_after_booking" | "on_status_change",
     days_before_tour: 100,
     email_template_id: "",
@@ -134,6 +147,11 @@ export const AutomatedEmailRulesManagement = () => {
       setFormData({ ...formData, status_filter: formData.status_filter.filter(s => s !== status) });
     }
   };
+
+  const filteredTemplates = templates?.filter(t => {
+    const ruleTypeDef = RULE_TYPES.find(rt => rt.value === formData.rule_type);
+    return ruleTypeDef ? t.type === ruleTypeDef.templateType : t.type === 'booking_confirmation';
+  });
 
   const bookingConfirmationTemplates = templates?.filter(t => t.type === 'booking_confirmation');
 
@@ -226,7 +244,7 @@ export const AutomatedEmailRulesManagement = () => {
             )}
             <div className="flex items-center gap-1">
               <Mail className="h-4 w-4" />
-              <span>Type: {isTravelDocs ? 'Passport Details Request' : rule.rule_type}</span>
+              <span>Type: {RULE_TYPES.find(rt => rt.value === rule.rule_type)?.label || rule.rule_type}</span>
             </div>
             <Badge variant="outline">
               {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
@@ -530,6 +548,28 @@ export const AutomatedEmailRulesManagement = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="rule_type">Email Type</Label>
+              <Select
+                value={formData.rule_type}
+                onValueChange={(value) => setFormData({ ...formData, rule_type: value, email_template_id: '' })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {RULE_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Determines the type of email sent and which templates are available
+              </p>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="trigger_type">Trigger Type</Label>
               <Select
                 value={formData.trigger_type}
@@ -603,8 +643,7 @@ export const AutomatedEmailRulesManagement = () => {
             {formData.rule_type === 'travel_documents_request' ? (
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                 <p className="text-sm text-purple-700">
-                  <strong>Travel Documents emails use a built-in template</strong> that includes the customer's name, 
-                  tour details, existing passport details (if any), and a secure link to submit their travel documents.
+                  <strong>Travel Documents emails use a dedicated template type.</strong> Select or create a "Travel Documents Request" template in Email Templates to customise the content.
                 </p>
               </div>
             ) : (
@@ -618,13 +657,22 @@ export const AutomatedEmailRulesManagement = () => {
                     <SelectValue placeholder="Select template" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bookingConfirmationTemplates?.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
+                    {filteredTemplates && filteredTemplates.length > 0 ? (
+                      filteredTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                        No templates found for this type. Create one in Email Templates first.
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
+                <p className="text-sm text-muted-foreground">
+                  Only templates of type "{RULE_TYPES.find(rt => rt.value === formData.rule_type)?.label}" are shown
+                </p>
               </div>
             )}
 

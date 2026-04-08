@@ -44,7 +44,19 @@ export const TourCommsSettingsInline = ({ overrides, onChange }: TourCommsSettin
   };
 
   const getRuleTypeBadge = (rule: any) => {
-    if (rule.rule_type === 'travel_documents_request') return <Badge variant="secondary">Travel Docs</Badge>;
+    const typeLabels: Record<string, string> = {
+      travel_documents_request: 'Travel Docs',
+      waiver_request: 'Waiver',
+      pickup_request: 'Pickup',
+      profile_update_request: 'Profile Update',
+      custom_form_request: 'Custom Form',
+      payment_reminder: 'Payment',
+      tour_update: 'Tour Update',
+      welcome_email: 'Welcome',
+      dietary_request: 'Dietary',
+    };
+    const label = typeLabels[rule.rule_type];
+    if (label) return <Badge variant="secondary">{label}</Badge>;
     return <Badge variant="outline">Booking Email</Badge>;
   };
 
