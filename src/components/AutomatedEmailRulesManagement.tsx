@@ -569,6 +569,7 @@ export const AutomatedEmailRulesManagement = () => {
               </p>
             </div>
 
+            <div className="space-y-2">
               <Label htmlFor="trigger_type">Trigger Type</Label>
               <Select
                 value={formData.trigger_type}
