@@ -53,6 +53,7 @@ export const AggregatedActivityMatrixReport = ({
   const [showAcknowledged, setShowAcknowledged] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (open !== false) {
