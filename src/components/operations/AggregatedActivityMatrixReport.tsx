@@ -244,6 +244,7 @@ export const AggregatedActivityMatrixReport = ({
 
       const keys = new Set(bookingDiscrepancies.map(d => `${d.bookingId}-${d.activityId}`));
       setAcknowledgments(prev => prev.filter(a => !keys.has(`${a.booking_id}-${a.activity_id}`)));
+      queryClient.invalidateQueries({ queryKey: ['activity-matrix-issues-count'] });
       toast.success('Acknowledgment removed');
     } catch (error) {
       console.error('Error removing acknowledgment:', error);
