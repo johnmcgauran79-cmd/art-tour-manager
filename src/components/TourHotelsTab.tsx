@@ -151,6 +151,7 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Row 1: Address & Contact Details */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   {hotel.address && (
                     <div className="flex items-center gap-1">
@@ -164,18 +165,22 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                       <span>Contact: {hotel.contact_name}</span>
                     </div>
                   )}
-                  {hotel.contact_phone && (
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>Phone: {hotel.contact_phone}</span>
-                    </div>
-                  )}
                   {hotel.contact_email && (
                     <div className="flex items-center gap-1">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span>Email: <a href={`mailto:${hotel.contact_email}`} className="text-primary underline hover:opacity-80">{hotel.contact_email}</a></span>
                     </div>
                   )}
+                  {hotel.contact_phone && (
+                    <div className="flex items-center gap-1">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span>Phone: {hotel.contact_phone}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Row 2: Check-in, Check-out, Nights, Room Type */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3">
                   {hotel.default_check_in && (
                     <div className="flex items-center gap-1">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -200,11 +205,10 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                       <span>Room Type: {hotel.default_room_type}</span>
                     </div>
                   )}
-                  {hotel.extra_night_price && (
-                    <div className="flex items-center gap-1">
-                      <span>Extra Night: ${hotel.extra_night_price}</span>
-                    </div>
-                  )}
+                </div>
+
+                {/* Row 3: Rooms Reserved, Rooms Booked, Total Room Nights, Extra Night */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mt-3">
                   <div className="flex items-center gap-1">
                     <Bed className="h-4 w-4 text-muted-foreground" />
                     <span>Rooms Reserved: {hotel.rooms_reserved || 0}</span>
@@ -213,11 +217,15 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                     <Bed className="h-4 w-4 text-muted-foreground" />
                     <span>Rooms Booked: {hotel.rooms_booked || 0}</span>
                   </div>
-                  {/* Total Room Nights calculation */}
                   <div className="flex items-center gap-1">
                     <Calculator className="h-4 w-4 text-muted-foreground" />
                     <span>Total Room Nights: {hotel.total_nights || 0}</span>
                   </div>
+                  {hotel.extra_night_price && (
+                    <div className="flex items-center gap-1">
+                      <span>Extra Night: ${hotel.extra_night_price}</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Operations Notes */}
