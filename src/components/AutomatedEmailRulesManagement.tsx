@@ -244,7 +244,7 @@ export const AutomatedEmailRulesManagement = () => {
             )}
             <div className="flex items-center gap-1">
               <Mail className="h-4 w-4" />
-              <span>Type: {isTravelDocs ? 'Passport Details Request' : rule.rule_type}</span>
+              <span>Type: {RULE_TYPES.find(rt => rt.value === rule.rule_type)?.label || rule.rule_type}</span>
             </div>
             <Badge variant="outline">
               {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
