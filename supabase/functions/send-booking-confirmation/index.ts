@@ -175,7 +175,7 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
           <!-- Body -->
           <tr>
             <td class="email-body" style="padding: 40px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
-              ${content}
+              ${sanitizedContent}
             </td>
           </tr>
           <!-- Footer -->
