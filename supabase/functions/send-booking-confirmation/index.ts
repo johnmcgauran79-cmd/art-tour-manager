@@ -91,11 +91,28 @@ const injectTravelDocsButtonNearCopy = (html: string, buttonHtml: string): strin
   );
 };
 
+// Sanitise Quill-generated HTML to fix broken heading nesting.
+// Quill sometimes wraps large blocks of content inside <h2><strong>...</strong></h2>
+// when users create headings, causing all subsequent text to inherit heading styles.
+const sanitizeQuillHtml = (html: string): string => {
+  let cleaned = html;
+
+  // Pattern: <h2><strong> immediately followed by block-level elements (p, h, table, ul, ol, div)
+  // indicates Quill wrapped block content inside a heading — strip the wrapping tags.
+  cleaned = cleaned.replace(/<h([1-6])>\s*<strong>\s*(?=<(?:p|h[1-6]|table|ul|ol|div)[\s>])/gi, '');
+
+  // Remove the matching orphaned </strong></h2> closers at the end of content
+  cleaned = cleaned.replace(/<\/strong>\s*<\/h([1-6])>\s*(?=<\/td>|$)/gi, '');
+
+  return cleaned;
+};
+
 // Branded email wrapper - wraps content in ART header with logo
 // Includes CSS normalisation for Quill-generated content
 const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string): string => {
   const headerTitle = title || 'Australian Racing Tours';
   const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+  const sanitizedContent = sanitizeQuillHtml(content);
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -158,7 +175,7 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
           <!-- Body -->
           <tr>
             <td class="email-body" style="padding: 40px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
-              ${content}
+              ${sanitizedContent}
             </td>
           </tr>
           <!-- Footer -->
