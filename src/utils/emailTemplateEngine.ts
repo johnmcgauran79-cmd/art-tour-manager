@@ -294,6 +294,7 @@ export interface EmailMergeData {
   missing_pickup_selection?: boolean;
   needs_passport_submission?: boolean;
   has_instalment?: boolean;
+  has_tour_host?: boolean;
   waiver_not_signed?: boolean;
 
   // Pickup location fields
@@ -693,6 +694,7 @@ export class EmailTemplateEngine {
       has_pickup_selection: !!booking.selected_pickup_option,
       missing_pickup_selection: !!tour.pickup_location_required && !booking.selected_pickup_option,
       has_instalment: !!tour.instalment_required,
+      has_tour_host: !!tour.tour_host && tour.tour_host !== 'TBD' && tour.tour_host.trim() !== '',
       waiver_not_signed: true,  // Client-side defaults to true; server overrides per-recipient with actual waiver status
       needs_passport_submission: !!tour.travel_documents_required,  // Client-side doesn't have passport data; server overrides per-recipient
 

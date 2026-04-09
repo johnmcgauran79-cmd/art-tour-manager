@@ -107,6 +107,8 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{#tour_requires_pickup}} ... {{/tour_requires_pickup}}',
     '{{#has_instalment}} ... {{/has_instalment}}',
     '{{^has_instalment}} ... {{/has_instalment}}',
+    '{{#has_tour_host}} ... {{/has_tour_host}}',
+    '{{^has_tour_host}} ... {{/has_tour_host}}',
     '--- Passport Conditions ---',
     '{{#has_passport_details}} ... {{/has_passport_details}}',
     '{{^has_passport_details}} ... {{/has_passport_details}}',
