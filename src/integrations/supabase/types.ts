@@ -995,6 +995,42 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_card_templates: {
+        Row: {
+          accent_color: string
+          created_at: string
+          created_by: string
+          header_emoji: string
+          header_title: string
+          id: string
+          name: string
+          rows: Json
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string
+          created_at?: string
+          created_by: string
+          header_emoji?: string
+          header_title?: string
+          id?: string
+          name: string
+          rows?: Json
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string
+          created_at?: string
+          created_by?: string
+          header_emoji?: string
+          header_title?: string
+          id?: string
+          name?: string
+          rows?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_access_tokens: {
         Row: {
           booking_id: string | null

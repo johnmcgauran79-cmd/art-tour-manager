@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,11 +78,16 @@ interface CardRow {
 }
 
 interface SavedCardTemplate {
+  id?: string;
   name: string;
   headerTitle: string;
   headerEmoji: string;
   accentColor: string;
   rows: CardRow[];
+}
+
+function generateId() {
+  return Math.random().toString(36).substr(2, 9);
 }
 
 function getAccentColors(themeGold: string, themeNavy: string) {
@@ -96,21 +103,60 @@ function getAccentColors(themeGold: string, themeNavy: string) {
 
 const COMMON_EMOJIS = ['📋', '📌', '✈️', '🏨', '👤', '📞', '📧', '💰', '🎫', '📄', '⚡', '🔔', '🗓️', '📍', '🎯', '✅', '⭐', '🚗', '🍽️', '💼'];
 
-const SAVED_CARDS_KEY = 'email_custom_card_templates';
+// Database-backed saved card templates
+function useCustomCardTemplates() {
+  const queryClient = useQueryClient();
 
-function generateId() {
-  return Math.random().toString(36).substr(2, 9);
-}
+  const query = useQuery({
+    queryKey: ['custom-card-templates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('custom_card_templates')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        headerTitle: row.header_title,
+        headerEmoji: row.header_emoji,
+        accentColor: row.accent_color,
+        rows: row.rows as CardRow[],
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-function getSavedCards(): SavedCardTemplate[] {
-  try {
-    const saved = localStorage.getItem(SAVED_CARDS_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-}
+  const createMutation = useMutation({
+    mutationFn: async (template: Omit<SavedCardTemplate, 'id'>) => {
+      const user = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('custom_card_templates')
+        .insert({
+          name: template.name,
+          header_title: template.headerTitle,
+          header_emoji: template.headerEmoji,
+          accent_color: template.accentColor,
+          rows: template.rows as any,
+          created_by: user.data.user?.id || '',
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custom-card-templates'] }),
+  });
 
-function saveCards(cards: SavedCardTemplate[]) {
-  localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify(cards));
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('custom_card_templates')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custom-card-templates'] }),
+  });
+
+  return { savedCards: query.data || [], createCard: createMutation.mutateAsync, deleteCard: deleteMutation.mutateAsync, isLoading: query.isLoading };
 }
 
 // Reusable row with bold/italic formatting buttons and merge field insert
@@ -264,7 +310,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
   const [showSaved, setShowSaved] = useState(false);
   const [saveName, setSaveName] = useState('');
   const [showSaveInput, setShowSaveInput] = useState(false);
-  const [savedCards, setSavedCards] = useState<SavedCardTemplate[]>(getSavedCards());
+  const { savedCards, createCard, deleteCard } = useCustomCardTemplates();
   const [showMergeFields, setShowMergeFields] = useState(false);
   // Track which row/field is "active" for merge field insertion
   const activeInsertCallbackRef = useRef<((field: string) => void) | null>(null);
@@ -370,14 +416,15 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
     setShowMergeFields(false);
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!saveName.trim()) return;
-    const template: SavedCardTemplate = { name: saveName.trim(), headerTitle, headerEmoji, accentColor, rows };
-    const updated = [...savedCards, template];
-    saveCards(updated);
-    setSavedCards(updated);
-    setShowSaveInput(false);
-    setSaveName('');
+    try {
+      await createCard({ name: saveName.trim(), headerTitle, headerEmoji, accentColor, rows });
+      setShowSaveInput(false);
+      setSaveName('');
+    } catch (error) {
+      console.error('Failed to save card template:', error);
+    }
   };
 
   const handleLoadTemplate = (template: SavedCardTemplate) => {
@@ -388,10 +435,13 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
     setShowSaved(false);
   };
 
-  const handleDeleteSaved = (index: number) => {
-    const updated = savedCards.filter((_, i) => i !== index);
-    saveCards(updated);
-    setSavedCards(updated);
+  const handleDeleteSaved = async (card: SavedCardTemplate) => {
+    if (!card.id) return;
+    try {
+      await deleteCard(card.id);
+    } catch (error) {
+      console.error('Failed to delete card template:', error);
+    }
   };
 
   const handleMergeFieldInsert = (field: string) => {
@@ -440,12 +490,12 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
 
               {showSaved && savedCards.length > 0 && (
                 <div className="border rounded-md p-2 space-y-1 bg-muted/20">
-                  {savedCards.map((card, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                  {savedCards.map((card) => (
+                    <div key={card.id || card.name} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
                       <button type="button" className="text-xs font-medium text-left flex-1" onClick={() => handleLoadTemplate(card)}>
                         {card.headerEmoji} {card.name}
                       </button>
-                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDeleteSaved(i)}>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDeleteSaved(card)}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </div>
