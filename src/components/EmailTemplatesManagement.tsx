@@ -630,7 +630,12 @@ export const EmailTemplatesManagement = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                       onClick={() => setIsHtmlView(!isHtmlView)}
+                       onClick={() => {
+                         if (isHtmlView) {
+                           setEditorContent(protectComplexEmailBlocksForEditor(formData.content_template));
+                         }
+                         setIsHtmlView(!isHtmlView);
+                       }}
                       className="flex items-center gap-2"
                     >
                       <Code2 className="h-4 w-4" />
