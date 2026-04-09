@@ -380,9 +380,8 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
         }
       }
 
-      // Wrap in condition if set
       if (row.condition) {
-        const prefix = row.condition.charAt(0); // # or ^
+        const prefix = row.condition.charAt(0);
         const key = row.condition.slice(1);
         rowHtml = `{{${prefix}${key}}}${rowHtml}{{/${key}}}`;
       }
@@ -390,8 +389,15 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
       innerHtml += rowHtml;
     }
 
-    return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0;border:1px solid ${accent.border};border-radius:8px;overflow:hidden;"><tr><td style="background-color:${accent.bg};padding:12px 16px;border-bottom:1px solid ${accent.border};"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">${headerEmoji}</td><td style="vertical-align:middle;"><strong style="font-size:15px;color:${accent.text};letter-spacing:0.5px;">${headerTitle}</strong></td></tr></table></td></tr><tr><td style="padding:16px;">${innerHtml}</td></tr></table>`;
-  }, [rows, headerTitle, headerEmoji, accent]);
+    const encodedMeta = encodeURIComponent(JSON.stringify({
+      headerTitle,
+      headerEmoji,
+      accentColor,
+      rows: rows.map(r => ({ ...r })),
+    }));
+
+    return `<table role="presentation" data-card-type="custom" data-card-meta="${encodedMeta}" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin:16px 0;border:1px solid ${accent.border};border-radius:8px;overflow:hidden;"><tr><td style="background-color:${accent.bg};padding:12px 16px;border-bottom:1px solid ${accent.border};"><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td style="padding-right:10px;vertical-align:middle;font-size:16px;">${headerEmoji}</td><td style="vertical-align:middle;"><strong style="font-size:15px;color:${accent.text};letter-spacing:0.5px;">${headerTitle}</strong></td></tr></table></td></tr><tr><td style="padding:16px;">${innerHtml}</td></tr></table>`;
+  }, [rows, headerTitle, headerEmoji, accent, accentColor]);
 
   const handleInsert = () => {
     onInsert({

@@ -55,7 +55,158 @@ const isStructuredBlockElement = (element: Element) => {
   return Array.from(element.attributes).some((attribute) => attribute.name.startsWith("data-art-"));
 };
 
+const getCustomCardMetaFromHtml = (html: string) => {
+  if (!html || typeof DOMParser === "undefined") return undefined;
+
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(`<body>${html}</body>`, "text/html");
+  const table = doc.body.firstElementChild;
+  if (!table || table.tagName.toLowerCase() !== "table") return undefined;
+
+  const encodedMeta = table.getAttribute("data-card-meta");
+  if (encodedMeta) {
+    const decodedMeta = decodeHtml(encodedMeta);
+    try {
+      JSON.parse(decodedMeta);
+      return decodedMeta;
+    } catch {
+      // Fall back to structural parsing for older cards.
+    }
+  }
+
+  const topLevelRowParent = (table as HTMLTableElement).tBodies[0] ?? table;
+  const topRows = Array.from(topLevelRowParent.children).filter(
+    (child): child is HTMLElement => child instanceof HTMLElement && child.tagName.toLowerCase() === "tr"
+  );
+  if (topRows.length < 2) return undefined;
+
+  const headerCell = topRows[0].querySelector("td");
+  const contentCell = topRows[1].querySelector("td");
+  if (!headerCell || !contentCell) return undefined;
+
+  const headerCells = headerCell.querySelectorAll("table td");
+  const headerTitle = normalizeText(headerCell.querySelector("strong")?.textContent);
+  const headerEmoji = normalizeText(headerCells[0]?.textContent);
+  const explicitCustomType = table.getAttribute("data-card-type") === "custom";
+  const looksLikeCustomCard = explicitCustomType || (headerCells.length >= 2 && headerTitle.length > 0 && headerEmoji.length > 0);
+  if (!looksLikeCustomCard || !headerTitle) return undefined;
+
+  const readStyleValue = (target: Element | null, property: string) =>
+    normalizeText(target?.getAttribute("style")?.match(new RegExp(`${property}\\s*:\\s*([^;]+)`, "i"))?.[1]);
+
+  const headerBg = readStyleValue(headerCell, "background-color").toLowerCase().replace(/\s+/g, "");
+  const headerText = readStyleValue(headerCell.querySelector("strong"), "color").toLowerCase().replace(/\s+/g, "");
+
+  let accentColor = "grey";
+  if (headerBg.includes("#eff6ff") || headerText.includes("#1e40af")) accentColor = "blue";
+  else if (headerBg.includes("#f0fdf4") || headerText.includes("#166534")) accentColor = "green";
+  else if (headerBg.includes("#fffbeb") || headerText.includes("#92400e")) accentColor = "amber";
+  else if (headerBg.includes("#f8f9fa") || headerText.includes("#1a2332")) accentColor = "grey";
+  else if (headerText.includes("#ffffff") || headerText.includes("rgb(255,255,255)") || headerText.includes("white")) accentColor = "navy";
+  else if (headerBg) accentColor = "gold";
+
+  const rows: Array<Record<string, unknown>> = [];
+  let pendingCondition: string | undefined;
+
+  Array.from(contentCell.childNodes).forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent ?? "";
+      const opener = text.match(/\{\{([#^][^}]+)\}\}/);
+      if (opener) pendingCondition = opener[1];
+      if (!opener && /\{\{\/[^}]+\}\}/.test(text)) pendingCondition = undefined;
+      return;
+    }
+
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+    const element = node as HTMLElement;
+    let row: Record<string, unknown> | null = null;
+
+    switch (element.tagName.toLowerCase()) {
+      case "p":
+        row = { type: "free_text", text: element.innerHTML };
+        break;
+      case "hr":
+        row = { type: "divider" };
+        break;
+      case "table": {
+        const cells = element.querySelectorAll("td");
+        const singleCell = cells.length === 1 ? (cells[0] as HTMLElement) : null;
+        const singleCellStyle = singleCell?.getAttribute("style") ?? "";
+
+        if (singleCell && /font-size\s*:\s*1px/i.test(singleCellStyle)) {
+          const height = Number(singleCellStyle.match(/height\s*:\s*(\d+)/i)?.[1] ?? 16);
+          row = { type: "spacer", spacerSize: height <= 8 ? "sm" : height <= 16 ? "md" : "lg" };
+        } else if (
+          singleCell &&
+          (/border-left\s*:\s*3px/i.test(singleCellStyle) || /background-color\s*:\s*#fef3c7/i.test(singleCellStyle))
+        ) {
+          row = { type: "highlight", highlightText: singleCell.innerHTML };
+        } else if (cells.length >= 2) {
+          row = {
+            type: "data_grid",
+            label: (cells[0] as HTMLElement).innerHTML,
+            value: (cells[1] as HTMLElement).innerHTML,
+          };
+        }
+        break;
+      }
+    }
+
+    if (!row) return;
+    if (pendingCondition) {
+      row.condition = pendingCondition;
+      pendingCondition = undefined;
+    }
+
+    rows.push({
+      id: Math.random().toString(36).slice(2, 11),
+      ...row,
+    });
+  });
+
+  return JSON.stringify({
+    headerTitle,
+    headerEmoji,
+    accentColor,
+    rows,
+  });
+};
+
+const getCustomCardMetaFromElement = (element: Element) => {
+  const directMeta = element.getAttribute("data-card-meta");
+  if (directMeta) {
+    const decodedMeta = decodeHtml(directMeta);
+    try {
+      JSON.parse(decodedMeta);
+      return decodedMeta;
+    } catch {
+      return undefined;
+    }
+  }
+
+  return element.tagName.toLowerCase() === "table"
+    ? getCustomCardMetaFromHtml(element.outerHTML)
+    : undefined;
+};
+
+const getCustomCardTitle = (element: Element) => {
+  const meta = getCustomCardMetaFromElement(element);
+  if (!meta) return "";
+
+  try {
+    return normalizeText(JSON.parse(meta).headerTitle);
+  } catch {
+    return "";
+  }
+};
+
 const getStructuredBlockLabel = (element: Element) => {
+  const customCardTitle = getCustomCardTitle(element);
+  if (customCardTitle) {
+    return `Custom Card • ${customCardTitle}`;
+  }
+
   if (isLegacyCardPlaceholder(element)) {
     const title = normalizeText(element.getAttribute("data-card-title"));
     return title ? `Custom Card • ${title}` : "Custom Card";
@@ -85,6 +236,10 @@ const getStructuredBlockLabel = (element: Element) => {
 };
 
 const getStructuredBlockDescription = (element: Element) => {
+  if (getCustomCardMetaFromElement(element)) {
+    return "Custom card preserved while you edit surrounding content.";
+  }
+
   if (element.tagName.toLowerCase() === "hr") {
     return "Divider preserved while you edit surrounding content.";
   }
