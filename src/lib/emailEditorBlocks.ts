@@ -353,11 +353,13 @@ export const protectComplexEmailBlocksForEditor = (html: string) => {
             html: decodeHtml(child.getAttribute("data-card-html") || ""),
             label: getStructuredBlockLabel(child),
             description: "Custom card preserved while you edit surrounding content.",
+            meta: getCustomCardMetaFromElement(child),
           }
         : {
             html: child.outerHTML,
             label: getStructuredBlockLabel(child),
             description: getStructuredBlockDescription(child),
+            meta: getCustomCardMetaFromElement(child),
           };
 
     child.replaceWith(createPlaceholderElement(doc, blockValue));
@@ -493,7 +495,9 @@ export const setupBlockInteractions = (
     e.preventDefault();
     e.stopPropagation();
 
-    const meta = block.getAttribute(BLOCK_META_ATTRIBUTE);
+    const meta = block.getAttribute(BLOCK_META_ATTRIBUTE)
+      || getCustomCardMetaFromHtml(decodeHtml(block.getAttribute(BLOCK_HTML_ATTRIBUTE) || ""));
+
     if (meta && onEditBlock) {
       onEditBlock(meta, block);
     }
