@@ -309,8 +309,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
   const [rows, setRows] = useState<CardRow[]>([]);
   const [showSaved, setShowSaved] = useState(false);
   const [saveName, setSaveName] = useState('');
-  const [showSaveInput, setShowSaveInput] = useState(false);
-  const [savedCards, setSavedCards] = useState<SavedCardTemplate[]>(getSavedCards());
+  const { savedCards, createCard, deleteCard } = useCustomCardTemplates();
   const [showMergeFields, setShowMergeFields] = useState(false);
   // Track which row/field is "active" for merge field insertion
   const activeInsertCallbackRef = useRef<((field: string) => void) | null>(null);
@@ -416,14 +415,15 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
     setShowMergeFields(false);
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!saveName.trim()) return;
-    const template: SavedCardTemplate = { name: saveName.trim(), headerTitle, headerEmoji, accentColor, rows };
-    const updated = [...savedCards, template];
-    saveCards(updated);
-    setSavedCards(updated);
-    setShowSaveInput(false);
-    setSaveName('');
+    try {
+      await createCard({ name: saveName.trim(), headerTitle, headerEmoji, accentColor, rows });
+      setShowSaveInput(false);
+      setSaveName('');
+    } catch (error) {
+      console.error('Failed to save card template:', error);
+    }
   };
 
   const handleLoadTemplate = (template: SavedCardTemplate) => {
@@ -434,10 +434,13 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
     setShowSaved(false);
   };
 
-  const handleDeleteSaved = (index: number) => {
-    const updated = savedCards.filter((_, i) => i !== index);
-    saveCards(updated);
-    setSavedCards(updated);
+  const handleDeleteSaved = async (card: SavedCardTemplate) => {
+    if (!card.id) return;
+    try {
+      await deleteCard(card.id);
+    } catch (error) {
+      console.error('Failed to delete card template:', error);
+    }
   };
 
   const handleMergeFieldInsert = (field: string) => {
