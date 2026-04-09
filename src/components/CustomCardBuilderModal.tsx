@@ -78,11 +78,16 @@ interface CardRow {
 }
 
 interface SavedCardTemplate {
+  id?: string;
   name: string;
   headerTitle: string;
   headerEmoji: string;
   accentColor: string;
   rows: CardRow[];
+}
+
+function generateId() {
+  return Math.random().toString(36).substr(2, 9);
 }
 
 function getAccentColors(themeGold: string, themeNavy: string) {
