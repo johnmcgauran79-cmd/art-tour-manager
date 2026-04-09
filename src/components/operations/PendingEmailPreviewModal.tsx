@@ -84,7 +84,7 @@ export const PendingEmailPreviewModal = ({
     '{{profile_update_link}}': '#preview-profile-update',
     '{{pickup_button}}': `<span style="${placeholderButtonStyle}">📍 Select Pickup Location (Preview)</span>`,
     '{{pickup_link}}': '#preview-pickup',
-    '{{travel_docs_button}}': `<span style="${placeholderButtonStyle}">🛂 Update Passport Details (Preview)</span>`,
+    '{{travel_docs_button}}': `<span style="${placeholderButtonStyle}">🛂 UPDATE PASSPORT DETAILS (Preview)</span>`,
     '{{travel_docs_link}}': '#preview-travel-docs',
     '{{waiver_button}}': `<span style="${placeholderButtonStyle}">📋 Sign Waiver (Preview)</span>`,
     '{{waiver_link}}': '#preview-waiver',
