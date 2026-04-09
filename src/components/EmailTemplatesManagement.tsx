@@ -99,6 +99,7 @@ export const EmailTemplatesManagement = () => {
     is_default: false,
     header_image_url: "" as string | null,
   });
+  const [editorContent, setEditorContent] = useState("");
   const [uploadingHeaderImage, setUploadingHeaderImage] = useState(false);
   const headerImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -132,13 +133,15 @@ export const EmailTemplatesManagement = () => {
       is_default: false,
       header_image_url: "",
     });
+    setEditorContent("");
     setEditingTemplate(null);
     setIsHtmlView(false);
   };
 
   const handleCreate = () => {
-    setIsCreateModalOpen(true);
     resetForm();
+    setEditorContent(protectComplexEmailBlocksForEditor(""));
+    setIsCreateModalOpen(true);
   };
 
   const handleEdit = (template: EmailTemplate) => {
@@ -154,6 +157,7 @@ export const EmailTemplatesManagement = () => {
       is_default: template.is_default,
       header_image_url: (template as any).header_image_url || "",
     });
+    setEditorContent(protectComplexEmailBlocksForEditor(content));
     setIsCreateModalOpen(true);
   };
 
@@ -170,6 +174,7 @@ export const EmailTemplatesManagement = () => {
       is_default: false,
       header_image_url: (template as any).header_image_url || "",
     });
+    setEditorContent(protectComplexEmailBlocksForEditor(content));
     setIsCreateModalOpen(true);
   };
 
@@ -716,8 +721,9 @@ export const EmailTemplatesManagement = () => {
                     <div className="flex-1 min-h-[400px] border border-input rounded-md overflow-hidden">
                       <ReactQuill
                         ref={quillRef}
-                        value={protectComplexEmailBlocksForEditor(formData.content_template)}
+                        value={editorContent}
                         onChange={(value) => {
+                          setEditorContent(value);
                           const resolvedValue = normalizeTemplateEditorHtml(resolveComplexEmailBlocksFromEditor(value));
                           setFormData(prev => prev.content_template === resolvedValue ? prev : { ...prev, content_template: resolvedValue });
                         }}
