@@ -122,7 +122,7 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
     
     mergeData.profile_update_button = `<a href="#" style="${mockButtonStyle}">UPDATE YOUR PROFILE (Preview)</a>`;
     mergeData.profile_update_link = '#preview-profile-update';
-    (mergeData as any).travel_docs_button = `<a href="#" style="${mockButtonStyle}">SUBMIT TRAVEL DOCUMENTS (Preview)</a>`;
+    (mergeData as any).travel_docs_button = `<a href="#" style="${mockButtonStyle}">UPDATE PASSPORT DETAILS (Preview)</a>`;
     (mergeData as any).travel_docs_link = '#preview-travel-docs';
     (mergeData as any).waiver_button = `<a href="#" style="${mockButtonStyle}">SIGN WAIVER (Preview)</a>`;
     (mergeData as any).waiver_link = '#preview-waiver';
