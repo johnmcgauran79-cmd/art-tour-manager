@@ -348,6 +348,18 @@ export const EmailTemplatesManagement = () => {
   }, [isHtmlView, isCreateModalOpen]);
 
   // Set up block interactions (click-to-select, delete, double-click-to-edit)
+  // We use a ref to track a generation counter so we can re-bind after card insert/edit
+  // without depending on content_template (which changes every keystroke and tears down listeners).
+  const blockGenRef = useRef(0);
+  const [blockInteractionGen, setBlockInteractionGen] = useState(0);
+
+  // Bump generation after card builder closes (card was inserted/edited)
+  useEffect(() => {
+    if (!showCardBuilder) {
+      setBlockInteractionGen(g => g + 1);
+    }
+  }, [showCardBuilder]);
+
   useEffect(() => {
     blockInteractionCleanupRef.current?.();
     blockInteractionCleanupRef.current = null;
@@ -368,7 +380,7 @@ export const EmailTemplatesManagement = () => {
       blockInteractionCleanupRef.current?.();
       blockInteractionCleanupRef.current = null;
     };
-  }, [bindBlockInteractions, formData.content_template, showCardBuilder, isHtmlView, isCreateModalOpen]);
+  }, [bindBlockInteractions, blockInteractionGen, isHtmlView, isCreateModalOpen]);
 
   const insertDivider = () => {
     if (isHtmlView) {
