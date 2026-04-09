@@ -490,12 +490,12 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
 
               {showSaved && savedCards.length > 0 && (
                 <div className="border rounded-md p-2 space-y-1 bg-muted/20">
-                  {savedCards.map((card, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
+                  {savedCards.map((card) => (
+                    <div key={card.id || card.name} className="flex items-center justify-between p-2 rounded hover:bg-muted/50">
                       <button type="button" className="text-xs font-medium text-left flex-1" onClick={() => handleLoadTemplate(card)}>
                         {card.headerEmoji} {card.name}
                       </button>
-                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDeleteSaved(i)}>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleDeleteSaved(card)}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>
                     </div>
