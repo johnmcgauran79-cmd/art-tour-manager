@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,21 +98,60 @@ function getAccentColors(themeGold: string, themeNavy: string) {
 
 const COMMON_EMOJIS = ['📋', '📌', '✈️', '🏨', '👤', '📞', '📧', '💰', '🎫', '📄', '⚡', '🔔', '🗓️', '📍', '🎯', '✅', '⭐', '🚗', '🍽️', '💼'];
 
-const SAVED_CARDS_KEY = 'email_custom_card_templates';
+// Database-backed saved card templates
+function useCustomCardTemplates() {
+  const queryClient = useQueryClient();
 
-function generateId() {
-  return Math.random().toString(36).substr(2, 9);
-}
+  const query = useQuery({
+    queryKey: ['custom-card-templates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('custom_card_templates')
+        .select('*')
+        .order('name');
+      if (error) throw error;
+      return (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.name,
+        headerTitle: row.header_title,
+        headerEmoji: row.header_emoji,
+        accentColor: row.accent_color,
+        rows: row.rows as CardRow[],
+      }));
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
-function getSavedCards(): SavedCardTemplate[] {
-  try {
-    const saved = localStorage.getItem(SAVED_CARDS_KEY);
-    return saved ? JSON.parse(saved) : [];
-  } catch { return []; }
-}
+  const createMutation = useMutation({
+    mutationFn: async (template: Omit<SavedCardTemplate, 'id'>) => {
+      const user = await supabase.auth.getUser();
+      const { error } = await supabase
+        .from('custom_card_templates')
+        .insert({
+          name: template.name,
+          header_title: template.headerTitle,
+          header_emoji: template.headerEmoji,
+          accent_color: template.accentColor,
+          rows: template.rows as any,
+          created_by: user.data.user?.id || '',
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custom-card-templates'] }),
+  });
 
-function saveCards(cards: SavedCardTemplate[]) {
-  localStorage.setItem(SAVED_CARDS_KEY, JSON.stringify(cards));
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('custom_card_templates')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['custom-card-templates'] }),
+  });
+
+  return { savedCards: query.data || [], createCard: createMutation.mutateAsync, deleteCard: deleteMutation.mutateAsync, isLoading: query.isLoading };
 }
 
 // Reusable row with bold/italic formatting buttons and merge field insert
