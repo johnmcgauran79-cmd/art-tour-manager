@@ -1025,6 +1025,7 @@ const handler = async (req: Request): Promise<Response> => {
       has_pickup_selection: hasPickupSelection,
       missing_pickup_selection: tourRequiresPickup && !hasPickupSelection,
       has_instalment: !!booking.tours?.instalment_required,
+      has_tour_host: !!booking.tours?.tour_host && booking.tours.tour_host !== 'TBD' && booking.tours.tour_host.trim() !== '',
       waiver_not_signed: !leadWaiverSigned,
       needs_passport_submission: !!booking.tours?.travel_documents_required && !leadHasPassportDetails,
       // Hotel bookings array
