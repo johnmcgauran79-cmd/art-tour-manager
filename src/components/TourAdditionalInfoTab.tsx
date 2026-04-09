@@ -30,7 +30,7 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
 
   // Get active email rules that are relevant (booking_confirmation type or have templates)
   const activeEmailRules = (emailRules || []).filter(r => 
-    r.is_active && r.rule_type === 'booking_confirmation' && r.email_template_id
+    r.is_active && r.email_template_id
   );
 
   const [editModalOpen, setEditModalOpen] = useState(false);
