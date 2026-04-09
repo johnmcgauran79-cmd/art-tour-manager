@@ -309,6 +309,7 @@ export const CustomCardBuilderModal = ({ open, onOpenChange, onInsert, initialDa
   const [rows, setRows] = useState<CardRow[]>([]);
   const [showSaved, setShowSaved] = useState(false);
   const [saveName, setSaveName] = useState('');
+  const [showSaveInput, setShowSaveInput] = useState(false);
   const { savedCards, createCard, deleteCard } = useCustomCardTemplates();
   const [showMergeFields, setShowMergeFields] = useState(false);
   // Track which row/field is "active" for merge field insertion
