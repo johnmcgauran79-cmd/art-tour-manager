@@ -10,6 +10,7 @@ import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRule
 import { EmailSuppressionsManagement } from "@/components/EmailSuppressionsManagement";
 import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTemplatesManagement";
 import { InvoiceLineTemplatesManagement } from "@/components/InvoiceLineTemplatesManagement";
+import { EmailSettingsTab } from "@/components/EmailSettingsTab";
 
 interface SettingsProps {
   onBack: () => void;
@@ -34,10 +35,11 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         <TabsContent value="email-management" className="space-y-6">
           <Tabs value={emailSubTab} onValueChange={setEmailSubTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+            <TabsList className="grid w-full grid-cols-4 mb-6">
               <TabsTrigger value="templates">Email Templates</TabsTrigger>
               <TabsTrigger value="automated-emails">Automated Emails</TabsTrigger>
               <TabsTrigger value="automated-reports">Automated Reports</TabsTrigger>
+              <TabsTrigger value="email-settings">Email Settings</TabsTrigger>
             </TabsList>
 
             <TabsContent value="templates" className="space-y-6">
@@ -60,6 +62,10 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
             <TabsContent value="automated-reports" className="space-y-6">
               <AutomatedReportRulesManagement />
+            </TabsContent>
+
+            <TabsContent value="email-settings" className="space-y-6">
+              <EmailSettingsTab />
             </TabsContent>
           </Tabs>
         </TabsContent>

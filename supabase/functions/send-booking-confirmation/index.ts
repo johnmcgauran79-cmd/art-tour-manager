@@ -1248,8 +1248,18 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
       
-      // Limit to 3 blocks max
-      matchingSections = matchingSections.slice(0, 3);
+      // Fetch configurable max blocks limit from general_settings
+      let maxBlocks = 5;
+      const { data: maxBlocksSetting } = await supabaseClient
+        .from('general_settings')
+        .select('setting_value')
+        .eq('setting_key', 'max_additional_info_blocks')
+        .maybeSingle();
+      if (maxBlocksSetting?.setting_value) {
+        const parsed = parseInt(String(maxBlocksSetting.setting_value), 10);
+        if (!isNaN(parsed) && parsed > 0) maxBlocks = parsed;
+      }
+      matchingSections = matchingSections.slice(0, maxBlocks);
       
       console.log(`Found ${matchingSections.length} matching additional info blocks`);
       
