@@ -31,6 +31,9 @@ export interface StatusChangeQueueItem {
       from_email: string;
     } | null;
   };
+  override_template?: {
+    name: string;
+  } | null;
   booking?: {
     id: string;
     passenger_count: number;
@@ -68,6 +71,9 @@ export const usePendingStatusChangeApprovals = () => {
               content_template,
               from_email
             )
+          ),
+          override_template:email_templates!status_change_email_queue_email_template_id_fkey(
+            name
           ),
           booking:bookings(
             id,
