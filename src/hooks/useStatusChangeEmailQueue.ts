@@ -101,18 +101,27 @@ export const usePendingStatusChangeApprovals = () => {
       // Group by rule_id and batch_date
       const grouped = (data as StatusChangeQueueItem[]).reduce((acc, item) => {
         const key = `${item.rule_id}-${item.batch_date}`;
+        // Resolve the effective template name: queue-item override > rule default
+        const effectiveTemplateName = item.override_template?.name 
+          || item.rule?.email_templates?.name 
+          || 'No template';
         if (!acc[key]) {
           acc[key] = {
             rule_id: item.rule_id,
             rule_name: item.rule?.rule_name || 'Unknown Rule',
             batch_date: item.batch_date,
             template_name: item.rule?.email_templates?.name || 'No template',
+            effective_template_name: effectiveTemplateName,
             items: [],
           };
         }
+        // Update effective template if any item has an override
+        if (item.override_template?.name) {
+          acc[key].effective_template_name = item.override_template.name;
+        }
         acc[key].items.push(item);
         return acc;
-      }, {} as Record<string, { rule_id: string; rule_name: string; batch_date: string; template_name: string; items: StatusChangeQueueItem[] }>);
+      }, {} as Record<string, { rule_id: string; rule_name: string; batch_date: string; template_name: string; effective_template_name: string; items: StatusChangeQueueItem[] }>);
       
       return Object.values(grouped);
     },

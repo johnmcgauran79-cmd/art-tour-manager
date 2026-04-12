@@ -319,7 +319,11 @@ export const PendingStatusChangeApprovals = () => {
                               )}
                             </h4>
                             <p className="text-sm text-muted-foreground">
-                              Template: {batch.template_name} • Queued: {format(new Date(batch.batch_date), 'd MMM yyyy')}
+                              Template: {batch.effective_template_name || batch.template_name}
+                              {hasOverride && batch.template_name !== batch.effective_template_name && (
+                                <span className="text-xs ml-1">(was: {batch.template_name})</span>
+                              )}
+                              {' '}• Queued: {format(new Date(batch.batch_date), 'd MMM yyyy')}
                             </p>
                           </div>
                           <CollapsibleTrigger asChild>
