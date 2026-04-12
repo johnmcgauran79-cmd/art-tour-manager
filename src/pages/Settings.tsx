@@ -10,6 +10,7 @@ import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRule
 import { EmailSuppressionsManagement } from "@/components/EmailSuppressionsManagement";
 import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTemplatesManagement";
 import { InvoiceLineTemplatesManagement } from "@/components/InvoiceLineTemplatesManagement";
+import { EmailSettingsTab } from "@/components/EmailSettingsTab";
 
 interface SettingsProps {
   onBack: () => void;
