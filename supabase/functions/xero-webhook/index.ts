@@ -532,7 +532,7 @@ serve(async (req) => {
               xero_invoice_id: change.xero_invoice_id,
               proposed_status: change.new_status,
               current_status_at_dismissal: change.current_status,
-              dismissed_by: body.dismissals?.[0]?.dismissed_by || null,
+              dismissed_by: body.user_id || body.dismissals?.[0]?.dismissed_by || null,
               dismissed_at: new Date().toISOString(),
               amount_paid_at_dismissal: change.amount_paid || 0,
               xero_status_at_dismissal: change.xero_status || null,

@@ -141,7 +141,7 @@ export const InvoiceSyncReviewModal = ({
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ changes, dismissals }),
+          body: JSON.stringify({ changes, dismissals, user_id: userId }),
         }
       );
 
