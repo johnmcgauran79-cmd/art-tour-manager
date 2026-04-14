@@ -118,17 +118,22 @@ export const useCreateItinerary = () => {
 
       if (itineraryError) throw itineraryError;
 
-      // Generate days between start and end date
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      // Generate days between start and end date (inclusive)
+      // Use date string comparison to avoid timezone issues
       const days = [];
+      const startParts = startDate.split('-').map(Number);
+      const current = new Date(Date.UTC(startParts[0], startParts[1] - 1, startParts[2]));
+      const endStr = endDate; // 'YYYY-MM-DD' string
 
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      while (true) {
+        const dateStr = current.toISOString().split('T')[0];
         days.push({
           itinerary_id: itinerary.id,
           day_number: days.length + 1,
-          activity_date: d.toISOString().split('T')[0]
+          activity_date: dateStr
         });
+        if (dateStr >= endStr) break;
+        current.setUTCDate(current.getUTCDate() + 1);
       }
 
       // Insert all days
