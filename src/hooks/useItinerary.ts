@@ -240,6 +240,103 @@ export const useUpdateItineraryEntry = () => {
   };
 };
 
+export const useAddItineraryDay = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [permissionError, setPermissionError] = useState(false);
+
+  return {
+    ...useMutation({
+      mutationFn: async ({ itineraryId, tourId, activityDate, dayNumber }: {
+        itineraryId: string;
+        tourId: string;
+        activityDate: string;
+        dayNumber: number;
+      }) => {
+        const { data, error } = await supabase
+          .from('tour_itinerary_days')
+          .insert({
+            itinerary_id: itineraryId,
+            day_number: dayNumber,
+            activity_date: activityDate,
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['itinerary', variables.tourId] });
+        toast({
+          title: "Day Added",
+          description: "A new day has been added to the itinerary.",
+        });
+      },
+      onError: (error: any) => {
+        if (isPermissionError(error)) {
+          setPermissionError(true);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to add day. Please try again.",
+            variant: "destructive",
+          });
+        }
+        console.error('Error adding itinerary day:', error);
+      },
+    }),
+    permissionError,
+    setPermissionError
+  };
+};
+
+export const useDeleteItineraryDay = () => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [permissionError, setPermissionError] = useState(false);
+
+  return {
+    ...useMutation({
+      mutationFn: async ({ dayId, tourId }: { dayId: string; tourId: string }) => {
+        // Entries will cascade delete if FK is set, otherwise delete manually
+        await supabase
+          .from('tour_itinerary_entries')
+          .delete()
+          .eq('day_id', dayId);
+
+        const { error } = await supabase
+          .from('tour_itinerary_days')
+          .delete()
+          .eq('id', dayId);
+
+        if (error) throw error;
+      },
+      onSuccess: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['itinerary', variables.tourId] });
+        toast({
+          title: "Day Removed",
+          description: "The day has been removed from the itinerary.",
+        });
+      },
+      onError: (error: any) => {
+        if (isPermissionError(error)) {
+          setPermissionError(true);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to remove day. Please try again.",
+            variant: "destructive",
+          });
+        }
+        console.error('Error deleting itinerary day:', error);
+      },
+    }),
+    permissionError,
+    setPermissionError
+  };
+};
+
 export const useDeleteItineraryEntry = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
