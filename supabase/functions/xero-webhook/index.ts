@@ -523,6 +523,21 @@ serve(async (req) => {
             status: 'success',
           });
 
+          // Save a dismissal so this proposal won't reappear on next sync
+          // (keyed on amount_paid so genuinely new payments still surface)
+          await supabase
+            .from('invoice_sync_dismissals')
+            .upsert({
+              booking_id: change.booking_id,
+              xero_invoice_id: change.xero_invoice_id,
+              proposed_status: change.new_status,
+              current_status_at_dismissal: change.current_status,
+              dismissed_by: body.dismissals?.[0]?.dismissed_by || null,
+              dismissed_at: new Date().toISOString(),
+              amount_paid_at_dismissal: change.amount_paid || 0,
+              xero_status_at_dismissal: change.xero_status || null,
+            }, { onConflict: 'booking_id,xero_invoice_id,amount_paid_at_dismissal' });
+
           applied++;
         } catch (err) {
           console.error(`Error applying change for booking ${change.booking_id}:`, err);
