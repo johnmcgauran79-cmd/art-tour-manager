@@ -29,6 +29,8 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
+  const addDay = useAddItineraryDay();
+  const deleteDay = useDeleteItineraryDay();
   const { userRole } = useAuth();
   
   // Agent users have view-only access
@@ -40,6 +42,28 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
       startDate: tour.startDate,
       endDate: tour.endDate
     });
+  };
+
+  const handleAddDay = () => {
+    if (!itinerary) return;
+    const lastDay = itinerary.days[itinerary.days.length - 1];
+    const nextDate = lastDay 
+      ? format(addDays(new Date(lastDay.activity_date), 1), 'yyyy-MM-dd')
+      : tour.startDate;
+    const nextDayNumber = lastDay ? lastDay.day_number + 1 : 1;
+    
+    addDay.mutate({
+      itineraryId: itinerary.id,
+      tourId: tour.id,
+      activityDate: nextDate,
+      dayNumber: nextDayNumber,
+    });
+  };
+
+  const handleDeleteDay = (dayId: string) => {
+    if (confirm('Are you sure you want to remove this day and all its activities?')) {
+      deleteDay.mutate({ dayId, tourId: tour.id });
+    }
   };
 
   const handleClosePermissionError = () => {
