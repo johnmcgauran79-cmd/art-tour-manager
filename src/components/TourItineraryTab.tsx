@@ -166,8 +166,22 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
             dayNumber={index + 1}
             tourId={tour.id}
             tourName={tour.name}
+            onDeleteDay={!isAgent ? () => handleDeleteDay(day.id) : undefined}
+            showDeleteDay={!isAgent && itinerary.days.length > 1}
           />
         ))}
+        
+        {!isAgent && (
+          <Button
+            onClick={handleAddDay}
+            variant="outline"
+            className="w-full border-dashed border-2 py-6"
+            disabled={addDay.isPending}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {addDay.isPending ? 'Adding Day...' : 'Add Day'}
+          </Button>
+        )}
       </div>
 
       {/* Generate Document Modal */}
