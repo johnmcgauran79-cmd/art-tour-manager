@@ -15,9 +15,11 @@ interface ItineraryDayCardProps {
   dayNumber: number;
   tourId: string;
   tourName?: string;
+  onDeleteDay?: () => void;
+  showDeleteDay?: boolean;
 }
 
-export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: ItineraryDayCardProps) => {
+export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName, onDeleteDay, showDeleteDay }: ItineraryDayCardProps) => {
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const deleteEntry = useDeleteItineraryEntry();
@@ -55,17 +57,30 @@ export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: Itinerary
               {format(new Date(day.activity_date), 'EEEE, d MMMM yyyy')}
             </div>
           </div>
-          {!isAgent && (
-            <Button
-              onClick={handleAddEntry}
-              size="sm"
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Add Activity
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {showDeleteDay && onDeleteDay && (
+              <Button
+                onClick={onDeleteDay}
+                size="sm"
+                variant="ghost"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                title="Remove this day"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+            {!isAgent && (
+              <Button
+                onClick={handleAddEntry}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Activity
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       

@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, FileText, Download, Mail } from "lucide-react";
-import { format } from "date-fns";
-import { useItinerary, useCreateItinerary } from "@/hooks/useItinerary";
+import { Calendar, Clock, Plus, FileText, Download, Mail, Trash2 } from "lucide-react";
+import { format, addDays } from "date-fns";
+import { useItinerary, useCreateItinerary, useAddItineraryDay, useDeleteItineraryDay } from "@/hooks/useItinerary";
 import { ItineraryDayCard } from "./itinerary/ItineraryDayCard";
 import { ItinerarySnapshotSection } from "./itinerary/ItinerarySnapshotSection";
 import { GenerateDocumentModal } from "./itinerary/GenerateDocumentModal";
@@ -29,6 +29,8 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
   const [showEmailModal, setShowEmailModal] = useState(false);
   const { data: itinerary, isLoading } = useItinerary(tour.id);
   const createItinerary = useCreateItinerary();
+  const addDay = useAddItineraryDay();
+  const deleteDay = useDeleteItineraryDay();
   const { userRole } = useAuth();
   
   // Agent users have view-only access
@@ -40,6 +42,28 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
       startDate: tour.startDate,
       endDate: tour.endDate
     });
+  };
+
+  const handleAddDay = () => {
+    if (!itinerary) return;
+    const lastDay = itinerary.days[itinerary.days.length - 1];
+    const nextDate = lastDay 
+      ? format(addDays(new Date(lastDay.activity_date), 1), 'yyyy-MM-dd')
+      : tour.startDate;
+    const nextDayNumber = lastDay ? lastDay.day_number + 1 : 1;
+    
+    addDay.mutate({
+      itineraryId: itinerary.id,
+      tourId: tour.id,
+      activityDate: nextDate,
+      dayNumber: nextDayNumber,
+    });
+  };
+
+  const handleDeleteDay = (dayId: string) => {
+    if (confirm('Are you sure you want to remove this day and all its activities?')) {
+      deleteDay.mutate({ dayId, tourId: tour.id });
+    }
   };
 
   const handleClosePermissionError = () => {
@@ -142,8 +166,22 @@ export const TourItineraryTab = ({ tour }: TourItineraryTabProps) => {
             dayNumber={index + 1}
             tourId={tour.id}
             tourName={tour.name}
+            onDeleteDay={!isAgent ? () => handleDeleteDay(day.id) : undefined}
+            showDeleteDay={!isAgent && itinerary.days.length > 1}
           />
         ))}
+        
+        {!isAgent && (
+          <Button
+            onClick={handleAddDay}
+            variant="outline"
+            className="w-full border-dashed border-2 py-6"
+            disabled={addDay.isPending}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {addDay.isPending ? 'Adding Day...' : 'Add Day'}
+          </Button>
+        )}
       </div>
 
       {/* Generate Document Modal */}
