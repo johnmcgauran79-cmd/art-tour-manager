@@ -19,7 +19,7 @@ interface ItineraryDayCardProps {
   showDeleteDay?: boolean;
 }
 
-export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: ItineraryDayCardProps) => {
+export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName, onDeleteDay, showDeleteDay }: ItineraryDayCardProps) => {
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const deleteEntry = useDeleteItineraryEntry();
