@@ -15,6 +15,8 @@ interface ItineraryDayCardProps {
   dayNumber: number;
   tourId: string;
   tourName?: string;
+  onDeleteDay?: () => void;
+  showDeleteDay?: boolean;
 }
 
 export const ItineraryDayCard = ({ day, dayNumber, tourId, tourName }: ItineraryDayCardProps) => {
