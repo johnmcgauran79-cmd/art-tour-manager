@@ -486,7 +486,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         <p><strong>Starting Point:</strong> ${tour.pickup_point || 'N/A'}</p>
         ${inclusionsList ? `<div><strong>Inclusions:</strong><ul style="margin-top: 4px;">${inclusionsList}</ul></div>` : ''}
         ${exclusionsList ? `<div><strong>Exclusions:</strong><ul style="margin-top: 4px;">${exclusionsList}</ul></div>` : ''}
-        <p style="margin-top: 6px; font-style: italic; font-size: 8pt;">Itinerary subject to change</p>
+        
       </div>
     `;
   }
