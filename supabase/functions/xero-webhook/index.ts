@@ -149,82 +149,94 @@ async function xeroFetchWithRetry(url: string, headers: Record<string, string>, 
   return await fetch(url, { headers });
 }
 
-// Fetch a single invoice ref from Xero — uses a single combined OR query to minimise API calls
-// Falls back to individual queries only if combined query isn't supported
-async function fetchInvoicesForRef(ref: string, auth: { token: string; tenantId: string }): Promise<any[]> {
+// Fetch ALL invoices from Xero in bulk pages (100 per page) and build a lookup map
+async function fetchAllXeroInvoices(auth: { token: string; tenantId: string }): Promise<Map<string, any[]>> {
   const headers = { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' };
-  const trimmed = ref.trim();
+  const invoiceMap = new Map<string, any[]>(); // key = normalized ref/number, value = invoices
 
-  // Strip common prefixes to get the numeric core
-  const numericCore = trimmed.replace(/^(INV-|inv-)/i, '');
-  const hasPrefix = numericCore !== trimmed;
+  const addToMap = (key: string, invoice: any) => {
+    const normalized = key.trim().toLowerCase();
+    if (!normalized) return;
+    const existing = invoiceMap.get(normalized) || [];
+    // Avoid duplicates by InvoiceID
+    if (!existing.some(i => i.InvoiceID === invoice.InvoiceID)) {
+      existing.push(invoice);
+      invoiceMap.set(normalized, existing);
+    }
+  };
 
-  // Build all candidate terms
-  const searchTerms: string[] = [trimmed];
-  if (hasPrefix && numericCore) searchTerms.push(numericCore);
-  if (!hasPrefix && /^\d+$/.test(trimmed)) searchTerms.push(`INV-${trimmed}`);
+  let page = 1;
+  let hasMore = true;
 
-  // Try a combined OR query first to use a single API call
-  const orClauses = searchTerms.flatMap(term => [
-    `Reference=="${term}"`,
-    `InvoiceNumber=="${term}"`,
-  ]);
-  const combinedWhere = orClauses.join(' OR ');
+  // Only fetch AUTHORISED and PAID invoices (the ones that matter for status sync)
+  const whereClause = encodeURIComponent('Status=="AUTHORISED" OR Status=="PAID"');
 
-  try {
+  while (hasMore) {
+    console.log(`Fetching Xero invoices page ${page}...`);
     const r = await xeroFetchWithRetry(
-      `https://api.xero.com/api.xro/2.0/Invoices?where=${encodeURIComponent(combinedWhere)}`,
+      `https://api.xero.com/api.xro/2.0/Invoices?where=${whereClause}&page=${page}&order=UpdatedDateUTC DESC`,
       headers
     );
-    if (r.ok) {
-      const data = await r.json();
-      if ((data.Invoices || []).length > 0) {
-        console.log(`Matched ref "${trimmed}" via combined query (${data.Invoices.length} result(s))`);
-        return data.Invoices;
-      }
-    } else {
+
+    if (!r.ok) {
       const errText = await r.text();
-      console.error(`Xero API error for ref "${trimmed}" (status ${r.status}): ${errText.substring(0, 200)}`);
+      console.error(`Xero bulk fetch error (page ${page}, status ${r.status}): ${errText.substring(0, 300)}`);
+      break;
+    }
 
-      // If combined query fails (e.g., syntax not supported), fall back to individual queries
-      if (r.status === 400) {
-        for (const term of searchTerms) {
-          const r1 = await xeroFetchWithRetry(`https://api.xero.com/api.xro/2.0/Invoices?where=InvoiceNumber=="${term}"`, headers);
-          if (r1.ok) {
-            const d1 = await r1.json();
-            if ((d1.Invoices || []).length > 0) {
-              console.log(`Matched ref "${trimmed}" by InvoiceNumber="${term}"`);
-              return d1.Invoices;
-            }
-          } else {
-            const errBody = await r1.text();
-            console.error(`Xero API error for InvoiceNumber="${term}" (status ${r1.status}): ${errBody.substring(0, 200)}`);
-          }
-          await new Promise(r => setTimeout(r, 500));
+    const data = await r.json();
+    const invoices = data.Invoices || [];
+    console.log(`Page ${page}: ${invoices.length} invoices`);
 
-          const r2 = await xeroFetchWithRetry(`https://api.xero.com/api.xro/2.0/Invoices?where=Reference=="${term}"`, headers);
-          if (r2.ok) {
-            const d2 = await r2.json();
-            if ((d2.Invoices || []).length > 0) {
-              console.log(`Matched ref "${trimmed}" by Reference="${term}"`);
-              return d2.Invoices;
-            }
-          } else {
-            const errBody = await r2.text();
-            console.error(`Xero API error for Reference="${term}" (status ${r2.status}): ${errBody.substring(0, 200)}`);
-          }
-          await new Promise(r => setTimeout(r, 500));
-        }
+    for (const inv of invoices) {
+      // Index by InvoiceNumber
+      if (inv.InvoiceNumber) {
+        addToMap(inv.InvoiceNumber, inv);
+        // Also index without INV- prefix
+        const stripped = inv.InvoiceNumber.replace(/^INV-/i, '');
+        if (stripped !== inv.InvoiceNumber) addToMap(stripped, inv);
+      }
+      // Index by Reference
+      if (inv.Reference) {
+        addToMap(inv.Reference, inv);
+        const stripped = inv.Reference.replace(/^INV-/i, '');
+        if (stripped !== inv.Reference) addToMap(stripped, inv);
       }
     }
-  } catch (err) {
-    console.error(`Network error fetching Xero invoice for ref "${trimmed}":`, err);
+
+    // Xero returns 100 per page; if fewer, we're done
+    if (invoices.length < 100) {
+      hasMore = false;
+    } else {
+      page++;
+      await new Promise(r => setTimeout(r, 500)); // brief pause between pages
+    }
   }
 
-  return [];
+  console.log(`Bulk fetch complete: ${invoiceMap.size} unique keys across ${page} pages`);
+  return invoiceMap;
 }
 
-// Fetch invoice data from Xero for all bookings with invoice references
+// Pick the best invoice when multiple match the same Reference
+function pickBestInvoice(invoices: any[]): any {
+  if (invoices.length === 1) return invoices[0];
+  
+  const statusPriority: Record<string, number> = {
+    'PAID': 4,
+    'AUTHORISED': 3,
+    'SUBMITTED': 2,
+    'DRAFT': 1,
+  };
+  
+  return invoices.sort((a: any, b: any) => {
+    const aPriority = statusPriority[a.Status] || 0;
+    const bPriority = statusPriority[b.Status] || 0;
+    if (aPriority !== bPriority) return bPriority - aPriority;
+    return new Date(b.Date || 0).getTime() - new Date(a.Date || 0).getTime();
+  })[0];
+}
+
+// Fetch invoice data using pre-built lookup map instead of per-booking API calls
 async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenantId: string }) {
   // Only check bookings for tours starting within the last 3 months or in the future
   const cutoffDate = new Date();
@@ -243,11 +255,14 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
     return { proposals: [], total_checked: 0 };
   }
 
+  // Bulk fetch all Xero invoices into a lookup map
+  console.log(`Matching ${bookings.length} bookings against Xero invoices...`);
+  const invoiceMap = await fetchAllXeroInvoices(auth);
+
   const proposals: any[] = [];
 
   for (const booking of bookings) {
     try {
-      // Split comma-separated references, skip placeholder values
       const refs = (booking.invoice_reference as string).split(',').map((r: string) => r.trim()).filter(Boolean)
         .filter((r: string) => !['0', 'TBC', 'tbc', 'N/A', 'n/a'].includes(r));
       const instalmentRequired = !!(booking as any).tours?.instalment_required;
@@ -256,23 +271,29 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
 
       if (refs.length === 0) continue;
 
-      // Collect invoice data for each ref
       const invoiceResults: Array<{ invoice: any; ref: string }> = [];
 
       for (const ref of refs) {
-        const invoices = await fetchInvoicesForRef(ref, auth);
-        if (invoices.length > 0) {
-          const best = pickBestInvoice(invoices);
+        const normalizedRef = ref.trim().toLowerCase();
+        const matches = invoiceMap.get(normalizedRef) || [];
+        
+        if (matches.length > 0) {
+          const best = pickBestInvoice(matches);
           invoiceResults.push({ invoice: best, ref });
         } else {
-          console.log(`No Xero invoice found for ref "${ref}" (booking ${booking.id})`);
+          // Try with/without INV- prefix
+          const withPrefix = `inv-${normalizedRef}`;
+          const withoutPrefix = normalizedRef.replace(/^inv-/i, '');
+          const altMatches = invoiceMap.get(withPrefix) || invoiceMap.get(withoutPrefix) || [];
+          if (altMatches.length > 0) {
+            const best = pickBestInvoice(altMatches);
+            invoiceResults.push({ invoice: best, ref });
+          }
         }
-        await new Promise(r => setTimeout(r, 300));
       }
 
       if (invoiceResults.length === 0) continue;
 
-      // For each matched invoice, compute proposed status
       const statusProposals: Array<{ status: string; order: number; invoice: any; ref: string }> = [];
 
       for (const { invoice, ref } of invoiceResults) {
@@ -319,7 +340,7 @@ async function fetchInvoiceProposals(supabase: any, auth: { token: string; tenan
         });
       }
     } catch (err) {
-      console.error(`Error fetching invoice for booking ${booking.id}:`, err);
+      console.error(`Error processing booking ${booking.id}:`, err);
     }
   }
 
