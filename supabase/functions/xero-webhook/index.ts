@@ -110,27 +110,6 @@ function mapXeroStatusToBookingStatus(
   return proposedStatus;
 }
 
-// Pick the best invoice when multiple match the same Reference
-function pickBestInvoice(invoices: any[]): any {
-  if (invoices.length === 1) return invoices[0];
-  
-  // Priority: PAID > AUTHORISED > SUBMITTED > DRAFT, then newest Date
-  const statusPriority: Record<string, number> = {
-    'PAID': 4,
-    'AUTHORISED': 3,
-    'SUBMITTED': 2,
-    'DRAFT': 1,
-  };
-  
-  return invoices.sort((a, b) => {
-    const aPriority = statusPriority[a.Status] || 0;
-    const bPriority = statusPriority[b.Status] || 0;
-    if (aPriority !== bPriority) return bPriority - aPriority;
-    // Tie-break by Date descending
-    return new Date(b.Date || 0).getTime() - new Date(a.Date || 0).getTime();
-  })[0];
-}
-
 // Rate-limit-aware fetch with retry for 429 responses
 async function xeroFetchWithRetry(url: string, headers: Record<string, string>, retries = 3): Promise<Response> {
   for (let attempt = 0; attempt < retries; attempt++) {
