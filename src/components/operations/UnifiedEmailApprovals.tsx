@@ -29,7 +29,9 @@ import {
   Zap,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from "lucide-react";
+import { SentEmailsReportModal } from "./SentEmailsReportModal";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
