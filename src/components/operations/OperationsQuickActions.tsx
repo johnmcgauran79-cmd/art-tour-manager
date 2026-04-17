@@ -184,6 +184,11 @@ export const OperationsQuickActions = () => {
           </div>
         </CardContent>
       </Card>
+
+      <SentEmailsReportModal
+        open={sentEmailsOpen}
+        onOpenChange={setSentEmailsOpen}
+      />
     </div>
   );
 };
