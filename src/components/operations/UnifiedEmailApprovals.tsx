@@ -29,7 +29,9 @@ import {
   Zap,
   ChevronDown,
   ChevronUp,
+  FileText,
 } from "lucide-react";
+import { SentEmailsReportModal } from "./SentEmailsReportModal";
 import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -94,6 +96,7 @@ export const UnifiedEmailApprovals = () => {
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [previewApproval, setPreviewApproval] = useState<any | null>(null);
+  const [showSentReport, setShowSentReport] = useState(false);
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -301,6 +304,10 @@ export const UnifiedEmailApprovals = () => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setShowSentReport(true)} size="sm" variant="outline">
+                <FileText className="h-4 w-4 mr-1" />
+                Sent Emails Report
+              </Button>
               <Button onClick={handleRefresh} disabled={isRefetching} size="sm" variant="outline">
                 <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? "animate-spin" : ""}`} />
                 Refresh
@@ -450,6 +457,11 @@ export const UnifiedEmailApprovals = () => {
           />
         );
       })()}
+
+      <SentEmailsReportModal
+        open={showSentReport}
+        onOpenChange={setShowSentReport}
+      />
 
       {/* Swap Template Dialog */}
       <AlertDialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>

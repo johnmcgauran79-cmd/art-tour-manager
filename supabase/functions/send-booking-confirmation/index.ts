@@ -1420,6 +1420,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Generate batch_id when sending to additional passengers (groups all sends for this booking together)
+    const batchId = crypto.randomUUID();
+    const willSendToAdditional = (booking.passenger_2?.email && booking.passenger_2.email !== booking.customers.email) ||
+                                 (booking.passenger_3?.email && booking.passenger_3.email !== booking.customers.email);
+
     // Log email to database for tracking
     if (emailResponse.data?.id) {
       const { error: logError } = await supabaseClient
@@ -1432,6 +1437,8 @@ const handler = async (req: Request): Promise<Response> => {
           recipient_name: `${booking.customers.first_name} ${booking.customers.last_name}`,
           subject: emailSubject,
           template_name: template?.name || 'Custom',
+          template_id: template?.id || null,
+          batch_id: willSendToAdditional ? batchId : null,
         });
 
       if (logError) {
@@ -1667,6 +1674,8 @@ const handler = async (req: Request): Promise<Response> => {
               recipient_name: `${passenger.first_name} ${passenger.last_name}`,
               subject: passengerSubject,
               template_name: template?.name || 'Custom',
+              template_id: template?.id || null,
+              batch_id: batchId,
             });
         }
       } catch (passengerEmailError) {
