@@ -114,13 +114,21 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Comms Settings
-          </CardTitle>
-          <CardDescription>
-            Assign tour-specific email templates to each automated email rule. If no override is set, the global default template from Settings will be used.
-          </CardDescription>
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Comms Settings
+              </CardTitle>
+              <CardDescription>
+                Assign tour-specific email templates to each automated email rule. If no override is set, the global default template from Settings will be used.
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowSentReport(true)}>
+              <FileText className="h-4 w-4 mr-1" />
+              Sent Emails Report
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -128,6 +136,8 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
               const override = getOverrideForRule(rule.id);
               const hasOverride = !!override;
               const defaultTemplateName = getTemplateName(rule.email_template_id);
+              const effectiveTemplateId = hasOverride ? override.email_template_id : rule.email_template_id;
+              const summary = effectiveTemplateId ? sendSummaries?.get(effectiveTemplateId) : null;
 
               return (
                 <div
@@ -195,6 +205,35 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
                     )}
                   </div>
 
+                  {/* Inline send summary (one-liner) */}
+                  {summary ? (
+                    <div className="flex items-center gap-2 text-xs flex-wrap">
+                      <Mail className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-muted-foreground">
+                        Last sent {formatDistanceToNow(new Date(summary.lastSentAt), { addSuffix: true })}
+                        {' · '}
+                        {summary.recipientCount} recipient{summary.recipientCount !== 1 ? 's' : ''}
+                      </span>
+                      {summary.opened > 0 && (
+                        <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
+                          <MailOpen className="h-3 w-3" />
+                          {summary.opened} opened
+                        </span>
+                      )}
+                      {summary.issues > 0 && (
+                        <span className="inline-flex items-center gap-1 text-destructive">
+                          <AlertTriangle className="h-3 w-3" />
+                          {summary.issues} issue{summary.issues !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      Not sent in last 90 days
+                    </div>
+                  )}
+
                   {hasOverride && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1">
                       <ArrowRight className="h-3 w-3" />
@@ -207,6 +246,15 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
           </div>
         </CardContent>
       </Card>
+
+      <SentEmailsReportModal
+        open={showSentReport}
+        onOpenChange={setShowSentReport}
+        tourId={tourId}
+        tourName={tourName}
+      />
     </div>
+  );
+};
   );
 };
