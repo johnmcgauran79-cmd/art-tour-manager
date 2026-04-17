@@ -86,11 +86,11 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
 
         {/* Summary Stats */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Total Customers</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.total_customers}</div>
@@ -98,9 +98,9 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
             </Card>
             
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Repeat Rate</CardTitle>
-                <Repeat className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Repeat Rate</CardTitle>
+                <Repeat className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.repeat_rate.toFixed(1)}%</div>
@@ -111,19 +111,19 @@ export const CustomerAnalyticsModal = ({ open, onOpenChange }: CustomerAnalytics
             </Card>
             
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Lifetime Value</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Avg Lifetime Value</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(stats.average_lifetime_value)}</div>
+                <div className="text-2xl font-bold break-words">{formatCurrency(stats.average_lifetime_value)}</div>
               </CardContent>
             </Card>
             
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Tours/Customer</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Avg Tours/Customer</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.average_tours_per_customer.toFixed(1)}</div>
