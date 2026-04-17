@@ -187,11 +187,11 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
       />
 
       {/* Capacity and Waitlist Information */}
-      <div className={`grid grid-cols-1 gap-3 ${isHost ? 'md:grid-cols-2' : 'md:grid-cols-4 lg:grid-cols-8'}`}>
+      <div className={`grid grid-cols-2 gap-3 ${isHost ? 'md:grid-cols-2' : 'sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8'}`}>
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Confirmed Passengers</CardTitle>
-            <Users className="h-4 w-4 text-green-600" />
+          <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Confirmed Passengers</CardTitle>
+            <Users className="h-4 w-4 text-green-600 flex-shrink-0 mt-0.5" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{totalConfirmedPassengers}</div>
@@ -201,9 +201,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
 
         {!isHost && waitlistedBookings.length > 0 && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Waitlisted Passengers</CardTitle>
-              <AlertCircle className="h-4 w-4 text-orange-600" />
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Waitlisted Passengers</CardTitle>
+              <AlertCircle className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-600">{totalWaitlistedPassengers}</div>
@@ -215,9 +215,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
         {!isHost && (
           <>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Total Capacity</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -230,9 +230,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Availability</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Availability</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -243,9 +243,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Rooms Booked</CardTitle>
-                <Hotel className="h-4 w-4 text-muted-foreground" />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Rooms Booked</CardTitle>
+                <Hotel className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -259,9 +259,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
               className="border-2 border-yellow-200 cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200"
               onClick={() => setSelectedTourForAlerts(tour.id)}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tour Alerts</CardTitle>
-                <div className="relative">
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Tour Alerts</CardTitle>
+                <div className="relative flex-shrink-0 mt-0.5">
                   <Bell className="h-4 w-4 text-yellow-600" />
                   {unacknowledgedCount > 0 && (
                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
@@ -286,9 +286,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
               }`}
               onClick={() => setDocumentAlertsModalOpen(true)}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Documents</CardTitle>
-                <div className="relative">
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Documents</CardTitle>
+                <div className="relative flex-shrink-0 mt-0.5">
                   <FileCheck className={`h-4 w-4 ${documentAlertsTotal > 0 ? 'text-amber-600' : 'text-green-600'}`} />
                   {documentAlertsTotal > 0 && (
                     <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
@@ -311,14 +311,16 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
               className="border-2 border-blue-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200"
               onClick={() => setPaymentStatusModalOpen(true)}
             >
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
-                <PaymentStatusTracker 
-                  activeLevel={activeLevel}
-                  level1Count={level1Count}
-                  level2Count={level2Count}
-                  level3Count={level3Count}
-                />
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Payment Status</CardTitle>
+                <div className="flex-shrink-0 mt-0.5">
+                  <PaymentStatusTracker 
+                    activeLevel={activeLevel}
+                    level1Count={level1Count}
+                    level2Count={level2Count}
+                    level3Count={level3Count}
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
