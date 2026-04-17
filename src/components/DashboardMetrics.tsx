@@ -51,14 +51,14 @@ export const DashboardMetrics = ({ onRevenueClick }: DashboardMetricsProps) => {
   }).reduce((sum, booking) => sum + (booking.revenue || 0), 0) || 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
       <Card 
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => navigate('/?tab=bookings')}
       >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Bookings This Month</CardTitle>
-          <Users className="h-4 w-4 text-muted-foreground" />
+        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Bookings This Month</CardTitle>
+          <Users className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{bookingsThisMonth}</div>
@@ -69,12 +69,12 @@ export const DashboardMetrics = ({ onRevenueClick }: DashboardMetricsProps) => {
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={onRevenueClick}
       >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Estimated Monthly Revenue</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Estimated Monthly Revenue</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
+          <div className="text-2xl font-bold break-words">
             ${estimatedRevenue.toLocaleString()}
           </div>
         </CardContent>
@@ -84,9 +84,9 @@ export const DashboardMetrics = ({ onRevenueClick }: DashboardMetricsProps) => {
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => navigate('/?tab=tours')}
       >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Active Tours</CardTitle>
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Total Active Tours</CardTitle>
+          <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{activeTours}</div>
@@ -97,9 +97,9 @@ export const DashboardMetrics = ({ onRevenueClick }: DashboardMetricsProps) => {
         className="cursor-pointer hover:shadow-md transition-shadow"
         onClick={() => navigate('/?tab=contacts')}
       >
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Passengers</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Total Passengers</CardTitle>
+          <TrendingUp className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{totalPassengers}</div>
