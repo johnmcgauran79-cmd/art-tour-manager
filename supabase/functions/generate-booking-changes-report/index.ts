@@ -432,36 +432,71 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
   );
 }
 
+// Categorize a change into one of three groups
+function categorizeChange(type: string): 'new' | 'cancelled' | 'changes' {
+  if (type === 'CREATE_BOOKING' || type === 'CREATE') return 'new';
+  if (
+    type === 'CANCEL_BOOKING' ||
+    type === 'DELETE_BOOKING' ||
+    type === 'REMOVE_HOTEL_FROM_BOOKING' ||
+    type === 'REMOVE_ACTIVITY_FROM_BOOKING'
+  ) return 'cancelled';
+  return 'changes';
+}
+
 // Generate HTML version of the report
 function generateBookingChangesHTML(changes: WeeklyChange[], daysBack: number = 7): string {
   if (!changes || changes.length === 0) {
     return '<p>No booking changes in the past ' + daysBack + ' days.</p>';
   }
 
-  let html = `<p style="color: #666;">Changes from the past ${daysBack} days across all tours</p>`;
-  html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
-  html += '<thead><tr><th>Date & Time</th><th>Customer</th><th>Tour</th><th>Action</th><th>Changed By</th></tr></thead>';
-  html += '<tbody>';
-
-  for (const change of changes) {
-    const date = new Date(change.timestamp).toLocaleDateString('en-AU', { 
-      day: '2-digit', 
-      month: '2-digit', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-    
-    html += '<tr>';
-    html += `<td>${date}</td>`;
-    html += `<td>${change.customer_name}</td>`;
-    html += `<td>${change.tour_name}</td>`;
-    html += `<td>${formatOperationType(change.operation_type, change.details)}</td>`;
-    html += `<td>${change.user_name}</td>`;
-    html += '</tr>';
+  const groups: Record<'new' | 'changes' | 'cancelled', WeeklyChange[]> = {
+    new: [],
+    changes: [],
+    cancelled: [],
+  };
+  for (const c of changes) {
+    groups[categorizeChange(c.operation_type)].push(c);
   }
 
-  html += '</tbody></table>';
+  const sections: Array<{ key: 'new' | 'changes' | 'cancelled'; title: string; color: string }> = [
+    { key: 'new', title: 'New Bookings', color: '#16a34a' },
+    { key: 'changes', title: 'Booking Changes', color: '#1976d2' },
+    { key: 'cancelled', title: 'Cancellations & Removals', color: '#dc2626' },
+  ];
+
+  let html = `<p style="color: #666;">Changes from the past ${daysBack} days across all tours</p>`;
+
+  for (const section of sections) {
+    const rows = groups[section.key];
+    if (rows.length === 0) continue;
+
+    html += `<h3 style="margin: 24px 0 8px 0; color: ${section.color}; border-left: 4px solid ${section.color}; padding-left: 10px;">${section.title} (${rows.length})</h3>`;
+    html += '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 12px;">';
+    html += '<thead><tr><th>Date & Time</th><th>Customer</th><th>Tour</th><th>Action</th><th>Changed By</th></tr></thead>';
+    html += '<tbody>';
+
+    for (const change of rows) {
+      const date = new Date(change.timestamp).toLocaleDateString('en-AU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      html += '<tr>';
+      html += `<td>${date}</td>`;
+      html += `<td>${change.customer_name}</td>`;
+      html += `<td>${change.tour_name}</td>`;
+      html += `<td>${formatOperationType(change.operation_type, change.details)}</td>`;
+      html += `<td>${change.user_name}</td>`;
+      html += '</tr>';
+    }
+
+    html += '</tbody></table>';
+  }
+
   html += `<p style="color: #666; font-size: 14px;">Total changes: ${changes.length}</p>`;
   return html;
 }

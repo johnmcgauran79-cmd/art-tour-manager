@@ -149,6 +149,29 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
     );
   }
 
+  const categorize = (type: string): 'new' | 'cancelled' | 'changes' => {
+    if (type === 'CREATE_BOOKING' || type === 'CREATE') return 'new';
+    if (
+      type === 'CANCEL_BOOKING' ||
+      type === 'DELETE_BOOKING' ||
+      type === 'REMOVE_HOTEL_FROM_BOOKING' ||
+      type === 'REMOVE_ACTIVITY_FROM_BOOKING'
+    ) return 'cancelled';
+    return 'changes';
+  };
+
+  const grouped = {
+    new: changes.filter(c => categorize(c.operation_type) === 'new'),
+    changes: changes.filter(c => categorize(c.operation_type) === 'changes'),
+    cancelled: changes.filter(c => categorize(c.operation_type) === 'cancelled'),
+  };
+
+  const sections: Array<{ key: 'new' | 'changes' | 'cancelled'; title: string; accent: string }> = [
+    { key: 'new', title: 'New Bookings', accent: 'border-l-4 border-l-green-600' },
+    { key: 'changes', title: 'Booking Changes', accent: 'border-l-4 border-l-primary' },
+    { key: 'cancelled', title: 'Cancellations & Removals', accent: 'border-l-4 border-l-destructive' },
+  ];
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-4">
@@ -167,32 +190,45 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
           </SelectContent>
         </Select>
       </div>
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[180px]">Date & Time</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Tour</TableHead>
-              <TableHead>Action</TableHead>
-              <TableHead>Changed By</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {changes.map((change) => (
-              <TableRow key={change.id}>
-                <TableCell className="font-medium text-sm">
-                  {format(new Date(change.timestamp), 'dd/MM/yyyy HH:mm')}
-                </TableCell>
-                <TableCell className="text-sm">{change.customer_name}</TableCell>
-                <TableCell className="text-sm">{change.tour_name}</TableCell>
-                <TableCell className="text-sm">{formatOperationType(change.operation_type, change.details)}</TableCell>
-                <TableCell className="text-sm">{change.user_name}</TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+
+      {sections.map(section => {
+        const rows = grouped[section.key];
+        if (rows.length === 0) return null;
+        return (
+          <div key={section.key} className="mb-6">
+            <h4 className={`text-base font-semibold mb-2 pl-3 ${section.accent}`}>
+              {section.title} <span className="text-muted-foreground font-normal">({rows.length})</span>
+            </h4>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[180px]">Date & Time</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Tour</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Changed By</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((change) => (
+                    <TableRow key={change.id}>
+                      <TableCell className="font-medium text-sm">
+                        {format(new Date(change.timestamp), 'dd/MM/yyyy HH:mm')}
+                      </TableCell>
+                      <TableCell className="text-sm">{change.customer_name}</TableCell>
+                      <TableCell className="text-sm">{change.tour_name}</TableCell>
+                      <TableCell className="text-sm">{formatOperationType(change.operation_type, change.details)}</TableCell>
+                      <TableCell className="text-sm">{change.user_name}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        );
+      })}
+
       <p className="text-sm text-muted-foreground mt-4">
         Total changes: {changes.length}
       </p>
