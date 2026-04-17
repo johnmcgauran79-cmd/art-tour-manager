@@ -4,10 +4,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Mail, Clock, Zap, RotateCcw, ArrowRight } from "lucide-react";
+import { Mail, Clock, Zap, RotateCcw, ArrowRight, FileText, AlertTriangle, MailOpen } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { useAutomatedEmailRules } from "@/hooks/useAutomatedEmailRules";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useTourEmailOverrides, useUpsertTourEmailOverride, useDeleteTourEmailOverride } from "@/hooks/useTourEmailOverrides";
+import { useTourTemplateSendSummaries } from "@/hooks/useSentEmailsReport";
+import { SentEmailsReportModal } from "@/components/operations/SentEmailsReportModal";
 
 interface TourCommsSettingsTabProps {
   tourId: string;
