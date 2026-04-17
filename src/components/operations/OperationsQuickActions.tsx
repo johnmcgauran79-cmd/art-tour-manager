@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign } from "lucide-react";
+import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SentEmailsReportModal } from "./SentEmailsReportModal";
 
 export const OperationsQuickActions = () => {
   const navigate = useNavigate();
+  const [sentEmailsOpen, setSentEmailsOpen] = useState(false);
 
   // Hotel Allocation Check count
   const { data: hotelIssuesCount = 0 } = useQuery({
@@ -130,6 +133,13 @@ export const OperationsQuickActions = () => {
       description: "Outstanding deposits, instalments & payments",
       count: paymentStatusCount,
       onClick: () => navigate("/operations/payment-status"),
+    },
+    {
+      icon: Mail,
+      label: "Sent Emails Report",
+      description: "All individual & bulk emails sent — opens, bounces, errors",
+      count: 0,
+      onClick: () => setSentEmailsOpen(true),
     },
   ];
 
