@@ -23,6 +23,8 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
   const { data: overrides, isLoading: overridesLoading } = useTourEmailOverrides(tourId);
   const upsertOverride = useUpsertTourEmailOverride();
   const deleteOverride = useDeleteTourEmailOverride();
+  const { data: sendSummaries } = useTourTemplateSendSummaries(tourId);
+  const [showSentReport, setShowSentReport] = useState(false);
 
   const activeRules = rules?.filter(r => r.is_active) || [];
   const isLoading = rulesLoading || templatesLoading || overridesLoading;
