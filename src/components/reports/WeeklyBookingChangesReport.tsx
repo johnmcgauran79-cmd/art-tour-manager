@@ -88,11 +88,16 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
       return 'Hotel Date Change';
     }
     
-    // Handle hotel room/bedding changes
-    if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && details?.bedding && !details?.hotel_dates)) {
+    // Handle hotel room/bedding/requests changes
+    if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && (details?.bedding || details?.room_requests) && !details?.hotel_dates)) {
       const changes = [];
       if (details?.bedding) {
-        changes.push(`bedding: ${details.bedding.old} → ${details.bedding.new}`);
+        changes.push(`bedding: ${details.bedding.old || '(none)'} → ${details.bedding.new || '(none)'}`);
+      }
+      if (details?.room_requests) {
+        const oldVal = details.room_requests.old?.trim() || '(none)';
+        const newVal = details.room_requests.new?.trim() || '(none)';
+        changes.push(`room requests: "${oldVal}" → "${newVal}"`);
       }
       if (changes.length > 0) {
         return `Hotel Room/Bedding Change: ${changes.join(', ')}`;
