@@ -50,10 +50,15 @@ function formatOperationType(type: string, details?: any): string {
     return 'Hotel Date Change';
   }
   
-  if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && details?.bedding && !details?.hotel_dates)) {
+  if (type === 'UPDATE_HOTEL_BOOKING_ROOM' || (type === 'UPDATE_HOTEL_BOOKING' && (details?.bedding || details?.room_requests) && !details?.hotel_dates)) {
     const changes = [];
     if (details?.bedding) {
-      changes.push(`bedding: ${details.bedding.old} → ${details.bedding.new}`);
+      changes.push(`bedding: ${details.bedding.old || '(none)'} → ${details.bedding.new || '(none)'}`);
+    }
+    if (details?.room_requests) {
+      const oldVal = details.room_requests.old?.trim() || '(none)';
+      const newVal = details.room_requests.new?.trim() || '(none)';
+      changes.push(`room requests: "${oldVal}" → "${newVal}"`);
     }
     if (changes.length > 0) {
       return `Hotel Room/Bedding Change: ${changes.join(', ')}`;
@@ -312,8 +317,8 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
         const profile = profiles?.find(p => p.id === entry.user_id);
         // Determine the specific subtype
         const hasDateChange = !!entry.details?.hotel_dates;
-        const hasBeddingChange = !!entry.details?.bedding;
-        const opType = hasDateChange ? 'UPDATE_HOTEL_BOOKING_DATES' : (hasBeddingChange ? 'UPDATE_HOTEL_BOOKING_ROOM' : 'UPDATE_HOTEL_BOOKING');
+        const hasRoomChange = !!entry.details?.bedding || !!entry.details?.room_requests;
+        const opType = hasDateChange ? 'UPDATE_HOTEL_BOOKING_DATES' : (hasRoomChange ? 'UPDATE_HOTEL_BOOKING_ROOM' : 'UPDATE_HOTEL_BOOKING');
         consolidatedChanges.push({
           id: entry.id,
           timestamp: entry.timestamp,
@@ -401,8 +406,8 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
         let opType = entry.operation_type;
         if (opType === 'UPDATE_HOTEL_BOOKING') {
           const hasDateChange = !!entry.details?.hotel_dates;
-          const hasBeddingChange = !!entry.details?.bedding;
-          opType = hasDateChange ? 'UPDATE_HOTEL_BOOKING_DATES' : (hasBeddingChange ? 'UPDATE_HOTEL_BOOKING_ROOM' : 'UPDATE_HOTEL_BOOKING');
+          const hasRoomChange = !!entry.details?.bedding || !!entry.details?.room_requests;
+          opType = hasDateChange ? 'UPDATE_HOTEL_BOOKING_DATES' : (hasRoomChange ? 'UPDATE_HOTEL_BOOKING_ROOM' : 'UPDATE_HOTEL_BOOKING');
         }
         
         consolidatedChanges.push({
