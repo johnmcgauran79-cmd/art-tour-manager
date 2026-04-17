@@ -304,6 +304,10 @@ export const UnifiedEmailApprovals = () => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setShowSentReport(true)} size="sm" variant="outline">
+                <FileText className="h-4 w-4 mr-1" />
+                Sent Emails Report
+              </Button>
               <Button onClick={handleRefresh} disabled={isRefetching} size="sm" variant="outline">
                 <RefreshCw className={`h-4 w-4 mr-1 ${isRefetching ? "animate-spin" : ""}`} />
                 Refresh
