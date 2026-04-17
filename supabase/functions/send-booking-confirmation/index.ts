@@ -1674,6 +1674,8 @@ const handler = async (req: Request): Promise<Response> => {
               recipient_name: `${passenger.first_name} ${passenger.last_name}`,
               subject: passengerSubject,
               template_name: template?.name || 'Custom',
+              template_id: template?.id || null,
+              batch_id: batchId,
             });
         }
       } catch (passengerEmailError) {
