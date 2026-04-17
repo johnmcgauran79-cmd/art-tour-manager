@@ -1293,8 +1293,10 @@ export type Database = {
       }
       email_logs: {
         Row: {
+          batch_id: string | null
           booking_id: string | null
           created_at: string
+          error_message: string | null
           id: string
           message_id: string
           recipient_email: string
@@ -1302,12 +1304,15 @@ export type Database = {
           sent_at: string
           sent_by: string | null
           subject: string
+          template_id: string | null
           template_name: string | null
           tour_id: string | null
         }
         Insert: {
+          batch_id?: string | null
           booking_id?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           message_id: string
           recipient_email: string
@@ -1315,12 +1320,15 @@ export type Database = {
           sent_at?: string
           sent_by?: string | null
           subject: string
+          template_id?: string | null
           template_name?: string | null
           tour_id?: string | null
         }
         Update: {
+          batch_id?: string | null
           booking_id?: string | null
           created_at?: string
+          error_message?: string | null
           id?: string
           message_id?: string
           recipient_email?: string
@@ -1328,6 +1336,7 @@ export type Database = {
           sent_at?: string
           sent_by?: string | null
           subject?: string
+          template_id?: string | null
           template_name?: string | null
           tour_id?: string | null
         }
@@ -1337,6 +1346,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
             referencedColumns: ["id"]
           },
           {
