@@ -107,25 +107,25 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {!isHost && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Dates</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Dates</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
             </CardHeader>
             <CardContent>
-              <div className="text-lg font-semibold">{tour.dates}</div>
-              <p className="text-sm text-muted-foreground mt-1">{tour.duration}</p>
+              <div className="text-lg font-semibold break-words">{tour.dates}</div>
+              <p className="text-sm text-muted-foreground mt-1 break-words">{tour.duration}</p>
             </CardContent>
           </Card>
         )}
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Location</CardTitle>
-            <MapPin className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Location</CardTitle>
+            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-semibold">{tour.location || "TBD"}</div>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="text-lg font-semibold break-words">{tour.location || "TBD"}</div>
+            <p className="text-sm text-muted-foreground mt-1 break-words">
               Pickup: {tour.pickupPoint || "TBD"}
             </p>
           </CardContent>
@@ -133,9 +133,9 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
 
         {!isHost && (
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Status</CardTitle>
-              <Badge className={getTourStatusColor(tour.status)}>
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium leading-tight min-w-0 break-words">Status</CardTitle>
+              <Badge className={`${getTourStatusColor(tour.status)} flex-shrink-0 whitespace-nowrap`}>
                 {formatStatusText(tour.status)}
               </Badge>
             </CardHeader>
