@@ -256,5 +256,3 @@ export const TourCommsSettingsTab = ({ tourId, tourName }: TourCommsSettingsTabP
     </div>
   );
 };
-  );
-};
