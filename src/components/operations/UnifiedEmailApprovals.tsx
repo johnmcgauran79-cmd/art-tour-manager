@@ -435,13 +435,21 @@ export const UnifiedEmailApprovals = () => {
       </Card>
 
       {/* Preview modal (scheduled batches only) */}
-      {previewApproval && (
-        <PendingEmailPreviewModal
-          open={!!previewApproval}
-          onOpenChange={(open) => !open && setPreviewApproval(null)}
-          approval={previewApproval}
-        />
-      )}
+      {previewApproval && (() => {
+        const tpl =
+          previewApproval.override_template || previewApproval.rule?.email_templates;
+        return (
+          <PendingEmailPreviewModal
+            open={!!previewApproval}
+            onOpenChange={(open) => !open && setPreviewApproval(null)}
+            tourId={previewApproval.tour_id}
+            templateSubject={tpl?.subject_template || ""}
+            templateContent={tpl?.content_template || ""}
+            templateFrom={tpl?.from_email || ""}
+            ruleName={previewApproval.rule?.rule_name || ""}
+          />
+        );
+      })()}
 
       {/* Swap Template Dialog */}
       <AlertDialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>
