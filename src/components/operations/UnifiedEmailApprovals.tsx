@@ -458,6 +458,11 @@ export const UnifiedEmailApprovals = () => {
         );
       })()}
 
+      <SentEmailsReportModal
+        open={showSentReport}
+        onOpenChange={setShowSentReport}
+      />
+
       {/* Swap Template Dialog */}
       <AlertDialog open={showSwapDialog} onOpenChange={setShowSwapDialog}>
         <AlertDialogContent>
