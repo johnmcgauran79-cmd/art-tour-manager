@@ -438,7 +438,7 @@ export const UnifiedEmailApprovals = () => {
       {previewApproval && (
         <PendingEmailPreviewModal
           open={!!previewApproval}
-          onClose={() => setPreviewApproval(null)}
+          onOpenChange={(open) => !open && setPreviewApproval(null)}
           approval={previewApproval}
         />
       )}
