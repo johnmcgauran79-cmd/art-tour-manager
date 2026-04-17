@@ -45,11 +45,11 @@ export const JourneysEditor = ({ journeys, onChange, readOnly = false }: Journey
             <h5 className="font-medium text-sm mb-2">Journey {index + 1}</h5>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 sm:gap-2 text-xs sm:text-sm">
               <div>
-                <span className="text-muted-foreground">Pickup Time</span>
+                <span className="text-muted-foreground">Depart Time</span>
                 <p className="font-medium">{journey.pickup_time ? formatTime(journey.pickup_time) : '-'}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Pickup Location</span>
+                <span className="text-muted-foreground">Depart Location</span>
                 <p className="font-medium">{journey.pickup_location || '-'}</p>
               </div>
               <div>
@@ -75,11 +75,11 @@ export const JourneysEditor = ({ journeys, onChange, readOnly = false }: Journey
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="space-y-1">
-              <Label className="text-xs">Pickup Time</Label>
+              <Label className="text-xs">Depart Time</Label>
               <Input type="time" value={journey.pickup_time} onChange={(e) => updateJourney(index, 'pickup_time', e.target.value)} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Pickup Location</Label>
+              <Label className="text-xs">Depart Location</Label>
               <Input value={journey.pickup_location} onChange={(e) => updateJourney(index, 'pickup_location', e.target.value)} />
             </div>
             <div className="space-y-1">
