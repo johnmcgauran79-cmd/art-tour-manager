@@ -71,10 +71,66 @@ const formatOperationType = (type: string, details?: any): string => {
   return typeMap[type] || type;
 };
 
+const categorizeChange = (type: string): 'new' | 'cancelled' | 'changes' => {
+  if (type === 'CREATE_BOOKING' || type === 'CREATE') return 'new';
+  if (
+    type === 'CANCEL_BOOKING' ||
+    type === 'DELETE_BOOKING' ||
+    type === 'REMOVE_HOTEL_FROM_BOOKING' ||
+    type === 'REMOVE_ACTIVITY_FROM_BOOKING'
+  ) return 'cancelled';
+  return 'changes';
+};
+
 const generateHTML = (changes: WeeklyChange[], period: string): string => {
   const currentDate = format(new Date(), 'dd/MM/yyyy');
-  
-  
+
+  const groups: Record<'new' | 'changes' | 'cancelled', WeeklyChange[]> = {
+    new: [],
+    changes: [],
+    cancelled: [],
+  };
+  for (const c of changes) {
+    groups[categorizeChange(c.operation_type)].push(c);
+  }
+
+  const sections: Array<{ key: 'new' | 'changes' | 'cancelled'; title: string; color: string }> = [
+    { key: 'new', title: 'New Bookings', color: '#16a34a' },
+    { key: 'changes', title: 'Booking Changes', color: '#1976d2' },
+    { key: 'cancelled', title: 'Cancellations & Removals', color: '#dc2626' },
+  ];
+
+  const renderSection = (title: string, color: string, rows: WeeklyChange[]) => {
+    if (rows.length === 0) return '';
+    return `
+      <h2 style="margin: 24px 0 8px 0; color: ${color}; border-left: 5px solid ${color}; padding-left: 12px; font-size: 16px;">
+        ${title} <span style="color: #666; font-weight: 400;">(${rows.length})</span>
+      </h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 16%">Date & Time</th>
+            <th style="width: 24%">Customer</th>
+            <th style="width: 26%">Tour</th>
+            <th style="width: 20%">Action</th>
+            <th style="width: 14%">Changed By</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(change => `
+            <tr>
+              <td><strong>${format(new Date(change.timestamp), 'dd/MM/yyyy HH:mm')}</strong></td>
+              <td>${change.customer_name}</td>
+              <td>${change.tour_name}</td>
+              <td>${formatOperationType(change.operation_type, change.details)}</td>
+              <td>${change.user_name}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  };
+
   return `
     <!DOCTYPE html>
     <html>
@@ -102,8 +158,6 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
             margin-bottom: 15px;
             padding-bottom: 10px;
             border-bottom: 3px solid #2c3e50;
-            page-break-after: avoid;
-            break-after: avoid;
           }
           .header h1 {
             margin: 0 0 6px 0;
@@ -120,29 +174,23 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
           table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 0;
+            margin: 0 0 12px 0;
             background: white;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            page-break-before: avoid;
-            break-before: avoid;
-          }
-          thead {
-            page-break-after: avoid;
-            break-after: avoid;
           }
           th {
             background-color: #34495e;
             color: white;
-            padding: 14px 12px;
+            padding: 12px;
             text-align: left;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             border: none;
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
           td {
-            padding: 12px;
+            padding: 10px 12px;
             border-bottom: 1px solid #e0e0e0;
             font-size: 12px;
             color: #333;
@@ -150,12 +198,6 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
           }
           tbody tr:nth-child(even) {
             background-color: #f8f9fa;
-          }
-          tbody tr:hover {
-            background-color: #e9ecef;
-          }
-          tbody tr:last-child td {
-            border-bottom: 2px solid #34495e;
           }
           .footer {
             margin-top: 25px;
@@ -186,34 +228,13 @@ const generateHTML = (changes: WeeklyChange[], period: string): string => {
           <p>Report Period: Last ${period} Days</p>
           <p>Generated: ${currentDate}</p>
         </div>
-        
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 16%">Date & Time</th>
-              <th style="width: 24%">Customer</th>
-              <th style="width: 26%">Tour</th>
-              <th style="width: 20%">Action</th>
-              <th style="width: 14%">Changed By</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${changes.map(change => `
-              <tr>
-                <td><strong>${format(new Date(change.timestamp), 'dd/MM/yyyy HH:mm')}</strong></td>
-                <td>${change.customer_name}</td>
-                <td>${change.tour_name}</td>
-                <td>${formatOperationType(change.operation_type, change.details)}</td>
-                <td>${change.user_name}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        
+
+        ${sections.map(s => renderSection(s.title, s.color, groups[s.key])).join('')}
+
         <div class="summary">
           <strong>Total Changes: ${changes.length}</strong>
         </div>
-        
+
         <div class="footer">
           <p>This report was automatically generated by the Tour Operations Management System</p>
           <p>Australian Racing Tours • Confidential</p>
