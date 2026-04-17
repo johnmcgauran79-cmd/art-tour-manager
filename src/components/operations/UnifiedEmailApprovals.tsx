@@ -96,6 +96,7 @@ export const UnifiedEmailApprovals = () => {
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [previewApproval, setPreviewApproval] = useState<any | null>(null);
+  const [showSentReport, setShowSentReport] = useState(false);
 
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
