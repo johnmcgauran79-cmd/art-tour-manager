@@ -271,13 +271,20 @@ const handler = async (req: Request): Promise<Response> => {
           '{{custom_form_link}}': formLink,
         };
 
+        // Helper to replace named custom form button placeholders {{custom_form_button:Form Title}}
+        // with the same styled CTA button. This supports the multi-form system where each form
+        // is referenced by its title in the email template.
+        const replaceNamedCustomFormButtons = (html: string) =>
+          html.replace(/\{\{custom_form_button:([^}]+)\}\}/g, () => customFormButtonHtml);
+
         let finalSubject: string;
         let finalHtml: string;
         let fromEmail: string;
 
         if (template) {
           fromEmail = template.from_email ? `${senderName} <${template.from_email}>` : `${senderName} <${fromEmailAddr}>`;
-          const processedContent = processTemplate(normalizeConditionalTemplateHtml(template.content_template || ''), replacements);
+          let processedContent = processTemplate(normalizeConditionalTemplateHtml(template.content_template || ''), replacements);
+          processedContent = replaceNamedCustomFormButtons(processedContent);
           finalSubject = processTemplate(template.subject_template || `${form.form_title} - ${tour.name}`, replacements);
           finalHtml = wrapInEmailShell(processedContent, headerImg, senderName, formLink);
         } else {
