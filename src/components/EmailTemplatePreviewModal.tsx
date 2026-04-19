@@ -130,6 +130,12 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
     (mergeData as any).pickup_link = '#preview-pickup';
     mergeData.itinerary_button = `<a href="#" style="${mockButtonStyle}">VIEW ITINERARY (Preview)</a>`;
     mergeData.itinerary_link = '#preview-itinerary';
+    (mergeData as any).custom_form_button = `<a href="#" style="${mockButtonStyle}">COMPLETE FORM (Preview)</a>`;
+    (mergeData as any).custom_form_link = '#preview-custom-form';
+    (mergeData as any).form_title = 'Sample Form Title';
+    (mergeData as any).form_description = 'Sample form description (Preview)';
+    (mergeData as any).current_details = '<div style="padding:8px;border:1px dashed #d1d5db;border-radius:6px;color:#6b7280;font-size:13px;">Current details will appear here (Preview)</div>';
+    (mergeData as any).existing_passport_details = '<div style="padding:8px;border:1px dashed #d1d5db;border-radius:6px;color:#6b7280;font-size:13px;">Existing passport details will appear here (Preview)</div>';
     mergeData.additional_info_blocks = '<div style="padding:12px;border:1px dashed #d1d5db;border-radius:8px;text-align:center;color:#9ca3af;font-size:13px;margin:8px 0;">Additional Info Blocks will appear here (rendered server-side)</div>';
 
     // Generate tour_details_card preview (hotel-card style)
