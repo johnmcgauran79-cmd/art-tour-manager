@@ -819,6 +819,9 @@ export type Database = {
           accommodation_required: boolean | null
           booking_agent: string | null
           booking_notes: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           check_in_date: string | null
           check_out_date: string | null
           created_at: string | null
@@ -838,6 +841,7 @@ export type Database = {
           passport_expiry_date: string | null
           passport_not_required: boolean
           passport_number: string | null
+          pre_cancellation_snapshot: Json | null
           revenue: number | null
           secondary_contact_id: string | null
           selected_pickup_option_id: string | null
@@ -852,6 +856,9 @@ export type Database = {
           accommodation_required?: boolean | null
           booking_agent?: string | null
           booking_notes?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
@@ -871,6 +878,7 @@ export type Database = {
           passport_expiry_date?: string | null
           passport_not_required?: boolean
           passport_number?: string | null
+          pre_cancellation_snapshot?: Json | null
           revenue?: number | null
           secondary_contact_id?: string | null
           selected_pickup_option_id?: string | null
@@ -885,6 +893,9 @@ export type Database = {
           accommodation_required?: boolean | null
           booking_agent?: string | null
           booking_notes?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           created_at?: string | null
@@ -904,6 +915,7 @@ export type Database = {
           passport_expiry_date?: string | null
           passport_not_required?: boolean
           passport_number?: string | null
+          pre_cancellation_snapshot?: Json | null
           revenue?: number | null
           secondary_contact_id?: string | null
           selected_pickup_option_id?: string | null
@@ -1518,6 +1530,9 @@ export type Database = {
           allocated: boolean | null
           bedding: Database["public"]["Enums"]["bedding_type"] | null
           booking_id: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           check_in_date: string | null
           check_out_date: string | null
           confirmation_number: string | null
@@ -1535,6 +1550,9 @@ export type Database = {
           allocated?: boolean | null
           bedding?: Database["public"]["Enums"]["bedding_type"] | null
           booking_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           confirmation_number?: string | null
@@ -1552,6 +1570,9 @@ export type Database = {
           allocated?: boolean | null
           bedding?: Database["public"]["Enums"]["bedding_type"] | null
           booking_id?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           check_in_date?: string | null
           check_out_date?: string | null
           confirmation_number?: string | null
