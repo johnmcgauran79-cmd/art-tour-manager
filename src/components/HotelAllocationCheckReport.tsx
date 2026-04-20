@@ -50,7 +50,8 @@ export const HotelAllocationCheckReport = ({ open, onOpenChange }: HotelAllocati
       // Get all hotel bookings
       const { data: hotelBookings, error: hotelBookingsError } = await supabase
         .from('hotel_bookings')
-        .select('booking_id');
+        .select('booking_id')
+        .is('cancelled_at', null);
 
       if (hotelBookingsError) throw hotelBookingsError;
 
