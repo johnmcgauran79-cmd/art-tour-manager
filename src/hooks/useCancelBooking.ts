@@ -9,12 +9,14 @@ export const useCancelBooking = () => {
 
   return useMutation({
     mutationFn: async ({ bookingId, cancellationReason }: { bookingId: string; cancellationReason: string }) => {
-      console.log('Cancelling booking:', bookingId, 'Reason:', cancellationReason);
+      console.log('Cancelling booking (soft):', bookingId, 'Reason:', cancellationReason);
 
-      // Start a transaction to ensure all operations succeed or fail together
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1. Fetch current booking values to snapshot
       const { data: booking, error: fetchError } = await supabase
         .from('bookings')
-        .select('booking_notes')
+        .select('booking_notes, passenger_count, check_in_date, check_out_date, total_nights, revenue, status')
         .eq('id', bookingId)
         .single();
 
@@ -23,14 +25,35 @@ export const useCancelBooking = () => {
         throw fetchError;
       }
 
-      // Prepare the cancellation note for the booking_notes field
+      // 2. Fetch activity bookings to snapshot passenger counts
+      const { data: activityBookings } = await supabase
+        .from('activity_bookings')
+        .select('id, passengers_attending')
+        .eq('booking_id', bookingId);
+
+      // Build snapshot
+      const snapshot = {
+        passenger_count: booking.passenger_count,
+        check_in_date: booking.check_in_date,
+        check_out_date: booking.check_out_date,
+        total_nights: booking.total_nights,
+        revenue: booking.revenue,
+        previous_status: booking.status,
+        activity_passengers: (activityBookings || []).reduce<Record<string, number>>((acc, ab) => {
+          acc[ab.id] = ab.passengers_attending;
+          return acc;
+        }, {}),
+        snapshot_at: new Date().toISOString(),
+      };
+
+      // Append cancellation note (preserves existing notes)
       const existingNotes = (booking as any).booking_notes || '';
       const cancellationNote = `CANCELLED: ${cancellationReason}`;
-      const updatedNotes = existingNotes 
+      const updatedNotes = existingNotes
         ? `${existingNotes}\n\n${cancellationNote}`
         : cancellationNote;
 
-      // 1. Update booking status and clear fields
+      // 3. Update booking: mark cancelled, store snapshot, clear active fields
       const { error: bookingError } = await supabase
         .from('bookings')
         .update({
@@ -39,9 +62,13 @@ export const useCancelBooking = () => {
           check_in_date: null,
           check_out_date: null,
           total_nights: null,
+          revenue: 0,
           booking_notes: updatedNotes,
-          revenue: 0
-        })
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: user?.id ?? null,
+          cancellation_reason: cancellationReason,
+          pre_cancellation_snapshot: snapshot,
+        } as any)
         .eq('id', bookingId);
 
       if (bookingError) {
@@ -49,18 +76,23 @@ export const useCancelBooking = () => {
         throw bookingError;
       }
 
-      // 2. Remove all hotel allocations for this booking
+      // 4. SOFT-cancel hotel allocations (preserve all notes/dates/bedding for restore)
       const { error: hotelError } = await supabase
         .from('hotel_bookings')
-        .delete()
-        .eq('booking_id', bookingId);
+        .update({
+          cancelled_at: new Date().toISOString(),
+          cancelled_by: user?.id ?? null,
+          cancellation_reason: cancellationReason,
+        } as any)
+        .eq('booking_id', bookingId)
+        .is('cancelled_at', null);
 
       if (hotelError) {
-        console.error('Error removing hotel allocations:', hotelError);
+        console.error('Error soft-cancelling hotel allocations:', hotelError);
         throw hotelError;
       }
 
-      // 3. Set all activity bookings to 0 passengers attending
+      // 5. Zero out activity passenger counts (rows kept, original counts in snapshot)
       const { error: activityError } = await supabase
         .from('activity_bookings')
         .update({ passengers_attending: 0 })
@@ -71,9 +103,9 @@ export const useCancelBooking = () => {
         throw activityError;
       }
 
-      console.log('Booking cancelled successfully');
+      console.log('Booking cancelled (soft) successfully');
 
-      // 4. Remove Keap tags for all passengers on this booking (fire-and-forget)
+      // 6. Remove Keap tags (fire-and-forget)
       try {
         await supabase.functions.invoke('keap-remove-tag', {
           body: { bookingId },
@@ -95,7 +127,7 @@ export const useCancelBooking = () => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       toast({
         title: "Booking Cancelled",
-        description: "The booking has been successfully cancelled and all allocations removed.",
+        description: "The booking has been cancelled. Hotel allocations and notes have been preserved and can be restored if needed.",
       });
     },
     onError: (error) => {

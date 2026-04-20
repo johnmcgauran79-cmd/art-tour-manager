@@ -43,16 +43,19 @@ export const CancelBookingDialog = ({
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to cancel this booking? This action will:
-          </p>
-          <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-            <li>Remove all hotel allocations</li>
-            <li>Clear check-in and check-out dates</li>
-            <li>Set passenger count to zero</li>
-            <li>Remove all activity bookings</li>
-            <li>Set revenue to zero</li>
-          </ul>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to cancel this booking? This action will:
+            </p>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
+              <li>Mark the booking as cancelled (status: cancelled)</li>
+              <li>Clear active passenger count, dates and revenue</li>
+              <li>Soft-cancel hotel allocations and zero out activity passengers</li>
+            </ul>
+            <p className="text-xs text-muted-foreground italic pt-1">
+              All hotel notes, bedding, dates and original values are preserved and the booking can be restored later if needed.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="cancellation-reason">Reason for cancellation</Label>

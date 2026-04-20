@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft, Save, Plane } from "lucide-react";
+import { Edit, Shield, FileText, Heart, MessageSquare, Hotel, MapPin, Info, UserPlus, ArrowLeft, Save, Plane, RotateCcw } from "lucide-react";
 import { BookingTravelDocsEdit } from "@/components/booking/BookingTravelDocsEdit";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useBookings, useUpdateBooking } from "@/hooks/useBookings";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useCancelBooking } from "@/hooks/useCancelBooking";
+import { useRestoreBooking } from "@/hooks/useRestoreBooking";
 import { useUpdateCustomer } from "@/hooks/useCustomers";
 import { HotelAllocationSection } from "@/components/HotelAllocationSection";
 import { ActivityAllocationSection } from "@/components/ActivityAllocationSection";
@@ -112,7 +113,9 @@ export default function BookingEdit() {
 
   const updateBooking = useUpdateBooking();
   const cancelBooking = useCancelBooking();
+  const restoreBooking = useRestoreBooking();
   const updateCustomer = useUpdateCustomer();
+  const [showRestoreConfirm, setShowRestoreConfirm] = useState(false);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -440,7 +443,7 @@ export default function BookingEdit() {
             )}
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -449,6 +452,18 @@ export default function BookingEdit() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            {booking.status === 'cancelled' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowRestoreConfirm(true)}
+                disabled={restoreBooking.isPending}
+                className="border-green-500 text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+              >
+                <RotateCcw className="mr-2 h-4 w-4" />
+                {restoreBooking.isPending ? 'Restoring...' : 'Restore Booking'}
+              </Button>
+            )}
             <Button
               variant="default"
               size="sm"
@@ -461,6 +476,46 @@ export default function BookingEdit() {
           </div>
         </div>
       </div>
+
+      {booking.status === 'cancelled' && (booking as any).cancellation_reason && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            <strong>This booking is cancelled.</strong> Reason: {(booking as any).cancellation_reason}
+            {(booking as any).cancelled_at && (
+              <span className="text-muted-foreground"> · Cancelled on {new Date((booking as any).cancelled_at).toLocaleDateString('en-AU')}</span>
+            )}
+            <span className="block mt-1 text-xs text-muted-foreground">
+              Click "Restore Booking" above to reinstate this booking with all preserved hotel allocations and notes.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <AlertDialog open={showRestoreConfirm} onOpenChange={setShowRestoreConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Restore this booking?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reinstate the booking with all its original hotel allocations, notes, dates, passenger count, revenue, and activity passenger counts (where snapshot data is available). The "CANCELLED" note will be removed from booking notes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setShowRestoreConfirm(false)}>Keep Cancelled</Button>
+            <AlertDialogAction
+              onClick={() => {
+                restoreBooking.mutate({ bookingId: booking.id }, {
+                  onSuccess: () => {
+                    setShowRestoreConfirm(false);
+                  }
+                });
+              }}
+            >
+              Restore Booking
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Tabs defaultValue="details" className="w-full">
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1 h-auto p-1">

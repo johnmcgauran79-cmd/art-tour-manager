@@ -29,6 +29,7 @@ export const useHotelBookings = (bookingId: string) => {
           hotels (name, default_check_in, default_check_out, default_room_type)
         `)
         .eq('booking_id', bookingId)
+        .is('cancelled_at', null)
         .order('created_at', { ascending: true });
       
       if (error) {
@@ -90,14 +91,15 @@ export const useCreateHotelBooking = () => {
     mutationFn: async (hotelBookingData: HotelBookingInsert) => {
       console.log('Creating hotel booking with data:', hotelBookingData);
       
-      // Check for existing allocated booking with same booking_id and hotel_id
+      // Check for existing allocated booking with same booking_id and hotel_id (ignoring cancelled)
       if (hotelBookingData.booking_id && hotelBookingData.hotel_id && hotelBookingData.allocated) {
         const { data: existingBookings, error: checkError } = await supabase
           .from('hotel_bookings')
           .select('id, allocated')
           .eq('booking_id', hotelBookingData.booking_id)
           .eq('hotel_id', hotelBookingData.hotel_id)
-          .eq('allocated', true);
+          .eq('allocated', true)
+          .is('cancelled_at', null);
 
         if (checkError) {
           console.error('Error checking for existing hotel booking:', checkError);

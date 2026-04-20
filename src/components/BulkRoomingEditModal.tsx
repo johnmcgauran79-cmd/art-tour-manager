@@ -62,6 +62,7 @@ export const BulkRoomingEditModal = ({ hotel, tourId, open, onOpenChange }: Bulk
         `)
         .eq('hotel_id', hotel.id)
         .eq('allocated', true)
+        .is('cancelled_at', null)
         .eq('bookings.tour_id', tourId)
         .neq('bookings.status', 'cancelled')
         .order('id', { ascending: true });

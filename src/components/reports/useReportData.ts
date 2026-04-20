@@ -44,6 +44,7 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
           hotels!inner (tour_id)
         `)
         .eq('hotels.tour_id', tourId)
+        .is('cancelled_at', null)
         .order('check_in_date', { ascending: true });
       
       if (error) throw error;
