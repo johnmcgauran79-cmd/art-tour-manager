@@ -91,7 +91,7 @@ export default function TaskEdit() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Task Not Found</h1>
-          <Button onClick={() => goBack("/?tab=operations")}>
+          <Button onClick={() => goBack("/?tab=tasks")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
