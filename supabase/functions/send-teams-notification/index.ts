@@ -163,10 +163,8 @@ serve(async (req) => {
       ? `${actor.first_name || ""} ${actor.last_name || ""}`.trim() || actor.email
       : "Someone";
 
-    // Recipients (dedupe, exclude actor)
-    const recipientIds = Array.from(
-      new Set(body.recipientUserIds.filter((id) => id !== body.actorUserId)),
-    );
+    // Recipients (dedupe). Actor is intentionally NOT excluded so users can self-test.
+    const recipientIds = Array.from(new Set(body.recipientUserIds));
     if (recipientIds.length === 0) {
       return new Response(JSON.stringify({ success: true, sent: 0, fallback: [] }), {
         status: 200,
