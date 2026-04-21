@@ -186,18 +186,22 @@ export const StreamlinedTasksTable = ({
                     </TableCell>
                   )}
                   
-                  <TableCell className="w-[280px] max-w-[280px]">
+                  <TableCell className="w-[260px] max-w-[260px]">
                     <div className="font-medium text-sm truncate" title={task.title}>
                       {task.title}
                     </div>
-                    {task.description && (
+                    {task.quick_update ? (
+                      <div className="text-xs text-muted-foreground truncate mt-1 italic" title={task.quick_update}>
+                        💬 {task.quick_update}
+                      </div>
+                    ) : task.description && (
                       <div className="text-xs text-muted-foreground truncate mt-1" title={task.description}>
                         {task.description}
                       </div>
                     )}
                   </TableCell>
                   
-                  <TableCell className="w-[140px] max-w-[140px]">
+                  <TableCell className="w-[130px] max-w-[130px]">
                     {task.tours ? (
                       <div className="flex items-center gap-1 text-sm overflow-hidden">
                         <MapPin className="h-3 w-3 text-muted-foreground" />
@@ -210,19 +214,55 @@ export const StreamlinedTasksTable = ({
                     )}
                   </TableCell>
                   
-                  <TableCell className="w-[90px] max-w-[90px]">
-                    <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
-                      {formatStatus(task.status)}
-                    </Badge>
+                  <TableCell className="w-[120px] max-w-[120px]" onClick={(e) => e.stopPropagation()}>
+                    {hasEditAccess && !isViewOnly ? (
+                      <Select
+                        value={task.status}
+                        onValueChange={(value) => updateTask.mutate({ taskId: task.id, updates: { status: value as any } })}
+                      >
+                        <SelectTrigger className={`h-7 text-xs px-2 ${getStatusColor(task.status)}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="not_started">Not Started</SelectItem>
+                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="waiting">Waiting</SelectItem>
+                          <SelectItem value="completed">Completed</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="archived">Archived</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className={`text-xs ${getStatusColor(task.status)}`}>
+                        {formatStatus(task.status)}
+                      </Badge>
+                    )}
                   </TableCell>
                   
-                  <TableCell className="w-[80px] max-w-[80px]">
-                    <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
-                      {task.priority}
-                    </Badge>
+                  <TableCell className="w-[80px] max-w-[80px]" onClick={(e) => e.stopPropagation()}>
+                    {hasEditAccess && !isViewOnly ? (
+                      <Select
+                        value={task.priority}
+                        onValueChange={(value) => updateTask.mutate({ taskId: task.id, updates: { priority: value as any } })}
+                      >
+                        <SelectTrigger className={`h-7 text-xs px-2 ${getPriorityColor(task.priority)}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="critical">Critical</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant="outline" className={`text-xs ${getPriorityColor(task.priority)}`}>
+                        {task.priority}
+                      </Badge>
+                    )}
                   </TableCell>
                   
-                  <TableCell className="w-[110px] max-w-[110px]">
+                  <TableCell className="w-[100px] max-w-[100px]">
                     {task.due_date ? (
                       <div className={`text-sm ${isOverdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
                         <div className="flex items-center gap-1">
@@ -240,8 +280,10 @@ export const StreamlinedTasksTable = ({
                     )}
                   </TableCell>
                   
-                  <TableCell className="w-[90px] max-w-[90px]">
-                    <span className="text-sm capitalize">{task.category}</span>
+                  <TableCell className="w-[110px] max-w-[110px]">
+                    <span className="text-xs text-muted-foreground" title={format(new Date(task.last_activity_at || task.updated_at), 'dd/MM/yyyy HH:mm')}>
+                      {formatDistanceToNow(new Date(task.last_activity_at || task.updated_at), { addSuffix: true })}
+                    </span>
                   </TableCell>
                   
                   <TableCell className="w-[100px] max-w-[100px]">
