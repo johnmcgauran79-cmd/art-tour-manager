@@ -81,8 +81,12 @@ serve(async (req) => {
       ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
       : "";
 
-    const messageBlock = body.message
-      ? `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-left:3px solid #1a2332;border-radius:4px;margin:16px 0;"><tr><td style="padding:14px 18px;color:#374151;font-size:14px;font-style:italic;line-height:1.5;">"${body.message.replace(/</g, "&lt;").substring(0, 500)}"</td></tr></table>`
+    // Strip @[Name](uuid) mention syntax → @Name for display
+    const cleanedMessage = body.message
+      ? body.message.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1")
+      : "";
+    const messageBlock = cleanedMessage
+      ? `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-left:3px solid #1a2332;border-radius:4px;margin:16px 0;"><tr><td style="padding:14px 18px;color:#374151;font-size:14px;font-style:italic;line-height:1.5;">"${cleanedMessage.replace(/</g, "&lt;").substring(0, 500)}"</td></tr></table>`
       : "";
 
     let sent = 0;
@@ -112,14 +116,30 @@ ${messageBlock}
 <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">Automated notification from Australian Racing Tours.</p>
 </td></tr></table></td></tr></table></body></html>`;
 
-      const { error } = await resend.emails.send({
+      const { data: sendData, error } = await resend.emails.send({
         from: "Australian Racing Tours <info@australianracingtours.com.au>",
         to: [r.email],
         subject: subjectLine,
         html,
       });
-      if (!error) sent++;
-      else console.error("Resend error for", r.email, error);
+      if (!error) {
+        sent++;
+        // Log to email_logs so it appears in tracking
+        try {
+          await supabase.from("email_logs").insert({
+            message_id: sendData?.id || `task-notif-${Date.now()}-${r.id}`,
+            recipient_email: r.email,
+            recipient_name: r.first_name || null,
+            subject: subjectLine,
+            template_name: body.type === "mention" ? "Task Mention" : "Task Assignment",
+            sent_by: body.actorUserId,
+          });
+        } catch (logErr) {
+          console.error("Failed to log task notification email:", logErr);
+        }
+      } else {
+        console.error("Resend error for", r.email, error);
+      }
     }
 
     return new Response(JSON.stringify({ success: true, sent }), {

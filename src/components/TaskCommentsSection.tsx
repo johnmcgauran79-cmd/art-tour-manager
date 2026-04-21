@@ -87,7 +87,9 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
                   {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                 </span>
               </div>
-              <p className="text-sm text-foreground/80 whitespace-pre-wrap">{comment.comment}</p>
+              <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                {comment.comment.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1')}
+              </p>
               {commentAttachments.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {commentAttachments.map(att => (
