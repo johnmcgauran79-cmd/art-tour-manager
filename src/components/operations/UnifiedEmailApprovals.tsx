@@ -384,16 +384,20 @@ export const UnifiedEmailApprovals = () => {
                             <p className="text-sm text-muted-foreground">{row.subtitle}</p>
                           </div>
                           <div className="flex gap-1">
-                            {row.source === "scheduled" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPreviewApproval(row.scheduledApproval)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Preview
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (row.source === "scheduled") {
+                                  setPreviewApproval(row.scheduledApproval);
+                                } else {
+                                  setPreviewApproval({ __statusChange: true, batch: row.statusChangeBatch });
+                                }
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Preview
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
