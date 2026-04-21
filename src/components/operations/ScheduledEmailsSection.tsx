@@ -369,6 +369,19 @@ export const ScheduledEmailsSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {previewGroup && (
+        <PendingEmailPreviewModal
+          open={!!previewGroup}
+          onOpenChange={(open) => !open && setPreviewGroup(null)}
+          tourId={previewGroup.tourId}
+          previewBookingId={previewGroup.bookingId}
+          templateSubject={previewGroup.subject}
+          templateContent={previewGroup.content}
+          templateFrom={previewGroup.from}
+          ruleName={previewGroup.label}
+        />
+      )}
     </>
   );
 };
