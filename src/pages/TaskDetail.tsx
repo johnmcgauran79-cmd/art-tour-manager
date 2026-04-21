@@ -434,7 +434,7 @@ export default function TaskDetail() {
       </Tabs>
 
       {/* Unsaved-changes confirmation */}
-      <AlertDialog open={blocker.state === "blocked"} onOpenChange={(open) => { if (!open && blocker.state === "blocked") blocker.reset?.(); }}>
+      <AlertDialog open={pendingNav !== null} onOpenChange={(open) => { if (!open) setPendingNav(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
@@ -443,8 +443,16 @@ export default function TaskDetail() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => blocker.reset?.()}>Stay on page</AlertDialogCancel>
-            <AlertDialogAction onClick={() => blocker.proceed?.()}>Discard & leave</AlertDialogAction>
+            <AlertDialogCancel onClick={() => setPendingNav(null)}>Stay on page</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const fn = pendingNav;
+                setPendingNav(null);
+                fn?.();
+              }}
+            >
+              Discard & leave
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
