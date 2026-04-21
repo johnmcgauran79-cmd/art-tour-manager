@@ -125,6 +125,21 @@ export const useCreateTaskComment = () => {
         } else {
           console.log('Notifications created successfully:', createdNotifications);
         }
+
+        // Send branded email notifications for @mentions
+        try {
+          await supabase.functions.invoke('send-task-notification', {
+            body: {
+              type: 'mention',
+              taskId: data.task_id,
+              recipientUserIds: data.mentioned_users,
+              actorUserId: user.user.id,
+              message: data.comment,
+            },
+          });
+        } catch (emailErr) {
+          console.error('Failed to send mention email:', emailErr);
+        }
       } else {
         console.log('No mentioned users to notify');
       }
