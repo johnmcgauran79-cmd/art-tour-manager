@@ -61,10 +61,7 @@ export const useTasks = (tourId?: string, filters?: {
         .select(`
           *,
           tours (name),
-          task_assignments (
-            user_id,
-            profiles:user_id (first_name, last_name, email, avatar_url)
-          ),
+          task_assignments (user_id),
           dependent_task:tasks!depends_on_task_id (
             id, title, status
           )
@@ -153,10 +150,7 @@ export const useMyTasks = () => {
           .select(`
             *,
             tours (name),
-            task_assignments (
-              user_id,
-              profiles:user_id (first_name, last_name, email, avatar_url)
-            ),
+            task_assignments (user_id),
             dependent_task:tasks!depends_on_task_id (
               id, title, status
             )
