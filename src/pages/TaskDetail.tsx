@@ -199,17 +199,6 @@ export default function TaskDetail() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold truncate">{edited.title || task.title}</h1>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Badge className={cn("border-transparent", getTaskPriorityColor(edited.priority || task.priority))}>
-                {formatStatusText(edited.priority || task.priority)}
-              </Badge>
-              <Badge className={cn("border-transparent", getTaskStatusColor(task.status))}>
-                {formatStatusText(task.status)}
-              </Badge>
-              {(edited.category || task.category) && (
-                <Badge variant="outline">{edited.category || task.category}</Badge>
-              )}
-            </div>
           </div>
 
           <div className="flex gap-2 shrink-0">
