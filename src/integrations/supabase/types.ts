@@ -2025,6 +2025,47 @@ export type Database = {
           },
         ]
       }
+      task_activity_log: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          message: string | null
+          new_value: Json | null
+          old_value: Json | null
+          task_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          message?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          task_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          message?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_activity_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_assignments: {
         Row: {
           assigned_at: string
@@ -2098,6 +2139,57 @@ export type Database = {
           },
         ]
       }
+      task_comment_attachments: {
+        Row: {
+          comment_id: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          task_id: string
+          uploaded_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          comment_id: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          task_id: string
+          uploaded_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          comment_id?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          task_id?: string
+          uploaded_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comment_attachments_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comment_attachments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_comments: {
         Row: {
           comment: string
@@ -2123,6 +2215,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_subtasks: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          id: string
+          sort_order: number
+          task_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          sort_order?: number
+          task_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          sort_order?: number
+          task_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_subtasks_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
@@ -2169,6 +2308,38 @@ export type Database = {
         }
         Relationships: []
       }
+      task_watchers: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_watchers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           automated_rule: string | null
@@ -2181,8 +2352,12 @@ export type Database = {
           due_date: string | null
           id: string
           is_automated: boolean
+          last_activity_at: string
           parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          quick_update: string | null
+          quick_update_at: string | null
+          quick_update_by: string | null
           status: Database["public"]["Enums"]["task_status"]
           title: string
           tour_id: string | null
@@ -2200,8 +2375,12 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_automated?: boolean
+          last_activity_at?: string
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          quick_update?: string | null
+          quick_update_at?: string | null
+          quick_update_by?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           tour_id?: string | null
@@ -2219,8 +2398,12 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_automated?: boolean
+          last_activity_at?: string
           parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          quick_update?: string | null
+          quick_update_at?: string | null
+          quick_update_by?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           tour_id?: string | null
@@ -3449,6 +3632,16 @@ export type Database = {
           operation_type: string
           record_id: string
           table_name: string
+        }
+        Returns: undefined
+      }
+      log_task_activity: {
+        Args: {
+          p_event_type: string
+          p_message?: string
+          p_new: Json
+          p_old: Json
+          p_task_id: string
         }
         Returns: undefined
       }
