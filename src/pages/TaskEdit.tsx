@@ -46,10 +46,20 @@ export default function TaskEdit() {
 
   const handleSave = () => {
     if (!task) return;
-    
+
+    // Normalize empty strings to null so optional fields (e.g. due_date)
+    // can be cleared without sending "" to a timestamp column.
+    const normalized: Partial<Task> = { ...editedTask };
+    const nullableKeys: (keyof Task)[] = ['due_date', 'url_reference', 'tour_id', 'description'];
+    nullableKeys.forEach((key) => {
+      if (normalized[key] === '') {
+        (normalized as any)[key] = null;
+      }
+    });
+
     updateTask.mutate({
       taskId: task.id,
-      updates: editedTask
+      updates: normalized,
     }, {
       onSuccess: () => {
         toast({
