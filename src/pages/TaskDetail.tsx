@@ -1,4 +1,4 @@
-import { useParams, useSearchParams, useBlocker } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
@@ -90,10 +90,16 @@ export default function TaskDetail() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  // Warn on in-app navigation
-  const blocker = useBlocker(({ currentLocation, nextLocation }) =>
-    isDirty && currentLocation.pathname !== nextLocation.pathname
-  );
+  // Pending in-app navigation guard
+  const [pendingNav, setPendingNav] = useState<null | (() => void)>(null);
+
+  const guardedNavigate = (action: () => void) => {
+    if (isDirty) {
+      setPendingNav(() => action);
+    } else {
+      action();
+    }
+  };
 
   const handleDelete = () => {
     if (!task) return;
@@ -207,7 +213,7 @@ export default function TaskDetail() {
           </div>
 
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="sm" onClick={() => goBack("/?tab=tasks")}>
+            <Button variant="outline" size="sm" onClick={() => guardedNavigate(() => goBack("/?tab=tasks"))}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
