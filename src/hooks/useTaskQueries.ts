@@ -29,6 +29,11 @@ export interface Task {
   };
   task_assignments?: Array<{
     user_id: string;
+    profiles?: {
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+    } | null;
   }>;
   dependent_task?: {
     id: string;
@@ -96,11 +101,27 @@ export const useTasks = (tourId?: string, filters?: {
 
       if (error) throw error;
 
-      // Transform the data to match our Task interface
-      const transformedData = data?.map(task => ({
+      // Collect unique assignee user_ids and fetch their profiles in one query
+      const assigneeIds = Array.from(new Set(
+        (data || []).flatMap((t: any) => (t.task_assignments || []).map((a: any) => a.user_id))
+      ));
+      const profileMap: Record<string, any> = {};
+      if (assigneeIds.length) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', assigneeIds);
+        (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
+      }
+
+      const transformedData = (data || []).map((task: any) => ({
         ...task,
-        dependent_task: task.dependent_task?.[0] || null
-      })) || [];
+        task_assignments: (task.task_assignments || []).map((a: any) => ({
+          user_id: a.user_id,
+          profiles: profileMap[a.user_id] || null,
+        })),
+        dependent_task: task.dependent_task?.[0] || null,
+      }));
 
       return transformedData as Task[];
     },
@@ -180,10 +201,26 @@ export const useMyTasks = () => {
 
         console.log('Filtered my tasks:', myTasks.length);
 
-        // Transform the data to match our Task interface
-        const transformedData = myTasks.map(task => ({
+        // Collect unique assignee user_ids and fetch their profiles in one query
+        const assigneeIds = Array.from(new Set(
+          myTasks.flatMap((t: any) => (t.task_assignments || []).map((a: any) => a.user_id))
+        ));
+        const profileMap: Record<string, any> = {};
+        if (assigneeIds.length) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, first_name, last_name, email')
+            .in('id', assigneeIds);
+          (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
+        }
+
+        const transformedData = myTasks.map((task: any) => ({
           ...task,
-          dependent_task: task.dependent_task?.[0] || null
+          task_assignments: (task.task_assignments || []).map((a: any) => ({
+            user_id: a.user_id,
+            profiles: profileMap[a.user_id] || null,
+          })),
+          dependent_task: task.dependent_task?.[0] || null,
         }));
 
         return transformedData as Task[];
