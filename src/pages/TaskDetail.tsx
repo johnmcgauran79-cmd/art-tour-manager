@@ -392,37 +392,15 @@ export default function TaskDetail() {
         updatedAt={task.quick_update_at}
       />
 
-      {/* Tabs with status selector on the right */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <TabsList>
-            <TabsTrigger value="comments">Comments</TabsTrigger>
-            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
-            <TabsTrigger value="attachments">Attachments</TabsTrigger>
-            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-            <TabsTrigger value="watchers">Watchers</TabsTrigger>
-            <TabsTrigger value="audit">Audit</TabsTrigger>
-          </TabsList>
-
-          <Select value={task.status} onValueChange={handleStatusChange}>
-            <SelectTrigger
-              className={cn(
-                "w-[180px] border-transparent font-medium",
-                getTaskStatusColor(task.status)
-              )}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="not_started">Not Started</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="waiting">Waiting</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <TabsList>
+          <TabsTrigger value="comments">Comments</TabsTrigger>
+          <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
+          <TabsTrigger value="attachments">Attachments</TabsTrigger>
+          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+          <TabsTrigger value="watchers">Watchers</TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="comments" className="mt-6">
           <TaskCommentsSection taskId={task.id} />
