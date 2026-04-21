@@ -269,14 +269,63 @@ export default function TaskDetail() {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="title">Title *</Label>
-          <Input
-            id="title"
-            value={edited.title || ""}
-            onChange={(e) => setEdited({ ...edited, title: e.target.value })}
-            className="text-base"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={edited.title || ""}
+              onChange={(e) => setEdited({ ...edited, title: e.target.value })}
+              className="text-base"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="priority">Priority</Label>
+            <Select
+              value={edited.priority}
+              onValueChange={(value) => setEdited({ ...edited, priority: value as any })}
+            >
+              <SelectTrigger
+                id="priority"
+                className={cn(
+                  "border-transparent font-medium",
+                  getTaskPriorityColor(edited.priority || task.priority)
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="status-inline">Status</Label>
+            <Select value={task.status} onValueChange={handleStatusChange}>
+              <SelectTrigger
+                id="status-inline"
+                className={cn(
+                  "border-transparent font-medium",
+                  getTaskStatusColor(task.status)
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_started">Not Started</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="waiting">Waiting</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div>
@@ -290,23 +339,7 @@ export default function TaskDetail() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="priority">Priority</Label>
-            <Select
-              value={edited.priority}
-              onValueChange={(value) => setEdited({ ...edited, priority: value as any })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="category">Category</Label>
             <Select
