@@ -2,7 +2,6 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
