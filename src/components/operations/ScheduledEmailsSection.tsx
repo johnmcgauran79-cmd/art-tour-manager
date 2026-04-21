@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, Check, X, Calendar, Users, Mail, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { Clock, Check, X, Calendar, Users, Mail, RefreshCw, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useScheduledEmails, useApproveScheduledEmails, useRejectScheduledEmails } from "@/hooks/useScheduledEmails";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatInTimeZone } from "date-fns-tz";
+import { PendingEmailPreviewModal } from "./PendingEmailPreviewModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,14 @@ export const ScheduledEmailsSection = () => {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [previewGroup, setPreviewGroup] = useState<{
+    tourId: string;
+    bookingId: string;
+    subject: string;
+    content: string;
+    from: string;
+    label: string;
+  } | null>(null);
 
   const timezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value || 'Australia/Melbourne';
   const tzString = typeof timezone === 'string' ? timezone : 'Australia/Melbourne';
