@@ -149,20 +149,7 @@ export const AllTasksView = () => {
   }, [activeFilter, pendingTasks, searchFilteredTasks, searchFilters]);
 
   const getFilterTitle = () => {
-    switch (activeFilter) {
-      case 'overdue':
-        return "Overdue Tasks";
-      case 'critical':
-        return "Critical Priority Tasks";
-      case 'high':
-        return "High Priority Tasks";
-      case 'due_soon':
-        return "Due Soon (Next 7 Days)";
-      case 'completed':
-        return "Completed Tasks";
-      default:
-        return "Action Items";
-    }
+    return "Action Items";
   };
 
   if (isLoading) {
