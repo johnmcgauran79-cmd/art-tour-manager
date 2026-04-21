@@ -3,9 +3,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle, Edit, Eye, Trash2, MapPin, Calendar, ClipboardList } from "lucide-react";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { TaskCard } from "@/components/cards/TaskCard";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
@@ -152,12 +153,12 @@ export const StreamlinedTasksTable = ({
                   />
                 </TableHead>
               )}
-              <TableHead className="w-[280px]">Name</TableHead>
-              <TableHead className="w-[140px]">Associated Tour</TableHead>
-              <TableHead className="w-[90px]">Status</TableHead>
+              <TableHead className="w-[260px]">Name</TableHead>
+              <TableHead className="w-[130px]">Associated Tour</TableHead>
+              <TableHead className="w-[120px]">Status</TableHead>
               <TableHead className="w-[80px]">Priority</TableHead>
-              <TableHead className="w-[110px]">Due Date</TableHead>
-              <TableHead className="w-[90px]">Category</TableHead>
+              <TableHead className="w-[100px]">Due Date</TableHead>
+              <TableHead className="w-[110px]">Last Activity</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
