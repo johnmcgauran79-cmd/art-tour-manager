@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Clock } from "lucide-react";
+import { Loader2, Clock, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
+import { PendingEmailPreviewModal } from "@/components/operations/PendingEmailPreviewModal";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import {
@@ -48,6 +49,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [sendProgress, setSendProgress] = useState<{ current: number; total: number } | null>(null);
   const [includeAdditionalPassengers, setIncludeAdditionalPassengers] = useState(true);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
   
   const scheduleEmailMutation = useScheduleEmail();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
@@ -494,6 +496,14 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                 onClick={handleCancel}
               >
                 Cancel
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowPreviewModal(true)}
+                disabled={!editedContent.trim() || !previewBooking}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Preview
               </Button>
               <Button
                 variant="outline"
