@@ -234,6 +234,26 @@ export const ScheduledEmailsSection = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const first: any = group.emails[0];
+                          const payload = first?.email_payload || {};
+                          if (!first?.tour_id || !first?.booking_id) return;
+                          setPreviewGroup({
+                            tourId: first.tour_id,
+                            bookingId: first.booking_id,
+                            subject: payload.customSubject || payload.subject || "",
+                            content: payload.customContent || payload.content || "",
+                            from: payload.fromEmail || payload.from_email || "",
+                            label: payload.emailTemplateName || "Scheduled Email",
+                          });
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
+                      </Button>
                       {group.emails.some(e => e.status === 'approved') && (
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                           Approved
