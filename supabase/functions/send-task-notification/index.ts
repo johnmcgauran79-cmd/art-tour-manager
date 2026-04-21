@@ -1,0 +1,134 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { Resend } from "npm:resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface NotificationRequest {
+  type: "mention" | "assignment";
+  taskId: string;
+  recipientUserIds: string[];
+  actorUserId: string;
+  message?: string;
+}
+
+const APP_URL = "https://art-tour-manager.lovable.app";
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    const body = (await req.json()) as NotificationRequest;
+    if (!body.type || !body.taskId || !body.recipientUserIds?.length || !body.actorUserId) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Resolve task
+    const { data: task } = await supabase
+      .from("tasks").select("id, title, priority, due_date").eq("id", body.taskId).single();
+    if (!task) {
+      return new Response(JSON.stringify({ error: "Task not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Resolve actor
+    const { data: actor } = await supabase
+      .from("profiles").select("first_name, last_name, email").eq("id", body.actorUserId).single();
+    const actorName = actor
+      ? `${actor.first_name || ""} ${actor.last_name || ""}`.trim() || actor.email
+      : "Someone";
+
+    // Resolve recipients (dedupe, exclude actor)
+    const recipientIds = Array.from(new Set(body.recipientUserIds.filter((id) => id !== body.actorUserId)));
+    if (recipientIds.length === 0) {
+      return new Response(JSON.stringify({ success: true, sent: 0 }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: recipients } = await supabase
+      .from("profiles").select("id, first_name, email").in("id", recipientIds);
+
+    // Header image
+    const { data: headerSetting } = await supabase
+      .from("general_settings").select("setting_value").eq("setting_key", "email_header_image_url").maybeSingle();
+    const emailHeaderImageUrl = (headerSetting?.setting_value as string) ||
+      "https://art-tour-manager.lovable.app/images/email-header-default.png";
+
+    const subjectLine = body.type === "mention"
+      ? `${actorName} mentioned you on a task`
+      : `${actorName} assigned you a task`;
+
+    const bodyHeading = body.type === "mention"
+      ? "You were mentioned in a comment"
+      : "You have been assigned a new task";
+
+    const taskUrl = `${APP_URL}/tasks/${task.id}`;
+    const dueLine = task.due_date
+      ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
+      : "";
+
+    const messageBlock = body.message
+      ? `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-left:3px solid #1a2332;border-radius:4px;margin:16px 0;"><tr><td style="padding:14px 18px;color:#374151;font-size:14px;font-style:italic;line-height:1.5;">"${body.message.replace(/</g, "&lt;").substring(0, 500)}"</td></tr></table>`
+      : "";
+
+    let sent = 0;
+    for (const r of recipients || []) {
+      if (!r.email) continue;
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 20px;">
+<tr><td align="center">
+<table cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+<tr><td style="background-color:#232628;padding:24px;text-align:center;">
+<img src="${emailHeaderImageUrl}" alt="Australian Racing Tours" style="height:60px;max-width:320px;width:auto;" />
+</td></tr>
+<tr><td style="padding:32px 36px;">
+<h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
+<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : "assigned you to"} the task below.</p>
+<h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
+<p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
+${dueLine}
+${messageBlock}
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 0;">
+<a href="${taskUrl}" style="display:inline-block;background-color:#1a2332;color:#f5c518;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">OPEN TASK</a>
+</td></tr></table>
+</td></tr>
+<tr><td style="background-color:#f9fafb;padding:16px;border-top:1px solid #e5e7eb;">
+<p style="color:#9ca3af;font-size:12px;text-align:center;margin:0;">Automated notification from Australian Racing Tours.</p>
+</td></tr></table></td></tr></table></body></html>`;
+
+      const { error } = await resend.emails.send({
+        from: "Australian Racing Tours <info@australianracingtours.com.au>",
+        to: [r.email],
+        subject: subjectLine,
+        html,
+      });
+      if (!error) sent++;
+      else console.error("Resend error for", r.email, error);
+    }
+
+    return new Response(JSON.stringify({ success: true, sent }), {
+      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error: any) {
+    console.error("send-task-notification error", error);
+    return new Response(JSON.stringify({ error: error.message || "Unexpected error" }), {
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
