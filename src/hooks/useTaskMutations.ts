@@ -262,6 +262,7 @@ export const useUpdateTask = () => {
     mutationFn: async (data: {
       taskId: string;
       updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference' | 'quick_update'>> & { tour_id?: string | null };
+      silent?: boolean;
     }) => {
       console.log('[useUpdateTask] Starting update for task:', data.taskId, 'with updates:', data.updates);
       
@@ -313,11 +314,13 @@ export const useUpdateTask = () => {
     onSuccess: (task, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['my-tasks'] });
-      
-      toast({
-        title: "Task Updated",
-        description: "The task has been successfully updated.",
-      });
+
+      if (!variables.silent) {
+        toast({
+          title: "Task Updated",
+          description: "The task has been successfully updated.",
+        });
+      }
       
       logOperation({
         operation_type: 'UPDATE',
