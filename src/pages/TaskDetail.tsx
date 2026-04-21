@@ -13,6 +13,10 @@ import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 import { TaskAttachmentsSection } from "@/components/TaskAttachmentsSection";
 import { TaskDependencyChain } from "@/components/TaskDependencyChain";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
+import { TaskActivityFeed } from "@/components/tasks/TaskActivityFeed";
+import { TaskSubtasksSection } from "@/components/tasks/TaskSubtasksSection";
+import { TaskWatchersSection } from "@/components/tasks/TaskWatchersSection";
+import { TaskQuickUpdate } from "@/components/tasks/TaskQuickUpdate";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTours } from "@/hooks/useTours";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
@@ -244,60 +248,92 @@ export default function TaskDetail() {
           </div>
         )}
 
+        {/* Quick Update */}
+        <TaskQuickUpdate
+          taskId={task.id}
+          currentUpdate={task.quick_update}
+          updatedAt={task.quick_update_at}
+        />
+
         {/* Main Content */}
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
             <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
             <TabsTrigger value="attachments">Attachments</TabsTrigger>
             <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 mt-6">
-            <div className="bg-card rounded-lg border p-6 space-y-4">
-              <div>
-                <label className="text-sm font-medium mb-2 block">Description</label>
-                <p className="text-sm whitespace-pre-wrap">{task.description || '—'}</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-2 bg-card rounded-lg border p-6 space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Description</label>
+                  <p className="text-sm whitespace-pre-wrap">{task.description || '—'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Priority</label>
+                    <p className="text-sm">{task.priority}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Category</label>
+                    <p className="text-sm">{task.category || '—'}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Due Date</label>
+                    <p className="text-sm">
+                      {task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy HH:mm') : '—'}
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Reference URL</label>
+                    {task.url_reference ? (
+                      <a href={task.url_reference} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
+                        {task.url_reference}
+                      </a>
+                    ) : (
+                      <p className="text-sm">—</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <TaskAssignmentSection taskId={task.id} />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Priority</label>
-                  <p className="text-sm">{task.priority}</p>
+              <div className="space-y-4">
+                <div className="bg-card rounded-lg border p-4">
+                  <TaskSubtasksSection taskId={task.id} />
                 </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Category</label>
-                  <p className="text-sm">{task.category || '—'}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Due Date</label>
-                  <p className="text-sm">
-                    {task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy HH:mm') : '—'}
-                  </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Reference URL</label>
-                  {task.url_reference ? (
-                    <a href={task.url_reference} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline">
-                      {task.url_reference}
-                    </a>
-                  ) : (
-                    <p className="text-sm">—</p>
-                  )}
+                <div className="bg-card rounded-lg border p-4">
+                  <TaskWatchersSection taskId={task.id} />
                 </div>
               </div>
+            </div>
+          </TabsContent>
 
-              <div className="border-t pt-4">
-                <TaskAssignmentSection taskId={task.id} />
-              </div>
+          <TabsContent value="activity" className="mt-6">
+            <div className="bg-card rounded-lg border p-6">
+              <TaskActivityFeed taskId={task.id} />
             </div>
           </TabsContent>
 
           <TabsContent value="comments" className="mt-6">
             <TaskCommentsSection taskId={task.id} />
+          </TabsContent>
+
+          <TabsContent value="subtasks" className="mt-6">
+            <div className="bg-card rounded-lg border p-6">
+              <TaskSubtasksSection taskId={task.id} />
+            </div>
           </TabsContent>
 
           <TabsContent value="attachments" className="mt-6">

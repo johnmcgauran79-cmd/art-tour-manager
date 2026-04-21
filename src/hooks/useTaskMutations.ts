@@ -246,7 +246,7 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: async (data: {
       taskId: string;
-      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference'>> & { tour_id?: string | null };
+      updates: Partial<Pick<Task, 'title' | 'description' | 'status' | 'priority' | 'category' | 'due_date' | 'completed_at' | 'depends_on_task_id' | 'url_reference' | 'quick_update'>> & { tour_id?: string | null };
     }) => {
       console.log('[useUpdateTask] Starting update for task:', data.taskId, 'with updates:', data.updates);
       
