@@ -201,9 +201,9 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
   }
 
   return (
-    <div className="space-y-3">
-      {/* Current Assignments */}
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
+      {/* Current Assignments (left-aligned chips) */}
+      <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
         {assignments?.map((assignment) => (
           <Badge
             key={assignment.id}
@@ -227,8 +227,8 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
         )}
       </div>
 
-      {/* Add New Assignment */}
-      <div className="flex items-center gap-2">
+      {/* Add New Assignment (right-aligned on same row) */}
+      <div className="flex items-center gap-2 ml-auto">
         <Select
           value={selectedUserId}
           onValueChange={setSelectedUserId}
