@@ -161,7 +161,7 @@ export const AllTasksView = () => {
       case 'completed':
         return "Completed Tasks";
       default:
-        return "All Tasks";
+        return "Action Items";
     }
   };
 

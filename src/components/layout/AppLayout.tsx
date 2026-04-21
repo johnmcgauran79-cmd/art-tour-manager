@@ -101,7 +101,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
               )}
               {!isAgent && !isHost && (
                 <TabsTrigger value="tasks" onClick={() => handleTabChange('tasks')} className="text-xs sm:text-sm px-2 sm:px-3">
-                  Tasks
+                  Action Items
                 </TabsTrigger>
               )}
               <TabsTrigger value="tours" onClick={() => handleTabChange('tours')} className="text-xs sm:text-sm px-2 sm:px-3">
