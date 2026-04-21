@@ -2,7 +2,6 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useState, useEffect, useMemo } from "react";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -199,17 +198,6 @@ export default function TaskDetail() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <h1 className="text-3xl font-bold truncate">{edited.title || task.title}</h1>
-            <div className="flex flex-wrap gap-2 mt-2">
-              <Badge className={cn("border-transparent", getTaskPriorityColor(edited.priority || task.priority))}>
-                {formatStatusText(edited.priority || task.priority)}
-              </Badge>
-              <Badge className={cn("border-transparent", getTaskStatusColor(task.status))}>
-                {formatStatusText(task.status)}
-              </Badge>
-              {(edited.category || task.category) && (
-                <Badge variant="outline">{edited.category || task.category}</Badge>
-              )}
-            </div>
           </div>
 
           <div className="flex gap-2 shrink-0">
@@ -280,14 +268,63 @@ export default function TaskDetail() {
           </div>
         </div>
 
-        <div>
-          <Label htmlFor="title">Title *</Label>
-          <Input
-            id="title"
-            value={edited.title || ""}
-            onChange={(e) => setEdited({ ...edited, title: e.target.value })}
-            className="text-base"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={edited.title || ""}
+              onChange={(e) => setEdited({ ...edited, title: e.target.value })}
+              className="text-base"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="priority">Priority</Label>
+            <Select
+              value={edited.priority}
+              onValueChange={(value) => setEdited({ ...edited, priority: value as any })}
+            >
+              <SelectTrigger
+                id="priority"
+                className={cn(
+                  "border-transparent font-medium",
+                  getTaskPriorityColor(edited.priority || task.priority)
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="status-inline">Status</Label>
+            <Select value={task.status} onValueChange={handleStatusChange}>
+              <SelectTrigger
+                id="status-inline"
+                className={cn(
+                  "border-transparent font-medium",
+                  getTaskStatusColor(task.status)
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_started">Not Started</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="waiting">Waiting</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="archived">Archived</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <div>
@@ -301,23 +338,7 @@ export default function TaskDetail() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="priority">Priority</Label>
-            <Select
-              value={edited.priority}
-              onValueChange={(value) => setEdited({ ...edited, priority: value as any })}
-            >
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="category">Category</Label>
             <Select
@@ -370,37 +391,15 @@ export default function TaskDetail() {
         updatedAt={task.quick_update_at}
       />
 
-      {/* Tabs with status selector on the right */}
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <TabsList>
-            <TabsTrigger value="comments">Comments</TabsTrigger>
-            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
-            <TabsTrigger value="attachments">Attachments</TabsTrigger>
-            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-            <TabsTrigger value="watchers">Watchers</TabsTrigger>
-            <TabsTrigger value="audit">Audit</TabsTrigger>
-          </TabsList>
-
-          <Select value={task.status} onValueChange={handleStatusChange}>
-            <SelectTrigger
-              className={cn(
-                "w-[180px] border-transparent font-medium",
-                getTaskStatusColor(task.status)
-              )}
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="not_started">Not Started</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="waiting">Waiting</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <TabsList>
+          <TabsTrigger value="comments">Comments</TabsTrigger>
+          <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
+          <TabsTrigger value="attachments">Attachments</TabsTrigger>
+          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+          <TabsTrigger value="watchers">Watchers</TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
+        </TabsList>
 
         <TabsContent value="comments" className="mt-6">
           <TaskCommentsSection taskId={task.id} />
