@@ -111,6 +111,20 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
         });
 
       if (error) throw error;
+
+      // Send branded assignment notification email
+      try {
+        await supabase.functions.invoke('send-task-notification', {
+          body: {
+            type: 'assignment',
+            taskId,
+            recipientUserIds: [userId],
+            actorUserId: user.user.id,
+          },
+        });
+      } catch (emailErr) {
+        console.error('Failed to send assignment email:', emailErr);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-assignments', taskId] });

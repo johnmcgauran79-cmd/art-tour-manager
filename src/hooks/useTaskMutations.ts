@@ -219,6 +219,21 @@ export const useCreateTask = () => {
         }
 
         console.log('Task assignments created successfully');
+
+        // Send branded email notifications for assignments
+        try {
+          await supabase.functions.invoke('send-task-notification', {
+            body: {
+              type: 'assignment',
+              taskId: task.id,
+              recipientUserIds: taskData.assignee_ids,
+              actorUserId: user.user.id,
+              message: taskData.description,
+            },
+          });
+        } catch (emailErr) {
+          console.error('Failed to send assignment emails:', emailErr);
+        }
       }
 
       return task;
