@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Clock, Check, X, Calendar, Users, Mail, RefreshCw, ChevronDown, ChevronRight } from "lucide-react";
+import { Clock, Check, X, Calendar, Users, Mail, RefreshCw, ChevronDown, ChevronRight, Eye } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useScheduledEmails, useApproveScheduledEmails, useRejectScheduledEmails } from "@/hooks/useScheduledEmails";
 import { useGeneralSettings } from "@/hooks/useGeneralSettings";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatInTimeZone } from "date-fns-tz";
+import { PendingEmailPreviewModal } from "./PendingEmailPreviewModal";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,14 @@ export const ScheduledEmailsSection = () => {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [previewGroup, setPreviewGroup] = useState<{
+    tourId: string;
+    bookingId: string;
+    subject: string;
+    content: string;
+    from: string;
+    label: string;
+  } | null>(null);
 
   const timezone = settings?.find(s => s.setting_key === 'display_timezone')?.setting_value || 'Australia/Melbourne';
   const tzString = typeof timezone === 'string' ? timezone : 'Australia/Melbourne';
@@ -225,6 +234,26 @@ export const ScheduledEmailsSection = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const first: any = group.emails[0];
+                          const payload = first?.email_payload || {};
+                          if (!first?.tour_id || !first?.booking_id) return;
+                          setPreviewGroup({
+                            tourId: first.tour_id,
+                            bookingId: first.booking_id,
+                            subject: payload.customSubject || payload.subject || "",
+                            content: payload.customContent || payload.content || "",
+                            from: payload.fromEmail || payload.from_email || "",
+                            label: payload.emailTemplateName || "Scheduled Email",
+                          });
+                        }}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Preview
+                      </Button>
                       {group.emails.some(e => e.status === 'approved') && (
                         <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                           Approved
@@ -340,6 +369,19 @@ export const ScheduledEmailsSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {previewGroup && (
+        <PendingEmailPreviewModal
+          open={!!previewGroup}
+          onOpenChange={(open) => !open && setPreviewGroup(null)}
+          tourId={previewGroup.tourId}
+          previewBookingId={previewGroup.bookingId}
+          templateSubject={previewGroup.subject}
+          templateContent={previewGroup.content}
+          templateFrom={previewGroup.from}
+          ruleName={previewGroup.label}
+        />
+      )}
     </>
   );
 };

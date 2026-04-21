@@ -384,16 +384,20 @@ export const UnifiedEmailApprovals = () => {
                             <p className="text-sm text-muted-foreground">{row.subtitle}</p>
                           </div>
                           <div className="flex gap-1">
-                            {row.source === "scheduled" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setPreviewApproval(row.scheduledApproval)}
-                              >
-                                <Eye className="h-4 w-4 mr-1" />
-                                Preview
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (row.source === "scheduled") {
+                                  setPreviewApproval(row.scheduledApproval);
+                                } else {
+                                  setPreviewApproval({ __statusChange: true, batch: row.statusChangeBatch });
+                                }
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Preview
+                            </Button>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -441,8 +445,29 @@ export const UnifiedEmailApprovals = () => {
         </CardContent>
       </Card>
 
-      {/* Preview modal (scheduled batches only) */}
+      {/* Preview modal — handles both scheduled batches and status-change batches */}
       {previewApproval && (() => {
+        if (previewApproval.__statusChange) {
+          const batch = previewApproval.batch;
+          const firstItem = batch?.items?.[0];
+          // Override template (per-item swap) takes precedence over rule's default template
+          const tpl =
+            firstItem?.override_template?.subject_template
+              ? firstItem.override_template
+              : firstItem?.rule?.email_templates;
+          return (
+            <PendingEmailPreviewModal
+              open={!!previewApproval}
+              onOpenChange={(open) => !open && setPreviewApproval(null)}
+              tourId={firstItem?.tour_id || ""}
+              previewBookingId={firstItem?.booking_id}
+              templateSubject={tpl?.subject_template || ""}
+              templateContent={tpl?.content_template || ""}
+              templateFrom={tpl?.from_email || ""}
+              ruleName={batch?.rule_name || ""}
+            />
+          );
+        }
         const tpl =
           previewApproval.override_template || previewApproval.rule?.email_templates;
         return (
