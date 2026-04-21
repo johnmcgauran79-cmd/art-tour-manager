@@ -29,6 +29,12 @@ export interface Task {
   };
   task_assignments?: Array<{
     user_id: string;
+    profiles?: {
+      first_name: string | null;
+      last_name: string | null;
+      email: string | null;
+      avatar_url?: string | null;
+    } | null;
   }>;
   dependent_task?: {
     id: string;
@@ -55,7 +61,10 @@ export const useTasks = (tourId?: string, filters?: {
         .select(`
           *,
           tours (name),
-          task_assignments (user_id),
+          task_assignments (
+            user_id,
+            profiles:user_id (first_name, last_name, email, avatar_url)
+          ),
           dependent_task:tasks!depends_on_task_id (
             id, title, status
           )
@@ -144,7 +153,10 @@ export const useMyTasks = () => {
           .select(`
             *,
             tours (name),
-            task_assignments (user_id),
+            task_assignments (
+              user_id,
+              profiles:user_id (first_name, last_name, email, avatar_url)
+            ),
             dependent_task:tasks!depends_on_task_id (
               id, title, status
             )
