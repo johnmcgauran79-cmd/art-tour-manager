@@ -244,10 +244,10 @@ export default function TaskDetail() {
 
       {/* Alerts */}
       {isOverdue && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+        <div className="bg-destructive/10 border-l-4 border-destructive p-4 rounded">
           <div className="flex items-center">
-            <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
-            <p className="text-sm text-red-700">
+            <AlertTriangle className="h-5 w-5 text-destructive mr-2" />
+            <p className="text-sm text-destructive">
               This task is overdue by {formatDistanceToNow(new Date(task.due_date!))}
             </p>
           </div>
@@ -255,10 +255,10 @@ export default function TaskDetail() {
       )}
 
       {isBlocked && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
+        <div className="bg-warning/10 border-l-4 border-warning p-4 rounded">
           <div className="flex items-center">
-            <Clock className="h-5 w-5 text-yellow-500 mr-2" />
-            <p className="text-sm text-yellow-700">
+            <Clock className="h-5 w-5 text-warning mr-2" />
+            <p className="text-sm text-warning-foreground">
               This task is blocked by: {task.dependent_task?.title}
             </p>
           </div>
