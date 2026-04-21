@@ -9,6 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserDepartments, useUpdateUserDepartments, Department } from "@/hooks/useUserDepartments";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useQuery } from "@tanstack/react-query";
 
 interface UserProfileModalProps {
   open: boolean;
@@ -24,6 +26,8 @@ const DEPARTMENTS: { value: Department; label: string }[] = [
   { value: 'general', label: 'General' },
 ];
 
+type NotificationPref = "email" | "teams" | "both";
+
 export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) => {
   const { profile, user } = useAuth();
   const { data: userDepartments } = useUserDepartments();
@@ -33,7 +37,23 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([]);
+  const [notificationPref, setNotificationPref] = useState<NotificationPref>('teams');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load the user's stored notification preference
+  const { data: prefData } = useQuery({
+    queryKey: ['profile-notification-pref', user?.id],
+    enabled: !!user?.id && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('notification_preference')
+        .eq('id', user!.id)
+        .single();
+      if (error) throw error;
+      return (data?.notification_preference as NotificationPref) || 'teams';
+    },
+  });
 
   // Only sync form data when modal opens to prevent infinite re-renders
   useEffect(() => {
@@ -46,8 +66,11 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
       if (userDepartments) {
         setSelectedDepartments(userDepartments);
       }
+      if (prefData) {
+        setNotificationPref(prefData);
+      }
     }
-  }, [open]); // Only depend on modal opening
+  }, [open, prefData]); // Only depend on modal opening
 
   // Reset form when modal closes
   useEffect(() => {
@@ -79,6 +102,7 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
         .update({
           first_name: firstName,
           last_name: lastName,
+          notification_preference: notificationPref,
         })
         .eq('id', user.id);
 
@@ -157,6 +181,37 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Notifications</Label>
+            <p className="text-sm text-muted-foreground">
+              How would you like to be notified about @mentions and task assignments?
+            </p>
+            <RadioGroup
+              value={notificationPref}
+              onValueChange={(v) => setNotificationPref(v as NotificationPref)}
+              className="space-y-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="teams" id="notif-teams" />
+                <Label htmlFor="notif-teams" className="text-sm font-normal cursor-pointer">
+                  Microsoft Teams chat (default)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="email" id="notif-email" />
+                <Label htmlFor="notif-email" className="text-sm font-normal cursor-pointer">
+                  Email only
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="both" id="notif-both" />
+                <Label htmlFor="notif-both" className="text-sm font-normal cursor-pointer">
+                  Both Teams and email
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

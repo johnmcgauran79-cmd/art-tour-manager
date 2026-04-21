@@ -59,8 +59,44 @@ serve(async (req) => {
       });
     }
 
-    const { data: recipients } = await supabase
-      .from("profiles").select("id, first_name, email").in("id", recipientIds);
+    const { data: allRecipients } = await supabase
+      .from("profiles")
+      .select("id, first_name, email, notification_preference")
+      .in("id", recipientIds);
+
+    // Split by notification_preference. Default 'teams' if unset.
+    const teamsRecipientIds: string[] = [];
+    const emailRecipients: typeof allRecipients = [];
+    for (const r of allRecipients || []) {
+      const pref = (r as any).notification_preference || "teams";
+      if (pref === "teams" || pref === "both") teamsRecipientIds.push(r.id);
+      if (pref === "email" || pref === "both") emailRecipients.push(r);
+    }
+
+    // Fire Teams notifications. Any recipients that fail (no Teams ID, etc.) fall back to email.
+    let teamsFallbackIds: string[] = [];
+    if (teamsRecipientIds.length > 0) {
+      try {
+        const { data: teamsResult } = await supabase.functions.invoke("send-teams-notification", {
+          body: {
+            type: body.type,
+            taskId: body.taskId,
+            recipientUserIds: teamsRecipientIds,
+            actorUserId: body.actorUserId,
+            message: body.message,
+          },
+        });
+        teamsFallbackIds = (teamsResult?.fallback as string[] | undefined) || [];
+      } catch (err) {
+        console.error("send-teams-notification invocation failed, falling back to email:", err);
+        teamsFallbackIds = teamsRecipientIds;
+      }
+    }
+
+    // Build the final email recipient set (preference=email/both + teams fallbacks)
+    const emailRecipientIds = new Set(emailRecipients.map((r) => r.id));
+    for (const id of teamsFallbackIds) emailRecipientIds.add(id);
+    const recipients = (allRecipients || []).filter((r) => emailRecipientIds.has(r.id));
 
     // Header image
     const { data: headerSetting } = await supabase

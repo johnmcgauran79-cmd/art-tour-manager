@@ -1841,6 +1841,8 @@ export type Database = {
           id: string
           last_name: string | null
           must_change_password: boolean | null
+          notification_preference: string
+          teams_user_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1850,6 +1852,8 @@ export type Database = {
           id: string
           last_name?: string | null
           must_change_password?: boolean | null
+          notification_preference?: string
+          teams_user_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1859,6 +1863,8 @@ export type Database = {
           id?: string
           last_name?: string | null
           must_change_password?: boolean | null
+          notification_preference?: string
+          teams_user_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
