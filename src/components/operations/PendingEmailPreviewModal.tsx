@@ -14,6 +14,8 @@ interface PendingEmailPreviewModalProps {
   templateContent: string;
   templateFrom: string;
   ruleName: string;
+  /** When provided, preview this specific booking instead of the first booking in the tour. */
+  previewBookingId?: string;
 }
 
 export const PendingEmailPreviewModal = ({
@@ -24,12 +26,15 @@ export const PendingEmailPreviewModal = ({
   templateContent,
   templateFrom,
   ruleName,
+  previewBookingId,
 }: PendingEmailPreviewModalProps) => {
-  // Fetch one non-cancelled booking from the tour with full data for merge
+  // Fetch one non-cancelled booking with full data for merge.
+  // Prefer the explicitly-requested booking; otherwise fall back to the first
+  // non-cancelled booking on the tour as a representative sample.
   const { data: booking, isLoading } = useQuery({
-    queryKey: ['pending-email-preview-booking', tourId],
+    queryKey: ['pending-email-preview-booking', tourId, previewBookingId || 'first'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select(`
           *,
@@ -53,17 +58,24 @@ export const PendingEmailPreviewModal = ({
             passengers_attending,
             activities (name, activity_date, start_time, end_time, location, contact_name, contact_phone, depart_for_activity, transport_mode, driver_name, driver_phone, transport_company, transport_contact_name, transport_phone, transport_email, activity_journeys (journey_number, pickup_time, pickup_location, destination, sort_order))
           )
-        `)
-        .eq('tour_id', tourId)
-        .not('status', 'eq', 'cancelled')
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        `);
+
+      if (previewBookingId) {
+        query = query.eq('id', previewBookingId);
+      } else {
+        query = query
+          .eq('tour_id', tourId)
+          .not('status', 'eq', 'cancelled')
+          .order('created_at', { ascending: true })
+          .limit(1);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
       return data;
     },
-    enabled: open && !!tourId,
+    enabled: open && (!!tourId || !!previewBookingId),
     staleTime: 60 * 1000,
   });
 
