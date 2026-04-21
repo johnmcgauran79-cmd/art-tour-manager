@@ -70,6 +70,32 @@ async function createOrGetOneOnOneChat(
   recipientTeamsId: string,
 ): Promise<string | null> {
   try {
+    // Self-chat: Microsoft Graph rejects oneOnOne with duplicate members.
+    // Use a single-member chat (notes-to-self style) instead.
+    if (meId === recipientTeamsId) {
+      const selfBody = {
+        chatType: "oneOnOne",
+        members: [
+          {
+            "@odata.type": "#microsoft.graph.aadUserConversationMember",
+            roles: ["owner"],
+            "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${meId}')`,
+          },
+        ],
+      };
+      const selfRes = await teamsFetch(`/chats`, {
+        method: "POST",
+        body: JSON.stringify(selfBody),
+      });
+      if (!selfRes.ok) {
+        const text = await selfRes.text();
+        console.error(`createOrGetOneOnOneChat (self) failed [${selfRes.status}]:`, text);
+        return null;
+      }
+      const selfData = await selfRes.json();
+      return selfData?.id ?? null;
+    }
+
     const body = {
       chatType: "oneOnOne",
       members: [
