@@ -53,7 +53,7 @@ export default function TaskDetail() {
           title: "Success",
           description: "Task deleted successfully",
         });
-        goBack("/?tab=operations");
+        goBack("/?tab=tasks");
       },
       onError: (error: any) => {
         toast({
@@ -98,7 +98,7 @@ export default function TaskDetail() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Task Not Found</h1>
-          <Button onClick={() => goBack("/?tab=operations")}>
+          <Button onClick={() => goBack("/?tab=tasks")}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Dashboard
           </Button>
@@ -142,7 +142,7 @@ export default function TaskDetail() {
       <div className="space-y-4">
         <AppBreadcrumbs
           items={[
-            { label: "Tasks", href: "/?tab=operations" },
+            { label: "Tasks", href: "/?tab=tasks" },
             ...(tour ? [{ label: tour.name, href: `/tours/${tour.id}` }] : []),
             { label: task.title }
           ]}
@@ -168,7 +168,7 @@ export default function TaskDetail() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => goBack("/?tab=operations")}
+              onClick={() => goBack("/?tab=tasks")}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
