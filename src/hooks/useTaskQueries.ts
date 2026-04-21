@@ -20,6 +20,10 @@ export interface Task {
   url_reference: string | null;
   created_at: string;
   updated_at: string;
+  quick_update: string | null;
+  quick_update_at: string | null;
+  quick_update_by: string | null;
+  last_activity_at: string;
   tours?: {
     name: string;
   };
