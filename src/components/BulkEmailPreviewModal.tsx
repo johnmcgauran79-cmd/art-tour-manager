@@ -620,6 +620,20 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
           setRecipientType("");
         }}
       />
+
+      {/* Email Preview Modal */}
+      {tourId && (
+        <PendingEmailPreviewModal
+          open={showPreviewModal}
+          onOpenChange={setShowPreviewModal}
+          tourId={tourId}
+          templateSubject={editedSubject}
+          templateContent={editedContent}
+          templateFrom={fromEmail}
+          ruleName={templates?.find(t => t.id === selectedTemplateId)?.name || 'Custom Email'}
+          previewBookingId={previewBooking?.id}
+        />
+      )}
     </Dialog>
   );
 };
