@@ -33,7 +33,6 @@ export interface Task {
       first_name: string | null;
       last_name: string | null;
       email: string | null;
-      avatar_url?: string | null;
     } | null;
   }>;
   dependent_task?: {
@@ -110,7 +109,7 @@ export const useTasks = (tourId?: string, filters?: {
       if (assigneeIds.length) {
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, first_name, last_name, email, avatar_url')
+          .select('id, first_name, last_name, email')
           .in('id', assigneeIds);
         (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
       }
@@ -210,7 +209,7 @@ export const useMyTasks = () => {
         if (assigneeIds.length) {
           const { data: profiles } = await supabase
             .from('profiles')
-            .select('id, first_name, last_name, email, avatar_url')
+            .select('id, first_name, last_name, email')
             .in('id', assigneeIds);
           (profiles || []).forEach((p: any) => { profileMap[p.id] = p; });
         }
