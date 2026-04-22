@@ -3635,6 +3635,10 @@ export type Database = {
         Args: { _tour_id: string; _user_id: string }
         Returns: boolean
       }
+      is_task_watcher: {
+        Args: { _task_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_sensitive_operation: {
         Args: {
           details?: Json
