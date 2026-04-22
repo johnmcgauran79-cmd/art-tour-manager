@@ -175,6 +175,42 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
         onProgress?.(i + 1, bookings.length);
         
         try {
+          // Custom Form Request branch — route to the dedicated edge function so
+          // each passenger gets their own secure token and the {{custom_form_button}}
+          // merge field works. Recipient expansion (lead-only vs all-passengers) is
+          // controlled by the form's email_recipients setting on the server.
+          if (customFormId) {
+            const { data, error } = await supabase.functions.invoke('send-custom-form-request', {
+              body: {
+                bookingId: booking.id,
+                formId: customFormId,
+                customSubject: subjectTemplate,
+                customContent: contentTemplate,
+                fromEmail,
+                ccEmails,
+                bccEmails,
+                emailTemplateId,
+              },
+            });
+
+            if (error) {
+              console.error(`[Bulk Email] Custom-form edge function error for ${recipientName}:`, error);
+              failedDetails.push(`${recipientName}: ${error.message || 'Unknown error'}`);
+              throw error;
+            }
+            if (!data?.success) {
+              const errMsg = data?.error || 'No success response from server';
+              failedDetails.push(`${recipientName}: ${errMsg}`);
+              throw new Error(errMsg);
+            }
+
+            console.log(`[Bulk Email] ✓ Custom form sent for ${recipientName} → ${(data.sentTo || []).length} recipient(s)`);
+            results.push({ status: 'fulfilled', value: booking });
+
+            if (i < bookings.length - 1) await delay(600);
+            continue;
+          }
+
           // When including additional passengers, send raw templates to the edge function
           // so it can process them individually for each passenger with their own data.
           // Otherwise, pre-process for the lead passenger only.
