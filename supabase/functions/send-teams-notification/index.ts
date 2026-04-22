@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_teams";
 const APP_URL = "https://art-tour-manager.lovable.app";
+const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 interface TeamsNotificationRequest {
   type: "mention" | "assignment";
@@ -16,19 +16,58 @@ interface TeamsNotificationRequest {
   message?: string;
 }
 
-async function teamsFetch(path: string, init: RequestInit = {}) {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const TEAMS_API_KEY = Deno.env.get("MICROSOFT_TEAMS_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-  if (!TEAMS_API_KEY) throw new Error("MICROSOFT_TEAMS_API_KEY is not configured");
+// Cache the access token for the lifetime of the function instance.
+let cachedToken: { value: string; expiresAt: number } | null = null;
 
+async function getGraphAccessToken(): Promise<string> {
+  const tenantId = Deno.env.get("MS_GRAPH_TENANT_ID");
+  const clientId = Deno.env.get("MS_GRAPH_CLIENT_ID");
+  const clientSecret = Deno.env.get("MS_GRAPH_CLIENT_SECRET");
+  if (!tenantId) throw new Error("MS_GRAPH_TENANT_ID is not configured");
+  if (!clientId) throw new Error("MS_GRAPH_CLIENT_ID is not configured");
+  if (!clientSecret) throw new Error("MS_GRAPH_CLIENT_SECRET is not configured");
+
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.value;
+  }
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "https://graph.microsoft.com/.default",
+    grant_type: "client_credentials",
+  });
+
+  const res = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    },
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Graph token fetch failed [${res.status}]: ${text}`);
+  }
+
+  const data = await res.json();
+  cachedToken = {
+    value: data.access_token,
+    expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
+  };
+  return cachedToken.value;
+}
+
+async function graphFetch(path: string, init: RequestInit = {}) {
+  const token = await getGraphAccessToken();
   const headers = {
-    Authorization: `Bearer ${LOVABLE_API_KEY}`,
-    "X-Connection-Api-Key": TEAMS_API_KEY,
+    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
     ...(init.headers || {}),
   };
-  return fetch(`${GATEWAY_URL}${path}`, { ...init, headers });
+  return fetch(`${GRAPH_BASE}${path}`, { ...init, headers });
 }
 
 /**
