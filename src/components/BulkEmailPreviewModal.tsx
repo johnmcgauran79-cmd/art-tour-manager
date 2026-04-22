@@ -214,6 +214,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     setOriginalSubjectTemplate("");
     setOriginalContentTemplate("");
     setSelectedTemplateId("");
+    setSelectedFormId("");
     onOpenChange(false);
   };
 
