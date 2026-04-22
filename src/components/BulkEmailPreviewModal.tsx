@@ -574,7 +574,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <Button
                 variant="outline"
                 onClick={() => setShowScheduleDialog(true)}
-                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim() || (isCustomFormTemplate && !selectedFormId)}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim() || isCustomFormTemplate}
+                title={isCustomFormTemplate ? 'Scheduling is not yet supported for Custom Form Requests — send immediately.' : undefined}
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Schedule
