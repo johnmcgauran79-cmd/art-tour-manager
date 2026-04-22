@@ -2106,6 +2106,7 @@ export type Database = {
       }
       task_attachments: {
         Row: {
+          description: string | null
           file_name: string
           file_path: string
           file_size: number | null
@@ -2116,6 +2117,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          description?: string | null
           file_name: string
           file_path: string
           file_size?: number | null
@@ -2126,6 +2128,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          description?: string | null
           file_name?: string
           file_path?: string
           file_size?: number | null

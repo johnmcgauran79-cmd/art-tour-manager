@@ -13,6 +13,7 @@ import { useAutoUnblockTasks } from "@/hooks/useTaskDependencies";
 import { formatDistanceToNow, format } from "date-fns";
 import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 import { TaskAttachmentsSection } from "@/components/TaskAttachmentsSection";
+import { TaskFilesSection } from "@/components/TaskFilesSection";
 import { TaskDependencyChain } from "@/components/TaskDependencyChain";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
 import { TaskActivityFeed } from "@/components/tasks/TaskActivityFeed";
@@ -395,6 +396,7 @@ export default function TaskDetail() {
         <TabsList>
           <TabsTrigger value="comments">Comments</TabsTrigger>
           <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="attachments">Attachments</TabsTrigger>
           <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
           <TabsTrigger value="watchers">Watchers</TabsTrigger>
@@ -408,6 +410,12 @@ export default function TaskDetail() {
         <TabsContent value="subtasks" className="mt-6">
           <div className="bg-card rounded-lg border p-6">
             <TaskSubtasksSection taskId={task.id} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-6">
+          <div className="bg-card rounded-lg border p-6">
+            <TaskFilesSection taskId={task.id} />
           </div>
         </TabsContent>
 
