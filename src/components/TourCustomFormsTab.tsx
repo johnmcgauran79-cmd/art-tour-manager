@@ -50,18 +50,20 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
   const [formTitle, setFormTitle] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [responseMode, setResponseMode] = useState<'per_passenger' | 'per_booking'>('per_passenger');
+  const [emailRecipients, setEmailRecipients] = useState<'lead_only' | 'all_passengers'>('all_passengers');
 
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
   }
 
   const handleCreateForm = () => {
-    createForm.mutate({ title: formTitle, description: formDescription, responseMode }, {
+    createForm.mutate({ title: formTitle, description: formDescription, responseMode, emailRecipients }, {
       onSuccess: () => {
         setShowCreateForm(false);
         setFormTitle('');
         setFormDescription('');
         setResponseMode('per_passenger');
+        setEmailRecipients('all_passengers');
       }
     });
   };
