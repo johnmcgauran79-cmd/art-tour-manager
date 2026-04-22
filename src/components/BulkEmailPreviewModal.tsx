@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useScheduleEmail } from "@/hooks/useScheduledEmails";
+import { useCustomForms } from "@/hooks/useCustomForms";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
