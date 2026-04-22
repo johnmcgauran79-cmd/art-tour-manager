@@ -232,11 +232,11 @@ Deno.serve(async (req) => {
       .select("id, first_name, email, teams_user_id")
       .in("id", recipientIds);
 
-    const meId = await getMeId();
-    if (!meId) {
-      console.warn("Could not get Teams 'me' id — service account may not be configured.");
+    const serviceUserId = await getServiceUserId();
+    if (!serviceUserId) {
+      console.warn("MS_GRAPH_SERVICE_USER_ID not configured or could not be resolved.");
       return new Response(
-        JSON.stringify({ success: false, sent: 0, fallback: recipientIds, reason: "no_me_id" }),
+        JSON.stringify({ success: false, sent: 0, fallback: recipientIds, reason: "no_service_user" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -285,7 +285,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const chatId = await createOrGetOneOnOneChat(meId, teamsUserId);
+      const chatId = await createOrGetOneOnOneChat(serviceUserId, teamsUserId);
       if (!chatId) {
         fallback.push(r.id);
         continue;
@@ -299,7 +299,7 @@ ${messageBlock}
 <p><a href="${taskUrl}">Open task</a></p>
 `.trim();
 
-      const ok = await sendChatMessage(chatId, html);
+      const ok = await sendChatMessage(chatId, serviceUserId, html);
       if (ok) sent.push(r.id);
       else fallback.push(r.id);
     }
