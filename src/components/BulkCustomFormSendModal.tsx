@@ -15,6 +15,7 @@ interface PublishedFormInfo {
   id: string;
   form_title: string;
   response_mode: string;
+  email_recipients?: string;
 }
 
 interface BulkCustomFormSendModalProps {
@@ -327,8 +328,8 @@ export function BulkCustomFormSendModal({
               {/* Summary */}
               {!sending && targetBookings.length > 0 && (
                 <p className="text-sm text-muted-foreground">
-                  This will send individual emails to passengers across <strong>{targetBookings.length}</strong> booking(s) for <strong>{selectedForm?.form_title}</strong>.
-                  {selectedForm?.response_mode === 'per_passenger'
+                  This will send emails for <strong>{selectedForm?.form_title}</strong> across <strong>{targetBookings.length}</strong> booking(s).
+                  {(selectedForm?.email_recipients ?? 'all_passengers') === 'all_passengers'
                     ? ' Each passenger with an email address will receive their own link.'
                     : ' Only the lead passenger of each booking will receive a link.'}
                 </p>
