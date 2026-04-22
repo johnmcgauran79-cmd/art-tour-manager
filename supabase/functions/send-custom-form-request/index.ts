@@ -133,7 +133,16 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { bookingId, formId } = await req.json();
+    const {
+      bookingId,
+      formId,
+      customSubject,
+      customContent,
+      fromEmail: overrideFromEmail,
+      ccEmails,
+      bccEmails,
+      emailTemplateId,
+    } = await req.json();
 
     if (!bookingId) {
       return new Response(JSON.stringify({ error: "Booking ID is required" }),
