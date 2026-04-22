@@ -149,6 +149,29 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     }
   }, [selectedTemplateId, templates]);
 
+  // When switching to/from a custom-form template, reset the chosen form and
+  // auto-pick the only published form if there's exactly one.
+  useEffect(() => {
+    if (!isCustomFormTemplate) {
+      setSelectedFormId("");
+      return;
+    }
+    if (publishedForms.length === 1) {
+      setSelectedFormId(publishedForms[0].id);
+    } else {
+      setSelectedFormId("");
+    }
+  }, [isCustomFormTemplate, publishedForms.length]);
+
+  // When the selected form is "lead_only", default the additional-passengers
+  // toggle off so the per-booking expansion mirrors the form's setting. Users
+  // can still override.
+  useEffect(() => {
+    if (!isCustomFormTemplate || !selectedForm) return;
+    const recipients = (selectedForm as any).email_recipients || 'all_passengers';
+    setIncludeAdditionalPassengers(recipients === 'all_passengers');
+  }, [isCustomFormTemplate, selectedForm?.id]);
+
   const handleRecipientTypeChange = (type: string) => {
     setRecipientType(type);
     
