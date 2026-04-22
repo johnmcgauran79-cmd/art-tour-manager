@@ -205,7 +205,10 @@ const handler = async (req: Request): Promise<Response> => {
       passengers.push({ id: booking.customers.id, first_name: booking.customers.first_name, last_name: booking.customers.last_name, email: booking.customers.email, preferred_name: booking.customers.preferred_name, slot: 1 });
     }
 
-    if (form.response_mode === "per_passenger") {
+    // Recipients are controlled by email_recipients (independent of how the form is filled).
+    // Default to all_passengers if the column is missing/legacy.
+    const recipientMode = (form.email_recipients as string) || 'all_passengers';
+    if (recipientMode === 'all_passengers') {
       if (booking.passenger_2?.email) {
         passengers.push({ id: booking.passenger_2.id, first_name: booking.passenger_2.first_name, last_name: booking.passenger_2.last_name, email: booking.passenger_2.email, preferred_name: booking.passenger_2.preferred_name, slot: 2 });
       }
