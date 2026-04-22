@@ -2201,6 +2201,7 @@ export type Database = {
           comment: string
           created_at: string
           id: string
+          parent_comment_id: string | null
           task_id: string
           user_id: string
         }
@@ -2208,6 +2209,7 @@ export type Database = {
           comment: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           task_id: string
           user_id: string
         }
@@ -2215,10 +2217,18 @@ export type Database = {
           comment?: string
           created_at?: string
           id?: string
+          parent_comment_id?: string | null
           task_id?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "task_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "task_comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "task_comments_task_id_fkey"
             columns: ["task_id"]
