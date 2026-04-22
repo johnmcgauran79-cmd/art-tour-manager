@@ -287,6 +287,7 @@ const handler = async (req: Request): Promise<Response> => {
           processedContent = replaceNamedCustomFormButtons(processedContent);
           finalSubject = processTemplate(template.subject_template || `${form.form_title} - ${tour.name}`, replacements);
           finalHtml = wrapInEmailShell(processedContent, headerImg, senderName, formLink);
+          console.log(`[custom-form] template path used. form_title="${form.form_title}" content has {{custom_form_button}}=${(template.content_template || '').includes('{{custom_form_button}}')} has named=${/\{\{custom_form_button:[^}]+\}\}/.test(template.content_template || '')} processed length=${processedContent.length} button-html-present=${processedContent.includes('COMPLETE FORM')}`);
         } else {
           fromEmail = `${senderName} <${fromEmailAddr}>`;
           finalSubject = `${form.form_title} - ${tour.name}`;
