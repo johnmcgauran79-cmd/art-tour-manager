@@ -223,6 +223,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   const handleConfirmSend = async () => {
     if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
+    if (isCustomFormTemplate && !selectedFormId) return;
     
     // Reset progress
     setSendProgress(null);
@@ -244,7 +245,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         selectedBookingIds: Array.from(selectedBookingIds),
         includeAdditionalPassengers,
-        emailTemplateId: selectedTemplateId || undefined
+        emailTemplateId: selectedTemplateId || undefined,
+        customFormId: isCustomFormTemplate ? selectedFormId : undefined,
       });
       
       console.log(`[Bulk Email UI] Send complete:`, result);
