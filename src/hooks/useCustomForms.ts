@@ -20,6 +20,7 @@ export interface CustomForm {
   form_description: string | null;
   is_published: boolean;
   response_mode: 'per_passenger' | 'per_booking';
+  email_recipients: 'lead_only' | 'all_passengers';
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -55,7 +56,7 @@ export function useCustomForms(tourId: string) {
   });
 
   const createForm = useMutation({
-    mutationFn: async (params: { title: string; description?: string; responseMode: 'per_passenger' | 'per_booking' }) => {
+    mutationFn: async (params: { title: string; description?: string; responseMode: 'per_passenger' | 'per_booking'; emailRecipients?: 'lead_only' | 'all_passengers' }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       const { data, error } = await supabase
@@ -65,6 +66,7 @@ export function useCustomForms(tourId: string) {
           form_title: params.title,
           form_description: params.description || null,
           response_mode: params.responseMode,
+          email_recipients: params.emailRecipients ?? 'all_passengers',
           created_by: user.id,
         })
         .select()
