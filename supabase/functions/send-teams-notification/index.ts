@@ -76,7 +76,7 @@ async function graphFetch(path: string, init: RequestInit = {}) {
  */
 async function resolveTeamsUserId(email: string): Promise<string | null> {
   try {
-    const res = await teamsFetch(`/users/${encodeURIComponent(email)}?$select=id`);
+    const res = await graphFetch(`/users/${encodeURIComponent(email)}?$select=id`);
     if (!res.ok) {
       console.warn(`Could not resolve Teams user for ${email}: HTTP ${res.status}`);
       return null;
@@ -90,17 +90,19 @@ async function resolveTeamsUserId(email: string): Promise<string | null> {
 }
 
 /**
- * Get the "me" id for the connected service account, used as a chat member.
+ * Get the configured service-account user id, used as the "from" side of 1:1 chats.
+ * This is set via MS_GRAPH_SERVICE_USER_ID (Entra object id or UPN/email).
  */
-async function getMeId(): Promise<string | null> {
-  try {
-    const res = await teamsFetch(`/me?$select=id`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.id ?? null;
-  } catch {
+async function getServiceUserId(): Promise<string | null> {
+  const configured = Deno.env.get("MS_GRAPH_SERVICE_USER_ID");
+  if (!configured) {
+    console.warn("MS_GRAPH_SERVICE_USER_ID is not configured");
     return null;
   }
+  // If it already looks like a GUID, use as-is. Otherwise resolve via Graph.
+  const guidPattern = /^[0-9a-fA-F-]{36}$/;
+  if (guidPattern.test(configured)) return configured;
+  return await resolveTeamsUserId(configured);
 }
 
 /** Create or get a 1:1 chat with the recipient. */
