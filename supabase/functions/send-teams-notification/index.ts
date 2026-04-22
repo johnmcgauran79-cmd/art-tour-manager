@@ -107,34 +107,14 @@ async function getServiceUserId(): Promise<string | null> {
 
 /** Create or get a 1:1 chat with the recipient. */
 async function createOrGetOneOnOneChat(
-  meId: string,
+  serviceUserId: string,
   recipientTeamsId: string,
 ): Promise<string | null> {
   try {
-    // Self-chat: Microsoft Graph rejects oneOnOne with duplicate members.
-    // Use a single-member chat (notes-to-self style) instead.
-    if (meId === recipientTeamsId) {
-      const selfBody = {
-        chatType: "oneOnOne",
-        members: [
-          {
-            "@odata.type": "#microsoft.graph.aadUserConversationMember",
-            roles: ["owner"],
-            "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${meId}')`,
-          },
-        ],
-      };
-      const selfRes = await teamsFetch(`/chats`, {
-        method: "POST",
-        body: JSON.stringify(selfBody),
-      });
-      if (!selfRes.ok) {
-        const text = await selfRes.text();
-        console.error(`createOrGetOneOnOneChat (self) failed [${selfRes.status}]:`, text);
-        return null;
-      }
-      const selfData = await selfRes.json();
-      return selfData?.id ?? null;
+    // Self-notification (recipient IS the service account): not supported by Graph.
+    if (serviceUserId === recipientTeamsId) {
+      console.warn("Skipping self-chat: service account cannot DM itself via Graph.");
+      return null;
     }
 
     const body = {
@@ -143,7 +123,7 @@ async function createOrGetOneOnOneChat(
         {
           "@odata.type": "#microsoft.graph.aadUserConversationMember",
           roles: ["owner"],
-          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${meId}')`,
+          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${serviceUserId}')`,
         },
         {
           "@odata.type": "#microsoft.graph.aadUserConversationMember",
@@ -152,7 +132,7 @@ async function createOrGetOneOnOneChat(
         },
       ],
     };
-    const res = await teamsFetch(`/chats`, {
+    const res = await graphFetch(`/chats`, {
       method: "POST",
       body: JSON.stringify(body),
     });
@@ -169,14 +149,23 @@ async function createOrGetOneOnOneChat(
   }
 }
 
-async function sendChatMessage(chatId: string, html: string): Promise<boolean> {
+async function sendChatMessage(
+  chatId: string,
+  serviceUserId: string,
+  html: string,
+): Promise<boolean> {
   try {
-    const res = await teamsFetch(`/chats/${chatId}/messages`, {
+    // App-only auth requires posting messages on behalf of a specific user
+    // via /users/{id}/chats/{chatId}/messages.
+    const res = await graphFetch(
+      `/users/${serviceUserId}/chats/${chatId}/messages`,
+      {
       method: "POST",
       body: JSON.stringify({
         body: { contentType: "html", content: html },
       }),
-    });
+      },
+    );
     if (!res.ok) {
       const text = await res.text();
       console.error(`sendChatMessage failed [${res.status}]:`, text);
