@@ -574,14 +574,14 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <Button
                 variant="outline"
                 onClick={() => setShowScheduleDialog(true)}
-                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim() || (isCustomFormTemplate && !selectedFormId)}
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Schedule
               </Button>
               <Button
                 onClick={handleSendClick}
-                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim() || (isCustomFormTemplate && !selectedFormId)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Send {selectedBookingIds.size} Email{selectedBookingIds.size !== 1 ? 's' : ''}
