@@ -5,8 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const GATEWAY_URL = "https://connector-gateway.lovable.dev/microsoft_teams";
 const APP_URL = "https://art-tour-manager.lovable.app";
+const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 
 interface TeamsNotificationRequest {
   type: "mention" | "assignment";
@@ -16,19 +16,58 @@ interface TeamsNotificationRequest {
   message?: string;
 }
 
-async function teamsFetch(path: string, init: RequestInit = {}) {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const TEAMS_API_KEY = Deno.env.get("MICROSOFT_TEAMS_API_KEY");
-  if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
-  if (!TEAMS_API_KEY) throw new Error("MICROSOFT_TEAMS_API_KEY is not configured");
+// Cache the access token for the lifetime of the function instance.
+let cachedToken: { value: string; expiresAt: number } | null = null;
 
+async function getGraphAccessToken(): Promise<string> {
+  const tenantId = Deno.env.get("MS_GRAPH_TENANT_ID");
+  const clientId = Deno.env.get("MS_GRAPH_CLIENT_ID");
+  const clientSecret = Deno.env.get("MS_GRAPH_CLIENT_SECRET");
+  if (!tenantId) throw new Error("MS_GRAPH_TENANT_ID is not configured");
+  if (!clientId) throw new Error("MS_GRAPH_CLIENT_ID is not configured");
+  if (!clientSecret) throw new Error("MS_GRAPH_CLIENT_SECRET is not configured");
+
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) {
+    return cachedToken.value;
+  }
+
+  const body = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "https://graph.microsoft.com/.default",
+    grant_type: "client_credentials",
+  });
+
+  const res = await fetch(
+    `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body,
+    },
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Graph token fetch failed [${res.status}]: ${text}`);
+  }
+
+  const data = await res.json();
+  cachedToken = {
+    value: data.access_token,
+    expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
+  };
+  return cachedToken.value;
+}
+
+async function graphFetch(path: string, init: RequestInit = {}) {
+  const token = await getGraphAccessToken();
   const headers = {
-    Authorization: `Bearer ${LOVABLE_API_KEY}`,
-    "X-Connection-Api-Key": TEAMS_API_KEY,
+    Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
     ...(init.headers || {}),
   };
-  return fetch(`${GATEWAY_URL}${path}`, { ...init, headers });
+  return fetch(`${GRAPH_BASE}${path}`, { ...init, headers });
 }
 
 /**
@@ -37,7 +76,7 @@ async function teamsFetch(path: string, init: RequestInit = {}) {
  */
 async function resolveTeamsUserId(email: string): Promise<string | null> {
   try {
-    const res = await teamsFetch(`/users/${encodeURIComponent(email)}?$select=id`);
+    const res = await graphFetch(`/users/${encodeURIComponent(email)}?$select=id`);
     if (!res.ok) {
       console.warn(`Could not resolve Teams user for ${email}: HTTP ${res.status}`);
       return null;
@@ -51,49 +90,31 @@ async function resolveTeamsUserId(email: string): Promise<string | null> {
 }
 
 /**
- * Get the "me" id for the connected service account, used as a chat member.
+ * Get the configured service-account user id, used as the "from" side of 1:1 chats.
+ * This is set via MS_GRAPH_SERVICE_USER_ID (Entra object id or UPN/email).
  */
-async function getMeId(): Promise<string | null> {
-  try {
-    const res = await teamsFetch(`/me?$select=id`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.id ?? null;
-  } catch {
+async function getServiceUserId(): Promise<string | null> {
+  const configured = Deno.env.get("MS_GRAPH_SERVICE_USER_ID");
+  if (!configured) {
+    console.warn("MS_GRAPH_SERVICE_USER_ID is not configured");
     return null;
   }
+  // If it already looks like a GUID, use as-is. Otherwise resolve via Graph.
+  const guidPattern = /^[0-9a-fA-F-]{36}$/;
+  if (guidPattern.test(configured)) return configured;
+  return await resolveTeamsUserId(configured);
 }
 
 /** Create or get a 1:1 chat with the recipient. */
 async function createOrGetOneOnOneChat(
-  meId: string,
+  serviceUserId: string,
   recipientTeamsId: string,
 ): Promise<string | null> {
   try {
-    // Self-chat: Microsoft Graph rejects oneOnOne with duplicate members.
-    // Use a single-member chat (notes-to-self style) instead.
-    if (meId === recipientTeamsId) {
-      const selfBody = {
-        chatType: "oneOnOne",
-        members: [
-          {
-            "@odata.type": "#microsoft.graph.aadUserConversationMember",
-            roles: ["owner"],
-            "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${meId}')`,
-          },
-        ],
-      };
-      const selfRes = await teamsFetch(`/chats`, {
-        method: "POST",
-        body: JSON.stringify(selfBody),
-      });
-      if (!selfRes.ok) {
-        const text = await selfRes.text();
-        console.error(`createOrGetOneOnOneChat (self) failed [${selfRes.status}]:`, text);
-        return null;
-      }
-      const selfData = await selfRes.json();
-      return selfData?.id ?? null;
+    // Self-notification (recipient IS the service account): not supported by Graph.
+    if (serviceUserId === recipientTeamsId) {
+      console.warn("Skipping self-chat: service account cannot DM itself via Graph.");
+      return null;
     }
 
     const body = {
@@ -102,7 +123,7 @@ async function createOrGetOneOnOneChat(
         {
           "@odata.type": "#microsoft.graph.aadUserConversationMember",
           roles: ["owner"],
-          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${meId}')`,
+          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${serviceUserId}')`,
         },
         {
           "@odata.type": "#microsoft.graph.aadUserConversationMember",
@@ -111,7 +132,7 @@ async function createOrGetOneOnOneChat(
         },
       ],
     };
-    const res = await teamsFetch(`/chats`, {
+    const res = await graphFetch(`/chats`, {
       method: "POST",
       body: JSON.stringify(body),
     });
@@ -128,14 +149,23 @@ async function createOrGetOneOnOneChat(
   }
 }
 
-async function sendChatMessage(chatId: string, html: string): Promise<boolean> {
+async function sendChatMessage(
+  chatId: string,
+  serviceUserId: string,
+  html: string,
+): Promise<boolean> {
   try {
-    const res = await teamsFetch(`/chats/${chatId}/messages`, {
+    // App-only auth requires posting messages on behalf of a specific user
+    // via /users/{id}/chats/{chatId}/messages.
+    const res = await graphFetch(
+      `/users/${serviceUserId}/chats/${chatId}/messages`,
+      {
       method: "POST",
       body: JSON.stringify({
         body: { contentType: "html", content: html },
       }),
-    });
+      },
+    );
     if (!res.ok) {
       const text = await res.text();
       console.error(`sendChatMessage failed [${res.status}]:`, text);
@@ -202,11 +232,11 @@ Deno.serve(async (req) => {
       .select("id, first_name, email, teams_user_id")
       .in("id", recipientIds);
 
-    const meId = await getMeId();
-    if (!meId) {
-      console.warn("Could not get Teams 'me' id — service account may not be configured.");
+    const serviceUserId = await getServiceUserId();
+    if (!serviceUserId) {
+      console.warn("MS_GRAPH_SERVICE_USER_ID not configured or could not be resolved.");
       return new Response(
-        JSON.stringify({ success: false, sent: 0, fallback: recipientIds, reason: "no_me_id" }),
+        JSON.stringify({ success: false, sent: 0, fallback: recipientIds, reason: "no_service_user" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -255,7 +285,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const chatId = await createOrGetOneOnOneChat(meId, teamsUserId);
+      const chatId = await createOrGetOneOnOneChat(serviceUserId, teamsUserId);
       if (!chatId) {
         fallback.push(r.id);
         continue;
@@ -269,7 +299,7 @@ ${messageBlock}
 <p><a href="${taskUrl}">Open task</a></p>
 `.trim();
 
-      const ok = await sendChatMessage(chatId, html);
+      const ok = await sendChatMessage(chatId, serviceUserId, html);
       if (ok) sent.push(r.id);
       else fallback.push(r.id);
     }
