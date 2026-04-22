@@ -204,9 +204,19 @@ Deno.serve(async (req) => {
       .select("id, first_name, email, teams_user_id")
       .in("id", recipientIds);
 
-    const currentTeamsUser = await getCurrentTeamsUser();
-    const currentTeamsUserId = currentTeamsUser.id;
-    const currentTeamsEmail = currentTeamsUser.userPrincipalName?.toLowerCase() || "";
+    let currentTeamsUserId = "";
+    let currentTeamsEmail = "";
+    try {
+      const currentTeamsUser = await getCurrentTeamsUser();
+      currentTeamsUserId = currentTeamsUser.id;
+      currentTeamsEmail = currentTeamsUser.userPrincipalName?.toLowerCase() || "";
+    } catch (err) {
+      console.error("Teams gateway unavailable, falling back all recipients to email:", err);
+      return new Response(
+        JSON.stringify({ success: true, sent: 0, sentTo: [], fallback: recipientIds }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const cleanedMessage = body.message
       ? body.message.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1")
