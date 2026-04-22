@@ -57,7 +57,7 @@ export const useCreateTaskComment = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: { task_id: string; comment: string; mentioned_users?: string[] }) => {
+    mutationFn: async (data: { task_id: string; comment: string; mentioned_users?: string[]; parent_comment_id?: string | null }) => {
       console.log('Creating comment with data:', data);
       
       const { data: user } = await supabase.auth.getUser();
@@ -71,6 +71,7 @@ export const useCreateTaskComment = () => {
           task_id: data.task_id,
           user_id: user.user.id,
           comment: data.comment,
+          parent_comment_id: data.parent_comment_id ?? null,
         })
         .select()
         .single();
@@ -82,12 +83,29 @@ export const useCreateTaskComment = () => {
 
       console.log('Comment created successfully:', comment);
 
-      // Create notifications for mentioned users
-      if (data.mentioned_users && data.mentioned_users.length > 0) {
-        console.log('Creating notifications for mentioned users:', data.mentioned_users);
+      // Build notification recipient list: mentioned users + parent commenter (for replies)
+      const recipientSet = new Set<string>(data.mentioned_users || []);
+      let parentCommenterId: string | null = null;
+      if (data.parent_comment_id) {
+        const { data: parentComment } = await supabase
+          .from('task_comments')
+          .select('user_id')
+          .eq('id', data.parent_comment_id)
+          .single();
+        if (parentComment && parentComment.user_id !== user.user.id) {
+          parentCommenterId = parentComment.user_id;
+          recipientSet.add(parentComment.user_id);
+        }
+      }
+      // Don't notify the author about their own comment
+      recipientSet.delete(user.user.id);
+      const recipients = Array.from(recipientSet);
+
+      if (recipients.length > 0) {
+        console.log('Creating notifications for recipients:', recipients);
 
         // Auto-add mentioned users as watchers so they can view the task
-        const watcherRows = data.mentioned_users.map((userId) => ({
+        const watcherRows = recipients.map((userId) => ({
           task_id: data.task_id,
           user_id: userId,
           added_by: user.user.id,
@@ -118,14 +136,20 @@ export const useCreateTaskComment = () => {
         console.log('Task details:', task);
         console.log('Commenter details:', commenter);
 
-        const notifications = data.mentioned_users.map(userId => ({
-          user_id: userId,
-          type: 'task',
-          title: 'You were mentioned in a comment',
-          message: `${commenterName} mentioned you in a comment on task: ${task?.title || 'Unknown task'}`,
-          priority: 'medium',
-          related_id: data.task_id,
-        }));
+        const mentionedSet = new Set(data.mentioned_users || []);
+        const notifications = recipients.map(userId => {
+          const isReplyToParent = userId === parentCommenterId && !mentionedSet.has(userId);
+          return {
+            user_id: userId,
+            type: 'task',
+            title: isReplyToParent ? 'New reply to your comment' : 'You were mentioned in a comment',
+            message: isReplyToParent
+              ? `${commenterName} replied to your comment on task: ${task?.title || 'Unknown task'}`
+              : `${commenterName} mentioned you in a comment on task: ${task?.title || 'Unknown task'}`,
+            priority: 'medium',
+            related_id: data.task_id,
+          };
+        });
 
         console.log('Notifications to create:', notifications);
 
@@ -144,9 +168,9 @@ export const useCreateTaskComment = () => {
         supabase.functions
           .invoke('send-task-notification', {
             body: {
-              type: 'mention',
+              type: data.parent_comment_id ? 'reply' : 'mention',
               taskId: data.task_id,
-              recipientUserIds: data.mentioned_users,
+              recipientUserIds: recipients,
               actorUserId: user.user.id,
               message: data.comment,
             },
@@ -155,7 +179,7 @@ export const useCreateTaskComment = () => {
             console.error('Failed to send mention notification:', emailErr);
           });
       } else {
-        console.log('No mentioned users to notify');
+        console.log('No recipients to notify');
       }
 
       return comment;
