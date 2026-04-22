@@ -330,6 +330,39 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     </SelectContent>
                   </Select>
                 </div>
+                {isCustomFormTemplate && (
+                  <div>
+                    <Label htmlFor="custom-form">
+                      Form to Send: <span className="text-destructive">*</span>
+                    </Label>
+                    {publishedForms.length === 0 ? (
+                      <div className="flex items-center h-9 px-3 border rounded-md bg-muted text-sm text-muted-foreground">
+                        No published forms on this tour
+                      </div>
+                    ) : (
+                      <Select value={selectedFormId} onValueChange={setSelectedFormId}>
+                        <SelectTrigger className="bg-background border z-50">
+                          <SelectValue placeholder="Choose a form..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg z-50">
+                          {publishedForms.map((f: any) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              {f.form_title}
+                              <span className="text-xs text-muted-foreground ml-2">
+                                · {(f.email_recipients || 'all_passengers') === 'lead_only' ? 'Lead only' : 'All passengers'}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {selectedForm && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Each passenger gets a unique secure link — use <code className="text-xs">{`{{custom_form_button}}`}</code> in the content.
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <Label>From Email:</Label>
                   <Select value={fromEmail} onValueChange={setFromEmail}>
