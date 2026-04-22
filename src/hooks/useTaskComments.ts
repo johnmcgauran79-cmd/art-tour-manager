@@ -84,7 +84,20 @@ export const useCreateTaskComment = () => {
       // Create notifications for mentioned users
       if (data.mentioned_users && data.mentioned_users.length > 0) {
         console.log('Creating notifications for mentioned users:', data.mentioned_users);
-        
+
+        // Auto-add mentioned users as watchers so they can view the task
+        const watcherRows = data.mentioned_users.map((userId) => ({
+          task_id: data.task_id,
+          user_id: userId,
+          added_by: user.user.id,
+        }));
+        const { error: watcherError } = await supabase
+          .from('task_watchers')
+          .upsert(watcherRows, { onConflict: 'task_id,user_id', ignoreDuplicates: true });
+        if (watcherError) {
+          console.error('Failed to add mentioned users as watchers:', watcherError);
+        }
+
         const { data: task } = await supabase
           .from('tasks')
           .select('title')
