@@ -198,7 +198,12 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
           onOpenChange={setShowBulkSend}
           tourId={tourId}
           tourName={tourName}
-          publishedForms={publishedForms.map(f => ({ id: f.id, form_title: f.form_title, response_mode: f.response_mode }))}
+          publishedForms={publishedForms.map(f => ({
+            id: f.id,
+            form_title: f.form_title,
+            response_mode: f.response_mode,
+            email_recipients: f.email_recipients,
+          }))}
         />
       )}
     </div>
