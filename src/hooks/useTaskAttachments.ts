@@ -12,6 +12,7 @@ export interface TaskAttachment {
   file_type: string;
   uploaded_by: string;
   uploaded_at: string;
+  description: string | null;
 }
 
 export const useTaskAttachments = (taskId: string) => {
@@ -36,7 +37,7 @@ export const useUploadTaskAttachment = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (data: { taskId: string; file: File }) => {
+    mutationFn: async (data: { taskId: string; file: File; description?: string | null }) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('User not authenticated');
 
@@ -60,6 +61,7 @@ export const useUploadTaskAttachment = () => {
           file_size: data.file.size,
           file_type: data.file.type,
           uploaded_by: user.user.id,
+          description: data.description?.trim() ? data.description.trim() : null,
         })
         .select()
         .single();
@@ -79,6 +81,61 @@ export const useUploadTaskAttachment = () => {
         title: "Upload Failed",
         description: "Failed to upload file. Please try again.",
         variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useUpdateTaskAttachmentDescription = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; taskId: string; description: string | null }) => {
+      const { error } = await supabase
+        .from('task_attachments')
+        .update({ description: data.description?.trim() ? data.description.trim() : null })
+        .eq('id', data.id);
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['task-attachments', variables.taskId] });
+      toast({ title: 'Note saved', description: 'File note updated.' });
+    },
+    onError: () => {
+      toast({ title: 'Update failed', description: 'Could not update file note.', variant: 'destructive' });
+    },
+  });
+};
+
+export const useDeleteTaskAttachment = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (data: { id: string; taskId: string; filePath: string }) => {
+      const { error: storageError } = await supabase.storage
+        .from('attachments')
+        .remove([data.filePath]);
+      if (storageError) throw storageError;
+
+      const { error: dbError } = await supabase
+        .from('task_attachments')
+        .delete()
+        .eq('id', data.id);
+      if (dbError) throw dbError;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['task-attachments', variables.taskId] });
+      toast({ title: 'File deleted', description: 'The file has been removed.' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Delete failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
       });
     },
   });
