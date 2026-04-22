@@ -163,6 +163,26 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                 </label>
               </div>
             </div>
+            <div className="space-y-3">
+              <Label>Email Recipients</Label>
+              <p className="text-xs text-muted-foreground">Who receives the form request email when sent.</p>
+              <div className="flex flex-col gap-3">
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${emailRecipients === 'all_passengers' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <input type="radio" checked={emailRecipients === 'all_passengers'} onChange={() => setEmailRecipients('all_passengers')} className="mt-1" />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" /> All Passengers</div>
+                    <p className="text-sm text-muted-foreground mt-1">Lead, Pax 2 and Pax 3 each receive their own link (if they have an email).</p>
+                  </div>
+                </label>
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${emailRecipients === 'lead_only' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <input type="radio" checked={emailRecipients === 'lead_only'} onChange={() => setEmailRecipients('lead_only')} className="mt-1" />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium"><User className="h-4 w-4" /> Lead Passenger Only</div>
+                    <p className="text-sm text-muted-foreground mt-1">Only the lead passenger gets the email request.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
