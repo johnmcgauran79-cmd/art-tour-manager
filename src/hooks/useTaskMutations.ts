@@ -220,9 +220,9 @@ export const useCreateTask = () => {
 
         console.log('Task assignments created successfully');
 
-        // Send branded email notifications for assignments
-        try {
-          await supabase.functions.invoke('send-task-notification', {
+        // Fire-and-forget notification (don't block UI on Teams/email delivery)
+        supabase.functions
+          .invoke('send-task-notification', {
             body: {
               type: 'assignment',
               taskId: task.id,
@@ -230,10 +230,10 @@ export const useCreateTask = () => {
               actorUserId: user.user.id,
               message: taskData.description,
             },
+          })
+          .catch((emailErr) => {
+            console.error('Failed to send assignment notification:', emailErr);
           });
-        } catch (emailErr) {
-          console.error('Failed to send assignment emails:', emailErr);
-        }
       }
 
       return task;

@@ -126,9 +126,9 @@ export const useCreateTaskComment = () => {
           console.log('Notifications created successfully:', createdNotifications);
         }
 
-        // Send branded email notifications for @mentions
-        try {
-          await supabase.functions.invoke('send-task-notification', {
+        // Fire-and-forget notification (don't block UI on Teams/email delivery)
+        supabase.functions
+          .invoke('send-task-notification', {
             body: {
               type: 'mention',
               taskId: data.task_id,
@@ -136,10 +136,10 @@ export const useCreateTaskComment = () => {
               actorUserId: user.user.id,
               message: data.comment,
             },
+          })
+          .catch((emailErr) => {
+            console.error('Failed to send mention notification:', emailErr);
           });
-        } catch (emailErr) {
-          console.error('Failed to send mention email:', emailErr);
-        }
       } else {
         console.log('No mentioned users to notify');
       }
