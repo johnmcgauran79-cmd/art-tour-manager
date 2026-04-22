@@ -422,6 +422,25 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                   />
                 </div>
               )}
+              {!isViewOnly && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor={`recipients-${formId}`} className="text-sm">Email to</Label>
+                  <Select
+                    value={form.email_recipients || 'all_passengers'}
+                    onValueChange={(v) => updateForm.mutate({ email_recipients: v } as any, {
+                      onSuccess: () => toast({ title: "Email recipients updated" }),
+                    })}
+                  >
+                    <SelectTrigger id={`recipients-${formId}`} className="h-9 w-[180px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all_passengers">All passengers</SelectItem>
+                      <SelectItem value="lead_only">Lead passenger only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {!isViewOnly && !isEditingMeta && (
                 <Button variant="outline" size="sm" onClick={() => {
                   setEditTitle(form.form_title);
