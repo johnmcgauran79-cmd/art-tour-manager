@@ -36,6 +36,7 @@ interface BulkEmailPreviewModalProps {
 
 export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailPreviewModalProps) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [originalSubjectTemplate, setOriginalSubjectTemplate] = useState("");
@@ -58,6 +59,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   });
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
+  const { forms: tourForms } = useCustomForms(tourId || "");
+  const publishedForms = (tourForms || []).filter((f: any) => f.is_published);
+
+  const selectedTemplate = templates?.find((t) => t.id === selectedTemplateId);
+  const isCustomFormTemplate = selectedTemplate?.type === 'custom_form_request';
+  const selectedForm = publishedForms.find((f: any) => f.id === selectedFormId);
 
   // Quill modules configuration
   const quillModules = {
