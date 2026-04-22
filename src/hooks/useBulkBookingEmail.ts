@@ -7,7 +7,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId, customFormId }: { 
       tourId: string; 
       recipientType?: string;
       subjectTemplate?: string; 
@@ -18,6 +18,12 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
       bccEmails?: string[];
       includeAdditionalPassengers?: boolean;
       emailTemplateId?: string;
+      /**
+       * When set, this bulk send is a Custom Form Request: emails are routed through
+       * `send-custom-form-request` so per-passenger secure tokens are generated and
+       * the {{custom_form_button}} merge field works correctly.
+       */
+      customFormId?: string;
     }) => {
       let bookings;
       
