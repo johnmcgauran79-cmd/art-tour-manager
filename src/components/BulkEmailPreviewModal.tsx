@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useScheduleEmail } from "@/hooks/useScheduledEmails";
+import { useCustomForms } from "@/hooks/useCustomForms";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
@@ -35,6 +36,7 @@ interface BulkEmailPreviewModalProps {
 
 export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailPreviewModalProps) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
+  const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [editedSubject, setEditedSubject] = useState("");
   const [editedContent, setEditedContent] = useState("");
   const [originalSubjectTemplate, setOriginalSubjectTemplate] = useState("");
@@ -57,6 +59,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   });
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
+  const { forms: tourForms } = useCustomForms(tourId || "");
+  const publishedForms = (tourForms || []).filter((f: any) => f.is_published);
+
+  const selectedTemplate = templates?.find((t) => t.id === selectedTemplateId);
+  const isCustomFormTemplate = selectedTemplate?.type === 'custom_form_request';
+  const selectedForm = publishedForms.find((f: any) => f.id === selectedFormId);
 
   // Quill modules configuration
   const quillModules = {
@@ -141,6 +149,29 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     }
   }, [selectedTemplateId, templates]);
 
+  // When switching to/from a custom-form template, reset the chosen form and
+  // auto-pick the only published form if there's exactly one.
+  useEffect(() => {
+    if (!isCustomFormTemplate) {
+      setSelectedFormId("");
+      return;
+    }
+    if (publishedForms.length === 1) {
+      setSelectedFormId(publishedForms[0].id);
+    } else {
+      setSelectedFormId("");
+    }
+  }, [isCustomFormTemplate, publishedForms.length]);
+
+  // When the selected form is "lead_only", default the additional-passengers
+  // toggle off so the per-booking expansion mirrors the form's setting. Users
+  // can still override.
+  useEffect(() => {
+    if (!isCustomFormTemplate || !selectedForm) return;
+    const recipients = (selectedForm as any).email_recipients || 'all_passengers';
+    setIncludeAdditionalPassengers(recipients === 'all_passengers');
+  }, [isCustomFormTemplate, selectedForm?.id]);
+
   const handleRecipientTypeChange = (type: string) => {
     setRecipientType(type);
     
@@ -183,6 +214,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
     setOriginalSubjectTemplate("");
     setOriginalContentTemplate("");
     setSelectedTemplateId("");
+    setSelectedFormId("");
     onOpenChange(false);
   };
 
@@ -192,6 +224,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
 
   const handleConfirmSend = async () => {
     if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
+    if (isCustomFormTemplate && !selectedFormId) return;
     
     // Reset progress
     setSendProgress(null);
@@ -213,7 +246,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         selectedBookingIds: Array.from(selectedBookingIds),
         includeAdditionalPassengers,
-        emailTemplateId: selectedTemplateId || undefined
+        emailTemplateId: selectedTemplateId || undefined,
+        customFormId: isCustomFormTemplate ? selectedFormId : undefined,
       });
       
       console.log(`[Bulk Email UI] Send complete:`, result);
@@ -297,6 +331,39 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
                     </SelectContent>
                   </Select>
                 </div>
+                {isCustomFormTemplate && (
+                  <div>
+                    <Label htmlFor="custom-form">
+                      Form to Send: <span className="text-destructive">*</span>
+                    </Label>
+                    {publishedForms.length === 0 ? (
+                      <div className="flex items-center h-9 px-3 border rounded-md bg-muted text-sm text-muted-foreground">
+                        No published forms on this tour
+                      </div>
+                    ) : (
+                      <Select value={selectedFormId} onValueChange={setSelectedFormId}>
+                        <SelectTrigger className="bg-background border z-50">
+                          <SelectValue placeholder="Choose a form..." />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg z-50">
+                          {publishedForms.map((f: any) => (
+                            <SelectItem key={f.id} value={f.id}>
+                              {f.form_title}
+                              <span className="text-xs text-muted-foreground ml-2">
+                                · {(f.email_recipients || 'all_passengers') === 'lead_only' ? 'Lead only' : 'All passengers'}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {selectedForm && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Each passenger gets a unique secure link — use <code className="text-xs">{`{{custom_form_button}}`}</code> in the content.
+                      </p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <Label>From Email:</Label>
                   <Select value={fromEmail} onValueChange={setFromEmail}>
@@ -508,14 +575,15 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               <Button
                 variant="outline"
                 onClick={() => setShowScheduleDialog(true)}
-                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim() || isCustomFormTemplate}
+                title={isCustomFormTemplate ? 'Scheduling is not yet supported for Custom Form Requests — send immediately.' : undefined}
               >
                 <Clock className="h-4 w-4 mr-1" />
                 Schedule
               </Button>
               <Button
                 onClick={handleSendClick}
-                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim()}
+                disabled={bulkEmailMutation.isPending || selectedBookingIds.size === 0 || !editedContent.trim() || (isCustomFormTemplate && !selectedFormId)}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 Send {selectedBookingIds.size} Email{selectedBookingIds.size !== 1 ? 's' : ''}

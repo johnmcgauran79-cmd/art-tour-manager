@@ -111,14 +111,15 @@ const handler = async (req: Request): Promise<Response> => {
     const btnBg = getS('theme_email_button_color', '#232628');
     const btnText = getS('theme_email_button_text', '#F5C518');
 
-    // Fetch email template
-    const { data: template } = await supabase
-      .from('email_templates')
-      .select('*')
-      .eq('type', 'custom_form_request')
-      .eq('is_active', true)
-      .eq('is_default', true)
-      .single();
+    // Fetch email template — prefer the explicitly chosen one, otherwise fall back
+    // to the default custom_form_request template.
+    let templateQuery = supabase.from('email_templates').select('*').eq('is_active', true);
+    if (emailTemplateId) {
+      templateQuery = templateQuery.eq('id', emailTemplateId);
+    } else {
+      templateQuery = templateQuery.eq('type', 'custom_form_request').eq('is_default', true);
+    }
+    const { data: template } = await templateQuery.maybeSingle();
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -133,7 +134,16 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const { bookingId, formId } = await req.json();
+    const {
+      bookingId,
+      formId,
+      customSubject,
+      customContent,
+      fromEmail: overrideFromEmail,
+      ccEmails,
+      bccEmails,
+      emailTemplateId,
+    } = await req.json();
 
     if (!bookingId) {
       return new Response(JSON.stringify({ error: "Booking ID is required" }),
@@ -284,13 +294,25 @@ const handler = async (req: Request): Promise<Response> => {
         let finalHtml: string;
         let fromEmail: string;
 
-        if (template) {
-          fromEmail = template.from_email ? `${senderName} <${template.from_email}>` : `${senderName} <${fromEmailAddr}>`;
-          let processedContent = processTemplate(normalizeConditionalTemplateHtml(template.content_template || ''), replacements);
+        // Override sources take precedence over the stored template so one-off
+        // sends from the bulk Send Email flow can edit subject/content per send.
+        const subjectSource =
+          (customSubject && customSubject.trim().length > 0)
+            ? customSubject
+            : (template?.subject_template || `${form.form_title} - ${tour.name}`);
+        const contentSource =
+          (customContent && customContent.trim().length > 0)
+            ? customContent
+            : (template?.content_template || '');
+
+        if (template || customContent) {
+          const fromAddr = overrideFromEmail || template?.from_email || fromEmailAddr;
+          fromEmail = `${senderName} <${fromAddr}>`;
+          let processedContent = processTemplate(normalizeConditionalTemplateHtml(contentSource), replacements);
           processedContent = replaceNamedCustomFormButtons(processedContent);
-          finalSubject = processTemplate(template.subject_template || `${form.form_title} - ${tour.name}`, replacements);
+          finalSubject = processTemplate(subjectSource, replacements);
           finalHtml = wrapInEmailShell(processedContent, headerImg, senderName, formLink);
-          console.log(`[custom-form] template path used. form_title="${form.form_title}" content has {{custom_form_button}}=${(template.content_template || '').includes('{{custom_form_button}}')} has named=${/\{\{custom_form_button:[^}]+\}\}/.test(template.content_template || '')} processed length=${processedContent.length} button-html-present=${processedContent.includes('COMPLETE FORM')}`);
+          console.log(`[custom-form] template path used. form_title="${form.form_title}" override-content=${!!customContent} override-subject=${!!customSubject} button-html-present=${processedContent.includes('COMPLETE FORM')}`);
         } else {
           fromEmail = `${senderName} <${fromEmailAddr}>`;
           finalSubject = `${form.form_title} - ${tour.name}`;
@@ -310,6 +332,8 @@ const handler = async (req: Request): Promise<Response> => {
         const { data: emailResult, error: emailError } = await resend.emails.send({
           from: fromEmail,
           to: [passenger.email],
+          cc: ccEmails && ccEmails.length > 0 ? ccEmails : undefined,
+          bcc: bccEmails && bccEmails.length > 0 ? bccEmails : undefined,
           subject: finalSubject,
           html: finalHtml,
         });
