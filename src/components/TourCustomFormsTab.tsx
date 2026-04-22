@@ -352,6 +352,11 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
               <Badge variant={form.response_mode === 'per_passenger' ? 'default' : 'secondary'}>
                 {form.response_mode === 'per_passenger' ? <><Users className="h-3 w-3 mr-1" /> Per Pax</> : <><User className="h-3 w-3 mr-1" /> Per Booking</>}
               </Badge>
+              <Badge variant="outline" className="text-xs">
+                {form.email_recipients === 'lead_only'
+                  ? <><User className="h-3 w-3 mr-1" /> Email: Lead Only</>
+                  : <><Users className="h-3 w-3 mr-1" /> Email: All Pax</>}
+              </Badge>
               <Badge variant={form.is_published ? 'default' : 'outline'}>
                 {form.is_published ? 'Published' : 'Draft'}
               </Badge>
