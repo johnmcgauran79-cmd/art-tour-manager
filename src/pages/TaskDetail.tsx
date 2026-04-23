@@ -26,6 +26,8 @@ import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useToast } from "@/hooks/use-toast";
 import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/lib/statusColors";
 import { cn } from "@/lib/utils";
+import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
+import { TaskLinkedItemsPanel } from "@/components/entityLinks/TaskLinkedItemsPanel";
 
 type EditableFields = Pick<Task, "title" | "description" | "priority" | "category" | "due_date" | "url_reference">;
 
@@ -330,12 +332,12 @@ export default function TaskDetail() {
 
         <div>
           <Label htmlFor="description">Description</Label>
-          <Textarea
+          <LinkableTextarea
             id="description"
             value={edited.description || ""}
-            onChange={(e) => setEdited({ ...edited, description: e.target.value })}
+            onChange={(next) => setEdited({ ...edited, description: next })}
             rows={4}
-            placeholder="Add a description…"
+            placeholder="Add a description… Use 'Link record' to reference a booking, hotel, tour, etc."
           />
         </div>
 
@@ -382,6 +384,11 @@ export default function TaskDetail() {
         <div className="border-t pt-4">
           <Label className="mb-2 block">Assignments</Label>
           <TaskAssignmentSection taskId={task.id} />
+        </div>
+
+        <div className="border-t pt-4">
+          <Label className="mb-2 block">Linked Records</Label>
+          <TaskLinkedItemsPanel taskId={task.id} />
         </div>
       </div>
 

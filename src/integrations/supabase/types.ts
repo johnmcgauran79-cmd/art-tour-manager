@@ -2250,6 +2250,44 @@ export type Database = {
           },
         ]
       }
+      task_entity_links: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["task_link_entity_type"]
+          id: string
+          source: string
+          source_id: string | null
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: Database["public"]["Enums"]["task_link_entity_type"]
+          id?: string
+          source: string
+          source_id?: string | null
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: Database["public"]["Enums"]["task_link_entity_type"]
+          id?: string
+          source?: string
+          source_id?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_entity_links_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_subtasks: {
         Row: {
           completed: boolean
@@ -3625,6 +3663,13 @@ export type Database = {
             }
             Returns: boolean
           }
+      extract_entity_links: {
+        Args: { _text: string }
+        Returns: {
+          entity_id: string
+          entity_type: string
+        }[]
+      }
       generate_temp_password: { Args: never; Returns: string }
       generate_tour_operation_tasks: {
         Args: { p_tour_id: string }
@@ -3754,6 +3799,12 @@ export type Database = {
         | "booking"
         | "maintenance"
         | "general"
+      task_link_entity_type:
+        | "booking"
+        | "hotel"
+        | "activity"
+        | "tour"
+        | "contact"
       task_priority: "low" | "medium" | "high" | "critical"
       task_status:
         | "not_started"
@@ -3955,6 +4006,13 @@ export const Constants = {
         "booking",
         "maintenance",
         "general",
+      ],
+      task_link_entity_type: [
+        "booking",
+        "hotel",
+        "activity",
+        "tour",
+        "contact",
       ],
       task_priority: ["low", "medium", "high", "critical"],
       task_status: [
