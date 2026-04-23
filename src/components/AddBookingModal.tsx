@@ -344,9 +344,15 @@ export const AddBookingModal = ({
       const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
       const isHost = status === 'host';
       const isComplimentary = status === 'complimentary';
+      const tourForBooking = tours?.find(t => t.id === formData.tour_id);
+      const isTestTour = !!(tourForBooking as any)?.is_test_tour;
 
-      const shouldTriggerXero = !isHost && !isComplimentary && isFullTourBooking;
-      const shouldTriggerKeap = isHost || isFullTourBooking;
+      const shouldTriggerXero = !isTestTour && !isHost && !isComplimentary && isFullTourBooking;
+      const shouldTriggerKeap = !isTestTour && (isHost || isFullTourBooking);
+
+      if (isTestTour) {
+        console.log('Test Tour: Skipping Xero & Keap integrations for booking', newBooking.id);
+      }
 
       if (shouldTriggerXero) {
         if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
