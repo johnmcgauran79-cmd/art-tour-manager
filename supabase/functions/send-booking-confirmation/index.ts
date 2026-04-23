@@ -1715,6 +1715,7 @@ const handler = async (req: Request): Promise<Response> => {
           to: [passenger.email],
           subject: passengerSubject,
           html: passengerEmailHtml,
+          attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
         });
         
         if (passengerEmailResponse.data?.id) {
