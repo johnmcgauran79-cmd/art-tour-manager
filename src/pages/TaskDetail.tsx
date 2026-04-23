@@ -196,12 +196,12 @@ export default function TaskDetail() {
           ]}
         />
 
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold truncate">{edited.title || task.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold break-words sm:truncate">{edited.title || task.title}</h1>
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => guardedNavigate(() => goBack("/?tab=tasks"))}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -393,15 +393,17 @@ export default function TaskDetail() {
       />
 
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="comments">Comments</TabsTrigger>
-          <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
-          <TabsTrigger value="attachments">Attachments</TabsTrigger>
-          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-          <TabsTrigger value="watchers">Watchers</TabsTrigger>
-          <TabsTrigger value="audit">Audit</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-thin">
+          <TabsList className="inline-flex w-max min-w-full justify-start">
+            <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="attachments">Attachments</TabsTrigger>
+            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+            <TabsTrigger value="watchers">Watchers</TabsTrigger>
+            <TabsTrigger value="audit">Audit</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="comments" className="mt-6">
           <TaskCommentsSection taskId={task.id} />
