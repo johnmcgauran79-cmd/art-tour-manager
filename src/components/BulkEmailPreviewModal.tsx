@@ -33,9 +33,21 @@ interface BulkEmailPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tourId: string | null;
+  /**
+   * Optional: when the modal opens, auto-select the default email template
+   * matching this `type` value (e.g. 'custom_form_request'). Lets entry points
+   * outside the Bookings tab open this modal pre-configured for a specific
+   * use case (Send Form Requests from the Forms tab, etc.).
+   */
+  initialTemplateType?: string;
+  /**
+   * Optional: when opening pre-configured for a Custom Form Request, pre-select
+   * this published form id so the user lands directly on the editor.
+   */
+  initialFormId?: string;
 }
 
-export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailPreviewModalProps) => {
+export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTemplateType, initialFormId }: BulkEmailPreviewModalProps) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [editedSubject, setEditedSubject] = useState("");
