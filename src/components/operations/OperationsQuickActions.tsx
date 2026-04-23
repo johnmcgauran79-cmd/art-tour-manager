@@ -161,12 +161,12 @@ export const OperationsQuickActions = () => {
                   key={index}
                   onClick={action.onClick}
                   variant="outline"
-                  className="h-auto min-h-[88px] flex-col items-start p-4 hover:bg-brand-navy hover:text-brand-yellow transition-all relative whitespace-normal text-left w-full overflow-hidden"
+                  className="h-auto min-h-[88px] flex-col items-start p-4 hover:bg-brand-navy hover:text-brand-yellow transition-all relative whitespace-normal text-left w-full"
                 >
                   {action.count > 0 && (
                     <Badge 
                       variant="destructive" 
-                      className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center rounded-full p-0 z-10"
+                      className="absolute -top-2 -right-2 min-w-[24px] h-6 flex items-center justify-center rounded-full px-1.5 z-10 text-xs font-bold shadow-md"
                     >
                       {action.count}
                     </Badge>
