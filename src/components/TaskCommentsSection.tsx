@@ -254,27 +254,71 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
                 {/* Replies (expanded inline) */}
                 {replies.length > 0 && (
                   <div className="mt-2 ml-4 space-y-2 border-l border-border/60 pl-3">
-                    {replies.map((reply) => (
-                      <div key={reply.id} className="py-1">
-                        <div className="flex items-start gap-2">
-                          <CornerDownRight className="h-3 w-3 text-muted-foreground mt-1 flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex justify-between items-start mb-1">
-                              <span className="text-sm font-medium text-foreground">
-                                {getUserDisplayName(reply)}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
-                              </span>
+                    {replies.map((reply) => {
+                      const isEditingReply = editingId === reply.id;
+                      const canEditReply = !!user && reply.user_id === user.id;
+                      return (
+                        <div key={reply.id} className="py-1">
+                          <div className="flex items-start gap-2">
+                            <CornerDownRight className="h-3 w-3 text-muted-foreground mt-1 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex justify-between items-start mb-1">
+                                <span className="text-sm font-medium text-foreground">
+                                  {getUserDisplayName(reply)}
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                  {reply.edited_at && (
+                                    <span className="ml-1 italic">(edited)</span>
+                                  )}
+                                </span>
+                              </div>
+                              {isEditingReply ? (
+                                <div className="space-y-2 mt-1">
+                                  <UserMentionInput
+                                    value={editText}
+                                    onChange={setEditText}
+                                    onMentionedUsersChange={setEditMentionedUsers}
+                                    placeholder="Edit your reply..."
+                                    rows={2}
+                                  />
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      onClick={() => handleSaveEdit(reply.id)}
+                                      disabled={!editText.trim() || updateComment.isPending}
+                                      size="sm"
+                                    >
+                                      {updateComment.isPending ? 'Saving...' : 'Save'}
+                                    </Button>
+                                    <Button onClick={cancelEdit} size="sm" variant="ghost">Cancel</Button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                                    {cleanMentions(reply.comment)}
+                                  </p>
+                                  {renderAttachments(reply.id)}
+                                  {canEditReply && (
+                                    <div className="mt-1">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                        onClick={() => startEdit(reply)}
+                                      >
+                                        <Pencil className="h-3 w-3 mr-1" />
+                                        Edit
+                                      </Button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
-                            <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                              {cleanMentions(reply.comment)}
-                            </p>
-                            {renderAttachments(reply.id)}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
