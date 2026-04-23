@@ -94,10 +94,11 @@ export const UnifiedEmailApprovals = () => {
   const swapStatus = useSwapStatusChangeTemplate();
 
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
-  // Per-item selection for status-change batches: set of status_change_email_queue item IDs
-  // that have been EXCLUDED from their batch. If a row's uid is in selectedUids and an item
-  // is NOT in this exclusion set, it's considered selected.
-  const [excludedStatusItemIds, setExcludedStatusItemIds] = useState<Set<string>>(new Set());
+  // Per-item selection for status-change batches.
+  // Tracks individual status_change_email_queue item IDs that the user has selected.
+  // A status_change row is considered (fully/partially) selected when at least one of its
+  // items is in this set OR the row uid itself is in selectedUids (legacy whole-batch select).
+  const [selectedStatusItemIds, setSelectedStatusItemIds] = useState<Set<string>>(new Set());
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [previewApproval, setPreviewApproval] = useState<any | null>(null);
   const [showSentReport, setShowSentReport] = useState(false);
