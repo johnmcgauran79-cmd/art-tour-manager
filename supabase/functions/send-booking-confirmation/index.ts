@@ -1752,6 +1752,20 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('Skipping additional passengers as includeAdditionalPassengers is false');
     }
 
+    // Clean up temporary uploaded attachments (kept for the duration of this send only).
+    // Tour-library attachments are NOT removed.
+    if (tempAttachmentPaths.length > 0) {
+      try {
+        const { error: rmErr } = await supabaseClient.storage
+          .from('attachments')
+          .remove(tempAttachmentPaths);
+        if (rmErr) console.warn('[Attachments] Temp cleanup error:', rmErr);
+        else console.log(`[Attachments] Cleaned up ${tempAttachmentPaths.length} temp file(s)`);
+      } catch (e) {
+        console.warn('[Attachments] Temp cleanup exception:', e);
+      }
+    }
+
     return new Response(JSON.stringify({ 
       success: true, 
       emailId: emailResponse.data?.id,
