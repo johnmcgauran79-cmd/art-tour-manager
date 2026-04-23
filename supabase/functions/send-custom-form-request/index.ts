@@ -111,16 +111,6 @@ const handler = async (req: Request): Promise<Response> => {
     const btnBg = getS('theme_email_button_color', '#232628');
     const btnText = getS('theme_email_button_text', '#F5C518');
 
-    // Fetch email template — prefer the explicitly chosen one, otherwise fall back
-    // to the default custom_form_request template.
-    let templateQuery = supabase.from('email_templates').select('*').eq('is_active', true);
-    if (emailTemplateId) {
-      templateQuery = templateQuery.eq('id', emailTemplateId);
-    } else {
-      templateQuery = templateQuery.eq('type', 'custom_form_request').eq('is_default', true);
-    }
-    const { data: template } = await templateQuery.maybeSingle();
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Authorization required" }),
@@ -149,6 +139,16 @@ const handler = async (req: Request): Promise<Response> => {
       return new Response(JSON.stringify({ error: "Booking ID is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+
+    // Fetch email template — prefer the explicitly chosen one, otherwise fall back
+    // to the default custom_form_request template.
+    let templateQuery = supabase.from('email_templates').select('*').eq('is_active', true);
+    if (emailTemplateId) {
+      templateQuery = templateQuery.eq('id', emailTemplateId);
+    } else {
+      templateQuery = templateQuery.eq('type', 'custom_form_request').eq('is_default', true);
+    }
+    const { data: template } = await templateQuery.maybeSingle();
 
     // Get booking with passengers and tour
     const { data: booking, error: bookingError } = await supabase
