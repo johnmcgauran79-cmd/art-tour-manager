@@ -7,7 +7,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId, customFormId }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId, customFormId, attachments }: { 
       tourId: string; 
       recipientType?: string;
       subjectTemplate?: string; 
@@ -24,6 +24,11 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
        * the {{custom_form_button}} merge field works correctly.
        */
       customFormId?: string;
+      /**
+       * Same attachments are sent to every booking in this batch.
+       * Temporary uploads survive across all sends and are removed after the batch.
+       */
+      attachments?: Array<{ path: string; name: string; source?: "tour" | "upload" }>;
     }) => {
       let bookings;
       
