@@ -505,6 +505,18 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                     >
                       All
                     </Button>
+                    {isCustomFormTemplate && selectedFormId && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRecipientTypeChange("incomplete_form")}
+                        className="text-xs"
+                        title="Select only bookings that haven't completed this form"
+                      >
+                        Incomplete ({incompleteCount})
+                      </Button>
+                    )}
                     <Button 
                       type="button"
                       variant="ghost" 
