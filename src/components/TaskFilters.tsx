@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Search, X } from "lucide-react";
+import { CalendarIcon, Search, X, AtSign } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
 
 interface TaskFiltersProps {
   onFiltersChange: (filters: {
@@ -20,6 +21,7 @@ interface TaskFiltersProps {
     priority?: string;
     startDate?: string;
     endDate?: string;
+    mentionsMe?: boolean;
   }) => void;
   onClearFilters: () => void;
 }
@@ -31,6 +33,7 @@ export const TaskFilters = ({ onFiltersChange, onClearFilters }: TaskFiltersProp
   const [priority, setPriority] = useState<string>("all");
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [mentionsMe, setMentionsMe] = useState(false);
 
   // Fetch users for assignee filter
   const { data: users } = useQuery({
@@ -46,7 +49,8 @@ export const TaskFilters = ({ onFiltersChange, onClearFilters }: TaskFiltersProp
     },
   });
 
-  const handleSearch = () => {
+  const applyFilters = (overrides?: { mentionsMe?: boolean }) => {
+    const m = overrides?.mentionsMe ?? mentionsMe;
     onFiltersChange({
       search: search.trim() || undefined,
       assigneeId: assigneeId !== "all" ? assigneeId : undefined,
@@ -54,8 +58,11 @@ export const TaskFilters = ({ onFiltersChange, onClearFilters }: TaskFiltersProp
       priority: priority !== "all" ? priority : undefined,
       startDate: startDate?.toISOString(),
       endDate: endDate?.toISOString(),
+      mentionsMe: m || undefined,
     });
   };
+
+  const handleSearch = () => applyFilters();
 
   const handleClear = () => {
     setSearch("");
@@ -64,6 +71,7 @@ export const TaskFilters = ({ onFiltersChange, onClearFilters }: TaskFiltersProp
     setPriority("all");
     setStartDate(undefined);
     setEndDate(undefined);
+    setMentionsMe(false);
     onClearFilters();
   };
 
@@ -76,6 +84,26 @@ export const TaskFilters = ({ onFiltersChange, onClearFilters }: TaskFiltersProp
       <div className="flex items-center gap-2">
         <Search className="h-4 w-4" />
         <h3 className="font-medium">Filter Tasks</h3>
+      </div>
+
+      <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <AtSign className="h-4 w-4 text-primary" />
+          <Label htmlFor="mentions-me" className="cursor-pointer">
+            Mentions me
+          </Label>
+          <span className="text-xs text-muted-foreground">
+            Tasks where I have unread @mentions
+          </span>
+        </div>
+        <Switch
+          id="mentions-me"
+          checked={mentionsMe}
+          onCheckedChange={(checked) => {
+            setMentionsMe(checked);
+            applyFilters({ mentionsMe: checked });
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
