@@ -553,9 +553,10 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {allBookingsData?.map((booking: any) => {
+                      {visibleBookings.map((booking: any) => {
                         const hasAccommodation = booking.hotel_bookings && booking.hotel_bookings.length > 0;
                         const hasAdditionalPax = booking.passenger_2?.email || booking.passenger_3?.email;
+                        const isFormCompleted = isCustomFormTemplate && completedBookingIds?.has(booking.id);
                         return (
                           <div key={booking.id} className="flex items-center space-x-2">
                             <Checkbox
@@ -571,14 +572,46 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                               <span className="text-muted-foreground ml-2 text-xs">
                                 {hasAccommodation ? '🏨' : '🎯'}
                                 {hasAdditionalPax && ' 👥'}
+                                {isFormCompleted && (
+                                  <span className="ml-2 text-green-600 font-medium">✓ Done</span>
+                                )}
                               </span>
                             </label>
                           </div>
                         );
                       })}
+                      {visibleBookings.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          {hideCompletedForm
+                            ? 'All bookings have completed this form.'
+                            : 'No bookings found.'}
+                        </p>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
+
+                {/* Hide-completed toggle (only for custom form requests) */}
+                {isCustomFormTemplate && selectedFormId && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox
+                      id="hideCompletedForm"
+                      checked={hideCompletedForm}
+                      onCheckedChange={(checked) => setHideCompletedForm(checked === true)}
+                    />
+                    <label
+                      htmlFor="hideCompletedForm"
+                      className="text-sm font-medium leading-none cursor-pointer"
+                    >
+                      Hide bookings that already completed this form
+                      {completedBookingIds && completedBookingIds.size > 0 && (
+                        <span className="text-muted-foreground font-normal ml-1">
+                          — {completedBookingIds.size} completed
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                )}
                 
                 {/* Additional passengers toggle */}
                 <div className="flex items-center space-x-2 mt-3 pt-3 border-t">
