@@ -756,36 +756,55 @@ const ScheduledDetails = ({ approval }: { approval: any }) => {
   );
 };
 
-const StatusChangeDetails = ({ batch }: { batch: any }) => (
+const StatusChangeDetails = ({
+  batch,
+  selectedItemIds,
+  wholeBatchSelected,
+  onToggleItem,
+}: {
+  batch: any;
+  selectedItemIds: Set<string>;
+  wholeBatchSelected: boolean;
+  onToggleItem: (id: string, checked: boolean) => void;
+}) => (
   <div className="mt-3 pl-2 space-y-2">
-    <p className="text-xs font-medium text-muted-foreground uppercase">Bookings in this batch:</p>
+    <p className="text-xs font-medium text-muted-foreground uppercase">
+      Bookings in this batch — tick to approve or reject individually:
+    </p>
     <div className="grid gap-2">
-      {batch.items.map((item: any) => (
-        <div
-          key={item.id}
-          className="flex items-center justify-between p-2 bg-muted rounded text-sm flex-wrap gap-2"
-        >
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">
-              {item.booking?.customers?.first_name} {item.booking?.customers?.last_name}
-            </span>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-muted-foreground">{item.booking?.customers?.email}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {item.previous_status || "new"} → {item.new_status}
-            </Badge>
-            {item.tour && (
-              <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                <Calendar className="h-3 w-3" />
-                {item.tour.name}
+      {batch.items.map((item: any) => {
+        const checked = wholeBatchSelected || selectedItemIds.has(item.id);
+        return (
+          <div
+            key={item.id}
+            className="flex items-center justify-between p-2 bg-muted rounded text-sm flex-wrap gap-2"
+          >
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(c) => onToggleItem(item.id, c as boolean)}
+              />
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">
+                {item.booking?.customers?.first_name} {item.booking?.customers?.last_name}
               </span>
-            )}
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground">{item.booking?.customers?.email}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {item.previous_status || "new"} → {item.new_status}
+              </Badge>
+              {item.tour && (
+                <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                  <Calendar className="h-3 w-3" />
+                  {item.tour.name}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   </div>
 );
