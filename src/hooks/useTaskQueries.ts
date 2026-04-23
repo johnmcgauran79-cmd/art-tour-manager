@@ -49,12 +49,33 @@ export const useTasks = (tourId?: string, filters?: {
   priority?: string;
   startDate?: string;
   endDate?: string;
+  mentionsMe?: boolean;
 }) => {
   const { user } = useAuth();
   
   return useQuery({
     queryKey: ['tasks', tourId, filters],
     queryFn: async () => {
+      // If "mentions me" filter is active, first resolve which task IDs the
+      // current user has unread @mention notifications for.
+      let mentionTaskIds: string[] | null = null;
+      if (filters?.mentionsMe && user?.id) {
+        const { data: notifs } = await supabase
+          .from('user_notifications')
+          .select('related_id, title')
+          .eq('user_id', user.id)
+          .eq('type', 'task')
+          .eq('read', false)
+          .ilike('title', '%mentioned%');
+        mentionTaskIds = Array.from(
+          new Set((notifs || []).map((n: any) => n.related_id).filter(Boolean) as string[])
+        );
+        // Short-circuit: no unread mentions → no tasks
+        if (mentionTaskIds.length === 0) {
+          return [] as Task[];
+        }
+      }
+
       let query = supabase
         .from('tasks')
         .select(`
@@ -71,6 +92,10 @@ export const useTasks = (tourId?: string, filters?: {
 
       if (tourId) {
         query = query.eq('tour_id', tourId);
+      }
+
+      if (mentionTaskIds && mentionTaskIds.length > 0) {
+        query = query.in('id', mentionTaskIds);
       }
 
       if (filters?.search) {

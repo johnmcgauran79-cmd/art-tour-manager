@@ -29,6 +29,7 @@ export const EnhancedTasksTable = ({
     priority?: string;
     startDate?: string;
     endDate?: string;
+    mentionsMe?: boolean;
   }>({});
   const [showFilters, setShowFilters] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
