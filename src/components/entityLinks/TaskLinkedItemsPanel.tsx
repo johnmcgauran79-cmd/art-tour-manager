@@ -40,75 +40,75 @@ const useEntityLabels = (links: TaskEntityLinkRow[]) => {
     ],
     queryFn: async (): Promise<Record<string, string>> => {
       const out: Record<string, string> = {};
-      const tasks: Promise<void>[] = [];
+      const jobs: Promise<void>[] = [];
 
       if (grouped.tour.size) {
-        tasks.push(
-          supabase
-            .from("tours")
-            .select("id, name")
-            .in("id", [...grouped.tour])
-            .then(({ data }) => {
-              (data || []).forEach((t: any) => (out[`tour:${t.id}`] = t.name));
-            })
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("tours")
+              .select("id, name")
+              .in("id", [...grouped.tour]);
+            (data || []).forEach((t: any) => (out[`tour:${t.id}`] = t.name));
+          })()
         );
       }
       if (grouped.contact.size) {
-        tasks.push(
-          supabase
-            .from("customers")
-            .select("id, first_name, last_name, email")
-            .in("id", [...grouped.contact])
-            .then(({ data }) => {
-              (data || []).forEach(
-                (c: any) =>
-                  (out[`contact:${c.id}`] =
-                    `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.email || "Contact")
-              );
-            })
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("customers")
+              .select("id, first_name, last_name, email")
+              .in("id", [...grouped.contact]);
+            (data || []).forEach(
+              (c: any) =>
+                (out[`contact:${c.id}`] =
+                  `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.email || "Contact")
+            );
+          })()
         );
       }
       if (grouped.hotel.size) {
-        tasks.push(
-          supabase
-            .from("hotels")
-            .select("id, name")
-            .in("id", [...grouped.hotel])
-            .then(({ data }) => {
-              (data || []).forEach((h: any) => (out[`hotel:${h.id}`] = h.name));
-            })
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("hotels")
+              .select("id, name")
+              .in("id", [...grouped.hotel]);
+            (data || []).forEach((h: any) => (out[`hotel:${h.id}`] = h.name));
+          })()
         );
       }
       if (grouped.activity.size) {
-        tasks.push(
-          supabase
-            .from("activities")
-            .select("id, name")
-            .in("id", [...grouped.activity])
-            .then(({ data }) => {
-              (data || []).forEach((a: any) => (out[`activity:${a.id}`] = a.name));
-            })
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("activities")
+              .select("id, name")
+              .in("id", [...grouped.activity]);
+            (data || []).forEach((a: any) => (out[`activity:${a.id}`] = a.name));
+          })()
         );
       }
       if (grouped.booking.size) {
-        tasks.push(
-          supabase
-            .from("bookings")
-            .select("id, customers!lead_passenger_id(first_name, last_name), tours(name)")
-            .in("id", [...grouped.booking])
-            .then(({ data }) => {
-              (data || []).forEach((b: any) => {
-                const lead = b.customers
-                  ? `${b.customers.first_name || ""} ${b.customers.last_name || ""}`.trim()
-                  : "";
-                out[`booking:${b.id}`] = lead
-                  ? `${lead}${b.tours?.name ? ` — ${b.tours.name}` : ""}`
-                  : `Booking ${b.id.slice(0, 8)}`;
-              });
-            })
+        jobs.push(
+          (async () => {
+            const { data } = await supabase
+              .from("bookings")
+              .select("id, customers!lead_passenger_id(first_name, last_name), tours(name)")
+              .in("id", [...grouped.booking]);
+            (data || []).forEach((b: any) => {
+              const lead = b.customers
+                ? `${b.customers.first_name || ""} ${b.customers.last_name || ""}`.trim()
+                : "";
+              out[`booking:${b.id}`] = lead
+                ? `${lead}${b.tours?.name ? ` — ${b.tours.name}` : ""}`
+                : `Booking ${b.id.slice(0, 8)}`;
+            });
+          })()
         );
       }
-      await Promise.all(tasks);
+      await Promise.all(jobs);
       return out;
     },
     enabled: links.length > 0,
