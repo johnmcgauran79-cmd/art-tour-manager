@@ -4,9 +4,26 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTaskEntityLinks, type TaskEntityLinkRow } from "@/hooks/useTaskEntityLinks";
 import { ENTITY_LABELS, entityLinkHref, type EntityType } from "@/lib/entityLinks";
-import { Briefcase, BedDouble, MapPin, User, Activity as ActivityIcon, Link2 } from "lucide-react";
+import { useEntityResolver } from "@/hooks/useEntityResolver";
+import {
+  Briefcase,
+  BedDouble,
+  MapPin,
+  User,
+  Activity as ActivityIcon,
+  Link2,
+  AlertCircle,
+  FileText,
+  MessageSquare,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const entityIcon: Record<EntityType, typeof Briefcase> = {
   booking: Briefcase,
@@ -16,102 +33,42 @@ const entityIcon: Record<EntityType, typeof Briefcase> = {
   contact: User,
 };
 
-/** Resolve display labels for a batch of entity links. */
-const useEntityLabels = (links: TaskEntityLinkRow[]) => {
-  // Group ids by type
-  const grouped = useMemo(() => {
-    const map: Record<EntityType, Set<string>> = {
-      booking: new Set(),
-      hotel: new Set(),
-      activity: new Set(),
-      tour: new Set(),
-      contact: new Set(),
-    };
-    links.forEach((l) => map[l.entity_type].add(l.entity_id));
-    return map;
-  }, [links]);
+/**
+ * Fetch comment author + creation date for any links sourced from a comment,
+ * so we can show "from comment by Sarah · 12 Mar" subtitles.
+ */
+const useCommentSources = (links: TaskEntityLinkRow[]) => {
+  const commentIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          links
+            .filter((l) => l.source === "comment" && l.source_id)
+            .map((l) => l.source_id as string)
+        )
+      ),
+    [links]
+  );
 
   return useQuery({
-    queryKey: [
-      "entity-link-labels",
-      Object.entries(grouped)
-        .map(([t, s]) => `${t}:${[...s].sort().join(",")}`)
-        .join("|"),
-    ],
-    queryFn: async (): Promise<Record<string, string>> => {
-      const out: Record<string, string> = {};
-      const jobs: Promise<void>[] = [];
-
-      if (grouped.tour.size) {
-        jobs.push(
-          (async () => {
-            const { data } = await supabase
-              .from("tours")
-              .select("id, name")
-              .in("id", [...grouped.tour]);
-            (data || []).forEach((t: any) => (out[`tour:${t.id}`] = t.name));
-          })()
-        );
-      }
-      if (grouped.contact.size) {
-        jobs.push(
-          (async () => {
-            const { data } = await supabase
-              .from("customers")
-              .select("id, first_name, last_name, email")
-              .in("id", [...grouped.contact]);
-            (data || []).forEach(
-              (c: any) =>
-                (out[`contact:${c.id}`] =
-                  `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.email || "Contact")
-            );
-          })()
-        );
-      }
-      if (grouped.hotel.size) {
-        jobs.push(
-          (async () => {
-            const { data } = await supabase
-              .from("hotels")
-              .select("id, name")
-              .in("id", [...grouped.hotel]);
-            (data || []).forEach((h: any) => (out[`hotel:${h.id}`] = h.name));
-          })()
-        );
-      }
-      if (grouped.activity.size) {
-        jobs.push(
-          (async () => {
-            const { data } = await supabase
-              .from("activities")
-              .select("id, name")
-              .in("id", [...grouped.activity]);
-            (data || []).forEach((a: any) => (out[`activity:${a.id}`] = a.name));
-          })()
-        );
-      }
-      if (grouped.booking.size) {
-        jobs.push(
-          (async () => {
-            const { data } = await supabase
-              .from("bookings")
-              .select("id, customers!lead_passenger_id(first_name, last_name), tours(name)")
-              .in("id", [...grouped.booking]);
-            (data || []).forEach((b: any) => {
-              const lead = b.customers
-                ? `${b.customers.first_name || ""} ${b.customers.last_name || ""}`.trim()
-                : "";
-              out[`booking:${b.id}`] = lead
-                ? `${lead}${b.tours?.name ? ` — ${b.tours.name}` : ""}`
-                : `Booking ${b.id.slice(0, 8)}`;
-            });
-          })()
-        );
-      }
-      await Promise.all(jobs);
-      return out;
+    queryKey: ["task-link-comment-sources", [...commentIds].sort().join(",")],
+    queryFn: async () => {
+      if (commentIds.length === 0) return {} as Record<string, { author: string; createdAt: string }>;
+      const { data } = await supabase
+        .from("task_comments")
+        .select("id, created_at, user_id, profiles:profiles!task_comments_user_id_fkey(full_name, email)")
+        .in("id", commentIds);
+      const map: Record<string, { author: string; createdAt: string }> = {};
+      (data || []).forEach((c: any) => {
+        map[c.id] = {
+          author: c.profiles?.full_name || c.profiles?.email || "Unknown",
+          createdAt: c.created_at,
+        };
+      });
+      return map;
     },
-    enabled: links.length > 0,
+    enabled: commentIds.length > 0,
+    staleTime: 60_000,
   });
 };
 
@@ -121,23 +78,44 @@ interface TaskLinkedItemsPanelProps {
 
 export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
   const { data: links = [], isLoading } = useTaskEntityLinks(taskId);
-  const { data: labels = {}, isLoading: loadingLabels } = useEntityLabels(links);
+  const refs = useMemo(
+    () =>
+      links.map((l) => ({
+        entity_type: l.entity_type,
+        entity_id: l.entity_id,
+      })),
+    [links]
+  );
+  const { data: resolved = {}, isLoading: loadingLabels } = useEntityResolver(refs);
+  const { data: commentSources = {} } = useCommentSources(links);
 
-  // Deduplicate by entity (a record may be referenced in both description & comments)
-  const unique = useMemo(() => {
-    const seen = new Set<string>();
-    const out: TaskEntityLinkRow[] = [];
+  // Group all source occurrences by entity so we can list each linked record
+  // once but still show every place it was referenced from.
+  type Grouped = {
+    entity_type: EntityType;
+    entity_id: string;
+    sources: TaskEntityLinkRow[];
+  };
+  const unique = useMemo<Grouped[]>(() => {
+    const map = new Map<string, Grouped>();
     links.forEach((l) => {
       const k = `${l.entity_type}:${l.entity_id}`;
-      if (seen.has(k)) return;
-      seen.add(k);
-      out.push(l);
+      const existing = map.get(k);
+      if (existing) {
+        existing.sources.push(l);
+      } else {
+        map.set(k, {
+          entity_type: l.entity_type,
+          entity_id: l.entity_id,
+          sources: [l],
+        });
+      }
     });
-    return out;
+    return [...map.values()];
   }, [links]);
 
   const grouped = useMemo(() => {
-    const map = new Map<EntityType, TaskEntityLinkRow[]>();
+    const map = new Map<EntityType, Grouped[]>();
     unique.forEach((l) => {
       const arr = map.get(l.entity_type) || [];
       arr.push(l);
@@ -172,31 +150,82 @@ export const TaskLinkedItemsPanel = ({ taskId }: TaskLinkedItemsPanelProps) => {
               <Icon className="h-3.5 w-3.5" />
               {ENTITY_LABELS[type]}s ({items.length})
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {items.map((l) => {
-                const label = labels[`${type}:${l.entity_id}`] || (loadingLabels ? "…" : "(unknown)");
-                const href = entityLinkHref(type, l.entity_id);
+            <ul className="space-y-1.5">
+              {items.map((g) => {
+                const r = resolved[`${type}:${g.entity_id}`];
+                const deleted = !!r?.deleted;
+                const label = !r
+                  ? loadingLabels
+                    ? "…"
+                    : "(unknown)"
+                  : r.label || "(untitled)";
+                const href = deleted
+                  ? null
+                  : entityLinkHref(type, g.entity_id, r?.tourId);
+
+                const ChipIcon = deleted ? AlertCircle : Link2;
                 const chip = (
                   <span
                     className={cn(
                       "inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs",
-                      "bg-muted/50 hover:bg-muted",
+                      deleted
+                        ? "bg-muted text-muted-foreground line-through opacity-70 border-dashed"
+                        : "bg-muted/50 hover:bg-muted",
                       href && "cursor-pointer"
                     )}
                   >
-                    <Link2 className="h-3 w-3" />
+                    <ChipIcon className="h-3 w-3" />
                     {label}
                   </span>
                 );
-                return href ? (
-                  <RouterLink key={l.id} to={href}>
-                    {chip}
-                  </RouterLink>
+
+                const chipNode = deleted ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span>{chip}</span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <span className="text-xs">
+                        {ENTITY_LABELS[type]} removed — record no longer exists
+                      </span>
+                    </TooltipContent>
+                  </Tooltip>
+                ) : href ? (
+                  <RouterLink to={href}>{chip}</RouterLink>
                 ) : (
-                  <span key={l.id}>{chip}</span>
+                  <span>{chip}</span>
+                );
+
+                return (
+                  <li key={`${type}:${g.entity_id}`} className="flex flex-col gap-0.5">
+                    {chipNode}
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground pl-1">
+                      {g.sources.map((s) => {
+                        if (s.source === "description") {
+                          return (
+                            <span key={s.id} className="inline-flex items-center gap-1">
+                              <FileText className="h-2.5 w-2.5" />
+                              from description
+                            </span>
+                          );
+                        }
+                        const meta = s.source_id ? commentSources[s.source_id] : undefined;
+                        return (
+                          <span key={s.id} className="inline-flex items-center gap-1">
+                            <MessageSquare className="h-2.5 w-2.5" />
+                            from comment
+                            {meta?.author ? ` by ${meta.author}` : ""}
+                            {meta?.createdAt
+                              ? ` · ${format(new Date(meta.createdAt), "d MMM yyyy")}`
+                              : ""}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           </div>
         );
       })}
