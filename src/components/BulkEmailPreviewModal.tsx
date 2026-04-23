@@ -66,6 +66,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+  const [hideCompletedForm, setHideCompletedForm] = useState(false);
   
   const scheduleEmailMutation = useScheduleEmail();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
