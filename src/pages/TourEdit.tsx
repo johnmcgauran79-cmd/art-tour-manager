@@ -361,7 +361,7 @@ export default function TourEdit() {
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Edit Tour: {tour.name}</h1>
           {formData.is_test_tour && (
-            <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400">
+            <Badge variant="secondary" className="gap-1">
               <FlaskConical className="mr-1 h-3 w-3" /> TEST TOUR
             </Badge>
           )}
