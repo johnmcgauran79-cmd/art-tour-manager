@@ -33,9 +33,21 @@ interface BulkEmailPreviewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tourId: string | null;
+  /**
+   * Optional: when the modal opens, auto-select the default email template
+   * matching this `type` value (e.g. 'custom_form_request'). Lets entry points
+   * outside the Bookings tab open this modal pre-configured for a specific
+   * use case (Send Form Requests from the Forms tab, etc.).
+   */
+  initialTemplateType?: string;
+  /**
+   * Optional: when opening pre-configured for a Custom Form Request, pre-select
+   * this published form id so the user lands directly on the editor.
+   */
+  initialFormId?: string;
 }
 
-export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailPreviewModalProps) => {
+export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTemplateType, initialFormId }: BulkEmailPreviewModalProps) => {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [selectedFormId, setSelectedFormId] = useState<string>("");
   const [editedSubject, setEditedSubject] = useState("");
@@ -67,6 +79,24 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const selectedTemplate = templates?.find((t) => t.id === selectedTemplateId);
   const isCustomFormTemplate = selectedTemplate?.type === 'custom_form_request';
   const selectedForm = publishedForms.find((f: any) => f.id === selectedFormId);
+
+  // When opened with an `initialTemplateType` (e.g. from the Forms tab's
+  // "Send Form Requests" button), auto-select the default template of that
+  // type and pre-select the requested form so the user lands directly in the
+  // edit/preview/attachments flow.
+  useEffect(() => {
+    if (!open || !initialTemplateType || !templates) return;
+    if (selectedTemplateId) return;
+    const match =
+      templates.find((t: any) => t.type === initialTemplateType && t.is_default) ||
+      templates.find((t: any) => t.type === initialTemplateType);
+    if (match) setSelectedTemplateId(match.id);
+  }, [open, initialTemplateType, templates, selectedTemplateId]);
+
+  useEffect(() => {
+    if (!open || !initialFormId) return;
+    setSelectedFormId(initialFormId);
+  }, [open, initialFormId]);
 
   // Quill modules configuration
   const quillModules = {

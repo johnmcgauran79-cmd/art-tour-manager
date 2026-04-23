@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
-import { BulkCustomFormSendModal } from "@/components/BulkCustomFormSendModal";
+import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 
 interface Props {
   tourId: string;
@@ -43,6 +43,8 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [expandedFormId, setExpandedFormId] = useState<string | null>(null);
   const [showBulkSend, setShowBulkSend] = useState(false);
+  const [bulkSendFormId, setBulkSendFormId] = useState<string>("");
+  const [showFormPicker, setShowFormPicker] = useState(false);
 
   const publishedForms = forms.filter(f => f.is_published);
 
@@ -84,7 +86,14 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
         {!isViewOnly && (
           <div className="flex items-center gap-2">
             {publishedForms.length > 0 && (
-              <Button variant="outline" size="sm" onClick={() => setShowBulkSend(true)}
+              <Button variant="outline" size="sm" onClick={() => {
+                if (publishedForms.length === 1) {
+                  setBulkSendFormId(publishedForms[0].id);
+                  setShowBulkSend(true);
+                } else {
+                  setShowFormPicker(true);
+                }
+              }}
                 className="border-blue-500/30 text-blue-600 hover:bg-blue-500/5">
                 <Send className="h-4 w-4 mr-2" /> Send Form Requests
               </Button>
@@ -191,21 +200,49 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
         </DialogContent>
       </Dialog>
 
-      {/* Global Bulk Send Modal */}
-      {publishedForms.length > 0 && (
-        <BulkCustomFormSendModal
-          open={showBulkSend}
-          onOpenChange={setShowBulkSend}
-          tourId={tourId}
-          tourName={tourName}
-          publishedForms={publishedForms.map(f => ({
-            id: f.id,
-            form_title: f.form_title,
-            response_mode: f.response_mode,
-            email_recipients: f.email_recipients,
-          }))}
-        />
-      )}
+      {/* Form Picker (only when multiple published forms exist) */}
+      <Dialog open={showFormPicker} onOpenChange={setShowFormPicker}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choose a Form to Send</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {publishedForms.map(f => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => {
+                  setBulkSendFormId(f.id);
+                  setShowFormPicker(false);
+                  setShowBulkSend(true);
+                }}
+                className="w-full text-left p-3 border rounded-md hover:bg-muted/50 transition-colors"
+              >
+                <div className="font-medium">{f.form_title}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {f.email_recipients === 'lead_only' ? 'Lead passenger only' : 'All passengers'}
+                  {' · '}
+                  {f.response_mode === 'per_passenger' ? 'Per passenger' : 'Per booking'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rich bulk email modal — pre-loaded with the Custom Form Request template
+          and the chosen form, so users get edit/preview/attachments/recipient
+          filtering, while passenger-token generation still happens server-side. */}
+      <BulkEmailPreviewModal
+        open={showBulkSend}
+        onOpenChange={(open) => {
+          setShowBulkSend(open);
+          if (!open) setBulkSendFormId("");
+        }}
+        tourId={tourId}
+        initialTemplateType="custom_form_request"
+        initialFormId={bulkSendFormId}
+      />
     </div>
   );
 }
