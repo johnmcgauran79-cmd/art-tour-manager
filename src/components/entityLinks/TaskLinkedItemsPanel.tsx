@@ -54,16 +54,31 @@ const useCommentSources = (links: TaskEntityLinkRow[]) => {
     queryKey: ["task-link-comment-sources", [...commentIds].sort().join(",")],
     queryFn: async () => {
       if (commentIds.length === 0) return {} as Record<string, { author: string; createdAt: string }>;
-      const { data } = await supabase
+      const { data: comments } = await supabase
         .from("task_comments")
-        .select("id, created_at, user_id, profiles:profiles!task_comments_user_id_fkey(full_name, email)")
+        .select("id, created_at, user_id")
         .in("id", commentIds);
+      const userIds = Array.from(
+        new Set((comments || []).map((c: any) => c.user_id).filter(Boolean))
+      );
+      const profilesById: Record<string, { first_name?: string; last_name?: string; email?: string }> = {};
+      if (userIds.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, email")
+          .in("id", userIds);
+        (profiles || []).forEach((p: any) => {
+          profilesById[p.id] = p;
+        });
+      }
       const map: Record<string, { author: string; createdAt: string }> = {};
-      (data || []).forEach((c: any) => {
-        map[c.id] = {
-          author: c.profiles?.full_name || c.profiles?.email || "Unknown",
-          createdAt: c.created_at,
-        };
+      (comments || []).forEach((c: any) => {
+        const p = profilesById[c.user_id];
+        const name =
+          p && (p.first_name || p.last_name)
+            ? `${p.first_name || ""} ${p.last_name || ""}`.trim()
+            : p?.email || "Unknown";
+        map[c.id] = { author: name, createdAt: c.created_at };
       });
       return map;
     },
