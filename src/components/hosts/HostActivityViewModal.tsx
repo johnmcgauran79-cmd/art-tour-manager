@@ -135,7 +135,7 @@ export const HostActivityViewModal = ({ activity, open, onOpenChange }: HostActi
                 <InfoRow label="Depart for Activity" value={formatTime(activity.depart_for_activity)} />
                 <InfoRow 
                   label="Transport Mode" 
-                  value={activity.transport_mode === 'train' ? 'Public Transport' : activity.transport_mode ? activity.transport_mode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not Required'} 
+                  value={activity.transport_mode === 'train' ? 'Public Transport' : activity.transport_mode === 'air_flight' ? 'Air/Flight Transfer' : activity.transport_mode ? activity.transport_mode.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not Required'} 
                 />
               </div>
             </div>
