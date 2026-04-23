@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,6 +41,21 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "activities");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-open the View Activity modal when arriving via `?activityId=` deep link
+  // (used by activity chips in linked-text fields).
+  useEffect(() => {
+    const activityId = searchParams.get("activityId");
+    if (!activityId || !activities?.length) return;
+    const match = activities.find((a) => a.id === activityId);
+    if (match) {
+      setSelectedActivityForView(match);
+      const next = new URLSearchParams(searchParams);
+      next.delete("activityId");
+      setSearchParams(next, { replace: true });
+    }
+  }, [activities, searchParams, setSearchParams]);
 
   // Fetch attachment counts for all activities in this tour
   const { data: attachmentCounts } = useQuery({
