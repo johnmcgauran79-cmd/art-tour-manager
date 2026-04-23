@@ -135,10 +135,11 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     auditData
       ?.filter(e => 
         (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && e.details?.activity_id) ||
+        (e.operation_type === 'REMOVE_ACTIVITY_FROM_BOOKING' && e.details?.activity_id) ||
         (e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.details?.passengers_attending?.activity_id)
       )
       .map(e => {
-        if (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING') {
+        if (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' || e.operation_type === 'REMOVE_ACTIVITY_FROM_BOOKING') {
           return e.details.activity_id;
         }
         return e.details?.passengers_attending?.activity_id;
