@@ -443,7 +443,7 @@ Deno.serve(async (req) => {
         tours:tour_id (
           id, name, start_date, end_date,
           price_single, price_double, price_twin,
-          xero_product_id, xero_reference, tour_type,
+          xero_product_id, xero_reference, tour_type, is_test_tour,
           deposit_required, instalment_required, instalment_amount, instalment_date, final_payment_date
         ),
         hotel_bookings (id, bedding, nights, check_in_date, check_out_date, hotel_id)
@@ -461,6 +461,13 @@ Deno.serve(async (req) => {
 
     // Server-side guard: skip Xero invoice for host, complimentary, or non-full-tour bookings
     const skipStatuses = ['host', 'complimentary'];
+    const tourForGuard = booking.tours as any;
+    if (tourForGuard?.is_test_tour) {
+      console.log(`Skipping Xero invoice — tour ${tourForGuard.id} (${tourForGuard.name}) is marked as a TEST tour`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Test tour' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     if (skipStatuses.includes(booking.status) || booking.whatsapp_group_comms === false || booking.accommodation_required === false) {
       console.log(`Skipping Xero invoice — booking ${bookingId} status: ${booking.status}, whatsapp_group_comms: ${booking.whatsapp_group_comms}, accommodation_required: ${booking.accommodation_required}`);
       return new Response(JSON.stringify({ success: true, skipped: true, reason: skipStatuses.includes(booking.status) ? `Status is ${booking.status}` : 'Non-full-tour booking' }), {
