@@ -58,6 +58,11 @@ Deno.serve(async (req) => {
             bccEmails: payload.bccEmails,
             includeAdditionalPassengers: payload.includeAdditionalPassengers ?? true,
             emailTemplateId: payload.emailTemplateId,
+            attachments: payload.attachments,
+            // Scheduled emails may share an upload across multiple due rows in a batch.
+            // Don't auto-clean here; cron-driven cleanup of stale temp files can be
+            // added separately if needed.
+            cleanupAttachments: false,
           },
         });
 
