@@ -72,6 +72,13 @@ export const WeeklyBookingChangesReport = ({ onDataChange }: WeeklyBookingChange
       const count = details?.bookings_affected || 0;
       return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
     }
+
+    // Handle activity removed from tour (bulk removal)
+    if (type === 'ACTIVITY_REMOVED_FROM_TOUR') {
+      const activityName = details?.activity_name || 'Activity';
+      const count = details?.bookings_affected || 0;
+      return `Activity Removed from Tour: "${activityName}" (${count} bookings affected)`;
+    }
     
     // Handle hotel date changes
     if (type === 'UPDATE_HOTEL_BOOKING_DATES' || (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates)) {

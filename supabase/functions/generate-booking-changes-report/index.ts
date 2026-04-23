@@ -35,6 +35,12 @@ function formatOperationType(type: string, details?: any): string {
     const count = details?.bookings_affected || 0;
     return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
   }
+
+  if (type === 'ACTIVITY_REMOVED_FROM_TOUR') {
+    const activityName = details?.activity_name || 'Activity';
+    const count = details?.bookings_affected || 0;
+    return `Activity Removed from Tour: "${activityName}" (${count} bookings affected)`;
+  }
   
   if (type === 'UPDATE_HOTEL_BOOKING_DATES' || (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates)) {
     const changes = [];
@@ -129,10 +135,11 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
     auditData
       ?.filter(e => 
         (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' && e.details?.activity_id) ||
+        (e.operation_type === 'REMOVE_ACTIVITY_FROM_BOOKING' && e.details?.activity_id) ||
         (e.operation_type === 'UPDATE_ACTIVITY_BOOKING' && e.details?.passengers_attending?.activity_id)
       )
       .map(e => {
-        if (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING') {
+        if (e.operation_type === 'ADD_ACTIVITY_TO_BOOKING' || e.operation_type === 'REMOVE_ACTIVITY_FROM_BOOKING') {
           return e.details.activity_id;
         }
         return e.details?.passengers_attending?.activity_id;
@@ -201,6 +208,53 @@ async function generateBookingChangesData(supabase: any, daysBack: number = 7): 
           ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
           : 'System',
         details: { activity_name: data.activityName, bookings_affected: data.entries.length }
+      });
+    }
+  });
+
+  // Detect bulk activity removals (when an activity is deleted from a tour, cascading to all bookings)
+  // This is a tour-level change, not a per-booking change.
+  const activityRemovals = auditData?.filter(e =>
+    e.operation_type === 'REMOVE_ACTIVITY_FROM_BOOKING'
+  ) || [];
+  const bulkActivityRemovals = new Map<string, { activityId: string; tourId: string; activityName: string; tourName: string; entries: any[]; firstEntry: any }>();
+
+  activityRemovals.forEach(entry => {
+    const activityId = entry.details?.activity_id;
+    if (!activityId) return;
+
+    if (!bulkActivityRemovals.has(activityId)) {
+      const activity = activities?.find(a => a.id === activityId);
+      const booking = bookings?.find(b => b.id === entry.record_id);
+      bulkActivityRemovals.set(activityId, {
+        activityId,
+        tourId: activity?.tour_id || booking?.tour_id,
+        activityName: activity?.name || entry.details?.activity_name || 'Unknown Activity',
+        tourName: booking?.tours?.name || 'Unknown Tour',
+        entries: [],
+        firstEntry: entry,
+      });
+    }
+    bulkActivityRemovals.get(activityId)!.entries.push(entry);
+  });
+
+  bulkActivityRemovals.forEach((data) => {
+    if (data.entries.length > 1) {
+      // Bulk removal — mark all entries to skip individual processing
+      data.entries.forEach(e => bulkActivityEntryIds.add(e.id));
+
+      const profile = profiles?.find(p => p.id === data.firstEntry.user_id);
+      consolidatedActivityChanges.push({
+        id: data.firstEntry.id,
+        timestamp: data.firstEntry.timestamp,
+        operation_type: 'ACTIVITY_REMOVED_FROM_TOUR',
+        booking_id: data.firstEntry.record_id,
+        customer_name: `${data.entries.length} bookings`,
+        tour_name: data.tourName,
+        user_name: profile
+          ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email || 'Unknown'
+          : 'System',
+        details: { activity_name: data.activityName, bookings_affected: data.entries.length },
       });
     }
   });
