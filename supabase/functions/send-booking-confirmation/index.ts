@@ -1405,6 +1405,50 @@ const handler = async (req: Request): Promise<Response> => {
     // Build the from field: if finalFromEmail already contains a display name (e.g. "Name <email>"), use as-is
     // Otherwise wrap with the configured sender name
     const fromField = finalFromEmail.includes('<') ? finalFromEmail : `${defaultSenderName} <${finalFromEmail}>`;
+
+    // Prepare email attachments (downloaded once, sent to every recipient).
+    // Hard caps: max 3 files, max 10MB total — UI enforces this, but we re-check
+    // server-side as defense in depth.
+    const MAX_ATTACHMENTS = 3;
+    const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+    type ResendAttachment = { filename: string; content: string };
+    const resendAttachments: ResendAttachment[] = [];
+    const tempAttachmentPaths: string[] = [];
+
+    if (Array.isArray(requestedAttachments) && requestedAttachments.length > 0) {
+      const limited = requestedAttachments.slice(0, MAX_ATTACHMENTS);
+      let totalBytes = 0;
+      for (const att of limited) {
+        if (!att?.path) continue;
+        try {
+          const { data: fileData, error: dlErr } = await supabaseClient.storage
+            .from('attachments')
+            .download(att.path);
+          if (dlErr || !fileData) {
+            console.error(`[Attachments] Download failed for ${att.path}:`, dlErr);
+            continue;
+          }
+          const buffer = new Uint8Array(await fileData.arrayBuffer());
+          totalBytes += buffer.byteLength;
+          if (totalBytes > MAX_ATTACHMENT_BYTES) {
+            console.warn('[Attachments] Total size exceeds 10MB cap, dropping further attachments.');
+            break;
+          }
+          // Resend accepts base64 strings via the `content` field.
+          let binary = '';
+          for (let i = 0; i < buffer.length; i++) binary += String.fromCharCode(buffer[i]);
+          const base64 = btoa(binary);
+          resendAttachments.push({
+            filename: att.name || att.path.split('/').pop() || 'attachment',
+            content: base64,
+          });
+          if (att.source === 'upload') tempAttachmentPaths.push(att.path);
+          console.log(`[Attachments] Prepared ${att.name} (${buffer.byteLength} bytes)`);
+        } catch (e) {
+          console.error(`[Attachments] Error processing ${att.path}:`, e);
+        }
+      }
+    }
     
     const emailResponse = await resend.emails.send({
       from: fromField,
@@ -1413,6 +1457,7 @@ const handler = async (req: Request): Promise<Response> => {
       bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
       subject: emailSubject,
       html: emailHtml,
+      attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
     });
 
     console.log("Booking confirmation email sent successfully:", emailResponse);
