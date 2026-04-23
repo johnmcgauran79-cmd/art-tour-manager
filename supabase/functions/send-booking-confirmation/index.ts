@@ -20,6 +20,17 @@ interface BookingConfirmationRequest {
   includeAdditionalPassengers?: boolean;
   ruleId?: string;
   emailTemplateId?: string;
+  /**
+   * File attachments to include with this email send.
+   * Each entry is a path inside the `attachments` storage bucket.
+   * The same set of attachments is sent to every recipient (lead + pax 2/3).
+   */
+  attachments?: Array<{
+    path: string;
+    name: string;
+    /** "upload" temp files are removed from storage after send completes. */
+    source?: "tour" | "upload";
+  }>;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
