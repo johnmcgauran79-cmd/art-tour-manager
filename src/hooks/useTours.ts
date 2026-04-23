@@ -36,6 +36,7 @@ export interface Tour {
   xero_product_id: string | null;
   keap_tag_id: string | null;
   pickup_location_required: boolean;
+  is_test_tour: boolean;
   ops_notes: string | null;
   ops_accomm_notes: string | null;
   ops_races_notes: string | null;
