@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Mail, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserEmails } from "@/hooks/useUserEmails";
 
 interface EmailRoomingListModalProps {
   open: boolean;
@@ -36,6 +37,10 @@ export const EmailRoomingListModal = ({
 }: EmailRoomingListModalProps) => {
   const { user } = useAuth();
   const userEmail = user?.email || "";
+  const { data: fromEmails = [] } = useUserEmails();
+  const dropdownEmails = Array.from(
+    new Set([...(userEmail ? [userEmail] : []), ...fromEmails])
+  );
   
   const [from, setFrom] = useState("");
   const [to, setTo] = useState(defaultToEmail || "");
@@ -75,9 +80,11 @@ export const EmailRoomingListModal = ({
                 <SelectValue placeholder="Select from email" />
               </SelectTrigger>
               <SelectContent>
-                {userEmail && <SelectItem value={userEmail}>{userEmail}</SelectItem>}
-                <SelectItem value="info@australianracingtours.com.au">info@australianracingtours.com.au</SelectItem>
-                <SelectItem value="bookings@australianracingtours.com.au">bookings@australianracingtours.com.au</SelectItem>
+                {dropdownEmails.map((email) => (
+                  <SelectItem key={email} value={email}>
+                    {email}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
