@@ -267,6 +267,7 @@ export const UnifiedEmailApprovals = () => {
     try {
       await Promise.all(tasks);
       setSelectedUids(new Set());
+      setSelectedStatusItemIds(new Set());
     } finally {
       setShowApproveDialog(false);
     }
@@ -294,6 +295,7 @@ export const UnifiedEmailApprovals = () => {
     try {
       await Promise.all(tasks);
       setSelectedUids(new Set());
+      setSelectedStatusItemIds(new Set());
       setRejectionReason("");
     } finally {
       setShowConfirmRejectDialog(false);
