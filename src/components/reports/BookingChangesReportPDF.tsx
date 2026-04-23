@@ -29,6 +29,18 @@ const formatOperationType = (type: string, details?: any): string => {
     'DELETE_BOOKING': 'Booking Deleted',
     'CANCEL_BOOKING': 'Booking Cancelled',
   };
+
+  if (type === 'NEW_ACTIVITY_ADDED_TO_TOUR') {
+    const activityName = details?.activity_name || 'Activity';
+    const count = details?.bookings_affected || 0;
+    return `New Activity Added: "${activityName}" (${count} bookings allocated)`;
+  }
+
+  if (type === 'ACTIVITY_REMOVED_FROM_TOUR') {
+    const activityName = details?.activity_name || 'Activity';
+    const count = details?.bookings_affected || 0;
+    return `Activity Removed from Tour: "${activityName}" (${count} bookings affected)`;
+  }
   
   if (type === 'UPDATE_HOTEL_BOOKING_DATES' || (type === 'UPDATE_HOTEL_BOOKING' && details?.hotel_dates)) {
     const changes = [];
