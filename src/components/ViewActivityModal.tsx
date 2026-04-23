@@ -10,6 +10,7 @@ import { Activity } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
 import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
 import { JourneysEditor } from "./JourneysEditor";
+import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
 interface ActivityBookingInfo {
   id: string;
   passengers_attending: number;
@@ -295,6 +296,9 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
 
           {/* Attachments Section */}
           <ActivityAttachmentsSection activityId={activity.id} />
+
+          {/* Related tasks (mentions this activity in description or comments) */}
+          <RelatedTasksSection entityType="activity" entityId={activity.id} />
 
           {/* Bookings List */}
           <div className="space-y-1">

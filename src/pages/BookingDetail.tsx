@@ -38,6 +38,7 @@ import { SendPickupRequestButton } from "@/components/SendPickupRequestButton";
 import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
+import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -730,6 +731,10 @@ export default function BookingDetail() {
               <h3 className="text-lg font-semibold mb-4">Comments</h3>
               <BookingCommentsSection bookingId={booking.id} />
             </div>
+
+            <Separator />
+
+            <RelatedTasksSection entityType="booking" entityId={booking.id} />
           </TabsContent>
         </Tabs>
 
