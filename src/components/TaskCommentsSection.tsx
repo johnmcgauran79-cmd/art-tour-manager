@@ -94,6 +94,36 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
     setReplyFiles([]);
   };
 
+  const startEdit = (comment: TaskComment) => {
+    setEditingId(comment.id);
+    setEditText(comment.comment);
+    setEditPreviousText(comment.comment);
+    setEditMentionedUsers([]);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditText("");
+    setEditPreviousText("");
+    setEditMentionedUsers([]);
+  };
+
+  const handleSaveEdit = async (commentId: string) => {
+    if (!editText.trim()) return;
+    try {
+      await updateComment.mutateAsync({
+        id: commentId,
+        task_id: taskId,
+        comment: editText.trim(),
+        mentioned_users: editMentionedUsers,
+        previous_comment: editPreviousText,
+      });
+      cancelEdit();
+    } catch (error) {
+      console.error('Error updating comment:', error);
+    }
+  };
+
   const handleDownload = async (att: TaskCommentAttachment) => {
     const { data, error } = await supabase.storage.from('attachments').download(att.file_path);
     if (error) return;
