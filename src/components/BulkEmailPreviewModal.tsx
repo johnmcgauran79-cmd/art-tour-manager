@@ -159,6 +159,60 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
 
   const previewBooking = allBookingsData?.find((booking: any) => selectedBookingIds.has(booking.id)) || allBookingsData?.[0] || null;
 
+  // For custom-form templates, fetch existing responses so we can show
+  // completion status and offer an "incomplete only" filter.
+  const { data: completedBookingIds } = useQuery({
+    queryKey: ['tour-custom-form-completed-bookings', tourId, selectedFormId, selectedForm?.response_mode],
+    queryFn: async () => {
+      if (!tourId || !selectedFormId || !selectedForm) return new Set<string>();
+      const { data: responses } = await supabase
+        .from('tour_custom_form_responses' as any)
+        .select('booking_id, passenger_slot')
+        .eq('form_id', selectedFormId);
+
+      const completed = new Set<string>();
+      if (!responses || responses.length === 0) return completed;
+
+      const bySlot = new Map<string, Set<number>>();
+      for (const r of responses as any[]) {
+        if (!bySlot.has(r.booking_id)) bySlot.set(r.booking_id, new Set());
+        bySlot.get(r.booking_id)!.add(r.passenger_slot);
+      }
+
+      const responseMode = (selectedForm as any).response_mode;
+      for (const b of (allBookingsData || []) as any[]) {
+        const slots = bySlot.get(b.id);
+        if (!slots) continue;
+        if (responseMode === 'per_booking') {
+          if (slots.has(1)) completed.add(b.id);
+        } else {
+          // per_passenger: every passenger with an email must have a response
+          let allDone = true;
+          if (b.customers?.email && !slots.has(1)) allDone = false;
+          if (b.passenger_2?.email && !slots.has(2)) allDone = false;
+          if (b.passenger_3?.email && !slots.has(3)) allDone = false;
+          if (allDone && b.customers?.email) completed.add(b.id);
+        }
+      }
+      return completed;
+    },
+    enabled: !!tourId && !!selectedFormId && !!selectedForm && !!allBookingsData && open,
+    staleTime: 30 * 1000,
+  });
+
+  // Visible bookings respect the "hide completed" toggle for custom forms.
+  const visibleBookings = (() => {
+    if (!allBookingsData) return [];
+    if (!isCustomFormTemplate || !hideCompletedForm || !completedBookingIds) {
+      return allBookingsData;
+    }
+    return allBookingsData.filter((b: any) => !completedBookingIds.has(b.id));
+  })();
+
+  const incompleteCount = isCustomFormTemplate && completedBookingIds && allBookingsData
+    ? allBookingsData.filter((b: any) => !completedBookingIds.has(b.id)).length
+    : 0;
+
   // Keep template content responsive even before any preview data loads
   useEffect(() => {
     if (selectedTemplateId && selectedTemplateId !== "blank" && templates) {
