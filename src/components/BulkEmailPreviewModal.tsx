@@ -80,6 +80,24 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const isCustomFormTemplate = selectedTemplate?.type === 'custom_form_request';
   const selectedForm = publishedForms.find((f: any) => f.id === selectedFormId);
 
+  // When opened with an `initialTemplateType` (e.g. from the Forms tab's
+  // "Send Form Requests" button), auto-select the default template of that
+  // type and pre-select the requested form so the user lands directly in the
+  // edit/preview/attachments flow.
+  useEffect(() => {
+    if (!open || !initialTemplateType || !templates) return;
+    if (selectedTemplateId) return;
+    const match =
+      templates.find((t: any) => t.type === initialTemplateType && t.is_default) ||
+      templates.find((t: any) => t.type === initialTemplateType);
+    if (match) setSelectedTemplateId(match.id);
+  }, [open, initialTemplateType, templates, selectedTemplateId]);
+
+  useEffect(() => {
+    if (!open || !initialFormId) return;
+    setSelectedFormId(initialFormId);
+  }, [open, initialFormId]);
+
   // Quill modules configuration
   const quillModules = {
     toolbar: [
