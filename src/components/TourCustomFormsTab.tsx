@@ -18,7 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
-import { BulkCustomFormSendModal } from "@/components/BulkCustomFormSendModal";
+import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 
 interface Props {
   tourId: string;
@@ -43,6 +43,8 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [expandedFormId, setExpandedFormId] = useState<string | null>(null);
   const [showBulkSend, setShowBulkSend] = useState(false);
+  const [bulkSendFormId, setBulkSendFormId] = useState<string>("");
+  const [showFormPicker, setShowFormPicker] = useState(false);
 
   const publishedForms = forms.filter(f => f.is_published);
 
@@ -84,7 +86,14 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
         {!isViewOnly && (
           <div className="flex items-center gap-2">
             {publishedForms.length > 0 && (
-              <Button variant="outline" size="sm" onClick={() => setShowBulkSend(true)}
+              <Button variant="outline" size="sm" onClick={() => {
+                if (publishedForms.length === 1) {
+                  setBulkSendFormId(publishedForms[0].id);
+                  setShowBulkSend(true);
+                } else {
+                  setShowFormPicker(true);
+                }
+              }}
                 className="border-blue-500/30 text-blue-600 hover:bg-blue-500/5">
                 <Send className="h-4 w-4 mr-2" /> Send Form Requests
               </Button>
