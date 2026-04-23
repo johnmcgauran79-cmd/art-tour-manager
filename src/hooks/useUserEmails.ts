@@ -5,29 +5,31 @@ export const useUserEmails = () => {
   return useQuery({
     queryKey: ['user-emails'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('email')
-        .not('email', 'is', null)
-        .order('email');
-      
-      if (error) throw error;
-      
-      // Add the default emails if not already in the list
-      const emails = data.map(profile => profile.email);
-      const defaultEmails = [
-        'bookings@australianracingtours.com.au',
-        'info@australianracingtours.com.au'
-      ];
-      
-      // Add default emails to the beginning if they're not already included
-      defaultEmails.reverse().forEach(defaultEmail => {
-        if (!emails.includes(defaultEmail)) {
-          emails.unshift(defaultEmail);
-        }
-      });
-      
-      return emails;
+      // Fetch in parallel: user profile emails + admin-managed extras
+      const [profilesRes, extrasRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('email')
+          .not('email', 'is', null)
+          .order('email'),
+        supabase
+          .from('additional_from_emails')
+          .select('email, sort_order')
+          .eq('is_active', true)
+          .order('sort_order'),
+      ]);
+
+      if (profilesRes.error) throw profilesRes.error;
+      if (extrasRes.error) throw extrasRes.error;
+
+      const extras = (extrasRes.data || []).map((r: any) => r.email as string);
+      const userEmails = (profilesRes.data || [])
+        .map((p: any) => p.email as string)
+        .filter((e) => !!e && !extras.includes(e));
+
+      // Admin-managed extras appear first (in their configured sort order),
+      // followed by user account emails alphabetically.
+      return [...extras, ...userEmails];
     },
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
