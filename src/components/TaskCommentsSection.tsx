@@ -421,6 +421,10 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
             <Send className="h-4 w-4" />
             {createComment.isPending || uploadAttachments.isPending ? "Adding..." : "Add Comment"}
           </Button>
+          <EntityLinkPicker
+            onInsert={(token) => appendToken(newComment, setNewComment, token)}
+            triggerLabel="Link record"
+          />
           <label className="cursor-pointer">
             <input
               type="file"
