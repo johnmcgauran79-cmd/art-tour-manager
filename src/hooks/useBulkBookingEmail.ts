@@ -195,6 +195,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
                 ccEmails,
                 bccEmails,
                 emailTemplateId,
+                attachments,
               },
             });
 
