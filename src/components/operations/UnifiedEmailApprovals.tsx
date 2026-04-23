@@ -239,9 +239,14 @@ export const UnifiedEmailApprovals = () => {
       .filter((r) => r.source === "scheduled")
       .map((r) => r.scheduledApprovalId!)
       .filter(Boolean);
+    // For status_change rows, only include the items the user actually selected
     const statusItemIds = selectedRows
       .filter((r) => r.source === "status_change")
-      .flatMap((r) => r.statusChangeItemIds || []);
+      .flatMap((r) => {
+        const ids = r.statusChangeItemIds || [];
+        if (selectedUids.has(r.uid)) return ids; // whole batch selected
+        return ids.filter((id) => selectedStatusItemIds.has(id));
+      });
     return { scheduledIds, statusItemIds };
   };
 
