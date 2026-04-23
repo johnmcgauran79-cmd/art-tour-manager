@@ -508,7 +508,16 @@ export const UnifiedEmailApprovals = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{row.countLabel}</span>
+                            <span className="font-medium">
+                              {row.countLabel}
+                              {row.source === "status_change" &&
+                                selectedItemCount > 0 &&
+                                selectedItemCount < itemIds.length && (
+                                  <span className="ml-2 text-primary">
+                                    ({selectedItemCount} selected)
+                                  </span>
+                                )}
+                            </span>
                           </div>
                           {row.dateLabel && (
                             <div className="flex items-center gap-2">
@@ -522,7 +531,14 @@ export const UnifiedEmailApprovals = () => {
                           <ScheduledDetails approval={row.scheduledApproval} />
                         )}
                         {isExpanded && row.source === "status_change" && row.statusChangeBatch && (
-                          <StatusChangeDetails batch={row.statusChangeBatch} />
+                          <StatusChangeDetails
+                            batch={row.statusChangeBatch}
+                            selectedItemIds={selectedStatusItemIds}
+                            wholeBatchSelected={selectedUids.has(row.uid)}
+                            onToggleItem={(id, checked) =>
+                              toggleStatusItem(id, row.uid, checked)
+                            }
+                          />
                         )}
                       </div>
                     </div>
