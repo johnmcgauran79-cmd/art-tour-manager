@@ -2203,25 +2203,34 @@ export type Database = {
         Row: {
           comment: string
           created_at: string
+          edited_at: string | null
+          edited_by: string | null
           id: string
           parent_comment_id: string | null
           task_id: string
+          updated_at: string
           user_id: string
         }
         Insert: {
           comment: string
           created_at?: string
+          edited_at?: string | null
+          edited_by?: string | null
           id?: string
           parent_comment_id?: string | null
           task_id: string
+          updated_at?: string
           user_id: string
         }
         Update: {
           comment?: string
           created_at?: string
+          edited_at?: string | null
+          edited_by?: string | null
           id?: string
           parent_comment_id?: string | null
           task_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [

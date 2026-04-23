@@ -10,6 +10,8 @@ export interface TaskComment {
   comment: string;
   created_at: string;
   parent_comment_id: string | null;
+  edited_at?: string | null;
+  edited_by?: string | null;
   profiles?: {
     first_name: string;
     last_name: string;
