@@ -393,15 +393,17 @@ export default function TaskDetail() {
       />
 
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
-        <TabsList>
-          <TabsTrigger value="comments">Comments</TabsTrigger>
-          <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
-          <TabsTrigger value="files">Files</TabsTrigger>
-          <TabsTrigger value="attachments">Attachments</TabsTrigger>
-          <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
-          <TabsTrigger value="watchers">Watchers</TabsTrigger>
-          <TabsTrigger value="audit">Audit</TabsTrigger>
-        </TabsList>
+        <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-thin">
+          <TabsList className="inline-flex w-max min-w-full justify-start">
+            <TabsTrigger value="comments">Comments</TabsTrigger>
+            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
+            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="attachments">Attachments</TabsTrigger>
+            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+            <TabsTrigger value="watchers">Watchers</TabsTrigger>
+            <TabsTrigger value="audit">Audit</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="comments" className="mt-6">
           <TaskCommentsSection taskId={task.id} />
