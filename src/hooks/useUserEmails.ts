@@ -9,8 +9,9 @@ export const useUserEmails = () => {
       const [profilesRes, extrasRes] = await Promise.all([
         supabase
           .from('profiles')
-          .select('email')
+          .select('email, user_roles!inner(role)')
           .not('email', 'is', null)
+          .in('user_roles.role', ['admin', 'manager'])
           .order('email'),
         supabase
           .from('additional_from_emails')
@@ -23,9 +24,14 @@ export const useUserEmails = () => {
       if (extrasRes.error) throw extrasRes.error;
 
       const extras = (extrasRes.data || []).map((r: any) => r.email as string);
-      const userEmails = (profilesRes.data || [])
-        .map((p: any) => p.email as string)
-        .filter((e) => !!e && !extras.includes(e));
+      // Dedupe in case a user has multiple roles (e.g. admin + manager)
+      const userEmails = Array.from(
+        new Set(
+          (profilesRes.data || [])
+            .map((p: any) => p.email as string)
+            .filter((e) => !!e && !extras.includes(e))
+        )
+      );
 
       // Admin-managed extras appear first (in their configured sort order),
       // followed by user account emails alphabetically.
