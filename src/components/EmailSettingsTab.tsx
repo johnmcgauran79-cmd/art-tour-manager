@@ -7,14 +7,18 @@ import { Settings, Save, Loader2 } from "lucide-react";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
 import { EmailHeaderSettingsCard } from "@/components/EmailHeaderSettingsCard";
 import { AdditionalFromEmailsCard } from "@/components/AdditionalFromEmailsCard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUserEmails } from "@/hooks/useUserEmails";
 
 export const EmailSettingsTab = () => {
   const { data: settings, isLoading } = useGeneralSettings();
   const updateSetting = useUpdateGeneralSetting();
+  const { data: availableFromEmails = [] } = useUserEmails();
   
   const [maxAdditionalInfoBlocks, setMaxAdditionalInfoBlocks] = useState("5");
   const [defaultSenderName, setDefaultSenderName] = useState("");
-  const [defaultFromEmail, setDefaultFromEmail] = useState("");
+  const [defaultFromClient, setDefaultFromClient] = useState("");
+  const [defaultFromOperational, setDefaultFromOperational] = useState("");
 
   useEffect(() => {
     if (settings) {
@@ -24,8 +28,11 @@ export const EmailSettingsTab = () => {
       const senderName = settings.find(s => s.setting_key === 'default_sender_name');
       if (senderName) setDefaultSenderName(String(senderName.setting_value));
       
-      const fromEmail = settings.find(s => s.setting_key === 'default_from_email_client');
-      if (fromEmail) setDefaultFromEmail(String(fromEmail.setting_value));
+      const clientFrom = settings.find(s => s.setting_key === 'default_from_email_client');
+      if (clientFrom) setDefaultFromClient(String(clientFrom.setting_value));
+
+      const opFrom = settings.find(s => s.setting_key === 'default_from_email_internal');
+      if (opFrom) setDefaultFromOperational(String(opFrom.setting_value));
     }
   }, [settings]);
 
@@ -40,9 +47,16 @@ export const EmailSettingsTab = () => {
     updateSetting.mutate({ settingKey: 'default_sender_name', value: defaultSenderName.trim() });
   };
 
-  const handleSaveFromEmail = () => {
-    if (!defaultFromEmail.trim()) return;
-    updateSetting.mutate({ settingKey: 'default_from_email_client', value: defaultFromEmail.trim() });
+  const handleSaveFromClient = (val: string) => {
+    if (!val) return;
+    setDefaultFromClient(val);
+    updateSetting.mutate({ settingKey: 'default_from_email_client', value: val });
+  };
+
+  const handleSaveFromOperational = (val: string) => {
+    if (!val) return;
+    setDefaultFromOperational(val);
+    updateSetting.mutate({ settingKey: 'default_from_email_internal', value: val });
   };
 
   if (isLoading) {
@@ -52,6 +66,15 @@ export const EmailSettingsTab = () => {
       </div>
     );
   }
+
+  // Ensure currently-saved values appear in the dropdown even if not in the
+  // managed list yet (so admins always see the active selection).
+  const clientOptions = Array.from(
+    new Set([...(defaultFromClient ? [defaultFromClient] : []), ...availableFromEmails])
+  );
+  const operationalOptions = Array.from(
+    new Set([...(defaultFromOperational ? [defaultFromOperational] : []), ...availableFromEmails])
+  );
 
   return (
     <div className="space-y-6">
@@ -66,11 +89,12 @@ export const EmailSettingsTab = () => {
             Email Defaults
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Configure default sender details and email behaviour settings.
+            Configure the sender name and which "From" address is pre-selected
+            for client emails versus operational emails.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
               <Label htmlFor="sender-name">Default Sender Name</Label>
               <div className="flex gap-2">
@@ -88,19 +112,37 @@ export const EmailSettingsTab = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="from-email">Default From Email (Client-facing)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="from-email"
-                  value={defaultFromEmail}
-                  onChange={(e) => setDefaultFromEmail(e.target.value)}
-                  placeholder="e.g. bookings@example.com"
-                />
-                <Button size="sm" onClick={handleSaveFromEmail} disabled={updateSetting.isPending}>
-                  <Save className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">The reply-to email address for client-facing emails.</p>
+              <Label htmlFor="from-client">Default From — Client Emails</Label>
+              <Select value={defaultFromClient} onValueChange={handleSaveFromClient}>
+                <SelectTrigger id="from-client">
+                  <SelectValue placeholder="Select default" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientOptions.map((email) => (
+                    <SelectItem key={email} value={email}>{email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Pre-selected for booking confirmations, forms, six-month emails, and other client-facing emails.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="from-operational">Default From — Operational Emails</Label>
+              <Select value={defaultFromOperational} onValueChange={handleSaveFromOperational}>
+                <SelectTrigger id="from-operational">
+                  <SelectValue placeholder="Select default" />
+                </SelectTrigger>
+                <SelectContent>
+                  {operationalOptions.map((email) => (
+                    <SelectItem key={email} value={email}>{email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Pre-selected for reports, rooming lists to hotels, passport reports, and other internal/vendor emails.
+              </p>
             </div>
           </div>
         </CardContent>
