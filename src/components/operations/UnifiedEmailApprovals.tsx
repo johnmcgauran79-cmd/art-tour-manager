@@ -94,6 +94,11 @@ export const UnifiedEmailApprovals = () => {
   const swapStatus = useSwapStatusChangeTemplate();
 
   const [selectedUids, setSelectedUids] = useState<Set<string>>(new Set());
+  // Per-item selection for status-change batches.
+  // Tracks individual status_change_email_queue item IDs that the user has selected.
+  // A status_change row is considered (fully/partially) selected when at least one of its
+  // items is in this set OR the row uid itself is in selectedUids (legacy whole-batch select).
+  const [selectedStatusItemIds, setSelectedStatusItemIds] = useState<Set<string>>(new Set());
   const [expandedUid, setExpandedUid] = useState<string | null>(null);
   const [previewApproval, setPreviewApproval] = useState<any | null>(null);
   const [showSentReport, setShowSentReport] = useState(false);
@@ -152,19 +157,75 @@ export const UnifiedEmailApprovals = () => {
     (statusChangeBatches?.reduce((s, b) => s + b.items.length, 0) || 0);
 
   const allUids = rows.map((r) => r.uid);
-  const allSelected = allUids.length > 0 && allUids.every((u) => selectedUids.has(u));
-  const selectedRows = rows.filter((r) => selectedUids.has(r.uid));
-  const selectedCount = selectedRows.length;
+  // A status_change row counts as "row selected" if its uid is in selectedUids OR all its
+  // items are individually selected. For approve/reject we treat any partially-selected
+  // status_change row as included (only the picked items will be sent).
+  const isRowSelected = (r: UnifiedRow) => {
+    if (selectedUids.has(r.uid)) return true;
+    if (r.source === "status_change" && r.statusChangeItemIds?.length) {
+      return r.statusChangeItemIds.some((id) => selectedStatusItemIds.has(id));
+    }
+    return false;
+  };
+  const isRowFullySelected = (r: UnifiedRow) => {
+    if (r.source === "scheduled") return selectedUids.has(r.uid);
+    const ids = r.statusChangeItemIds || [];
+    if (ids.length === 0) return selectedUids.has(r.uid);
+    return ids.every((id) => selectedStatusItemIds.has(id)) || selectedUids.has(r.uid);
+  };
+  const allSelected = allUids.length > 0 && rows.every(isRowFullySelected);
+  const selectedRows = rows.filter(isRowSelected);
+  // Count individual emails selected (per-booking for status_change, batch booking_count for scheduled)
+  const selectedCount = selectedRows.reduce((acc, r) => {
+    if (r.source === "scheduled") {
+      return acc + (r.scheduledApproval?.booking_count || 1);
+    }
+    // status_change: count individually-selected items, or all if whole-row selected
+    if (selectedUids.has(r.uid)) return acc + (r.statusChangeItemIds?.length || 0);
+    return acc + (r.statusChangeItemIds || []).filter((id) => selectedStatusItemIds.has(id)).length;
+  }, 0);
 
   // ---------- selection ----------
   const toggleAll = (checked: boolean) => {
-    setSelectedUids(checked ? new Set(allUids) : new Set());
+    if (checked) {
+      setSelectedUids(new Set(allUids));
+      // Also select every status-change item so counts/details stay consistent
+      const allItems = new Set<string>();
+      rows.forEach((r) => r.statusChangeItemIds?.forEach((id) => allItems.add(id)));
+      setSelectedStatusItemIds(allItems);
+    } else {
+      setSelectedUids(new Set());
+      setSelectedStatusItemIds(new Set());
+    }
   };
   const toggleOne = (uid: string, checked: boolean) => {
     const next = new Set(selectedUids);
     if (checked) next.add(uid);
     else next.delete(uid);
     setSelectedUids(next);
+    // Mirror into per-item set for status_change rows so the row checkbox + item checkboxes stay in sync
+    const row = rows.find((r) => r.uid === uid);
+    if (row?.source === "status_change" && row.statusChangeItemIds?.length) {
+      const items = new Set(selectedStatusItemIds);
+      if (checked) row.statusChangeItemIds.forEach((id) => items.add(id));
+      else row.statusChangeItemIds.forEach((id) => items.delete(id));
+      setSelectedStatusItemIds(items);
+    }
+  };
+  const toggleStatusItem = (itemId: string, rowUid: string, checked: boolean) => {
+    const items = new Set(selectedStatusItemIds);
+    if (checked) items.add(itemId);
+    else items.delete(itemId);
+    setSelectedStatusItemIds(items);
+    // Keep row uid in selectedUids only when ALL its items are selected, so "Select All" stays consistent
+    const row = rows.find((r) => r.uid === rowUid);
+    if (row?.statusChangeItemIds?.length) {
+      const allChecked = row.statusChangeItemIds.every((id) => items.has(id));
+      const next = new Set(selectedUids);
+      if (allChecked) next.add(rowUid);
+      else next.delete(rowUid);
+      setSelectedUids(next);
+    }
   };
 
   // ---------- actions ----------
@@ -178,9 +239,14 @@ export const UnifiedEmailApprovals = () => {
       .filter((r) => r.source === "scheduled")
       .map((r) => r.scheduledApprovalId!)
       .filter(Boolean);
+    // For status_change rows, only include the items the user actually selected
     const statusItemIds = selectedRows
       .filter((r) => r.source === "status_change")
-      .flatMap((r) => r.statusChangeItemIds || []);
+      .flatMap((r) => {
+        const ids = r.statusChangeItemIds || [];
+        if (selectedUids.has(r.uid)) return ids; // whole batch selected
+        return ids.filter((id) => selectedStatusItemIds.has(id));
+      });
     return { scheduledIds, statusItemIds };
   };
 
@@ -201,6 +267,7 @@ export const UnifiedEmailApprovals = () => {
     try {
       await Promise.all(tasks);
       setSelectedUids(new Set());
+      setSelectedStatusItemIds(new Set());
     } finally {
       setShowApproveDialog(false);
     }
@@ -228,6 +295,7 @@ export const UnifiedEmailApprovals = () => {
     try {
       await Promise.all(tasks);
       setSelectedUids(new Set());
+      setSelectedStatusItemIds(new Set());
       setRejectionReason("");
     } finally {
       setShowConfirmRejectDialog(false);
@@ -358,11 +426,32 @@ export const UnifiedEmailApprovals = () => {
 
               {rows.map((row) => {
                 const isExpanded = expandedUid === row.uid;
+                const itemIds = row.statusChangeItemIds || [];
+                const selectedItemCount =
+                  row.source === "status_change"
+                    ? selectedUids.has(row.uid)
+                      ? itemIds.length
+                      : itemIds.filter((id) => selectedStatusItemIds.has(id)).length
+                    : 0;
+                const rowFullySelected =
+                  row.source === "scheduled"
+                    ? selectedUids.has(row.uid)
+                    : itemIds.length > 0 && selectedItemCount === itemIds.length;
+                const rowPartiallySelected =
+                  row.source === "status_change" &&
+                  selectedItemCount > 0 &&
+                  selectedItemCount < itemIds.length;
                 return (
                   <div key={row.uid} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-start gap-3">
                       <Checkbox
-                        checked={selectedUids.has(row.uid)}
+                        checked={
+                          rowFullySelected
+                            ? true
+                            : rowPartiallySelected
+                              ? "indeterminate"
+                              : false
+                        }
                         onCheckedChange={(c) => toggleOne(row.uid, c as boolean)}
                       />
                       <div className="flex-1 space-y-2">
@@ -419,7 +508,16 @@ export const UnifiedEmailApprovals = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                           <div className="flex items-center gap-2">
                             <Users className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{row.countLabel}</span>
+                            <span className="font-medium">
+                              {row.countLabel}
+                              {row.source === "status_change" &&
+                                selectedItemCount > 0 &&
+                                selectedItemCount < itemIds.length && (
+                                  <span className="ml-2 text-primary">
+                                    ({selectedItemCount} selected)
+                                  </span>
+                                )}
+                            </span>
                           </div>
                           {row.dateLabel && (
                             <div className="flex items-center gap-2">
@@ -433,7 +531,14 @@ export const UnifiedEmailApprovals = () => {
                           <ScheduledDetails approval={row.scheduledApproval} />
                         )}
                         {isExpanded && row.source === "status_change" && row.statusChangeBatch && (
-                          <StatusChangeDetails batch={row.statusChangeBatch} />
+                          <StatusChangeDetails
+                            batch={row.statusChangeBatch}
+                            selectedItemIds={selectedStatusItemIds}
+                            wholeBatchSelected={selectedUids.has(row.uid)}
+                            onToggleItem={(id, checked) =>
+                              toggleStatusItem(id, row.uid, checked)
+                            }
+                          />
                         )}
                       </div>
                     </div>
@@ -651,36 +756,55 @@ const ScheduledDetails = ({ approval }: { approval: any }) => {
   );
 };
 
-const StatusChangeDetails = ({ batch }: { batch: any }) => (
+const StatusChangeDetails = ({
+  batch,
+  selectedItemIds,
+  wholeBatchSelected,
+  onToggleItem,
+}: {
+  batch: any;
+  selectedItemIds: Set<string>;
+  wholeBatchSelected: boolean;
+  onToggleItem: (id: string, checked: boolean) => void;
+}) => (
   <div className="mt-3 pl-2 space-y-2">
-    <p className="text-xs font-medium text-muted-foreground uppercase">Bookings in this batch:</p>
+    <p className="text-xs font-medium text-muted-foreground uppercase">
+      Bookings in this batch — tick to approve or reject individually:
+    </p>
     <div className="grid gap-2">
-      {batch.items.map((item: any) => (
-        <div
-          key={item.id}
-          className="flex items-center justify-between p-2 bg-muted rounded text-sm flex-wrap gap-2"
-        >
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">
-              {item.booking?.customers?.first_name} {item.booking?.customers?.last_name}
-            </span>
-            <span className="text-muted-foreground">•</span>
-            <span className="text-muted-foreground">{item.booking?.customers?.email}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-xs">
-              {item.previous_status || "new"} → {item.new_status}
-            </Badge>
-            {item.tour && (
-              <span className="text-muted-foreground flex items-center gap-1 text-xs">
-                <Calendar className="h-3 w-3" />
-                {item.tour.name}
+      {batch.items.map((item: any) => {
+        const checked = wholeBatchSelected || selectedItemIds.has(item.id);
+        return (
+          <div
+            key={item.id}
+            className="flex items-center justify-between p-2 bg-muted rounded text-sm flex-wrap gap-2"
+          >
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={checked}
+                onCheckedChange={(c) => onToggleItem(item.id, c as boolean)}
+              />
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">
+                {item.booking?.customers?.first_name} {item.booking?.customers?.last_name}
               </span>
-            )}
+              <span className="text-muted-foreground">•</span>
+              <span className="text-muted-foreground">{item.booking?.customers?.email}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {item.previous_status || "new"} → {item.new_status}
+              </Badge>
+              {item.tour && (
+                <span className="text-muted-foreground flex items-center gap-1 text-xs">
+                  <Calendar className="h-3 w-3" />
+                  {item.tour.name}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   </div>
 );
