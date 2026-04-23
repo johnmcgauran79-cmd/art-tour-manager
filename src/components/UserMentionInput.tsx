@@ -3,6 +3,12 @@ import { useState, useRef, useEffect } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  InlineEntitySuggestions,
+  detectHashTrigger,
+  type InlineSuggestionItem,
+} from "@/components/entityLinks/InlineEntitySuggestions";
+import { buildEntityToken } from "@/lib/entityLinks";
 
 interface User {
   id: string;
@@ -32,6 +38,17 @@ export const UserMentionInput = ({
   const [displayValue, setDisplayValue] = useState(value);
   const [mentionPositions, setMentionPositions] = useState<Array<{start: number, end: number, userId: string, displayName: string}>>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Inline `#` entity-link trigger (mirrors LinkableTextarea behaviour)
+  const [hashTrigger, setHashTrigger] = useState<{ start: number; query: string } | null>(null);
+  const [entityActiveIndex, setEntityActiveIndex] = useState(0);
+  const entityItemsRef = useRef<InlineSuggestionItem[]>([]);
+
+  const closeHashTrigger = () => {
+    setHashTrigger(null);
+    setEntityActiveIndex(0);
+    entityItemsRef.current = [];
+  };
 
   // Fetch users for mentions
   const { data: users = [] } = useQuery({
@@ -107,6 +124,11 @@ export const UserMentionInput = ({
       setShowSuggestions(false);
       setMentionQuery("");
     }
+
+    // Check for # entity-link trigger (independent of @ mentions)
+    const hash = detectHashTrigger(newDisplayValue, cursor);
+    setHashTrigger(hash);
+    if (!hash) setEntityActiveIndex(0);
     
     // Reconstruct structured value by finding existing mentions in the new display text
     let newStructuredValue = newDisplayValue;
@@ -159,6 +181,26 @@ export const UserMentionInput = ({
     }, 0);
   };
 
+  const insertEntityToken = (item: InlineSuggestionItem) => {
+    if (!hashTrigger) return;
+    const before = displayValue.slice(0, hashTrigger.start);
+    const after = displayValue.slice(cursorPosition);
+    const token = buildEntityToken(item.type, item.id, item.label);
+    const needsTrailingSpace = !after.startsWith(" ");
+    const insertion = `${token}${needsTrailingSpace ? " " : ""}`;
+    const next = `${before}${insertion}${after}`;
+    setDisplayValue(next);
+    onChange(next);
+    closeHashTrigger();
+    requestAnimationFrame(() => {
+      const el = textareaRef.current;
+      if (!el) return;
+      const pos = (before + insertion).length;
+      el.focus();
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
   const filteredUsers = users.filter(user => {
     if (!mentionQuery) return true;
     const displayName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
@@ -174,9 +216,33 @@ export const UserMentionInput = ({
         onChange={handleInputChange}
         placeholder={placeholder}
         rows={rows}
+        onClick={(e) => {
+          const c = (e.target as HTMLTextAreaElement).selectionStart ?? 0;
+          setCursorPosition(c);
+          setHashTrigger(detectHashTrigger(displayValue, c));
+        }}
+        onBlur={() => setTimeout(closeHashTrigger, 150)}
         onKeyDown={(e) => {
           if (e.key === 'Escape') {
             setShowSuggestions(false);
+            closeHashTrigger();
+            return;
+          }
+          if (hashTrigger) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              setEntityActiveIndex((i) =>
+                Math.min(entityItemsRef.current.length - 1, i + 1)
+              );
+            } else if (e.key === 'ArrowUp') {
+              e.preventDefault();
+              setEntityActiveIndex((i) => Math.max(0, i - 1));
+            } else if (e.key === 'Enter') {
+              if (entityItemsRef.current.length > 0) {
+                e.preventDefault();
+                insertEntityToken(entityItemsRef.current[entityActiveIndex]);
+              }
+            }
           }
         }}
       />
@@ -199,6 +265,19 @@ export const UserMentionInput = ({
             );
           })}
         </div>
+      )}
+
+      {hashTrigger && !showSuggestions && (
+        <InlineEntitySuggestions
+          query={hashTrigger.query}
+          activeIndex={entityActiveIndex}
+          onItemsChange={(items) => {
+            entityItemsRef.current = items;
+            if (entityActiveIndex >= items.length) setEntityActiveIndex(0);
+          }}
+          onPick={insertEntityToken}
+          onDismiss={closeHashTrigger}
+        />
       )}
     </div>
   );
