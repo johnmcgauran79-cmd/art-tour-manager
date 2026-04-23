@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Clock, User, Calendar, MapPin } from "lucide-react";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { formatDistanceToNow } from "date-fns";
+import { stripEntityTokens } from "@/lib/entityLinks";
 
 interface TaskCardProps {
   task: Task;
@@ -139,7 +140,7 @@ export const TaskCard = ({ task, showTourName = false, onTaskClick }: TaskCardPr
       </CardHeader>
       <CardContent className="pt-0">
         {task.description && (
-          <p className="text-sm text-gray-600">{task.description}</p>
+          <p className="text-sm text-gray-600">{stripEntityTokens(task.description)}</p>
         )}
       </CardContent>
     </Card>

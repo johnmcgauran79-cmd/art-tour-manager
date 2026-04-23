@@ -1,6 +1,7 @@
 import { useTaskActivity, TaskActivityEvent } from "@/hooks/useTaskActivity";
 import { Activity, MessageSquare, UserPlus, UserMinus, CheckCircle2, RotateCcw, Paperclip, Calendar, Flag, FileEdit, Edit3, ListChecks } from "lucide-react";
 import { format } from "date-fns";
+import { LinkedTextRenderer } from "@/components/entityLinks/LinkedTextRenderer";
 
 interface TaskActivityFeedProps {
   taskId: string;
@@ -37,7 +38,11 @@ const renderDelta = (e: TaskActivityEvent) => {
       return <span className="text-muted-foreground">{e.new_value?.due_date ? format(new Date(e.new_value.due_date), 'dd/MM/yyyy') : 'cleared'}</span>;
     case "comment_added":
     case "quick_update_changed":
-      return e.message ? <span className="text-foreground italic">"{e.message}"</span> : null;
+      return e.message ? (
+        <span className="text-foreground italic">
+          "<LinkedTextRenderer text={e.message} />"
+        </span>
+      ) : null;
     case "attachment_added":
     case "attachment_removed":
     case "subtask_added":

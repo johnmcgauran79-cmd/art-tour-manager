@@ -6,6 +6,8 @@ import { formatDistanceToNow, format } from "date-fns";
 import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/lib/statusColors";
 import { Task } from "@/hooks/useTasks";
 import { typography } from "@/lib/typography";
+import { LinkedTextRenderer } from "@/components/entityLinks/LinkedTextRenderer";
+import { stripEntityTokens } from "@/lib/entityLinks";
 
 interface TaskCardProps {
   task: Task;
@@ -49,7 +51,7 @@ export const TaskCard = ({ task, onView, showTourName = false }: TaskCardProps) 
         {/* Description */}
         {task.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">
-            {task.description}
+            {stripEntityTokens(task.description)}
           </p>
         )}
 
