@@ -277,6 +277,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
     } else if (type === "all") {
       const allIds = allBookingsData.map(b => b.id);
       setSelectedBookingIds(new Set(allIds));
+    } else if (type === "incomplete_form") {
+      if (!completedBookingIds) return;
+      const incompleteIds = allBookingsData
+        .filter((b: any) => !completedBookingIds.has(b.id))
+        .map((b: any) => b.id);
+      setSelectedBookingIds(new Set(incompleteIds));
     }
   };
 
