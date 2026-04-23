@@ -157,19 +157,75 @@ export const UnifiedEmailApprovals = () => {
     (statusChangeBatches?.reduce((s, b) => s + b.items.length, 0) || 0);
 
   const allUids = rows.map((r) => r.uid);
-  const allSelected = allUids.length > 0 && allUids.every((u) => selectedUids.has(u));
-  const selectedRows = rows.filter((r) => selectedUids.has(r.uid));
-  const selectedCount = selectedRows.length;
+  // A status_change row counts as "row selected" if its uid is in selectedUids OR all its
+  // items are individually selected. For approve/reject we treat any partially-selected
+  // status_change row as included (only the picked items will be sent).
+  const isRowSelected = (r: UnifiedRow) => {
+    if (selectedUids.has(r.uid)) return true;
+    if (r.source === "status_change" && r.statusChangeItemIds?.length) {
+      return r.statusChangeItemIds.some((id) => selectedStatusItemIds.has(id));
+    }
+    return false;
+  };
+  const isRowFullySelected = (r: UnifiedRow) => {
+    if (r.source === "scheduled") return selectedUids.has(r.uid);
+    const ids = r.statusChangeItemIds || [];
+    if (ids.length === 0) return selectedUids.has(r.uid);
+    return ids.every((id) => selectedStatusItemIds.has(id)) || selectedUids.has(r.uid);
+  };
+  const allSelected = allUids.length > 0 && rows.every(isRowFullySelected);
+  const selectedRows = rows.filter(isRowSelected);
+  // Count individual emails selected (per-booking for status_change, batch booking_count for scheduled)
+  const selectedCount = selectedRows.reduce((acc, r) => {
+    if (r.source === "scheduled") {
+      return acc + (r.scheduledApproval?.booking_count || 1);
+    }
+    // status_change: count individually-selected items, or all if whole-row selected
+    if (selectedUids.has(r.uid)) return acc + (r.statusChangeItemIds?.length || 0);
+    return acc + (r.statusChangeItemIds || []).filter((id) => selectedStatusItemIds.has(id)).length;
+  }, 0);
 
   // ---------- selection ----------
   const toggleAll = (checked: boolean) => {
-    setSelectedUids(checked ? new Set(allUids) : new Set());
+    if (checked) {
+      setSelectedUids(new Set(allUids));
+      // Also select every status-change item so counts/details stay consistent
+      const allItems = new Set<string>();
+      rows.forEach((r) => r.statusChangeItemIds?.forEach((id) => allItems.add(id)));
+      setSelectedStatusItemIds(allItems);
+    } else {
+      setSelectedUids(new Set());
+      setSelectedStatusItemIds(new Set());
+    }
   };
   const toggleOne = (uid: string, checked: boolean) => {
     const next = new Set(selectedUids);
     if (checked) next.add(uid);
     else next.delete(uid);
     setSelectedUids(next);
+    // Mirror into per-item set for status_change rows so the row checkbox + item checkboxes stay in sync
+    const row = rows.find((r) => r.uid === uid);
+    if (row?.source === "status_change" && row.statusChangeItemIds?.length) {
+      const items = new Set(selectedStatusItemIds);
+      if (checked) row.statusChangeItemIds.forEach((id) => items.add(id));
+      else row.statusChangeItemIds.forEach((id) => items.delete(id));
+      setSelectedStatusItemIds(items);
+    }
+  };
+  const toggleStatusItem = (itemId: string, rowUid: string, checked: boolean) => {
+    const items = new Set(selectedStatusItemIds);
+    if (checked) items.add(itemId);
+    else items.delete(itemId);
+    setSelectedStatusItemIds(items);
+    // Keep row uid in selectedUids only when ALL its items are selected, so "Select All" stays consistent
+    const row = rows.find((r) => r.uid === rowUid);
+    if (row?.statusChangeItemIds?.length) {
+      const allChecked = row.statusChangeItemIds.every((id) => items.has(id));
+      const next = new Set(selectedUids);
+      if (allChecked) next.add(rowUid);
+      else next.delete(rowUid);
+      setSelectedUids(next);
+    }
   };
 
   // ---------- actions ----------
