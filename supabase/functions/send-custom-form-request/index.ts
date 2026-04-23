@@ -133,6 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
       ccEmails,
       bccEmails,
       emailTemplateId,
+      attachments: requestedAttachments,
     } = await req.json();
 
     if (!bookingId) {
@@ -241,6 +242,45 @@ const handler = async (req: Request): Promise<Response> => {
     const failedEmails: string[] = [];
     const headerImg = template?.header_image_url || emailHeaderImageUrl;
 
+    // Prepare email attachments once and reuse for every passenger send.
+    // Hard caps: max 3 files, max 10MB total — UI enforces this, defense-in-depth here.
+    const MAX_ATTACHMENTS = 3;
+    const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+    type ResendAttachment = { filename: string; content: string };
+    const resendAttachments: ResendAttachment[] = [];
+    if (Array.isArray(requestedAttachments) && requestedAttachments.length > 0) {
+      const limited = requestedAttachments.slice(0, MAX_ATTACHMENTS);
+      let totalBytes = 0;
+      for (const att of limited) {
+        if (!att?.path) continue;
+        try {
+          const { data: fileData, error: dlErr } = await supabase.storage
+            .from('attachments')
+            .download(att.path);
+          if (dlErr || !fileData) {
+            console.error(`[custom-form Attachments] Download failed for ${att.path}:`, dlErr);
+            continue;
+          }
+          const buffer = new Uint8Array(await fileData.arrayBuffer());
+          totalBytes += buffer.byteLength;
+          if (totalBytes > MAX_ATTACHMENT_BYTES) {
+            console.warn('[custom-form Attachments] Total size exceeds 10MB cap, dropping further attachments.');
+            break;
+          }
+          let binary = '';
+          for (let i = 0; i < buffer.length; i++) binary += String.fromCharCode(buffer[i]);
+          const base64 = btoa(binary);
+          resendAttachments.push({
+            filename: att.name || att.path.split('/').pop() || 'attachment',
+            content: base64,
+          });
+          console.log(`[custom-form Attachments] Prepared ${att.name} (${buffer.byteLength} bytes)`);
+        } catch (e) {
+          console.error(`[custom-form Attachments] Error processing ${att.path}:`, e);
+        }
+      }
+    }
+
     for (const passenger of passengers) {
       try {
         const expiresAt = new Date();
@@ -336,6 +376,7 @@ const handler = async (req: Request): Promise<Response> => {
           bcc: bccEmails && bccEmails.length > 0 ? bccEmails : undefined,
           subject: finalSubject,
           html: finalHtml,
+          attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
         });
 
         if (emailError) {
