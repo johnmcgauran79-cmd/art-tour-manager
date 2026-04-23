@@ -1,0 +1,1 @@
+ALTER TABLE public.tour_custom_forms DROP CONSTRAINT IF EXISTS tour_custom_forms_tour_id_key;

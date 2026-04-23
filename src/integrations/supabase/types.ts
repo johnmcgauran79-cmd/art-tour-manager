@@ -2793,7 +2793,7 @@ export type Database = {
           {
             foreignKeyName: "tour_custom_forms_tour_id_fkey"
             columns: ["tour_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "tours"
             referencedColumns: ["id"]
           },
