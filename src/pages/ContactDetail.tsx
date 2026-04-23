@@ -16,6 +16,7 @@ import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 import { ContactAvatar } from "@/components/ContactAvatar";
 import { SendProfileUpdateButton } from "@/components/SendProfileUpdateButton";
+import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 const InfoRow = ({ label, value, extra }: { label: string; value: string | null | undefined; extra?: ReactNode }) => (
   <div className="flex flex-col gap-1">
     <span className="text-sm font-medium text-muted-foreground">{label}</span>
@@ -354,6 +355,7 @@ export default function ContactDetail() {
 
         <TabsContent value="bookings" className="space-y-4 mt-6">
           <ContactBookingsList contactId={contact.id} />
+          <RelatedTasksSection entityType="contact" entityId={contact.id} />
         </TabsContent>
       </Tabs>
     </div>

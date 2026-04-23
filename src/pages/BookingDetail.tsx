@@ -731,6 +731,10 @@ export default function BookingDetail() {
               <h3 className="text-lg font-semibold mb-4">Comments</h3>
               <BookingCommentsSection bookingId={booking.id} />
             </div>
+
+            <Separator />
+
+            <RelatedTasksSection entityType="booking" entityId={booking.id} />
           </TabsContent>
         </Tabs>
 

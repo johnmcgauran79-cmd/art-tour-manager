@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Hotel } from "@/hooks/useHotels";
 import { HotelAttachmentsSection } from "./HotelAttachmentsSection";
 import { HotelDateCascadeModal } from "./HotelDateCascadeModal";
+import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
 
 interface EditHotelModalProps {
   hotel: Hotel | null;
@@ -370,6 +371,13 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           )}
 
           <Separator />
+
+          {hotel && (
+            <>
+              <RelatedTasksSection entityType="hotel" entityId={hotel.id} />
+              <Separator />
+            </>
+          )}
 
           <div className="flex justify-between">
             <Button 

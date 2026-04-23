@@ -22,6 +22,7 @@ import { TourOperationsTab } from "@/components/TourOperationsTab";
 import { TourAttachmentsSection } from "@/components/TourAttachmentsSection";
 import { TourItineraryTab } from "@/components/TourItineraryTab";
 import { TourTasksTab } from "@/components/TourTasksTab";
+import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
 import { TourPickupLocationsTab } from "@/components/TourPickupLocationsTab";
 import { TourHostsInfoTab } from "@/components/TourHostsInfoTab";
 import { TourCustomFormsTab } from "@/components/TourCustomFormsTab";
@@ -496,6 +497,11 @@ export default function TourDetail() {
 
         <TabsContent value="tasks" className="space-y-4 mt-6">
           <TourTasksTab tourId={tour.id} tourName={tour.name} />
+          <RelatedTasksSection
+            entityType="tour"
+            entityId={tour.id}
+            title="Tasks Mentioning This Tour"
+          />
         </TabsContent>
 
         <TabsContent value="hostsinfo" className="space-y-4 mt-6">
