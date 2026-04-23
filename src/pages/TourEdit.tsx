@@ -684,6 +684,7 @@ export default function TourEdit() {
               value={formData.xero_product_id}
               onChange={(e) => handleInputChange("xero_product_id", e.target.value)}
               placeholder="e.g., TOUR-2026-MEL"
+              disabled={formData.is_test_tour}
             />
             <p className="text-xs text-muted-foreground">
               The Xero product/service ItemCode used for invoicing this tour.
@@ -710,10 +711,38 @@ export default function TourEdit() {
               value={formData.keap_tag_id}
               onChange={(e) => handleInputChange("keap_tag_id", e.target.value)}
               placeholder="Existing Keap tag ID (auto-created if empty)"
+              disabled={formData.is_test_tour}
             />
             <p className="text-xs text-muted-foreground">
               Enter an existing Keap tag ID for this tour, or leave blank to auto-create when a booking is made.
             </p>
+          </div>
+        </div>
+
+        {/* Test Mode toggle */}
+        <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="is_test_tour" className="text-base font-medium cursor-pointer">
+                  Test Tour (Sandbox Mode)
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground max-w-2xl">
+                Mark this as a sandbox tour for testing emails, forms, alerts and triggers.
+                When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong> and
+                <strong> skip Keap CRM tagging</strong>. The Xero & Keap fields above are not required.
+                Everything else (emails, forms, automations, reports) works exactly as a real tour.
+              </p>
+            </div>
+            <Switch
+              id="is_test_tour"
+              checked={formData.is_test_tour}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, is_test_tour: checked }))
+              }
+            />
           </div>
         </div>
 

@@ -262,13 +262,16 @@ export const AddBookingModal = ({
     // Validate tour has required integration codes
     const selectedTour = tours?.find(t => t.id === formData.tour_id);
     if (selectedTour) {
-      const missingCodes: string[] = [];
-      if (!selectedTour.xero_product_id) missingCodes.push('Xero Product Code');
-      if (!selectedTour.keap_tag_id) missingCodes.push('Keap Tag');
-      
-      if (missingCodes.length > 0) {
-        setValidationError(`Tour is missing ${missingCodes.join(' and ')}. Please set up the tour properly before creating a booking.`);
-        return;
+      // Skip integration validation for test tours
+      if (!(selectedTour as any).is_test_tour) {
+        const missingCodes: string[] = [];
+        if (!selectedTour.xero_product_id) missingCodes.push('Xero Product Code');
+        if (!selectedTour.keap_tag_id) missingCodes.push('Keap Tag');
+
+        if (missingCodes.length > 0) {
+          setValidationError(`Tour is missing ${missingCodes.join(' and ')}. Please set up the tour properly before creating a booking.`);
+          return;
+        }
       }
     }
 
