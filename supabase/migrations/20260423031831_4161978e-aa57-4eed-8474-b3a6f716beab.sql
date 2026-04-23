@@ -1,0 +1,2 @@
+ALTER TABLE public.tours ADD COLUMN IF NOT EXISTS is_test_tour boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN public.tours.is_test_tour IS 'When true, this tour is a sandbox/test tour: integrations like Xero invoice creation and Keap CRM tagging are skipped for all bookings on this tour.';

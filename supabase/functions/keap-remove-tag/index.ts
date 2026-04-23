@@ -80,9 +80,16 @@ Deno.serve(async (req) => {
     // Fetch the tour's keap_tag_id
     const { data: tour, error: tourError } = await supabase
       .from('tours')
-      .select('id, name, keap_tag_id')
+      .select('id, name, keap_tag_id, is_test_tour')
       .eq('id', booking.tour_id)
       .single();
+
+    if ((tour as any)?.is_test_tour) {
+      console.log(`Skipping Keap remove-tag — tour ${tour?.id} is marked as a TEST tour`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Test tour' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (tourError || !tour?.keap_tag_id) {
       console.log('Tour has no keap_tag_id, nothing to remove');

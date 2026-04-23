@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, AlertTriangle, Mail } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, Mail, FlaskConical } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/utils";
 import { useUpdateTour, useTours } from "@/hooks/useTours";
@@ -53,6 +55,7 @@ export default function TourEdit() {
     keap_tag_id: "",
     xero_product_id: "",
     xero_reference: "",
+    is_test_tour: false,
   });
 
   const updateTourMutation = useUpdateTour();
@@ -84,7 +87,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour')
           .eq('id', id)
           .single();
         
@@ -116,6 +119,7 @@ export default function TourEdit() {
             keap_tag_id: (data as any).keap_tag_id || "",
             xero_product_id: (data as any).xero_product_id || "",
             xero_reference: (data as any).xero_reference || "",
+            is_test_tour: (data as any).is_test_tour || false,
           });
         }
       }
@@ -180,6 +184,7 @@ export default function TourEdit() {
       keap_tag_id: formData.keap_tag_id || null,
       xero_product_id: formData.xero_product_id || null,
       xero_reference: formData.xero_reference || null,
+      is_test_tour: formData.is_test_tour,
     } as any;
 
     // Check if status is changing TO cancelled — require confirmation
@@ -353,7 +358,14 @@ export default function TourEdit() {
       />
 
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Edit Tour: {tour.name}</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Edit Tour: {tour.name}</h1>
+          {formData.is_test_tour && (
+            <Badge variant="secondary" className="gap-1">
+              <FlaskConical className="mr-1 h-3 w-3" /> TEST TOUR
+            </Badge>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -672,6 +684,7 @@ export default function TourEdit() {
               value={formData.xero_product_id}
               onChange={(e) => handleInputChange("xero_product_id", e.target.value)}
               placeholder="e.g., TOUR-2026-MEL"
+              disabled={formData.is_test_tour}
             />
             <p className="text-xs text-muted-foreground">
               The Xero product/service ItemCode used for invoicing this tour.
@@ -698,10 +711,38 @@ export default function TourEdit() {
               value={formData.keap_tag_id}
               onChange={(e) => handleInputChange("keap_tag_id", e.target.value)}
               placeholder="Existing Keap tag ID (auto-created if empty)"
+              disabled={formData.is_test_tour}
             />
             <p className="text-xs text-muted-foreground">
               Enter an existing Keap tag ID for this tour, or leave blank to auto-create when a booking is made.
             </p>
+          </div>
+        </div>
+
+        {/* Test Mode toggle */}
+        <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="is_test_tour" className="text-base font-medium cursor-pointer">
+                  Test Tour (Sandbox Mode)
+                </Label>
+              </div>
+              <p className="text-xs text-muted-foreground max-w-2xl">
+                Mark this as a sandbox tour for testing emails, forms, alerts and triggers.
+                When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong> and
+                <strong> skip Keap CRM tagging</strong>. The Xero & Keap fields above are not required.
+                Everything else (emails, forms, automations, reports) works exactly as a real tour.
+              </p>
+            </div>
+            <Switch
+              id="is_test_tour"
+              checked={formData.is_test_tour}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, is_test_tour: checked }))
+              }
+            />
           </div>
         </div>
 

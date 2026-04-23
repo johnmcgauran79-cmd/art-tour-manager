@@ -107,10 +107,22 @@ export const useCancelBooking = () => {
 
       // 6. Remove Keap tags (fire-and-forget)
       try {
-        await supabase.functions.invoke('keap-remove-tag', {
-          body: { bookingId },
-        });
-        console.log('Keap tag removal triggered for cancelled booking');
+        // Check if this is a test tour — skip Keap removal entirely
+        const { data: bookingTour } = await supabase
+          .from('bookings')
+          .select('tour_id, tours:tour_id(is_test_tour)')
+          .eq('id', bookingId)
+          .single();
+        const isTestTour = !!(bookingTour?.tours as any)?.is_test_tour;
+
+        if (isTestTour) {
+          console.log('Test Tour: Skipping Keap tag removal for cancelled booking');
+        } else {
+          await supabase.functions.invoke('keap-remove-tag', {
+            body: { bookingId },
+          });
+          console.log('Keap tag removal triggered for cancelled booking');
+        }
       } catch (keapError) {
         console.error('Non-blocking: Failed to remove Keap tags:', keapError);
       }

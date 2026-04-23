@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
 
     // Fetch tour name and customer details from Supabase
     const [tourResult, bookingResult] = await Promise.all([
-      supabase.from('tours').select('name, keap_tag_id').eq('id', tourId).single(),
+      supabase.from('tours').select('name, keap_tag_id, is_test_tour').eq('id', tourId).single(),
       supabase.from('bookings').select(`
         id,
         lead_passenger_id,
@@ -165,6 +165,14 @@ Deno.serve(async (req) => {
 
     const tourName = tourResult.data.name;
     const existingKeapTagId = tourResult.data.keap_tag_id;
+    const isTestTour = (tourResult.data as any).is_test_tour === true;
+
+    if (isTestTour) {
+      console.log(`Skipping Keap tag — tour ${tourId} (${tourName}) is marked as a TEST tour`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'Test tour' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Server-side guard:
     // - Host: always allow Keap tag (they need tour updates)

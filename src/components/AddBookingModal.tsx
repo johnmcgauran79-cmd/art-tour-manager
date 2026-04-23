@@ -262,13 +262,16 @@ export const AddBookingModal = ({
     // Validate tour has required integration codes
     const selectedTour = tours?.find(t => t.id === formData.tour_id);
     if (selectedTour) {
-      const missingCodes: string[] = [];
-      if (!selectedTour.xero_product_id) missingCodes.push('Xero Product Code');
-      if (!selectedTour.keap_tag_id) missingCodes.push('Keap Tag');
-      
-      if (missingCodes.length > 0) {
-        setValidationError(`Tour is missing ${missingCodes.join(' and ')}. Please set up the tour properly before creating a booking.`);
-        return;
+      // Skip integration validation for test tours
+      if (!(selectedTour as any).is_test_tour) {
+        const missingCodes: string[] = [];
+        if (!selectedTour.xero_product_id) missingCodes.push('Xero Product Code');
+        if (!selectedTour.keap_tag_id) missingCodes.push('Keap Tag');
+
+        if (missingCodes.length > 0) {
+          setValidationError(`Tour is missing ${missingCodes.join(' and ')}. Please set up the tour properly before creating a booking.`);
+          return;
+        }
       }
     }
 
@@ -341,9 +344,15 @@ export const AddBookingModal = ({
       const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
       const isHost = status === 'host';
       const isComplimentary = status === 'complimentary';
+      const tourForBooking = tours?.find(t => t.id === formData.tour_id);
+      const isTestTour = !!(tourForBooking as any)?.is_test_tour;
 
-      const shouldTriggerXero = !isHost && !isComplimentary && isFullTourBooking;
-      const shouldTriggerKeap = isHost || isFullTourBooking;
+      const shouldTriggerXero = !isTestTour && !isHost && !isComplimentary && isFullTourBooking;
+      const shouldTriggerKeap = !isTestTour && (isHost || isFullTourBooking);
+
+      if (isTestTour) {
+        console.log('Test Tour: Skipping Xero & Keap integrations for booking', newBooking.id);
+      }
 
       if (shouldTriggerXero) {
         if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {

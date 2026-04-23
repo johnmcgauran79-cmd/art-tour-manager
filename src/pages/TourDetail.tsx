@@ -242,7 +242,14 @@ export default function TourDetail() {
         
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{tour.name}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{tour.name}</h1>
+              {(tour as any).is_test_tour && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-secondary text-secondary-foreground px-2 py-1 text-xs font-medium">
+                  🧪 TEST TOUR
+                </span>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
               {formatDateRange(tour.start_date, tour.end_date)}
             </p>
