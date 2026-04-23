@@ -426,11 +426,32 @@ export const UnifiedEmailApprovals = () => {
 
               {rows.map((row) => {
                 const isExpanded = expandedUid === row.uid;
+                const itemIds = row.statusChangeItemIds || [];
+                const selectedItemCount =
+                  row.source === "status_change"
+                    ? selectedUids.has(row.uid)
+                      ? itemIds.length
+                      : itemIds.filter((id) => selectedStatusItemIds.has(id)).length
+                    : 0;
+                const rowFullySelected =
+                  row.source === "scheduled"
+                    ? selectedUids.has(row.uid)
+                    : itemIds.length > 0 && selectedItemCount === itemIds.length;
+                const rowPartiallySelected =
+                  row.source === "status_change" &&
+                  selectedItemCount > 0 &&
+                  selectedItemCount < itemIds.length;
                 return (
                   <div key={row.uid} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-start gap-3">
                       <Checkbox
-                        checked={selectedUids.has(row.uid)}
+                        checked={
+                          rowFullySelected
+                            ? true
+                            : rowPartiallySelected
+                              ? "indeterminate"
+                              : false
+                        }
                         onCheckedChange={(c) => toggleOne(row.uid, c as boolean)}
                       />
                       <div className="flex-1 space-y-2">
