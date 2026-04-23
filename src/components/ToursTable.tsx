@@ -282,7 +282,14 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => handleTourClick(tour)}
                       >
-                        <TableCell className="font-medium">{tour.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <span className="inline-flex items-center gap-2">
+                            {tour.name}
+                            {(tour as any).is_test_tour && (
+                              <Badge variant="secondary" className="text-xs">TEST</Badge>
+                            )}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           {tour.tour_host && tour.tour_host !== 'TBD' ? (
                             <Badge className={getHostFlightStatusStyle(tour.host_flights_status)}>

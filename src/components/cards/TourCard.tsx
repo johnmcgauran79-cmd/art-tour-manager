@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, MapPin, DollarSign, Edit, Copy } from "lucide-react";
+import { Calendar, Users, MapPin, DollarSign, Edit, Copy, FlaskConical } from "lucide-react";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "@/lib/statusColors";
 import { typography } from "@/lib/typography";
@@ -33,9 +33,16 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
     >
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-2">
-          <Badge className={`${getTourStatusColor(tour.status)} self-start`}>
-            {formatStatusText(tour.status)}
-          </Badge>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge className={`${getTourStatusColor(tour.status)} self-start`}>
+              {formatStatusText(tour.status)}
+            </Badge>
+            {(tour as any).is_test_tour && (
+              <Badge variant="secondary" className="gap-1 self-start">
+                <FlaskConical className="h-3 w-3" /> TEST
+              </Badge>
+            )}
+          </div>
           <div className="min-w-0">
             <h3 className={`${typography.cardTitle} line-clamp-2 mb-1`}>
               {tour.name}
