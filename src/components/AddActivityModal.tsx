@@ -254,6 +254,7 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
                   <SelectItem value="taxi">Taxi</SelectItem>
                   <SelectItem value="ferry">Ferry</SelectItem>
                   <SelectItem value="train">Public Transport</SelectItem>
+                  <SelectItem value="air_flight">Air/Flight Transfer</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
