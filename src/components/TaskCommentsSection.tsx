@@ -7,6 +7,8 @@ import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Send, Paperclip, X, Download, CornerDownRight, Reply, Pencil } from "lucide-react";
 import { UserMentionInput } from "@/components/UserMentionInput";
 import { useAuth } from "@/hooks/useAuth";
+import { EntityLinkPicker } from "@/components/entityLinks/EntityLinkPicker";
+import { LinkedTextRenderer } from "@/components/entityLinks/LinkedTextRenderer";
 
 interface TaskCommentsSectionProps {
   taskId: string;
@@ -167,6 +169,11 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
 
   const cleanMentions = (text: string) => text.replace(/@\[([^\]]+)\]\([^)]+\)/g, '@$1');
 
+  const appendToken = (current: string, setter: (s: string) => void, token: string) => {
+    const sep = current && !/\s$/.test(current) ? " " : "";
+    setter(`${current}${sep}${token} `);
+  };
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading comments...</div>;
   }
@@ -222,7 +229,7 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
                 ) : (
                   <>
                     <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                      {cleanMentions(comment.comment)}
+                      <LinkedTextRenderer text={cleanMentions(comment.comment)} />
                     </p>
                     {renderAttachments(comment.id)}
 
@@ -296,7 +303,7 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
                               ) : (
                                 <>
                                   <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                                    {cleanMentions(reply.comment)}
+                                    <LinkedTextRenderer text={cleanMentions(reply.comment)} />
                                   </p>
                                   {renderAttachments(reply.id)}
                                   {canEditReply && (

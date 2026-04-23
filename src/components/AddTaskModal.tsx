@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
+import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 
 interface AddTaskModalProps {
   open: boolean;
@@ -347,11 +348,11 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea
+            <LinkableTextarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter task description (optional)"
+              onChange={setDescription}
+              placeholder="Enter task description (optional). Use 'Link record' to reference a booking, hotel, tour, etc."
               rows={3}
             />
           </div>
