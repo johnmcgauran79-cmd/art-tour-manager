@@ -72,3 +72,16 @@ export const ENTITY_LABELS: Record<EntityType, string> = {
   tour: "Tour",
   contact: "Contact",
 };
+
+/**
+ * Replace `[[type:id|Label]]` tokens with just `Label` (or the type name if no
+ * label was captured). Use anywhere we need plain, human-readable text — emails,
+ * notification copy, line-clamped previews, plain-text exports, etc.
+ */
+export function stripEntityTokens(text: string | null | undefined): string {
+  if (!text) return "";
+  return text.replace(ENTITY_LINK_REGEX, (_match, type, _id, label) => {
+    const clean = (label || "").trim();
+    return clean || (type as string);
+  });
+}

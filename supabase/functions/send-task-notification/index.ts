@@ -116,9 +116,14 @@ Deno.serve(async (req) => {
       ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
       : "";
 
-    // Strip @[Name](uuid) mention syntax → @Name for display
+    // Strip @[Name](uuid) mention syntax → @Name AND [[type:id|Label]] entity tokens → Label
     const cleanedMessage = body.message
-      ? body.message.replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1")
+      ? body.message
+          .replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1")
+          .replace(
+            /\[\[(?:booking|hotel|activity|tour|contact):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\|([^\]]*))?\]\]/gi,
+            (_m, label) => (label || "").trim() || "(linked record)"
+          )
       : "";
     const messageBlock = cleanedMessage
       ? `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-left:3px solid #1a2332;border-radius:4px;margin:16px 0;"><tr><td style="padding:14px 18px;color:#374151;font-size:14px;font-style:italic;line-height:1.5;">"${cleanedMessage.replace(/</g, "&lt;").substring(0, 500)}"</td></tr></table>`
