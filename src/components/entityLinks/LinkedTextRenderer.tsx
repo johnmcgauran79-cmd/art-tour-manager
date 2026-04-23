@@ -1,6 +1,6 @@
 import { Link as RouterLink } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BedDouble, Briefcase, MapPin, User, Activity as ActivityIcon } from "lucide-react";
+import { BedDouble, Briefcase, MapPin, User, Activity as ActivityIcon, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   parseEntityLinks,
@@ -8,6 +8,8 @@ import {
   ENTITY_LABELS,
   type EntityType,
 } from "@/lib/entityLinks";
+import { useEntityResolver } from "@/hooks/useEntityResolver";
+import { useMemo } from "react";
 
 interface LinkedTextRendererProps {
   text: string | null | undefined;
@@ -30,15 +32,32 @@ const entityChipClass: Record<EntityType, string> = {
   contact: "bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/40 dark:text-pink-200",
 };
 
-const Chip = ({ type, label, id }: { type: EntityType; label: string; id: string }) => {
-  const Icon = entityIcon[type];
-  const href = entityLinkHref(type, id);
+const Chip = ({
+  type,
+  label,
+  id,
+  deleted,
+  tourId,
+  loading,
+}: {
+  type: EntityType;
+  label: string;
+  id: string;
+  deleted?: boolean;
+  tourId?: string | null;
+  loading?: boolean;
+}) => {
+  const Icon = deleted ? AlertCircle : entityIcon[type];
+  const href = deleted ? null : entityLinkHref(type, id, tourId);
   const inner = (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium align-baseline",
-        entityChipClass[type],
-        href && "cursor-pointer"
+        deleted
+          ? "bg-muted text-muted-foreground line-through opacity-70"
+          : entityChipClass[type],
+        href && "cursor-pointer",
+        loading && "opacity-70"
       )}
     >
       <Icon className="h-3 w-3" />
@@ -59,7 +78,9 @@ const Chip = ({ type, label, id }: { type: EntityType; label: string; id: string
       </TooltipTrigger>
       <TooltipContent side="top">
         <span className="text-xs">
-          {ENTITY_LABELS[type]}: {label}
+          {deleted
+            ? `${ENTITY_LABELS[type]} removed — record no longer exists`
+            : `${ENTITY_LABELS[type]}: ${label}`}
         </span>
       </TooltipContent>
     </Tooltip>
@@ -71,8 +92,14 @@ const Chip = ({ type, label, id }: { type: EntityType; label: string; id: string
  * Plain text segments preserve whitespace.
  */
 export const LinkedTextRenderer = ({ text, className }: LinkedTextRendererProps) => {
+  const links = useMemo(() => parseEntityLinks(text), [text]);
+  const refs = useMemo(
+    () => links.map((l) => ({ entity_type: l.type, entity_id: l.id })),
+    [links]
+  );
+  const { data: resolved, isLoading } = useEntityResolver(refs);
+
   if (!text) return null;
-  const links = parseEntityLinks(text);
   if (links.length === 0) {
     return <span className={cn("whitespace-pre-wrap", className)}>{text}</span>;
   }
@@ -86,7 +113,20 @@ export const LinkedTextRenderer = ({ text, className }: LinkedTextRendererProps)
         </span>
       );
     }
-    parts.push(<Chip key={`c-${i}`} type={l.type} id={l.id} label={l.label} />);
+    const r = resolved?.[`${l.type}:${l.id}`];
+    parts.push(
+      <Chip
+        key={`c-${i}`}
+        type={l.type}
+        id={l.id}
+        // Prefer the live label; fall back to the stored label so chips
+        // still read sensibly while resolving / for deleted entities.
+        label={r && !r.deleted ? r.label : l.label}
+        deleted={r?.deleted}
+        tourId={r?.tourId}
+        loading={isLoading && !r}
+      />
+    );
     cursor = l.end;
   });
   if (cursor < text.length) {

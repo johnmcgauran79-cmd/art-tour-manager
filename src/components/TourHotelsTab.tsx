@@ -9,7 +9,8 @@ import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModa
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
 import { HotelAttachmentsSection } from "@/components/HotelAttachmentsSection";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
 import { TourAlert } from "@/hooks/useTourAlerts";
@@ -31,6 +32,22 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
   const [showDuplicateModal, setShowDuplicateModal] = useState(false);
   const { userRole } = useAuth();
   const { count: alertCount, criticalCount } = useTabAlerts(alerts, "hotels");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-open the Edit Hotel modal when navigated to via a `?hotelId=` deep link
+  // (used by hotel chips in linked-text fields).
+  useEffect(() => {
+    const hotelId = searchParams.get("hotelId");
+    if (!hotelId || !hotels?.length) return;
+    const match = hotels.find((h) => h.id === hotelId);
+    if (match) {
+      onEditHotel(match);
+      // Strip the param so it doesn't keep retriggering on subsequent renders.
+      const next = new URLSearchParams(searchParams);
+      next.delete("hotelId");
+      setSearchParams(next, { replace: true });
+    }
+  }, [hotels, searchParams, onEditHotel, setSearchParams]);
   
   // Agent users have view-only access
   const isAgent = userRole === 'agent';
