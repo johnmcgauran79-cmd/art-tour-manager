@@ -27,6 +27,10 @@ interface InlineEntitySuggestionsProps {
   onPick: (item: InlineSuggestionItem) => void;
   /** Called when the user dismisses (Esc, blur, etc). */
   onDismiss: () => void;
+  /** Controlled active index (for keyboard nav driven by parent textarea). */
+  activeIndex: number;
+  /** Called whenever the visible items list changes — parent uses to clamp the active index. */
+  onItemsChange?: (items: InlineSuggestionItem[]) => void;
   /** Position relative to the parent (typically anchored under the textarea). */
   className?: string;
 }
@@ -40,6 +44,8 @@ export const InlineEntitySuggestions = ({
   query,
   onPick,
   onDismiss,
+  activeIndex,
+  onItemsChange,
   className,
 }: InlineEntitySuggestionsProps) => {
   const term = query.trim();
@@ -165,21 +171,20 @@ export const InlineEntitySuggestions = ({
     return out.slice(0, 12);
   }, [queries]);
 
-  const [active, setActive] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Reset active index when items change
+  // Notify parent when the items list resolves (so it can clamp activeIndex)
   useEffect(() => {
-    setActive(0);
-  }, [term, items.length]);
+    onItemsChange?.(items);
+  }, [items, onItemsChange]);
 
-  // Keyboard handlers attached on the document while the popover is open.
-  // We don't intercept here directly — the parent textarea forwards keys via
-  // the `useInlineEntityTrigger` hook below.
-
-  // Expose imperative API for parent
-  (InlineEntitySuggestions as any).move = (delta: 1 | -1) =>
-    setActive((i) => Math.max(0, Math.min(items.length - 1, i + delta)));
+  // Keep the active item scrolled into view
+  useEffect(() => {
+    const el = containerRef.current?.querySelector<HTMLElement>(
+      `[data-suggestion-index="${activeIndex}"]`
+    );
+    el?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
 
   if (items.length === 0 && !isLoading) {
     return (
@@ -218,11 +223,11 @@ export const InlineEntitySuggestions = ({
               <li key={`${it.type}-${it.id}`}>
                 <button
                   type="button"
+                  data-suggestion-index={idx}
                   onClick={() => onPick(it)}
-                  onMouseEnter={() => setActive(idx)}
                   className={cn(
                     "w-full flex items-start gap-2 px-3 py-1.5 text-left text-sm",
-                    idx === active
+                    idx === activeIndex
                       ? "bg-accent text-accent-foreground"
                       : "hover:bg-accent/40"
                   )}
