@@ -50,7 +50,11 @@ export function parseEntityLinks(text: string | null | undefined): ParsedEntityL
 }
 
 /** Get a stable nav route for an entity link, or null if it isn't navigable. */
-export function entityLinkHref(type: EntityType, id: string): string | null {
+export function entityLinkHref(
+  type: EntityType,
+  id: string,
+  tourId?: string | null
+): string | null {
   switch (type) {
     case "booking":
       return `/bookings/${id}`;
@@ -59,9 +63,10 @@ export function entityLinkHref(type: EntityType, id: string): string | null {
     case "contact":
       return `/contacts/${id}`;
     case "hotel":
+      // Deep-link into the parent tour's Hotels tab and pre-select this hotel.
+      return tourId ? `/tours/${tourId}?tab=hotels&hotelId=${id}` : null;
     case "activity":
-      // No standalone detail pages — chip is informational only.
-      return null;
+      return tourId ? `/tours/${tourId}?tab=activities&activityId=${id}` : null;
   }
 }
 
