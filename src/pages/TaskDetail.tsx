@@ -196,12 +196,12 @@ export default function TaskDetail() {
           ]}
         />
 
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl font-bold truncate">{edited.title || task.title}</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold break-words sm:truncate">{edited.title || task.title}</h1>
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex gap-2 shrink-0 flex-wrap">
             <Button variant="outline" size="sm" onClick={() => guardedNavigate(() => goBack("/?tab=tasks"))}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
