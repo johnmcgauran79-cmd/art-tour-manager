@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
 
 interface EmailRoomingListModalProps {
   open: boolean;
@@ -38,8 +39,13 @@ export const EmailRoomingListModal = ({
   const { user } = useAuth();
   const userEmail = user?.email || "";
   const { data: fromEmails = [] } = useUserEmails();
+  const { defaultFromEmail: operationalDefault } = useDefaultFromEmail("operational");
   const dropdownEmails = Array.from(
-    new Set([...(userEmail ? [userEmail] : []), ...fromEmails])
+    new Set([
+      ...(operationalDefault ? [operationalDefault] : []),
+      ...(userEmail ? [userEmail] : []),
+      ...fromEmails,
+    ])
   );
   
   const [from, setFrom] = useState("");
@@ -51,12 +57,12 @@ export const EmailRoomingListModal = ({
     `Dear ${hotelName},\n\nPlease find attached the rooming list for ${tourName}.\n\nKind regards,\nOperations Team`
   );
 
-  // Set default from email when component opens
+  // When the modal opens, pre-select the configured operational default
+  // (e.g. admin@). Falls back to the current user's email if no default is set.
   useEffect(() => {
-    if (open && userEmail) {
-      setFrom(userEmail);
-    }
-  }, [open, userEmail]);
+    if (!open) return;
+    setFrom(operationalDefault || userEmail || "");
+  }, [open, operationalDefault, userEmail]);
 
   const handleSend = () => {
     onSend({ from, to, cc, bcc, subject, message });
