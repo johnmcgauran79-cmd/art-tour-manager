@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Mail, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
 
 interface EmailPassportReportModalProps {
   open: boolean;
@@ -34,8 +35,13 @@ export const EmailPassportReportModal = ({
   const { user } = useAuth();
   const userEmail = user?.email || "";
   const { data: fromEmails = [] } = useUserEmails();
+  const { defaultFromEmail: operationalDefault } = useDefaultFromEmail("operational");
   const dropdownEmails = Array.from(
-    new Set([...(userEmail ? [userEmail] : []), ...fromEmails])
+    new Set([
+      ...(operationalDefault ? [operationalDefault] : []),
+      ...(userEmail ? [userEmail] : []),
+      ...fromEmails,
+    ])
   );
   
   const [from, setFrom] = useState("");
@@ -47,12 +53,12 @@ export const EmailPassportReportModal = ({
     `Dear Team,\n\nPlease find attached the passport details report for ${tourName}.\n\nThis report includes all travel document information for passengers on this tour.\n\nKind regards,\nOperations Team`
   );
 
-  // Set default from email when component opens
+  // Pre-select the configured operational default on open
+  // (falls back to the logged-in user's email if not set).
   useEffect(() => {
-    if (open && userEmail) {
-      setFrom(userEmail);
-    }
-  }, [open, userEmail]);
+    if (!open) return;
+    setFrom(operationalDefault || userEmail || "");
+  }, [open, operationalDefault, userEmail]);
 
   // Reset subject and message when tour name changes
   useEffect(() => {

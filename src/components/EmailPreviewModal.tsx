@@ -13,6 +13,7 @@ import { useScheduleEmail } from "@/hooks/useScheduledEmails";
 import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
 import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -69,7 +70,8 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   // Track if user has manually edited the content (if so, send their edits as-is)
   const [userHasEdited, setUserHasEdited] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
-  const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
+  const { defaultFromEmail: clientDefault } = useDefaultFromEmail("client");
+  const [fromEmail, setFromEmail] = useState<string>(clientDefault);
   const [ccEmails, setCcEmails] = useState<string>("");
   const [bccEmails, setBccEmails] = useState<string>("");
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
@@ -78,6 +80,12 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
+
+  // Keep the From field in sync with the configured default until the user
+  // explicitly changes it.
+  useEffect(() => {
+    if (clientDefault) setFromEmail((prev) => prev || clientDefault);
+  }, [clientDefault]);
 
   // Quill modules configuration
   const quillModules = {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Mail, Plus, X } from "lucide-react";
 import html2pdf from "html2pdf.js";
 import { useToast } from "@/hooks/use-toast";
+import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
 
 interface EmailItineraryModalProps {
   open: boolean;
@@ -32,6 +33,10 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
   const [subject, setSubject] = useState(`${tour.name} - Tour Itinerary`);
   const [message, setMessage] = useState("");
   const [fromEmail, setFromEmail] = useState("");
+  const { defaultFromEmail: clientDefault } = useDefaultFromEmail("client");
+  useEffect(() => {
+    if (open && clientDefault) setFromEmail((prev) => prev || clientDefault);
+  }, [open, clientDefault]);
   const [includeHotels, setIncludeHotels] = useState(true);
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
   const [ccEmails, setCcEmails] = useState<string[]>([]);

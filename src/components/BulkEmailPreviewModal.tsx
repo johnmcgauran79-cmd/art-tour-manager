@@ -16,6 +16,7 @@ import { useCustomForms } from "@/hooks/useCustomForms";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import { useDefaultFromEmail } from "@/hooks/useDefaultFromEmail";
 import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { PendingEmailPreviewModal } from "@/components/operations/PendingEmailPreviewModal";
 import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
@@ -56,7 +57,8 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [originalContentTemplate, setOriginalContentTemplate] = useState("");
   
   const [recipientType, setRecipientType] = useState<string>("");
-  const [fromEmail, setFromEmail] = useState<string>("bookings@australianracingtours.com.au");
+  const { defaultFromEmail: clientDefault } = useDefaultFromEmail("client");
+  const [fromEmail, setFromEmail] = useState<string>(clientDefault);
   const [ccEmails, setCcEmails] = useState<string>("");
   const [bccEmails, setBccEmails] = useState<string>("");
   const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
@@ -74,6 +76,10 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   });
   const { data: templates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
+
+  useEffect(() => {
+    if (clientDefault) setFromEmail((prev) => prev || clientDefault);
+  }, [clientDefault]);
   const { forms: tourForms } = useCustomForms(tourId || "");
   const publishedForms = (tourForms || []).filter((f: any) => f.is_published);
 
