@@ -137,7 +137,10 @@ export const StreamlinedTasksTable = ({
                         className="text-xs text-muted-foreground mt-0.5 line-clamp-1"
                         title={task.description}
                       >
-                        {task.description}
+                        {task.description.replace(
+                          /\[\[(?:booking|hotel|activity|tour|contact):[0-9a-f-]{36}(?:\|([^\]]*))?\]\]/gi,
+                          (_m, label) => label?.trim() || "(linked)"
+                        )}
                       </div>
                     )}
                   </TableCell>
