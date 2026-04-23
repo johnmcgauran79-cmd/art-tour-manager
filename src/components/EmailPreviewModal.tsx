@@ -13,6 +13,7 @@ import { useScheduleEmail } from "@/hooks/useScheduledEmails";
 import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { EmailTemplateEngine } from "@/utils/emailTemplateEngine";
 import { useUserEmails } from "@/hooks/useUserEmails";
+import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import {
@@ -72,6 +73,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const [ccEmails, setCcEmails] = useState<string>("");
   const [bccEmails, setBccEmails] = useState<string>("");
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
   const sendEmail = useSendBookingConfirmation();
   const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
@@ -237,6 +239,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
         ccEmails: ccEmails.split(',').map(e => e.trim()).filter(Boolean),
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
       onOpenChange(false);
     } catch (error) {
@@ -357,6 +360,13 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
               />
             </div>
 
+            <EmailAttachmentPicker
+              tourId={recipientData?.tourId || null}
+              attachments={attachments}
+              onChange={setAttachments}
+              disabled={sendEmail.isPending}
+            />
+
             <div>
               <Label htmlFor="subject">Subject:</Label>
               <Input
@@ -456,6 +466,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
               includeAdditionalPassengers: true,
               emailTemplateId: selectedTemplateId || undefined,
               emailTemplateName: selectedTemplate?.name || 'Custom',
+              attachments: attachments.length > 0 ? attachments : undefined,
             },
           });
           setShowScheduleDialog(false);

@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserEmails } from "@/hooks/useUserEmails";
 import { ScheduleEmailDialog } from "@/components/ScheduleEmailDialog";
 import { PendingEmailPreviewModal } from "@/components/operations/PendingEmailPreviewModal";
+import { EmailAttachmentPicker, type EmailAttachment } from "@/components/email/EmailAttachmentPicker";
 import ReactQuill, { Quill } from "react-quill";
 import "react-quill/dist/quill.snow.css";
 import {
@@ -52,6 +53,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
   const [includeAdditionalPassengers, setIncludeAdditionalPassengers] = useState(true);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
   
   const scheduleEmailMutation = useScheduleEmail();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
@@ -248,6 +250,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
         includeAdditionalPassengers,
         emailTemplateId: selectedTemplateId || undefined,
         customFormId: isCustomFormTemplate ? selectedFormId : undefined,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
       
       console.log(`[Bulk Email UI] Send complete:`, result);
@@ -555,6 +558,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               </p>
             </div>
 
+            <EmailAttachmentPicker
+              tourId={tourId}
+              attachments={attachments}
+              onChange={setAttachments}
+              disabled={bulkEmailMutation.isPending}
+            />
 
             <div className="flex justify-end gap-2 pt-4 border-t sticky bottom-0 bg-background">
               <Button 
@@ -680,6 +689,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId }: BulkEmailP
               includeAdditionalPassengers,
               emailTemplateId: selectedTemplateId || undefined,
               emailTemplateName: selectedTemplate?.name || 'Custom',
+              attachments: attachments.length > 0 ? attachments : undefined,
             },
           });
           setShowScheduleDialog(false);
