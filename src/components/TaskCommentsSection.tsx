@@ -184,6 +184,8 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
           topLevelComments.map((comment) => {
             const replies = repliesByParent[comment.id] || [];
             const isReplyOpen = replyingTo === comment.id;
+            const isEditing = editingId === comment.id;
+            const canEdit = !!user && comment.user_id === user.id;
             return (
               <div key={comment.id} className="border-l-2 border-border pl-3 py-2">
                 <div className="flex justify-between items-start mb-1">
@@ -192,24 +194,62 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                    {comment.edited_at && (
+                      <span className="ml-1 italic">(edited)</span>
+                    )}
                   </span>
                 </div>
-                <p className="text-sm text-foreground/80 whitespace-pre-wrap">
-                  {cleanMentions(comment.comment)}
-                </p>
-                {renderAttachments(comment.id)}
+                {isEditing ? (
+                  <div className="space-y-2 mt-1">
+                    <UserMentionInput
+                      value={editText}
+                      onChange={setEditText}
+                      onMentionedUsersChange={setEditMentionedUsers}
+                      placeholder="Edit your comment..."
+                      rows={3}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => handleSaveEdit(comment.id)}
+                        disabled={!editText.trim() || updateComment.isPending}
+                        size="sm"
+                      >
+                        {updateComment.isPending ? 'Saving...' : 'Save'}
+                      </Button>
+                      <Button onClick={cancelEdit} size="sm" variant="ghost">Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-foreground/80 whitespace-pre-wrap">
+                      {cleanMentions(comment.comment)}
+                    </p>
+                    {renderAttachments(comment.id)}
 
-                <div className="mt-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => (isReplyOpen ? cancelReply() : setReplyingTo(comment.id))}
-                  >
-                    <Reply className="h-3 w-3 mr-1" />
-                    {isReplyOpen ? 'Cancel' : 'Reply'}
-                  </Button>
-                </div>
+                    <div className="mt-2 flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => (isReplyOpen ? cancelReply() : setReplyingTo(comment.id))}
+                      >
+                        <Reply className="h-3 w-3 mr-1" />
+                        {isReplyOpen ? 'Cancel' : 'Reply'}
+                      </Button>
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                          onClick={() => startEdit(comment)}
+                        >
+                          <Pencil className="h-3 w-3 mr-1" />
+                          Edit
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Replies (expanded inline) */}
                 {replies.length > 0 && (
