@@ -7,7 +7,7 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId, customFormId }: { 
+    mutationFn: async ({ tourId, recipientType, subjectTemplate, contentTemplate, fromEmail, selectedBookingIds, ccEmails, bccEmails, includeAdditionalPassengers, emailTemplateId, customFormId, attachments }: { 
       tourId: string; 
       recipientType?: string;
       subjectTemplate?: string; 
@@ -24,6 +24,11 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
        * the {{custom_form_button}} merge field works correctly.
        */
       customFormId?: string;
+      /**
+       * Same attachments are sent to every booking in this batch.
+       * Temporary uploads survive across all sends and are removed after the batch.
+       */
+      attachments?: Array<{ path: string; name: string; source?: "tour" | "upload" }>;
     }) => {
       let bookings;
       
@@ -243,7 +248,11 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
               ccEmails,
               bccEmails,
               includeAdditionalPassengers: includeAdditionalPassengers ?? true,
-              emailTemplateId
+              emailTemplateId,
+              attachments,
+              // Bulk batch shares one set of uploaded files — keep them in
+              // storage until the parent hook cleans up after the loop.
+              cleanupAttachments: false,
             }
           });
           
@@ -279,6 +288,22 @@ export const useBulkBookingEmail = (onProgress?: (current: number, total: number
       console.log(`[Bulk Email] Complete: ${successful} sent, ${failed} failed out of ${bookings.length}`);
       if (failedDetails.length > 0) {
         console.error('[Bulk Email] Failed details:', failedDetails);
+      }
+
+      // Clean up any temporary uploaded attachments after the entire batch.
+      // Tour-library attachments (source: 'tour') are NOT removed.
+      const tempPaths = (attachments || [])
+        .filter(a => a.source === 'upload')
+        .map(a => a.path);
+      if (tempPaths.length > 0) {
+        try {
+          const { error: rmErr } = await supabase.storage
+            .from('attachments')
+            .remove(tempPaths);
+          if (rmErr) console.warn('[Bulk Email] Temp attachment cleanup error:', rmErr);
+        } catch (e) {
+          console.warn('[Bulk Email] Temp attachment cleanup exception:', e);
+        }
       }
 
       return { successful, failed, total: bookings.length, failedDetails };

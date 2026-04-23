@@ -20,6 +20,23 @@ interface BookingConfirmationRequest {
   includeAdditionalPassengers?: boolean;
   ruleId?: string;
   emailTemplateId?: string;
+  /**
+   * File attachments to include with this email send.
+   * Each entry is a path inside the `attachments` storage bucket.
+   * The same set of attachments is sent to every recipient (lead + pax 2/3).
+   */
+  attachments?: Array<{
+    path: string;
+    name: string;
+    /** "upload" temp files are removed from storage after send completes. */
+    source?: "tour" | "upload";
+  }>;
+  /**
+   * When false, temporary uploaded attachments are NOT deleted after this send.
+   * Used by bulk-send flows that share one upload across many recipients.
+   * Defaults to true.
+   */
+  cleanupAttachments?: boolean;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
@@ -268,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, attachments: requestedAttachments, cleanupAttachments }: BookingConfirmationRequest = await req.json();
     
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
@@ -1394,6 +1411,50 @@ const handler = async (req: Request): Promise<Response> => {
     // Build the from field: if finalFromEmail already contains a display name (e.g. "Name <email>"), use as-is
     // Otherwise wrap with the configured sender name
     const fromField = finalFromEmail.includes('<') ? finalFromEmail : `${defaultSenderName} <${finalFromEmail}>`;
+
+    // Prepare email attachments (downloaded once, sent to every recipient).
+    // Hard caps: max 3 files, max 10MB total — UI enforces this, but we re-check
+    // server-side as defense in depth.
+    const MAX_ATTACHMENTS = 3;
+    const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+    type ResendAttachment = { filename: string; content: string };
+    const resendAttachments: ResendAttachment[] = [];
+    const tempAttachmentPaths: string[] = [];
+
+    if (Array.isArray(requestedAttachments) && requestedAttachments.length > 0) {
+      const limited = requestedAttachments.slice(0, MAX_ATTACHMENTS);
+      let totalBytes = 0;
+      for (const att of limited) {
+        if (!att?.path) continue;
+        try {
+          const { data: fileData, error: dlErr } = await supabaseClient.storage
+            .from('attachments')
+            .download(att.path);
+          if (dlErr || !fileData) {
+            console.error(`[Attachments] Download failed for ${att.path}:`, dlErr);
+            continue;
+          }
+          const buffer = new Uint8Array(await fileData.arrayBuffer());
+          totalBytes += buffer.byteLength;
+          if (totalBytes > MAX_ATTACHMENT_BYTES) {
+            console.warn('[Attachments] Total size exceeds 10MB cap, dropping further attachments.');
+            break;
+          }
+          // Resend accepts base64 strings via the `content` field.
+          let binary = '';
+          for (let i = 0; i < buffer.length; i++) binary += String.fromCharCode(buffer[i]);
+          const base64 = btoa(binary);
+          resendAttachments.push({
+            filename: att.name || att.path.split('/').pop() || 'attachment',
+            content: base64,
+          });
+          if (att.source === 'upload') tempAttachmentPaths.push(att.path);
+          console.log(`[Attachments] Prepared ${att.name} (${buffer.byteLength} bytes)`);
+        } catch (e) {
+          console.error(`[Attachments] Error processing ${att.path}:`, e);
+        }
+      }
+    }
     
     const emailResponse = await resend.emails.send({
       from: fromField,
@@ -1402,6 +1463,7 @@ const handler = async (req: Request): Promise<Response> => {
       bcc: bccRecipients.length > 0 ? bccRecipients : undefined,
       subject: emailSubject,
       html: emailHtml,
+      attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
     });
 
     console.log("Booking confirmation email sent successfully:", emailResponse);
@@ -1659,6 +1721,7 @@ const handler = async (req: Request): Promise<Response> => {
           to: [passenger.email],
           subject: passengerSubject,
           html: passengerEmailHtml,
+          attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
         });
         
         if (passengerEmailResponse.data?.id) {
@@ -1693,6 +1756,22 @@ const handler = async (req: Request): Promise<Response> => {
       }
     } else {
       console.log('Skipping additional passengers as includeAdditionalPassengers is false');
+    }
+
+    // Clean up temporary uploaded attachments (kept for the duration of this send only).
+    // Tour-library attachments are NOT removed. Bulk flows pass cleanupAttachments:false
+    // so a shared upload survives until the final iteration cleans it up itself.
+    const shouldCleanup = cleanupAttachments !== false;
+    if (shouldCleanup && tempAttachmentPaths.length > 0) {
+      try {
+        const { error: rmErr } = await supabaseClient.storage
+          .from('attachments')
+          .remove(tempAttachmentPaths);
+        if (rmErr) console.warn('[Attachments] Temp cleanup error:', rmErr);
+        else console.log(`[Attachments] Cleaned up ${tempAttachmentPaths.length} temp file(s)`);
+      } catch (e) {
+        console.warn('[Attachments] Temp cleanup exception:', e);
+      }
     }
 
     return new Response(JSON.stringify({ 
