@@ -8,6 +8,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
 import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
+import { HotelAttachmentsSection } from "@/components/HotelAttachmentsSection";
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useTabAlerts } from "@/hooks/useTabAlerts";
@@ -278,6 +279,11 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Attachments */}
+                <div className="mt-4 pt-4 border-t">
+                  <HotelAttachmentsSection hotelId={hotel.id} />
                 </div>
               </CardContent>
             </Card>
