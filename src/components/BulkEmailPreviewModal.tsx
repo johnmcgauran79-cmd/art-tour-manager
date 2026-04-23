@@ -66,6 +66,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+  const [hideCompletedForm, setHideCompletedForm] = useState(false);
   
   const scheduleEmailMutation = useScheduleEmail();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
@@ -158,6 +159,60 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
 
   const previewBooking = allBookingsData?.find((booking: any) => selectedBookingIds.has(booking.id)) || allBookingsData?.[0] || null;
 
+  // For custom-form templates, fetch existing responses so we can show
+  // completion status and offer an "incomplete only" filter.
+  const { data: completedBookingIds } = useQuery({
+    queryKey: ['tour-custom-form-completed-bookings', tourId, selectedFormId, selectedForm?.response_mode],
+    queryFn: async () => {
+      if (!tourId || !selectedFormId || !selectedForm) return new Set<string>();
+      const { data: responses } = await supabase
+        .from('tour_custom_form_responses' as any)
+        .select('booking_id, passenger_slot')
+        .eq('form_id', selectedFormId);
+
+      const completed = new Set<string>();
+      if (!responses || responses.length === 0) return completed;
+
+      const bySlot = new Map<string, Set<number>>();
+      for (const r of responses as any[]) {
+        if (!bySlot.has(r.booking_id)) bySlot.set(r.booking_id, new Set());
+        bySlot.get(r.booking_id)!.add(r.passenger_slot);
+      }
+
+      const responseMode = (selectedForm as any).response_mode;
+      for (const b of (allBookingsData || []) as any[]) {
+        const slots = bySlot.get(b.id);
+        if (!slots) continue;
+        if (responseMode === 'per_booking') {
+          if (slots.has(1)) completed.add(b.id);
+        } else {
+          // per_passenger: every passenger with an email must have a response
+          let allDone = true;
+          if (b.customers?.email && !slots.has(1)) allDone = false;
+          if (b.passenger_2?.email && !slots.has(2)) allDone = false;
+          if (b.passenger_3?.email && !slots.has(3)) allDone = false;
+          if (allDone && b.customers?.email) completed.add(b.id);
+        }
+      }
+      return completed;
+    },
+    enabled: !!tourId && !!selectedFormId && !!selectedForm && !!allBookingsData && open,
+    staleTime: 30 * 1000,
+  });
+
+  // Visible bookings respect the "hide completed" toggle for custom forms.
+  const visibleBookings = (() => {
+    if (!allBookingsData) return [];
+    if (!isCustomFormTemplate || !hideCompletedForm || !completedBookingIds) {
+      return allBookingsData;
+    }
+    return allBookingsData.filter((b: any) => !completedBookingIds.has(b.id));
+  })();
+
+  const incompleteCount = isCustomFormTemplate && completedBookingIds && allBookingsData
+    ? allBookingsData.filter((b: any) => !completedBookingIds.has(b.id)).length
+    : 0;
+
   // Keep template content responsive even before any preview data loads
   useEffect(() => {
     if (selectedTemplateId && selectedTemplateId !== "blank" && templates) {
@@ -222,6 +277,12 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
     } else if (type === "all") {
       const allIds = allBookingsData.map(b => b.id);
       setSelectedBookingIds(new Set(allIds));
+    } else if (type === "incomplete_form") {
+      if (!completedBookingIds) return;
+      const incompleteIds = allBookingsData
+        .filter((b: any) => !completedBookingIds.has(b.id))
+        .map((b: any) => b.id);
+      setSelectedBookingIds(new Set(incompleteIds));
     }
   };
 
@@ -444,6 +505,18 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                     >
                       All
                     </Button>
+                    {isCustomFormTemplate && selectedFormId && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRecipientTypeChange("incomplete_form")}
+                        className="text-xs"
+                        title="Select only bookings that haven't completed this form"
+                      >
+                        Incomplete ({incompleteCount})
+                      </Button>
+                    )}
                     <Button 
                       type="button"
                       variant="ghost" 
@@ -480,9 +553,10 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {allBookingsData?.map((booking: any) => {
+                      {visibleBookings.map((booking: any) => {
                         const hasAccommodation = booking.hotel_bookings && booking.hotel_bookings.length > 0;
                         const hasAdditionalPax = booking.passenger_2?.email || booking.passenger_3?.email;
+                        const isFormCompleted = isCustomFormTemplate && completedBookingIds?.has(booking.id);
                         return (
                           <div key={booking.id} className="flex items-center space-x-2">
                             <Checkbox
@@ -498,14 +572,46 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                               <span className="text-muted-foreground ml-2 text-xs">
                                 {hasAccommodation ? '🏨' : '🎯'}
                                 {hasAdditionalPax && ' 👥'}
+                                {isFormCompleted && (
+                                  <span className="ml-2 text-green-600 font-medium">✓ Done</span>
+                                )}
                               </span>
                             </label>
                           </div>
                         );
                       })}
+                      {visibleBookings.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">
+                          {hideCompletedForm
+                            ? 'All bookings have completed this form.'
+                            : 'No bookings found.'}
+                        </p>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
+
+                {/* Hide-completed toggle (only for custom form requests) */}
+                {isCustomFormTemplate && selectedFormId && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <Checkbox
+                      id="hideCompletedForm"
+                      checked={hideCompletedForm}
+                      onCheckedChange={(checked) => setHideCompletedForm(checked === true)}
+                    />
+                    <label
+                      htmlFor="hideCompletedForm"
+                      className="text-sm font-medium leading-none cursor-pointer"
+                    >
+                      Hide bookings that already completed this form
+                      {completedBookingIds && completedBookingIds.size > 0 && (
+                        <span className="text-muted-foreground font-normal ml-1">
+                          — {completedBookingIds.size} completed
+                        </span>
+                      )}
+                    </label>
+                  </div>
+                )}
                 
                 {/* Additional passengers toggle */}
                 <div className="flex items-center space-x-2 mt-3 pt-3 border-t">
