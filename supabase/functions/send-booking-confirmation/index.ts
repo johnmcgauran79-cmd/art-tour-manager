@@ -31,6 +31,12 @@ interface BookingConfirmationRequest {
     /** "upload" temp files are removed from storage after send completes. */
     source?: "tour" | "upload";
   }>;
+  /**
+   * When false, temporary uploaded attachments are NOT deleted after this send.
+   * Used by bulk-send flows that share one upload across many recipients.
+   * Defaults to true.
+   */
+  cleanupAttachments?: boolean;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
@@ -279,7 +285,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, attachments: requestedAttachments }: BookingConfirmationRequest = await req.json();
+    const { bookingId, customSubject, customContent, fromEmail, ccEmails, bccEmails, includeAdditionalPassengers, ruleId, emailTemplateId, attachments: requestedAttachments, cleanupAttachments }: BookingConfirmationRequest = await req.json();
     
     // Default to true if not explicitly provided (backwards compatible)
     const shouldIncludeAdditionalPassengers = includeAdditionalPassengers !== false;
@@ -1753,8 +1759,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Clean up temporary uploaded attachments (kept for the duration of this send only).
-    // Tour-library attachments are NOT removed.
-    if (tempAttachmentPaths.length > 0) {
+    // Tour-library attachments are NOT removed. Bulk flows pass cleanupAttachments:false
+    // so a shared upload survives until the final iteration cleans it up itself.
+    const shouldCleanup = cleanupAttachments !== false;
+    if (shouldCleanup && tempAttachmentPaths.length > 0) {
       try {
         const { error: rmErr } = await supabaseClient.storage
           .from('attachments')
