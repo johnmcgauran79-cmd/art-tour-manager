@@ -1,17 +1,19 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useTaskComments, useCreateTaskComment, TaskComment } from "@/hooks/useTaskComments";
+import { useTaskComments, useCreateTaskComment, useUpdateTaskComment, TaskComment } from "@/hooks/useTaskComments";
 import { useTaskCommentAttachments, useUploadCommentAttachments, useDeleteCommentAttachment, TaskCommentAttachment } from "@/hooks/useTaskCommentAttachments";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, Send, Paperclip, X, Download, CornerDownRight, Reply } from "lucide-react";
+import { MessageSquare, Send, Paperclip, X, Download, CornerDownRight, Reply, Pencil } from "lucide-react";
 import { UserMentionInput } from "@/components/UserMentionInput";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TaskCommentsSectionProps {
   taskId: string;
 }
 
 export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
+  const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
   const [mentionedUsers, setMentionedUsers] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -19,10 +21,15 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
   const [replyText, setReplyText] = useState("");
   const [replyMentionedUsers, setReplyMentionedUsers] = useState<string[]>([]);
   const [replyFiles, setReplyFiles] = useState<File[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [editMentionedUsers, setEditMentionedUsers] = useState<string[]>([]);
+  const [editPreviousText, setEditPreviousText] = useState("");
 
   const { data: comments, isLoading } = useTaskComments(taskId);
   const { data: attachments } = useTaskCommentAttachments(taskId);
   const createComment = useCreateTaskComment();
+  const updateComment = useUpdateTaskComment();
   const uploadAttachments = useUploadCommentAttachments();
   const deleteAttachment = useDeleteCommentAttachment();
 
