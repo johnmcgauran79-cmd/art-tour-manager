@@ -2533,6 +2533,27 @@ export type Database = {
           },
         ]
       }
+      teams_oauth_states: {
+        Row: {
+          created_at: string
+          expires_at: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       tour_additional_info_sections: {
         Row: {
           content: string | null
@@ -3447,6 +3468,48 @@ export type Database = {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_teams_connections: {
+        Row: {
+          access_token: string | null
+          access_token_expires_at: string | null
+          connected_at: string
+          id: string
+          ms_display_name: string | null
+          ms_user_id: string
+          ms_user_principal_name: string | null
+          refresh_token: string
+          scope: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
+          connected_at?: string
+          id?: string
+          ms_display_name?: string | null
+          ms_user_id: string
+          ms_user_principal_name?: string | null
+          refresh_token: string
+          scope?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
+          connected_at?: string
+          id?: string
+          ms_display_name?: string | null
+          ms_user_id?: string
+          ms_user_principal_name?: string | null
+          refresh_token?: string
+          scope?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
