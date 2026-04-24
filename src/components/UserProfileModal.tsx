@@ -98,6 +98,18 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   }, [open, toast, refreshTeamsConnectionState]);
 
   const handleConnectTeams = async () => {
+    const popup = window.open('', 'teams-oauth', 'width=560,height=720');
+    if (!popup) {
+      toast({
+        title: 'Popup blocked',
+        description: 'Allow popups for this site, then try connecting Teams again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    popup.document.title = 'Connecting to Microsoft Teams';
+    popup.document.body.innerHTML = '<div style="font-family: system-ui, sans-serif; padding: 24px; color: #111827;">Opening Microsoft sign-in…</div>';
     setIsConnectingTeams(true);
     try {
       const { data, error } = await supabase.functions.invoke('teams-oauth-start', {
@@ -106,10 +118,11 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
       if (error || !data?.url) {
         throw new Error(error?.message || 'Could not start OAuth flow');
       }
-      window.open(data.url, 'teams-oauth', 'width=560,height=720');
+      popup.location.href = data.url;
       // Re-check connection status after a delay in case popup-blocker prevented postMessage
       setTimeout(() => void refreshTeamsConnectionState(), 30_000);
     } catch (err) {
+      popup.close();
       console.error('Failed to start Teams OAuth:', err);
       toast({
         title: 'Could not connect Teams',
