@@ -3,18 +3,33 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Plus, ArrowLeft } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ClipboardList, Plus, ArrowLeft, UserCheck, PenSquare, Globe } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 import { TaskSearch } from "@/components/TaskSearch";
+import { useAuth } from "@/hooks/useAuth";
 
 export const AllTasksView = () => {
   console.log('AllTasksView rendering');
   
   const navigate = useNavigate();
-  const { data: tasks, isLoading } = useMyTasks();
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
+
+  // Default view = assigned-to-me only. Other toggles are additive.
+  const [assignedToMe, setAssignedToMe] = useState(true);
+  const [createdByMe, setCreatedByMe] = useState(false);
+  const [allTasks, setAllTasks] = useState(false);
+
+  const { data: tasks, isLoading } = useMyTasks({
+    assignedToMe,
+    createdByMe,
+    allTasks: isAdmin && allTasks,
+  });
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'overdue' | 'critical' | 'high' | 'due_soon' | 'completed' | null>(null);
   const [searchFilters, setSearchFilters] = useState<{
