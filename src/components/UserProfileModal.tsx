@@ -100,7 +100,9 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   const handleConnectTeams = async () => {
     setIsConnectingTeams(true);
     try {
-      const { data, error } = await supabase.functions.invoke('teams-oauth-start');
+      const { data, error } = await supabase.functions.invoke('teams-oauth-start', {
+        body: { returnUrl: window.location.origin },
+      });
       if (error || !data?.url) {
         throw new Error(error?.message || 'Could not start OAuth flow');
       }
