@@ -14,6 +14,10 @@ const SCOPES = [
   "ChatMessage.Send",
 ].join(" ");
 
+function encodeReturnUrl(value: string) {
+  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
 function generateState() {
   const bytes = new Uint8Array(32);
   crypto.getRandomValues(bytes);
@@ -24,6 +28,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const body = req.method === "POST" ? await req.json().catch(() => ({})) : {};
     const clientId = Deno.env.get("MS_GRAPH_CLIENT_ID");
     const redirectUri = Deno.env.get("MS_GRAPH_REDIRECT_URI");
     if (!clientId || !redirectUri) {
@@ -50,7 +55,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const state = generateState();
+    const requestReturnUrl = typeof body?.returnUrl === "string" ? body.returnUrl : "";
+    const headerOrigin = req.headers.get("origin") || req.headers.get("referer") || "";
+    const fallbackOrigin = headerOrigin ? new URL(headerOrigin).origin : "https://art-tour-manager.lovable.app";
+    const returnUrl = requestReturnUrl || fallbackOrigin;
+
+    const state = `${generateState()}.${encodeReturnUrl(returnUrl)}`;
     const { error: stateErr } = await supabase
       .from("teams_oauth_states")
       .insert({ state, user_id: userData.user.id });

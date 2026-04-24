@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +74,11 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
     },
   });
 
+  const refreshTeamsConnectionState = useCallback(async () => {
+    await refetchTeamsConnection();
+    await queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
+  }, [queryClient, refetchTeamsConnection, user?.id]);
+
   // Listen for the OAuth popup completion message
   useEffect(() => {
     if (!open) return;
@@ -82,8 +87,7 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
         setIsConnectingTeams(false);
         if (event.data.success) {
           toast({ title: 'Microsoft Teams connected', description: 'Notifications will now send from your Teams account.' });
-          refetchTeamsConnection();
-          queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
+          void refreshTeamsConnectionState();
         } else {
           toast({ title: 'Teams connection failed', description: 'Please try again.', variant: 'destructive' });
         }
@@ -91,18 +95,20 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, [open, user?.id, refetchTeamsConnection, queryClient, toast]);
+  }, [open, toast, refreshTeamsConnectionState]);
 
   const handleConnectTeams = async () => {
     setIsConnectingTeams(true);
     try {
-      const { data, error } = await supabase.functions.invoke('teams-oauth-start');
+      const { data, error } = await supabase.functions.invoke('teams-oauth-start', {
+        body: { returnUrl: window.location.origin },
+      });
       if (error || !data?.url) {
         throw new Error(error?.message || 'Could not start OAuth flow');
       }
       window.open(data.url, 'teams-oauth', 'width=560,height=720');
       // Re-check connection status after a delay in case popup-blocker prevented postMessage
-      setTimeout(() => refetchTeamsConnection(), 30_000);
+      setTimeout(() => void refreshTeamsConnectionState(), 30_000);
     } catch (err) {
       console.error('Failed to start Teams OAuth:', err);
       toast({
@@ -120,8 +126,7 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
       const { error } = await supabase.functions.invoke('teams-disconnect');
       if (error) throw error;
       toast({ title: 'Microsoft Teams disconnected' });
-      refetchTeamsConnection();
-      queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
+      await refreshTeamsConnectionState();
     } catch (err) {
       console.error('Failed to disconnect Teams:', err);
       toast({
