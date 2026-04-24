@@ -154,11 +154,22 @@ export const useTasks = (tourId?: string, filters?: {
   });
 };
 
-export const useMyTasks = () => {
+export interface MyTasksFilters {
+  assignedToMe?: boolean;
+  createdByMe?: boolean;
+  allTasks?: boolean;
+}
+
+export const useMyTasks = (filters?: MyTasksFilters) => {
   const { user } = useAuth();
-  
+
+  // Default: assigned-to-me only
+  const assignedToMe = filters?.assignedToMe ?? true;
+  const createdByMe = filters?.createdByMe ?? false;
+  const allTasks = filters?.allTasks ?? false;
+
   return useQuery({
-    queryKey: ['my-tasks'],
+    queryKey: ['my-tasks', { assignedToMe, createdByMe, allTasks }],
     queryFn: async () => {
       try {
         console.log('[useMyTasks] Starting query...');
@@ -195,10 +206,14 @@ export const useMyTasks = () => {
 
         console.log('All tasks fetched:', allTasks?.length);
 
-        // Filter to "created by me OR assigned to me" only.
+        // Apply filter mode. If `allTasks` is on (admin only — RLS will
+        // already prevent non-admins from seeing more than created/assigned),
+        // return everything visible. Otherwise include tasks matching any
+        // of the enabled additive filters (assigned-to-me, created-by-me).
         const myTasks = allTasks?.filter(task => {
-          if (task.created_by === user.id) return true;
-          if (task.task_assignments?.some(a => a.user_id === user.id)) return true;
+          if (allTasks) return true;
+          if (assignedToMe && task.task_assignments?.some(a => a.user_id === user.id)) return true;
+          if (createdByMe && task.created_by === user.id) return true;
           return false;
         }) || [];
 
