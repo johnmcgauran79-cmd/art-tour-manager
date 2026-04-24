@@ -10,7 +10,8 @@ import { useUserDepartments, useUpdateUserDepartments, Department } from "@/hook
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { CheckCircle2, Link2, Unlink } from "lucide-react";
 
 interface UserProfileModalProps {
   open: boolean;
@@ -33,12 +34,15 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   const { data: userDepartments } = useUserDepartments();
   const updateDepartments = useUpdateUserDepartments();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState<Department[]>([]);
   const [notificationPref, setNotificationPref] = useState<NotificationPref>('teams');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isConnectingTeams, setIsConnectingTeams] = useState(false);
+  const [isDisconnectingTeams, setIsDisconnectingTeams] = useState(false);
 
   // Load the user's stored notification preference
   const { data: prefData } = useQuery({
@@ -54,6 +58,81 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
       return (data?.notification_preference as NotificationPref) || 'teams';
     },
   });
+
+  // Load the user's Teams connection status
+  const { data: teamsConnection, refetch: refetchTeamsConnection } = useQuery({
+    queryKey: ['user-teams-connection', user?.id],
+    enabled: !!user?.id && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_teams_connections')
+        .select('ms_display_name, ms_user_principal_name, connected_at')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Listen for the OAuth popup completion message
+  useEffect(() => {
+    if (!open) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'teams-oauth') {
+        setIsConnectingTeams(false);
+        if (event.data.success) {
+          toast({ title: 'Microsoft Teams connected', description: 'Notifications will now send from your Teams account.' });
+          refetchTeamsConnection();
+          queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
+        } else {
+          toast({ title: 'Teams connection failed', description: 'Please try again.', variant: 'destructive' });
+        }
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, [open, user?.id, refetchTeamsConnection, queryClient, toast]);
+
+  const handleConnectTeams = async () => {
+    setIsConnectingTeams(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('teams-oauth-start');
+      if (error || !data?.url) {
+        throw new Error(error?.message || 'Could not start OAuth flow');
+      }
+      window.open(data.url, 'teams-oauth', 'width=560,height=720');
+      // Re-check connection status after a delay in case popup-blocker prevented postMessage
+      setTimeout(() => refetchTeamsConnection(), 30_000);
+    } catch (err) {
+      console.error('Failed to start Teams OAuth:', err);
+      toast({
+        title: 'Could not connect Teams',
+        description: err instanceof Error ? err.message : 'Unexpected error',
+        variant: 'destructive',
+      });
+      setIsConnectingTeams(false);
+    }
+  };
+
+  const handleDisconnectTeams = async () => {
+    setIsDisconnectingTeams(true);
+    try {
+      const { error } = await supabase.functions.invoke('teams-disconnect');
+      if (error) throw error;
+      toast({ title: 'Microsoft Teams disconnected' });
+      refetchTeamsConnection();
+      queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
+    } catch (err) {
+      console.error('Failed to disconnect Teams:', err);
+      toast({
+        title: 'Could not disconnect',
+        description: err instanceof Error ? err.message : 'Unexpected error',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDisconnectingTeams(false);
+    }
+  };
 
   // Only sync form data when modal opens to prevent infinite re-renders
   useEffect(() => {
@@ -212,6 +291,44 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
                 </Label>
               </div>
             </RadioGroup>
+          </div>
+
+          <div className="space-y-3 rounded-md border border-border p-4">
+            <Label>Microsoft Teams connection</Label>
+            <p className="text-sm text-muted-foreground">
+              Connect your Teams account so notifications you trigger (assignments, @mentions) are sent <strong>from you</strong> in Teams. If you don't connect, the system will fall back to email.
+            </p>
+            {teamsConnection ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <span>
+                    Connected as <strong>{teamsConnection.ms_display_name || teamsConnection.ms_user_principal_name}</strong>
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnectTeams}
+                  disabled={isDisconnectingTeams}
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  {isDisconnectingTeams ? 'Disconnecting…' : 'Disconnect Teams'}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleConnectTeams}
+                disabled={isConnectingTeams}
+              >
+                <Link2 className="mr-2 h-4 w-4" />
+                {isConnectingTeams ? 'Opening Microsoft sign-in…' : 'Connect Microsoft Teams'}
+              </Button>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2 pt-4">

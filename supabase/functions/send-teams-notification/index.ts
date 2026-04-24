@@ -6,7 +6,8 @@ const corsHeaders = {
 };
 
 const APP_URL = "https://art-tour-manager.lovable.app";
-const GATEWAY_BASE = "https://connector-gateway.lovable.dev/microsoft_teams";
+const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
+const TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
 interface TeamsNotificationRequest {
   type: "mention" | "assignment";
@@ -20,44 +21,11 @@ interface ProfileRecipient {
   id: string;
   first_name: string | null;
   email: string | null;
-  teams_user_id: string | null;
 }
 
-interface TeamsMeResponse {
-  id: string;
-  displayName?: string;
-  userPrincipalName?: string;
-}
-
-function getGatewayHeaders() {
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-  const teamsApiKey = Deno.env.get("MICROSOFT_TEAMS_API_KEY");
-
-  if (!lovableApiKey) {
-    throw new Error("LOVABLE_API_KEY is not configured");
-  }
-
-  if (!teamsApiKey) {
-    throw new Error("MICROSOFT_TEAMS_API_KEY is not configured");
-  }
-
-  return {
-    Authorization: `Bearer ${lovableApiKey}`,
-    "X-Connection-Api-Key": teamsApiKey,
-    "Content-Type": "application/json",
-  };
-}
-
-async function gatewayFetch(path: string, init: RequestInit = {}) {
-  const response = await fetch(`${GATEWAY_BASE}${path}`, {
-    ...init,
-    headers: {
-      ...getGatewayHeaders(),
-      ...(init.headers || {}),
-    },
-  });
-
-  return response;
+interface ActorTokenContext {
+  accessToken: string;
+  msUserId: string;
 }
 
 function escapeHtml(value: string) {
@@ -69,18 +37,98 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
-async function getCurrentTeamsUser(): Promise<TeamsMeResponse> {
-  const response = await gatewayFetch("/me?$select=id,displayName,userPrincipalName");
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Failed to resolve Teams connection user [${response.status}]: ${text}`);
+async function refreshActorToken(
+  supabase: ReturnType<typeof createClient>,
+  actorUserId: string,
+): Promise<ActorTokenContext | null> {
+  const { data: conn } = await supabase
+    .from("user_teams_connections")
+    .select("ms_user_id, refresh_token, access_token, access_token_expires_at")
+    .eq("user_id", actorUserId)
+    .maybeSingle();
+
+  if (!conn) return null;
+
+  // Reuse cached token if still valid (60s safety margin)
+  if (
+    conn.access_token &&
+    conn.access_token_expires_at &&
+    new Date(conn.access_token_expires_at as string) > new Date(Date.now() + 60_000)
+  ) {
+    return {
+      accessToken: conn.access_token as string,
+      msUserId: conn.ms_user_id as string,
+    };
   }
 
-  return await response.json();
+  const clientId = Deno.env.get("MS_GRAPH_CLIENT_ID");
+  const clientSecret = Deno.env.get("MS_GRAPH_CLIENT_SECRET");
+  if (!clientId || !clientSecret) {
+    console.error("MS_GRAPH_CLIENT_ID or MS_GRAPH_CLIENT_SECRET missing");
+    return null;
+  }
+
+  const res = await fetch(TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: conn.refresh_token as string,
+      grant_type: "refresh_token",
+    }),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    console.error("Refresh token exchange failed:", data);
+    return null;
+  }
+
+  const expiresAt = new Date(Date.now() + ((data.expires_in || 3600) - 60) * 1000).toISOString();
+  await supabase
+    .from("user_teams_connections")
+    .update({
+      access_token: data.access_token,
+      access_token_expires_at: expiresAt,
+      // Microsoft may rotate refresh tokens
+      refresh_token: data.refresh_token || conn.refresh_token,
+    })
+    .eq("user_id", actorUserId);
+
+  return { accessToken: data.access_token, msUserId: conn.ms_user_id as string };
 }
 
-async function createOrGetOneOnOneChat(recipientIdentifier: string, currentTeamsUserId: string): Promise<string | null> {
-  const response = await gatewayFetch("/chats", {
+async function graphFetch(accessToken: string, path: string, init: RequestInit = {}) {
+  return await fetch(`${GRAPH_BASE}${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+}
+
+async function lookupRecipientMsUserId(
+  accessToken: string,
+  email: string,
+): Promise<string | null> {
+  const res = await graphFetch(accessToken, `/users/${encodeURIComponent(email)}?$select=id`);
+  if (!res.ok) {
+    const text = await res.text();
+    console.error(`Failed to look up Teams user for ${email} [${res.status}]:`, text);
+    return null;
+  }
+  const data = await res.json();
+  return data?.id ?? null;
+}
+
+async function createOrGetOneOnOneChat(
+  accessToken: string,
+  actorMsUserId: string,
+  recipientMsUserId: string,
+): Promise<string | null> {
+  const response = await graphFetch(accessToken, "/chats", {
     method: "POST",
     body: JSON.stringify({
       chatType: "oneOnOne",
@@ -88,12 +136,12 @@ async function createOrGetOneOnOneChat(recipientIdentifier: string, currentTeams
         {
           "@odata.type": "#microsoft.graph.aadUserConversationMember",
           roles: ["owner"],
-          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${currentTeamsUserId}')`,
+          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${actorMsUserId}')`,
         },
         {
           "@odata.type": "#microsoft.graph.aadUserConversationMember",
           roles: ["owner"],
-          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${recipientIdentifier}')`,
+          "user@odata.bind": `https://graph.microsoft.com/v1.0/users('${recipientMsUserId}')`,
         },
       ],
     }),
@@ -109,41 +157,25 @@ async function createOrGetOneOnOneChat(recipientIdentifier: string, currentTeams
   return data?.id ?? null;
 }
 
-async function sendChatMessage(chatId: string, html: string): Promise<boolean> {
-  const response = await gatewayFetch(`/chats/${encodeURIComponent(chatId)}/messages`, {
-    method: "POST",
-    body: JSON.stringify({
-      body: {
-        contentType: "html",
-        content: html,
-      },
-    }),
-  });
+async function sendChatMessage(
+  accessToken: string,
+  chatId: string,
+  html: string,
+): Promise<boolean> {
+  const response = await graphFetch(
+    accessToken,
+    `/chats/${encodeURIComponent(chatId)}/messages`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        body: { contentType: "html", content: html },
+      }),
+    },
+  );
 
   if (!response.ok) {
     const text = await response.text();
     console.error(`sendChatMessage failed [${response.status}]:`, text);
-    return false;
-  }
-
-  await response.text();
-  return true;
-}
-
-async function sendSelfChatMessage(html: string): Promise<boolean> {
-  const response = await gatewayFetch("/me/chats/48:notes/messages", {
-    method: "POST",
-    body: JSON.stringify({
-      body: {
-        contentType: "html",
-        content: html,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    console.error(`sendSelfChatMessage failed [${response.status}]:`, text);
     return false;
   }
 
@@ -201,19 +233,24 @@ Deno.serve(async (req) => {
 
     const { data: recipients } = await supabase
       .from("profiles")
-      .select("id, first_name, email, teams_user_id")
+      .select("id, first_name, email")
       .in("id", recipientIds);
 
-    let currentTeamsUserId = "";
-    let currentTeamsEmail = "";
-    try {
-      const currentTeamsUser = await getCurrentTeamsUser();
-      currentTeamsUserId = currentTeamsUser.id;
-      currentTeamsEmail = currentTeamsUser.userPrincipalName?.toLowerCase() || "";
-    } catch (err) {
-      console.error("Teams gateway unavailable, falling back all recipients to email:", err);
+    // Per-user OAuth: resolve the actor's Teams token. If they haven't connected,
+    // fall everything back to email so send-task-notification can email instead.
+    const actorContext = await refreshActorToken(supabase, body.actorUserId);
+    if (!actorContext) {
+      console.log(
+        `Actor ${body.actorUserId} has no Teams connection — falling back to email for all recipients`,
+      );
       return new Response(
-        JSON.stringify({ success: true, sent: 0, sentTo: [], fallback: recipientIds }),
+        JSON.stringify({
+          success: true,
+          sent: 0,
+          sentTo: [],
+          fallback: recipientIds,
+          reason: "actor_not_connected",
+        }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -225,27 +262,23 @@ Deno.serve(async (req) => {
 
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
-      ? `<p>Due: <strong>${new Date(task.due_date).toLocaleDateString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
+      ? `<p>Due: <strong>${new Date(task.due_date).toLocaleDateString("en-AU", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}</strong></p>`
       : "";
 
     const verbHtml = body.type === "mention"
       ? "mentioned you in a comment on"
       : "assigned you to";
 
-    const messageBlock = escapedMessage
-      ? `<blockquote>${escapedMessage}</blockquote>`
-      : "";
+    const messageBlock = escapedMessage ? `<blockquote>${escapedMessage}</blockquote>` : "";
 
     const sent: string[] = [];
     const fallback: string[] = [];
 
     for (const recipient of (recipients || []) as ProfileRecipient[]) {
-      const recipientEmail = recipient.email?.toLowerCase() || "";
-      const isSelfChat = !!currentTeamsUserId && (
-        recipient.teams_user_id === currentTeamsUserId ||
-        (!!recipientEmail && recipientEmail === currentTeamsEmail)
-      );
-
       const html = `
 <p>Hi ${escapeHtml(recipient.first_name || "there")},</p>
 <p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} the task <strong>${escapeHtml(task.title)}</strong>.</p>
@@ -254,26 +287,32 @@ ${messageBlock}
 <p><a href="${taskUrl}">Open task</a></p>
 `.trim();
 
-      let delivered = false;
-
-      if (isSelfChat) {
-        delivered = await sendSelfChatMessage(html);
-      } else {
-        const recipientIdentifier = recipient.teams_user_id || recipient.email;
-        if (!recipientIdentifier) {
-          fallback.push(recipient.id);
-          continue;
-        }
-
-        const chatId = await createOrGetOneOnOneChat(recipientIdentifier, currentTeamsUserId);
-        if (!chatId) {
-          fallback.push(recipient.id);
-          continue;
-        }
-
-        delivered = await sendChatMessage(chatId, html);
+      // Need the recipient's email/UPN to look them up in Microsoft Entra
+      if (!recipient.email) {
+        fallback.push(recipient.id);
+        continue;
       }
 
+      const recipientMsUserId = await lookupRecipientMsUserId(
+        actorContext.accessToken,
+        recipient.email,
+      );
+      if (!recipientMsUserId) {
+        fallback.push(recipient.id);
+        continue;
+      }
+
+      const chatId = await createOrGetOneOnOneChat(
+        actorContext.accessToken,
+        actorContext.msUserId,
+        recipientMsUserId,
+      );
+      if (!chatId) {
+        fallback.push(recipient.id);
+        continue;
+      }
+
+      const delivered = await sendChatMessage(actorContext.accessToken, chatId, html);
       if (delivered) {
         sent.push(recipient.id);
       } else {
@@ -288,9 +327,9 @@ ${messageBlock}
   } catch (error: unknown) {
     console.error("send-teams-notification error", error);
     const message = error instanceof Error ? error.message : "Unexpected error";
-    return new Response(
-      JSON.stringify({ error: message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
