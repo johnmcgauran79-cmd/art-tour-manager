@@ -169,22 +169,10 @@ export const useMyTasks = () => {
           return [] as Task[];
         }
 
-        console.log('Fetching my tasks for user:', user.id);
-
-        // First, get user's departments
-        const { data: userDepartments, error: deptError } = await supabase
-          .from('user_departments')
-          .select('department')
-          .eq('user_id', user.id);
-
-        if (deptError) {
-          console.warn('[useMyTasks] Could not fetch user departments:', deptError.message);
-        }
-
-        const departments = userDepartments?.map(d => d.department) || [];
-        console.log('[useMyTasks] User departments:', departments);
-
-        // Get all tasks with their assignments
+        // RLS now restricts visibility to: tasks the user created, is assigned
+        // to, is a host on the linked tour, or is a watcher of. We then
+        // narrow client-side to "created by me OR assigned to me" for the
+        // "My Tasks" view specifically.
         const { data: allTasks, error } = await supabase
           .from('tasks')
           .select(`
@@ -207,20 +195,10 @@ export const useMyTasks = () => {
 
         console.log('All tasks fetched:', allTasks?.length);
 
-        // Filter tasks that should be shown to the user
+        // Filter to "created by me OR assigned to me" only.
         const myTasks = allTasks?.filter(task => {
-          // Show tasks created by the user
           if (task.created_by === user.id) return true;
-          
-          // Show tasks assigned to the user
-          if (task.task_assignments && task.task_assignments.some(assignment => assignment.user_id === user.id)) return true;
-          
-          // Show tasks that match user's departments
-          if (departments.length > 0 && departments.includes(task.category)) return true;
-          
-          // Show unassigned tasks only if user belongs to the task's department
-          if ((!task.task_assignments || task.task_assignments.length === 0) && departments.length > 0 && departments.includes(task.category)) return true;
-          
+          if (task.task_assignments?.some(a => a.user_id === user.id)) return true;
           return false;
         }) || [];
 
