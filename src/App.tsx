@@ -26,6 +26,7 @@ import SignWaiver from "./pages/SignWaiver";
 import SelectPickup from "./pages/SelectPickup";
 import CustomForm from "./pages/CustomForm";
 import ViewItinerary from "./pages/ViewItinerary";
+import TeamsOAuthComplete from "./pages/TeamsOAuthComplete";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
 
@@ -80,6 +81,7 @@ function App() {
               <Route path="/select-pickup/:token" element={<SelectPickup />} />
               <Route path="/custom-form/:token" element={<CustomForm />} />
               <Route path="/view-itinerary/:token" element={<ViewItinerary />} />
+              <Route path="/teams-oauth-complete" element={<TeamsOAuthComplete />} />
               <Route
                 path="/"
                 element={
