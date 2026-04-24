@@ -10,6 +10,7 @@ const SCOPES = [
   "openid",
   "profile",
   "User.Read",
+  "User.ReadBasic.All",
   "Chat.Create",
   "ChatMessage.Send",
 ].join(" ");
