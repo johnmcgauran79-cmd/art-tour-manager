@@ -301,7 +301,7 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
             {teamsConnection ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
-                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <CheckCircle2 className="h-4 w-4 text-success" />
                   <span>
                     Connected as <strong>{teamsConnection.ms_display_name || teamsConnection.ms_user_principal_name}</strong>
                   </span>
