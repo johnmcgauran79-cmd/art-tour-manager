@@ -113,14 +113,34 @@ async function lookupRecipientMsUserId(
   accessToken: string,
   email: string,
 ): Promise<string | null> {
-  const res = await graphFetch(accessToken, `/users/${encodeURIComponent(email)}?$select=id`);
+  // Try direct lookup first (works if email matches UPN)
+  const direct = await graphFetch(
+    accessToken,
+    `/users/${encodeURIComponent(email)}?$select=id`,
+  );
+  if (direct.ok) {
+    const data = await direct.json();
+    if (data?.id) return data.id;
+  } else if (direct.status !== 404 && direct.status !== 403) {
+    const text = await direct.text();
+    console.error(`Direct user lookup failed for ${email} [${direct.status}]:`, text);
+  } else {
+    await direct.text();
+  }
+
+  // Fallback: filter by mail or userPrincipalName (handles aliases / guest accounts)
+  const filter = `mail eq '${email.replace(/'/g, "''")}' or userPrincipalName eq '${email.replace(/'/g, "''")}'`;
+  const res = await graphFetch(
+    accessToken,
+    `/users?$filter=${encodeURIComponent(filter)}&$select=id&$top=1`,
+  );
   if (!res.ok) {
     const text = await res.text();
-    console.error(`Failed to look up Teams user for ${email} [${res.status}]:`, text);
+    console.error(`Filter user lookup failed for ${email} [${res.status}]:`, text);
     return null;
   }
   const data = await res.json();
-  return data?.id ?? null;
+  return data?.value?.[0]?.id ?? null;
 }
 
 async function createOrGetOneOnOneChat(
