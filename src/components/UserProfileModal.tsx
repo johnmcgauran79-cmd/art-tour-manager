@@ -44,11 +44,6 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
   const [isConnectingTeams, setIsConnectingTeams] = useState(false);
   const [isDisconnectingTeams, setIsDisconnectingTeams] = useState(false);
 
-  const refreshTeamsConnectionState = useCallback(async () => {
-    await refetchTeamsConnection();
-    await queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
-  }, [queryClient, refetchTeamsConnection, user?.id]);
-
   // Load the user's stored notification preference
   const { data: prefData } = useQuery({
     queryKey: ['profile-notification-pref', user?.id],
@@ -78,6 +73,11 @@ export const UserProfileModal = ({ open, onOpenChange }: UserProfileModalProps) 
       return data;
     },
   });
+
+  const refreshTeamsConnectionState = useCallback(async () => {
+    await refetchTeamsConnection();
+    await queryClient.invalidateQueries({ queryKey: ['user-teams-connection', user?.id] });
+  }, [queryClient, refetchTeamsConnection, user?.id]);
 
   // Listen for the OAuth popup completion message
   useEffect(() => {

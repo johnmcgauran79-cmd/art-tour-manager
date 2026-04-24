@@ -9,7 +9,7 @@ const TeamsOAuthComplete = () => {
 
   useEffect(() => {
     try {
-      window.opener?.postMessage({ type: "teams-oauth", success }, window.location.origin);
+      window.opener?.postMessage({ type: "teams-oauth", success }, "*");
     } catch (_error) {
       // noop
     }
