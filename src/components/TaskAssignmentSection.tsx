@@ -7,6 +7,8 @@ import { UserPlus, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface TaskAssignmentSectionProps {
   taskId: string;
@@ -31,6 +33,25 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: roles = [] } = useUserRoles();
+  const isAdmin = roles.includes("admin");
+
+  // Fetch the task's creator so we can decide if the current user is allowed
+  // to add/remove assignees on this task.
+  const { data: taskMeta } = useQuery({
+    queryKey: ["task-creator", taskId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("created_by")
+        .eq("id", taskId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!taskId,
+  });
 
   // Fetch all users
   const { data: users } = useQuery({
@@ -196,6 +217,12 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
     return users.filter(user => !assignedUserIds.includes(user.id));
   };
 
+  // Permission: only the task creator, an existing assignee on this task,
+  // or an admin can add/remove assignees. (Managers explicitly excluded.)
+  const isCreator = !!user?.id && !!taskMeta?.created_by && taskMeta.created_by === user.id;
+  const isExistingAssignee = !!user?.id && (assignments || []).some((a) => a.user_id === user.id);
+  const canManageAssignees = isAdmin || isCreator || isExistingAssignee;
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading assignments...</div>;
   }
@@ -211,15 +238,17 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
             className="flex items-center gap-1 px-3 py-1"
           >
             {assignment.user ? getUserDisplayName(assignment.user) : 'Unknown User'}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-4 w-4 p-0 hover:bg-red-100"
-              onClick={() => handleRemoveAssignment(assignment.id)}
-              disabled={removeAssignmentMutation.isPending}
-            >
-              <X className="h-3 w-3" />
-            </Button>
+            {canManageAssignees && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-4 w-4 p-0 hover:bg-red-100"
+                onClick={() => handleRemoveAssignment(assignment.id)}
+                disabled={removeAssignmentMutation.isPending}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
           </Badge>
         ))}
         {(!assignments || assignments.length === 0) && (
@@ -227,8 +256,9 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
         )}
       </div>
 
-      {/* Add New Assignment (right-aligned on same row) */}
-      <div className="flex items-center gap-2 ml-auto">
+      {/* Add New Assignment (right-aligned on same row) — only visible to those allowed */}
+      {canManageAssignees && (
+        <div className="flex items-center gap-2 ml-auto">
         <Select
           value={selectedUserId}
           onValueChange={setSelectedUserId}
@@ -253,7 +283,8 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
           <UserPlus className="h-4 w-4" />
           {addAssignmentMutation.isPending ? "Adding..." : "Assign"}
         </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
