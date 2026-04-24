@@ -50,8 +50,11 @@ Deno.serve(async (req) => {
       ? `${actor.first_name || ""} ${actor.last_name || ""}`.trim() || actor.email
       : "Someone";
 
-    // Resolve recipients (dedupe). Actor is intentionally NOT excluded so users can self-test.
-    const recipientIds = Array.from(new Set(body.recipientUserIds));
+    // Resolve recipients (dedupe) and exclude the actor — users should never be
+    // notified about their own actions (self-assignment, self-mention, self-reply).
+    const recipientIds = Array.from(new Set(body.recipientUserIds)).filter(
+      (id) => id !== body.actorUserId
+    );
     if (recipientIds.length === 0) {
       return new Response(JSON.stringify({ success: true, sent: 0 }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
