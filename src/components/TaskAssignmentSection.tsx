@@ -217,6 +217,12 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
     return users.filter(user => !assignedUserIds.includes(user.id));
   };
 
+  // Permission: only the task creator, an existing assignee on this task,
+  // or an admin can add/remove assignees. (Managers explicitly excluded.)
+  const isCreator = !!user?.id && !!taskMeta?.created_by && taskMeta.created_by === user.id;
+  const isExistingAssignee = !!user?.id && (assignments || []).some((a) => a.user_id === user.id);
+  const canManageAssignees = isAdmin || isCreator || isExistingAssignee;
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading assignments...</div>;
   }
@@ -232,15 +238,17 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
             className="flex items-center gap-1 px-3 py-1"
           >
             {assignment.user ? getUserDisplayName(assignment.user) : 'Unknown User'}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-4 w-4 p-0 hover:bg-red-100"
-              onClick={() => handleRemoveAssignment(assignment.id)}
-              disabled={removeAssignmentMutation.isPending}
-            >
-              <X className="h-3 w-3" />
-            </Button>
+            {canManageAssignees && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-4 w-4 p-0 hover:bg-red-100"
+                onClick={() => handleRemoveAssignment(assignment.id)}
+                disabled={removeAssignmentMutation.isPending}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
           </Badge>
         ))}
         {(!assignments || assignments.length === 0) && (
@@ -248,8 +256,9 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
         )}
       </div>
 
-      {/* Add New Assignment (right-aligned on same row) */}
-      <div className="flex items-center gap-2 ml-auto">
+      {/* Add New Assignment (right-aligned on same row) — only visible to those allowed */}
+      {canManageAssignees && (
+        <div className="flex items-center gap-2 ml-auto">
         <Select
           value={selectedUserId}
           onValueChange={setSelectedUserId}
@@ -274,7 +283,8 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
           <UserPlus className="h-4 w-4" />
           {addAssignmentMutation.isPending ? "Adding..." : "Assign"}
         </Button>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
