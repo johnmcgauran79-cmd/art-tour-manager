@@ -7,6 +7,8 @@ import { UserPlus, X } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 interface TaskAssignmentSectionProps {
   taskId: string;
@@ -31,6 +33,25 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
   const [selectedUserId, setSelectedUserId] = useState<string>("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const { data: roles = [] } = useUserRoles();
+  const isAdmin = roles.includes("admin");
+
+  // Fetch the task's creator so we can decide if the current user is allowed
+  // to add/remove assignees on this task.
+  const { data: taskMeta } = useQuery({
+    queryKey: ["task-creator", taskId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tasks")
+        .select("created_by")
+        .eq("id", taskId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!taskId,
+  });
 
   // Fetch all users
   const { data: users } = useQuery({
