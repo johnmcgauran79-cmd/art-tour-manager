@@ -7,18 +7,17 @@ const corsHeaders = {
 
 const APP_URL = "https://art-tour-manager.lovable.app";
 
-function htmlResponse(message: string, success: boolean) {
-  const color = success ? "#16a34a" : "#dc2626";
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Microsoft Teams ${success ? "Connected" : "Connection Failed"}</title>
-<style>body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#f4f4f5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;}
-.card{background:#fff;padding:36px;border-radius:12px;max-width:480px;width:100%;box-shadow:0 8px 24px rgba(0,0,0,.08);text-align:center;}
-h1{color:${color};margin:0 0 12px;font-size:22px;}p{color:#374151;line-height:1.5;margin:0 0 18px;}
-a{display:inline-block;background:#1a2332;color:#f5c518;padding:10px 22px;border-radius:6px;text-decoration:none;font-weight:600;}</style></head>
-<body><div class="card"><h1>${success ? "✓ Microsoft Teams Connected" : "Connection Failed"}</h1>
-<p>${message}</p><a href="${APP_URL}">Return to app</a></div>
-<script>setTimeout(()=>{try{window.opener&&window.opener.postMessage({type:"teams-oauth",success:${success}},"*");}catch(e){}},100);</script>
-</body></html>`;
-  return new Response(html, { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } });
+function redirectToFrontend(message: string, success: boolean, displayName?: string | null) {
+  const params = new URLSearchParams({
+    success: success ? "1" : "0",
+    message,
+  });
+
+  if (displayName) {
+    params.set("displayName", displayName);
+  }
+
+  return Response.redirect(`${APP_URL}/teams-oauth-complete?${params.toString()}`, 302);
 }
 
 Deno.serve(async (req) => {
@@ -32,17 +31,17 @@ Deno.serve(async (req) => {
     const errorDesc = url.searchParams.get("error_description");
 
     if (errorParam) {
-      return htmlResponse(`Microsoft returned an error: ${errorDesc || errorParam}`, false);
+      return redirectToFrontend(`Microsoft returned an error: ${errorDesc || errorParam}`, false);
     }
     if (!code || !state) {
-      return htmlResponse("Missing authorization code or state parameter.", false);
+      return redirectToFrontend("Missing authorization code or state parameter.", false);
     }
 
     const clientId = Deno.env.get("MS_GRAPH_CLIENT_ID");
     const clientSecret = Deno.env.get("MS_GRAPH_CLIENT_SECRET");
     const redirectUri = Deno.env.get("MS_GRAPH_REDIRECT_URI");
     if (!clientId || !clientSecret || !redirectUri) {
-      return htmlResponse("Server is missing Microsoft Graph configuration.", false);
+      return redirectToFrontend("Server is missing Microsoft Graph configuration.", false);
     }
 
     const supabase = createClient(
@@ -57,11 +56,11 @@ Deno.serve(async (req) => {
       .eq("state", state)
       .maybeSingle();
     if (stateErr || !stateRow) {
-      return htmlResponse("Invalid or expired authorization state. Please try again.", false);
+      return redirectToFrontend("Invalid or expired authorization state. Please try again.", false);
     }
     if (new Date(stateRow.expires_at) < new Date()) {
       await supabase.from("teams_oauth_states").delete().eq("state", state);
-      return htmlResponse("Authorization request expired. Please try again.", false);
+      return redirectToFrontend("Authorization request expired. Please try again.", false);
     }
 
     const userId = stateRow.user_id;
@@ -82,12 +81,12 @@ Deno.serve(async (req) => {
     const tokenData = await tokenRes.json();
     if (!tokenRes.ok) {
       console.error("Token exchange failed:", tokenData);
-      return htmlResponse(`Token exchange failed: ${tokenData.error_description || tokenData.error || "unknown"}`, false);
+      return redirectToFrontend(`Token exchange failed: ${tokenData.error_description || tokenData.error || "unknown"}`, false);
     }
 
     const { access_token, refresh_token, expires_in, scope } = tokenData;
     if (!access_token || !refresh_token) {
-      return htmlResponse("Microsoft did not return both access and refresh tokens. Make sure 'offline_access' scope is granted.", false);
+      return redirectToFrontend("Microsoft did not return both access and refresh tokens. Make sure 'offline_access' scope is granted.", false);
     }
 
     // Fetch the Microsoft user profile
@@ -97,7 +96,7 @@ Deno.serve(async (req) => {
     const meData = await meRes.json();
     if (!meRes.ok || !meData.id) {
       console.error("Failed to fetch /me:", meData);
-      return htmlResponse("Could not fetch your Microsoft profile.", false);
+      return redirectToFrontend("Could not fetch your Microsoft profile.", false);
     }
 
     const expiresAt = new Date(Date.now() + (expires_in - 60) * 1000).toISOString();
@@ -119,16 +118,20 @@ Deno.serve(async (req) => {
 
     if (upsertErr) {
       console.error("Failed to store connection:", upsertErr);
-      return htmlResponse("Failed to save your Teams connection. Please try again.", false);
+      return redirectToFrontend("Failed to save your Teams connection. Please try again.", false);
     }
 
     // Clean up state
     await supabase.from("teams_oauth_states").delete().eq("state", state);
 
-    return htmlResponse(`Connected as ${meData.displayName || meData.userPrincipalName}. You can close this window.`, true);
+    return redirectToFrontend(
+      `Connected as ${meData.displayName || meData.userPrincipalName}. You can close this window.`,
+      true,
+      meData.displayName || meData.userPrincipalName,
+    );
   } catch (error: unknown) {
     console.error("teams-oauth-callback error", error);
     const message = error instanceof Error ? error.message : "Unexpected error";
-    return htmlResponse(message, false);
+    return redirectToFrontend(message, false);
   }
 });
