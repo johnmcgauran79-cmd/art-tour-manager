@@ -15,6 +15,7 @@ import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCust
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ManageFormExemptionsModal } from "@/components/ManageFormExemptionsModal";
 
 import { format } from "date-fns";
 
@@ -42,6 +43,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
   const queryClient = useQueryClient();
   const [editingRow, setEditingRow] = useState<PassengerRow | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
+  const [showExemptions, setShowExemptions] = useState(false);
 
   // Fetch ALL bookings for this tour (not just those with responses)
   const { data: tourBookings = [] } = useQuery({
@@ -423,16 +425,21 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Form Responses — {form.form_title}</span>
-              {completedCount > 0 && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-                    <Printer className="h-4 w-4 mr-2" /> Print PDF
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => setShowExemptions(true)}>
+                  <Ban className="h-4 w-4 mr-2" /> Manage Exemptions
+                </Button>
+                {completedCount > 0 && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+                      <Printer className="h-4 w-4 mr-2" /> Print PDF
+                    </Button>
+                  </>
+                )}
+              </div>
             </DialogTitle>
           </DialogHeader>
 
