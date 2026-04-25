@@ -133,7 +133,24 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     staleTime: 60000,
   });
 
-  const isLoading = bookingsLoading || tourLoading || docsLoading || formsLoading || responsesLoading || tokensLoading;
+  // Get form exemptions (Not Required) for this tour
+  const { data: formExemptions, isLoading: exemptionsLoading } = useQuery({
+    queryKey: ["tour-doc-alerts-exemptions", tourId],
+    queryFn: async () => {
+      if (!forms || forms.length === 0) return [];
+      const formIds = forms.map(f => f.id);
+      const { data, error } = await supabase
+        .from("tour_custom_form_exemptions" as any)
+        .select("form_id, booking_id, passenger_slot")
+        .in("form_id", formIds);
+      if (error) throw error;
+      return (data || []) as unknown as { form_id: string; booking_id: string; passenger_slot: number }[];
+    },
+    enabled: !!forms && forms.length > 0,
+    staleTime: 60000,
+  });
+
+  const isLoading = bookingsLoading || tourLoading || docsLoading || formsLoading || responsesLoading || tokensLoading || exemptionsLoading;
 
   if (isLoading || !bookings || !tour) {
     return { missingPassports: 0, missingPickups: 0, missingForms: 0, total: 0, isLoading };
@@ -186,19 +203,22 @@ export const useTourDocumentAlerts = (tourId: string): DocumentAlertCounts => {
     const responseSet = new Set(
       (formResponses || []).map(r => `${r.form_id}-${r.booking_id}-${r.passenger_slot}`)
     );
+    const exemptionSet = new Set(
+      (formExemptions || []).map(e => `${e.form_id}-${e.booking_id}-${e.passenger_slot}`)
+    );
     for (const form of forms) {
       for (const booking of bookings) {
         if (!formRequestedSet.has(`${form.id}-${booking.id}`)) continue;
         if (form.response_mode === 'per_passenger') {
           for (let slot = 1; slot <= booking.passenger_count; slot++) {
-            if (!responseSet.has(`${form.id}-${booking.id}-${slot}`)) {
-              missingForms++;
-            }
-          }
-        } else {
-          if (!responseSet.has(`${form.id}-${booking.id}-1`)) {
+            if (responseSet.has(`${form.id}-${booking.id}-${slot}`)) continue;
+            if (exemptionSet.has(`${form.id}-${booking.id}-${slot}`)) continue;
             missingForms++;
           }
+        } else {
+          if (responseSet.has(`${form.id}-${booking.id}-1`)) continue;
+          if (exemptionSet.has(`${form.id}-${booking.id}-1`)) continue;
+          missingForms++;
         }
       }
     }
