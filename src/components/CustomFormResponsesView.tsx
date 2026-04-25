@@ -447,6 +447,12 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                 {outstandingCount} outstanding
               </span>
             )}
+            {exemptCount > 0 && (
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <Ban className="h-3.5 w-3.5" />
+                {exemptCount} not required
+              </span>
+            )}
             <span>·</span>
             <span>{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
             {lastSentDate && (
@@ -474,15 +480,27 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                     <TableHead>Booking</TableHead>
                     {fields.map(f => <TableHead key={f.id}>{f.field_label}</TableHead>)}
                     <TableHead>Submitted</TableHead>
+                    <TableHead className="w-32">Not Required</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {allPassengers.map(row => (
-                    <TableRow key={`${row.bookingId}-${row.slot}`} className={!row.response ? 'bg-amber-50/50' : ''}>
+                    <TableRow
+                      key={`${row.bookingId}-${row.slot}`}
+                      className={
+                        row.exempt && !row.response
+                          ? 'opacity-50 bg-muted/40'
+                          : !row.response
+                            ? 'bg-amber-50/50'
+                            : ''
+                      }
+                    >
                       <TableCell>
                         {row.response ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : row.exempt ? (
+                          <Ban className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-amber-500" />
                         )}
@@ -497,6 +515,8 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                             ) : (
                               getFieldValue(row.response, f) || <span className="text-muted-foreground">—</span>
                             )
+                          ) : row.exempt ? (
+                            <span className="text-muted-foreground italic">Not required</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -506,10 +526,30 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                         {row.response ? new Date(row.response.submitted_at).toLocaleDateString('en-AU') : '—'}
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={row.exempt}
+                            disabled={!!row.response || toggleExemption.isPending}
+                            onCheckedChange={() =>
+                              toggleExemption.mutate({
+                                bookingId: row.bookingId,
+                                slot: row.slot,
+                                currentlyExempt: row.exempt,
+                              })
+                            }
+                            aria-label="Toggle not required"
+                          />
+                          {row.exempt && (
+                            <Badge variant="outline" className="text-xs">N/A</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => startEdit(row)}
+                          disabled={row.exempt && !row.response}
                           title={row.response ? 'Edit response' : 'Enter details'}
                         >
                           {row.response ? (
