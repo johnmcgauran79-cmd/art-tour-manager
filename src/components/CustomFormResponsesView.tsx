@@ -126,14 +126,11 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
         rows.push({ bookingId: b.id, slot, customerId, passengerName, bookingName, response, exempt });
       }
     }
-    // Sort: outstanding (not exempt, no response) first, then exempt/completed mixed by name
-    rows.sort((a, b) => {
-      const aOutstanding = !a.response && !a.exempt;
-      const bOutstanding = !b.response && !b.exempt;
-      if (aOutstanding && !bOutstanding) return -1;
-      if (!aOutstanding && bOutstanding) return 1;
-      return a.bookingName.localeCompare(b.bookingName) || a.slot - b.slot;
-    });
+    // Stable sort by booking name then slot — do NOT re-order when exemption toggles,
+    // otherwise the row appears to "disappear" by jumping down the list.
+    rows.sort((a, b) =>
+      a.bookingName.localeCompare(b.bookingName) || a.slot - b.slot
+    );
     return rows;
   }, [tourBookings, responses, form.response_mode, exemptSet]);
 
