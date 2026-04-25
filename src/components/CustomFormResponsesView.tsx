@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Printer, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle } from "lucide-react";
+import { Printer, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle, Ban } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +35,7 @@ interface PassengerRow {
   passengerName: string;
   bookingName: string;
   response: CustomFormResponse | null;
+  exempt: boolean;
 }
 
 export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, form, fields, responses }: Props) {
@@ -72,6 +74,25 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     enabled: open,
   });
 
+  // Fetch "Not Required" exemptions for this form
+  const { data: exemptions = [] } = useQuery({
+    queryKey: ['custom-form-exemptions', form.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tour_custom_form_exemptions' as any)
+        .select('booking_id, passenger_slot')
+        .eq('form_id', form.id);
+      if (error) throw error;
+      return (data || []) as unknown as { booking_id: string; passenger_slot: number }[];
+    },
+    enabled: open,
+  });
+
+  const exemptSet = useMemo(
+    () => new Set(exemptions.map(e => `${e.booking_id}-${e.passenger_slot}`)),
+    [exemptions]
+  );
+
   // Build complete passenger list with response status
   const allPassengers = useMemo((): PassengerRow[] => {
     const rows: PassengerRow[] = [];
@@ -99,20 +120,24 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           r => r.booking_id === b.id && r.passenger_slot === slot
         ) || null;
 
-        rows.push({ bookingId: b.id, slot, customerId, passengerName, bookingName, response });
+        const exempt = exemptSet.has(`${b.id}-${slot}`);
+        rows.push({ bookingId: b.id, slot, customerId, passengerName, bookingName, response, exempt });
       }
     }
-    // Sort: outstanding first, then by booking name
+    // Sort: outstanding (not exempt, no response) first, then exempt/completed mixed by name
     rows.sort((a, b) => {
-      if (!a.response && b.response) return -1;
-      if (a.response && !b.response) return 1;
+      const aOutstanding = !a.response && !a.exempt;
+      const bOutstanding = !b.response && !b.exempt;
+      if (aOutstanding && !bOutstanding) return -1;
+      if (!aOutstanding && bOutstanding) return 1;
       return a.bookingName.localeCompare(b.bookingName) || a.slot - b.slot;
     });
     return rows;
-  }, [tourBookings, responses, form.response_mode]);
+  }, [tourBookings, responses, form.response_mode, exemptSet]);
 
   const completedCount = allPassengers.filter(p => p.response).length;
-  const outstandingCount = allPassengers.length - completedCount;
+  const exemptCount = allPassengers.filter(p => p.exempt && !p.response).length;
+  const outstandingCount = allPassengers.filter(p => !p.response && !p.exempt).length;
 
   const updateResponse = useMutation({
     mutationFn: async ({ id, response_data }: { id: string; response_data: Record<string, any> }) => {
@@ -155,6 +180,38 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     queryClient.invalidateQueries({ queryKey: ['custom-form-responses', form.id] });
     queryClient.invalidateQueries({ queryKey: ['all-form-responses', tourId] });
   };
+
+  const toggleExemption = useMutation({
+    mutationFn: async ({ bookingId, slot, currentlyExempt }: { bookingId: string; slot: number; currentlyExempt: boolean }) => {
+      if (currentlyExempt) {
+        const { error } = await supabase
+          .from('tour_custom_form_exemptions' as any)
+          .delete()
+          .eq('form_id', form.id)
+          .eq('booking_id', bookingId)
+          .eq('passenger_slot', slot);
+        if (error) throw error;
+      } else {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error } = await supabase
+          .from('tour_custom_form_exemptions' as any)
+          .insert({
+            form_id: form.id,
+            booking_id: bookingId,
+            passenger_slot: slot,
+            created_by: user?.id ?? null,
+          } as any);
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['custom-form-exemptions', form.id] });
+      queryClient.invalidateQueries({ queryKey: ['global-document-alerts'] });
+      queryClient.invalidateQueries({ queryKey: ['tour-doc-alerts-exemptions', tourId] });
+      toast.success(vars.currentlyExempt ? 'Marked as required' : 'Marked as not required');
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const getFieldValue = (response: CustomFormResponse, field: CustomFormField): string => {
     const val = response.response_data[field.id];
@@ -390,6 +447,12 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                 {outstandingCount} outstanding
               </span>
             )}
+            {exemptCount > 0 && (
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <Ban className="h-3.5 w-3.5" />
+                {exemptCount} not required
+              </span>
+            )}
             <span>·</span>
             <span>{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
             {lastSentDate && (
@@ -417,15 +480,27 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                     <TableHead>Booking</TableHead>
                     {fields.map(f => <TableHead key={f.id}>{f.field_label}</TableHead>)}
                     <TableHead>Submitted</TableHead>
+                    <TableHead className="w-32">Not Required</TableHead>
                     <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {allPassengers.map(row => (
-                    <TableRow key={`${row.bookingId}-${row.slot}`} className={!row.response ? 'bg-amber-50/50' : ''}>
+                    <TableRow
+                      key={`${row.bookingId}-${row.slot}`}
+                      className={
+                        row.exempt && !row.response
+                          ? 'opacity-50 bg-muted/40'
+                          : !row.response
+                            ? 'bg-amber-50/50'
+                            : ''
+                      }
+                    >
                       <TableCell>
                         {row.response ? (
                           <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : row.exempt ? (
+                          <Ban className="h-4 w-4 text-muted-foreground" />
                         ) : (
                           <AlertCircle className="h-4 w-4 text-amber-500" />
                         )}
@@ -440,6 +515,8 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                             ) : (
                               getFieldValue(row.response, f) || <span className="text-muted-foreground">—</span>
                             )
+                          ) : row.exempt ? (
+                            <span className="text-muted-foreground italic">Not required</span>
                           ) : (
                             <span className="text-muted-foreground">—</span>
                           )}
@@ -449,10 +526,30 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                         {row.response ? new Date(row.response.submitted_at).toLocaleDateString('en-AU') : '—'}
                       </TableCell>
                       <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={row.exempt}
+                            disabled={!!row.response || toggleExemption.isPending}
+                            onCheckedChange={() =>
+                              toggleExemption.mutate({
+                                bookingId: row.bookingId,
+                                slot: row.slot,
+                                currentlyExempt: row.exempt,
+                              })
+                            }
+                            aria-label="Toggle not required"
+                          />
+                          {row.exempt && (
+                            <Badge variant="outline" className="text-xs">N/A</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => startEdit(row)}
+                          disabled={row.exempt && !row.response}
                           title={row.response ? 'Edit response' : 'Enter details'}
                         >
                           {row.response ? (

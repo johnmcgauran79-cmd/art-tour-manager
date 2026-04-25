@@ -71,7 +71,7 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
       const bookingIds = bookings.map(b => b.id);
 
       // Parallel chunked queries
-      const [travelDocs, formsRes, formResponses, tokens] = await Promise.all([
+      const [travelDocs, formsRes, formResponses, tokens, formExemptions] = await Promise.all([
         Promise.all(
           chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
             const { data, error } = await supabase
@@ -108,6 +108,16 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
             return data || [];
           })
         ).then(r => r.flat()),
+        Promise.all(
+          chunk(bookingIds, CHUNK_SIZE).map(async (ids) => {
+            const { data, error } = await supabase
+              .from("tour_custom_form_exemptions" as any)
+              .select("form_id, booking_id, passenger_slot")
+              .in("booking_id", ids);
+            if (error) throw error;
+            return (data || []) as unknown as { form_id: string; booking_id: string; passenger_slot: number }[];
+          })
+        ).then(r => r.flat()),
       ]);
 
       if (formsRes.error) throw formsRes.error;
@@ -131,6 +141,9 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
       );
       const responseSet = new Set(
         formResponses.map(r => `${r.form_id}-${r.booking_id}-${r.passenger_slot}`)
+      );
+      const exemptionSet = new Set(
+        formExemptions.map(e => `${e.form_id}-${e.booking_id}-${e.passenger_slot}`)
       );
 
       // Group bookings by tour
@@ -177,10 +190,14 @@ export const useGlobalDocumentAlerts = (): GlobalDocumentAlerts => {
             if (!formRequestedSet.has(`${form.id}-${b.id}`)) continue;
             if (form.response_mode === 'per_passenger') {
               for (let slot = 1; slot <= b.passenger_count; slot++) {
-                if (!responseSet.has(`${form.id}-${b.id}-${slot}`)) missingForms++;
+                if (responseSet.has(`${form.id}-${b.id}-${slot}`)) continue;
+                if (exemptionSet.has(`${form.id}-${b.id}-${slot}`)) continue;
+                missingForms++;
               }
             } else {
-              if (!responseSet.has(`${form.id}-${b.id}-1`)) missingForms++;
+              if (responseSet.has(`${form.id}-${b.id}-1`)) continue;
+              if (exemptionSet.has(`${form.id}-${b.id}-1`)) continue;
+              missingForms++;
             }
           }
         }
