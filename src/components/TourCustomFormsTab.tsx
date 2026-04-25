@@ -874,6 +874,17 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
         />
       )}
 
+      {/* Manage Exemptions */}
+      {showExemptions && form && (
+        <ManageFormExemptionsModal
+          open={showExemptions}
+          onOpenChange={setShowExemptions}
+          tourId={tourId}
+          formId={form.id}
+          formTitle={form.form_title}
+          responseMode={form.response_mode}
+        />
+      )}
 
     </>
   );
