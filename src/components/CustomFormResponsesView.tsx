@@ -605,6 +605,18 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Manage Exemptions */}
+      {showExemptions && (
+        <ManageFormExemptionsModal
+          open={showExemptions}
+          onOpenChange={setShowExemptions}
+          tourId={tourId}
+          formId={form.id}
+          formTitle={form.form_title}
+          responseMode={form.response_mode}
+        />
+      )}
     </>
   );
 }
