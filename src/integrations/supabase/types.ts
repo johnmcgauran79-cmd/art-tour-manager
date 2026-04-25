@@ -2735,6 +2735,51 @@ export type Database = {
           },
         ]
       }
+      tour_custom_form_exemptions: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          form_id: string
+          id: string
+          passenger_slot: number
+          reason: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          form_id: string
+          id?: string
+          passenger_slot: number
+          reason?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          form_id?: string
+          id?: string
+          passenger_slot?: number
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_custom_form_exemptions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_custom_form_exemptions_form_id_fkey"
+            columns: ["form_id"]
+            isOneToOne: false
+            referencedRelation: "tour_custom_forms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_custom_form_fields: {
         Row: {
           created_at: string
