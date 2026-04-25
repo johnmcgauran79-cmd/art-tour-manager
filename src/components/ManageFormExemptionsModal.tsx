@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Loader2, Ban, CheckCircle2, Search } from "lucide-react";
@@ -257,7 +256,7 @@ export function ManageFormExemptionsModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Ban className="h-5 w-5" />
@@ -307,7 +306,7 @@ export function ManageFormExemptionsModal({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <ScrollArea className="flex-1 border rounded-lg min-h-0 h-[400px]">
+          <div className="flex-1 border rounded-lg min-h-0 h-[400px] overflow-y-auto">
             <div className="p-2 space-y-1">
               {filtered.length === 0 && (
                 <p className="text-center text-sm text-muted-foreground py-6">
@@ -353,7 +352,7 @@ export function ManageFormExemptionsModal({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
         )}
 
         <DialogFooter>
