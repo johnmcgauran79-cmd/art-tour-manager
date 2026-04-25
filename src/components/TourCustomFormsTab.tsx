@@ -344,6 +344,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
+  const [showExemptions, setShowExemptions] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -549,6 +550,11 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
               <Button variant="outline" size="sm" onClick={() => setShowResponses(true)}>
                 <FileText className="h-4 w-4 mr-2" /> Responses ({responses.length})
               </Button>
+              {!isViewOnly && (
+                <Button variant="outline" size="sm" onClick={() => setShowExemptions(true)}>
+                  <Ban className="h-4 w-4 mr-2" /> Manage Exemptions
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleCopyMergeField}>
                 {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
                 {linkCopied ? 'Copied!' : 'Copy Merge Field'}
