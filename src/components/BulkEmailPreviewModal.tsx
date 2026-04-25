@@ -176,28 +176,46 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
         .select('booking_id, passenger_slot')
         .eq('form_id', selectedFormId);
 
-      const completed = new Set<string>();
-      if (!responses || responses.length === 0) return completed;
+      // Pull exemptions so "Not Required" passengers are treated as completed.
+      const { data: exemptions } = await supabase
+        .from('tour_custom_form_exemptions' as any)
+        .select('booking_id, passenger_slot')
+        .eq('form_id', selectedFormId);
 
+      const completed = new Set<string>();
       const bySlot = new Map<string, Set<number>>();
-      for (const r of responses as any[]) {
+      for (const r of (responses || []) as any[]) {
         if (!bySlot.has(r.booking_id)) bySlot.set(r.booking_id, new Set());
         bySlot.get(r.booking_id)!.add(r.passenger_slot);
+      }
+      const exBySlot = new Map<string, Set<number>>();
+      for (const e of (exemptions || []) as any[]) {
+        if (!exBySlot.has(e.booking_id)) exBySlot.set(e.booking_id, new Set());
+        exBySlot.get(e.booking_id)!.add(e.passenger_slot);
       }
 
       const responseMode = (selectedForm as any).response_mode;
       for (const b of (allBookingsData || []) as any[]) {
-        const slots = bySlot.get(b.id);
-        if (!slots) continue;
+        const slots = bySlot.get(b.id) ?? new Set<number>();
+        const exempt = exBySlot.get(b.id) ?? new Set<number>();
         if (responseMode === 'per_booking') {
-          if (slots.has(1)) completed.add(b.id);
+          if (slots.has(1) || exempt.has(1)) completed.add(b.id);
         } else {
-          // per_passenger: every passenger with an email must have a response
           let allDone = true;
-          if (b.customers?.email && !slots.has(1)) allDone = false;
-          if (b.passenger_2?.email && !slots.has(2)) allDone = false;
-          if (b.passenger_3?.email && !slots.has(3)) allDone = false;
-          if (allDone && b.customers?.email) completed.add(b.id);
+          let anyTarget = false;
+          if (b.customers?.email && !exempt.has(1)) {
+            anyTarget = true;
+            if (!slots.has(1)) allDone = false;
+          }
+          if (b.passenger_2?.email && !exempt.has(2)) {
+            anyTarget = true;
+            if (!slots.has(2)) allDone = false;
+          }
+          if (b.passenger_3?.email && !exempt.has(3)) {
+            anyTarget = true;
+            if (!slots.has(3)) allDone = false;
+          }
+          if (allDone && (anyTarget || b.customers?.email)) completed.add(b.id);
         }
       }
       return completed;

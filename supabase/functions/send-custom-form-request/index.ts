@@ -228,6 +228,27 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Filter out passengers who have been marked "Not Required" (exempt) for this form.
+    // Exempt passengers must never receive a form-request email.
+    const { data: exemptions } = await supabase
+      .from('tour_custom_form_exemptions')
+      .select('passenger_slot')
+      .eq('form_id', form.id)
+      .eq('booking_id', bookingId);
+    const exemptSlots = new Set<number>(
+      (exemptions || []).map((e: any) => Number(e.passenger_slot))
+    );
+    if (exemptSlots.size > 0) {
+      const before = passengers.length;
+      for (let i = passengers.length - 1; i >= 0; i--) {
+        if (exemptSlots.has(passengers[i].slot)) {
+          console.log(`[custom-form] Skipping exempt passenger slot ${passengers[i].slot} for booking ${bookingId}`);
+          passengers.splice(i, 1);
+        }
+      }
+      console.log(`[custom-form] Removed ${before - passengers.length} exempt passenger(s) for booking ${bookingId}`);
+    }
+
     if (passengers.length === 0) {
       return new Response(JSON.stringify({ error: "No passengers with email addresses found" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

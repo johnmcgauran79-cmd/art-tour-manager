@@ -15,10 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send, Clock } from "lucide-react";
+import { Plus, Trash2, GripVertical, Eye, Users, User, FileText, Copy, Check, ChevronDown, ChevronUp, Pencil, Send, Clock, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
 import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
+import { ManageFormExemptionsModal } from "@/components/ManageFormExemptionsModal";
 
 interface Props {
   tourId: string;
@@ -45,6 +46,10 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
   const [showBulkSend, setShowBulkSend] = useState(false);
   const [bulkSendFormId, setBulkSendFormId] = useState<string>("");
   const [showFormPicker, setShowFormPicker] = useState(false);
+  // After creating a form with "Choose specific passengers", open the manage modal
+  const [postCreateExemptionsForm, setPostCreateExemptionsForm] = useState<
+    { id: string; title: string; responseMode: 'per_passenger' | 'per_booking' } | null
+  >(null);
 
   const publishedForms = forms.filter(f => f.is_published);
 
@@ -53,6 +58,8 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
   const [formDescription, setFormDescription] = useState('');
   const [responseMode, setResponseMode] = useState<'per_passenger' | 'per_booking'>('per_passenger');
   const [emailRecipients, setEmailRecipients] = useState<'lead_only' | 'all_passengers'>('all_passengers');
+  // "all" = applies to every passenger; "choose" = open exemption picker after creation
+  const [appliesTo, setAppliesTo] = useState<'all' | 'choose'>('all');
 
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
@@ -60,12 +67,22 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
 
   const handleCreateForm = () => {
     createForm.mutate({ title: formTitle, description: formDescription, responseMode, emailRecipients }, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         setShowCreateForm(false);
+        // If the user wants to choose specific passengers, open the exemptions modal
+        // for the newly-created form so they can untick those who don't need it.
+        if (appliesTo === 'choose' && created?.id) {
+          setPostCreateExemptionsForm({
+            id: created.id,
+            title: formTitle,
+            responseMode,
+          });
+        }
         setFormTitle('');
         setFormDescription('');
         setResponseMode('per_passenger');
         setEmailRecipients('all_passengers');
+        setAppliesTo('all');
       }
     });
   };
@@ -192,6 +209,28 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
                 </label>
               </div>
             </div>
+            <div className="space-y-3">
+              <Label>Who is this form for?</Label>
+              <p className="text-xs text-muted-foreground">
+                You can mark specific passengers as "not required" so they're excluded from outstanding counts and emails.
+              </p>
+              <div className="flex flex-col gap-3">
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${appliesTo === 'all' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <input type="radio" checked={appliesTo === 'all'} onChange={() => setAppliesTo('all')} className="mt-1" />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" /> All passengers</div>
+                    <p className="text-sm text-muted-foreground mt-1">Form applies to everyone (default). You can still exempt individuals later.</p>
+                  </div>
+                </label>
+                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${appliesTo === 'choose' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+                  <input type="radio" checked={appliesTo === 'choose'} onChange={() => setAppliesTo('choose')} className="mt-1" />
+                  <div>
+                    <div className="flex items-center gap-2 font-medium"><Ban className="h-4 w-4" /> Choose specific passengers</div>
+                    <p className="text-sm text-muted-foreground mt-1">After creating the form, untick anyone who shouldn't have to fill it in.</p>
+                  </div>
+                </label>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
@@ -243,6 +282,18 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
         initialTemplateType="custom_form_request"
         initialFormId={bulkSendFormId}
       />
+
+      {/* Post-create exemption picker (when "Choose specific passengers" is selected) */}
+      {postCreateExemptionsForm && (
+        <ManageFormExemptionsModal
+          open={!!postCreateExemptionsForm}
+          onOpenChange={(open) => { if (!open) setPostCreateExemptionsForm(null); }}
+          tourId={tourId}
+          formId={postCreateExemptionsForm.id}
+          formTitle={postCreateExemptionsForm.title}
+          responseMode={postCreateExemptionsForm.responseMode}
+        />
+      )}
     </div>
   );
 }
@@ -293,6 +344,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [showAddField, setShowAddField] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
+  const [showExemptions, setShowExemptions] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [isEditingMeta, setIsEditingMeta] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -498,6 +550,11 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
               <Button variant="outline" size="sm" onClick={() => setShowResponses(true)}>
                 <FileText className="h-4 w-4 mr-2" /> Responses ({responses.length})
               </Button>
+              {!isViewOnly && (
+                <Button variant="outline" size="sm" onClick={() => setShowExemptions(true)}>
+                  <Ban className="h-4 w-4 mr-2" /> Manage Exemptions
+                </Button>
+              )}
               <Button variant="outline" size="sm" onClick={handleCopyMergeField}>
                 {linkCopied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
                 {linkCopied ? 'Copied!' : 'Copy Merge Field'}
@@ -817,6 +874,17 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
         />
       )}
 
+      {/* Manage Exemptions */}
+      {showExemptions && form && (
+        <ManageFormExemptionsModal
+          open={showExemptions}
+          onOpenChange={setShowExemptions}
+          tourId={tourId}
+          formId={form.id}
+          formTitle={form.form_title}
+          responseMode={form.response_mode}
+        />
+      )}
 
     </>
   );
