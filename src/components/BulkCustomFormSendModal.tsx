@@ -90,29 +90,49 @@ export function BulkCustomFormSendModal({
         .select("booking_id, passenger_slot")
         .eq("form_id", selectedFormId);
 
+      // Treat exempt ("Not Required") passengers as already-handled so they are
+      // excluded from the "incomplete" count and don't trigger an unnecessary send.
+      const { data: exemptions } = await supabase
+        .from("tour_custom_form_exemptions" as any)
+        .select("booking_id, passenger_slot")
+        .eq("form_id", selectedFormId);
+
+      const responsesByBooking = new Map<string, Set<number>>();
+      for (const r of (responses || []) as any[]) {
+        if (!responsesByBooking.has(r.booking_id)) responsesByBooking.set(r.booking_id, new Set());
+        responsesByBooking.get(r.booking_id)!.add(r.passenger_slot);
+      }
+      const exemptionsByBooking = new Map<string, Set<number>>();
+      for (const e of (exemptions || []) as any[]) {
+        if (!exemptionsByBooking.has(e.booking_id)) exemptionsByBooking.set(e.booking_id, new Set());
+        exemptionsByBooking.get(e.booking_id)!.add(e.passenger_slot);
+      }
+
       const completedBookings = new Set<string>();
-      if (responses && responses.length > 0) {
-        const responsesByBooking = new Map<string, Set<number>>();
-        for (const r of responses as any[]) {
-          if (!responsesByBooking.has(r.booking_id)) {
-            responsesByBooking.set(r.booking_id, new Set());
-          }
-          responsesByBooking.get(r.booking_id)!.add(r.passenger_slot);
-        }
+      for (const b of bookingsData || []) {
+        const responded = responsesByBooking.get(b.id) ?? new Set<number>();
+        const exempt = exemptionsByBooking.get(b.id) ?? new Set<number>();
 
-        for (const b of bookingsData || []) {
-          const slots = responsesByBooking.get(b.id);
-          if (!slots) continue;
-
-          if (selectedForm.response_mode === 'per_booking') {
-            if (slots.has(1)) completedBookings.add(b.id);
-          } else {
-            let allDone = true;
-            if ((b as any).customers?.email && !slots.has(1)) allDone = false;
-            if ((b as any).passenger_2?.email && !slots.has(2)) allDone = false;
-            if ((b as any).passenger_3?.email && !slots.has(3)) allDone = false;
-            if (allDone && (b as any).customers?.email) completedBookings.add(b.id);
+        if (selectedForm.response_mode === 'per_booking') {
+          if (responded.has(1) || exempt.has(1)) completedBookings.add(b.id);
+        } else {
+          // per_passenger: every passenger who has an email AND isn't exempt must have a response
+          let allDone = true;
+          let anyTarget = false;
+          if ((b as any).customers?.email && !exempt.has(1)) {
+            anyTarget = true;
+            if (!responded.has(1)) allDone = false;
           }
+          if ((b as any).passenger_2?.email && !exempt.has(2)) {
+            anyTarget = true;
+            if (!responded.has(2)) allDone = false;
+          }
+          if ((b as any).passenger_3?.email && !exempt.has(3)) {
+            anyTarget = true;
+            if (!responded.has(3)) allDone = false;
+          }
+          // If the whole booking is exempt (no targets), treat as completed so it's not flagged.
+          if (allDone && (anyTarget || (b as any).customers?.email)) completedBookings.add(b.id);
         }
       }
 
