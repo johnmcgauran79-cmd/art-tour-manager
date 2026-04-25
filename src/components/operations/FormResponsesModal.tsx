@@ -42,6 +42,22 @@ export function FormResponsesModal({ open, onOpenChange, tourId, tourName }: For
     enabled: open && forms.length > 0,
   });
 
+  // Fetch all "Not Required" exemptions for all forms in this tour
+  const { data: allExemptions = [] } = useQuery({
+    queryKey: ['all-form-exemptions', tourId],
+    queryFn: async () => {
+      const formIds = forms.map(f => f.id);
+      if (formIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('tour_custom_form_exemptions' as any)
+        .select('form_id, booking_id, passenger_slot')
+        .in('form_id', formIds);
+      if (error) throw error;
+      return (data || []) as unknown as { form_id: string; booking_id: string; passenger_slot: number }[];
+    },
+    enabled: open && forms.length > 0,
+  });
+
   // Fetch fields for selected form
   const { data: selectedFormFields = [] } = useQuery({
     queryKey: ['custom-form-fields', selectedForm?.id],
@@ -66,19 +82,35 @@ export function FormResponsesModal({ open, onOpenChange, tourId, tourName }: For
     const responseSet = new Set(
       responses.map(r => `${r.booking_id}-${r.passenger_slot}`)
     );
+    const exemptionSet = new Set(
+      allExemptions
+        .filter(e => e.form_id === form.id)
+        .map(e => `${e.booking_id}-${e.passenger_slot}`)
+    );
 
     let expected = 0;
+    let exempt = 0;
     for (const booking of tourBookings) {
       if (form.response_mode === 'per_passenger') {
         expected += booking.passenger_count;
+        for (let slot = 1; slot <= booking.passenger_count; slot++) {
+          if (exemptionSet.has(`${booking.id}-${slot}`)
+              && !responseSet.has(`${booking.id}-${slot}`)) {
+            exempt++;
+          }
+        }
       } else {
         expected += 1;
+        if (exemptionSet.has(`${booking.id}-1`)
+            && !responseSet.has(`${booking.id}-1`)) {
+          exempt++;
+        }
       }
     }
 
     const completed = responseSet.size;
-    const outstanding = Math.max(0, expected - completed);
-    return { completed, expected, outstanding, responses };
+    const outstanding = Math.max(0, expected - completed - exempt);
+    return { completed, expected, outstanding, exempt, responses };
   };
 
   const totalOutstanding = forms.reduce((sum, form) => {
