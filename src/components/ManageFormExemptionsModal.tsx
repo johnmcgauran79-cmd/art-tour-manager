@@ -307,7 +307,7 @@ export function ManageFormExemptionsModal({
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <ScrollArea className="flex-1 border rounded-lg min-h-0">
+          <ScrollArea className="flex-1 border rounded-lg min-h-0 h-[400px]">
             <div className="p-2 space-y-1">
               {filtered.length === 0 && (
                 <p className="text-center text-sm text-muted-foreground py-6">
