@@ -1,8 +1,9 @@
+import { useMemo, useState } from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ClipboardList, MapPin } from "lucide-react";
+import { ClipboardList, MapPin, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { TaskCard } from "@/components/cards/TaskCard";
@@ -31,6 +32,32 @@ const PRIORITY_DOT: Record<string, { color: string; label: string }> = {
   low: { color: "bg-priority-low", label: "Low" },
 };
 
+type SortKey = "users" | "tour" | "status" | "priority" | "due_date" | "last_update";
+type SortDir = "asc" | "desc";
+
+const PRIORITY_RANK: Record<string, number> = {
+  critical: 0,
+  high: 1,
+  medium: 2,
+  low: 3,
+};
+
+const STATUS_RANK: Record<string, number> = {
+  not_started: 0,
+  in_progress: 1,
+  waiting: 2,
+  completed: 3,
+  cancelled: 4,
+  archived: 5,
+};
+
+const assigneeLabel = (task: Task) => {
+  const a = task.task_assignments?.[0] as any;
+  if (!a) return "";
+  const p = a.profiles || a.profile || {};
+  return (p.full_name || p.email || "").toString().toLowerCase();
+};
+
 export const StreamlinedTasksTable = ({
   tasks,
   loading = false,
@@ -43,6 +70,108 @@ export const StreamlinedTasksTable = ({
   const updateTask = useUpdateTask();
   const { hasEditAccess, isViewOnly } = usePermissions();
   const canEditInline = hasEditAccess && !isViewOnly;
+
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir("asc");
+    } else if (sortDir === "asc") {
+      setSortDir("desc");
+    } else {
+      // third click clears sort, reverts to original order
+      setSortKey(null);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedTasks = useMemo(() => {
+    if (!sortKey) return tasks;
+    const dirMul = sortDir === "asc" ? 1 : -1;
+    const NULL_LAST = Number.POSITIVE_INFINITY;
+    const cmp = (a: Task, b: Task): number => {
+      switch (sortKey) {
+        case "users": {
+          const av = assigneeLabel(a);
+          const bv = assigneeLabel(b);
+          if (!av && bv) return 1;
+          if (av && !bv) return -1;
+          return av.localeCompare(bv);
+        }
+        case "tour": {
+          const av = a.tours?.name?.toLowerCase() || "";
+          const bv = b.tours?.name?.toLowerCase() || "";
+          if (!av && bv) return 1;
+          if (av && !bv) return -1;
+          return av.localeCompare(bv);
+        }
+        case "status": {
+          const av = STATUS_RANK[a.status] ?? 99;
+          const bv = STATUS_RANK[b.status] ?? 99;
+          return av - bv;
+        }
+        case "priority": {
+          const av = PRIORITY_RANK[a.priority] ?? 99;
+          const bv = PRIORITY_RANK[b.priority] ?? 99;
+          return av - bv;
+        }
+        case "due_date": {
+          const av = a.due_date ? new Date(a.due_date).getTime() : NULL_LAST;
+          const bv = b.due_date ? new Date(b.due_date).getTime() : NULL_LAST;
+          return av - bv;
+        }
+        case "last_update": {
+          const av = new Date(a.last_activity_at || a.updated_at).getTime();
+          const bv = new Date(b.last_activity_at || b.updated_at).getTime();
+          return av - bv;
+        }
+        default:
+          return 0;
+      }
+    };
+    return [...tasks].sort((a, b) => cmp(a, b) * dirMul);
+  }, [tasks, sortKey, sortDir]);
+
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) {
+      return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    }
+    return sortDir === "asc" ? (
+      <ArrowUp className="h-3 w-3" />
+    ) : (
+      <ArrowDown className="h-3 w-3" />
+    );
+  };
+
+  const SortableHead = ({
+    k,
+    children,
+    className,
+    align = "left",
+  }: {
+    k: SortKey;
+    children: React.ReactNode;
+    className?: string;
+    align?: "left" | "center";
+  }) => (
+    <TableHead className={className}>
+      <button
+        type="button"
+        onClick={() => handleSort(k)}
+        className={cn(
+          "inline-flex items-center gap-1 hover:text-foreground transition-colors select-none",
+          align === "center" && "justify-center w-full",
+          sortKey === k ? "text-foreground font-semibold" : "text-muted-foreground",
+        )}
+        aria-label={`Sort by ${typeof children === "string" ? children : k}`}
+      >
+        <span>{children}</span>
+        <SortIcon k={k} />
+      </button>
+    </TableHead>
+  );
 
   const allSelected = tasks.length > 0 && selectedTasks.length === tasks.length;
   const someSelected = selectedTasks.length > 0 && selectedTasks.length < tasks.length;
@@ -69,7 +198,7 @@ export const StreamlinedTasksTable = ({
     <div className="space-y-4">
       {/* Mobile cards */}
       <div className="block md:hidden space-y-3">
-        {tasks.map((task) => (
+        {sortedTasks.map((task) => (
           <TaskCard key={task.id} task={task} onView={onTaskClick} showTourName />
         ))}
       </div>
@@ -89,17 +218,17 @@ export const StreamlinedTasksTable = ({
                 </TableHead>
               )}
               <TableHead className="min-w-[280px]">Task</TableHead>
-              <TableHead className="w-[110px]">Users</TableHead>
-              <TableHead className="w-[140px]">Tour</TableHead>
-              <TableHead className="w-[130px]">Status</TableHead>
-              <TableHead className="w-[70px] text-center">Priority</TableHead>
-              <TableHead className="w-[110px]">Due Date</TableHead>
-              <TableHead className="w-[120px]">Last Update</TableHead>
+              <SortableHead k="users" className="w-[110px]">Users</SortableHead>
+              <SortableHead k="tour" className="w-[140px]">Tour</SortableHead>
+              <SortableHead k="status" className="w-[130px]">Status</SortableHead>
+              <SortableHead k="priority" className="w-[70px] text-center" align="center">Priority</SortableHead>
+              <SortableHead k="due_date" className="w-[110px]">Due Date</SortableHead>
+              <SortableHead k="last_update" className="w-[120px]">Last Update</SortableHead>
               <TableHead className="min-w-[200px]">Latest</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tasks.map((task) => {
+            {sortedTasks.map((task) => {
               const isOverdue =
                 task.due_date &&
                 new Date(task.due_date) < new Date() &&
