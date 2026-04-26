@@ -12,6 +12,11 @@ export interface TaskSubtask {
   sort_order: number;
   created_at: string;
   created_by: string;
+  due_date: string | null;
+  assignee_id: string | null;
+  latest_note: string | null;
+  latest_note_at: string | null;
+  latest_note_by: string | null;
 }
 
 export const useTaskSubtasks = (taskId: string) => {
@@ -35,12 +40,17 @@ export const useCreateSubtask = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (input: { task_id: string; title: string }) => {
+    mutationFn: async (input: { task_id: string; title: string; assignee_id?: string | null }) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
       const { data, error } = await supabase
         .from('task_subtasks')
-        .insert({ task_id: input.task_id, title: input.title, created_by: user.user.id })
+        .insert({
+          task_id: input.task_id,
+          title: input.title,
+          created_by: user.user.id,
+          assignee_id: input.assignee_id ?? user.user.id,
+        })
         .select()
         .single();
       if (error) throw error;
@@ -86,5 +96,39 @@ export const useDeleteSubtask = () => {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['task-subtasks', vars.task_id] });
     },
+  });
+};
+
+export const useUpdateSubtask = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      task_id: string;
+      due_date?: string | null;
+      assignee_id?: string | null;
+      latest_note?: string | null;
+    }) => {
+      const { data: user } = await supabase.auth.getUser();
+      const patch: Record<string, any> = {};
+      if ('due_date' in input) patch.due_date = input.due_date;
+      if ('assignee_id' in input) patch.assignee_id = input.assignee_id;
+      if ('latest_note' in input) {
+        patch.latest_note = input.latest_note;
+        patch.latest_note_at = new Date().toISOString();
+        patch.latest_note_by = user.user?.id ?? null;
+      }
+      const { error } = await supabase
+        .from('task_subtasks')
+        .update(patch)
+        .eq('id', input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['task-subtasks', vars.task_id] });
+      queryClient.invalidateQueries({ queryKey: ['task-activity', vars.task_id] });
+    },
+    onError: (e: any) => toast({ title: "Failed to update subtask", description: e.message, variant: "destructive" }),
   });
 };
