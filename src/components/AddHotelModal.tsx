@@ -10,6 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  BOOKING_WORKFLOW_STATUS_OPTIONS,
+  PAYMENT_WORKFLOW_STATUS_OPTIONS,
+} from "@/lib/workflowStatuses";
 
 interface AddHotelModalProps {
   tourId: string;
@@ -23,6 +27,7 @@ interface AddHotelModalProps {
     contact_email: string;
     rooms_reserved: string;
     booking_status: string;
+    payment_status: string;
     default_room_type: string;
     default_check_in: string;
     default_check_out: string;
@@ -43,6 +48,7 @@ const emptyFormData = {
   contact_email: "",
   rooms_reserved: "",
   booking_status: "pending",
+  payment_status: "unpaid",
   default_room_type: "",
   default_check_in: "",
   default_check_out: "",
@@ -99,6 +105,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
           contact_email: hotelData.contact_email || null,
           rooms_reserved: hotelData.rooms_reserved ? parseInt(hotelData.rooms_reserved) : null,
           booking_status: hotelData.booking_status,
+          payment_status: hotelData.payment_status,
           default_room_type: hotelData.default_room_type || null,
           default_check_in: hotelData.default_check_in || null,
           default_check_out: hotelData.default_check_out || null,
@@ -230,13 +237,27 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="contracted">Contracted</SelectItem>
-                  <SelectItem value="updated">Updated</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="finalised">Finalised</SelectItem>
+                  {BOOKING_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payment_status">Payment Status</Label>
+              <Select value={formData.payment_status} onValueChange={(value) => handleInputChange("payment_status", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

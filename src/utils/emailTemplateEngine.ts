@@ -642,7 +642,7 @@ export class EmailTemplateEngine {
       activity_bookings: activityBookings.map((ab: any) => ({
         activity_name: ab.activities?.name,
         activity_date: this.formatDate(ab.activities?.activity_date),
-        activity_status: ab.activities?.activity_status,
+        activity_status: ab.activities?.booking_status,
         activity_start_time: ab.activities?.start_time,
         activity_end_time: ab.activities?.end_time,
         activity_location: ab.activities?.location,

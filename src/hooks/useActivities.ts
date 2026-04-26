@@ -23,7 +23,8 @@ export interface Activity {
   depart_for_activity: string | null;
   spots_available: number | null;
   spots_booked: number | null;
-  activity_status: string;
+  booking_status: string;
+  payment_status: string;
   transport_status: string;
   transport_mode: string | null;
   contact_name: string | null;

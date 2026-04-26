@@ -137,8 +137,11 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
         <DialogHeader className="pb-2">
           <DialogTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="text-base sm:text-lg truncate pr-2">{activity.name}</span>
-            <Badge variant={getStatusColor(activity.activity_status || 'pending')} className="self-start sm:self-auto text-xs">
-              {(activity.activity_status || 'pending').replace(/_/g, ' ').toUpperCase()}
+            <Badge variant={getStatusColor(activity.booking_status || 'pending')} className="self-start sm:self-auto text-xs">
+              {(activity.booking_status || 'pending').replace(/_/g, ' ').toUpperCase()}
+            </Badge>
+            <Badge variant="outline" className="self-start sm:self-auto text-xs">
+              {(activity.payment_status || 'unpaid').replace(/_/g, ' ').toUpperCase()}
             </Badge>
           </DialogTitle>
         </DialogHeader>

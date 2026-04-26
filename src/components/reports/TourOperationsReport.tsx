@@ -193,8 +193,8 @@ export const TourOperationsReport = ({
                       </ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.name`)} className="font-medium">{activity.name}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.location`)}>{activity.location || '-'}</ChangedCell>
-                      <ChangedCell isChanged={isChanged(`${key}.activity_status`)}>
-                        <Badge variant="outline" className="capitalize">{activity.activity_status?.replace('_', ' ') || '-'}</Badge>
+                      <ChangedCell isChanged={isChanged(`${key}.booking_status`)}>
+                        <Badge variant="outline" className="capitalize">{activity.booking_status?.replace('_', ' ') || '-'}</Badge>
                       </ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.depart_for_activity`)}>{formatTime(activity.depart_for_activity)}</ChangedCell>
                       <ChangedCell isChanged={isChanged(`${key}.start_time`)}>{formatTime(activity.start_time)}</ChangedCell>

@@ -20,6 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  BOOKING_WORKFLOW_STATUS_OPTIONS,
+  PAYMENT_WORKFLOW_STATUS_OPTIONS,
+  formatBookingWorkflowStatus,
+  formatPaymentWorkflowStatus,
+  getBookingWorkflowStatusColor,
+  getPaymentWorkflowStatusColor,
+} from "@/lib/workflowStatuses";
 
 interface TourActivitiesTabProps {
   tourId: string;
@@ -79,7 +87,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
 
   // Quick Update state
   const [quickUpdateMode, setQuickUpdateMode] = useState(false);
-  const [editingData, setEditingData] = useState<Record<string, { spots_available: number; activity_status: string }>>({});
+  const [editingData, setEditingData] = useState<Record<string, { spots_available: number; booking_status: string; payment_status: string }>>({});
   
   // Reset Activities state
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -149,21 +157,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
     setPaxAttendingData(paxData);
   };
 
-  const getActivityStatusColor = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      'pending': 'bg-yellow-500 text-white hover:bg-yellow-500',
-      'contacted_enquiry_sent': 'bg-yellow-500 text-white hover:bg-yellow-500',
-      'on_hold': 'bg-orange-500 text-white hover:bg-orange-500',
-      'booked': 'bg-blue-600 text-white hover:bg-blue-600',
-      'tentative_booking': 'bg-blue-400 text-white hover:bg-blue-400',
-      'paid_deposit': 'bg-green-400 text-white hover:bg-green-400',
-      'fully_paid': 'bg-green-700 text-white hover:bg-green-700',
-      'finalised': 'bg-gray-900 text-white hover:bg-gray-900',
-      'confirmed': 'bg-gray-900 text-white hover:bg-gray-900',
-      'cancelled': 'bg-red-600 text-white hover:bg-red-600',
-    };
-    return statusMap[status] || statusMap['pending'];
-  };
+  // Status colors are provided by the centralized workflow-status helpers
+  // imported below.
 
   const formatTime = (timeString: string) => {
     if (!timeString) return '';
@@ -180,11 +175,12 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
       setEditingData({});
     } else {
       // Enter mode - initialize editing data with current values
-      const initialData: Record<string, { spots_available: number; activity_status: string }> = {};
+      const initialData: Record<string, { spots_available: number; booking_status: string; payment_status: string }> = {};
       sortedActivities?.forEach(activity => {
         initialData[activity.id] = {
           spots_available: activity.spots_available || 0,
-          activity_status: activity.activity_status || 'pending'
+          booking_status: activity.booking_status || 'pending',
+          payment_status: activity.payment_status || 'unpaid'
         };
       });
       setEditingData(initialData);
@@ -200,7 +196,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
       .from('activities')
       .update({
         spots_available: data.spots_available,
-        activity_status: data.activity_status as any
+        booking_status: data.booking_status as any,
+        payment_status: data.payment_status as any
       })
       .eq('id', activityId);
 
@@ -221,7 +218,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
     refetch();
   };
 
-  const updateEditingData = (activityId: string, field: 'spots_available' | 'activity_status', value: number | string) => {
+  const updateEditingData = (activityId: string, field: 'spots_available' | 'booking_status' | 'payment_status', value: number | string) => {
     setEditingData(prev => ({
       ...prev,
       [activityId]: {
@@ -402,8 +399,11 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                       {(attachmentCounts?.[activity.id] || 0) > 0 && (
                         <Paperclip className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                       )}
-                      <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
-                        {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                      <Badge className={`text-xs ${getBookingWorkflowStatusColor(activity.booking_status)}`}>
+                        {formatBookingWorkflowStatus(activity.booking_status || 'pending')}
+                      </Badge>
+                      <Badge className={`text-xs ${getPaymentWorkflowStatusColor(activity.payment_status)}`}>
+                        {formatPaymentWorkflowStatus(activity.payment_status || 'unpaid')}
                       </Badge>
                     </div>
                   </div>
@@ -435,7 +435,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                   <TableHead>Time</TableHead>
                   <TableHead>Spots Available</TableHead>
                   <TableHead>Pax Attending</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Booking Status</TableHead>
+                  <TableHead>Payment Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -477,23 +478,16 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       {quickUpdateMode ? (
                         <Select
-                          value={editingData[activity.id]?.activity_status ?? activity.activity_status ?? 'pending'}
-                          onValueChange={(value) => updateEditingData(activity.id, 'activity_status', value)}
+                          value={editingData[activity.id]?.booking_status ?? activity.booking_status ?? 'pending'}
+                          onValueChange={(value) => updateEditingData(activity.id, 'booking_status', value)}
                         >
                           <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="booked">Booked</SelectItem>
-                            <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
-                            <SelectItem value="fully_paid">Fully Paid</SelectItem>
-                            <SelectItem value="confirmed">Confirmed</SelectItem>
-                            <SelectItem value="on_hold">On Hold</SelectItem>
-                            <SelectItem value="contacted_enquiry_sent">Contacted/Enquiry Sent</SelectItem>
-                            <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
-                            <SelectItem value="finalised">Finalised</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            {BOOKING_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       ) : (
@@ -501,10 +495,31 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                           {(attachmentCounts?.[activity.id] || 0) > 0 && (
                             <Paperclip className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           )}
-                          <Badge className={getActivityStatusColor(activity.activity_status || 'pending')}>
-                            {activity.activity_status.replace(/_/g, ' ').toUpperCase()}
+                          <Badge className={getBookingWorkflowStatusColor(activity.booking_status)}>
+                            {formatBookingWorkflowStatus(activity.booking_status || 'pending')}
                           </Badge>
                         </div>
+                      )}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {quickUpdateMode ? (
+                        <Select
+                          value={editingData[activity.id]?.payment_status ?? activity.payment_status ?? 'unpaid'}
+                          onValueChange={(value) => updateEditingData(activity.id, 'payment_status', value)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge className={getPaymentWorkflowStatusColor(activity.payment_status)}>
+                          {formatPaymentWorkflowStatus(activity.payment_status || 'unpaid')}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>

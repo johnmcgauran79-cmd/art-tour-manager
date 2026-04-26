@@ -13,6 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Activity } from "@/hooks/useActivities";
 import { JourneysEditor, Journey } from "./JourneysEditor";
 import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
+import {
+  BOOKING_WORKFLOW_STATUS_OPTIONS,
+  PAYMENT_WORKFLOW_STATUS_OPTIONS,
+} from "@/lib/workflowStatuses";
 
 interface EditActivityModalProps {
   activity: Activity | null;
@@ -30,7 +34,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     end_time: "",
     depart_for_activity: "",
     spots_booked: "",
-    activity_status: "pending",
+    booking_status: "pending",
+    payment_status: "unpaid",
     transport_status: "pending",
     transport_mode: "not_required",
     contact_name: "",
@@ -65,7 +70,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         end_time: activity.end_time || "",
         depart_for_activity: activity.depart_for_activity || "",
         spots_booked: activity.spots_available?.toString() || "",
-        activity_status: activity.activity_status || "pending",
+        booking_status: activity.booking_status || "pending",
+        payment_status: activity.payment_status || "unpaid",
         transport_status: activity.transport_status || "pending",
         transport_mode: activity.transport_mode || "not_required",
         contact_name: activity.contact_name || "",
@@ -125,7 +131,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           end_time: activityData.end_time || null,
           depart_for_activity: activityData.depart_for_activity || null,
           spots_available: activityData.spots_available ? parseInt(activityData.spots_available) : 0,
-          activity_status: activityData.activity_status,
+          booking_status: activityData.booking_status,
+          payment_status: activityData.payment_status,
           transport_status: activityData.transport_status,
           transport_mode: activityData.transport_mode || 'not_required',
           contact_name: activityData.contact_name || null,
@@ -227,27 +234,35 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             </div>
           </div>
 
-          {/* Row 2: Date & Status */}
+          {/* Row 2: Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="activity_date">Activity Date</Label>
               <Input id="activity_date" type="date" value={formData.activity_date} onChange={(e) => handleInputChange("activity_date", e.target.value)} />
             </div>
+          </div>
+
+          {/* Row 2b: Booking & Payment Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="activity_status">Activity Status</Label>
-              <Select value={formData.activity_status} onValueChange={(value) => handleInputChange("activity_status", value)}>
+              <Label htmlFor="booking_status">Booking Status</Label>
+              <Select value={formData.booking_status} onValueChange={(value) => handleInputChange("booking_status", value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="contacted_enquiry_sent">Contacted / Enquiry Sent</SelectItem>
-                  <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
-                  <SelectItem value="on_hold">On Hold</SelectItem>
-                  <SelectItem value="booked">Booked</SelectItem>
-                  <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
-                  <SelectItem value="fully_paid">Fully Paid</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="finalised">Finalised</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  {BOOKING_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="payment_status">Payment Status</Label>
+              <Select value={formData.payment_status} onValueChange={(value) => handleInputChange("payment_status", value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -14,6 +14,10 @@ import { Hotel } from "@/hooks/useHotels";
 import { HotelAttachmentsSection } from "./HotelAttachmentsSection";
 import { HotelDateCascadeModal } from "./HotelDateCascadeModal";
 import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
+import {
+  BOOKING_WORKFLOW_STATUS_OPTIONS,
+  PAYMENT_WORKFLOW_STATUS_OPTIONS,
+} from "@/lib/workflowStatuses";
 
 interface EditHotelModalProps {
   hotel: Hotel | null;
@@ -30,6 +34,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
     contact_email: "",
     rooms_reserved: "",
     booking_status: "pending",
+    payment_status: "unpaid",
     default_room_type: "",
     default_check_in: "",
     default_check_out: "",
@@ -63,6 +68,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         contact_email: hotel.contact_email || "",
         rooms_reserved: hotel.rooms_reserved?.toString() || "",
         booking_status: hotel.booking_status || "pending",
+        payment_status: hotel.payment_status || "unpaid",
         default_room_type: hotel.default_room_type || "",
         default_check_in: hotel.default_check_in || "",
         default_check_out: hotel.default_check_out || "",
@@ -88,6 +94,7 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           contact_email: hotelData.contact_email || null,
           rooms_reserved: hotelData.rooms_reserved ? parseInt(hotelData.rooms_reserved) : null,
           booking_status: hotelData.booking_status,
+          payment_status: hotelData.payment_status,
           default_room_type: hotelData.default_room_type || null,
           default_check_in: hotelData.default_check_in,
           default_check_out: hotelData.default_check_out,
@@ -248,13 +255,27 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="enquiry_sent">Enquiry Sent</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="contracted">Contracted</SelectItem>
-                  <SelectItem value="updated">Updated</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="finalised">Finalised</SelectItem>
+                  {BOOKING_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payment_status">Payment Status</Label>
+              <Select value={formData.payment_status} onValueChange={(value) => handleInputChange("payment_status", value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

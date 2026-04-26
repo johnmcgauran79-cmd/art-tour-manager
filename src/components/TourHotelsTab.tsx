@@ -1,13 +1,19 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, Bell, Copy, DollarSign } from "lucide-react";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
 import { AddHotelModal } from "@/components/AddHotelModal";
-import { StatusBadge, hotelStatusConfig } from "@/components/ui/status-badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  formatBookingWorkflowStatus,
+  formatPaymentWorkflowStatus,
+  getBookingWorkflowStatusColor,
+  getPaymentWorkflowStatusColor,
+} from "@/lib/workflowStatuses";
+import { Badge } from "@/components/ui/badge";
 import { HotelAttachmentsSection } from "@/components/HotelAttachmentsSection";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -99,10 +105,12 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-base">{hotel.name}</CardTitle>
-                    <StatusBadge 
-                      status={hotel.booking_status}
-                      variant={hotelStatusConfig[hotel.booking_status as keyof typeof hotelStatusConfig]?.variant || 'default'}
-                    />
+                    <Badge className={getBookingWorkflowStatusColor(hotel.booking_status)}>
+                      {formatBookingWorkflowStatus(hotel.booking_status)}
+                    </Badge>
+                    <Badge className={getPaymentWorkflowStatusColor(hotel.payment_status)}>
+                      {formatPaymentWorkflowStatus(hotel.payment_status)}
+                    </Badge>
                   </div>
                   <div className="flex gap-2">
                     <Button
@@ -127,6 +135,7 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                           contact_email: hotel.contact_email || "",
                           rooms_reserved: hotel.rooms_reserved?.toString() || "",
                           booking_status: "pending",
+                          payment_status: "unpaid",
                           default_room_type: hotel.default_room_type || "",
                           default_check_in: "",
                           default_check_out: "",

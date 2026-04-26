@@ -38,7 +38,8 @@ const buildSnapshot = (hotels: Hotel[], activities: Activity[]) => {
     snapshot[`activity_${activity.id}`] = {
       name: activity.name,
       activity_date: activity.activity_date,
-      activity_status: activity.activity_status,
+      booking_status: activity.booking_status,
+      payment_status: activity.payment_status,
       start_time: activity.start_time,
       depart_for_activity: activity.depart_for_activity,
       end_time: activity.end_time,
