@@ -20,6 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  BOOKING_WORKFLOW_STATUS_OPTIONS,
+  PAYMENT_WORKFLOW_STATUS_OPTIONS,
+  formatBookingWorkflowStatus,
+  formatPaymentWorkflowStatus,
+  getBookingWorkflowStatusColor,
+  getPaymentWorkflowStatusColor,
+} from "@/lib/workflowStatuses";
 
 interface TourActivitiesTabProps {
   tourId: string;
