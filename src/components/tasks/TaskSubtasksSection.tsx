@@ -14,8 +14,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
@@ -52,19 +51,8 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
   const updateSubtask = useUpdateSubtask();
   const [newTitle, setNewTitle] = useState("");
 
-  // Lightweight users list for assignee picker
-  const { data: users } = useQuery({
-    queryKey: ["users-for-subtask-assignment"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, email")
-        .order("first_name");
-      if (error) throw error;
-      return (data || []) as SubtaskUser[];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  // Only Admin and Manager users can be assigned to subtasks.
+  const { data: users } = useAssignableUsers();
 
   const usersById = new Map((users || []).map((u) => [u.id, u]));
 

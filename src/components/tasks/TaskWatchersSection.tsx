@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, X, UserPlus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTaskWatchers, useAddWatcher, useRemoveWatcher } from "@/hooks/useTaskWatchers";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 
 interface TaskWatchersSectionProps {
   taskId: string;
@@ -19,16 +18,8 @@ export const TaskWatchersSection = ({ taskId }: TaskWatchersSectionProps) => {
   const removeWatcher = useRemoveWatcher();
   const [selectedUser, setSelectedUser] = useState("");
 
-  const { data: users } = useQuery({
-    queryKey: ['users-for-watchers'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email')
-        .order('first_name');
-      return data || [];
-    },
-  });
+  // Watchers/assignees are restricted to Admin and Manager roles.
+  const { data: users } = useAssignableUsers();
 
   const watcherIds = new Set((watchers || []).map(w => w.user_id));
   const isWatching = user?.id ? watcherIds.has(user.id) : false;

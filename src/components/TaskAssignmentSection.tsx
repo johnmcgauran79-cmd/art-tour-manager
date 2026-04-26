@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 
 interface TaskAssignmentSectionProps {
   taskId: string;
@@ -53,19 +54,8 @@ export const TaskAssignmentSection = ({ taskId }: TaskAssignmentSectionProps) =>
     enabled: !!taskId,
   });
 
-  // Fetch all users
-  const { data: users } = useQuery({
-    queryKey: ['users-for-assignment'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email')
-        .order('first_name');
-
-      if (error) throw error;
-      return data as User[];
-    },
-  });
+  // Only Admin and Manager users can be assigned to tasks.
+  const { data: users } = useAssignableUsers();
 
   // Fetch current task assignments with user details
   const { data: assignments, isLoading } = useQuery({

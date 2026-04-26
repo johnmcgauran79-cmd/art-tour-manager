@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useThemeProvider } from "@/hooks/useThemeProvider";
+import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -54,6 +55,30 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" />;
   }
   
+  return <>{children}</>;
+};
+
+/**
+ * Guards routes that require the Tasks system. Tasks are restricted to
+ * Admin and Manager roles — hosts, agents and booking agents are silently
+ * redirected to the dashboard.
+ */
+const TaskRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const { isAdminOrManager, isLoading: rolesLoading } = useIsAdminOrManager();
+
+  if (loading || rolesLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdminOrManager) {
+    return <Navigate to="/" replace />;
+  }
+
   return <>{children}</>;
 };
 
@@ -125,21 +150,21 @@ function App() {
               <Route
                 path="/tasks/:id"
                 element={
-                  <ProtectedRoute>
+                  <TaskRoute>
                     <AppLayout>
                       <TaskDetail />
                     </AppLayout>
-                  </ProtectedRoute>
+                  </TaskRoute>
                 }
               />
               <Route
                 path="/tasks/:id/edit"
                 element={
-                  <ProtectedRoute>
+                  <TaskRoute>
                     <AppLayout>
                       <TaskEdit />
                     </AppLayout>
-                  </ProtectedRoute>
+                  </TaskRoute>
                 }
               />
               <Route

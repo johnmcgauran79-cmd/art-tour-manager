@@ -69,10 +69,14 @@ const Index = () => {
     } else if (isAgent && !['tours', 'bookings'].includes(tabFromUrl)) {
       setSearchParams({ tab: 'tours' });
       setActiveTab('tours');
+    // Tasks tab is restricted to Admin and Manager — silently redirect others.
+    } else if (tabFromUrl === 'tasks' && !isAdminOrManager) {
+      setSearchParams({});
+      setActiveTab('dashboard');
     } else {
       setActiveTab(tabFromUrl);
     }
-  }, [tabFromUrl, isAgent, isHost, setSearchParams]);
+  }, [tabFromUrl, isAgent, isHost, isAdminOrManager, setSearchParams]);
 
   const { data: bookings = [] } = useBookings();
   const { data: tours = [] } = useTours();

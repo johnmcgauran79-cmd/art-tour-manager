@@ -21,9 +21,13 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   
   // Agent users can only see bookings and tours tabs
   const isAgent = userRole === 'agent';
-  
+
   // Host users can only see tours tab
   const isHost = userRole === 'host';
+
+  // Tasks are restricted to Admin and Manager only — hosts, agents and
+  // booking agents cannot view, be assigned, or interact with tasks.
+  const canSeeTasks = isAdminOrManager;
 
   // Determine active tab from current route and query params
   const getActiveTab = () => {
@@ -99,7 +103,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   <span className="sm:hidden">Ops</span>
                 </TabsTrigger>
               )}
-              {!isAgent && !isHost && (
+              {canSeeTasks && (
                 <TabsTrigger value="tasks" onClick={() => handleTabChange('tasks')} className="text-xs sm:text-sm px-2 sm:px-3">
                   Tasks
                 </TabsTrigger>

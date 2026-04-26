@@ -13,11 +13,10 @@ import { CalendarIcon, Users, Link, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useTours } from "@/hooks/useTours";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 
 interface AddTaskModalProps {
   open: boolean;
@@ -47,19 +46,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   // Fetch existing tasks for dependency selection
   const { data: existingTasks } = useTasks();
 
-  // Fetch users for assignment - simplified query to avoid relation issues
-  const { data: users } = useQuery({
-    queryKey: ['users-for-assignment'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, first_name, last_name, email')
-        .order('first_name');
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Only Admin and Manager users can be assigned to tasks.
+  const { data: users } = useAssignableUsers();
 
   // Update selectedTourId when tourId prop changes
   useEffect(() => {
