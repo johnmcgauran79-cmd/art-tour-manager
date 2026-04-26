@@ -3969,6 +3969,9 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "archived"
+        | "not_required"
+        | "with_third_party"
+        | "awaiting_further_information"
       tour_status:
         | "pending"
         | "available"
@@ -4178,6 +4181,9 @@ export const Constants = {
         "completed",
         "cancelled",
         "archived",
+        "not_required",
+        "with_third_party",
+        "awaiting_further_information",
       ],
       tour_status: [
         "pending",
