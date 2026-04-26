@@ -162,7 +162,7 @@ serve(async (req) => {
         }
 
         // Filter bookings with valid email
-        const eligibleBookings = bookings?.filter(b => b.lead_passenger?.email) || [];
+        const eligibleBookings = bookings?.filter((b: any) => b.lead_passenger?.email) || [];
         const bookingCount = eligibleBookings.length;
 
         if (bookingCount === 0) {

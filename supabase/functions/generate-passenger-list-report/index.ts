@@ -19,7 +19,7 @@ async function generatePassengerListData(supabase: any, tourId: string) {
     return { passengers: [], count: 0 };
   }
 
-  const passengers = bookings.map(booking => {
+  const passengers = bookings.map((booking: any) => {
     const customer = booking.customers || {};
     return {
       name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown',
