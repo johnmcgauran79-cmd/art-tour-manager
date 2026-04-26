@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { Task } from "@/hooks/useTasks";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface TaskDependencyChainProps {
   task: Task;
@@ -86,7 +87,7 @@ export const TaskDependencyChain = ({ task, allTasks }: TaskDependencyChainProps
                 </div>
               ))}
             </div>
-            {dependencyChain.some(t => t.status !== 'completed') && (
+            {dependencyChain.some(t => !isTaskFinished(t.status)) && (
               <p className="text-xs text-orange-600 mt-2">
                 ⚠️ This task is blocked until all dependencies are completed
               </p>
@@ -108,7 +109,7 @@ export const TaskDependencyChain = ({ task, allTasks }: TaskDependencyChainProps
                 </div>
               ))}
             </div>
-            {task.status !== 'completed' && (
+            {!isTaskFinished(task.status) && (
               <p className="text-xs text-blue-600 mt-2">
                 📋 {blockedTasks.length} task(s) will be unblocked when this is completed
               </p>
