@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "mention" | "assignment";
+  type: "mention" | "assignment" | "subtask_assignment";
   taskId: string;
   recipientUserIds: string[];
   actorUserId: string;
@@ -106,30 +106,44 @@ Deno.serve(async (req) => {
     const emailHeaderImageUrl = (headerSetting?.setting_value as string) ||
       "https://art-tour-manager.lovable.app/images/email-header-default.png";
 
-    const subjectLine = body.type === "mention"
-      ? `${actorName} mentioned you on a task`
-      : `${actorName} assigned you a task`;
+    const subjectLine =
+      body.type === "mention"
+        ? `${actorName} mentioned you on a task`
+        : body.type === "subtask_assignment"
+        ? `${actorName} assigned you a subtask`
+        : `${actorName} assigned you a task`;
 
-    const bodyHeading = body.type === "mention"
-      ? "You were mentioned in a comment"
-      : "You have been assigned a new task";
+    const bodyHeading =
+      body.type === "mention"
+        ? "You were mentioned in a comment"
+        : body.type === "subtask_assignment"
+        ? "You have been assigned a subtask"
+        : "You have been assigned a new task";
 
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
       ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`
       : "";
 
+    // For subtask assignments, the message field carries the subtask title and
+    // is shown as a labelled line rather than a quote block.
+    const subtaskTitle = body.type === "subtask_assignment" ? (body.message || "").trim() : "";
+
     // Strip @[Name](uuid) mention syntax → @Name AND [[type:id|Label]] entity tokens → Label
     const cleanedMessage = body.message
-      ? body.message
+      ? (body.type === "subtask_assignment" ? "" : body.message
           .replace(/@\[([^\]]+)\]\([^)]+\)/g, "@$1")
           .replace(
             /\[\[(?:booking|hotel|activity|tour|contact):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?:\|([^\]]*))?\]\]/gi,
             (_m, label) => (label || "").trim() || "(linked record)"
-          )
+          ))
       : "";
     const messageBlock = cleanedMessage
       ? `<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f9fafb;border-left:3px solid #1a2332;border-radius:4px;margin:16px 0;"><tr><td style="padding:14px 18px;color:#374151;font-size:14px;font-style:italic;line-height:1.5;">"${cleanedMessage.replace(/</g, "&lt;").substring(0, 500)}"</td></tr></table>`
+      : "";
+
+    const subtaskBlock = subtaskTitle
+      ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Subtask: <strong>${subtaskTitle.replace(/</g, "&lt;").substring(0, 300)}</strong></p>`
       : "";
 
     let sent = 0;
@@ -146,10 +160,11 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:32px 36px;">
 <h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
-<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : "assigned you to"} the task below.</p>
+<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : "assigned you to"} the task below.</p>
 <h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
 <p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
 ${dueLine}
+${subtaskBlock}
 ${messageBlock}
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 0;">
 <a href="${taskUrl}" style="display:inline-block;background-color:#1a2332;color:#f5c518;text-decoration:none;padding:12px 28px;border-radius:6px;font-size:14px;font-weight:600;">OPEN TASK</a>
@@ -174,7 +189,12 @@ ${messageBlock}
             recipient_email: r.email,
             recipient_name: r.first_name || null,
             subject: subjectLine,
-            template_name: body.type === "mention" ? "Task Mention" : "Task Assignment",
+            template_name:
+              body.type === "mention"
+                ? "Task Mention"
+                : body.type === "subtask_assignment"
+                ? "Subtask Assignment"
+                : "Task Assignment",
             sent_by: body.actorUserId,
           });
         } catch (logErr) {
