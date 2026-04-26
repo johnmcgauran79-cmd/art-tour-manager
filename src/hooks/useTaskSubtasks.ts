@@ -54,11 +54,23 @@ export const useCreateSubtask = () => {
         .select()
         .single();
       if (error) throw error;
+      // If the new subtask has an assignee that isn't the actor, ensure they're
+      // also assigned to the parent task and notify them.
+      const assigneeId = (data as any).assignee_id as string | null | undefined;
+      if (assigneeId && assigneeId !== user.user.id) {
+        await ensureParentAssignmentAndNotify({
+          taskId: input.task_id,
+          assigneeId,
+          actorUserId: user.user.id,
+          subtaskTitle: input.title,
+        });
+      }
       return data;
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['task-subtasks', vars.task_id] });
       queryClient.invalidateQueries({ queryKey: ['task-activity', vars.task_id] });
+      queryClient.invalidateQueries({ queryKey: ['task-assignments', vars.task_id] });
     },
     onError: (e: any) => toast({ title: "Failed to add subtask", description: e.message, variant: "destructive" }),
   });
@@ -119,16 +131,67 @@ export const useUpdateSubtask = () => {
         patch.latest_note_at = new Date().toISOString();
         patch.latest_note_by = user.user?.id ?? null;
       }
-      const { error } = await supabase
+      const { data: updated, error } = await supabase
         .from('task_subtasks')
         .update(patch)
-        .eq('id', input.id);
+        .eq('id', input.id)
+        .select('title, assignee_id')
+        .single();
       if (error) throw error;
+      // When the assignee changes to someone other than the actor, ensure
+      // they're added to the parent task and notify them.
+      if ('assignee_id' in input && input.assignee_id && input.assignee_id !== user.user?.id) {
+        await ensureParentAssignmentAndNotify({
+          taskId: input.task_id,
+          assigneeId: input.assignee_id,
+          actorUserId: user.user!.id,
+          subtaskTitle: (updated as any)?.title ?? '',
+        });
+      }
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['task-subtasks', vars.task_id] });
       queryClient.invalidateQueries({ queryKey: ['task-activity', vars.task_id] });
+      queryClient.invalidateQueries({ queryKey: ['task-assignments', vars.task_id] });
     },
     onError: (e: any) => toast({ title: "Failed to update subtask", description: e.message, variant: "destructive" }),
   });
 };
+
+/**
+ * Ensures the subtask assignee is also an assignee on the parent task (idempotent
+ * via the (task_id, user_id) unique constraint) and fires a Teams/email
+ * notification using the existing send-task-notification edge function.
+ */
+async function ensureParentAssignmentAndNotify(params: {
+  taskId: string;
+  assigneeId: string;
+  actorUserId: string;
+  subtaskTitle: string;
+}) {
+  const { taskId, assigneeId, actorUserId, subtaskTitle } = params;
+
+  // Idempotent insert — relies on UNIQUE(task_id, user_id)
+  const { error: assignError } = await supabase
+    .from('task_assignments')
+    .upsert(
+      { task_id: taskId, user_id: assigneeId, assigned_by: actorUserId },
+      { onConflict: 'task_id,user_id', ignoreDuplicates: true }
+    );
+  if (assignError) {
+    console.error('Failed to add subtask assignee to parent task:', assignError);
+  }
+
+  // Fire-and-forget notification
+  supabase.functions
+    .invoke('send-task-notification', {
+      body: {
+        type: 'subtask_assignment',
+        taskId,
+        recipientUserIds: [assigneeId],
+        actorUserId,
+        message: subtaskTitle,
+      },
+    })
+    .catch((err) => console.error('Failed to send subtask notification:', err));
+}
