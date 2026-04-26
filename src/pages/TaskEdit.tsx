@@ -270,6 +270,31 @@ export default function TaskEdit() {
               </div>
 
               <div className="md:col-span-2">
+                <Label htmlFor="tour_id">Assign to Tour</Label>
+                <Select
+                  value={editedTask.tour_id || 'unassigned'}
+                  onValueChange={(value) =>
+                    setEditedTask({
+                      ...editedTask,
+                      tour_id: value === 'unassigned' ? '' : value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="tour_id">
+                    <SelectValue placeholder="Select a tour or leave unassigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">No tour (unassigned)</SelectItem>
+                    {tours?.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="md:col-span-2">
                 <Label htmlFor="url_reference">Reference URL</Label>
                 <Input
                   id="url_reference"
