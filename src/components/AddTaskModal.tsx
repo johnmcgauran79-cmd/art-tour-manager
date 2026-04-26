@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarIcon, Users, Link, AlertTriangle } from "lucide-react";
+import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useTours } from "@/hooks/useTours";
@@ -18,6 +18,16 @@ import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 import { isTaskFinished } from "@/lib/taskStatuses";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+
+interface DraftSubtask {
+  id: string; // local-only id for keying
+  title: string;
+  assignee_id: string | null;
+  due_date: string | null; // yyyy-MM-dd
+}
 
 interface AddTaskModalProps {
   open: boolean;
@@ -38,8 +48,12 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [draftSubtasks, setDraftSubtasks] = useState<DraftSubtask[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
 
   const createTask = useCreateTask();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // Fetch tours for the dropdown
   const { data: tours } = useTours();
@@ -102,10 +116,38 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         tour_id: selectedTourId,
       });
 
-      await createTask.mutateAsync({
+      const created = await createTask.mutateAsync({
         ...taskData,
         tour_id: selectedTourId,
       });
+
+      // Persist any draft subtasks created in this modal
+      const subtasksToInsert = draftSubtasks
+        .map((s) => ({ ...s, title: s.title.trim() }))
+        .filter((s) => s.title.length > 0);
+      if (created?.id && subtasksToInsert.length > 0) {
+        const { data: userRes } = await supabase.auth.getUser();
+        const actorId = userRes.user?.id ?? null;
+        const rows = subtasksToInsert.map((s, idx) => ({
+          task_id: created.id,
+          title: s.title,
+          created_by: actorId!,
+          assignee_id: s.assignee_id ?? actorId,
+          due_date: s.due_date,
+          sort_order: idx,
+        }));
+        const { error: subtaskError } = await supabase.from('task_subtasks').insert(rows);
+        if (subtaskError) {
+          console.error('Error creating subtasks:', subtaskError);
+          toast({
+            title: "Subtasks not created",
+            description: subtaskError.message,
+            variant: "destructive",
+          });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['task-subtasks', created.id] });
+        }
+      }
 
       console.log('Task created successfully, resetting form');
 
@@ -121,6 +163,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setUrlReference("");
       setValidationErrors([]);
       setValidationWarnings([]);
+      setDraftSubtasks([]);
+      setNewSubtaskTitle("");
       
       onOpenChange(false);
     } catch (error) {
@@ -138,6 +182,35 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
 
   const getUserDisplayName = (user: any) => {
     return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+  };
+
+  const userLabel = (u?: { first_name: string | null; last_name: string | null; email: string | null } | null) => {
+    if (!u) return "Unassigned";
+    const name = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
+    return name || u.email || "Unknown";
+  };
+
+  const addDraftSubtask = () => {
+    const t = newSubtaskTitle.trim();
+    if (!t) return;
+    setDraftSubtasks((prev) => [
+      ...prev,
+      {
+        id: `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title: t,
+        assignee_id: null,
+        due_date: null,
+      },
+    ]);
+    setNewSubtaskTitle("");
+  };
+
+  const updateDraftSubtask = (id: string, patch: Partial<DraftSubtask>) => {
+    setDraftSubtasks((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  };
+
+  const removeDraftSubtask = (id: string) => {
+    setDraftSubtasks((prev) => prev.filter((s) => s.id !== id));
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -376,6 +449,151 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                 {selectedUsers.length} user(s) selected
               </p>
             )}
+          </div>
+
+          {/* Subtasks Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <ListChecks className="h-4 w-4" />
+              <Label className="font-medium">
+                Subtasks{" "}
+                {draftSubtasks.length > 0 && (
+                  <span className="text-muted-foreground font-normal">
+                    ({draftSubtasks.length})
+                  </span>
+                )}
+              </Label>
+            </div>
+
+            {draftSubtasks.length > 0 && (
+              <div className="space-y-2">
+                {draftSubtasks.map((st) => {
+                  const assignee = st.assignee_id
+                    ? users?.find((u) => u.id === st.assignee_id)
+                    : null;
+                  const dueDateObj = st.due_date ? new Date(st.due_date + "T00:00:00") : undefined;
+                  return (
+                    <div
+                      key={st.id}
+                      className="group rounded border border-border/60 px-3 py-2 hover:bg-accent/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={st.title}
+                          onChange={(e) => updateDraftSubtask(st.id, { title: e.target.value })}
+                          placeholder="Subtask title"
+                          className="h-8 flex-1"
+                        />
+
+                        <Select
+                          value={st.assignee_id ?? "unassigned"}
+                          onValueChange={(val) =>
+                            updateDraftSubtask(st.id, {
+                              assignee_id: val === "unassigned" ? null : val,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-auto min-w-[8rem] gap-1 px-2 text-xs">
+                            <UserIcon className="h-3 w-3 text-muted-foreground" />
+                            <SelectValue>
+                              <span className="truncate">{userLabel(assignee)}</span>
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unassigned">Unassigned</SelectItem>
+                            {users?.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {userLabel(u)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className={cn(
+                                "h-8 gap-1 px-2 text-xs font-normal",
+                                !dueDateObj && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="h-3 w-3" />
+                              {dueDateObj ? format(dueDateObj, "d MMM yyyy") : "Due date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={dueDateObj}
+                              onSelect={(date) =>
+                                updateDraftSubtask(st.id, {
+                                  due_date: date ? format(date, "yyyy-MM-dd") : null,
+                                })
+                              }
+                              initialFocus
+                              className="pointer-events-auto"
+                            />
+                            {dueDateObj && (
+                              <div className="p-2 border-t">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-full h-7 text-xs"
+                                  onClick={() => updateDraftSubtask(st.id, { due_date: null })}
+                                >
+                                  Clear due date
+                                </Button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => removeDraftSubtask(st.id)}
+                          aria-label="Remove subtask"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add a subtask..."
+                value={newSubtaskTitle}
+                onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addDraftSubtask();
+                  }
+                }}
+                className="h-9"
+              />
+              <Button
+                type="button"
+                onClick={addDraftSubtask}
+                size="sm"
+                disabled={!newSubtaskTitle.trim()}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Subtasks will be created with the main task.
+            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
