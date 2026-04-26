@@ -8,6 +8,7 @@ import { CheckCircle, User, MoreHorizontal, Calendar, Flag } from "lucide-react"
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface QuickTaskActionsProps {
   task: Task;
@@ -84,12 +85,12 @@ export const QuickTaskActions = ({ task, onTaskClick }: QuickTaskActionsProps) =
     return `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
   };
 
-  const isBlocked = task.dependent_task && task.dependent_task.status !== 'completed';
+  const isBlocked = task.dependent_task && !isTaskFinished(task.dependent_task.status);
 
   return (
     <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
       {/* Quick Complete Button */}
-      {task.status !== 'completed' && !isBlocked && (
+      {!isTaskFinished(task.status) && !isBlocked && (
         <Button
           size="sm"
           variant="outline"
