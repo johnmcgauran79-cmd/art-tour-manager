@@ -417,7 +417,7 @@ export default function TaskDetail() {
 
         <TabsContent value="subtasks" className="mt-6">
           <div className="bg-card rounded-lg border p-6">
-            <TaskSubtasksSection taskId={task.id} />
+            <TaskSubtasksSection taskId={task.id} defaultAssigneeId={task.created_by} />
           </div>
         </TabsContent>
 
