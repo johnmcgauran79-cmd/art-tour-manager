@@ -208,7 +208,7 @@ serve(async (req) => {
       headers: { 'Location': `${appUrl}/?tab=settings&xero=connected` },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Xero OAuth error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

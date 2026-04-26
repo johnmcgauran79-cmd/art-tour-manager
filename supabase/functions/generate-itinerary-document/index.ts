@@ -162,7 +162,7 @@ serve(async (req) => {
       });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating document:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

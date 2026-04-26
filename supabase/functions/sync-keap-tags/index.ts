@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true, tagged: totalTagged, details: results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in sync-keap-tags:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,

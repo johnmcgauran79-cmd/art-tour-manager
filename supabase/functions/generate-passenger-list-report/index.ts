@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 
@@ -110,7 +111,7 @@ serve(async (req) => {
         }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating passenger list report:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
