@@ -99,6 +99,8 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
           operations_notes: activityData.operations_notes || null,
           cancellation_terms: activityData.cancellation_terms || null,
           transport_notes: activityData.transport_notes || null,
+          cancellation_details: activityData.cancellation_details || null,
+          cancellation_status: activityData.cancellation_status || null,
         }])
         .select()
         .single();
