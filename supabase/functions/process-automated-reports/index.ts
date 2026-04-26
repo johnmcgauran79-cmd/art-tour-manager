@@ -361,7 +361,7 @@ serve(async (req) => {
         status: 200,
       },
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error processing automated reports:', error);
     
     // Try to log the error

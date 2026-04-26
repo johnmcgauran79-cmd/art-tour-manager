@@ -120,7 +120,7 @@ serve(async (req) => {
         }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating rooming list report:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

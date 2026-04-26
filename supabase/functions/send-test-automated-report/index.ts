@@ -90,7 +90,7 @@ serve(async (req) => {
         status: 200,
       },
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending test automated report:', error);
     return new Response(
       JSON.stringify({

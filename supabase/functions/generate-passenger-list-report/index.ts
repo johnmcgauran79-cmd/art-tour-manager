@@ -110,7 +110,7 @@ serve(async (req) => {
         }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating passenger list report:', error);
     return new Response(
       JSON.stringify({ error: error.message }),

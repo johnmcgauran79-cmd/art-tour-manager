@@ -180,7 +180,7 @@ serve(async (req) => {
             });
             console.error(`Failed to process system-wide rule "${rule.rule_name}":`, errorText);
           }
-        } catch (error) {
+        } catch (error: any) {
           results.push({
             rule: rule.rule_name,
             tour: 'System-wide',
@@ -239,7 +239,7 @@ serve(async (req) => {
               });
               console.error(`Failed to process rule "${rule.rule_name}" for tour "${tour.name}":`, errorText);
             }
-          } catch (error) {
+          } catch (error: any) {
             results.push({
               rule: rule.rule_name,
               tour: tour.name,
@@ -304,7 +304,7 @@ serve(async (req) => {
               console.error(`Failed to process days-before rule "${rule.rule_name}" for tour "${tour.name}":`, errorText);
             }
           }
-        } catch (error) {
+        } catch (error: any) {
           results.push({
             rule: rule.rule_name,
             tour: tour.name,
@@ -327,7 +327,7 @@ serve(async (req) => {
         status: 200,
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in scheduled report processing:', error);
     return new Response(
       JSON.stringify({
