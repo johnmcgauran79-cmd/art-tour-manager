@@ -58,7 +58,15 @@ export default function TaskDetail() {
         url_reference: task.url_reference || "",
       });
     }
-  }, [task?.id]);
+  }, [
+    task?.id,
+    task?.title,
+    task?.description,
+    task?.priority,
+    task?.category,
+    task?.due_date,
+    task?.url_reference,
+  ]);
 
   // Update tab when URL changes
   useEffect(() => {
