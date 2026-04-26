@@ -106,8 +106,8 @@ serve(async (req) => {
         .eq('rule_id', rule.id)
         .in('booking_id', bookingIds);
 
-      const alreadySentIds = new Set(alreadySent?.map(s => s.booking_id) || []);
-      const eligibleBookings = bookings.filter(b => 
+      const alreadySentIds = new Set(alreadySent?.map((s: any) => s.booking_id) || []);
+      const eligibleBookings = bookings.filter((b: any) => 
         !alreadySentIds.has(b.id) && 
         b.lead_passenger?.email
       );

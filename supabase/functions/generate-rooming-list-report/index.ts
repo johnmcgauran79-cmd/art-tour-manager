@@ -29,7 +29,7 @@ async function generateRoomingListData(supabase: any, tourId: string) {
     return { hotels: [], count: 0 };
   }
 
-  return { hotels, count: hotels.reduce((sum, h) => sum + h.hotel_bookings.length, 0) };
+  return { hotels, count: hotels.reduce((sum: number, h: any) => sum + h.hotel_bookings.length, 0) };
 }
 
 function generateRoomingListHTML(hotels: any[], tourName: string): string {

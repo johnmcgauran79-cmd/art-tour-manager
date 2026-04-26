@@ -99,11 +99,11 @@ Deno.serve(async (req) => {
       const passenger2Name = booking.passenger_2_name as string;
       const { firstName, lastName } = splitName(passenger2Name);
       
-      const leadPax = booking.customers as { first_name: string; last_name: string } | null;
+      const leadPax = booking.customers as unknown as { first_name: string; last_name: string } | null;
       const leadPassengerName = leadPax 
         ? `${leadPax.first_name} ${leadPax.last_name}` 
         : 'Unknown';
-      const tourName = (booking.tours as { name: string } | null)?.name || 'Unknown Tour';
+      const tourName = (booking.tours as unknown as { name: string } | null)?.name || 'Unknown Tour';
 
       // Try to find matching customer by first + last name (case-insensitive)
       const matchedCustomer = allCustomers?.find(c => 
