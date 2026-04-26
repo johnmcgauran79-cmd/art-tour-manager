@@ -15,6 +15,7 @@ export interface Hotel {
   rooms_booked: number | null;
   rooms_available: number | null;
   booking_status: string;
+  payment_status: string;
   default_room_type: string | null;
   default_check_in: string | null;
   default_check_out: string | null;

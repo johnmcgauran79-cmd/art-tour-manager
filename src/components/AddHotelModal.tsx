@@ -10,6 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  BOOKING_WORKFLOW_STATUS_OPTIONS,
+  PAYMENT_WORKFLOW_STATUS_OPTIONS,
+} from "@/lib/workflowStatuses";
 
 interface AddHotelModalProps {
   tourId: string;
@@ -23,6 +27,7 @@ interface AddHotelModalProps {
     contact_email: string;
     rooms_reserved: string;
     booking_status: string;
+    payment_status: string;
     default_room_type: string;
     default_check_in: string;
     default_check_out: string;
@@ -43,6 +48,7 @@ const emptyFormData = {
   contact_email: "",
   rooms_reserved: "",
   booking_status: "pending",
+  payment_status: "unpaid",
   default_room_type: "",
   default_check_in: "",
   default_check_out: "",
