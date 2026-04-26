@@ -435,7 +435,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                   <TableHead>Time</TableHead>
                   <TableHead>Spots Available</TableHead>
                   <TableHead>Pax Attending</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Booking Status</TableHead>
+                  <TableHead>Payment Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -477,23 +478,16 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       {quickUpdateMode ? (
                         <Select
-                          value={editingData[activity.id]?.activity_status ?? activity.activity_status ?? 'pending'}
-                          onValueChange={(value) => updateEditingData(activity.id, 'activity_status', value)}
+                          value={editingData[activity.id]?.booking_status ?? activity.booking_status ?? 'pending'}
+                          onValueChange={(value) => updateEditingData(activity.id, 'booking_status', value)}
                         >
                           <SelectTrigger className="w-40">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="pending">Pending</SelectItem>
-                            <SelectItem value="booked">Booked</SelectItem>
-                            <SelectItem value="paid_deposit">Paid Deposit</SelectItem>
-                            <SelectItem value="fully_paid">Fully Paid</SelectItem>
-                            <SelectItem value="confirmed">Confirmed</SelectItem>
-                            <SelectItem value="on_hold">On Hold</SelectItem>
-                            <SelectItem value="contacted_enquiry_sent">Contacted/Enquiry Sent</SelectItem>
-                            <SelectItem value="tentative_booking">Tentative Booking</SelectItem>
-                            <SelectItem value="finalised">Finalised</SelectItem>
-                            <SelectItem value="cancelled">Cancelled</SelectItem>
+                            {BOOKING_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       ) : (
@@ -501,10 +495,31 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                           {(attachmentCounts?.[activity.id] || 0) > 0 && (
                             <Paperclip className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                           )}
-                          <Badge className={getActivityStatusColor(activity.activity_status || 'pending')}>
-                            {activity.activity_status.replace(/_/g, ' ').toUpperCase()}
+                          <Badge className={getBookingWorkflowStatusColor(activity.booking_status)}>
+                            {formatBookingWorkflowStatus(activity.booking_status || 'pending')}
                           </Badge>
                         </div>
+                      )}
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {quickUpdateMode ? (
+                        <Select
+                          value={editingData[activity.id]?.payment_status ?? activity.payment_status ?? 'unpaid'}
+                          onValueChange={(value) => updateEditingData(activity.id, 'payment_status', value)}
+                        >
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge className={getPaymentWorkflowStatusColor(activity.payment_status)}>
+                          {formatPaymentWorkflowStatus(activity.payment_status || 'unpaid')}
+                        </Badge>
                       )}
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
