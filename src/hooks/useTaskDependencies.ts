@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/hooks/useTasks";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 export const useTaskDependencies = (taskId?: string) => {
   return useQuery({
@@ -46,8 +47,8 @@ export const useTaskDependencies = (taskId?: string) => {
         task,
         dependencyChain,
         blockedTasks,
-        isBlocked: task.depends_on_task_id && dependencyChain.some(dep => dep.status !== 'completed'),
-        willUnblock: blockedTasks.length > 0 && task.status !== 'completed'
+        isBlocked: task.depends_on_task_id && dependencyChain.some(dep => !isTaskFinished(dep.status)),
+        willUnblock: blockedTasks.length > 0 && !isTaskFinished(task.status)
       };
     },
     enabled: !!taskId,
