@@ -15,6 +15,7 @@ import {
 } from "@/lib/workflowStatuses";
 import { Badge } from "@/components/ui/badge";
 import { HotelAttachmentsSection } from "@/components/HotelAttachmentsSection";
+import { HotelExternalLinksSection } from "@/components/HotelExternalLinksSection";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -310,6 +311,11 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                 {/* Attachments */}
                 <div className="mt-4 pt-4 border-t">
                   <HotelAttachmentsSection hotelId={hotel.id} />
+                </div>
+
+                {/* External Links */}
+                <div className="mt-4 pt-4 border-t">
+                  <HotelExternalLinksSection hotelId={hotel.id} />
                 </div>
               </CardContent>
             </Card>
