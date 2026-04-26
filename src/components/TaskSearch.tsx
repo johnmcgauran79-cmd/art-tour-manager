@@ -9,6 +9,7 @@ import { Search, Filter, X, Calendar } from "lucide-react";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { TASK_STATUS_OPTIONS } from "@/lib/taskStatuses";
 
 interface TaskSearchProps {
   onSearch: (filters: {
@@ -124,11 +125,9 @@ export const TaskSearch = ({ onSearch, onClear }: TaskSearchProps) => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="not_started">Not Started</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="waiting">Waiting</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    {TASK_STATUS_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
