@@ -140,7 +140,7 @@ serve(async (req) => {
 
     // Send email via Resend
     console.log("Sending itinerary email with PDF attachment...");
-    const emailResponse = await resend.emails.send(emailOptions);
+    const emailResponse: any = await resend.emails.send(emailOptions);
 
     console.log("Email sent successfully:", emailResponse);
 
@@ -150,7 +150,7 @@ serve(async (req) => {
       recipient_email: recipientEmail,
       recipient_name: recipientName || null,
       subject: emailSubject,
-      message_id: emailResponse.id || "unknown",
+      message_id: emailResponse?.data?.id || emailResponse?.id || "unknown",
       sent_at: new Date().toISOString(),
       template_name: "tour_itinerary",
     });
@@ -159,7 +159,7 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         sentTo: recipientEmail,
-        messageId: emailResponse.id,
+        messageId: emailResponse?.data?.id || emailResponse?.id,
       }),
       {
         status: 200,

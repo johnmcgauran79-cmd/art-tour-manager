@@ -1526,7 +1526,7 @@ const handler = async (req: Request): Promise<Response> => {
       const passengerExistingPassportDetails = buildExistingPassportDetailsHtml(passengerDocs);
       
       // Create personalized merge data for this passenger
-      const passengerMergeData = {
+      const passengerMergeData: any = {
         ...mergeData,
         customer_first_name: passenger.first_name || '',
         customer_last_name: passenger.last_name || '',
