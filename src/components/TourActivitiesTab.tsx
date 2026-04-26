@@ -175,11 +175,12 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
       setEditingData({});
     } else {
       // Enter mode - initialize editing data with current values
-      const initialData: Record<string, { spots_available: number; activity_status: string }> = {};
+      const initialData: Record<string, { spots_available: number; booking_status: string; payment_status: string }> = {};
       sortedActivities?.forEach(activity => {
         initialData[activity.id] = {
           spots_available: activity.spots_available || 0,
-          activity_status: activity.activity_status || 'pending'
+          booking_status: activity.booking_status || 'pending',
+          payment_status: activity.payment_status || 'unpaid'
         };
       });
       setEditingData(initialData);
@@ -195,7 +196,8 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
       .from('activities')
       .update({
         spots_available: data.spots_available,
-        activity_status: data.activity_status as any
+        booking_status: data.booking_status as any,
+        payment_status: data.payment_status as any
       })
       .eq('id', activityId);
 
@@ -216,7 +218,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
     refetch();
   };
 
-  const updateEditingData = (activityId: string, field: 'spots_available' | 'activity_status', value: number | string) => {
+  const updateEditingData = (activityId: string, field: 'spots_available' | 'booking_status' | 'payment_status', value: number | string) => {
     setEditingData(prev => ({
       ...prev,
       [activityId]: {
@@ -397,8 +399,11 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
                       {(attachmentCounts?.[activity.id] || 0) > 0 && (
                         <Paperclip className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                       )}
-                      <Badge className={`text-xs ${getActivityStatusColor(activity.activity_status || 'pending')}`}>
-                        {activity.activity_status?.replace(/_/g, ' ').toUpperCase() || 'PENDING'}
+                      <Badge className={`text-xs ${getBookingWorkflowStatusColor(activity.booking_status)}`}>
+                        {formatBookingWorkflowStatus(activity.booking_status || 'pending')}
+                      </Badge>
+                      <Badge className={`text-xs ${getPaymentWorkflowStatusColor(activity.payment_status)}`}>
+                        {formatPaymentWorkflowStatus(activity.payment_status || 'unpaid')}
                       </Badge>
                     </div>
                   </div>
