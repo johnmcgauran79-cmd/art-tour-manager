@@ -404,7 +404,8 @@ export default function TaskDetail() {
             <TabsTrigger value="comments">Comments</TabsTrigger>
             <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
             <TabsTrigger value="files">Files</TabsTrigger>
-            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+            {/* Dependencies tab hidden — feature dormant, can be re-enabled when fully built out */}
+            {/* <TabsTrigger value="dependencies">Dependencies</TabsTrigger> */}
             <TabsTrigger value="watchers">Watchers</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
           </TabsList>
