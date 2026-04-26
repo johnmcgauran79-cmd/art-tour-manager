@@ -178,7 +178,7 @@ const handler = async (req: Request): Promise<Response> => {
     const passengers: PassengerInfo[] = [];
 
     if (bookingId) {
-      const { data: booking, error: bookingError } = await supabase
+      const { data: bookingRaw, error: bookingError } = await supabase
         .from("bookings")
         .select(`
           id,
@@ -201,7 +201,7 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", bookingId)
         .single();
 
-      if (bookingError || !booking) {
+      if (bookingError || !bookingRaw) {
         console.error("Booking fetch error:", bookingError);
         return new Response(
           JSON.stringify({ error: "Booking not found" }),
@@ -209,9 +209,18 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      if (booking.customers?.email) passengers.push(booking.customers as PassengerInfo);
-      if (booking.passenger_2?.email) passengers.push(booking.passenger_2 as PassengerInfo);
-      if (booking.passenger_3?.email) passengers.push(booking.passenger_3 as PassengerInfo);
+      const booking = bookingRaw as any;
+      const pickPassenger = (p: any): PassengerInfo | null => {
+        if (!p) return null;
+        const obj = Array.isArray(p) ? p[0] : p;
+        return obj?.email ? (obj as PassengerInfo) : null;
+      };
+      const lead = pickPassenger(booking.customers);
+      const pax2 = pickPassenger(booking.passenger_2);
+      const pax3 = pickPassenger(booking.passenger_3);
+      if (lead) passengers.push(lead);
+      if (pax2) passengers.push(pax2);
+      if (pax3) passengers.push(pax3);
     } else if (customerId) {
       const { data: customer, error: customerError } = await supabase
         .from("customers")

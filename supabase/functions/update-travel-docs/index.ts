@@ -281,7 +281,7 @@ const handler = async (req: Request): Promise<Response> => {
         await resend.emails.send({
           from: `${senderName} <${fromEmailAddr}>`,
           to: [customerEmail],
-          subject: `Passport Details Updated - ${booking.tours?.name || 'Your Booking'}`,
+          subject: `Passport Details Updated - ${(booking as any).tours?.name || 'Your Booking'}`,
           html: `
             <!DOCTYPE html>
             <html>
@@ -298,7 +298,7 @@ const handler = async (req: Request): Promise<Response> => {
               <div style="background: #fff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
                 <p style="margin-top: 0;">Dear ${customer.first_name},</p>
                 
-                <p>Travel documents have been successfully updated for <strong>${booking.tours?.name || 'your booking'}</strong>. Here's a summary of the changes:</p>
+                <p>Travel documents have been successfully updated for <strong>${(booking as any).tours?.name || 'your booking'}</strong>. Here's a summary of the changes:</p>
                 
                 ${changesHtml}
                 

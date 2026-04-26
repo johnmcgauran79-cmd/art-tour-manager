@@ -539,7 +539,7 @@ serve(async (req) => {
             }, { onConflict: 'booking_id,xero_invoice_id,amount_paid_at_dismissal' });
 
           applied++;
-        } catch (err) {
+        } catch (err: any) {
           console.error(`Error applying change for booking ${change.booking_id}:`, err);
           errors++;
 
@@ -549,7 +549,7 @@ serve(async (req) => {
             booking_id: change.booking_id,
             action: 'status_updated',
             status: 'failed',
-            error_message: err.message,
+            error_message: err?.message || String(err),
           });
         }
       }
