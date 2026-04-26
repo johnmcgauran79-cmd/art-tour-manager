@@ -2323,36 +2323,51 @@ export type Database = {
       }
       task_subtasks: {
         Row: {
+          assignee_id: string | null
           completed: boolean
           completed_at: string | null
           completed_by: string | null
           created_at: string
           created_by: string
+          due_date: string | null
           id: string
+          latest_note: string | null
+          latest_note_at: string | null
+          latest_note_by: string | null
           sort_order: number
           task_id: string
           title: string
           updated_at: string
         }
         Insert: {
+          assignee_id?: string | null
           completed?: boolean
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           created_by: string
+          due_date?: string | null
           id?: string
+          latest_note?: string | null
+          latest_note_at?: string | null
+          latest_note_by?: string | null
           sort_order?: number
           task_id: string
           title: string
           updated_at?: string
         }
         Update: {
+          assignee_id?: string | null
           completed?: boolean
           completed_at?: string | null
           completed_by?: string | null
           created_at?: string
           created_by?: string
+          due_date?: string | null
           id?: string
+          latest_note?: string | null
+          latest_note_at?: string | null
+          latest_note_by?: string | null
           sort_order?: number
           task_id?: string
           title?: string
