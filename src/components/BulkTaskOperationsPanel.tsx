@@ -10,6 +10,7 @@ import { useBulkUpdateTasks, useBulkAssignTasks, useBulkDeleteTasks } from "@/ho
 import { Task } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { TASK_STATUS_OPTIONS } from "@/lib/taskStatuses";
 
 interface BulkTaskOperationsPanelProps {
   selectedTasks: string[];
@@ -222,12 +223,9 @@ export const BulkTaskOperationsPanel = ({
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="not_started">Not Started</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="waiting">Waiting</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                {TASK_STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button
