@@ -41,8 +41,12 @@ export const getTourStatusColor = (status: string): string => {
 export const getTaskStatusColor = (status: string): string => {
   const statusMap: Record<string, string> = {
     'todo': 'bg-status-todo text-status-todo-foreground',
+    'not_started': 'bg-status-todo text-status-todo-foreground',
     'in_progress': 'bg-status-in-progress text-status-in-progress-foreground',
     'waiting': 'bg-status-waiting text-status-waiting-foreground',
+    'awaiting_further_information': 'bg-status-waiting text-status-waiting-foreground',
+    'with_third_party': 'bg-status-waiting text-status-waiting-foreground',
+    'not_required': 'bg-muted text-muted-foreground',
     'completed': 'bg-status-completed text-status-completed-foreground',
     'cancelled': 'bg-status-cancelled text-status-cancelled-foreground',
     'archived': 'bg-status-archived text-status-archived-foreground',
