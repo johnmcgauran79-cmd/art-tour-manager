@@ -129,10 +129,12 @@ const handler = async (req: Request): Promise<Response> => {
           console.error("Error adding to suppression list:", suppressionError);
         } else {
           // Update bounce count
-          await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() }).catch(() => {
+          try {
+            await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() });
+          } catch {
             // If RPC doesn't exist, just log - the initial insert is enough
             console.log("Bounce count increment not available, skipping");
-          });
+          }
           console.log(`Added ${recipientEmail} to suppression list`);
         }
       }
