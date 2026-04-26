@@ -17,7 +17,7 @@ export type Database = {
       activities: {
         Row: {
           activity_date: string | null
-          activity_status: Database["public"]["Enums"]["activity_status"] | null
+          booking_status: Database["public"]["Enums"]["booking_workflow_status"]
           cancellation_terms: string | null
           contact_email: string | null
           contact_name: string | null
@@ -30,10 +30,12 @@ export type Database = {
           end_time: string | null
           hospitality_inclusions: string | null
           id: string
+          legacy_status: Database["public"]["Enums"]["activity_status"] | null
           location: string | null
           name: string
           notes: string | null
           operations_notes: string | null
+          payment_status: Database["public"]["Enums"]["payment_workflow_status"]
           pickup_location_transport: string | null
           spots_available: number | null
           spots_booked: number | null
@@ -53,9 +55,7 @@ export type Database = {
         }
         Insert: {
           activity_date?: string | null
-          activity_status?:
-            | Database["public"]["Enums"]["activity_status"]
-            | null
+          booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
           cancellation_terms?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -68,10 +68,12 @@ export type Database = {
           end_time?: string | null
           hospitality_inclusions?: string | null
           id?: string
+          legacy_status?: Database["public"]["Enums"]["activity_status"] | null
           location?: string | null
           name: string
           notes?: string | null
           operations_notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_workflow_status"]
           pickup_location_transport?: string | null
           spots_available?: number | null
           spots_booked?: number | null
@@ -91,9 +93,7 @@ export type Database = {
         }
         Update: {
           activity_date?: string | null
-          activity_status?:
-            | Database["public"]["Enums"]["activity_status"]
-            | null
+          booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
           cancellation_terms?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -106,10 +106,12 @@ export type Database = {
           end_time?: string | null
           hospitality_inclusions?: string | null
           id?: string
+          legacy_status?: Database["public"]["Enums"]["activity_status"] | null
           location?: string | null
           name?: string
           notes?: string | null
           operations_notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_workflow_status"]
           pickup_location_transport?: string | null
           spots_available?: number | null
           spots_booked?: number | null
@@ -1640,9 +1642,7 @@ export type Database = {
         Row: {
           address: string | null
           auto_allocate_on_create: boolean
-          booking_status:
-            | Database["public"]["Enums"]["hotel_booking_status"]
-            | null
+          booking_status: Database["public"]["Enums"]["booking_workflow_status"]
           cancellation_policy: string | null
           contact_email: string | null
           contact_name: string | null
@@ -1655,8 +1655,12 @@ export type Database = {
           final_rooms_cutoff_date: string | null
           id: string
           initial_rooms_cutoff_date: string | null
+          legacy_status:
+            | Database["public"]["Enums"]["hotel_booking_status"]
+            | null
           name: string
           operations_notes: string | null
+          payment_status: Database["public"]["Enums"]["payment_workflow_status"]
           rooms_available: number | null
           rooms_booked: number | null
           rooms_reserved: number | null
@@ -1667,9 +1671,7 @@ export type Database = {
         Insert: {
           address?: string | null
           auto_allocate_on_create?: boolean
-          booking_status?:
-            | Database["public"]["Enums"]["hotel_booking_status"]
-            | null
+          booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
           cancellation_policy?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -1682,8 +1684,12 @@ export type Database = {
           final_rooms_cutoff_date?: string | null
           id?: string
           initial_rooms_cutoff_date?: string | null
+          legacy_status?:
+            | Database["public"]["Enums"]["hotel_booking_status"]
+            | null
           name: string
           operations_notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_workflow_status"]
           rooms_available?: number | null
           rooms_booked?: number | null
           rooms_reserved?: number | null
@@ -1694,9 +1700,7 @@ export type Database = {
         Update: {
           address?: string | null
           auto_allocate_on_create?: boolean
-          booking_status?:
-            | Database["public"]["Enums"]["hotel_booking_status"]
-            | null
+          booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
           cancellation_policy?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -1709,8 +1713,12 @@ export type Database = {
           final_rooms_cutoff_date?: string | null
           id?: string
           initial_rooms_cutoff_date?: string | null
+          legacy_status?:
+            | Database["public"]["Enums"]["hotel_booking_status"]
+            | null
           name?: string
           operations_notes?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_workflow_status"]
           rooms_available?: number | null
           rooms_booked?: number | null
           rooms_reserved?: number | null
@@ -3933,6 +3941,15 @@ export type Database = {
         | "host"
         | "racing_breaks_invoice"
         | "complimentary"
+      booking_workflow_status:
+        | "pending"
+        | "enquiry_sent"
+        | "quote_received"
+        | "on_hold"
+        | "booked"
+        | "confirmed"
+        | "finalised"
+        | "cancelled"
       department:
         | "operations"
         | "finance"
@@ -3948,6 +3965,11 @@ export type Database = {
         | "updated"
         | "paid"
         | "finalised"
+      payment_workflow_status:
+        | "unpaid"
+        | "partially_paid"
+        | "fully_paid"
+        | "cancelled"
       task_category:
         | "operations"
         | "finance"
@@ -4141,6 +4163,16 @@ export const Constants = {
         "racing_breaks_invoice",
         "complimentary",
       ],
+      booking_workflow_status: [
+        "pending",
+        "enquiry_sent",
+        "quote_received",
+        "on_hold",
+        "booked",
+        "confirmed",
+        "finalised",
+        "cancelled",
+      ],
       department: [
         "operations",
         "finance",
@@ -4157,6 +4189,12 @@ export const Constants = {
         "updated",
         "paid",
         "finalised",
+      ],
+      payment_workflow_status: [
+        "unpaid",
+        "partially_paid",
+        "fully_paid",
+        "cancelled",
       ],
       task_category: [
         "operations",
