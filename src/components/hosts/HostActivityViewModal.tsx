@@ -111,7 +111,7 @@ export const HostActivityViewModal = ({ activity, open, onOpenChange }: HostActi
           <DialogTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="text-base sm:text-lg truncate pr-2">{activity.name}</span>
             <Badge variant="outline" className="self-start sm:self-auto text-xs">
-              {(activity.activity_status || 'pending').replace(/_/g, ' ').toUpperCase()}
+              {(activity.booking_status || 'pending').replace(/_/g, ' ').toUpperCase()}
             </Badge>
           </DialogTitle>
         </DialogHeader>

@@ -201,7 +201,7 @@ export default function TourEdit() {
           .from('activities')
           .select('id', { count: 'exact', head: true })
           .eq('tour_id', id!)
-          .neq('activity_status', 'cancelled'),
+          .neq('booking_status', 'cancelled'),
       ]);
       setCancelCounts({
         bookings: bookingsRes.count || 0,
@@ -293,9 +293,9 @@ export default function TourEdit() {
     // Cancel all non-cancelled activities
     await supabase
       .from('activities')
-      .update({ activity_status: 'cancelled' as any })
+      .update({ booking_status: 'cancelled' as any })
       .eq('tour_id', id)
-      .neq('activity_status', 'cancelled');
+      .neq('booking_status', 'cancelled');
   };
 
   const handleConfirmCancel = () => {

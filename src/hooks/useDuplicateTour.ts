@@ -166,7 +166,8 @@ async function duplicateActivities(originalTourId: string, newTourId: string) {
         end_time: activity.end_time,
         depart_for_activity: activity.depart_for_activity,
         spots_available: 0, // Reset to 0 - no spots booked yet for new tour year
-        activity_status: 'pending' as const,
+        booking_status: 'pending' as const,
+        payment_status: 'unpaid' as const,
         transport_status: 'pending' as const,
         transport_mode: activity.transport_mode,
         contact_name: activity.contact_name,
