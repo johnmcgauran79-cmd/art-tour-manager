@@ -327,11 +327,11 @@ export default function TaskDetail() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="not_started">Not Started</SelectItem>
+                <SelectItem value="not_required">Not Required</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
                 <SelectItem value="waiting">Waiting</SelectItem>
                 <SelectItem value="awaiting_further_information">Awaiting Further Information</SelectItem>
                 <SelectItem value="with_third_party">With Third Party</SelectItem>
-                <SelectItem value="not_required">Not Required</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
