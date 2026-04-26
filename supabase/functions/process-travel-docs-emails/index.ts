@@ -232,6 +232,10 @@ async function processTravelDocsBatch(
       if (booking.passport_expiry_date) existingDetails.push(`Expiry Date: ${formatDate(booking.passport_expiry_date)}`);
       if (booking.nationality) existingDetails.push(`Nationality: ${booking.nationality}`);
 
+      const existingDetailsHtml = existingDetails.length > 0
+        ? `<div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 15px 0;"><p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Current details on file:</strong></p><ul style="margin: 0; padding-left: 20px; font-size: 14px;">${existingDetails.map(d => `<li>${d}</li>`).join('')}</ul></div>`
+        : '';
+
       // Build the travel docs button HTML
       const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PASSPORT DETAILS</a></div>`;
 
