@@ -116,7 +116,7 @@ export const QuickTaskActions = ({ task, onTaskClick }: QuickTaskActionsProps) =
         </PopoverTrigger>
         <PopoverContent className="w-48 p-2">
           <div className="space-y-1">
-            {['not_started', 'in_progress', 'waiting', 'awaiting_further_information', 'with_third_party', 'not_required', 'completed', 'cancelled'].map((status) => (
+            {['not_started', 'not_required', 'in_progress', 'waiting', 'awaiting_further_information', 'with_third_party', 'completed', 'cancelled'].map((status) => (
               <Button
                 key={status}
                 variant={task.status === status ? "secondary" : "ghost"}
