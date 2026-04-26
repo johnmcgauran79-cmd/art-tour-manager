@@ -1650,6 +1650,44 @@ export type Database = {
           },
         ]
       }
+      hotel_external_links: {
+        Row: {
+          created_at: string
+          created_by: string
+          hotel_id: string
+          id: string
+          label: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          hotel_id: string
+          id?: string
+          label: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          hotel_id?: string
+          id?: string
+          label?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_external_links_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotels: {
         Row: {
           address: string | null
