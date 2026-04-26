@@ -41,6 +41,8 @@ interface AddHotelModalProps {
     cancellation_policy: string;
     initial_rooms_cutoff_date: string;
     final_rooms_cutoff_date: string;
+    cancellation_details?: string;
+    cancellation_status?: string;
   };
 }
 
