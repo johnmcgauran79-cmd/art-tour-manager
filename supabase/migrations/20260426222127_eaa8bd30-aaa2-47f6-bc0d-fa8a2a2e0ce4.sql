@@ -1,0 +1,9 @@
+ALTER FUNCTION public.alert_extra_nights() SET search_path = public;
+ALTER FUNCTION public.alert_new_booking() SET search_path = public;
+ALTER FUNCTION public.auto_allocate_hotel_to_bookings() SET search_path = public;
+ALTER FUNCTION public.check_activity_oversold() SET search_path = public;
+ALTER FUNCTION public.check_hotel_oversold() SET search_path = public;
+ALTER FUNCTION public.check_missing_activity_allocations() SET search_path = public;
+ALTER FUNCTION public.get_activity_allocation_discrepancies() SET search_path = public;
+ALTER FUNCTION public.handle_booking_alerts() SET search_path = public;
+ALTER FUNCTION public.refresh_capacity_alerts() SET search_path = public;
