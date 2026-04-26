@@ -35,7 +35,8 @@ const handler = async (req: Request): Promise<Response> => {
       wh.verify(payload, headers);
       console.log("Webhook signature verified successfully");
     } catch (err) {
-      console.error("Invalid webhook signature:", err.message);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Invalid webhook signature:", msg);
       return new Response(
         JSON.stringify({ error: "Invalid signature" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -128,10 +129,12 @@ const handler = async (req: Request): Promise<Response> => {
           console.error("Error adding to suppression list:", suppressionError);
         } else {
           // Update bounce count
-          await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() }).catch(() => {
+          try {
+            await supabase.rpc('increment_bounce_count', { email: recipientEmail.toLowerCase() });
+          } catch {
             // If RPC doesn't exist, just log - the initial insert is enough
             console.log("Bounce count increment not available, skipping");
-          });
+          }
           console.log(`Added ${recipientEmail} to suppression list`);
         }
       }

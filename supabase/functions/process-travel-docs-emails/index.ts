@@ -53,7 +53,7 @@ serve(async (req) => {
     const { tourId, ruleId, batchId } = body;
 
     // Helper function for rate limiting delay
-    const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+    const delay = (ms: number): Promise<void> => new Promise<void>(resolve => setTimeout(() => resolve(), ms));
 
     // Format date helper
     const formatDate = (dateStr: string) => {
@@ -69,190 +69,37 @@ serve(async (req) => {
     const errors: any[] = [];
     let emailsSent = 0;
 
-    // If called with specific params, process that batch only
-    if (tourId && ruleId && batchId) {
-      console.log(`Processing specific travel docs batch: tour=${tourId}, batch=${batchId}`);
-      
-      const { data: tour } = await supabase
-        .from('tours')
-        .select('id, name, start_date, end_date')
-        .eq('id', tourId)
-        .single();
-
-      const { data: rule } = await supabase
-        .from('automated_email_rules')
-        .select('*')
-        .eq('id', ruleId)
-        .single();
-
-      if (tour && rule) {
-        emailsSent = await processTravelDocsBatch(supabase, resend, tour, rule, batchId, errors, delay, formatDate);
-      }
-
+    // This function is invoked with specific batch params from process-automated-emails
+    if (!tourId || !ruleId || !batchId) {
       return new Response(
-        JSON.stringify({ success: true, emailsSent, errors: errors.length > 0 ? errors : undefined }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Missing required params: tourId, ruleId, batchId' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Otherwise, this is a standalone call - run full processing
-    console.log('Running full travel docs email processing...');
+    console.log(`Processing travel docs batch: tour=${tourId}, batch=${batchId}`);
 
-    // Process each tour
-    for (const tour of upcomingTours || []) {
-      try {
-        const tourStartDate = new Date(tour.start_date);
-        const daysUntilTour = Math.floor((tourStartDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const { data: tour } = await supabase
+      .from('tours')
+      .select('id, name, start_date, end_date')
+      .eq('id', tourId)
+      .single();
 
-        console.log(`Tour "${tour.name}" is ${daysUntilTour} days away`);
+    const { data: rule } = await supabase
+      .from('automated_email_rules')
+      .select('*')
+      .eq('id', ruleId)
+      .single();
 
-        // Find the most recent applicable rule
-        let applicableRule = null;
-        for (const rule of rules || []) {
-          if (daysUntilTour <= rule.days_before_tour) {
-            applicableRule = rule;
-            break;
-          }
-        }
-
-        if (!applicableRule) {
-          console.log(`No applicable travel docs rule for tour "${tour.name}" (${daysUntilTour} days away)`);
-          continue;
-        }
-
-        console.log(`Applicable rule for "${tour.name}": ${applicableRule.rule_name} (${applicableRule.days_before_tour} days)`);
-
-        // Check if we already have a batch for this tour/rule
-        const { data: existingBatch } = await supabase
-          .from('automated_email_log')
-          .select('id, approval_status, sent_at')
-          .eq('tour_id', tour.id)
-          .eq('rule_id', applicableRule.id)
-          .is('booking_id', null)
-          .maybeSingle();
-
-        if (existingBatch) {
-          console.log(`Batch already exists for tour "${tour.name}", status: ${existingBatch.approval_status}`);
-          
-          if (existingBatch.approval_status === 'sent') {
-            console.log(`Travel docs emails already sent for tour "${tour.name}" - skipping`);
-            continue;
-          }
-          
-          if (existingBatch.approval_status === 'processing') {
-            console.log(`Currently processing for tour "${tour.name}" - skipping`);
-            continue;
-          }
-          
-          if (existingBatch.approval_status === 'approved') {
-            console.log(`Processing approved travel docs batch for tour "${tour.name}"`);
-            
-            // Mark as processing
-            await supabase
-              .from('automated_email_log')
-              .update({ approval_status: 'processing' })
-              .eq('id', existingBatch.id);
-            
-            // Process and send emails
-            const sentCount = await processTravelDocsBatch(supabase, resend, tour, applicableRule, existingBatch.id, errors, delay, formatDate);
-            totalEmailsSent += sentCount;
-            continue;
-          }
-          
-          if (existingBatch.approval_status === 'pending_approval') {
-            console.log(`Travel docs batch pending approval for tour "${tour.name}" - skipping`);
-            continue;
-          }
-          
-          if (existingBatch.approval_status === 'rejected') {
-            console.log(`Deleting rejected batch for tour "${tour.name}"`);
-            await supabase
-              .from('automated_email_log')
-              .delete()
-              .eq('id', existingBatch.id);
-          }
-        }
-
-        // Get eligible bookings for this tour
-        let bookingsQuery = supabase
-          .from('bookings')
-          .select(`
-            id,
-            lead_passenger_id,
-            passport_number,
-            customers!bookings_lead_passenger_id_fkey(id, first_name, last_name, email)
-          `)
-          .eq('tour_id', tour.id)
-          .neq('status', 'cancelled')
-          .neq('status', 'waitlisted');
-
-        // Apply recipient filter if specified
-        if (applicableRule.recipient_filter === 'with_accommodation') {
-          bookingsQuery = bookingsQuery.eq('accommodation_required', true);
-        } else if (applicableRule.recipient_filter === 'without_accommodation') {
-          bookingsQuery = bookingsQuery.eq('accommodation_required', false);
-        }
-
-        const { data: bookings, error: bookingsError } = await bookingsQuery;
-
-        if (bookingsError) {
-          console.error(`Error fetching bookings for tour ${tour.id}:`, bookingsError);
-          errors.push({ tour: tour.name, error: bookingsError });
-          continue;
-        }
-
-        // Filter bookings that have an email address
-        const eligibleBookings = bookings?.filter(b => b.customers?.email) || [];
-        const bookingCount = eligibleBookings.length;
-
-        if (bookingCount === 0) {
-          console.log(`No eligible bookings for tour "${tour.name}"`);
-          continue;
-        }
-
-        console.log(`Creating travel docs batch for tour "${tour.name}" with ${bookingCount} bookings`);
-
-        // Create batch record - requires approval
-        const { error: logError } = await supabase
-          .from('automated_email_log')
-          .insert({
-            tour_id: tour.id,
-            booking_id: null,
-            rule_id: applicableRule.id,
-            tour_start_date: tour.start_date,
-            days_before_send: applicableRule.days_before_tour,
-            booking_count: bookingCount,
-            approval_status: applicableRule.requires_approval ? 'pending_approval' : 'approved'
-          });
-
-        if (logError) {
-          console.error('Error creating batch record:', logError);
-          errors.push({ tour: tour.name, rule: applicableRule.rule_name, error: logError });
-        } else {
-          console.log(`Created travel docs batch for tour "${tour.name}", ${bookingCount} bookings`);
-          totalBatchesCreated++;
-        }
-
-      } catch (tourError) {
-        console.error(`Error processing tour ${tour.name}:`, tourError);
-        errors.push({ tour: tour.name, error: tourError });
-      }
+    if (tour && rule) {
+      emailsSent = await processTravelDocsBatch(
+        supabase, resend, tour, rule, batchId, errors, delay, formatDate,
+        emailHeaderImageUrl, senderName, fromEmailAddr
+      );
     }
 
-    const result = {
-      success: true,
-      totalBatchesCreated,
-      totalEmailsSent,
-      rulesProcessed: rules?.length || 0,
-      toursChecked: upcomingTours?.length || 0,
-      errors: errors.length > 0 ? errors : undefined,
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('Travel docs email processing complete:', result);
-
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ success: true, emailsSent, errors: errors.length > 0 ? errors : undefined }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
@@ -273,7 +120,10 @@ async function processTravelDocsBatch(
   batchId: string,
   errors: any[],
   delay: (ms: number) => Promise<void>,
-  formatDate: (dateStr: string) => string
+  formatDate: (dateStr: string) => string,
+  emailHeaderImageUrl: string,
+  senderName: string,
+  fromEmailAddr: string
 ): Promise<number> {
   let sentCount = 0;
   let failedCount = 0;
@@ -381,6 +231,10 @@ async function processTravelDocsBatch(
       if (booking.passport_country) existingDetails.push(`Passport Country: ${booking.passport_country}`);
       if (booking.passport_expiry_date) existingDetails.push(`Expiry Date: ${formatDate(booking.passport_expiry_date)}`);
       if (booking.nationality) existingDetails.push(`Nationality: ${booking.nationality}`);
+
+      const existingDetailsHtml = existingDetails.length > 0
+        ? `<div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 15px 0;"><p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Current details on file:</strong></p><ul style="margin: 0; padding-left: 20px; font-size: 14px;">${existingDetails.map(d => `<li>${d}</li>`).join('')}</ul></div>`
+        : '';
 
       // Build the travel docs button HTML
       const travelDocsButton = `<div style="text-align: center; margin: 30px 0;"><a href="${updateLink}" style="display: inline-block; background: #232628; color: #F5C518; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">UPDATE PASSPORT DETAILS</a></div>`;
