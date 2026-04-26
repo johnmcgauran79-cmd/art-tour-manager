@@ -52,7 +52,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     notes: "",
     operations_notes: "",
     cancellation_terms: "",
-    transport_notes: ""
+    transport_notes: "",
+    cancellation_details: "",
+    cancellation_status: ""
   });
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [paxAttending, setPaxAttending] = useState(0);
@@ -88,7 +90,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         notes: activity.notes || "",
         operations_notes: activity.operations_notes || "",
         cancellation_terms: (activity as any).cancellation_terms || "",
-        transport_notes: activity.transport_notes || ""
+        transport_notes: activity.transport_notes || "",
+        cancellation_details: (activity as any).cancellation_details || "",
+        cancellation_status: (activity as any).cancellation_status || ""
       });
 
       // Load journeys from activity data

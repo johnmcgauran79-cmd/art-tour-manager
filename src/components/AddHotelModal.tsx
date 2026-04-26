@@ -57,7 +57,9 @@ const emptyFormData = {
   upgrade_options: "",
   cancellation_policy: "",
   initial_rooms_cutoff_date: "",
-  final_rooms_cutoff_date: ""
+  final_rooms_cutoff_date: "",
+  cancellation_details: "",
+  cancellation_status: ""
 };
 
 export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHotelModalProps) => {
@@ -115,6 +117,8 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
           cancellation_policy: hotelData.cancellation_policy || null,
           initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
           final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
+          cancellation_details: hotelData.cancellation_details || null,
+          cancellation_status: hotelData.cancellation_status || null,
           auto_allocate_on_create: autoAllocate,
         }])
         .select()

@@ -43,7 +43,9 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
     upgrade_options: "",
     cancellation_policy: "",
     initial_rooms_cutoff_date: "",
-    final_rooms_cutoff_date: ""
+    final_rooms_cutoff_date: "",
+    cancellation_details: "",
+    cancellation_status: ""
   });
 
   // Track cascade modal state
@@ -77,7 +79,9 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         upgrade_options: hotel.upgrade_options || "",
         cancellation_policy: (hotel as any).cancellation_policy || "",
         initial_rooms_cutoff_date: (hotel as any).initial_rooms_cutoff_date || "",
-        final_rooms_cutoff_date: (hotel as any).final_rooms_cutoff_date || ""
+        final_rooms_cutoff_date: (hotel as any).final_rooms_cutoff_date || "",
+        cancellation_details: (hotel as any).cancellation_details || "",
+        cancellation_status: (hotel as any).cancellation_status || ""
       });
     }
   }, [hotel]);
@@ -104,6 +108,8 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           cancellation_policy: hotelData.cancellation_policy || null,
           initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
           final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
+          cancellation_details: hotelData.cancellation_details || null,
+          cancellation_status: hotelData.cancellation_status || null,
         })
         .eq('id', hotel?.id)
         .select()

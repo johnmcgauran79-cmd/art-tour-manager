@@ -50,7 +50,9 @@ const initialFormData = {
   notes: "",
   operations_notes: "",
   cancellation_terms: "",
-  transport_notes: ""
+  transport_notes: "",
+  cancellation_details: "",
+  cancellation_status: ""
 };
 
 export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated }: AddActivityModalProps) => {
