@@ -69,14 +69,14 @@ const emptyFormData = {
 };
 
 export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHotelModalProps) => {
-  const [formData, setFormData] = useState(initialData || emptyFormData);
+  const [formData, setFormData] = useState({ ...emptyFormData, ...(initialData || {}) });
   const [autoAllocate, setAutoAllocate] = useState(true);
   const [prevOpen, setPrevOpen] = useState(false);
 
   // Sync form data when modal opens (handles both fresh open and duplicate)
   if (open && !prevOpen) {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({ ...emptyFormData, ...initialData });
       setAutoAllocate(false);
     } else {
       setFormData(emptyFormData);
