@@ -9,11 +9,11 @@ export interface TaskStatusOption {
 
 export const TASK_STATUS_OPTIONS: TaskStatusOption[] = [
   { value: "not_started", label: "Not Started" },
+  { value: "not_required", label: "Not Required" },
   { value: "in_progress", label: "In Progress" },
   { value: "waiting", label: "Waiting" },
   { value: "awaiting_further_information", label: "Awaiting Further Information" },
   { value: "with_third_party", label: "With Third Party" },
-  { value: "not_required", label: "Not Required" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
   { value: "archived", label: "Archived" },
@@ -34,3 +34,17 @@ export const formatTaskStatus = (status: string): string => {
     .replace(/_/g, " ")
     .replace(/\b\w/g, (l) => l.toUpperCase());
 };
+
+/**
+ * Statuses that mean the task is finished / closed.
+ * These all behave the same way: the task is no longer active.
+ */
+export const TASK_FINISHED_STATUSES = [
+  "completed",
+  "cancelled",
+  "archived",
+  "not_required",
+] as const;
+
+export const isTaskFinished = (status: string | null | undefined): boolean =>
+  !!status && (TASK_FINISHED_STATUSES as readonly string[]).includes(status);

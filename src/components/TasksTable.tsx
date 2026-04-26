@@ -8,6 +8,7 @@ import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { formatDistanceToNow, format } from "date-fns";
 import { QuickTaskActions } from "@/components/QuickTaskActions";
 import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/lib/statusColors";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface TasksTableProps {
   tasks: Task[];
@@ -115,8 +116,8 @@ export const TasksTable = ({
         </TableHeader>
         <TableBody>
           {tasks.map((task) => {
-            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
-            const isBlocked = task.dependent_task && task.dependent_task.status !== 'completed';
+            const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isTaskFinished(task.status);
+            const isBlocked = task.dependent_task && !isTaskFinished(task.dependent_task.status);
             const isSelected = selectedTasks.includes(task.id);
 
             return (
@@ -124,7 +125,7 @@ export const TasksTable = ({
                 key={task.id} 
                 className={`cursor-pointer hover:bg-gray-50 ${
                   isOverdue ? 'bg-red-50' : ''
-                } ${task.status === 'completed' ? 'opacity-60' : ''} ${
+                } ${isTaskFinished(task.status) ? 'opacity-60' : ''} ${
                   isSelected ? 'bg-blue-50' : ''
                 }`}
                 onClick={() => handleRowClick(task)}

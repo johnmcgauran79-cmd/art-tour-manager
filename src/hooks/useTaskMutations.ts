@@ -281,8 +281,9 @@ export const useUpdateTask = () => {
 
       const updateData = { ...data.updates };
       
-      // If marking as completed, set completed_at
-      if (data.updates.status === 'completed' && !data.updates.completed_at) {
+      // If marking as a finishing status (completed/cancelled/archived/not_required), set completed_at
+      const FINISHED = ['completed', 'cancelled', 'archived', 'not_required'];
+      if (data.updates.status && FINISHED.includes(data.updates.status) && !data.updates.completed_at) {
         updateData.completed_at = new Date().toISOString();
         console.log('[useUpdateTask] Setting completed_at to:', updateData.completed_at);
       }

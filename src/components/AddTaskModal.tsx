@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface AddTaskModalProps {
   open: boolean;
@@ -150,12 +151,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     return tour ? tour.name : "Unknown tour";
   };
 
-  // Filter tasks for dependency selection (exclude completed and current task if editing)
-  const availableDependentTasks = existingTasks?.filter(task => 
-    task.status !== 'completed' && 
-    task.status !== 'cancelled' &&
-    task.status !== 'archived'
-  ) || [];
+  // Filter tasks for dependency selection (exclude finished tasks)
+  const availableDependentTasks = existingTasks?.filter(task => !isTaskFinished(task.status)) || [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

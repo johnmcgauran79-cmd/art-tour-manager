@@ -2,6 +2,7 @@
 import { AlertTriangle, Clock, Flag, CheckCircle } from "lucide-react";
 import { TaskCategoryCard } from "./TaskCategoryCard";
 import { Task } from "@/hooks/useTasks";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface TaskCategoriesGridProps {
   tasks: Task[];
@@ -12,7 +13,7 @@ export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGri
   console.log('TaskCategoriesGrid rendering with tasks:', tasks?.length);
   
   // Calculate task counts for non-completed tasks
-  const pendingTasks = tasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+  const pendingTasks = tasks.filter(task => !isTaskFinished(task.status));
   
   const overdueTasks = pendingTasks.filter(task => 
     task.due_date && new Date(task.due_date) < new Date()
@@ -28,7 +29,7 @@ export const TaskCategoriesGrid = ({ tasks, onCategoryClick }: TaskCategoriesGri
   });
 
   // Get completed tasks count from all tasks
-  const completedTasks = tasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
+  const completedTasks = tasks.filter(task => isTaskFinished(task.status));
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

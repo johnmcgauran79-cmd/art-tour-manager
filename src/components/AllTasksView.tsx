@@ -12,6 +12,7 @@ import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 import { TaskSearch } from "@/components/TaskSearch";
 import { useAuth } from "@/hooks/useAuth";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 export const AllTasksView = () => {
   console.log('AllTasksView rendering');
@@ -75,7 +76,7 @@ export const AllTasksView = () => {
 
   // Calculate pending tasks
   const pendingTasks = useMemo(() => {
-    return tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
+    return tasks?.filter(task => !isTaskFinished(task.status)) || [];
   }, [tasks]);
 
   // Apply search filters to all tasks first
@@ -127,7 +128,7 @@ export const AllTasksView = () => {
     if (!activeFilter) {
       const hasSearchFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
       if (hasSearchFilters) {
-        return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+        return searchFilteredTasks.filter(task => !isTaskFinished(task.status));
       }
       return pendingTasks;
     }
@@ -135,31 +136,31 @@ export const AllTasksView = () => {
     switch (activeFilter) {
       case 'overdue':
         return searchFilteredTasks.filter(task => 
-          task.status !== 'completed' && task.status !== 'cancelled' &&
+          !isTaskFinished(task.status) &&
           task.due_date && new Date(task.due_date) < new Date()
         );
       case 'critical':
         return searchFilteredTasks.filter(task => 
-          task.status !== 'completed' && task.status !== 'cancelled' &&
+          !isTaskFinished(task.status) &&
           task.priority === 'critical'
         );
       case 'high':
         return searchFilteredTasks.filter(task => 
-          task.status !== 'completed' && task.status !== 'cancelled' &&
+          !isTaskFinished(task.status) &&
           task.priority === 'high'
         );
       case 'due_soon':
         return searchFilteredTasks.filter(task => {
-          if (task.status === 'completed' || task.status === 'cancelled' || !task.due_date) return false;
+          if (isTaskFinished(task.status) || !task.due_date) return false;
           const dueDate = new Date(task.due_date);
           const today = new Date();
           const sevenDaysFromNow = new Date(today.getTime() + (7 * 24 * 60 * 60 * 1000));
           return dueDate >= today && dueDate <= sevenDaysFromNow;
         });
       case 'completed':
-        return searchFilteredTasks.filter(task => task.status === 'completed' || task.status === 'cancelled');
+        return searchFilteredTasks.filter(task => isTaskFinished(task.status));
       default:
-        return searchFilteredTasks.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+        return searchFilteredTasks.filter(task => !isTaskFinished(task.status));
     }
   }, [activeFilter, pendingTasks, searchFilteredTasks, searchFilters]);
 

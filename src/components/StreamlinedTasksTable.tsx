@@ -44,11 +44,11 @@ const PRIORITY_RANK: Record<string, number> = {
 
 const STATUS_RANK: Record<string, number> = {
   not_started: 0,
-  in_progress: 1,
-  waiting: 2,
-  awaiting_further_information: 3,
-  with_third_party: 4,
-  not_required: 5,
+  not_required: 1,
+  in_progress: 2,
+  waiting: 3,
+  awaiting_further_information: 4,
+  with_third_party: 5,
   completed: 6,
   cancelled: 7,
   archived: 8,
@@ -319,11 +319,11 @@ export const StreamlinedTasksTable = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="not_started">Not Started</SelectItem>
+                          <SelectItem value="not_required">Not Required</SelectItem>
                           <SelectItem value="in_progress">In Progress</SelectItem>
                           <SelectItem value="waiting">Waiting</SelectItem>
                           <SelectItem value="awaiting_further_information">Awaiting Further Information</SelectItem>
                           <SelectItem value="with_third_party">With Third Party</SelectItem>
-                          <SelectItem value="not_required">Not Required</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                           <SelectItem value="archived">Archived</SelectItem>
