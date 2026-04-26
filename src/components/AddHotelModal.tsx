@@ -14,6 +14,10 @@ import {
   BOOKING_WORKFLOW_STATUS_OPTIONS,
   PAYMENT_WORKFLOW_STATUS_OPTIONS,
 } from "@/lib/workflowStatuses";
+import {
+  CANCELLATION_REFUND_STATUS_OPTIONS,
+  NONE_CANCELLATION_STATUS,
+} from "@/lib/cancellationStatuses";
 
 interface AddHotelModalProps {
   tourId: string;
@@ -37,6 +41,8 @@ interface AddHotelModalProps {
     cancellation_policy: string;
     initial_rooms_cutoff_date: string;
     final_rooms_cutoff_date: string;
+    cancellation_details?: string;
+    cancellation_status?: string;
   };
 }
 
@@ -57,18 +63,20 @@ const emptyFormData = {
   upgrade_options: "",
   cancellation_policy: "",
   initial_rooms_cutoff_date: "",
-  final_rooms_cutoff_date: ""
+  final_rooms_cutoff_date: "",
+  cancellation_details: "",
+  cancellation_status: ""
 };
 
 export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHotelModalProps) => {
-  const [formData, setFormData] = useState(initialData || emptyFormData);
+  const [formData, setFormData] = useState({ ...emptyFormData, ...(initialData || {}) });
   const [autoAllocate, setAutoAllocate] = useState(true);
   const [prevOpen, setPrevOpen] = useState(false);
 
   // Sync form data when modal opens (handles both fresh open and duplicate)
   if (open && !prevOpen) {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({ ...emptyFormData, ...initialData });
       setAutoAllocate(false);
     } else {
       setFormData(emptyFormData);
@@ -115,6 +123,8 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
           cancellation_policy: hotelData.cancellation_policy || null,
           initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
           final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
+          cancellation_details: hotelData.cancellation_details || null,
+          cancellation_status: hotelData.cancellation_status || null,
           auto_allocate_on_create: autoAllocate,
         }])
         .select()
@@ -254,6 +264,42 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
                 </SelectTrigger>
                 <SelectContent>
                   {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cancellation_details">Cancellation Details</Label>
+              <Textarea
+                id="cancellation_details"
+                value={formData.cancellation_details}
+                onChange={(e) => handleInputChange("cancellation_details", e.target.value)}
+                rows={3}
+                placeholder="Notes about the cancellation (refund amount, contact, dates, etc.)"
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cancellation_status">Cancellation Status</Label>
+              <Select
+                value={formData.cancellation_status || NONE_CANCELLATION_STATUS}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    "cancellation_status",
+                    value === NONE_CANCELLATION_STATUS ? "" : value
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_CANCELLATION_STATUS}>Not set</SelectItem>
+                  {CANCELLATION_REFUND_STATUS_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>

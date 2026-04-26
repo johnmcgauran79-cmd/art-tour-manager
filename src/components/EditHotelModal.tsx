@@ -18,6 +18,10 @@ import {
   BOOKING_WORKFLOW_STATUS_OPTIONS,
   PAYMENT_WORKFLOW_STATUS_OPTIONS,
 } from "@/lib/workflowStatuses";
+import {
+  CANCELLATION_REFUND_STATUS_OPTIONS,
+  NONE_CANCELLATION_STATUS,
+} from "@/lib/cancellationStatuses";
 
 interface EditHotelModalProps {
   hotel: Hotel | null;
@@ -43,7 +47,9 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
     upgrade_options: "",
     cancellation_policy: "",
     initial_rooms_cutoff_date: "",
-    final_rooms_cutoff_date: ""
+    final_rooms_cutoff_date: "",
+    cancellation_details: "",
+    cancellation_status: ""
   });
 
   // Track cascade modal state
@@ -77,7 +83,9 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
         upgrade_options: hotel.upgrade_options || "",
         cancellation_policy: (hotel as any).cancellation_policy || "",
         initial_rooms_cutoff_date: (hotel as any).initial_rooms_cutoff_date || "",
-        final_rooms_cutoff_date: (hotel as any).final_rooms_cutoff_date || ""
+        final_rooms_cutoff_date: (hotel as any).final_rooms_cutoff_date || "",
+        cancellation_details: (hotel as any).cancellation_details || "",
+        cancellation_status: (hotel as any).cancellation_status || ""
       });
     }
   }, [hotel]);
@@ -104,6 +112,8 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           cancellation_policy: hotelData.cancellation_policy || null,
           initial_rooms_cutoff_date: hotelData.initial_rooms_cutoff_date || null,
           final_rooms_cutoff_date: hotelData.final_rooms_cutoff_date || null,
+          cancellation_details: hotelData.cancellation_details || null,
+          cancellation_status: hotelData.cancellation_status || null,
         })
         .eq('id', hotel?.id)
         .select()
@@ -272,6 +282,42 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
                 </SelectTrigger>
                 <SelectContent>
                   {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cancellation_details">Cancellation Details</Label>
+              <Textarea
+                id="cancellation_details"
+                value={formData.cancellation_details}
+                onChange={(e) => handleInputChange("cancellation_details", e.target.value)}
+                rows={3}
+                placeholder="Notes about the cancellation (refund amount, contact, dates, etc.)"
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="cancellation_status">Cancellation Status</Label>
+              <Select
+                value={formData.cancellation_status || NONE_CANCELLATION_STATUS}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    "cancellation_status",
+                    value === NONE_CANCELLATION_STATUS ? "" : value
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_CANCELLATION_STATUS}>Not set</SelectItem>
+                  {CANCELLATION_REFUND_STATUS_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>

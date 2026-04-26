@@ -17,6 +17,10 @@ import {
   BOOKING_WORKFLOW_STATUS_OPTIONS,
   PAYMENT_WORKFLOW_STATUS_OPTIONS,
 } from "@/lib/workflowStatuses";
+import {
+  CANCELLATION_REFUND_STATUS_OPTIONS,
+  NONE_CANCELLATION_STATUS,
+} from "@/lib/cancellationStatuses";
 
 interface EditActivityModalProps {
   activity: Activity | null;
@@ -52,7 +56,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
     notes: "",
     operations_notes: "",
     cancellation_terms: "",
-    transport_notes: ""
+    transport_notes: "",
+    cancellation_details: "",
+    cancellation_status: ""
   });
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [paxAttending, setPaxAttending] = useState(0);
@@ -88,7 +94,9 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
         notes: activity.notes || "",
         operations_notes: activity.operations_notes || "",
         cancellation_terms: (activity as any).cancellation_terms || "",
-        transport_notes: activity.transport_notes || ""
+        transport_notes: activity.transport_notes || "",
+        cancellation_details: (activity as any).cancellation_details || "",
+        cancellation_status: (activity as any).cancellation_status || ""
       });
 
       // Load journeys from activity data
@@ -150,6 +158,8 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           operations_notes: activityData.operations_notes || null,
           cancellation_terms: activityData.cancellation_terms || null,
           transport_notes: activityData.transport_notes || null,
+          cancellation_details: activityData.cancellation_details || null,
+          cancellation_status: activityData.cancellation_status || null,
         })
         .eq('id', activity?.id)
         .select()
@@ -262,6 +272,44 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
                 <SelectContent>
                   {PAYMENT_WORKFLOW_STATUS_OPTIONS.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Cancellation */}
+          <div className="space-y-4 rounded-md border border-border p-4">
+            <div className="space-y-2">
+              <Label htmlFor="cancellation_details">Cancellation Details</Label>
+              <Textarea
+                id="cancellation_details"
+                value={formData.cancellation_details}
+                onChange={(e) => handleInputChange("cancellation_details", e.target.value)}
+                rows={3}
+                placeholder="Notes about the cancellation (refund amount, contact, dates, etc.)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cancellation_status">Cancellation Status</Label>
+              <Select
+                value={formData.cancellation_status || NONE_CANCELLATION_STATUS}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    "cancellation_status",
+                    value === NONE_CANCELLATION_STATUS ? "" : value
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_CANCELLATION_STATUS}>Not set</SelectItem>
+                  {CANCELLATION_REFUND_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
