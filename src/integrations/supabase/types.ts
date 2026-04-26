@@ -18,6 +18,10 @@ export type Database = {
         Row: {
           activity_date: string | null
           booking_status: Database["public"]["Enums"]["booking_workflow_status"]
+          cancellation_details: string | null
+          cancellation_status:
+            | Database["public"]["Enums"]["cancellation_refund_status"]
+            | null
           cancellation_terms: string | null
           contact_email: string | null
           contact_name: string | null
@@ -56,6 +60,10 @@ export type Database = {
         Insert: {
           activity_date?: string | null
           booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
+          cancellation_details?: string | null
+          cancellation_status?:
+            | Database["public"]["Enums"]["cancellation_refund_status"]
+            | null
           cancellation_terms?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -94,6 +102,10 @@ export type Database = {
         Update: {
           activity_date?: string | null
           booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
+          cancellation_details?: string | null
+          cancellation_status?:
+            | Database["public"]["Enums"]["cancellation_refund_status"]
+            | null
           cancellation_terms?: string | null
           contact_email?: string | null
           contact_name?: string | null
@@ -1643,7 +1655,11 @@ export type Database = {
           address: string | null
           auto_allocate_on_create: boolean
           booking_status: Database["public"]["Enums"]["booking_workflow_status"]
+          cancellation_details: string | null
           cancellation_policy: string | null
+          cancellation_status:
+            | Database["public"]["Enums"]["cancellation_refund_status"]
+            | null
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
@@ -1672,7 +1688,11 @@ export type Database = {
           address?: string | null
           auto_allocate_on_create?: boolean
           booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
+          cancellation_details?: string | null
           cancellation_policy?: string | null
+          cancellation_status?:
+            | Database["public"]["Enums"]["cancellation_refund_status"]
+            | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -1701,7 +1721,11 @@ export type Database = {
           address?: string | null
           auto_allocate_on_create?: boolean
           booking_status?: Database["public"]["Enums"]["booking_workflow_status"]
+          cancellation_details?: string | null
           cancellation_policy?: string | null
+          cancellation_status?:
+            | Database["public"]["Enums"]["cancellation_refund_status"]
+            | null
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
@@ -3950,6 +3974,12 @@ export type Database = {
         | "confirmed"
         | "finalised"
         | "cancelled"
+      cancellation_refund_status:
+        | "waiting_for_refund"
+        | "cancellation_processed"
+        | "cash_refund_received"
+        | "credit_received"
+        | "no_refund"
       department:
         | "operations"
         | "finance"
@@ -4172,6 +4202,13 @@ export const Constants = {
         "confirmed",
         "finalised",
         "cancelled",
+      ],
+      cancellation_refund_status: [
+        "waiting_for_refund",
+        "cancellation_processed",
+        "cash_refund_received",
+        "credit_received",
+        "no_refund",
       ],
       department: [
         "operations",
