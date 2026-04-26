@@ -6,6 +6,7 @@ import { CheckCircle, Clock, User, Calendar, MapPin } from "lucide-react";
 import { Task, useUpdateTask } from "@/hooks/useTasks";
 import { formatDistanceToNow } from "date-fns";
 import { stripEntityTokens } from "@/lib/entityLinks";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface TaskCardProps {
   task: Task;
@@ -67,13 +68,13 @@ export const TaskCard = ({ task, showTourName = false, onTaskClick }: TaskCardPr
     }
   };
 
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'completed';
+  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && !isTaskFinished(task.status);
 
   return (
     <Card 
       className={`transition-all duration-200 hover:shadow-md cursor-pointer ${
         isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200'
-      } ${task.status === 'completed' ? 'opacity-60' : ''}`}
+      } ${isTaskFinished(task.status) ? 'opacity-60' : ''}`}
       onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
@@ -125,7 +126,7 @@ export const TaskCard = ({ task, showTourName = false, onTaskClick }: TaskCardPr
               )}
             </div>
           </div>
-          {task.status !== 'completed' && (
+          {!isTaskFinished(task.status) && (
             <Button
               size="sm"
               variant="outline"
