@@ -2,7 +2,8 @@ import { forwardRef, useRef, useImperativeHandle, useState, useCallback } from "
 import { Textarea } from "@/components/ui/textarea";
 import { EntityLinkPicker } from "./EntityLinkPicker";
 import { cn } from "@/lib/utils";
-import { buildEntityToken } from "@/lib/entityLinks";
+import { buildEntityToken, parseEntityLinks } from "@/lib/entityLinks";
+import { LinkedTextRenderer } from "./LinkedTextRenderer";
 import {
   InlineEntitySuggestions,
   detectHashTrigger,
@@ -147,6 +148,16 @@ export const LinkableTextarea = forwardRef<HTMLTextAreaElement, LinkableTextarea
             />
           )}
         </div>
+        {parseEntityLinks(value).length > 0 && (
+          <div className="rounded-md border border-dashed bg-muted/30 px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+              Preview
+            </p>
+            <div className="text-sm leading-relaxed">
+              <LinkedTextRenderer text={value} />
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <p className="text-[11px] text-muted-foreground">
             Tip: type <kbd className="px-1 py-0.5 rounded bg-muted text-[10px]">#</kbd> to link a record, or use the button →
