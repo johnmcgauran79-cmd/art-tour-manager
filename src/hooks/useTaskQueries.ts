@@ -6,7 +6,7 @@ export interface Task {
   id: string;
   title: string;
   description: string | null;
-  status: 'not_started' | 'in_progress' | 'waiting' | 'completed' | 'cancelled' | 'archived';
+  status: 'not_started' | 'in_progress' | 'waiting' | 'completed' | 'cancelled' | 'archived' | 'not_required' | 'with_third_party' | 'awaiting_further_information';
   priority: 'low' | 'medium' | 'high' | 'critical';
   category: 'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general';
   due_date: string | null;
