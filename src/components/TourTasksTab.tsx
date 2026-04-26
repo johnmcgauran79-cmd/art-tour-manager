@@ -11,6 +11,7 @@ import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskTemplateModal } from "@/components/TaskTemplateModal";
 import { useAuth } from "@/hooks/useAuth";
+import { isTaskFinished } from "@/lib/taskStatuses";
 
 interface TourTasksTabProps {
   tourId: string;
@@ -45,18 +46,14 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
     });
   };
 
-  const activeTasks = tasks?.filter(task => 
-    task.status !== 'completed' && task.status !== 'cancelled'
-  ) || [];
+  const activeTasks = tasks?.filter(task => !isTaskFinished(task.status)) || [];
 
-  const completedTasks = tasks?.filter(task => 
-    task.status === 'completed' || task.status === 'cancelled'
-  ) || [];
+  const completedTasks = tasks?.filter(task => isTaskFinished(task.status)) || [];
 
   // Filter tasks based on showCompletedTasks state
   const displayedTasks = showCompletedTasks 
     ? tasks 
-    : tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled');
+    : tasks?.filter(task => !isTaskFinished(task.status));
 
   return (
     <>
