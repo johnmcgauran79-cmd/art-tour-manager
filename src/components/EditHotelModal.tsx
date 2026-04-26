@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Hotel } from "@/hooks/useHotels";
 import { HotelAttachmentsSection } from "./HotelAttachmentsSection";
+import { HotelExternalLinksSection } from "./HotelExternalLinksSection";
 import { HotelDateCascadeModal } from "./HotelDateCascadeModal";
 import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
 import {
@@ -438,6 +439,13 @@ export const EditHotelModal = ({ hotel, open, onOpenChange }: EditHotelModalProp
           )}
 
           <Separator />
+
+          {hotel && (
+            <>
+              <HotelExternalLinksSection hotelId={hotel.id} />
+              <Separator />
+            </>
+          )}
 
           {hotel && (
             <>
