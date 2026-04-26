@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, EyeOff, X, UserPlus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTaskWatchers, useAddWatcher, useRemoveWatcher } from "@/hooks/useTaskWatchers";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 
 interface TaskWatchersSectionProps {
   taskId: string;
