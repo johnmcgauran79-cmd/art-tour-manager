@@ -652,9 +652,9 @@ Deno.serve(async (req) => {
             passengerName: pax.name,
             passengerRole: pax.role,
           });
-        } catch (err) {
+        } catch (err: any) {
           console.error(`Failed to create split invoice for ${pax.name}:`, err);
-          results.push({ error: err.message, passengerName: pax.name, passengerRole: pax.role });
+          results.push({ error: err?.message || String(err), passengerName: pax.name, passengerRole: pax.role });
         }
       }
 
