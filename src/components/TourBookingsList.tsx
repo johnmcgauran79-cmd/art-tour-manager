@@ -396,6 +396,10 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                               </div>
                             )}
                             <span>{booking.customers?.first_name} {booking.customers?.last_name}</span>
+                            <ManualHandlingIndicator
+                              tour={(booking as any).tours ? { manual_billing: (booking as any).tours.manual_billing, manual_emails: (booking as any).tours.manual_emails } : null}
+                              bookingOverride={((booking as any).automation_override as BookingAutomationOverride) ?? 'inherit'}
+                            />
                           </div>
                         </td>
                         <td className="p-3">
