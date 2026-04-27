@@ -230,6 +230,33 @@ export default function TourEdit() {
       return;
     }
 
+    // Detect manual-handling toggle ON (off -> on) and ask staff what to do
+    // with already-queued automations.
+    const billingTurnedOn = !tour?.manual_billing && formData.manual_billing;
+    const emailsTurnedOn = !tour?.manual_emails && formData.manual_emails;
+    if (billingTurnedOn || emailsTurnedOn) {
+      const [statusQueueRes, timedQueueRes] = await Promise.all([
+        supabase
+          .from('status_change_email_queue')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending'),
+        supabase
+          .from('automated_email_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending'),
+      ]);
+      setManualToggleCounts({
+        pendingStatusEmails: statusQueueRes.count || 0,
+        pendingTimedEmails: timedQueueRes.count || 0,
+      });
+      setManualToggleFlags({ billingTurnedOn, emailsTurnedOn });
+      setPendingSubmitData(updateData);
+      setShowManualToggleDialog(true);
+      return;
+    }
+
     executeSave(updateData);
   };
 
