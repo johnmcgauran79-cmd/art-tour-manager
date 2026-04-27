@@ -4,7 +4,8 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield, Plane } from "lucide-react";
+import { Edit, Trash2, Hotel, MapPin, Heart, FileText, MessageSquare, Mail, ArrowLeft, X, ExternalLink, Shield, Plane, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { EmailPreviewModal } from "@/components/EmailPreviewModal";
 import { useDeleteBooking, useUpdateBooking } from "@/hooks/useBookings";
 import { useBookingById } from "@/hooks/useTourBookings";
@@ -60,6 +61,7 @@ export default function BookingDetail() {
   const [currentTab, setCurrentTab] = useState(searchParams.get('tab') || "details");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showRemoveSecondaryContactDialog, setShowRemoveSecondaryContactDialog] = useState(false);
+  const [isRetryingXero, setIsRetryingXero] = useState(false);
   const deleteBooking = useDeleteBooking();
   const updateBooking = useUpdateBooking();
   const isMobile = useIsMobile();
@@ -124,6 +126,50 @@ export default function BookingDetail() {
       }
     );
   };
+
+  const handleRetryXeroInvoice = async () => {
+    if (!booking) return;
+    setIsRetryingXero(true);
+    try {
+      const res = await supabase.functions.invoke('xero-create-invoice', {
+        body: { bookingId: booking.id }
+      });
+      if (res.error) {
+        toast({
+          title: "Xero invoice failed",
+          description: res.error.message || 'Unknown error. Check edge function logs.',
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Xero invoice created",
+          description: "Invoice has been generated. Refreshing booking details...",
+        });
+        // Allow Xero webhook / DB update to land before refetch
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    } catch (err: any) {
+      toast({
+        title: "Xero invoice failed",
+        description: err?.message || 'Network error. Please try again.',
+        variant: "destructive",
+      });
+    } finally {
+      setIsRetryingXero(false);
+    }
+  };
+
+  // Determine if this booking is eligible for Xero invoice creation but doesn't have one yet
+  const isXeroEligible = (() => {
+    if (!booking || !tour) return false;
+    if ((tour as any).is_test_tour) return false;
+    if ((tour as any).manual_billing) return false;
+    if (booking.status === 'host' || booking.status === 'complimentary' || booking.status === 'cancelled') return false;
+    const isFullTour = booking.whatsapp_group_comms !== false && booking.accommodation_required !== false;
+    if (!isFullTour) return false;
+    return !booking.invoice_reference || booking.invoice_reference.trim() === '';
+  })();
+  const canRetryXero = isXeroEligible && !isAgent && (userRole === 'admin' || userRole === 'manager');
 
   if (isLoading) {
     return (
@@ -556,6 +602,24 @@ export default function BookingDetail() {
                 <InfoRow label="WhatsApp Group Comms" value={booking.whatsapp_group_comms ? 'Yes' : 'No'} />
                 {booking.invoice_reference && (
                   <InfoRow label="Invoice Reference (Xero)" value={booking.invoice_reference} />
+                )}
+                {canRetryXero && (
+                  <Alert variant="destructive" className="mt-2">
+                    <AlertDescription className="flex items-center justify-between gap-3 flex-wrap">
+                      <span>
+                        No Xero invoice has been created for this booking. This may have failed during booking creation.
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleRetryXeroInvoice}
+                        disabled={isRetryingXero}
+                      >
+                        <RefreshCw className={`h-4 w-4 mr-2 ${isRetryingXero ? 'animate-spin' : ''}`} />
+                        {isRetryingXero ? 'Creating...' : 'Create Xero Invoice'}
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
                 )}
                 {booking.invoice_notes && (
                   <InfoRow label="Invoice Notes" value={booking.invoice_notes} />
