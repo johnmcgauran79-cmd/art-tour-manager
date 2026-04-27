@@ -802,7 +802,8 @@ export default function TourEdit() {
           </div>
         </div>
 
-        {/* Test Mode toggle */}
+        {/* Test Mode toggle — Admin only */}
+        {isAdmin && (
         <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
@@ -828,6 +829,7 @@ export default function TourEdit() {
             />
           </div>
         </div>
+        )}
 
         {/* Manual Handling toggles */}
         <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
