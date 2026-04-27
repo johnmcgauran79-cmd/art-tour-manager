@@ -507,20 +507,21 @@ export const AddBookingModal = ({
         }
       }
       
-      // If integrations failed, keep modal open and show a clear warning.
+      // If integrations failed, keep modal open with a persistent error so user can act.
       if (xeroFailed || keapFailed) {
         const failures: string[] = [];
         if (xeroFailed) failures.push(`Xero invoice (${xeroErrorMsg})`);
         if (keapFailed) failures.push(`Keap tagging (${keapErrorMsg})`);
+        const message = `Booking was saved successfully, but the following integration(s) failed: ${failures.join(', ')}. Open the booking from the bookings list and use the "Retry Xero Invoice" button, or contact an admin.`;
+        setValidationError(message);
         toast({
           title: "Booking saved — integration issue",
-          description: `Booking ${newBooking.id.slice(0, 8)} was created, but the following failed: ${failures.join(', ')}. Open the booking and use the retry button, or contact an admin.`,
+          description: failures.join(', '),
           variant: "destructive",
           duration: 12000,
         });
-        // Close the create modal but stay on page so user can navigate to booking
+        // Close the inner confirmation dialog but keep the create modal open
         setShowConfirmation(false);
-        onOpenChange(false);
         return;
       }
 
