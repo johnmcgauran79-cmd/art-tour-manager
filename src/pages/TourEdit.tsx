@@ -350,6 +350,41 @@ export default function TourEdit() {
     setIsCancelling(false);
   };
 
+  // Manual handling toggle confirmation handlers
+  const handleManualToggleProceed = async (cancelPending: boolean) => {
+    setShowManualToggleDialog(false);
+    if (!pendingSubmitData) return;
+
+    if (cancelPending && manualToggleFlags.emailsTurnedOn) {
+      // Reject any pending status-change emails for this tour
+      if (manualToggleCounts.pendingStatusEmails > 0) {
+        await supabase
+          .from('status_change_email_queue')
+          .update({
+            approval_status: 'rejected',
+            rejection_reason: 'Tour switched to manual email handling',
+            approved_at: new Date().toISOString(),
+          })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending');
+      }
+      // Reject any pending time-based automated emails for this tour
+      if (manualToggleCounts.pendingTimedEmails > 0) {
+        await supabase
+          .from('automated_email_log')
+          .update({
+            approval_status: 'rejected',
+            rejection_reason: 'Tour switched to manual email handling',
+            approved_at: new Date().toISOString(),
+          })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending');
+      }
+    }
+
+    executeSave(pendingSubmitData);
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
