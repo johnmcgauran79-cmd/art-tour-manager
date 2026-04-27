@@ -346,12 +346,16 @@ export const AddBookingModal = ({
       const isComplimentary = status === 'complimentary';
       const tourForBooking = tours?.find(t => t.id === formData.tour_id);
       const isTestTour = !!(tourForBooking as any)?.is_test_tour;
+      const tourManualBilling = !!(tourForBooking as any)?.manual_billing;
 
-      const shouldTriggerXero = !isTestTour && !isHost && !isComplimentary && isFullTourBooking;
-      const shouldTriggerKeap = !isTestTour && (isHost || isFullTourBooking);
+      const shouldTriggerXero = !isTestTour && !tourManualBilling && !isHost && !isComplimentary && isFullTourBooking;
+      const shouldTriggerKeap = !isTestTour && !tourManualBilling && (isHost || isFullTourBooking);
 
       if (isTestTour) {
         console.log('Test Tour: Skipping Xero & Keap integrations for booking', newBooking.id);
+      }
+      if (tourManualBilling) {
+        console.log('Manual Billing tour: Skipping Xero & Keap integrations for booking', newBooking.id);
       }
 
       if (shouldTriggerXero) {
