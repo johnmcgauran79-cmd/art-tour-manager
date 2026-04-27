@@ -28,6 +28,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ContactSearch } from "@/components/booking/ContactSearch";
 import { PassengerContactSearch } from "@/components/booking/PassengerContactSearch";
 import { PassengerContactData } from "@/hooks/useBookingFormState";
+import { BookingAutomationOverrideField } from "@/components/booking/BookingAutomationOverrideField";
+import { BookingAutomationOverride } from "@/lib/automationOverrides";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useTours } from "@/hooks/useTours";
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +86,7 @@ export default function BookingEdit() {
     split_invoice: false,
     passport_not_required: false,
     selected_pickup_option_id: '',
+    automation_override: 'inherit' as BookingAutomationOverride,
   });
 
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -153,6 +156,7 @@ export default function BookingEdit() {
         split_invoice: (booking as any).split_invoice ?? false,
         passport_not_required: (booking as any).passport_not_required ?? false,
         selected_pickup_option_id: booking.selected_pickup_option_id || '',
+        automation_override: ((booking as any).automation_override as BookingAutomationOverride) || 'inherit',
       });
 
       if (booking.secondary_contact) {
@@ -321,6 +325,7 @@ export default function BookingEdit() {
       split_invoice: formData.split_invoice,
       passport_not_required: formData.passport_not_required,
       selected_pickup_option_id: formData.selected_pickup_option_id || null,
+      automation_override: formData.automation_override,
     }, {
       onSuccess: () => {
         toast({
@@ -894,6 +899,15 @@ export default function BookingEdit() {
                   id="passport_not_required"
                   checked={formData.passport_not_required ?? false}
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, passport_not_required: checked }))}
+                />
+              </div>
+
+              <div className="pt-2 border-t">
+                <BookingAutomationOverrideField
+                  value={formData.automation_override}
+                  onChange={(v) => setFormData(prev => ({ ...prev, automation_override: v }))}
+                  tour={tour ? { manual_billing: (tour as any).manual_billing, manual_emails: (tour as any).manual_emails } : null}
+                  disabled={isViewOnly}
                 />
               </div>
             </div>

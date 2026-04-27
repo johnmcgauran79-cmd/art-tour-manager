@@ -23,6 +23,7 @@ import { ViewToggle } from "@/components/ViewToggle";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionButton } from "@/components/ui/permission-button";
+import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
 
 interface ToursTableProps {
   showOnlyActive?: boolean;
@@ -288,6 +289,9 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                             {(tour as any).is_test_tour && (
                               <Badge variant="secondary" className="text-xs">TEST</Badge>
                             )}
+                            <ManualHandlingIndicator
+                              tour={{ manual_billing: (tour as any).manual_billing, manual_emails: (tour as any).manual_emails }}
+                            />
                           </span>
                         </TableCell>
                         <TableCell>

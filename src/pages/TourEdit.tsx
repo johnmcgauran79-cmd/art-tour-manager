@@ -66,6 +66,18 @@ export default function TourEdit() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
 
+  // "Manual handling" toggle confirmation: when manual_billing or manual_emails
+  // is turned ON, ask staff what to do with already-queued automations.
+  const [showManualToggleDialog, setShowManualToggleDialog] = useState(false);
+  const [manualToggleCounts, setManualToggleCounts] = useState({
+    pendingStatusEmails: 0,
+    pendingTimedEmails: 0,
+  });
+  const [manualToggleFlags, setManualToggleFlags] = useState({
+    billingTurnedOn: false,
+    emailsTurnedOn: false,
+  });
+
   // Comms overrides
   const { data: existingOverrides } = useTourEmailOverrides(id || '');
   const upsertOverride = useUpsertTourEmailOverride();
@@ -218,6 +230,33 @@ export default function TourEdit() {
       return;
     }
 
+    // Detect manual-handling toggle ON (off -> on) and ask staff what to do
+    // with already-queued automations.
+    const billingTurnedOn = !tour?.manual_billing && formData.manual_billing;
+    const emailsTurnedOn = !tour?.manual_emails && formData.manual_emails;
+    if (billingTurnedOn || emailsTurnedOn) {
+      const [statusQueueRes, timedQueueRes] = await Promise.all([
+        supabase
+          .from('status_change_email_queue')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending'),
+        supabase
+          .from('automated_email_log')
+          .select('id', { count: 'exact', head: true })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending'),
+      ]);
+      setManualToggleCounts({
+        pendingStatusEmails: statusQueueRes.count || 0,
+        pendingTimedEmails: timedQueueRes.count || 0,
+      });
+      setManualToggleFlags({ billingTurnedOn, emailsTurnedOn });
+      setPendingSubmitData(updateData);
+      setShowManualToggleDialog(true);
+      return;
+    }
+
     executeSave(updateData);
   };
 
@@ -309,6 +348,41 @@ export default function TourEdit() {
     setShowCancelDialog(false);
     executeSave(pendingSubmitData, true);
     setIsCancelling(false);
+  };
+
+  // Manual handling toggle confirmation handlers
+  const handleManualToggleProceed = async (cancelPending: boolean) => {
+    setShowManualToggleDialog(false);
+    if (!pendingSubmitData) return;
+
+    if (cancelPending && manualToggleFlags.emailsTurnedOn) {
+      // Reject any pending status-change emails for this tour
+      if (manualToggleCounts.pendingStatusEmails > 0) {
+        await supabase
+          .from('status_change_email_queue')
+          .update({
+            approval_status: 'rejected',
+            rejection_reason: 'Tour switched to manual email handling',
+            approved_at: new Date().toISOString(),
+          })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending');
+      }
+      // Reject any pending time-based automated emails for this tour
+      if (manualToggleCounts.pendingTimedEmails > 0) {
+        await supabase
+          .from('automated_email_log')
+          .update({
+            approval_status: 'rejected',
+            rejection_reason: 'Tour switched to manual email handling',
+            approved_at: new Date().toISOString(),
+          })
+          .eq('tour_id', id!)
+          .eq('approval_status', 'pending');
+      }
+    }
+
+    executeSave(pendingSubmitData);
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -901,6 +975,75 @@ export default function TourEdit() {
               disabled={isCancelling}
             >
               {isCancelling ? 'Cancelling...' : 'Yes, Cancel Tour'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Manual handling toggle confirmation */}
+      <AlertDialog open={showManualToggleDialog} onOpenChange={setShowManualToggleDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Hand className="h-5 w-5" />
+              Switch to manual handling?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  You're enabling manual handling on this tour:
+                </p>
+                <ul className="list-disc pl-5 text-sm space-y-1">
+                  {manualToggleFlags.billingTurnedOn && (
+                    <li>Manual billing — automatic Xero invoicing &amp; Keap tagging will be skipped for new bookings.</li>
+                  )}
+                  {manualToggleFlags.emailsTurnedOn && (
+                    <li>Manual emails — automated emails will be skipped for this tour going forward.</li>
+                  )}
+                </ul>
+
+                {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0 ? (
+                  <div className="rounded-lg border border-dashed bg-muted p-3 space-y-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Already-queued emails awaiting approval:
+                    </p>
+                    {manualToggleCounts.pendingStatusEmails > 0 && (
+                      <p className="text-sm text-foreground">
+                        • {manualToggleCounts.pendingStatusEmails} status-change email{manualToggleCounts.pendingStatusEmails !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {manualToggleCounts.pendingTimedEmails > 0 && (
+                      <p className="text-sm text-foreground">
+                        • {manualToggleCounts.pendingTimedEmails} time-based email{manualToggleCounts.pendingTimedEmails !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Choose whether to cancel them now or leave them queued for manual review.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No emails are currently queued for this tour.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <AlertDialogCancel>Don't switch</AlertDialogCancel>
+            {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleManualToggleProceed(false)}
+              >
+                Switch &amp; leave queued emails
+              </Button>
+            )}
+            <AlertDialogAction onClick={() => handleManualToggleProceed(true)}>
+              {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0
+                ? 'Switch & cancel queued emails'
+                : 'Switch to manual'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

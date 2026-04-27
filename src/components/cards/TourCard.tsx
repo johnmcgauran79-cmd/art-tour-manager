@@ -8,6 +8,7 @@ import { getTourStatusColor, formatStatusText, getHostFlightStatusStyle } from "
 import { typography } from "@/lib/typography";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
+import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
 
 interface TourCardProps {
   tour: any;
@@ -42,6 +43,9 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
                 <FlaskConical className="h-3 w-3" /> TEST
               </Badge>
             )}
+            <ManualHandlingIndicator
+              tour={{ manual_billing: (tour as any).manual_billing, manual_emails: (tour as any).manual_emails }}
+            />
           </div>
           <div className="min-w-0">
             <h3 className={`${typography.cardTitle} line-clamp-2 mb-1`}>
