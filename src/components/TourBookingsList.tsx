@@ -13,6 +13,8 @@ import { AddBookingModal } from "@/components/AddBookingModal";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { ContactAvatar } from "@/components/ContactAvatar";
+import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
+import type { BookingAutomationOverride } from "@/lib/automationOverrides";
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -287,6 +289,11 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
                             {(booking.status || 'pending').replace("_", " ").toUpperCase()}
                           </Badge>
                         )}
+                        <ManualHandlingIndicator
+                          tour={(booking as any).tours ? { manual_billing: (booking as any).tours.manual_billing, manual_emails: (booking as any).tours.manual_emails } : null}
+                          bookingOverride={((booking as any).automation_override as BookingAutomationOverride) ?? 'inherit'}
+                          className="flex-shrink-0"
+                        />
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>{booking.passenger_count} pax</span>
