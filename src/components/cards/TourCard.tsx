@@ -9,6 +9,7 @@ import { typography } from "@/lib/typography";
 import { usePermissions } from "@/hooks/usePermissions";
 import { PermissionButton } from "@/components/ui/permission-button";
 import { ManualHandlingIndicator } from "@/components/ManualHandlingIndicator";
+import { useAuth } from "@/hooks/useAuth";
 
 interface TourCardProps {
   tour: any;
@@ -20,6 +21,7 @@ interface TourCardProps {
 
 export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicate }: TourCardProps) => {
   const { hasEditAccess } = usePermissions();
+  const { userRole } = useAuth();
   
   const handleCardClick = () => {
     if (onView) {
@@ -38,7 +40,7 @@ export const TourCard = ({ tour, totalPassengers = 0, onView, onEdit, onDuplicat
             <Badge className={`${getTourStatusColor(tour.status)} self-start`}>
               {formatStatusText(tour.status)}
             </Badge>
-            {(tour as any).is_test_tour && (
+            {(tour as any).is_test_tour && userRole === 'admin' && (
               <Badge variant="secondary" className="gap-1 self-start">
                 <FlaskConical className="h-3 w-3" /> TEST
               </Badge>

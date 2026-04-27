@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CalendarIcon, Mail, Hand, FlaskConical } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AddTourModalProps {
   open: boolean;
@@ -22,6 +23,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
 
   const [formData, setFormData] = useState({
     name: "",
@@ -533,7 +536,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
           </div>
 
-          {/* Test Tour (Sandbox Mode) */}
+          {/* Test Tour (Sandbox Mode) — Admin only */}
+          {isAdmin && (
           <div className="space-y-3 border-t pt-4">
             <div className="rounded-lg border border-dashed p-4 bg-muted/30">
               <div className="flex items-start justify-between gap-4">
@@ -561,6 +565,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               </div>
             </div>
           </div>
+          )}
 
           {/* Manual Handling */}
           <div className="space-y-3 border-t pt-4">

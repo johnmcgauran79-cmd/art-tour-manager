@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Navigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,8 @@ import { useTourEmailOverrides, useUpsertTourEmailOverride, useDeleteTourEmailOv
 export default function TourEdit() {
   const { id } = useParams();
   const { isViewOnly } = usePermissions();
+  const { userRole } = useAuth();
+  const isAdmin = userRole === 'admin';
   const { goBack } = useNavigationContext();
 
   const { toast } = useToast();
@@ -440,7 +443,7 @@ export default function TourEdit() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Edit Tour: {tour.name}</h1>
-          {formData.is_test_tour && (
+          {formData.is_test_tour && isAdmin && (
             <Badge variant="secondary" className="gap-1">
               <FlaskConical className="mr-1 h-3 w-3" /> TEST TOUR
             </Badge>
@@ -799,7 +802,8 @@ export default function TourEdit() {
           </div>
         </div>
 
-        {/* Test Mode toggle */}
+        {/* Test Mode toggle — Admin only */}
+        {isAdmin && (
         <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
@@ -825,6 +829,7 @@ export default function TourEdit() {
             />
           </div>
         </div>
+        )}
 
         {/* Manual Handling toggles */}
         <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
