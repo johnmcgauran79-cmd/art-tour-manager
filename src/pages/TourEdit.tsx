@@ -752,6 +752,54 @@ export default function TourEdit() {
           </div>
         </div>
 
+        {/* Manual Handling toggles */}
+        <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <Hand className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-base font-medium">Manual Handling (corporate / group bookings)</Label>
+          </div>
+          <p className="text-xs text-muted-foreground max-w-2xl">
+            Disable specific automations for this entire tour. Useful for corporate group bookings where invoicing
+            and communications are handled manually. Individual bookings can still override these settings.
+          </p>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border bg-background p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="manual_billing" className="text-sm font-medium cursor-pointer">
+                Manual billing
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Skip automatic Xero invoice creation and Keap CRM tagging for all bookings on this tour.
+              </p>
+            </div>
+            <Switch
+              id="manual_billing"
+              checked={formData.manual_billing}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, manual_billing: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border bg-background p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="manual_emails" className="text-sm font-medium cursor-pointer">
+                Manual emails
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Skip all automated emails (status-change, time-based reminders, scheduled) for this tour.
+              </p>
+            </div>
+            <Switch
+              id="manual_emails"
+              checked={formData.manual_emails}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, manual_emails: checked }))
+              }
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor="inclusions">Inclusions</Label>
           <Textarea
