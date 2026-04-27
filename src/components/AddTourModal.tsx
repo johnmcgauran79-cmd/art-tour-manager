@@ -533,6 +533,35 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
             <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
           </div>
 
+          {/* Test Tour (Sandbox Mode) */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="rounded-lg border border-dashed p-4 bg-muted/30">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="is_test_tour" className="text-base font-medium cursor-pointer">
+                      Test Tour (Sandbox Mode)
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-2xl">
+                    Mark this as a sandbox tour for testing emails, forms, alerts and triggers.
+                    When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong> and
+                    <strong> skip Keap CRM tagging</strong>. Everything else (emails, forms, automations, reports)
+                    works exactly as a real tour.
+                  </p>
+                </div>
+                <Switch
+                  id="is_test_tour"
+                  checked={formData.is_test_tour}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, is_test_tour: checked }))
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Manual Handling */}
           <div className="space-y-3 border-t pt-4">
             <div className="flex items-center gap-2">
