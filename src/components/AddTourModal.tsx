@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, Mail } from "lucide-react";
+import { CalendarIcon, Mail, Hand } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
 
 interface AddTourModalProps {
@@ -45,6 +46,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
+    manual_billing: false,
+    manual_emails: false,
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -117,6 +120,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
         tour_type: formData.tour_type,
+        manual_billing: formData.manual_billing,
+        manual_emails: formData.manual_emails,
         status: "pending",
       }).select().single();
 
@@ -161,6 +166,8 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: "",
         minimum_passengers_required: "",
         tour_type: "domestic",
+        manual_billing: false,
+        manual_emails: false,
       });
       setCommsOverrides([]);
 
@@ -521,6 +528,54 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               Optionally assign tour-specific email templates. If not set, the global default from Settings will be used.
             </p>
             <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
+          </div>
+
+          {/* Manual Handling */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <Hand className="h-4 w-4 text-muted-foreground" />
+              <Label className="text-base font-medium">Manual Handling (corporate / group bookings)</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Disable specific automations for this entire tour. Useful for corporate group bookings where invoicing
+              and communications are handled manually. Individual bookings can still override these settings.
+            </p>
+
+            <div className="flex items-start justify-between gap-4 rounded-md border bg-muted/30 p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="manual_billing" className="text-sm font-medium cursor-pointer">
+                  Manual billing
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Skip automatic Xero invoice creation and Keap CRM tagging for all bookings on this tour.
+                </p>
+              </div>
+              <Switch
+                id="manual_billing"
+                checked={formData.manual_billing}
+                onCheckedChange={(checked) =>
+                  setFormData(prev => ({ ...prev, manual_billing: checked }))
+                }
+              />
+            </div>
+
+            <div className="flex items-start justify-between gap-4 rounded-md border bg-muted/30 p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="manual_emails" className="text-sm font-medium cursor-pointer">
+                  Manual emails
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Skip all automated emails (status-change, time-based reminders, scheduled) for this tour.
+                </p>
+              </div>
+              <Switch
+                id="manual_emails"
+                checked={formData.manual_emails}
+                onCheckedChange={(checked) =>
+                  setFormData(prev => ({ ...prev, manual_emails: checked }))
+                }
+              />
+            </div>
           </div>
         </form>
 
