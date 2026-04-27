@@ -66,6 +66,18 @@ export default function TourEdit() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [pendingSubmitData, setPendingSubmitData] = useState<any>(null);
 
+  // "Manual handling" toggle confirmation: when manual_billing or manual_emails
+  // is turned ON, ask staff what to do with already-queued automations.
+  const [showManualToggleDialog, setShowManualToggleDialog] = useState(false);
+  const [manualToggleCounts, setManualToggleCounts] = useState({
+    pendingStatusEmails: 0,
+    pendingTimedEmails: 0,
+  });
+  const [manualToggleFlags, setManualToggleFlags] = useState({
+    billingTurnedOn: false,
+    emailsTurnedOn: false,
+  });
+
   // Comms overrides
   const { data: existingOverrides } = useTourEmailOverrides(id || '');
   const upsertOverride = useUpsertTourEmailOverride();
