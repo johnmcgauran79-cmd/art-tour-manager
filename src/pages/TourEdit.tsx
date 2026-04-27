@@ -979,6 +979,75 @@ export default function TourEdit() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Manual handling toggle confirmation */}
+      <AlertDialog open={showManualToggleDialog} onOpenChange={setShowManualToggleDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Hand className="h-5 w-5" />
+              Switch to manual handling?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  You're enabling manual handling on this tour:
+                </p>
+                <ul className="list-disc pl-5 text-sm space-y-1">
+                  {manualToggleFlags.billingTurnedOn && (
+                    <li>Manual billing — automatic Xero invoicing &amp; Keap tagging will be skipped for new bookings.</li>
+                  )}
+                  {manualToggleFlags.emailsTurnedOn && (
+                    <li>Manual emails — automated emails will be skipped for this tour going forward.</li>
+                  )}
+                </ul>
+
+                {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0 ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1">
+                    <p className="text-sm font-medium text-amber-900">
+                      Already-queued emails awaiting approval:
+                    </p>
+                    {manualToggleCounts.pendingStatusEmails > 0 && (
+                      <p className="text-sm text-amber-900">
+                        • {manualToggleCounts.pendingStatusEmails} status-change email{manualToggleCounts.pendingStatusEmails !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {manualToggleCounts.pendingTimedEmails > 0 && (
+                      <p className="text-sm text-amber-900">
+                        • {manualToggleCounts.pendingTimedEmails} time-based email{manualToggleCounts.pendingTimedEmails !== 1 ? 's' : ''}
+                      </p>
+                    )}
+                    <p className="text-xs text-amber-800 pt-1">
+                      Choose whether to cancel them now or leave them queued for manual review.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    No emails are currently queued for this tour.
+                  </p>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row sm:justify-end gap-2">
+            <AlertDialogCancel>Don't switch</AlertDialogCancel>
+            {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleManualToggleProceed(false)}
+              >
+                Switch &amp; leave queued emails
+              </Button>
+            )}
+            <AlertDialogAction onClick={() => handleManualToggleProceed(true)}>
+              {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0
+                ? 'Switch & cancel queued emails'
+                : 'Switch to manual'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
