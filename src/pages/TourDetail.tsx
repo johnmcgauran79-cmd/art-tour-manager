@@ -245,7 +245,7 @@ export default function TourDetail() {
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">{tour.name}</h1>
-              {(tour as any).is_test_tour && (
+              {(tour as any).is_test_tour && userRole === 'admin' && (
                 <span className="inline-flex items-center gap-1 rounded-md bg-secondary text-secondary-foreground px-2 py-1 text-xs font-medium">
                   🧪 TEST TOUR
                 </span>

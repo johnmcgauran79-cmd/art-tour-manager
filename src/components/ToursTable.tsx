@@ -286,7 +286,7 @@ export const ToursTable = ({ showOnlyActive = false, onViewAll }: ToursTableProp
                         <TableCell className="font-medium">
                           <span className="inline-flex items-center gap-2">
                             {tour.name}
-                            {(tour as any).is_test_tour && (
+                            {(tour as any).is_test_tour && userRole === 'admin' && (
                               <Badge variant="secondary" className="text-xs">TEST</Badge>
                             )}
                             <ManualHandlingIndicator
