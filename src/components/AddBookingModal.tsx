@@ -358,14 +358,30 @@ export const AddBookingModal = ({
         console.log('Manual Billing tour: Skipping Xero & Keap integrations for booking', newBooking.id);
       }
 
+      // Track integration failures so we can warn the user without losing the booking.
+      let xeroFailed = false;
+      let keapFailed = false;
+      let xeroErrorMsg: string | null = null;
+      let keapErrorMsg: string | null = null;
+
       if (shouldTriggerXero) {
         if (!formData.invoice_reference || formData.invoice_reference.trim() === '') {
-          supabase.functions.invoke('xero-create-invoice', {
-            body: { bookingId: newBooking.id }
-          }).then(res => {
-            if (res.error) console.error('Xero invoice error:', res.error);
-            else console.log('Xero invoice triggered:', res.data);
-          });
+          try {
+            const res = await supabase.functions.invoke('xero-create-invoice', {
+              body: { bookingId: newBooking.id }
+            });
+            if (res.error) {
+              xeroFailed = true;
+              xeroErrorMsg = res.error.message || 'Unknown error';
+              console.error('Xero invoice error:', res.error);
+            } else {
+              console.log('Xero invoice triggered:', res.data);
+            }
+          } catch (err: any) {
+            xeroFailed = true;
+            xeroErrorMsg = err?.message || 'Network error';
+            console.error('Xero invoice exception:', err);
+          }
         } else {
           console.log('Skipping Xero invoice creation - invoice reference already provided:', formData.invoice_reference);
         }
@@ -374,16 +390,26 @@ export const AddBookingModal = ({
       }
 
       if (shouldTriggerKeap) {
-        supabase.functions.invoke('keap-add-tag', {
-          body: {
-            contactEmail: selectedContact?.email,
-            bookingId: newBooking.id,
-            tourId: formData.tour_id
+        try {
+          const res = await supabase.functions.invoke('keap-add-tag', {
+            body: {
+              contactEmail: selectedContact?.email,
+              bookingId: newBooking.id,
+              tourId: formData.tour_id
+            }
+          });
+          if (res.error) {
+            keapFailed = true;
+            keapErrorMsg = res.error.message || 'Unknown error';
+            console.error('Keap tag error:', res.error);
+          } else {
+            console.log('Keap tag triggered:', res.data);
           }
-        }).then(res => {
-          if (res.error) console.error('Keap tag error:', res.error);
-          else console.log('Keap tag triggered:', res.data);
-        });
+        } catch (err: any) {
+          keapFailed = true;
+          keapErrorMsg = err?.message || 'Network error';
+          console.error('Keap tag exception:', err);
+        }
       } else {
         console.log('Skipping Keap tag - status:', status, 'isFullTourBooking:', isFullTourBooking);
       }
@@ -481,11 +507,28 @@ export const AddBookingModal = ({
         }
       }
       
+      // If integrations failed, keep modal open and show a clear warning.
+      if (xeroFailed || keapFailed) {
+        const failures: string[] = [];
+        if (xeroFailed) failures.push(`Xero invoice (${xeroErrorMsg})`);
+        if (keapFailed) failures.push(`Keap tagging (${keapErrorMsg})`);
+        toast({
+          title: "Booking saved — integration issue",
+          description: `Booking ${newBooking.id.slice(0, 8)} was created, but the following failed: ${failures.join(', ')}. Open the booking and use the retry button, or contact an admin.`,
+          variant: "destructive",
+          duration: 12000,
+        });
+        // Close the create modal but stay on page so user can navigate to booking
+        setShowConfirmation(false);
+        onOpenChange(false);
+        return;
+      }
+
       toast({
         title: "Success",
         description: `Booking created successfully with hotels and activities!`,
       });
-      
+
       setShowConfirmation(false);
       onOpenChange(false);
     } catch (error) {
