@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, Mail, Hand } from "lucide-react";
+import { CalendarIcon, Mail, Hand, FlaskConical } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
 
@@ -48,6 +48,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     tour_type: "domestic" as "domestic" | "international",
     manual_billing: false,
     manual_emails: false,
+    is_test_tour: false,
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -122,6 +123,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         tour_type: formData.tour_type,
         manual_billing: formData.manual_billing,
         manual_emails: formData.manual_emails,
+        is_test_tour: formData.is_test_tour,
         status: "pending",
       }).select().single();
 
@@ -168,6 +170,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         tour_type: "domestic",
         manual_billing: false,
         manual_emails: false,
+        is_test_tour: false,
       });
       setCommsOverrides([]);
 
