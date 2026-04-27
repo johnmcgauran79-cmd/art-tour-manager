@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, AlertTriangle, Mail, FlaskConical } from "lucide-react";
+import { ArrowLeft, Save, AlertTriangle, Mail, FlaskConical, Hand } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +56,8 @@ export default function TourEdit() {
     xero_product_id: "",
     xero_reference: "",
     is_test_tour: false,
+    manual_billing: false,
+    manual_emails: false,
   });
 
   const updateTourMutation = useUpdateTour();
@@ -87,7 +89,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails')
           .eq('id', id)
           .single();
         
@@ -120,6 +122,8 @@ export default function TourEdit() {
             xero_product_id: (data as any).xero_product_id || "",
             xero_reference: (data as any).xero_reference || "",
             is_test_tour: (data as any).is_test_tour || false,
+            manual_billing: (data as any).manual_billing || false,
+            manual_emails: (data as any).manual_emails || false,
           });
         }
       }
@@ -185,6 +189,8 @@ export default function TourEdit() {
       xero_product_id: formData.xero_product_id || null,
       xero_reference: formData.xero_reference || null,
       is_test_tour: formData.is_test_tour,
+      manual_billing: formData.manual_billing,
+      manual_emails: formData.manual_emails,
     } as any;
 
     // Check if status is changing TO cancelled — require confirmation
@@ -741,6 +747,54 @@ export default function TourEdit() {
               checked={formData.is_test_tour}
               onCheckedChange={(checked) =>
                 setFormData(prev => ({ ...prev, is_test_tour: checked }))
+              }
+            />
+          </div>
+        </div>
+
+        {/* Manual Handling toggles */}
+        <div className="rounded-lg border border-dashed p-4 bg-muted/30 space-y-3">
+          <div className="flex items-center gap-2">
+            <Hand className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-base font-medium">Manual Handling (corporate / group bookings)</Label>
+          </div>
+          <p className="text-xs text-muted-foreground max-w-2xl">
+            Disable specific automations for this entire tour. Useful for corporate group bookings where invoicing
+            and communications are handled manually. Individual bookings can still override these settings.
+          </p>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border bg-background p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="manual_billing" className="text-sm font-medium cursor-pointer">
+                Manual billing
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Skip automatic Xero invoice creation and Keap CRM tagging for all bookings on this tour.
+              </p>
+            </div>
+            <Switch
+              id="manual_billing"
+              checked={formData.manual_billing}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, manual_billing: checked }))
+              }
+            />
+          </div>
+
+          <div className="flex items-start justify-between gap-4 rounded-md border bg-background p-3">
+            <div className="space-y-0.5">
+              <Label htmlFor="manual_emails" className="text-sm font-medium cursor-pointer">
+                Manual emails
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Skip all automated emails (status-change, time-based reminders, scheduled) for this tour.
+              </p>
+            </div>
+            <Switch
+              id="manual_emails"
+              checked={formData.manual_emails}
+              onCheckedChange={(checked) =>
+                setFormData(prev => ({ ...prev, manual_emails: checked }))
               }
             />
           </div>

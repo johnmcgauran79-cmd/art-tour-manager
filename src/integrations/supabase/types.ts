@@ -864,6 +864,7 @@ export type Database = {
       bookings: {
         Row: {
           accommodation_required: boolean | null
+          automation_override: Database["public"]["Enums"]["booking_automation_override"]
           booking_agent: string | null
           booking_notes: string | null
           cancellation_reason: string | null
@@ -901,6 +902,7 @@ export type Database = {
         }
         Insert: {
           accommodation_required?: boolean | null
+          automation_override?: Database["public"]["Enums"]["booking_automation_override"]
           booking_agent?: string | null
           booking_notes?: string | null
           cancellation_reason?: string | null
@@ -938,6 +940,7 @@ export type Database = {
         }
         Update: {
           accommodation_required?: boolean | null
+          automation_override?: Database["public"]["Enums"]["booking_automation_override"]
           booking_agent?: string | null
           booking_notes?: string | null
           cancellation_reason?: string | null
@@ -3343,6 +3346,8 @@ export type Database = {
           is_test_tour: boolean
           keap_tag_id: string | null
           location: string | null
+          manual_billing: boolean
+          manual_emails: boolean
           minimum_passengers_required: number | null
           name: string
           nights: number
@@ -3394,6 +3399,8 @@ export type Database = {
           is_test_tour?: boolean
           keap_tag_id?: string | null
           location?: string | null
+          manual_billing?: boolean
+          manual_emails?: boolean
           minimum_passengers_required?: number | null
           name: string
           nights: number
@@ -3445,6 +3452,8 @@ export type Database = {
           is_test_tour?: boolean
           keap_tag_id?: string | null
           location?: string | null
+          manual_billing?: boolean
+          manual_emails?: boolean
           minimum_passengers_required?: number | null
           name?: string
           nights?: number
@@ -3815,6 +3824,8 @@ export type Database = {
         Returns: boolean
       }
       auto_archive_completed_tours: { Args: never; Returns: number }
+      booking_skips_billing: { Args: { _booking_id: string }; Returns: boolean }
+      booking_skips_emails: { Args: { _booking_id: string }; Returns: boolean }
       calculate_nights: {
         Args: { check_in: string; check_out: string }
         Returns: number
@@ -3992,6 +4003,12 @@ export type Database = {
         | "cancelled"
       app_role: "admin" | "manager" | "booking_agent" | "agent" | "host"
       bedding_type: "single" | "double" | "twin"
+      booking_automation_override:
+        | "inherit"
+        | "force_automated"
+        | "manual_billing"
+        | "manual_emails"
+        | "manual_all"
       booking_status:
         | "pending"
         | "invoiced"
@@ -4219,6 +4236,13 @@ export const Constants = {
       ],
       app_role: ["admin", "manager", "booking_agent", "agent", "host"],
       bedding_type: ["single", "double", "twin"],
+      booking_automation_override: [
+        "inherit",
+        "force_automated",
+        "manual_billing",
+        "manual_emails",
+        "manual_all",
+      ],
       booking_status: [
         "pending",
         "invoiced",

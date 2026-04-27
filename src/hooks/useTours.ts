@@ -37,6 +37,8 @@ export interface Tour {
   keap_tag_id: string | null;
   pickup_location_required: boolean;
   is_test_tour: boolean;
+  manual_billing: boolean;
+  manual_emails: boolean;
   ops_notes: string | null;
   ops_accomm_notes: string | null;
   ops_races_notes: string | null;
