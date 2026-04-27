@@ -1003,21 +1003,21 @@ export default function TourEdit() {
                 </ul>
 
                 {manualToggleFlags.emailsTurnedOn && (manualToggleCounts.pendingStatusEmails + manualToggleCounts.pendingTimedEmails) > 0 ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-1">
-                    <p className="text-sm font-medium text-amber-900">
+                  <div className="rounded-lg border border-dashed bg-muted p-3 space-y-1">
+                    <p className="text-sm font-medium text-foreground">
                       Already-queued emails awaiting approval:
                     </p>
                     {manualToggleCounts.pendingStatusEmails > 0 && (
-                      <p className="text-sm text-amber-900">
+                      <p className="text-sm text-foreground">
                         • {manualToggleCounts.pendingStatusEmails} status-change email{manualToggleCounts.pendingStatusEmails !== 1 ? 's' : ''}
                       </p>
                     )}
                     {manualToggleCounts.pendingTimedEmails > 0 && (
-                      <p className="text-sm text-amber-900">
+                      <p className="text-sm text-foreground">
                         • {manualToggleCounts.pendingTimedEmails} time-based email{manualToggleCounts.pendingTimedEmails !== 1 ? 's' : ''}
                       </p>
                     )}
-                    <p className="text-xs text-amber-800 pt-1">
+                    <p className="text-xs text-muted-foreground pt-1">
                       Choose whether to cancel them now or leave them queued for manual review.
                     </p>
                   </div>
