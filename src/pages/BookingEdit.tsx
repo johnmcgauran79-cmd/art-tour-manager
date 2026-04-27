@@ -901,6 +901,15 @@ export default function BookingEdit() {
                   onCheckedChange={(checked) => setFormData(prev => ({ ...prev, passport_not_required: checked }))}
                 />
               </div>
+
+              <div className="pt-2 border-t">
+                <BookingAutomationOverrideField
+                  value={formData.automation_override}
+                  onChange={(v) => setFormData(prev => ({ ...prev, automation_override: v }))}
+                  tour={tour ? { manual_billing: (tour as any).manual_billing, manual_emails: (tour as any).manual_emails } : null}
+                  disabled={isViewOnly}
+                />
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t">
