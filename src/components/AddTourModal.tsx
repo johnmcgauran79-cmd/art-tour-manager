@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarIcon, Mail, Hand } from "lucide-react";
+import { CalendarIcon, Mail, Hand, FlaskConical } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
 
@@ -48,6 +48,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     tour_type: "domestic" as "domestic" | "international",
     manual_billing: false,
     manual_emails: false,
+    is_test_tour: false,
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -122,6 +123,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         tour_type: formData.tour_type,
         manual_billing: formData.manual_billing,
         manual_emails: formData.manual_emails,
+        is_test_tour: formData.is_test_tour,
         status: "pending",
       }).select().single();
 
@@ -168,6 +170,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         tour_type: "domestic",
         manual_billing: false,
         manual_emails: false,
+        is_test_tour: false,
       });
       setCommsOverrides([]);
 
@@ -528,6 +531,35 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
               Optionally assign tour-specific email templates. If not set, the global default from Settings will be used.
             </p>
             <TourCommsSettingsInline overrides={commsOverrides} onChange={setCommsOverrides} />
+          </div>
+
+          {/* Test Tour (Sandbox Mode) */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="rounded-lg border border-dashed p-4 bg-muted/30">
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="h-4 w-4 text-muted-foreground" />
+                    <Label htmlFor="is_test_tour" className="text-base font-medium cursor-pointer">
+                      Test Tour (Sandbox Mode)
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-2xl">
+                    Mark this as a sandbox tour for testing emails, forms, alerts and triggers.
+                    When enabled, bookings on this tour will <strong>skip Xero invoice creation</strong> and
+                    <strong> skip Keap CRM tagging</strong>. Everything else (emails, forms, automations, reports)
+                    works exactly as a real tour.
+                  </p>
+                </div>
+                <Switch
+                  id="is_test_tour"
+                  checked={formData.is_test_tour}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, is_test_tour: checked }))
+                  }
+                />
+              </div>
+            </div>
           </div>
 
           {/* Manual Handling */}
