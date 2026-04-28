@@ -191,6 +191,36 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
     bookingGroups.get(p.bookingId)!.passengers!.push(p);
   }
 
+  // Sort: required+missing first, then required+submitted, then not required.
+  // Sort booking-by-booking so passengers in the same booking stay together.
+  // Within a booking, rank = min(passenger rank) so the booking moves up if any
+  // passenger still needs to submit.
+  const passengerRank = (p: { passportNotRequired: boolean; hasDocuments: boolean }) => {
+    if (p.passportNotRequired) return 2; // not required → bottom
+    if (!p.hasDocuments) return 0;       // required & missing → top
+    return 1;                            // required & submitted → middle
+  };
+
+  const bookingOrder = new Map<string, { rank: number; firstIndex: number }>();
+  (passportData || []).forEach((p, idx) => {
+    const existing = bookingOrder.get(p.bookingId);
+    const rank = passengerRank(p);
+    if (!existing) {
+      bookingOrder.set(p.bookingId, { rank, firstIndex: idx });
+    } else if (rank < existing.rank) {
+      bookingOrder.set(p.bookingId, { rank, firstIndex: existing.firstIndex });
+    }
+  });
+
+  const sortedPassportData = [...(passportData || [])].sort((a, b) => {
+    const ra = bookingOrder.get(a.bookingId)!;
+    const rb = bookingOrder.get(b.bookingId)!;
+    if (ra.rank !== rb.rank) return ra.rank - rb.rank;
+    if (a.bookingId !== b.bookingId) return ra.firstIndex - rb.firstIndex;
+    // Within a booking, keep missing passengers above submitted ones
+    return passengerRank(a) - passengerRank(b);
+  });
+
   return (
     <div className="space-y-4">
       {/* Header with stats and actions */}
@@ -274,9 +304,9 @@ export const TourPassportDetailsTab = ({ tourId, tourName }: TourPassportDetails
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(passportData || []).map((passenger, index) => {
+                {sortedPassportData.map((passenger, index) => {
                   // Only show toggle on first passenger per booking
-                  const isFirstInBooking = index === 0 || passportData![index - 1].bookingId !== passenger.bookingId;
+                  const isFirstInBooking = index === 0 || sortedPassportData[index - 1].bookingId !== passenger.bookingId;
                   const bookingPassengerCount = bookingGroups.get(passenger.bookingId)?.passengers?.length || 1;
 
                   return (
