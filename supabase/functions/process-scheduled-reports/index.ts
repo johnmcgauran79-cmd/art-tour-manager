@@ -133,7 +133,7 @@ serve(async (req) => {
     console.log(`Found ${upcomingTours.length} upcoming tours`);
 
     // System-wide report types that should only be sent once (not per tour)
-    const systemWideReportTypes = ['booking_changes'];
+    const systemWideReportTypes = ['booking_changes', 'activity_matrix', 'payment_status'];
 
     // Process weekly and monthly rules
     for (const rule of rulesToProcess) {
