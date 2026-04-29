@@ -317,11 +317,63 @@ export const OperationsToursOverview = () => {
                   
                   {/* Column 3: General Operations Notes (40% width) */}
                   <div className="w-[40%]">
-                    <div className="bg-gray-100 p-3 rounded h-full">
-                      <div className="font-medium mb-2">General Operations Notes:</div>
-                      <div className="text-muted-foreground text-sm whitespace-pre-wrap">
-                        {tour.ops_notes || "No general operations notes"}
+                    <div
+                      className="bg-gray-100 p-3 rounded h-full group/notes"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="font-medium">General Operations Notes:</div>
+                        {editingNotesTourId === tour.id ? (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-7 px-2"
+                              onClick={(e) => cancelEditingNotes(e)}
+                              disabled={updateTour.isPending}
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              className="h-7 px-2"
+                              onClick={(e) => saveEditingNotes(e, tour.id)}
+                              disabled={updateTour.isPending}
+                            >
+                              <Save className="h-3.5 w-3.5 mr-1" />
+                              Save
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 opacity-0 group-hover/notes:opacity-100 transition-opacity"
+                            onClick={(e) => startEditingNotes(e, tour)}
+                            title="Edit notes"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
+                      {editingNotesTourId === tour.id ? (
+                        <Textarea
+                          autoFocus
+                          value={editingNotesValue}
+                          onChange={(e) => setEditingNotesValue(e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="min-h-[100px] text-sm bg-white"
+                          placeholder="Enter general operations notes..."
+                        />
+                      ) : (
+                        <div
+                          className="text-muted-foreground text-sm whitespace-pre-wrap cursor-text rounded hover:bg-gray-200/60 -mx-1 px-1 py-0.5"
+                          onClick={(e) => startEditingNotes(e, tour)}
+                          title="Click to edit"
+                        >
+                          {tour.ops_notes || "No general operations notes"}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
