@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Search, Bell } from "lucide-react";
-import { useTours, Tour } from "@/hooks/useTours";
+import { AlertTriangle, Search, Bell, Pencil, Save, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { useTours, Tour, useUpdateTour } from "@/hooks/useTours";
+import { useToast } from "@/hooks/use-toast";
 import { useBookings } from "@/hooks/useBookings";
 import { useTourAlerts } from "@/hooks/useTourAlerts";
 import { useGlobalTourAlerts } from "@/hooks/useGlobalTourAlerts";
@@ -43,6 +45,10 @@ export const OperationsToursOverview = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTourForAlerts, setSelectedTourForAlerts] = useState<string | null>(null);
   const [showGlobalAlerts, setShowGlobalAlerts] = useState(false);
+  const [editingNotesTourId, setEditingNotesTourId] = useState<string | null>(null);
+  const [editingNotesValue, setEditingNotesValue] = useState<string>("");
+  const updateTour = useUpdateTour();
+  const { toast } = useToast();
   const { navigateWithContext } = useNavigationContext();
   const { unacknowledgedCount, criticalCount } = useGlobalTourAlerts();
 
@@ -100,6 +106,30 @@ export const OperationsToursOverview = () => {
   const handleAlertsClick = (e: React.MouseEvent, tourId: string) => {
     e.stopPropagation(); // Prevent tour card click
     setSelectedTourForAlerts(tourId);
+  };
+
+  const startEditingNotes = (e: React.MouseEvent, tour: Tour) => {
+    e.stopPropagation();
+    setEditingNotesTourId(tour.id);
+    setEditingNotesValue(tour.ops_notes || "");
+  };
+
+  const cancelEditingNotes = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingNotesTourId(null);
+    setEditingNotesValue("");
+  };
+
+  const saveEditingNotes = async (e: React.MouseEvent, tourId: string) => {
+    e.stopPropagation();
+    try {
+      await updateTour.mutateAsync({ tourId, updates: { ops_notes: editingNotesValue } });
+      toast({ title: "General Operations Notes updated" });
+      setEditingNotesTourId(null);
+      setEditingNotesValue("");
+    } catch (err) {
+      toast({ title: "Failed to save notes", variant: "destructive" });
+    }
   };
 
   if (isLoading) {
