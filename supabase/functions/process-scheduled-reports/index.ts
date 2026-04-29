@@ -132,8 +132,19 @@ serve(async (req) => {
 
     console.log(`Found ${upcomingTours.length} upcoming tours`);
 
-    // System-wide report types that should only be sent once (not per tour)
-    const systemWideReportTypes = ['booking_changes', 'activity_matrix', 'payment_status'];
+    // Report types are either:
+    //   - tour-specific: one email per tour (rooming list, passenger list, bedding review, etc.)
+    //   - system-wide:   a single consolidated email covering all tours
+    // When adding a NEW report type, add it to ONE of these lists.
+    const tourSpecificReportTypes = ['rooming_list', 'passenger_list', 'bedding_review'];
+    const systemWideReportTypes = [
+      'booking_changes',
+      'activity_matrix',
+      'payment_status',
+      'hotel_check',
+      'activity_check',
+    ];
+    // Default unknown types to system-wide (safer — avoids accidental fan-out per tour)
 
     // Process weekly and monthly rules
     for (const rule of rulesToProcess) {
