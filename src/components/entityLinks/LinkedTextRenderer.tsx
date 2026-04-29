@@ -16,6 +16,64 @@ interface LinkedTextRendererProps {
   className?: string;
 }
 
+// Match http(s) URLs and bare www. URLs. Trailing punctuation is trimmed below.
+const URL_REGEX = /(\bhttps?:\/\/[^\s<]+|\bwww\.[^\s<]+)/gi;
+
+/**
+ * Render a plain-text segment, converting URLs into clickable links.
+ * Preserves whitespace and is safe to nest inside the entity-link renderer.
+ */
+const renderTextWithLinks = (text: string, keyPrefix: string): React.ReactNode => {
+  if (!text) return text;
+  const nodes: React.ReactNode[] = [];
+  let last = 0;
+  let i = 0;
+  const re = new RegExp(URL_REGEX.source, URL_REGEX.flags);
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    let url = m[0];
+    let trailing = "";
+    // Strip common trailing punctuation that is rarely part of the URL.
+    const trailingMatch = url.match(/[).,;:!?'"]+$/);
+    if (trailingMatch) {
+      trailing = trailingMatch[0];
+      url = url.slice(0, -trailing.length);
+    }
+    const start = m.index;
+    const end = start + url.length;
+    if (start > last) {
+      nodes.push(
+        <span key={`${keyPrefix}-t-${i}`} className="whitespace-pre-wrap">
+          {text.slice(last, start)}
+        </span>
+      );
+    }
+    const href = url.startsWith("http") ? url : `https://${url}`;
+    nodes.push(
+      <a
+        key={`${keyPrefix}-u-${i}`}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="text-primary underline underline-offset-2 hover:opacity-80 break-all"
+      >
+        {url}
+      </a>
+    );
+    last = end;
+    i++;
+  }
+  if (last < text.length) {
+    nodes.push(
+      <span key={`${keyPrefix}-t-end`} className="whitespace-pre-wrap">
+        {text.slice(last)}
+      </span>
+    );
+  }
+  return nodes.length > 0 ? nodes : text;
+};
+
 const entityIcon: Record<EntityType, typeof Briefcase> = {
   booking: Briefcase,
   hotel: BedDouble,
@@ -101,15 +159,15 @@ export const LinkedTextRenderer = ({ text, className }: LinkedTextRendererProps)
 
   if (!text) return null;
   if (links.length === 0) {
-    return <span className={cn("whitespace-pre-wrap", className)}>{text}</span>;
+    return <span className={className}>{renderTextWithLinks(text, "only")}</span>;
   }
   const parts: React.ReactNode[] = [];
   let cursor = 0;
   links.forEach((l, i) => {
     if (l.start > cursor) {
       parts.push(
-        <span key={`t-${i}`} className="whitespace-pre-wrap">
-          {text.slice(cursor, l.start)}
+        <span key={`t-${i}`}>
+          {renderTextWithLinks(text.slice(cursor, l.start), `pre-${i}`)}
         </span>
       );
     }
@@ -131,8 +189,8 @@ export const LinkedTextRenderer = ({ text, className }: LinkedTextRendererProps)
   });
   if (cursor < text.length) {
     parts.push(
-      <span key="t-end" className="whitespace-pre-wrap">
-        {text.slice(cursor)}
+      <span key="t-end">
+        {renderTextWithLinks(text.slice(cursor), "end")}
       </span>
     );
   }
