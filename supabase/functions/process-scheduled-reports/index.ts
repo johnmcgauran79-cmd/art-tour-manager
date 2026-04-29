@@ -148,8 +148,11 @@ serve(async (req) => {
 
     // Process weekly and monthly rules
     for (const rule of rulesToProcess) {
-      // Check if this rule contains ONLY system-wide reports
-      const hasOnlySystemWideReports = rule.report_types.every((rt: string) => systemWideReportTypes.includes(rt));
+      // A rule is "system-wide" if NONE of its report types are tour-specific.
+      // This way, any new summary/total report defaults to a single consolidated email.
+      const hasOnlySystemWideReports = rule.report_types.every(
+        (rt: string) => !tourSpecificReportTypes.includes(rt)
+      );
       
       if (hasOnlySystemWideReports) {
         // Send system-wide reports only once (use first tour just for context)
