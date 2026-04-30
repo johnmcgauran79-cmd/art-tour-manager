@@ -1,0 +1,1 @@
+UPDATE email_suppressions SET is_active = false WHERE is_active = true AND email_address IN ('lyn.sayers@yarradale.com.au','peter@loudoun.com.au','geoff@tosswill.com.au');
