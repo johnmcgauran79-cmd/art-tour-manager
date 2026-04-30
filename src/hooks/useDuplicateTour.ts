@@ -328,6 +328,7 @@ async function duplicateCustomForms(originalTourId: string, newTourId: string) {
         form_title: form.form_title,
         form_description: form.form_description,
         response_mode: form.response_mode,
+        email_recipients: form.email_recipients,
         is_published: false, // Start unpublished
         created_by: user.id,
       } as any)
