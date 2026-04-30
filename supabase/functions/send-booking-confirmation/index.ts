@@ -363,7 +363,7 @@ const handler = async (req: Request): Promise<Response> => {
         activity_bookings (
           passengers_attending,
           activities (
-            name, activity_date, activity_status, start_time, end_time, location,
+            name, activity_date, booking_status, start_time, end_time, location,
             depart_for_activity, transport_mode, driver_name, driver_phone,
             transport_company, transport_contact_name, transport_phone, transport_email,
             contact_name, contact_phone, contact_email, hospitality_inclusions, notes,
@@ -1074,7 +1074,7 @@ const handler = async (req: Request): Promise<Response> => {
       activity_bookings: (booking.activity_bookings || []).map((ab: any) => ({
         activity_name: ab.activities?.name || '',
         activity_date: formatDate(ab.activities?.activity_date),
-        activity_status: ab.activities?.activity_status || '',
+        activity_status: ab.activities?.booking_status || '',
         activity_start_time: ab.activities?.start_time || '',
         activity_end_time: ab.activities?.end_time || '',
         activity_location: ab.activities?.location || '',
