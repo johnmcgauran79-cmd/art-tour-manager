@@ -364,49 +364,6 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
 
         {isExpanded && (
           <CardContent className="space-y-4 border-t pt-4">
-            {/* Edit title/description inline */}
-            {isEditingMeta && (
-              <div className="space-y-3 p-3 border rounded-lg bg-muted/30">
-                <div className="space-y-2">
-                  <Label>Form Title *</Label>
-                  <Input
-                    value={editTitle}
-                    onChange={e => setEditTitle(e.target.value)}
-                    placeholder="Form title"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Merge field will update to: <code className="bg-muted px-1 rounded">{`{{custom_form_button:${editTitle || 'Form Title'}}}`}</code>
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={editDescription}
-                    onChange={e => setEditDescription(e.target.value)}
-                    placeholder="Brief instructions for the customer..."
-                    rows={2}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    disabled={!editTitle.trim() || updateForm.isPending}
-                    onClick={() => {
-                      updateForm.mutate({ form_title: editTitle.trim(), form_description: editDescription.trim() || null } as any, {
-                        onSuccess: () => {
-                          setIsEditingMeta(false);
-                          toast({ title: "Form updated" });
-                        }
-                      });
-                    }}
-                  >
-                    Save Changes
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setIsEditingMeta(false)}>Cancel</Button>
-                </div>
-              </div>
-            )}
-
             {/* Action bar */}
             <div className="flex flex-wrap gap-2">
               {!isViewOnly && (
@@ -420,31 +377,8 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
                 </div>
               )}
               {!isViewOnly && (
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={`recipients-${formId}`} className="text-sm">Email to</Label>
-                  <Select
-                    value={form.email_recipients || 'all_passengers'}
-                    onValueChange={(v) => updateForm.mutate({ email_recipients: v } as any, {
-                      onSuccess: () => toast({ title: "Email recipients updated" }),
-                    })}
-                  >
-                    <SelectTrigger id={`recipients-${formId}`} className="h-9 w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all_passengers">All passengers</SelectItem>
-                      <SelectItem value="lead_only">Lead passenger only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              {!isViewOnly && !isEditingMeta && (
-                <Button variant="outline" size="sm" onClick={() => {
-                  setEditTitle(form.form_title);
-                  setEditDescription(form.form_description || '');
-                  setIsEditingMeta(true);
-                }}>
-                  <Pencil className="h-4 w-4 mr-2" /> Edit Details
+                <Button variant="outline" size="sm" onClick={() => setShowEditSettings(true)}>
+                  <Pencil className="h-4 w-4 mr-2" /> Edit Settings
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={() => setShowPreview(true)}>
