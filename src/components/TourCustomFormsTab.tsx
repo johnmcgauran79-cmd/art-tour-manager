@@ -723,6 +723,37 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
         />
       )}
 
+      {/* Edit Settings */}
+      {form && (
+        <FormSettingsDialog
+          open={showEditSettings}
+          onOpenChange={setShowEditSettings}
+          mode="edit"
+          hideAppliesTo
+          lockResponseMode={responses.length > 0}
+          isSaving={updateForm.isPending}
+          initialValues={{
+            title: form.form_title,
+            description: form.form_description || '',
+            responseMode: form.response_mode,
+            emailRecipients: form.email_recipients || 'all_passengers',
+          }}
+          onSubmit={(values) => {
+            updateForm.mutate({
+              form_title: values.title.trim(),
+              form_description: values.description.trim() || null,
+              response_mode: values.responseMode,
+              email_recipients: values.emailRecipients,
+            } as any, {
+              onSuccess: () => {
+                setShowEditSettings(false);
+                toast({ title: "Form settings updated" });
+              }
+            });
+          }}
+        />
+      )}
+
     </>
   );
 }
