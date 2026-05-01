@@ -54,36 +54,26 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
 
   const publishedForms = forms.filter(f => f.is_published);
 
-  // Create form state
-  const [formTitle, setFormTitle] = useState('');
-  const [formDescription, setFormDescription] = useState('');
-  const [responseMode, setResponseMode] = useState<'per_passenger' | 'per_booking'>('per_passenger');
-  const [emailRecipients, setEmailRecipients] = useState<'lead_only' | 'all_passengers'>('all_passengers');
-  // "all" = applies to every passenger; "choose" = open exemption picker after creation
-  const [appliesTo, setAppliesTo] = useState<'all' | 'choose'>('all');
-
   if (isLoading) {
     return <div className="text-center py-8 text-muted-foreground">Loading...</div>;
   }
 
-  const handleCreateForm = () => {
-    createForm.mutate({ title: formTitle, description: formDescription, responseMode, emailRecipients }, {
+  const handleCreateForm = (values: FormSettingsValues) => {
+    createForm.mutate({
+      title: values.title.trim(),
+      description: values.description.trim() || undefined,
+      responseMode: values.responseMode,
+      emailRecipients: values.emailRecipients,
+    }, {
       onSuccess: (created) => {
         setShowCreateForm(false);
-        // If the user wants to choose specific passengers, open the exemptions modal
-        // for the newly-created form so they can untick those who don't need it.
-        if (appliesTo === 'choose' && created?.id) {
+        if (values.appliesTo === 'choose' && created?.id) {
           setPostCreateExemptionsForm({
             id: created.id,
-            title: formTitle,
-            responseMode,
+            title: values.title.trim(),
+            responseMode: values.responseMode,
           });
         }
-        setFormTitle('');
-        setFormDescription('');
-        setResponseMode('per_passenger');
-        setEmailRecipients('all_passengers');
-        setAppliesTo('all');
       }
     });
   };
