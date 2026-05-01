@@ -251,9 +251,7 @@ function FormCard({ formId, tourId, tourName, isExpanded, onToggle, isViewOnly, 
   const [showResponses, setShowResponses] = useState(false);
   const [showExemptions, setShowExemptions] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [isEditingMeta, setIsEditingMeta] = useState(false);
-  const [editTitle, setEditTitle] = useState('');
-  const [editDescription, setEditDescription] = useState('');
+  const [showEditSettings, setShowEditSettings] = useState(false);
 
   const [editingField, setEditingField] = useState<CustomFormField | null>(null);
   const [editFieldState, setEditFieldState] = useState({
