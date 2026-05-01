@@ -136,99 +136,13 @@ export function TourCustomFormsTab({ tourId, tourName }: Props) {
       )}
 
       {/* Create Form Dialog */}
-      <Dialog open={showCreateForm} onOpenChange={setShowCreateForm}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create Custom Form</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Form Title *</Label>
-              <Input
-                value={formTitle}
-                onChange={e => setFormTitle(e.target.value)}
-                placeholder="e.g., Meal Pre-Order, Royal Ascot Details"
-              />
-              <p className="text-xs text-muted-foreground">
-                This title is used as the merge field reference: <code className="bg-muted px-1 rounded">{`{{custom_form_button:${formTitle || 'Form Title'}}}`}</code>
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formDescription}
-                onChange={e => setFormDescription(e.target.value)}
-                placeholder="Brief instructions for the customer..."
-              />
-            </div>
-            <div className="space-y-3">
-              <Label>Response Mode</Label>
-              <div className="flex flex-col gap-3">
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${responseMode === 'per_passenger' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <input type="radio" checked={responseMode === 'per_passenger'} onChange={() => setResponseMode('per_passenger')} className="mt-1" />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" /> Per Passenger</div>
-                    <p className="text-sm text-muted-foreground mt-1">Each passenger fills out individually.</p>
-                  </div>
-                </label>
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${responseMode === 'per_booking' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <input type="radio" checked={responseMode === 'per_booking'} onChange={() => setResponseMode('per_booking')} className="mt-1" />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium"><User className="h-4 w-4" /> Per Booking</div>
-                    <p className="text-sm text-muted-foreground mt-1">One submission per booking by lead passenger.</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label>Email Recipients</Label>
-              <p className="text-xs text-muted-foreground">Who receives the form request email when sent.</p>
-              <div className="flex flex-col gap-3">
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${emailRecipients === 'all_passengers' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <input type="radio" checked={emailRecipients === 'all_passengers'} onChange={() => setEmailRecipients('all_passengers')} className="mt-1" />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" /> All Passengers</div>
-                    <p className="text-sm text-muted-foreground mt-1">Lead, Pax 2 and Pax 3 each receive their own link (if they have an email).</p>
-                  </div>
-                </label>
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${emailRecipients === 'lead_only' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <input type="radio" checked={emailRecipients === 'lead_only'} onChange={() => setEmailRecipients('lead_only')} className="mt-1" />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium"><User className="h-4 w-4" /> Lead Passenger Only</div>
-                    <p className="text-sm text-muted-foreground mt-1">Only the lead passenger gets the email request.</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <Label>Who is this form for?</Label>
-              <p className="text-xs text-muted-foreground">
-                You can mark specific passengers as "not required" so they're excluded from outstanding counts and emails.
-              </p>
-              <div className="flex flex-col gap-3">
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${appliesTo === 'all' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <input type="radio" checked={appliesTo === 'all'} onChange={() => setAppliesTo('all')} className="mt-1" />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium"><Users className="h-4 w-4" /> All passengers</div>
-                    <p className="text-sm text-muted-foreground mt-1">Form applies to everyone (default). You can still exempt individuals later.</p>
-                  </div>
-                </label>
-                <label className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${appliesTo === 'choose' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-                  <input type="radio" checked={appliesTo === 'choose'} onChange={() => setAppliesTo('choose')} className="mt-1" />
-                  <div>
-                    <div className="flex items-center gap-2 font-medium"><Ban className="h-4 w-4" /> Choose specific passengers</div>
-                    <p className="text-sm text-muted-foreground mt-1">After creating the form, untick anyone who shouldn't have to fill it in.</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateForm(false)}>Cancel</Button>
-            <Button onClick={handleCreateForm} disabled={!formTitle.trim() || createForm.isPending}>Create Form</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FormSettingsDialog
+        open={showCreateForm}
+        onOpenChange={setShowCreateForm}
+        mode="create"
+        isSaving={createForm.isPending}
+        onSubmit={handleCreateForm}
+      />
 
       {/* Form Picker (only when multiple published forms exist) */}
       <Dialog open={showFormPicker} onOpenChange={setShowFormPicker}>
