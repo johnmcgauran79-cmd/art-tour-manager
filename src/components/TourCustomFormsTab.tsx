@@ -20,6 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CustomFormResponsesView } from "@/components/CustomFormResponsesView";
 import { BulkEmailPreviewModal } from "@/components/BulkEmailPreviewModal";
 import { ManageFormExemptionsModal } from "@/components/ManageFormExemptionsModal";
+import { FormSettingsDialog, FormSettingsValues } from "@/components/FormSettingsDialog";
 
 interface Props {
   tourId: string;
