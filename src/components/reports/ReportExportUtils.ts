@@ -1,4 +1,5 @@
 import { formatPhoneForWhatsApp } from '@/utils/phoneFormatter';
+import { downloadBlob } from '@/lib/fileDownload';
 
 interface ReportItem {
   id: string;
@@ -75,10 +76,7 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
   ].join('\n');
 
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${tourName}_${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
-  link.click();
+  downloadBlob(blob, `${tourName}_${report.title.replace(/[^a-zA-Z0-9]/g, '_')}.csv`);
 };
 
 export const printReport = (report: ReportItem, tourName: string) => {
