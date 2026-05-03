@@ -18,6 +18,7 @@ import {
   TaskAttachment,
 } from "@/hooks/useTaskAttachments";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadFromStorage } from "@/lib/fileDownload";
 import {
   FileText,
   Download,
