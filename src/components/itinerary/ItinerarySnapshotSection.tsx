@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
+import { downloadFromStorage } from "@/lib/fileDownload";
 
 interface ItinerarySnapshotSectionProps {
   tourId: string;
@@ -102,11 +103,12 @@ export const ItinerarySnapshotSection = ({
   };
 
   const handleDownload = async () => {
-    if (!signedUrl || !snapshotFileName) return;
-    // Open the signed URL in a new tab — works in Microsoft Teams' webview,
-    // which blocks blob/anchor downloads.
-    const win = window.open(signedUrl, "_blank", "noopener,noreferrer");
-    if (!win) window.location.href = signedUrl;
+    if (!snapshotFilePath || !snapshotFileName) return;
+    try {
+      await downloadFromStorage("attachments", snapshotFilePath, snapshotFileName);
+    } catch (e) {
+      console.error("Error downloading snapshot:", e);
+    }
   };
 
   return (
