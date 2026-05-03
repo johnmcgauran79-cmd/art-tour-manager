@@ -127,13 +127,11 @@ export const TaskCommentsSection = ({ taskId }: TaskCommentsSectionProps) => {
   };
 
   const handleDownload = async (att: TaskCommentAttachment) => {
-    const { data, error } = await supabase.storage.from('attachments').download(att.file_path);
-    if (error) return;
-    const url = URL.createObjectURL(data);
-    const a = document.createElement('a');
-    a.href = url; a.download = att.file_name;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      await downloadFromStorage('attachments', att.file_path, att.file_name);
+    } catch (e) {
+      console.error('Error downloading file:', e);
+    }
   };
 
   const getUserDisplayName = (comment: any) => {
