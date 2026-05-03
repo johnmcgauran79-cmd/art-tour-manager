@@ -126,7 +126,6 @@ export const TaskFilesSection = ({ taskId }: TaskFilesSectionProps) => {
 
   const handleDownload = async (attachment: TaskAttachment) => {
     try {
-      const { downloadFromStorage } = await import("@/lib/fileDownload");
       await downloadFromStorage("attachments", attachment.file_path, attachment.file_name);
     } catch (error) {
       console.error("Error downloading file:", error);
