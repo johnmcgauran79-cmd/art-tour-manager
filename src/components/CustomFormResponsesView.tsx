@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ManageFormExemptionsModal } from "@/components/ManageFormExemptionsModal";
 
 import { format } from "date-fns";
+import { downloadBlob } from "@/lib/fileDownload";
 
 interface Props {
   open: boolean;
@@ -351,11 +352,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${tourName.replace(/[^a-zA-Z0-9]/g, '_')}_${form.form_title.replace(/[^a-zA-Z0-9]/g, '_')}_Responses.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadBlob(blob, `${tourName.replace(/[^a-zA-Z0-9]/g, '_')}_${form.form_title.replace(/[^a-zA-Z0-9]/g, '_')}_Responses.csv`);
     toast.success('CSV downloaded');
   };
 
