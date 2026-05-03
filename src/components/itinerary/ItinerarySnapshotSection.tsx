@@ -103,14 +103,10 @@ export const ItinerarySnapshotSection = ({
 
   const handleDownload = async () => {
     if (!signedUrl || !snapshotFileName) return;
-    const response = await fetch(signedUrl);
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = snapshotFileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Open the signed URL in a new tab — works in Microsoft Teams' webview,
+    // which blocks blob/anchor downloads.
+    const win = window.open(signedUrl, "_blank", "noopener,noreferrer");
+    if (!win) window.location.href = signedUrl;
   };
 
   return (
