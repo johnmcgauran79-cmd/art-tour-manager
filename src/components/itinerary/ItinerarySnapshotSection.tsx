@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useSignedUrl } from "@/hooks/useSignedUrl";
+import { downloadFromStorage } from "@/lib/fileDownload";
 
 interface ItinerarySnapshotSectionProps {
   tourId: string;
@@ -102,15 +103,12 @@ export const ItinerarySnapshotSection = ({
   };
 
   const handleDownload = async () => {
-    if (!signedUrl || !snapshotFileName) return;
-    const response = await fetch(signedUrl);
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = snapshotFileName;
-    a.click();
-    URL.revokeObjectURL(url);
+    if (!snapshotFilePath || !snapshotFileName) return;
+    try {
+      await downloadFromStorage("attachments", snapshotFilePath, snapshotFileName);
+    } catch (e) {
+      console.error("Error downloading snapshot:", e);
+    }
   };
 
   return (

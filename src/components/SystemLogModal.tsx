@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { RefreshCw, Download, AlertCircle } from "lucide-react";
 import type { Json } from "@/integrations/supabase/types";
+import { downloadBlob } from "@/lib/fileDownload";
 
 interface AuditLogEntry {
   id: string;
@@ -199,14 +200,7 @@ export function SystemLogModal({ open, onOpenChange }: SystemLogModalProps) {
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `system-logs-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    downloadBlob(blob, `system-logs-${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   const formatDetails = (details: Json) => {

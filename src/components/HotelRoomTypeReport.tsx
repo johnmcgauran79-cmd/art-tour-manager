@@ -5,6 +5,7 @@ import { FileText, Printer } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { downloadBlob } from "@/lib/fileDownload";
 
 interface Hotel {
   id: string;
@@ -251,12 +252,7 @@ export const HotelRoomTypeReport = ({ hotel, tourId, open, onOpenChange }: Hotel
       .map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${hotel?.name}-room-type-report.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    downloadBlob(blob, `${hotel?.name}-room-type-report.csv`);
   };
 
   if (!hotel) return null;

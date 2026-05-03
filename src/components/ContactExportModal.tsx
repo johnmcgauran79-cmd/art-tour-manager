@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
 import { useAllCustomers } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
+import { downloadBlob } from "@/lib/fileDownload";
 
 interface ContactExportModalProps {
   open: boolean;
@@ -127,19 +128,10 @@ export const ContactExportModal = ({ open, onOpenChange, searchQuery, filteredCo
 
       // Create and download file
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      
       const fileName = searchQuery 
         ? `contacts_filtered_${new Date().toISOString().split('T')[0]}.csv`
         : `contacts_all_${new Date().toISOString().split('T')[0]}.csv`;
-      
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      downloadBlob(blob, fileName);
 
       toast({
         title: "Export Successful",

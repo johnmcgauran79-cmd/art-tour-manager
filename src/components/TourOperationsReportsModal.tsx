@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, Mail, Printer } from "lucide-react";
+import { downloadBlob } from "@/lib/fileDownload";
 
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -187,10 +188,7 @@ export const TourOperationsReportsModal = ({
     const csvContent = [headers.join(','), ...csvData].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${tourName}_Passport_Details.csv`;
-    link.click();
+    downloadBlob(blob, `${tourName}_Passport_Details.csv`);
   };
 
   // PDF view for passport report

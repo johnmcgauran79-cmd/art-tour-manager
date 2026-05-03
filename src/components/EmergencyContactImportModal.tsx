@@ -11,6 +11,7 @@ import { Upload, FileText, AlertTriangle, CheckCircle, XCircle, User, HelpCircle
 import { useAllCustomers, useUpdateCustomer } from "@/hooks/useCustomers";
 import { useToast } from "@/hooks/use-toast";
 import { formatPhoneForWhatsApp } from "@/utils/phoneFormatter";
+import { downloadBlob } from "@/lib/fileDownload";
 
 interface EmergencyContactImportModalProps {
   open: boolean;
@@ -545,14 +546,7 @@ export const EmergencyContactImportModal = ({ open, onOpenChange }: EmergencyCon
 
     // Create and download the file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `unmatched_emergency_contacts_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadBlob(blob, `unmatched_emergency_contacts_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   return (

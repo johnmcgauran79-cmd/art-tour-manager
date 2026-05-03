@@ -11,6 +11,7 @@ import { HotelRoomTypeReport } from "./HotelRoomTypeReport";
 import { useSendRoomingList } from "@/hooks/useRoomingListEmail";
 import { useTours } from "@/hooks/useTours";
 import { EmailRoomingListModal } from "./EmailRoomingListModal";
+import { downloadBlob } from "@/lib/fileDownload";
 
 interface Hotel {
   id: string;
@@ -216,12 +217,7 @@ export const RoomingListModal = ({ hotel, tourId, open, onOpenChange }: RoomingL
     ].map(row => row.join(',')).join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${hotel?.name}-rooming-list.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    downloadBlob(blob, `${hotel?.name}-rooming-list.csv`);
   };
 
   const handleSendEmail = (emailData: { from: string; to: string; cc: string; bcc: string; subject: string; message: string }) => {

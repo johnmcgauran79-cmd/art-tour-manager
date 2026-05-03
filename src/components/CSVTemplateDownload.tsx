@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
+import { downloadBlob } from "@/lib/fileDownload";
 
 export const CSVTemplateDownload = () => {
   const downloadTemplate = () => {
@@ -9,14 +10,7 @@ John,Doe,john@email.com,555-1234,Sydney,NSW,Australia,Jane,Vegetarian,VIP client
 Mary,Smith,mary@email.com,555-5678,Melbourne,VIC,Australia,,Gluten-free,Regular customer`;
     
     const blob = new Blob([template], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'contacts_template.csv';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    downloadBlob(blob, 'contacts_template.csv');
   };
 
   return (
