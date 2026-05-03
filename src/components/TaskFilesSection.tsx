@@ -126,18 +126,8 @@ export const TaskFilesSection = ({ taskId }: TaskFilesSectionProps) => {
 
   const handleDownload = async (attachment: TaskAttachment) => {
     try {
-      const { data, error } = await supabase.storage
-        .from("attachments")
-        .download(attachment.file_path);
-      if (error) throw error;
-      const url = URL.createObjectURL(data);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = attachment.file_name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const { downloadFromStorage } = await import("@/lib/fileDownload");
+      await downloadFromStorage("attachments", attachment.file_path, attachment.file_name);
     } catch (error) {
       console.error("Error downloading file:", error);
       toast({
