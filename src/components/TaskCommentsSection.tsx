@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useTaskComments, useCreateTaskComment, useUpdateTaskComment, TaskComment } from "@/hooks/useTaskComments";
 import { useTaskCommentAttachments, useUploadCommentAttachments, useDeleteCommentAttachment, TaskCommentAttachment } from "@/hooks/useTaskCommentAttachments";
 import { supabase } from "@/integrations/supabase/client";
+import { downloadFromStorage } from "@/lib/fileDownload";
 import { formatDistanceToNow } from "date-fns";
 import { MessageSquare, Send, Paperclip, X, Download, CornerDownRight, Reply, Pencil } from "lucide-react";
 import { UserMentionInput } from "@/components/UserMentionInput";
