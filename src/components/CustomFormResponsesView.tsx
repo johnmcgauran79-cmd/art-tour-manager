@@ -19,6 +19,7 @@ import { ManageFormExemptionsModal } from "@/components/ManageFormExemptionsModa
 
 import { format } from "date-fns";
 import { downloadBlob } from "@/lib/fileDownload";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Props {
   open: boolean;
@@ -42,6 +43,7 @@ interface PassengerRow {
 
 export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, form, fields, responses }: Props) {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [editingRow, setEditingRow] = useState<PassengerRow | null>(null);
   const [editData, setEditData] = useState<Record<string, any>>({});
   const [showExemptions, setShowExemptions] = useState(false);
@@ -421,21 +423,21 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-[90vw] w-full max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden p-3 sm:p-6">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Form Responses — {form.form_title}</span>
-              <div className="flex gap-2">
+            <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pr-6">
+              <span className="text-base sm:text-lg truncate">Form Responses — {form.form_title}</span>
+              <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowExemptions(true)}>
-                  <Ban className="h-4 w-4 mr-2" /> Manage Exemptions
+                  <Ban className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Manage Exemptions</span>
                 </Button>
                 {completedCount > 0 && (
                   <>
                     <Button variant="outline" size="sm" onClick={handleDownloadCSV}>
-                      <FileSpreadsheet className="h-4 w-4 mr-2" /> CSV
+                      <FileSpreadsheet className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">CSV</span>
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
-                      <Printer className="h-4 w-4 mr-2" /> Print PDF
+                      <Printer className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Print PDF</span>
                     </Button>
                   </>
                 )}
@@ -476,6 +478,93 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
           {allPassengers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No bookings found for this tour.
+            </div>
+          ) : isMobile ? (
+            <div className="flex-1 overflow-auto min-h-0 -mx-1 px-1 space-y-2">
+              {allPassengers.map(row => (
+                <div
+                  key={`${row.bookingId}-${row.slot}`}
+                  className={`rounded-lg border p-3 ${
+                    row.exempt && !row.response
+                      ? 'opacity-60 bg-muted/40'
+                      : !row.response
+                        ? 'bg-amber-50/50'
+                        : 'bg-card'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-start gap-2 min-w-0">
+                      <div className="mt-0.5">
+                        {row.response ? (
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                        ) : row.exempt ? (
+                          <Ban className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm truncate">{row.passengerName}</div>
+                        <div className="text-xs text-muted-foreground truncate">{row.bookingName}</div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEdit(row)}
+                      disabled={row.exempt && !row.response}
+                      className="shrink-0 h-8"
+                    >
+                      {row.response ? (
+                        <><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</>
+                      ) : (
+                        <><Plus className="h-3.5 w-3.5 mr-1" /> Enter</>
+                      )}
+                    </Button>
+                  </div>
+
+                  {row.response ? (
+                    <div className="space-y-1.5 text-sm border-t pt-2">
+                      {fields.map(f => (
+                        <div key={f.id} className="grid grid-cols-[40%_60%] gap-2">
+                          <div className="text-xs text-muted-foreground truncate">{f.field_label}</div>
+                          <div className="text-sm break-words">
+                            {f.field_type === 'checkbox' ? (
+                              row.response!.response_data[f.id] ? <Badge>Yes</Badge> : <Badge variant="outline">No</Badge>
+                            ) : (
+                              getFieldValue(row.response!, f) || <span className="text-muted-foreground">—</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="text-xs text-muted-foreground pt-1">
+                        Submitted {new Date(row.response.submitted_at).toLocaleDateString('en-AU')}
+                      </div>
+                    </div>
+                  ) : row.exempt ? (
+                    <div className="text-xs text-muted-foreground italic border-t pt-2">Not required</div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground border-t pt-2">No response yet</div>
+                  )}
+
+                  {!row.response && (
+                    <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t">
+                      <Label className="text-xs text-muted-foreground">Not required</Label>
+                      <Switch
+                        checked={row.exempt}
+                        disabled={toggleExemption.isPending}
+                        onCheckedChange={() =>
+                          toggleExemption.mutate({
+                            bookingId: row.bookingId,
+                            slot: row.slot,
+                            currentlyExempt: row.exempt,
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           ) : (
             <div className="flex-1 overflow-auto min-h-0">
