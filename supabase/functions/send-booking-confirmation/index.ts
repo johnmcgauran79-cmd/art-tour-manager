@@ -1507,8 +1507,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate batch_id when sending to additional passengers (groups all sends for this booking together)
-    const batchId = crypto.randomUUID();
+    // batch_id groups together rows in email_logs that belong to the same logical send.
+    // - externalBatchId: supplied by the caller (e.g. automated rule run) so all bookings
+    //   in that run share one batch and appear grouped in the Sent Emails Report.
+    // - Otherwise we generate a per-booking batch id used only when sending to additional
+    //   passengers on the same booking.
+    const batchId = externalBatchId || crypto.randomUUID();
     const willSendToAdditional = (booking.passenger_2?.email && booking.passenger_2.email !== booking.customers.email) ||
                                  (booking.passenger_3?.email && booking.passenger_3.email !== booking.customers.email);
 
@@ -1525,7 +1529,7 @@ const handler = async (req: Request): Promise<Response> => {
           subject: emailSubject,
           template_name: template?.name || 'Custom',
           template_id: template?.id || null,
-          batch_id: willSendToAdditional ? batchId : null,
+          batch_id: externalBatchId || (willSendToAdditional ? batchId : null),
         });
 
       if (logError) {
