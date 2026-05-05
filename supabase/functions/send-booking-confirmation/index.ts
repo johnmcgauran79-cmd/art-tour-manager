@@ -21,6 +21,13 @@ interface BookingConfirmationRequest {
   ruleId?: string;
   emailTemplateId?: string;
   /**
+   * Optional externally-supplied batch_id used to group this send with other
+   * sends in the same logical batch (e.g. an automated rule run that sends
+   * to many bookings). When present, the lead-passenger log row is tagged
+   * with this batchId so reports can group them together.
+   */
+  batchId?: string;
+  /**
    * File attachments to include with this email send.
    * Each entry is a path inside the `attachments` storage bucket.
    * The same set of attachments is sent to every recipient (lead + pax 2/3).
