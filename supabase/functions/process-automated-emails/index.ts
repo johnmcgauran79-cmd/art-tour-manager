@@ -542,7 +542,10 @@ async function processBatchEmails(
             fromEmail: emailTemplate?.from_email,
             isAutomated: true,
             ruleId: rule.id,
-            emailTemplateId: emailTemplate?.id
+            emailTemplateId: emailTemplate?.id,
+            // Group all sends from this automated run under one batch_id so the
+            // Sent Emails Report shows them as a single bulk send.
+            batchId: batchId
           }
         }
       );
