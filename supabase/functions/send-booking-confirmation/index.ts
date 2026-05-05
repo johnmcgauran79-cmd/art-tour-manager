@@ -310,15 +310,33 @@ const handler = async (req: Request): Promise<Response> => {
     const btnBg = getGSetting('theme_email_button_color', '#232628');
     const btnText = getGSetting('theme_email_button_text', '#F5C518');
 
-    // Fetch email template for booking confirmation
-    const { data: template, error: templateError } = await supabaseClient
-      .from('email_templates')
-      .select('*, header_image_url')
-      .eq('type', 'booking_confirmation')
-      .eq('is_active', true)
-      .order('is_default', { ascending: false })
-      .limit(1)
-      .single();
+    // Fetch email template. If emailTemplateId is provided (e.g. from automated
+    // email rules), use that exact template so logging reflects the real
+    // template that was sent. Otherwise fall back to the default
+    // booking_confirmation template.
+    let template: any = null;
+    let templateError: any = null;
+    if (emailTemplateId) {
+      const res = await supabaseClient
+        .from('email_templates')
+        .select('*, header_image_url')
+        .eq('id', emailTemplateId)
+        .maybeSingle();
+      template = res.data;
+      templateError = res.error;
+    }
+    if (!template) {
+      const res = await supabaseClient
+        .from('email_templates')
+        .select('*, header_image_url')
+        .eq('type', 'booking_confirmation')
+        .eq('is_active', true)
+        .order('is_default', { ascending: false })
+        .limit(1)
+        .single();
+      template = res.data;
+      templateError = res.error;
+    }
 
     if (templateError) {
       console.error('Error fetching email template:', templateError);

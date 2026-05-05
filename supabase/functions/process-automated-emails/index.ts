@@ -541,7 +541,8 @@ async function processBatchEmails(
             customContent: emailTemplate?.content_template,
             fromEmail: emailTemplate?.from_email,
             isAutomated: true,
-            ruleId: rule.id
+            ruleId: rule.id,
+            emailTemplateId: emailTemplate?.id
           }
         }
       );
