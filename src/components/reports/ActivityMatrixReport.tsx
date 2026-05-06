@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { AlertTriangle, Grid3X3 } from "lucide-react";
-import { FixMissingActivityBookings } from "@/components/FixMissingActivityBookings";
 
 interface ActivityMatrixReportProps {
   data: Array<{
@@ -169,19 +168,8 @@ export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixRep
     );
   }
 
-  // Get tour ID for fix component
-  const tourId = activities.length > 0 ? activities[0].tour_id : null;
-
   return (
     <div className="space-y-4">
-      {/* Fix Missing Activity Bookings */}
-      {tourId && (
-        <FixMissingActivityBookings 
-          tourId={tourId} 
-          onFixComplete={() => window.location.reload()} 
-        />
-      )}
-      
       {/* Alert Header */}
       <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
         <AlertTriangle className="h-5 w-5 text-red-600" />
