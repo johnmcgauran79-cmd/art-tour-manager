@@ -28,12 +28,16 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
   const [selectedTourIds, setSelectedTourIds] = useState<string[]>([]);
   const [showReport, setShowReport] = useState(false);
 
-  const sortedTours = useMemo(
-    () => [...tours].filter(t => t.status !== 'cancelled').sort((a, b) =>
-      (a.start_date || '').localeCompare(b.start_date || '')
-    ),
-    [tours]
-  );
+  const sortedTours = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return [...tours]
+      .filter(t =>
+        t.status !== 'cancelled' &&
+        t.status !== 'past' &&
+        (t.end_date || t.start_date || '') >= today
+      )
+      .sort((a, b) => (a.start_date || '').localeCompare(b.start_date || ''));
+  }, [tours]);
 
   const toggleTour = (id: string) => {
     setSelectedTourIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
