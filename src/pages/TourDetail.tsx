@@ -5,6 +5,7 @@ import { useNavigationContext } from "@/hooks/useNavigationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ShareButton } from "@/components/ShareButton";
 import { Edit, Copy, MapPin, Calendar, Users, FileText, Building, Trash2, Paperclip, Clock, ClipboardList, ArrowLeft, Bus, UserCheck, FormInput, ShieldCheck, Info, Mail, BookOpen } from "lucide-react";
 import { AddBookingModal } from "@/components/AddBookingModal";
 import { AddActivityModal } from "@/components/AddActivityModal";
@@ -266,7 +267,8 @@ export default function TourDetail() {
               <ArrowLeft className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Back</span>
             </Button>
-            
+            <ShareButton title={tour.name} context="Tour" className="flex-shrink-0" />
+
             {!isViewOnly && userRole !== 'operations_team' && (
               <>
                 <Button

@@ -40,6 +40,7 @@ import { WaiverStatusDisplay } from "@/components/WaiverStatusDisplay";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { SendCustomFormRequestButton } from "@/components/SendCustomFormRequestButton";
 import { RelatedTasksSection } from "@/components/entityLinks/RelatedTasksSection";
+import { ShareButton } from "@/components/ShareButton";
 
 const InfoRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="flex flex-col gap-1">
@@ -363,7 +364,11 @@ export default function BookingDetail() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            
+            <ShareButton
+              title={`${leadPassengerName}${tour ? ` — ${tour.name}` : ""}`}
+              context="Booking"
+            />
+
             {!isAgent && (
               <Button
                 variant="outline"
