@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Printer, FileSpreadsheet, Clock, Pencil, Plus, CheckCircle, AlertCircle, Ban } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
 import { Switch } from "@/components/ui/switch";
 import { CustomForm, CustomFormField, CustomFormResponse } from "@/hooks/useCustomForms";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -441,6 +442,7 @@ export function CustomFormResponsesView({ open, onOpenChange, tourId, tourName, 
                     </Button>
                   </>
                 )}
+                <ShareButton title={`${form.form_title} — ${tourName}`} context="Form Responses" />
               </div>
             </DialogTitle>
           </DialogHeader>
