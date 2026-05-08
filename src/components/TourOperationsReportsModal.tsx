@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Download, FileText, Mail, Printer } from "lucide-react";
 import { downloadBlob } from "@/lib/fileDownload";
+import { ShareButton } from "@/components/ShareButton";
 
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
@@ -299,6 +300,7 @@ export const TourOperationsReportsModal = ({
                 <MapPin className="h-5 w-5 text-sky-600" />
                 <DialogTitle>Pickup Locations - {tourName}</DialogTitle>
               </div>
+              <ShareButton title={`Pickup Locations — ${tourName}`} context="Report" className="mr-6" />
             </div>
           </DialogHeader>
           <PickupLocationReport tourId={tourId} />
@@ -342,6 +344,7 @@ export const TourOperationsReportsModal = ({
                   <Printer className="h-4 w-4" />
                   Print PDF
                 </Button>
+                <ShareButton title={`Tour Attendees — ${tourName}`} context="Report" />
               </div>
             </div>
           </DialogHeader>
@@ -409,6 +412,7 @@ export const TourOperationsReportsModal = ({
                     <Mail className="h-4 w-4" />
                     Email Report
                   </Button>
+                  <ShareButton title={`Passport Details — ${tourName}`} context="Report" />
                 </div>
               </div>
             </DialogHeader>
@@ -460,6 +464,7 @@ export const TourOperationsReportsModal = ({
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle>Email Tracking - {tourName}</DialogTitle>
+              <ShareButton title={`Email Tracking — ${tourName}`} context="Report" className="mr-6" />
             </div>
           </DialogHeader>
           
@@ -552,6 +557,7 @@ export const TourOperationsReportsModal = ({
                       </Button>
                     </>
                   )}
+                  <ShareButton title={`${displayReport.title} — ${tourName}`} context="Report" />
                 </div>
               </div>
             </DialogHeader>
