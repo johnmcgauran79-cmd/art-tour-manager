@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
 
 interface ReportPDFViewerProps {
   open: boolean;
@@ -46,6 +47,7 @@ export const ReportPDFViewer = ({
                 <Printer className="h-4 w-4" />
                 Print PDF
               </Button>
+              <ShareButton title={`${reportTitle} — ${tourName}`} context="Report" />
             </div>
           </DialogTitle>
         </DialogHeader>
