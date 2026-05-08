@@ -137,7 +137,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5" />
@@ -163,7 +163,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
                 </Button>
               </div>
             </div>
-            <ScrollArea className="flex-1 border rounded-md p-2">
+            <ScrollArea className="flex-1 min-h-0 border rounded-md p-2">
               <div className="space-y-1">
                 {sortedTours.map(t => (
                   <label
@@ -209,7 +209,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
                 </Button>
               </div>
             </div>
-            <ScrollArea className="flex-1 border rounded-md p-4">
+            <ScrollArea className="flex-1 min-h-0 border rounded-md p-4">
               {isLoading ? (
                 <p className="text-center text-muted-foreground py-8">Loading...</p>
               ) : !report || report.length === 0 ? (
