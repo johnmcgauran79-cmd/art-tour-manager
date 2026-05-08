@@ -2,15 +2,17 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail } from "lucide-react";
+import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail, Tag } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SentEmailsReportModal } from "./SentEmailsReportModal";
+import { NameTagGeneratorModal } from "./NameTagGeneratorModal";
 
 export const OperationsQuickActions = () => {
   const navigate = useNavigate();
   const [sentEmailsOpen, setSentEmailsOpen] = useState(false);
+  const [nameTagOpen, setNameTagOpen] = useState(false);
 
   // Hotel Allocation Check count
   const { data: hotelIssuesCount = 0 } = useQuery({
@@ -141,6 +143,13 @@ export const OperationsQuickActions = () => {
       count: 0,
       onClick: () => setSentEmailsOpen(true),
     },
+    {
+      icon: Tag,
+      label: "Name Tag Generator",
+      description: "Generate first-name lists by tour for printing name tags",
+      count: 0,
+      onClick: () => setNameTagOpen(true),
+    },
   ];
 
   return (
@@ -188,6 +197,11 @@ export const OperationsQuickActions = () => {
       <SentEmailsReportModal
         open={sentEmailsOpen}
         onOpenChange={setSentEmailsOpen}
+      />
+
+      <NameTagGeneratorModal
+        open={nameTagOpen}
+        onOpenChange={setNameTagOpen}
       />
     </div>
   );
