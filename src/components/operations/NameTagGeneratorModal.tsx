@@ -141,7 +141,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
           </DialogTitle>
           <DialogDescription>
             {showReport
-              ? 'First names of all passengers (in capitals), grouped by tour. Preferred names shown in brackets.'
+              ? 'First names of all passengers (in capitals), grouped by tour. Preferred names used where set.'
               : 'Select one or more tours to generate a name list for printing name tags.'}
           </DialogDescription>
         </DialogHeader>
