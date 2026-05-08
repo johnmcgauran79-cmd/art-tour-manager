@@ -67,11 +67,8 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
         const bucket = grouped.get(b.tour_id);
         if (!bucket) continue;
         const addPerson = (first: string | null, preferred: string | null) => {
-          const f = upper(first);
-          const p = upper(preferred);
-          if (!f && !p) return;
-          if (p && p !== f) bucket.names.push(`${f}${f ? ' ' : ''}(${p})`.trim());
-          else if (f) bucket.names.push(f);
+          const name = upper(preferred) || upper(first);
+          if (name) bucket.names.push(name);
         };
         addPerson(b.customers?.first_name, b.customers?.preferred_name);
         addPerson(b.passenger_2?.first_name, b.passenger_2?.preferred_name);
@@ -144,7 +141,7 @@ export const NameTagGeneratorModal = ({ open, onOpenChange }: NameTagGeneratorMo
           </DialogTitle>
           <DialogDescription>
             {showReport
-              ? 'First names of all passengers (in capitals), grouped by tour. Preferred names shown in brackets.'
+              ? 'First names of all passengers (in capitals), grouped by tour. Preferred names used where set.'
               : 'Select one or more tours to generate a name list for printing name tags.'}
           </DialogDescription>
         </DialogHeader>
