@@ -3361,6 +3361,7 @@ export type Database = {
           ops_transport_notes: string | null
           outbound_flight_date: string | null
           outbound_flight_number: string | null
+          photos_videos_url: string | null
           pickup_location_required: boolean
           pickup_point: string | null
           price_double: number | null
@@ -3414,6 +3415,7 @@ export type Database = {
           ops_transport_notes?: string | null
           outbound_flight_date?: string | null
           outbound_flight_number?: string | null
+          photos_videos_url?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
           price_double?: number | null
@@ -3467,6 +3469,7 @@ export type Database = {
           ops_transport_notes?: string | null
           outbound_flight_date?: string | null
           outbound_flight_number?: string | null
+          photos_videos_url?: string | null
           pickup_location_required?: boolean
           pickup_point?: string | null
           price_double?: number | null

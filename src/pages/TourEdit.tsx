@@ -61,6 +61,7 @@ export default function TourEdit() {
     is_test_tour: false,
     manual_billing: false,
     manual_emails: false,
+    photos_videos_url: "",
   });
 
   const updateTourMutation = useUpdateTour();
@@ -104,7 +105,7 @@ export default function TourEdit() {
       if (tour && id) {
         const { data, error } = await supabase
           .from('tours')
-          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails')
+          .select('minimum_passengers_required, tour_type, instalment_required, travel_documents_required, pickup_location_required, keap_tag_id, xero_product_id, xero_reference, is_test_tour, manual_billing, manual_emails, photos_videos_url')
           .eq('id', id)
           .single();
         
@@ -139,6 +140,7 @@ export default function TourEdit() {
             is_test_tour: (data as any).is_test_tour || false,
             manual_billing: (data as any).manual_billing || false,
             manual_emails: (data as any).manual_emails || false,
+            photos_videos_url: (data as any).photos_videos_url || "",
           });
         }
       }
@@ -206,6 +208,7 @@ export default function TourEdit() {
       is_test_tour: formData.is_test_tour,
       manual_billing: formData.manual_billing,
       manual_emails: formData.manual_emails,
+      photos_videos_url: formData.photos_videos_url || null,
     } as any;
 
     // Check if status is changing TO cancelled — require confirmation
@@ -592,6 +595,18 @@ export default function TourEdit() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="photos_videos_url">Tour Photos and Videos URL</Label>
+          <Input
+            id="photos_videos_url"
+            type="url"
+            value={formData.photos_videos_url}
+            onChange={(e) => handleInputChange("photos_videos_url", e.target.value)}
+            placeholder="https://drive.google.com/..."
+          />
+          <p className="text-xs text-muted-foreground">Link to a folder where tour photos and videos can be viewed and uploaded.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

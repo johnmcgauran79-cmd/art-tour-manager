@@ -51,6 +51,7 @@ interface TourOverviewTabProps {
     keapTagId: string;
     xeroProductId: string;
     xeroReference: string;
+    photosVideosUrl?: string;
   };
   onNavigateToReport?: (reportType: 'passport' | 'pickup' | 'forms') => void;
 }
@@ -481,6 +482,28 @@ export const TourOverviewTab = ({ tour, onNavigateToReport }: TourOverviewTabPro
           </Card>
         )}
       </div>
+
+      {tour.photosVideosUrl && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Tour Photos and Videos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <a
+              href={tour.photosVideosUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-blue-600 hover:text-blue-800 hover:underline break-all"
+            >
+              {tour.photosVideosUrl}
+            </a>
+            <p className="text-xs text-muted-foreground mt-1">View tour photos and videos, or upload new ones to this folder.</p>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedTourForAlerts && (
         <TourAlertsModal
