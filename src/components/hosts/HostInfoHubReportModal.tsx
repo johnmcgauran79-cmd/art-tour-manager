@@ -151,6 +151,14 @@ export const HostInfoHubReportModal = ({
   const contactsReport = reports.find((r) => r.type === "contacts");
   const dietaryReport = reports.find((r) => r.type === "dietary");
   const summaryReport = reports.find((r) => r.type === "summary");
+  const reportHasContent = Boolean(
+    (summaryReport?.data?.length || 0) > 0 ||
+    (contactsReport?.data?.length || 0) > 0 ||
+    (dietaryReport?.data?.length || 0) > 0 ||
+    (hotels?.length || 0) > 0 ||
+    (activities?.length || 0) > 0 ||
+    (pickupLocationRequired && (pickupOptions?.length || 0) > 0)
+  );
 
   const htmlContent = useMemo(() => {
     const styles = `
@@ -394,11 +402,19 @@ export const HostInfoHubReportModal = ({
   // Build the combined PDF (report + snapshot) once, reuse for preview/print/download
   const buildCombinedPdf = async (): Promise<Blob> => {
     const html2pdf = (await import("html2pdf.js")).default as any;
+    const parsed = new DOMParser().parseFromString(htmlContent, "text/html");
 
-    // Render in a visible-flow off-screen container with explicit A4 width
-    // so html2canvas captures multi-page content properly.
     const container = document.createElement("div");
-    container.innerHTML = htmlContent;
+    const styleEl = document.createElement("style");
+    styleEl.textContent = Array.from(parsed.head.querySelectorAll("style"))
+      .map((styleNode) => styleNode.textContent || "")
+      .join("\n");
+
+    const content = document.createElement("div");
+    content.innerHTML = parsed.body.innerHTML;
+
+    container.appendChild(styleEl);
+    container.appendChild(content);
     container.style.position = "absolute";
     container.style.left = "-10000px";
     container.style.top = "0";
@@ -408,6 +424,8 @@ export const HostInfoHubReportModal = ({
     container.style.pointerEvents = "none";
     container.style.visibility = "visible";
     document.body.appendChild(container);
+
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     let reportPdfBlob: Blob;
     try {
@@ -419,8 +437,8 @@ export const HostInfoHubReportModal = ({
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
           pagebreak: { mode: ["avoid-all", "css", "legacy"] },
         })
-        .from(container)
-        .outputPdf("blob");
+        .from(content)
+        .output("blob");
     } finally {
       document.body.removeChild(container);
     }
@@ -481,6 +499,9 @@ export const HostInfoHubReportModal = ({
         URL.revokeObjectURL(combinedUrl);
         setCombinedUrl(null);
       }
+      return;
+    }
+    if (!reportHasContent && !snapshotUrl) {
       return;
     }
     let cancelled = false;
