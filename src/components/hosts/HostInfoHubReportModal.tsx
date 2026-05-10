@@ -178,12 +178,11 @@ export const HostInfoHubReportModal = ({
         h1 { font-size: 22px; margin: 0 0 4px 0; }
         h2 { font-size: 16px; margin: 0 0 8px 0; padding-bottom: 4px; border-bottom: 2px solid #1a1a1a; }
         h3 { font-size: 13px; margin: 12px 0 4px 0; }
-        .cover { text-align: center; padding-top: 40mm; page-break-after: always; }
+        .cover { text-align: center; padding-top: 40mm; }
         .cover h1 { font-size: 30px; }
         .cover .subtitle { font-size: 14px; color: #555; margin-top: 8px; }
         .cover .date { margin-top: 30px; font-size: 11px; color: #777; }
         .section { page-break-before: always; }
-        .cover + .section { page-break-before: auto; }
         .activity-page { page-break-before: always; }
         table { width: 100%; border-collapse: collapse; margin: 6px 0 12px 0; }
         th, td { border: 1px solid #d4d4d4; padding: 5px 7px; text-align: left; vertical-align: top; }
