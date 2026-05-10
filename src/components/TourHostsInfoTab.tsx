@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays, FileImage } from "lucide-react";
+import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays, FileImage, FileDown } from "lucide-react";
 import { useReportData } from "@/components/reports/useReportData";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
@@ -17,6 +17,7 @@ import { RoomingListModal } from "@/components/RoomingListModal";
 import { exportReportToCSV } from "@/components/reports/ReportExportUtils";
 import { HostActivitiesSection } from "@/components/hosts/HostActivitiesSection";
 import { ItinerarySnapshotSection } from "@/components/itinerary/ItinerarySnapshotSection";
+import { HostInfoHubReportModal } from "@/components/hosts/HostInfoHubReportModal";
 
 interface TourHostsInfoTabProps {
   tourId: string;
@@ -80,6 +81,7 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
   const { data: itinerary } = useItinerary(tourId);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
+  const [combinedReportOpen, setCombinedReportOpen] = useState(false);
 
   const contactsReport = reports.find(r => r.type === 'contacts');
   const dietaryReport = reports.find(r => r.type === 'dietary');
@@ -87,9 +89,15 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Host Information Hub</h2>
-        <p className="text-sm text-muted-foreground">Key reports and information for tour hosts</p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-lg font-semibold">Host Information Hub</h2>
+          <p className="text-sm text-muted-foreground">Key reports and information for tour hosts</p>
+        </div>
+        <Button onClick={() => setCombinedReportOpen(true)} size="sm">
+          <FileDown className="h-4 w-4 mr-1" />
+          Generate Combined Report
+        </Button>
       </div>
 
       {/* Itinerary Snapshot */}
@@ -238,6 +246,15 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
           }}
         />
       )}
+
+      {/* Combined Host Info Report */}
+      <HostInfoHubReportModal
+        open={combinedReportOpen}
+        onOpenChange={setCombinedReportOpen}
+        tourId={tourId}
+        tourName={tourName}
+        pickupLocationRequired={pickupLocationRequired}
+      />
     </div>
   );
 };
