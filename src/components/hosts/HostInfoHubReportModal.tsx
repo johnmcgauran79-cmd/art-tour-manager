@@ -400,24 +400,24 @@ export const HostInfoHubReportModal = ({
     const container = document.createElement("div");
     container.innerHTML = htmlContent;
     container.style.position = "absolute";
-    container.style.left = "0";
+    container.style.left = "-10000px";
     container.style.top = "0";
     container.style.width = "794px"; // ~A4 at 96dpi
     container.style.background = "#fff";
     container.style.zIndex = "-1";
-    container.style.opacity = "0";
     container.style.pointerEvents = "none";
+    container.style.visibility = "visible";
     document.body.appendChild(container);
 
     let reportPdfBlob: Blob;
     try {
       reportPdfBlob = await html2pdf()
         .set({
-          margin: [10, 10, 10, 10],
-          image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, windowWidth: 794 },
+          margin: [0.5, 0.5, 0.5, 0.5],
+          image: { type: "png", quality: 1 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, windowWidth: 794 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
         })
         .from(container)
         .outputPdf("blob");
