@@ -9,6 +9,7 @@ import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useItinerary } from "@/hooks/useItinerary";
+import { useBookings } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -58,6 +59,13 @@ const formatTransportMode = (m: string | null | undefined) => {
   return m.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
+const formatCustomerName = (customer: { first_name?: string | null; preferred_name?: string | null; last_name?: string | null } | null | undefined) => {
+  if (!customer) return "—";
+  const firstName = customer.preferred_name?.trim() || customer.first_name?.trim() || "";
+  const lastName = customer.last_name?.trim() || "";
+  return `${firstName} ${lastName}`.trim() || "—";
+};
+
 export const HostInfoHubReportModal = ({
   open,
   onOpenChange,
@@ -70,14 +78,15 @@ export const HostInfoHubReportModal = ({
   const [combinedUrl, setCombinedUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const { isFetched: bookingsFetched } = useBookings();
   const reports = useReportData(tourId, { showAllContacts: true });
-  const { data: hotels } = useHotels(tourId);
-  const { data: activities } = useActivities(tourId);
-  const { data: pickupOptions } = usePickupOptions(tourId);
-  const { data: itinerary } = useItinerary(tourId);
+  const { data: hotels, isFetched: hotelsFetched } = useHotels(tourId);
+  const { data: activities, isFetched: activitiesFetched } = useActivities(tourId);
+  const { data: pickupOptions, isFetched: pickupOptionsFetched } = usePickupOptions(tourId);
+  const { data: itinerary, isFetched: itineraryFetched } = useItinerary(tourId);
 
   // Rooming list data per hotel (one query for all hotels on this tour)
-  const { data: roomingByHotel } = useQuery({
+  const { data: roomingByHotel, isFetched: roomingByHotelFetched } = useQuery({
     queryKey: ["host-info-hub-rooming", tourId],
     enabled: !!tourId && open,
     queryFn: async () => {
@@ -103,7 +112,7 @@ export const HostInfoHubReportModal = ({
   });
 
   // Activity passenger allocations (one query for all activities on this tour)
-  const { data: activityPassengers } = useQuery({
+  const { data: activityPassengers, isFetched: activityPassengersFetched } = useQuery({
     queryKey: ["host-info-hub-activity-pax", tourId],
     enabled: !!tourId && open,
     queryFn: async () => {
@@ -129,7 +138,7 @@ export const HostInfoHubReportModal = ({
   });
 
   // Itinerary snapshot signed URL
-  const { data: snapshotUrl } = useQuery({
+  const { data: snapshotUrl, isFetched: snapshotUrlFetched } = useQuery({
     queryKey: ["host-info-hub-snapshot-url", itinerary?.snapshot_file_path],
     enabled: !!itinerary?.snapshot_file_path && open,
     queryFn: async () => {
@@ -144,6 +153,22 @@ export const HostInfoHubReportModal = ({
   const contactsReport = reports.find((r) => r.type === "contacts");
   const dietaryReport = reports.find((r) => r.type === "dietary");
   const summaryReport = reports.find((r) => r.type === "summary");
+  const reportHasContent = Boolean(
+    (summaryReport?.data?.length || 0) > 0 ||
+    (contactsReport?.data?.length || 0) > 0 ||
+    (dietaryReport?.data?.length || 0) > 0 ||
+    (hotels?.length || 0) > 0 ||
+    (activities?.length || 0) > 0 ||
+    (pickupLocationRequired && (pickupOptions?.length || 0) > 0)
+  );
+  const reportDataReady = bookingsFetched &&
+    hotelsFetched &&
+    activitiesFetched &&
+    itineraryFetched &&
+    roomingByHotelFetched &&
+    activityPassengersFetched &&
+    (!pickupLocationRequired || pickupOptionsFetched) &&
+    (!itinerary?.snapshot_file_path || snapshotUrlFetched);
 
   const htmlContent = useMemo(() => {
     const styles = `
@@ -158,7 +183,7 @@ export const HostInfoHubReportModal = ({
         .cover .subtitle { font-size: 14px; color: #555; margin-top: 8px; }
         .cover .date { margin-top: 30px; font-size: 11px; color: #777; }
         .section { page-break-before: always; }
-        .section:first-of-type { page-break-before: auto; }
+        .cover + .section { page-break-before: auto; }
         .activity-page { page-break-before: always; }
         table { width: 100%; border-collapse: collapse; margin: 6px 0 12px 0; }
         th, td { border: 1px solid #d4d4d4; padding: 5px 7px; text-align: left; vertical-align: top; }
@@ -247,8 +272,8 @@ export const HostInfoHubReportModal = ({
       html += `<div class="section"><h2>Hotel Reports</h2>`;
       for (const hotel of hotels) {
         const rows = (roomingByHotel?.[hotel.id] || []).slice().sort((a: any, b: any) => {
-          const an = `${a.bookings.customers?.last_name || ""} ${a.bookings.customers?.first_name || ""}`;
-          const bn = `${b.bookings.customers?.last_name || ""} ${b.bookings.customers?.first_name || ""}`;
+          const an = `${a.bookings.customers?.last_name || ""} ${a.bookings.customers?.preferred_name || a.bookings.customers?.first_name || ""}`;
+          const bn = `${b.bookings.customers?.last_name || ""} ${b.bookings.customers?.preferred_name || b.bookings.customers?.first_name || ""}`;
           return an.localeCompare(bn);
         });
         html += `<div style="page-break-inside: avoid; margin-bottom: 16px;">
@@ -267,7 +292,7 @@ export const HostInfoHubReportModal = ({
           </tr></thead><tbody>`;
           for (const r of rows) {
             const cust = r.bookings.customers || {};
-            const name = `${cust.first_name || ""} ${cust.last_name || ""}`.trim() || "—";
+            const name = formatCustomerName(cust);
             html += `<tr>
               <td>${escapeHtml(name)}</td>
               <td>${escapeHtml(r.bookings.group_name || "-")}</td>
@@ -360,8 +385,8 @@ export const HostInfoHubReportModal = ({
 
         if (pax.length > 0) {
           const sortedPax = pax.slice().sort((x: any, y: any) => {
-            const an = `${x.bookings.customers?.last_name || ""} ${x.bookings.customers?.first_name || ""}`;
-            const bn = `${y.bookings.customers?.last_name || ""} ${y.bookings.customers?.first_name || ""}`;
+            const an = `${x.bookings.customers?.last_name || ""} ${x.bookings.customers?.preferred_name || x.bookings.customers?.first_name || ""}`;
+            const bn = `${y.bookings.customers?.last_name || ""} ${y.bookings.customers?.preferred_name || y.bookings.customers?.first_name || ""}`;
             return an.localeCompare(bn);
           });
           html += `<h3>Allocated Passengers (${totalPax})</h3><table><thead><tr>
@@ -369,7 +394,7 @@ export const HostInfoHubReportModal = ({
           </tr></thead><tbody>`;
           for (const p of sortedPax) {
             const c = p.bookings.customers || {};
-            const lead = `${c.first_name || ""} ${c.last_name || ""}${c.preferred_name ? ` (${c.preferred_name})` : ""}`.trim();
+            const lead = formatCustomerName(c);
             const others = [p.bookings.passenger_2_name, p.bookings.passenger_3_name].filter(Boolean).join(", ") || "-";
             html += `<tr><td>${escapeHtml(lead)}</td><td>${escapeHtml(others)}</td><td>${escapeHtml(p.passengers_attending)}</td></tr>`;
           }
@@ -387,33 +412,43 @@ export const HostInfoHubReportModal = ({
   // Build the combined PDF (report + snapshot) once, reuse for preview/print/download
   const buildCombinedPdf = async (): Promise<Blob> => {
     const html2pdf = (await import("html2pdf.js")).default as any;
+    const parsed = new DOMParser().parseFromString(htmlContent, "text/html");
 
-    // Render in a visible-flow off-screen container with explicit A4 width
-    // so html2canvas captures multi-page content properly.
     const container = document.createElement("div");
-    container.innerHTML = htmlContent;
+    const styleEl = document.createElement("style");
+    styleEl.textContent = Array.from(parsed.head.querySelectorAll("style"))
+      .map((styleNode) => styleNode.textContent || "")
+      .join("\n");
+
+    const content = document.createElement("div");
+    content.innerHTML = parsed.body.innerHTML;
+
+    container.appendChild(styleEl);
+    container.appendChild(content);
     container.style.position = "absolute";
-    container.style.left = "0";
+    container.style.left = "-10000px";
     container.style.top = "0";
     container.style.width = "794px"; // ~A4 at 96dpi
     container.style.background = "#fff";
     container.style.zIndex = "-1";
-    container.style.opacity = "0";
     container.style.pointerEvents = "none";
+    container.style.visibility = "visible";
     document.body.appendChild(container);
+
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     let reportPdfBlob: Blob;
     try {
       reportPdfBlob = await html2pdf()
         .set({
-          margin: [10, 10, 10, 10],
-          image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, windowWidth: 794 },
+          margin: [0.5, 0.5, 0.5, 0.5],
+          image: { type: "png", quality: 1 },
+          html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, windowWidth: 794 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["css", "legacy"] },
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
         })
-        .from(container)
-        .outputPdf("blob");
+        .from(content)
+        .output("blob");
     } finally {
       document.body.removeChild(container);
     }
@@ -476,6 +511,18 @@ export const HostInfoHubReportModal = ({
       }
       return;
     }
+    if (!reportDataReady) {
+      setIsBuilding(true);
+      return;
+    }
+    if (!reportHasContent && !snapshotUrl) {
+      setIsBuilding(false);
+      return;
+    }
+    if (combinedUrl) {
+      URL.revokeObjectURL(combinedUrl);
+      setCombinedUrl(null);
+    }
     let cancelled = false;
     let createdUrl: string | null = null;
     setIsBuilding(true);
@@ -504,7 +551,7 @@ export const HostInfoHubReportModal = ({
     };
     // Rebuild only when modal opens or core data changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, htmlContent, snapshotUrl]);
+  }, [open, htmlContent, snapshotUrl, reportDataReady, reportHasContent]);
 
   const handlePrint = () => {
     if (!combinedUrl) return;
