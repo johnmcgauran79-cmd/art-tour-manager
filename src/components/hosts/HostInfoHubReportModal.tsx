@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Printer, Download, Loader2 } from "lucide-react";
@@ -66,6 +66,8 @@ export const HostInfoHubReportModal = ({
   pickupLocationRequired = false,
 }: HostInfoHubReportModalProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isBuilding, setIsBuilding] = useState(false);
+  const [combinedUrl, setCombinedUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   const reports = useReportData(tourId, { showAllContacts: true });
@@ -382,84 +384,151 @@ export const HostInfoHubReportModal = ({
     return html;
   }, [tourName, summaryReport, contactsReport, dietaryReport, hotels, roomingByHotel, activities, activityPassengers, pickupOptions, pickupLocationRequired]);
 
-  const handlePrint = () => {
-    const w = window.open("", "_blank");
-    if (!w) return;
-    w.document.write(htmlContent);
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 600);
-  };
+  // Build the combined PDF (report + snapshot) once, reuse for preview/print/download
+  const buildCombinedPdf = async (): Promise<Blob> => {
+    const html2pdf = (await import("html2pdf.js")).default as any;
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
+    // Render in a visible-flow off-screen container with explicit A4 width
+    // so html2canvas captures multi-page content properly.
+    const container = document.createElement("div");
+    container.innerHTML = htmlContent;
+    container.style.position = "absolute";
+    container.style.left = "0";
+    container.style.top = "0";
+    container.style.width = "794px"; // ~A4 at 96dpi
+    container.style.background = "#fff";
+    container.style.zIndex = "-1";
+    container.style.opacity = "0";
+    container.style.pointerEvents = "none";
+    document.body.appendChild(container);
+
+    let reportPdfBlob: Blob;
     try {
-      // 1) Render the report HTML to a PDF via html2pdf
-      const html2pdf = (await import("html2pdf.js")).default as any;
-      const container = document.createElement("div");
-      container.innerHTML = htmlContent;
-      // html2pdf uses the first child if it's a real element; ensure it's attached briefly
-      container.style.position = "fixed";
-      container.style.left = "-10000px";
-      container.style.top = "0";
-      document.body.appendChild(container);
-
-      const reportPdfBlob: Blob = await html2pdf()
+      reportPdfBlob = await html2pdf()
         .set({
           margin: [10, 10, 10, 10],
-          filename: `${tourName} - Host Information Report.pdf`,
           image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { scale: 2, useCORS: true, windowWidth: 794 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
           pagebreak: { mode: ["css", "legacy"] },
         })
         .from(container)
         .outputPdf("blob");
+    } finally {
       document.body.removeChild(container);
+    }
 
-      // 2) If snapshot exists, prepend it via pdf-lib
-      let finalBlob: Blob = reportPdfBlob;
-      if (snapshotUrl && itinerary?.snapshot_file_path) {
-        try {
-          const isPdf = /\.pdf(\?|$)/i.test(itinerary.snapshot_file_path);
-          if (isPdf) {
-            const { PDFDocument } = await import("pdf-lib");
-            const snapshotBytes = await fetch(snapshotUrl).then((r) => r.arrayBuffer());
-            const reportBytes = await reportPdfBlob.arrayBuffer();
-            const merged = await PDFDocument.create();
-            const snap = await PDFDocument.load(snapshotBytes);
-            const rep = await PDFDocument.load(reportBytes);
-            const snapPages = await merged.copyPages(snap, snap.getPageIndices());
-            snapPages.forEach((p) => merged.addPage(p));
-            const repPages = await merged.copyPages(rep, rep.getPageIndices());
-            repPages.forEach((p) => merged.addPage(p));
-            const out = await merged.save();
-            finalBlob = new Blob([out as BlobPart], { type: "application/pdf" });
-          }
-        } catch (mergeErr) {
-          console.warn("Snapshot merge skipped:", mergeErr);
-          toast({
-            title: "Snapshot not merged",
-            description: "Downloaded report without itinerary snapshot.",
-          });
-        }
+    // Prepend snapshot if it's a PDF; if it's an image, wrap into a PDF page first.
+    if (!snapshotUrl || !itinerary?.snapshot_file_path) {
+      return reportPdfBlob;
+    }
+
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const path = itinerary.snapshot_file_path.toLowerCase();
+      const isPdf = path.endsWith(".pdf");
+      const isJpg = path.endsWith(".jpg") || path.endsWith(".jpeg");
+      const isPng = path.endsWith(".png");
+
+      const snapshotBytes = await fetch(snapshotUrl).then((r) => r.arrayBuffer());
+      const reportBytes = await reportPdfBlob.arrayBuffer();
+      const merged = await PDFDocument.create();
+
+      if (isPdf) {
+        const snap = await PDFDocument.load(snapshotBytes);
+        const snapPages = await merged.copyPages(snap, snap.getPageIndices());
+        snapPages.forEach((p) => merged.addPage(p));
+      } else if (isJpg || isPng) {
+        const img = isJpg
+          ? await merged.embedJpg(snapshotBytes)
+          : await merged.embedPng(snapshotBytes);
+        // Fit to A4 portrait
+        const a4w = 595.28;
+        const a4h = 841.89;
+        const scale = Math.min(a4w / img.width, a4h / img.height);
+        const w = img.width * scale;
+        const h = img.height * scale;
+        const page = merged.addPage([a4w, a4h]);
+        page.drawImage(img, { x: (a4w - w) / 2, y: (a4h - h) / 2, width: w, height: h });
       }
 
-      const url = URL.createObjectURL(finalBlob);
+      const rep = await PDFDocument.load(reportBytes);
+      const repPages = await merged.copyPages(rep, rep.getPageIndices());
+      repPages.forEach((p) => merged.addPage(p));
+      const out = await merged.save();
+      return new Blob([out as BlobPart], { type: "application/pdf" });
+    } catch (mergeErr) {
+      console.warn("Snapshot merge failed, returning report only:", mergeErr);
+      toast({
+        title: "Snapshot not merged",
+        description: "Could not embed the itinerary snapshot — showing report only.",
+      });
+      return reportPdfBlob;
+    }
+  };
+
+  // Build combined PDF when modal opens (or when source data changes)
+  useEffect(() => {
+    if (!open) {
+      if (combinedUrl) {
+        URL.revokeObjectURL(combinedUrl);
+        setCombinedUrl(null);
+      }
+      return;
+    }
+    let cancelled = false;
+    let createdUrl: string | null = null;
+    setIsBuilding(true);
+    (async () => {
+      try {
+        const blob = await buildCombinedPdf();
+        if (cancelled) return;
+        createdUrl = URL.createObjectURL(blob);
+        setCombinedUrl(createdUrl);
+      } catch (err: any) {
+        console.error("Failed to build combined report:", err);
+        if (!cancelled) {
+          toast({
+            title: "Report failed",
+            description: err?.message || "Could not generate the combined PDF.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (!cancelled) setIsBuilding(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+    // Rebuild only when modal opens or core data changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, htmlContent, snapshotUrl]);
+
+  const handlePrint = () => {
+    if (!combinedUrl) return;
+    const w = window.open(combinedUrl, "_blank");
+    if (!w) {
+      toast({ title: "Popup blocked", description: "Allow popups to print." });
+      return;
+    }
+    // PDF viewer in the new tab will offer print; also try auto-trigger
+    setTimeout(() => {
+      try { w.focus(); w.print(); } catch { /* ignore */ }
+    }, 800);
+  };
+
+  const handleDownload = async () => {
+    if (!combinedUrl) return;
+    setIsDownloading(true);
+    try {
       const a = document.createElement("a");
-      a.href = url;
+      a.href = combinedUrl;
       a.download = `${tourName} - Host Information Report.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
-    } catch (err: any) {
-      console.error("Download failed:", err);
-      toast({
-        title: "Download failed",
-        description: err?.message || "Could not generate the PDF.",
-        variant: "destructive",
-      });
     } finally {
       setIsDownloading(false);
     }
@@ -472,12 +541,12 @@ export const HostInfoHubReportModal = ({
           <DialogTitle className="flex items-center justify-between gap-2">
             <span>Host Information Report — {tourName}</span>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Button variant="outline" size="sm" onClick={handlePrint} disabled={!combinedUrl || isBuilding}>
                 <Printer className="h-4 w-4 mr-1" />
                 Print
               </Button>
-              <Button size="sm" onClick={handleDownload} disabled={isDownloading}>
-                {isDownloading ? (
+              <Button size="sm" onClick={handleDownload} disabled={!combinedUrl || isBuilding || isDownloading}>
+                {isDownloading || isBuilding ? (
                   <Loader2 className="h-4 w-4 mr-1 animate-spin" />
                 ) : (
                   <Download className="h-4 w-4 mr-1" />
@@ -487,8 +556,22 @@ export const HostInfoHubReportModal = ({
             </div>
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-hidden border rounded-lg bg-white">
-          <iframe srcDoc={htmlContent} className="w-full h-full border-0" title="Host Information Report" />
+        <div className="flex-1 overflow-hidden border rounded-lg bg-white relative">
+          {isBuilding && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Building combined report (including itinerary snapshot)…
+              </div>
+            </div>
+          )}
+          {combinedUrl ? (
+            <iframe src={combinedUrl} className="w-full h-full border-0" title="Host Information Report" />
+          ) : (
+            !isBuilding && (
+              <iframe srcDoc={htmlContent} className="w-full h-full border-0" title="Host Information Report" />
+            )
+          )}
         </div>
       </DialogContent>
     </Dialog>
