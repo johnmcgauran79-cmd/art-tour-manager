@@ -597,6 +597,18 @@ export default function TourEdit() {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="photos_videos_url">Tour Photos and Videos URL</Label>
+          <Input
+            id="photos_videos_url"
+            type="url"
+            value={formData.photos_videos_url}
+            onChange={(e) => handleInputChange("photos_videos_url", e.target.value)}
+            placeholder="https://drive.google.com/..."
+          />
+          <p className="text-xs text-muted-foreground">Link to a folder where tour photos and videos can be viewed and uploaded.</p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-2">
             <Label htmlFor="price_single">Single Price ($)</Label>
