@@ -519,6 +519,10 @@ export const HostInfoHubReportModal = ({
       setIsBuilding(false);
       return;
     }
+    if (combinedUrl) {
+      URL.revokeObjectURL(combinedUrl);
+      setCombinedUrl(null);
+    }
     let cancelled = false;
     let createdUrl: string | null = null;
     setIsBuilding(true);
@@ -547,7 +551,7 @@ export const HostInfoHubReportModal = ({
     };
     // Rebuild only when modal opens or core data changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, htmlContent, snapshotUrl]);
+  }, [open, htmlContent, snapshotUrl, reportDataReady, reportHasContent]);
 
   const handlePrint = () => {
     if (!combinedUrl) return;
