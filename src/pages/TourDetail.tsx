@@ -157,6 +157,7 @@ export default function TourDetail() {
     keapTagId: tour.keap_tag_id || '',
     xeroProductId: tour.xero_product_id || '',
     xeroReference: (tour as any).xero_reference || '',
+    photosVideosUrl: (tour as any).photos_videos_url || '',
   } : null;
 
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
