@@ -51,6 +51,7 @@ interface TourOverviewTabProps {
     keapTagId: string;
     xeroProductId: string;
     xeroReference: string;
+    photosVideosUrl?: string;
   };
   onNavigateToReport?: (reportType: 'passport' | 'pickup' | 'forms') => void;
 }
