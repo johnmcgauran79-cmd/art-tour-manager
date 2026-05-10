@@ -1,0 +1,496 @@
+import { useMemo, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Printer, Download, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useReportData } from "@/components/reports/useReportData";
+import { useHotels } from "@/hooks/useHotels";
+import { useActivities } from "@/hooks/useActivities";
+import { usePickupOptions } from "@/hooks/usePickupOptions";
+import { useItinerary } from "@/hooks/useItinerary";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+interface HostInfoHubReportModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tourId: string;
+  tourName: string;
+  pickupLocationRequired?: boolean;
+}
+
+const escapeHtml = (s: any): string =>
+  String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const formatTime = (t: string | null | undefined) => {
+  if (!t) return "-";
+  const [h, m] = t.split(":");
+  const hh = parseInt(h);
+  const h12 = hh === 0 ? 12 : hh > 12 ? hh - 12 : hh;
+  const ampm = hh >= 12 ? "pm" : "am";
+  return `${h12}:${m}${ampm}`;
+};
+
+const formatDressCode = (d: string | null | undefined) => {
+  if (!d) return "";
+  const map: Record<string, string> = {
+    casual: "Casual",
+    smart_casual: "Smart Casual",
+    casual_racewear: "Casual Racewear (collared shirt, no jacket or tie required)",
+    members_racewear: "Members Racewear (Jacket & Tie)",
+    black_tie: "Black Tie",
+    other: "Other",
+    not_required: "",
+  };
+  return map[d] ?? d;
+};
+
+const formatTransportMode = (m: string | null | undefined) => {
+  if (!m) return "Not Required";
+  if (m === "train") return "Public Transport";
+  if (m === "air_flight") return "Air/Flight Transfer";
+  return m.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+};
+
+export const HostInfoHubReportModal = ({
+  open,
+  onOpenChange,
+  tourId,
+  tourName,
+  pickupLocationRequired = false,
+}: HostInfoHubReportModalProps) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+  const { toast } = useToast();
+
+  const reports = useReportData(tourId, { showAllContacts: true });
+  const { data: hotels } = useHotels(tourId);
+  const { data: activities } = useActivities(tourId);
+  const { data: pickupOptions } = usePickupOptions(tourId);
+  const { data: itinerary } = useItinerary(tourId);
+
+  // Rooming list data per hotel (one query for all hotels on this tour)
+  const { data: roomingByHotel } = useQuery({
+    queryKey: ["host-info-hub-rooming", tourId],
+    enabled: !!tourId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("hotel_bookings")
+        .select(`
+          hotel_id, bedding, check_in_date, check_out_date, nights, room_type, allocated,
+          bookings!inner(id, status, passenger_2_name, passenger_3_name, group_name,
+            customers!lead_passenger_id(first_name, last_name))
+        `)
+        .eq("bookings.tour_id", tourId)
+        .eq("allocated", true)
+        .neq("bookings.status", "cancelled")
+        .is("cancelled_at", null);
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      for (const row of data || []) {
+        if (!grouped[row.hotel_id]) grouped[row.hotel_id] = [];
+        grouped[row.hotel_id].push(row);
+      }
+      return grouped;
+    },
+  });
+
+  // Activity passenger allocations (one query for all activities on this tour)
+  const { data: activityPassengers } = useQuery({
+    queryKey: ["host-info-hub-activity-pax", tourId],
+    enabled: !!tourId && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activity_bookings")
+        .select(`
+          activity_id, passengers_attending,
+          activities!inner(tour_id),
+          bookings!inner(id, status, passenger_2_name, passenger_3_name,
+            customers!lead_passenger_id(first_name, last_name, preferred_name))
+        `)
+        .eq("activities.tour_id", tourId)
+        .gt("passengers_attending", 0)
+        .neq("bookings.status", "cancelled");
+      if (error) throw error;
+      const grouped: Record<string, any[]> = {};
+      for (const row of data || []) {
+        if (!grouped[row.activity_id]) grouped[row.activity_id] = [];
+        grouped[row.activity_id].push(row);
+      }
+      return grouped;
+    },
+  });
+
+  // Itinerary snapshot signed URL
+  const { data: snapshotUrl } = useQuery({
+    queryKey: ["host-info-hub-snapshot-url", itinerary?.snapshot_file_path],
+    enabled: !!itinerary?.snapshot_file_path && open,
+    queryFn: async () => {
+      const { data, error } = await supabase.storage
+        .from("attachments")
+        .createSignedUrl(itinerary!.snapshot_file_path!, 3600);
+      if (error) throw error;
+      return data.signedUrl;
+    },
+  });
+
+  const contactsReport = reports.find((r) => r.type === "contacts");
+  const dietaryReport = reports.find((r) => r.type === "dietary");
+  const summaryReport = reports.find((r) => r.type === "summary");
+
+  const htmlContent = useMemo(() => {
+    const styles = `
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; color: #1a1a1a; font-size: 11px; line-height: 1.4; margin: 0; }
+        h1 { font-size: 22px; margin: 0 0 4px 0; }
+        h2 { font-size: 16px; margin: 0 0 8px 0; padding-bottom: 4px; border-bottom: 2px solid #1a1a1a; }
+        h3 { font-size: 13px; margin: 12px 0 4px 0; }
+        .cover { text-align: center; padding-top: 40mm; page-break-after: always; }
+        .cover h1 { font-size: 30px; }
+        .cover .subtitle { font-size: 14px; color: #555; margin-top: 8px; }
+        .cover .date { margin-top: 30px; font-size: 11px; color: #777; }
+        .section { page-break-before: always; }
+        .section:first-of-type { page-break-before: auto; }
+        .activity-page { page-break-before: always; }
+        table { width: 100%; border-collapse: collapse; margin: 6px 0 12px 0; }
+        th, td { border: 1px solid #d4d4d4; padding: 5px 7px; text-align: left; vertical-align: top; }
+        th { background: #f3f3f3; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; }
+        td { font-size: 10.5px; }
+        .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin: 6px 0 10px 0; }
+        .meta div { font-size: 10.5px; }
+        .meta strong { color: #555; font-weight: 600; margin-right: 4px; }
+        .notes { background: #f9f9f9; padding: 8px 10px; border-left: 3px solid #888; margin: 6px 0; white-space: pre-wrap; font-size: 10.5px; }
+        .empty { color: #888; font-style: italic; }
+        .header-bar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+        .header-bar .small { font-size: 10px; color: #666; }
+      </style>
+    `;
+
+    const today = formatDateToDDMMYYYY(new Date().toISOString().slice(0, 10));
+
+    let html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(tourName)} – Host Information Report</title>${styles}</head><body>`;
+
+    // Cover
+    html += `
+      <div class="cover">
+        <h1>${escapeHtml(tourName)}</h1>
+        <div class="subtitle">Host Information Report</div>
+        <div class="date">Generated ${today}</div>
+      </div>
+    `;
+
+    // Passenger Summary
+    if (summaryReport && summaryReport.data.length > 0) {
+      const hasPickup = summaryReport.data.some((d: any) => d.pickupLocation);
+      html += `<div class="section"><h2>Passenger Summary</h2><table><thead><tr>
+        <th>Lead Passenger</th><th>Additional</th><th>Pax</th><th>Bedding</th>
+        <th>Check In</th><th>Check Out</th><th>Nights</th>${hasPickup ? "<th>Pickup</th>" : ""}
+      </tr></thead><tbody>`;
+      for (const r of summaryReport.data as any[]) {
+        html += `<tr>
+          <td>${escapeHtml(r.leadPassenger)}</td>
+          <td>${escapeHtml((r.additionalPassengers || []).join(", ") || "-")}</td>
+          <td>${escapeHtml(r.passengerCount)}</td>
+          <td style="text-transform:capitalize">${escapeHtml(r.bedding || "-")}</td>
+          <td>${escapeHtml(r.checkIn)}</td>
+          <td>${escapeHtml(r.checkOut)}</td>
+          <td>${escapeHtml(r.nights)}</td>
+          ${hasPickup ? `<td>${escapeHtml(r.pickupLocation || "-")}</td>` : ""}
+        </tr>`;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Contacts List
+    if (contactsReport && contactsReport.data.length > 0) {
+      html += `<div class="section"><h2>Contacts List</h2><table><thead><tr>
+        <th>First Name</th><th>Last Name</th><th>Phone</th>
+      </tr></thead><tbody>`;
+      for (const c of contactsReport.data as any[]) {
+        html += `<tr><td>${escapeHtml(c.firstName)}</td><td>${escapeHtml(c.lastName)}</td><td>${escapeHtml(c.phone || "-")}</td></tr>`;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Dietary
+    if (dietaryReport && dietaryReport.data.length > 0) {
+      html += `<div class="section"><h2>Dietary Requirements</h2><table><thead><tr>
+        <th>Passenger</th><th>Booking (Lead)</th><th>Dietary Requirements</th>
+      </tr></thead><tbody>`;
+      for (const d of dietaryReport.data as any[]) {
+        html += `<tr><td>${escapeHtml(d.passengerName || d.leadPassenger)}</td><td>${escapeHtml(d.leadPassenger)}</td><td>${escapeHtml(d.dietaryRequirements)}</td></tr>`;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Pickup Locations
+    if (pickupLocationRequired && pickupOptions && pickupOptions.length > 0) {
+      html += `<div class="section"><h2>Pickup Locations</h2><table><thead><tr>
+        <th>Name</th><th>Time</th><th>Details</th>
+      </tr></thead><tbody>`;
+      for (const p of pickupOptions) {
+        html += `<tr><td>${escapeHtml(p.name)}</td><td>${escapeHtml(formatTime(p.pickup_time))}</td><td>${escapeHtml(p.details || "-")}</td></tr>`;
+      }
+      html += `</tbody></table></div>`;
+    }
+
+    // Hotel Reports (Rooming List per hotel)
+    if (hotels && hotels.length > 0) {
+      html += `<div class="section"><h2>Hotel Reports</h2>`;
+      for (const hotel of hotels) {
+        const rows = (roomingByHotel?.[hotel.id] || []).slice().sort((a: any, b: any) => {
+          const an = `${a.bookings.customers?.last_name || ""} ${a.bookings.customers?.first_name || ""}`;
+          const bn = `${b.bookings.customers?.last_name || ""} ${b.bookings.customers?.first_name || ""}`;
+          return an.localeCompare(bn);
+        });
+        html += `<div style="page-break-inside: avoid; margin-bottom: 16px;">
+          <h3>${escapeHtml(hotel.name)}</h3>
+          <div class="meta">
+            ${hotel.address ? `<div><strong>Address:</strong>${escapeHtml(hotel.address)}</div>` : ""}
+            ${hotel.contact_phone ? `<div><strong>Phone:</strong>${escapeHtml(hotel.contact_phone)}</div>` : ""}
+            ${hotel.default_check_in ? `<div><strong>Default Check-in:</strong>${escapeHtml(formatDateToDDMMYYYY(hotel.default_check_in))}</div>` : ""}
+            ${hotel.default_check_out ? `<div><strong>Default Check-out:</strong>${escapeHtml(formatDateToDDMMYYYY(hotel.default_check_out))}</div>` : ""}
+          </div>`;
+        if (rows.length === 0) {
+          html += `<p class="empty">No allocated rooms.</p>`;
+        } else {
+          html += `<table><thead><tr>
+            <th>Guest Name</th><th>Group</th><th>Bedding</th><th>Check In</th><th>Check Out</th><th>Nights</th><th>Room Type</th>
+          </tr></thead><tbody>`;
+          for (const r of rows) {
+            const cust = r.bookings.customers || {};
+            const name = `${cust.first_name || ""} ${cust.last_name || ""}`.trim() || "—";
+            html += `<tr>
+              <td>${escapeHtml(name)}</td>
+              <td>${escapeHtml(r.bookings.group_name || "-")}</td>
+              <td style="text-transform:capitalize">${escapeHtml(r.bedding || "-")}</td>
+              <td>${escapeHtml(formatDateToDDMMYYYY(r.check_in_date))}</td>
+              <td>${escapeHtml(formatDateToDDMMYYYY(r.check_out_date))}</td>
+              <td>${escapeHtml(r.nights || "-")}</td>
+              <td>${escapeHtml(r.room_type || "Standard")}</td>
+            </tr>`;
+          }
+          html += `</tbody></table>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Activities (one page each)
+    if (activities && activities.length > 0) {
+      for (const a of activities) {
+        const pax = activityPassengers?.[a.id] || [];
+        const totalPax = pax.reduce((s: number, p: any) => s + (p.passengers_attending || 0), 0);
+        const journeys = (a.activity_journeys || []).slice().sort((x: any, y: any) => x.journey_number - y.journey_number);
+        const dressCode = formatDressCode(a.dress_code);
+        html += `<div class="activity-page">
+          <div class="header-bar">
+            <h2 style="border:none; padding:0; margin:0;">Activity: ${escapeHtml(a.name)}</h2>
+            <span class="small">${escapeHtml(a.activity_date ? formatDateToDDMMYYYY(a.activity_date) : "Date TBD")}</span>
+          </div>
+          <div class="meta">
+            <div><strong>Location:</strong>${escapeHtml(a.location || "-")}</div>
+            <div><strong>Date:</strong>${escapeHtml(a.activity_date ? formatDateToDDMMYYYY(a.activity_date) : "TBD")}</div>
+            <div><strong>Start:</strong>${escapeHtml(formatTime(a.start_time))}</div>
+            <div><strong>End:</strong>${escapeHtml(formatTime(a.end_time))}</div>
+            <div><strong>Depart for Activity:</strong>${escapeHtml(formatTime(a.depart_for_activity))}</div>
+            <div><strong>Transport Mode:</strong>${escapeHtml(formatTransportMode(a.transport_mode))}</div>
+            <div><strong>Spots:</strong>${escapeHtml(a.spots_available ?? 0)}</div>
+            <div><strong>Pax Allocated:</strong>${escapeHtml(totalPax)}</div>
+            ${dressCode ? `<div><strong>Dress Code:</strong>${escapeHtml(dressCode)}</div>` : ""}
+            <div><strong>Booking Status:</strong>${escapeHtml((a.booking_status || "pending").replace(/_/g, " "))}</div>
+          </div>
+        `;
+
+        if (a.contact_name || a.contact_phone || a.contact_email) {
+          html += `<h3>Activity Contact</h3><div class="meta">
+            ${a.contact_name ? `<div><strong>Name:</strong>${escapeHtml(a.contact_name)}</div>` : ""}
+            ${a.contact_phone ? `<div><strong>Phone:</strong>${escapeHtml(a.contact_phone)}</div>` : ""}
+            ${a.contact_email ? `<div><strong>Email:</strong>${escapeHtml(a.contact_email)}</div>` : ""}
+          </div>`;
+        }
+
+        if (a.transport_company || a.transport_contact_name || a.transport_phone || a.driver_name) {
+          html += `<h3>Transport</h3><div class="meta">
+            ${a.transport_company ? `<div><strong>Company:</strong>${escapeHtml(a.transport_company)}</div>` : ""}
+            ${a.transport_status ? `<div><strong>Status:</strong>${escapeHtml(a.transport_status.replace(/_/g, " "))}</div>` : ""}
+            ${a.transport_contact_name ? `<div><strong>Contact:</strong>${escapeHtml(a.transport_contact_name)}</div>` : ""}
+            ${a.transport_phone ? `<div><strong>Phone:</strong>${escapeHtml(a.transport_phone)}</div>` : ""}
+            ${a.transport_email ? `<div><strong>Email:</strong>${escapeHtml(a.transport_email)}</div>` : ""}
+            ${a.driver_name ? `<div><strong>Driver:</strong>${escapeHtml(a.driver_name)}</div>` : ""}
+            ${a.driver_phone ? `<div><strong>Driver Phone:</strong>${escapeHtml(a.driver_phone)}</div>` : ""}
+          </div>`;
+        }
+
+        if (journeys.length > 0) {
+          html += `<h3>Journeys</h3><table><thead><tr>
+            <th>#</th><th>Pickup Time</th><th>Pickup Location</th><th>Destination</th>
+          </tr></thead><tbody>`;
+          for (const j of journeys) {
+            html += `<tr>
+              <td>${escapeHtml(j.journey_number)}</td>
+              <td>${escapeHtml(formatTime(j.pickup_time))}</td>
+              <td>${escapeHtml(j.pickup_location || "-")}</td>
+              <td>${escapeHtml(j.destination || "-")}</td>
+            </tr>`;
+          }
+          html += `</tbody></table>`;
+        }
+
+        if (a.hospitality_inclusions) {
+          html += `<h3>Hospitality Inclusions</h3><div class="notes">${escapeHtml(a.hospitality_inclusions)}</div>`;
+        }
+
+        if (a.notes) {
+          html += `<h3>Notes</h3><div class="notes">${escapeHtml(a.notes)}</div>`;
+        }
+
+        if (a.transport_notes) {
+          html += `<h3>Transport Notes</h3><div class="notes">${escapeHtml(a.transport_notes)}</div>`;
+        }
+
+        if (pax.length > 0) {
+          const sortedPax = pax.slice().sort((x: any, y: any) => {
+            const an = `${x.bookings.customers?.last_name || ""} ${x.bookings.customers?.first_name || ""}`;
+            const bn = `${y.bookings.customers?.last_name || ""} ${y.bookings.customers?.first_name || ""}`;
+            return an.localeCompare(bn);
+          });
+          html += `<h3>Allocated Passengers (${totalPax})</h3><table><thead><tr>
+            <th>Lead Passenger</th><th>Other Passengers</th><th>Pax Attending</th>
+          </tr></thead><tbody>`;
+          for (const p of sortedPax) {
+            const c = p.bookings.customers || {};
+            const lead = `${c.first_name || ""} ${c.last_name || ""}${c.preferred_name ? ` (${c.preferred_name})` : ""}`.trim();
+            const others = [p.bookings.passenger_2_name, p.bookings.passenger_3_name].filter(Boolean).join(", ") || "-";
+            html += `<tr><td>${escapeHtml(lead)}</td><td>${escapeHtml(others)}</td><td>${escapeHtml(p.passengers_attending)}</td></tr>`;
+          }
+          html += `</tbody></table>`;
+        }
+
+        html += `</div>`;
+      }
+    }
+
+    html += `</body></html>`;
+    return html;
+  }, [tourName, summaryReport, contactsReport, dietaryReport, hotels, roomingByHotel, activities, activityPassengers, pickupOptions, pickupLocationRequired]);
+
+  const handlePrint = () => {
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.write(htmlContent);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 600);
+  };
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      // 1) Render the report HTML to a PDF via html2pdf
+      const html2pdf = (await import("html2pdf.js")).default as any;
+      const container = document.createElement("div");
+      container.innerHTML = htmlContent;
+      // html2pdf uses the first child if it's a real element; ensure it's attached briefly
+      container.style.position = "fixed";
+      container.style.left = "-10000px";
+      container.style.top = "0";
+      document.body.appendChild(container);
+
+      const reportPdfBlob: Blob = await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: `${tourName} - Host Information Report.pdf`,
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: { mode: ["css", "legacy"] },
+        })
+        .from(container)
+        .outputPdf("blob");
+      document.body.removeChild(container);
+
+      // 2) If snapshot exists, prepend it via pdf-lib
+      let finalBlob: Blob = reportPdfBlob;
+      if (snapshotUrl && itinerary?.snapshot_file_path) {
+        try {
+          const isPdf = /\.pdf(\?|$)/i.test(itinerary.snapshot_file_path);
+          if (isPdf) {
+            const { PDFDocument } = await import("pdf-lib");
+            const snapshotBytes = await fetch(snapshotUrl).then((r) => r.arrayBuffer());
+            const reportBytes = await reportPdfBlob.arrayBuffer();
+            const merged = await PDFDocument.create();
+            const snap = await PDFDocument.load(snapshotBytes);
+            const rep = await PDFDocument.load(reportBytes);
+            const snapPages = await merged.copyPages(snap, snap.getPageIndices());
+            snapPages.forEach((p) => merged.addPage(p));
+            const repPages = await merged.copyPages(rep, rep.getPageIndices());
+            repPages.forEach((p) => merged.addPage(p));
+            const out = await merged.save();
+            finalBlob = new Blob([out], { type: "application/pdf" });
+          }
+        } catch (mergeErr) {
+          console.warn("Snapshot merge skipped:", mergeErr);
+          toast({
+            title: "Snapshot not merged",
+            description: "Downloaded report without itinerary snapshot.",
+          });
+        }
+      }
+
+      const url = URL.createObjectURL(finalBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${tourName} - Host Information Report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("Download failed:", err);
+      toast({
+        title: "Download failed",
+        description: err?.message || "Could not generate the PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle className="flex items-center justify-between gap-2">
+            <span>Host Information Report — {tourName}</span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handlePrint}>
+                <Printer className="h-4 w-4 mr-1" />
+                Print
+              </Button>
+              <Button size="sm" onClick={handleDownload} disabled={isDownloading}>
+                {isDownloading ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4 mr-1" />
+                )}
+                Download PDF
+              </Button>
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-hidden border rounded-lg bg-white">
+          <iframe srcDoc={htmlContent} className="w-full h-full border-0" title="Host Information Report" />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
