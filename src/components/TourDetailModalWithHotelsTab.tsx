@@ -112,6 +112,7 @@ export const TourDetailModalWithHotelsTab = ({
         startDate: currentTour.start_date,
         endDate: currentTour.end_date,
         tourHost: currentTour.tour_host,
+        photosVideosUrl: (currentTour as any).photos_videos_url || "",
       };
       console.log('Hotels tab tour transformed successfully:', transformed);
       setTransformedTour(transformed);
