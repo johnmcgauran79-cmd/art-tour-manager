@@ -434,7 +434,7 @@ export const HostInfoHubReportModal = ({
             const repPages = await merged.copyPages(rep, rep.getPageIndices());
             repPages.forEach((p) => merged.addPage(p));
             const out = await merged.save();
-            finalBlob = new Blob([out], { type: "application/pdf" });
+            finalBlob = new Blob([out as BlobPart], { type: "application/pdf" });
           }
         } catch (mergeErr) {
           console.warn("Snapshot merge skipped:", mergeErr);
