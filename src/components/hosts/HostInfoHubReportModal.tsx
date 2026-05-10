@@ -58,6 +58,13 @@ const formatTransportMode = (m: string | null | undefined) => {
   return m.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
+const formatCustomerName = (customer: { first_name?: string | null; preferred_name?: string | null; last_name?: string | null } | null | undefined) => {
+  if (!customer) return "—";
+  const firstName = customer.preferred_name?.trim() || customer.first_name?.trim() || "";
+  const lastName = customer.last_name?.trim() || "";
+  return `${firstName} ${lastName}`.trim() || "—";
+};
+
 export const HostInfoHubReportModal = ({
   open,
   onOpenChange,
@@ -158,7 +165,7 @@ export const HostInfoHubReportModal = ({
         .cover .subtitle { font-size: 14px; color: #555; margin-top: 8px; }
         .cover .date { margin-top: 30px; font-size: 11px; color: #777; }
         .section { page-break-before: always; }
-        .section:first-of-type { page-break-before: auto; }
+        .cover + .section { page-break-before: auto; }
         .activity-page { page-break-before: always; }
         table { width: 100%; border-collapse: collapse; margin: 6px 0 12px 0; }
         th, td { border: 1px solid #d4d4d4; padding: 5px 7px; text-align: left; vertical-align: top; }
@@ -247,8 +254,8 @@ export const HostInfoHubReportModal = ({
       html += `<div class="section"><h2>Hotel Reports</h2>`;
       for (const hotel of hotels) {
         const rows = (roomingByHotel?.[hotel.id] || []).slice().sort((a: any, b: any) => {
-          const an = `${a.bookings.customers?.last_name || ""} ${a.bookings.customers?.first_name || ""}`;
-          const bn = `${b.bookings.customers?.last_name || ""} ${b.bookings.customers?.first_name || ""}`;
+          const an = `${a.bookings.customers?.last_name || ""} ${a.bookings.customers?.preferred_name || a.bookings.customers?.first_name || ""}`;
+          const bn = `${b.bookings.customers?.last_name || ""} ${b.bookings.customers?.preferred_name || b.bookings.customers?.first_name || ""}`;
           return an.localeCompare(bn);
         });
         html += `<div style="page-break-inside: avoid; margin-bottom: 16px;">
@@ -267,7 +274,7 @@ export const HostInfoHubReportModal = ({
           </tr></thead><tbody>`;
           for (const r of rows) {
             const cust = r.bookings.customers || {};
-            const name = `${cust.first_name || ""} ${cust.last_name || ""}`.trim() || "—";
+            const name = formatCustomerName(cust);
             html += `<tr>
               <td>${escapeHtml(name)}</td>
               <td>${escapeHtml(r.bookings.group_name || "-")}</td>
@@ -360,8 +367,8 @@ export const HostInfoHubReportModal = ({
 
         if (pax.length > 0) {
           const sortedPax = pax.slice().sort((x: any, y: any) => {
-            const an = `${x.bookings.customers?.last_name || ""} ${x.bookings.customers?.first_name || ""}`;
-            const bn = `${y.bookings.customers?.last_name || ""} ${y.bookings.customers?.first_name || ""}`;
+            const an = `${x.bookings.customers?.last_name || ""} ${x.bookings.customers?.preferred_name || x.bookings.customers?.first_name || ""}`;
+            const bn = `${y.bookings.customers?.last_name || ""} ${y.bookings.customers?.preferred_name || y.bookings.customers?.first_name || ""}`;
             return an.localeCompare(bn);
           });
           html += `<h3>Allocated Passengers (${totalPax})</h3><table><thead><tr>
@@ -369,7 +376,7 @@ export const HostInfoHubReportModal = ({
           </tr></thead><tbody>`;
           for (const p of sortedPax) {
             const c = p.bookings.customers || {};
-            const lead = `${c.first_name || ""} ${c.last_name || ""}${c.preferred_name ? ` (${c.preferred_name})` : ""}`.trim();
+            const lead = formatCustomerName(c);
             const others = [p.bookings.passenger_2_name, p.bookings.passenger_3_name].filter(Boolean).join(", ") || "-";
             html += `<tr><td>${escapeHtml(lead)}</td><td>${escapeHtml(others)}</td><td>${escapeHtml(p.passengers_attending)}</td></tr>`;
           }
