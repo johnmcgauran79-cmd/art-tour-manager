@@ -9,6 +9,7 @@ import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { useItinerary } from "@/hooks/useItinerary";
+import { useBookings } from "@/hooks/useBookings";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -77,14 +78,15 @@ export const HostInfoHubReportModal = ({
   const [combinedUrl, setCombinedUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const { isFetched: bookingsFetched } = useBookings();
   const reports = useReportData(tourId, { showAllContacts: true });
-  const { data: hotels } = useHotels(tourId);
-  const { data: activities } = useActivities(tourId);
-  const { data: pickupOptions } = usePickupOptions(tourId);
-  const { data: itinerary } = useItinerary(tourId);
+  const { data: hotels, isFetched: hotelsFetched } = useHotels(tourId);
+  const { data: activities, isFetched: activitiesFetched } = useActivities(tourId);
+  const { data: pickupOptions, isFetched: pickupOptionsFetched } = usePickupOptions(tourId);
+  const { data: itinerary, isFetched: itineraryFetched } = useItinerary(tourId);
 
   // Rooming list data per hotel (one query for all hotels on this tour)
-  const { data: roomingByHotel } = useQuery({
+  const { data: roomingByHotel, isFetched: roomingByHotelFetched } = useQuery({
     queryKey: ["host-info-hub-rooming", tourId],
     enabled: !!tourId && open,
     queryFn: async () => {
@@ -110,7 +112,7 @@ export const HostInfoHubReportModal = ({
   });
 
   // Activity passenger allocations (one query for all activities on this tour)
-  const { data: activityPassengers } = useQuery({
+  const { data: activityPassengers, isFetched: activityPassengersFetched } = useQuery({
     queryKey: ["host-info-hub-activity-pax", tourId],
     enabled: !!tourId && open,
     queryFn: async () => {
@@ -136,7 +138,7 @@ export const HostInfoHubReportModal = ({
   });
 
   // Itinerary snapshot signed URL
-  const { data: snapshotUrl } = useQuery({
+  const { data: snapshotUrl, isFetched: snapshotUrlFetched } = useQuery({
     queryKey: ["host-info-hub-snapshot-url", itinerary?.snapshot_file_path],
     enabled: !!itinerary?.snapshot_file_path && open,
     queryFn: async () => {
@@ -159,6 +161,14 @@ export const HostInfoHubReportModal = ({
     (activities?.length || 0) > 0 ||
     (pickupLocationRequired && (pickupOptions?.length || 0) > 0)
   );
+  const reportDataReady = bookingsFetched &&
+    hotelsFetched &&
+    activitiesFetched &&
+    itineraryFetched &&
+    roomingByHotelFetched &&
+    activityPassengersFetched &&
+    (!pickupLocationRequired || pickupOptionsFetched) &&
+    (!itinerary?.snapshot_file_path || snapshotUrlFetched);
 
   const htmlContent = useMemo(() => {
     const styles = `
@@ -501,7 +511,12 @@ export const HostInfoHubReportModal = ({
       }
       return;
     }
+    if (!reportDataReady) {
+      setIsBuilding(true);
+      return;
+    }
     if (!reportHasContent && !snapshotUrl) {
+      setIsBuilding(false);
       return;
     }
     let cancelled = false;
