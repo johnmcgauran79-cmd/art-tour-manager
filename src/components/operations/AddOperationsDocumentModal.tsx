@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,26 +9,18 @@ import {
   useCreateOperationsDocument,
   type OperationsDocCategory,
 } from "@/hooks/useOperationsDocuments";
-import type { Department } from "@/hooks/useUserDepartments";
-
-const DEPARTMENTS: { value: Department; label: string }[] = [
-  { value: "operations", label: "Operations" },
-  { value: "finance", label: "Finance" },
-  { value: "marketing", label: "Marketing" },
-  { value: "booking", label: "Booking" },
-  { value: "maintenance", label: "Maintenance" },
-  { value: "general", label: "General" },
-];
+import { useOperationsDocumentSections } from "@/hooks/useOperationsDocumentSections";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: OperationsDocCategory;
-  defaultDepartment?: Department;
+  defaultSection?: string;
 }
 
-export const AddOperationsDocumentModal = ({ open, onOpenChange, category, defaultDepartment }: Props) => {
-  const [department, setDepartment] = useState<Department>(defaultDepartment || "general");
+export const AddOperationsDocumentModal = ({ open, onOpenChange, category, defaultSection }: Props) => {
+  const { data: sections = [] } = useOperationsDocumentSections(category);
+  const [department, setDepartment] = useState<string>(defaultSection || "");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [note, setNote] = useState("");
@@ -38,8 +30,14 @@ export const AddOperationsDocumentModal = ({ open, onOpenChange, category, defau
 
   const create = useCreateOperationsDocument();
 
+  useEffect(() => {
+    if (open) {
+      setDepartment(defaultSection || sections[0]?.name || "");
+    }
+  }, [open, defaultSection, sections]);
+
   const reset = () => {
-    setDepartment(defaultDepartment || "general");
+    setDepartment(defaultSection || sections[0]?.name || "");
     setName("");
     setDescription("");
     setNote("");
@@ -49,7 +47,7 @@ export const AddOperationsDocumentModal = ({ open, onOpenChange, category, defau
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || !department) return;
     if (sourceType === "file" && !file) return;
     if (sourceType === "url" && !url.trim()) return;
 
@@ -75,12 +73,12 @@ export const AddOperationsDocumentModal = ({ open, onOpenChange, category, defau
 
         <div className="space-y-4">
           <div>
-            <Label>Department</Label>
-            <Select value={department} onValueChange={(v) => setDepartment(v as Department)}>
+            <Label>Section</Label>
+            <Select value={department} onValueChange={setDepartment}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {DEPARTMENTS.map(d => (
-                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                {sections.map(s => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
