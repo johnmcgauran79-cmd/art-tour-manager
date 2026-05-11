@@ -2,17 +2,32 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail, Tag } from "lucide-react";
+import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail, Tag, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SentEmailsReportModal } from "./SentEmailsReportModal";
 import { NameTagGeneratorModal } from "./NameTagGeneratorModal";
+import { BouncedEmailsReportModal } from "./BouncedEmailsReportModal";
 
 export const OperationsQuickActions = () => {
   const navigate = useNavigate();
   const [sentEmailsOpen, setSentEmailsOpen] = useState(false);
   const [nameTagOpen, setNameTagOpen] = useState(false);
+  const [bouncedEmailsOpen, setBouncedEmailsOpen] = useState(false);
+
+  // Bounced Emails count (active suppressions)
+  const { data: bouncedEmailsCount = 0 } = useQuery({
+    queryKey: ['bounced-emails-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('email_suppressions')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
 
   // Hotel Allocation Check count
   const { data: hotelIssuesCount = 0 } = useQuery({
