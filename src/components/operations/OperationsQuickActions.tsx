@@ -165,6 +165,13 @@ export const OperationsQuickActions = () => {
       count: 0,
       onClick: () => setNameTagOpen(true),
     },
+    {
+      icon: AlertTriangle,
+      label: "Bounced Emails",
+      description: "Email addresses that bounced and are suppressed from sending",
+      count: bouncedEmailsCount,
+      onClick: () => setBouncedEmailsOpen(true),
+    },
   ];
 
   return (
@@ -217,6 +224,11 @@ export const OperationsQuickActions = () => {
       <NameTagGeneratorModal
         open={nameTagOpen}
         onOpenChange={setNameTagOpen}
+      />
+
+      <BouncedEmailsReportModal
+        open={bouncedEmailsOpen}
+        onOpenChange={setBouncedEmailsOpen}
       />
     </div>
   );
