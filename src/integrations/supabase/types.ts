@@ -1890,12 +1890,42 @@ export type Database = {
           },
         ]
       }
+      operations_document_sections: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       operations_documents: {
         Row: {
           category: string
           created_at: string
           created_by: string | null
-          department: Database["public"]["Enums"]["department"]
+          department: string
           description: string | null
           external_url: string | null
           file_name: string | null
@@ -1909,7 +1939,7 @@ export type Database = {
           category: string
           created_at?: string
           created_by?: string | null
-          department: Database["public"]["Enums"]["department"]
+          department: string
           description?: string | null
           external_url?: string | null
           file_name?: string | null
@@ -1923,7 +1953,7 @@ export type Database = {
           category?: string
           created_at?: string
           created_by?: string | null
-          department?: Database["public"]["Enums"]["department"]
+          department?: string
           description?: string | null
           external_url?: string | null
           file_name?: string | null
