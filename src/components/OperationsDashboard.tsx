@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { AllTasksView } from "@/components/AllTasksView";
 import { useAuth } from "@/hooks/useAuth";
 import { OperationsHeader } from "@/components/operations/OperationsHeader";
 import { OperationsQuickActions } from "@/components/operations/OperationsQuickActions";
 import { OperationsToursOverview } from "@/components/operations/OperationsToursOverview";
+import { OperationsDocumentsTab } from "@/components/operations/OperationsDocumentsTab";
 
 interface OperationsDashboardProps {
   onNavigateToItem?: (type: string, itemId: string, hotelId?: string) => void;
@@ -67,12 +69,34 @@ export const OperationsDashboard = ({ onNavigateToItem }: OperationsDashboardPro
   }
 
   return (
-    <div className="space-y-6">
-      <OperationsHeader />
+    <Tabs defaultValue="center" className="space-y-6">
+      <TabsList>
+        <TabsTrigger value="center">Operations Center</TabsTrigger>
+        <TabsTrigger value="working">Working Documents</TabsTrigger>
+        <TabsTrigger value="policies">Policies and Procedures</TabsTrigger>
+      </TabsList>
 
-      <OperationsQuickActions />
+      <TabsContent value="center" className="space-y-6">
+        <OperationsHeader />
+        <OperationsQuickActions />
+        <OperationsToursOverview />
+      </TabsContent>
 
-      <OperationsToursOverview />
-    </div>
+      <TabsContent value="working">
+        <OperationsDocumentsTab
+          category="working_docs"
+          title="Working Documents"
+          description="Operational working documents organised by department."
+        />
+      </TabsContent>
+
+      <TabsContent value="policies">
+        <OperationsDocumentsTab
+          category="policies"
+          title="Policies and Procedures"
+          description="Company policies and standard operating procedures by department."
+        />
+      </TabsContent>
+    </Tabs>
   );
 };

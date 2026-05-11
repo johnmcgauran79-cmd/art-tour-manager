@@ -1890,6 +1890,51 @@ export type Database = {
           },
         ]
       }
+      operations_documents: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          department: Database["public"]["Enums"]["department"]
+          description: string | null
+          external_url: string | null
+          file_name: string | null
+          file_path: string | null
+          id: string
+          name: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          department: Database["public"]["Enums"]["department"]
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          department?: Database["public"]["Enums"]["department"]
+          description?: string | null
+          external_url?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       post_booking_email_log: {
         Row: {
           booking_id: string
