@@ -1,14 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { Department } from "@/hooks/useUserDepartments";
 
 export type OperationsDocCategory = "working_docs" | "policies";
 
 export interface OperationsDocument {
   id: string;
   category: OperationsDocCategory;
-  department: Department;
+  department: string;
   name: string;
   description: string | null;
   note: string | null;
@@ -37,7 +36,7 @@ export const useOperationsDocuments = (category: OperationsDocCategory) => {
 
 export interface CreateOperationsDocumentInput {
   category: OperationsDocCategory;
-  department: Department;
+  department: string;
   name: string;
   description?: string | null;
   note?: string | null;

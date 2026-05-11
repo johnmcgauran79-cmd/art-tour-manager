@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, ExternalLink, FileDown, Trash2 } from "lucide-react";
+import { Plus, ExternalLink, FileDown, Trash2, Settings2 } from "lucide-react";
 import {
   useOperationsDocuments,
   useUpdateOperationsDocumentNote,
@@ -12,18 +12,10 @@ import {
   type OperationsDocCategory,
   type OperationsDocument,
 } from "@/hooks/useOperationsDocuments";
-import type { Department } from "@/hooks/useUserDepartments";
+import { useOperationsDocumentSections } from "@/hooks/useOperationsDocumentSections";
 import { AddOperationsDocumentModal } from "./AddOperationsDocumentModal";
+import { ManageSectionsModal } from "./ManageSectionsModal";
 import { useToast } from "@/hooks/use-toast";
-
-const DEPARTMENTS: { value: Department; label: string }[] = [
-  { value: "operations", label: "Operations" },
-  { value: "finance", label: "Finance" },
-  { value: "marketing", label: "Marketing" },
-  { value: "booking", label: "Booking" },
-  { value: "maintenance", label: "Maintenance" },
-  { value: "general", label: "General" },
-];
 
 interface Props {
   category: OperationsDocCategory;
@@ -55,20 +47,28 @@ const NoteCell = ({ doc }: { doc: OperationsDocument }) => {
 
 export const OperationsDocumentsTab = ({ category, title, description }: Props) => {
   const { data: docs = [], isLoading } = useOperationsDocuments(category);
+  const { data: sections = [] } = useOperationsDocumentSections(category);
   const deleteMut = useDeleteOperationsDocument();
   const { toast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
-  const [defaultDept, setDefaultDept] = useState<Department | undefined>();
+  const [manageOpen, setManageOpen] = useState(false);
+  const [defaultSection, setDefaultSection] = useState<string | undefined>();
 
   const grouped = useMemo(() => {
     const map: Record<string, OperationsDocument[]> = {};
-    DEPARTMENTS.forEach(d => { map[d.value] = []; });
+    sections.forEach(s => { map[s.name] = []; });
     docs.forEach(d => {
       if (!map[d.department]) map[d.department] = [];
       map[d.department].push(d);
     });
     return map;
-  }, [docs]);
+  }, [docs, sections]);
+
+  // Identify orphaned sections (docs whose department isn't in sections list)
+  const orphanNames = useMemo(() => {
+    const known = new Set(sections.map(s => s.name));
+    return Object.keys(grouped).filter(n => !known.has(n));
+  }, [grouped, sections]);
 
   const openFile = async (doc: OperationsDocument) => {
     if (doc.external_url) {
@@ -90,6 +90,64 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
     deleteMut.mutate(doc);
   };
 
+  const renderSection = (sectionName: string, items: OperationsDocument[]) => (
+    <Card key={sectionName}>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-lg">{sectionName}</CardTitle>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => { setDefaultSection(sectionName); setModalOpen(true); }}
+        >
+          <Plus className="h-4 w-4 mr-1" /> Add to {sectionName}
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {items.length === 0 ? (
+          <p className="text-sm text-muted-foreground italic">No files yet.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[22%]">File Name</TableHead>
+                <TableHead className="w-[12%]">Link</TableHead>
+                <TableHead className="w-[26%]">Description</TableHead>
+                <TableHead className="w-[32%]">Notes</TableHead>
+                <TableHead className="w-[8%]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map(doc => (
+                <TableRow key={doc.id} className="cursor-default">
+                  <TableCell className="font-medium align-top">
+                    {doc.name}
+                    {doc.file_name && (
+                      <div className="text-xs text-muted-foreground truncate">{doc.file_name}</div>
+                    )}
+                  </TableCell>
+                  <TableCell className="align-top">
+                    <Button size="sm" variant="ghost" onClick={() => openFile(doc)}>
+                      {doc.external_url ? <ExternalLink className="h-4 w-4" /> : <FileDown className="h-4 w-4" />}
+                    </Button>
+                  </TableCell>
+                  <TableCell className="text-sm align-top">{doc.description || <span className="text-muted-foreground">—</span>}</TableCell>
+                  <TableCell className="align-top">
+                    <NoteCell doc={doc} />
+                  </TableCell>
+                  <TableCell className="align-top">
+                    <Button size="sm" variant="ghost" onClick={() => handleDelete(doc)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -97,79 +155,49 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
           <h2 className="text-2xl font-bold text-brand-navy">{title}</h2>
           <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        <Button onClick={() => { setDefaultDept(undefined); setModalOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" /> Add New File
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setManageOpen(true)}>
+            <Settings2 className="h-4 w-4 mr-2" /> Manage Sections
+          </Button>
+          <Button onClick={() => { setDefaultSection(undefined); setModalOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" /> Add New File
+          </Button>
+        </div>
       </div>
 
       {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
 
-      {DEPARTMENTS.map(dept => {
-        const items = grouped[dept.value] || [];
-        return (
-          <Card key={dept.value}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-lg">{dept.label}</CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => { setDefaultDept(dept.value); setModalOpen(true); }}
-              >
-                <Plus className="h-4 w-4 mr-1" /> Add to {dept.label}
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {items.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No files yet.</p>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[22%]">File Name</TableHead>
-                      <TableHead className="w-[12%]">Link</TableHead>
-                      <TableHead className="w-[26%]">Description</TableHead>
-                      <TableHead className="w-[32%]">Notes</TableHead>
-                      <TableHead className="w-[8%]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map(doc => (
-                      <TableRow key={doc.id} className="cursor-default">
-                        <TableCell className="font-medium align-top">
-                          {doc.name}
-                          {doc.file_name && (
-                            <div className="text-xs text-muted-foreground truncate">{doc.file_name}</div>
-                          )}
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Button size="sm" variant="ghost" onClick={() => openFile(doc)}>
-                            {doc.external_url ? <ExternalLink className="h-4 w-4" /> : <FileDown className="h-4 w-4" />}
-                          </Button>
-                        </TableCell>
-                        <TableCell className="text-sm align-top">{doc.description || <span className="text-muted-foreground">—</span>}</TableCell>
-                        <TableCell className="align-top">
-                          <NoteCell doc={doc} />
-                        </TableCell>
-                        <TableCell className="align-top">
-                          <Button size="sm" variant="ghost" onClick={() => handleDelete(doc)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        );
-      })}
+      {sections.length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            No sections yet. Click <strong>Manage Sections</strong> to add one.
+          </CardContent>
+        </Card>
+      )}
+
+      {sections.map(s => renderSection(s.name, grouped[s.name] || []))}
+
+      {orphanNames.map(name => (
+        <div key={name}>
+          <p className="text-xs text-muted-foreground italic mb-1">
+            Section "{name}" no longer exists — files below need to be reassigned or deleted.
+          </p>
+          {renderSection(name, grouped[name])}
+        </div>
+      ))}
 
       <AddOperationsDocumentModal
         open={modalOpen}
         onOpenChange={setModalOpen}
         category={category}
-        defaultDepartment={defaultDept}
+        defaultSection={defaultSection}
+      />
+
+      <ManageSectionsModal
+        open={manageOpen}
+        onOpenChange={setManageOpen}
+        category={category}
+        title={title}
       />
     </div>
   );
