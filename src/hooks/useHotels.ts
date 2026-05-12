@@ -19,7 +19,7 @@ export interface Hotel {
   default_room_type: string | null;
   default_check_in: string | null;
   default_check_out: string | null;
-  extra_night_price: number | null;
+  extra_night_price: string | null;
   operations_notes: string | null;
   upgrade_options: string | null;
   created_at: string;
