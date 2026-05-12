@@ -252,7 +252,7 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                   {hotel.extra_night_price && (
                      <div className="flex items-center gap-1">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>Extra Night: ${hotel.extra_night_price}</span>
+                      <span>Extra Night: {hotel.extra_night_price}</span>
                     </div>
                   )}
                 </div>
