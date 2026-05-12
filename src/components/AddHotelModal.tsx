@@ -117,7 +117,7 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
           default_room_type: hotelData.default_room_type || null,
           default_check_in: hotelData.default_check_in || null,
           default_check_out: hotelData.default_check_out || null,
-          extra_night_price: hotelData.extra_night_price ? parseFloat(hotelData.extra_night_price) : null,
+          extra_night_price: hotelData.extra_night_price?.trim() ? hotelData.extra_night_price.trim() : null,
           operations_notes: hotelData.operations_notes || null,
           upgrade_options: hotelData.upgrade_options || null,
           cancellation_policy: hotelData.cancellation_policy || null,
@@ -329,12 +329,10 @@ export const AddHotelModal = ({ tourId, open, onOpenChange, initialData }: AddHo
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="extra_night_price">Extra Night Price ($)</Label>
+              <Label htmlFor="extra_night_price">Extra Night Price</Label>
               <Input
                 id="extra_night_price"
-                type="number"
-                min="0"
-                step="0.01"
+                placeholder="e.g. Single $150, Twin $220"
                 value={formData.extra_night_price}
                 onChange={(e) => handleInputChange("extra_night_price", e.target.value)}
               />
