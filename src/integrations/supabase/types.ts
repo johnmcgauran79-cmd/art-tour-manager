@@ -1708,7 +1708,7 @@ export type Database = {
           default_check_in: string | null
           default_check_out: string | null
           default_room_type: string | null
-          extra_night_price: number | null
+          extra_night_price: string | null
           final_rooms_cutoff_date: string | null
           id: string
           initial_rooms_cutoff_date: string | null
@@ -1741,7 +1741,7 @@ export type Database = {
           default_check_in?: string | null
           default_check_out?: string | null
           default_room_type?: string | null
-          extra_night_price?: number | null
+          extra_night_price?: string | null
           final_rooms_cutoff_date?: string | null
           id?: string
           initial_rooms_cutoff_date?: string | null
@@ -1774,7 +1774,7 @@ export type Database = {
           default_check_in?: string | null
           default_check_out?: string | null
           default_room_type?: string | null
-          extra_night_price?: number | null
+          extra_night_price?: string | null
           final_rooms_cutoff_date?: string | null
           id?: string
           initial_rooms_cutoff_date?: string | null

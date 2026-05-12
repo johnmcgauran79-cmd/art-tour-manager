@@ -1,0 +1,1 @@
+ALTER TABLE public.hotels ALTER COLUMN extra_night_price TYPE TEXT USING extra_night_price::TEXT;
