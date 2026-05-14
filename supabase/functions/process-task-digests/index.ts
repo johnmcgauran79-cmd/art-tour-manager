@@ -153,7 +153,7 @@ function digestHtml(
   const blocks = sections
     .map(
       (s) =>
-        `<h3 style="color:#1a2332;font-size:15px;margin:18px 0 8px;">${s.title} <span style="color:#9ca3af;font-weight:400;font-size:13px;">(${s.tasks.length})</span></h3>${renderTaskList(s.tasks)}`,
+        `<h3 style="color:#d4a017;font-size:15px;margin:22px 0 10px;padding:6px 10px;background:#fff8e1;border-left:4px solid #ffd11a;border-radius:3px;text-transform:uppercase;letter-spacing:0.4px;">${s.title} <span style="color:#a07a10;font-weight:500;font-size:12px;">(${s.tasks.length})</span></h3>${renderTaskList(s.tasks)}`,
     )
     .join("");
   return `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f4f4f5;font-family:Arial,Helvetica,sans-serif;">
