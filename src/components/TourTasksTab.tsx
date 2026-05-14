@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Plus, Settings2, ClipboardList } from "lucide-react";
+import { Plus, Settings2, ClipboardList, Bell } from "lucide-react";
 import { useTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
 import { TaskTemplateModal } from "@/components/TaskTemplateModal";
+import { TaskNotificationsModal } from "@/components/tasks/TaskNotificationsModal";
 import { useAuth } from "@/hooks/useAuth";
 import { isTaskFinished } from "@/lib/taskStatuses";
 
@@ -22,6 +23,7 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
   const { navigateWithContext } = useNavigationContext();
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [taskTemplateModalOpen, setTaskTemplateModalOpen] = useState(false);
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const [showCompletedTasks, setShowCompletedTasks] = useState(false);
   const { userRole } = useAuth();
   
@@ -82,6 +84,15 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
                 >
                   <Settings2 className="h-4 w-4" />
                   Task Templates
+                </Button>
+                <Button
+                  onClick={() => setNotificationsModalOpen(true)}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Bell className="h-4 w-4" />
+                  Task Notifications
                 </Button>
                 <Button
                   onClick={() => setAddTaskModalOpen(true)}
@@ -204,6 +215,10 @@ export const TourTasksTab = ({ tourId, tourName }: TourTasksTabProps) => {
       <TaskTemplateModal
         open={taskTemplateModalOpen}
         onOpenChange={setTaskTemplateModalOpen}
+      />
+      <TaskNotificationsModal
+        open={notificationsModalOpen}
+        onOpenChange={setNotificationsModalOpen}
       />
     </>
   );

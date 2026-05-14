@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
+import { TaskNotificationsModal } from "@/components/tasks/TaskNotificationsModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
@@ -50,6 +51,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const { userRole } = useAuth();
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
