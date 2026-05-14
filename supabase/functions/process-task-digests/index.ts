@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
           const { data: u } = await supabase.auth.getUser(token);
           if (u?.user?.id) testUserId = u.user.id;
         }
+        if (!testUserId && body?.user_id) testUserId = String(body.user_id);
       }
     }
   } catch (_) {}
