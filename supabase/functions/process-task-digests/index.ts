@@ -75,10 +75,11 @@ function shouldSendDigest(pref: Pref, now: { weekday: number; hour: number; minu
   const nowMin = now.hour * 60 + now.minute;
   if (Math.abs(nowMin - targetMin) > 15) return false;
 
-  // Don't double-send within last 12 hours
+  // Don't double-send within last 6 hours (shorter than daily window so a
+  // late-evening send never blocks the next morning's scheduled digest)
   if (pref.last_digest_sent_at) {
     const ageHrs = (Date.now() - new Date(pref.last_digest_sent_at).getTime()) / 3600000;
-    if (ageHrs < 12) return false;
+    if (ageHrs < 6) return false;
   }
   return true;
 }
@@ -376,10 +377,14 @@ Deno.serve(async (req) => {
 
       if (delivered) {
         sent++;
-        await supabase
-          .from("task_notification_preferences")
-          .update({ last_digest_sent_at: new Date().toISOString() })
-          .eq("user_id", pref.user_id);
+        // Test sends must not update last_digest_sent_at, otherwise the
+        // anti-duplicate guard can suppress the next scheduled digest.
+        if (!testUserId) {
+          await supabase
+            .from("task_notification_preferences")
+            .update({ last_digest_sent_at: new Date().toISOString() })
+            .eq("user_id", pref.user_id);
+        }
         await supabase.from("task_notification_log").insert({
           user_id: pref.user_id,
           task_id: "00000000-0000-0000-0000-000000000000",
