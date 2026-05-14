@@ -41,6 +41,7 @@ interface TaskRow {
   due_date: string | null;
   status: string;
   tour_id: string | null;
+  tour_name?: string | null;
 }
 
 function getLocalParts(tz: string) {
@@ -135,7 +136,7 @@ function renderTaskList(tasks: TaskRow[]): string {
         `<tr><td style="padding:8px 10px;border-bottom:1px solid #eef0f3;">
           <a href="${APP_URL}/tasks/${t.id}" style="color:#1a2332;font-weight:600;text-decoration:none;font-size:14px;">${t.title}</a>
           <div style="color:#6b7280;font-size:12px;margin-top:2px;">
-            Due: ${fmtAuDate(t.due_date)} · Priority: <span style="text-transform:capitalize;">${t.priority || "—"}</span>
+            Due: ${fmtAuDate(t.due_date)} · Priority: <span style="text-transform:capitalize;">${t.priority || "—"}</span>${t.tour_name ? ` · Tour: <span style="color:#1a2332;font-weight:500;">${t.tour_name}</span>` : ""}
           </div>
         </td></tr>`,
     )
@@ -249,6 +250,22 @@ Deno.serve(async (req) => {
         if (chunkTasks) tasks.push(...chunkTasks);
       }
       debug.push({ tasksFetched: tasks.length });
+
+      // Hydrate tour names
+      const tourIds = Array.from(
+        new Set(tasks.map((t: any) => t.tour_id).filter(Boolean) as string[]),
+      );
+      const tourMap: Record<string, string> = {};
+      if (tourIds.length) {
+        const { data: tourRows } = await supabase
+          .from("tours")
+          .select("id, name")
+          .in("id", tourIds);
+        (tourRows || []).forEach((r: any) => {
+          tourMap[r.id] = r.name;
+        });
+      }
+      for (const t of tasks) t.tour_name = t.tour_id ? tourMap[t.tour_id] || null : null;
 
       const now = Date.now();
       const today = new Date();
