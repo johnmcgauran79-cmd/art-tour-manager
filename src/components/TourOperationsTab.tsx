@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck, BellRing } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTourBookings } from "@/hooks/useTourBookings";
 import { useHotels } from "@/hooks/useHotels";
@@ -601,6 +601,15 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 <Plus className="h-4 w-4" />
                 Add Task
               </Button>
+              <Button
+                onClick={() => setNotificationsModalOpen(true)}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <BellRing className="h-4 w-4" />
+                Task Notifications
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -744,6 +753,11 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         onOpenChange={setFormResponsesModalOpen}
         tourId={tourId}
         tourName={tourName}
+      />
+
+      <TaskNotificationsModal
+        open={notificationsModalOpen}
+        onOpenChange={setNotificationsModalOpen}
       />
     </div>
   );
