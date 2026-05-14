@@ -213,25 +213,39 @@ Deno.serve(async (req) => {
 
     const nowParts = getLocalParts(TZ);
     let sent = 0;
+    const debug: any[] = [];
 
     for (const pref of (prefs || []) as Pref[]) {
       if (!testUserId && !shouldSendDigest(pref, nowParts)) continue;
 
       const { assigned, watching, mentioned } = await getScopedTaskIds(supabase, pref);
       const allIds = new Set<string>([...assigned, ...watching, ...mentioned]);
+      debug.push({ user: pref.user_id, assigned: assigned.size, watching: watching.size, mentioned: mentioned.size });
       if (!allIds.size && pref.digest_skip_if_empty && !testUserId) continue;
 
       const { data: profile } = await supabase
         .from("profiles")
         .select("id, first_name, email")
         .eq("id", pref.user_id)
-        .single();
-      if (!profile?.email) continue;
+        .maybeSingle();
+      if (!profile?.email) {
+        debug.push({ user: pref.user_id, skip: "no profile email" });
+        continue;
+      }
 
-      const { data: tasks } = await supabase
+      // Chunk the .in() to avoid URL length limits with many ids
+      const idArr = Array.from(allIds);
+      const tasks: any[] = [];
+      for (let i = 0; i < idArr.length; i += 200) {
+        const chunk = idArr.slice(i, i + 200);
+        const { data: chunkTasks, error: tErr } = await supabase
         .from("tasks")
         .select("id, title, priority, due_date, status, tour_id, created_at")
-        .in("id", Array.from(allIds));
+          .in("id", chunk);
+        if (tErr) debug.push({ taskFetchError: tErr.message });
+        if (chunkTasks) tasks.push(...chunkTasks);
+      }
+      debug.push({ tasksFetched: tasks.length });
 
       const now = Date.now();
       const today = new Date();
@@ -249,7 +263,7 @@ Deno.serve(async (req) => {
       const watchedOnly: TaskRow[] = [];
 
       for (const t of (tasks || []) as any[]) {
-        if (FINISHED.has(t.status)) continue;
+        if (FINISHED.has(String(t.status).toLowerCase())) continue;
         if (
           pref.digest_priority_filter.length > 0 &&
           !pref.digest_priority_filter.includes((t.priority || "").toLowerCase())
@@ -298,6 +312,7 @@ Deno.serve(async (req) => {
         sections.push({ title: "Watched (non-assigned)", tasks: watchedOnly });
 
       const total = sections.reduce((s, x) => s + x.tasks.length, 0);
+      debug.push({ overdue: overdue.length, dueToday: dueToday.length, upcoming: upcoming.length, newlyAssigned: newlyAssigned.length, watchedOnly: watchedOnly.length, total });
       if (total === 0 && pref.digest_skip_if_empty && !testUserId) continue;
 
       const html = digestHtml(profile.first_name, sections, pref.digest_lookahead_days, headerImg);
@@ -309,16 +324,17 @@ Deno.serve(async (req) => {
       let delivered = false;
       if (wantEmail) {
         try {
-          const { error } = await resend.emails.send({
+          const { error, data: rd } = await resend.emails.send({
             from: "Australian Racing Tours <info@australianracingtours.com.au>",
             to: [profile.email],
             subject,
             html,
           });
           if (!error) delivered = true;
-          else console.error("resend digest err", profile.email, error);
+          else debug.push({ resendError: JSON.stringify(error) });
+          debug.push({ resendData: rd });
         } catch (e) {
-          console.error("resend exception", e);
+          debug.push({ resendException: String(e) });
         }
       }
       if (wantTeams) {
@@ -355,7 +371,7 @@ Deno.serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ success: true, sent, summary: testUserId ? "Test digest dispatched" : `${sent} digest(s) sent` }),
+      JSON.stringify({ success: true, sent, summary: testUserId ? `Test digest: ${sent === 1 ? "sent" : "FAILED to send"} — see debug` : `${sent} digest(s) sent`, debug }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
