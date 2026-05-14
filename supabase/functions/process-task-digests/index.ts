@@ -193,14 +193,15 @@ Deno.serve(async (req) => {
   } catch (_) {}
 
   try {
-    const query = supabase
-      .from("task_notification_preferences")
-      .select("*")
-      .eq("digest_enabled", true)
-      .neq("digest_channel", "off");
-    const { data: prefs } = testUserId
+    const prefsResult = testUserId
       ? await supabase.from("task_notification_preferences").select("*").eq("user_id", testUserId)
-      : await query;
+      : await supabase
+          .from("task_notification_preferences")
+          .select("*")
+          .eq("digest_enabled", true)
+          .neq("digest_channel", "off");
+    const prefs = prefsResult.data;
+    const prefsErr = prefsResult.error;
 
     const { data: headerSetting } = await supabase
       .from("general_settings")
@@ -214,6 +215,7 @@ Deno.serve(async (req) => {
     const nowParts = getLocalParts(TZ);
     let sent = 0;
     const debug: any[] = [];
+    debug.push({ testUserId, prefsCount: prefs?.length || 0, prefsErr: prefsErr?.message });
 
     for (const pref of (prefs || []) as Pref[]) {
       if (!testUserId && !shouldSendDigest(pref, nowParts)) continue;
