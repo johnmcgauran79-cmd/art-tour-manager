@@ -2469,6 +2469,123 @@ export type Database = {
           },
         ]
       }
+      task_notification_log: {
+        Row: {
+          id: string
+          kind: string
+          sent_at: string
+          task_id: string
+          threshold_hours: number | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          kind: string
+          sent_at?: string
+          task_id: string
+          threshold_hours?: number | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          kind?: string
+          sent_at?: string
+          task_id?: string
+          threshold_hours?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      task_notification_preferences: {
+        Row: {
+          alert_on_overdue: boolean
+          alert_priority_filter: string[]
+          alert_thresholds_hours: number[]
+          alerts_channel: Database["public"]["Enums"]["task_notif_channel"]
+          alerts_enabled: boolean
+          created_at: string
+          digest_cadence: Database["public"]["Enums"]["task_digest_cadence"]
+          digest_channel: Database["public"]["Enums"]["task_notif_channel"]
+          digest_enabled: boolean
+          digest_include_due_today: boolean
+          digest_include_newly_assigned: boolean
+          digest_include_overdue: boolean
+          digest_include_subtasks: boolean
+          digest_include_upcoming: boolean
+          digest_include_watched: boolean
+          digest_lookahead_days: number
+          digest_priority_filter: string[]
+          digest_skip_if_empty: boolean
+          digest_time_local: string
+          digest_weekdays: number[]
+          last_digest_sent_at: string | null
+          overdue_reminder_interval_hours: number
+          scope_assigned: boolean
+          scope_mentioned: boolean
+          scope_watching: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alert_on_overdue?: boolean
+          alert_priority_filter?: string[]
+          alert_thresholds_hours?: number[]
+          alerts_channel?: Database["public"]["Enums"]["task_notif_channel"]
+          alerts_enabled?: boolean
+          created_at?: string
+          digest_cadence?: Database["public"]["Enums"]["task_digest_cadence"]
+          digest_channel?: Database["public"]["Enums"]["task_notif_channel"]
+          digest_enabled?: boolean
+          digest_include_due_today?: boolean
+          digest_include_newly_assigned?: boolean
+          digest_include_overdue?: boolean
+          digest_include_subtasks?: boolean
+          digest_include_upcoming?: boolean
+          digest_include_watched?: boolean
+          digest_lookahead_days?: number
+          digest_priority_filter?: string[]
+          digest_skip_if_empty?: boolean
+          digest_time_local?: string
+          digest_weekdays?: number[]
+          last_digest_sent_at?: string | null
+          overdue_reminder_interval_hours?: number
+          scope_assigned?: boolean
+          scope_mentioned?: boolean
+          scope_watching?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alert_on_overdue?: boolean
+          alert_priority_filter?: string[]
+          alert_thresholds_hours?: number[]
+          alerts_channel?: Database["public"]["Enums"]["task_notif_channel"]
+          alerts_enabled?: boolean
+          created_at?: string
+          digest_cadence?: Database["public"]["Enums"]["task_digest_cadence"]
+          digest_channel?: Database["public"]["Enums"]["task_notif_channel"]
+          digest_enabled?: boolean
+          digest_include_due_today?: boolean
+          digest_include_newly_assigned?: boolean
+          digest_include_overdue?: boolean
+          digest_include_subtasks?: boolean
+          digest_include_upcoming?: boolean
+          digest_include_watched?: boolean
+          digest_lookahead_days?: number
+          digest_priority_filter?: string[]
+          digest_skip_if_empty?: boolean
+          digest_time_local?: string
+          digest_weekdays?: number[]
+          last_digest_sent_at?: string | null
+          overdue_reminder_interval_hours?: number
+          scope_assigned?: boolean
+          scope_mentioned?: boolean
+          scope_watching?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_subtasks: {
         Row: {
           assignee_id: string | null
@@ -4140,12 +4257,14 @@ export type Database = {
         | "booking"
         | "maintenance"
         | "general"
+      task_digest_cadence: "daily" | "weekly" | "custom_weekdays"
       task_link_entity_type:
         | "booking"
         | "hotel"
         | "activity"
         | "tour"
         | "contact"
+      task_notif_channel: "off" | "email" | "teams" | "both"
       task_priority: "low" | "medium" | "high" | "critical"
       task_status:
         | "not_started"
@@ -4381,6 +4500,7 @@ export const Constants = {
         "maintenance",
         "general",
       ],
+      task_digest_cadence: ["daily", "weekly", "custom_weekdays"],
       task_link_entity_type: [
         "booking",
         "hotel",
@@ -4388,6 +4508,7 @@ export const Constants = {
         "tour",
         "contact",
       ],
+      task_notif_channel: ["off", "email", "teams", "both"],
       task_priority: ["low", "medium", "high", "critical"],
       task_status: [
         "not_started",

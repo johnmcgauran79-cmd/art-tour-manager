@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ClipboardList, Plus, ArrowLeft, UserCheck, PenSquare, Globe } from "lucide-react";
+import { ClipboardList, Plus, ArrowLeft, UserCheck, PenSquare, Globe, Bell } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
+import { TaskNotificationsModal } from "@/components/tasks/TaskNotificationsModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 import { TaskSearch } from "@/components/TaskSearch";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +33,7 @@ export const AllTasksView = () => {
     allTasks: isAdmin && allTasks,
   });
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'overdue' | 'critical' | 'high' | 'due_soon' | 'completed' | null>(null);
   const [searchFilters, setSearchFilters] = useState<{
     search?: string;
@@ -221,6 +223,15 @@ export const AllTasksView = () => {
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add Task</span>
               </Button>
+              <Button
+                onClick={() => setNotificationsModalOpen(true)}
+                size="sm"
+                variant="outline"
+                className="flex items-center gap-1"
+              >
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Task Notifications</span>
+              </Button>
             </div>
           </div>
           
@@ -307,6 +318,10 @@ export const AllTasksView = () => {
       <AddTaskModal
         open={addTaskModalOpen}
         onOpenChange={setAddTaskModalOpen}
+      />
+      <TaskNotificationsModal
+        open={notificationsModalOpen}
+        onOpenChange={setNotificationsModalOpen}
       />
     </>
   );

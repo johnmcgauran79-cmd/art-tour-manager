@@ -3,10 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClipboardList, Plus, List, ArrowLeft } from "lucide-react";
+import { ClipboardList, Plus, List, ArrowLeft, Bell } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
+import { TaskNotificationsModal } from "@/components/tasks/TaskNotificationsModal";
 import { FilteredTasksModal } from "@/components/FilteredTasksModal";
 import { AllTasksModal } from "@/components/AllTasksModal";
 import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
@@ -23,6 +24,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
   const navigate = useNavigate();
   const { data: tasks, isLoading } = useMyTasks();
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
+  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
   const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
   const [allTasksModalOpen, setAllTasksModalOpen] = useState(false);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
@@ -250,6 +252,17 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
                   >
                     <Plus className="h-4 w-4" />
                     Add Task
+                  </Button>
+                )}
+                {!hideAddButton && (
+                  <Button
+                    onClick={() => setNotificationsModalOpen(true)}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Bell className="h-4 w-4" />
+                    Task Notifications
                   </Button>
                 )}
               </div>
