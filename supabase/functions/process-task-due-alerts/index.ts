@@ -171,15 +171,20 @@ Deno.serve(async (req) => {
 
       // Fetch tasks
       const ids = Array.from(taskIds);
-      const { data: tasks } = await supabase
-        .from("tasks")
-        .select("id, title, priority, due_date, status")
-        .in("id", ids)
-        .not("due_date", "is", null);
+      const tasks: any[] = [];
+      for (let i = 0; i < ids.length; i += 200) {
+        const chunk = ids.slice(i, i + 200);
+        const { data: chunkTasks } = await supabase
+          .from("tasks")
+          .select("id, title, priority, due_date, status")
+          .in("id", chunk)
+          .not("due_date", "is", null);
+        if (chunkTasks) tasks.push(...chunkTasks);
+      }
 
       const candidates: { task: TaskRow; kind: string; hours?: number }[] = [];
       for (const t of (tasks || []) as TaskRow[]) {
-        if (FINISHED.has(t.status)) continue;
+        if (FINISHED.has(String(t.status).toLowerCase())) continue;
         if (
           pref.alert_priority_filter.length > 0 &&
           !pref.alert_priority_filter.includes((t.priority || "").toLowerCase())
