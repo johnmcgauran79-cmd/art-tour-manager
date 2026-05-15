@@ -9,6 +9,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { TaskTemplate, useCreateTaskTemplate, useUpdateTaskTemplate } from "@/hooks/useTaskTemplates";
 import { Save, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useAssignableUsers } from "@/hooks/useAssignableUsers";
 
 interface TaskTemplateModalProps {
   template?: TaskTemplate | null;
@@ -25,10 +27,13 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
     days_before_tour: '',
     date_field_type: 'tour_start_date' as TaskTemplate['date_field_type'],
     is_active: true,
+    assignee_user_ids: [] as string[],
   });
 
   const createTemplate = useCreateTaskTemplate();
   const updateTemplate = useUpdateTaskTemplate();
+  const { data: assignableUsers = [] } = useAssignableUsers();
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
 
   useEffect(() => {
     if (template) {
@@ -40,6 +45,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
         days_before_tour: template.days_before_tour?.toString() || '',
         date_field_type: template.date_field_type,
         is_active: template.is_active,
+        assignee_user_ids: template.assignee_user_ids || [],
       });
     } else {
       setFormData({
@@ -50,6 +56,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
         days_before_tour: '',
         date_field_type: 'tour_start_date',
         is_active: true,
+        assignee_user_ids: [],
       });
     }
   }, [template]);
@@ -65,6 +72,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
       days_before_tour: formData.days_before_tour ? parseInt(formData.days_before_tour) : undefined,
       date_field_type: formData.date_field_type,
       is_active: formData.is_active,
+      assignee_user_ids: formData.assignee_user_ids,
     };
 
     try {
@@ -83,6 +91,32 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
   };
 
   const isLoading = createTemplate.isPending || updateTemplate.isPending;
+
+  const userLabel = (id: string) => {
+    const u = assignableUsers.find((x) => x.id === id);
+    if (!u) return 'Unknown';
+    return `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email || 'Unknown';
+  };
+
+  const availableToAdd = assignableUsers.filter(
+    (u) => !formData.assignee_user_ids.includes(u.id)
+  );
+
+  const addAssignee = () => {
+    if (!selectedUserId) return;
+    setFormData({
+      ...formData,
+      assignee_user_ids: [...formData.assignee_user_ids, selectedUserId],
+    });
+    setSelectedUserId("");
+  };
+
+  const removeAssignee = (id: string) => {
+    setFormData({
+      ...formData,
+      assignee_user_ids: formData.assignee_user_ids.filter((x) => x !== id),
+    });
+  };
 
   const getDateFieldLabel = (dateField: string) => {
     switch (dateField) {
@@ -148,6 +182,7 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
                     <SelectItem value="general">General</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-gray-500 mt-1">Department label for the task — does not affect who is assigned</p>
               </div>
 
               <div>
@@ -216,6 +251,53 @@ export const TaskTemplateModal = ({ template, open, onOpenChange }: TaskTemplate
                 onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
               />
               <Label htmlFor="is_active">Active Template</Label>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label>Assignees</Label>
+              <p className="text-xs text-gray-500">
+                Each person listed here will get their own copy of the task when it's generated for a tour.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {formData.assignee_user_ids.length === 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    No assignees yet — tasks won't be generated until you add at least one person.
+                  </span>
+                )}
+                {formData.assignee_user_ids.map((id) => (
+                  <Badge key={id} variant="secondary" className="flex items-center gap-1 px-3 py-1">
+                    {userLabel(id)}
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-4 w-4 p-0 hover:bg-red-100"
+                      onClick={() => removeAssignee(id)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+              {availableToAdd.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                    <SelectTrigger className="w-64">
+                      <SelectValue placeholder="Select user to add" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableToAdd.map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {`${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button type="button" size="sm" onClick={addAssignee} disabled={!selectedUserId}>
+                    Add
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
