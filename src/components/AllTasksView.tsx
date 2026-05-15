@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,11 +18,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+type TaskFilterUser = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+};
+
 export const AllTasksView = () => {
   console.log('AllTasksView rendering');
   
   const navigate = useNavigate();
-  const { userRole } = useAuth();
+  const { user, userRole } = useAuth();
   const isAdmin = userRole === 'admin';
 
   // Default view = assigned-to-me only. Other toggles are additive.
@@ -31,14 +38,47 @@ export const AllTasksView = () => {
   const [allTasks, setAllTasks] = useState(false);
   const [filterUserId, setFilterUserId] = useState<string>("all");
 
-  // Admin-only: fetch all profiles for the user filter dropdown
-  const { data: allUsers } = useQuery({
-    queryKey: ["all-profiles-for-task-filter"],
+  useEffect(() => {
+    if (isAdmin && user?.id && filterUserId === "all") {
+      setFilterUserId(user.id);
+    }
+  }, [isAdmin, user?.id, filterUserId]);
+
+  const selectedFilterUserId = isAdmin
+    ? (filterUserId !== "all" ? filterUserId : user?.id)
+    : undefined;
+
+  // Admin-only: fetch staff users for the user filter dropdown, excluding agents and hosts
+  const { data: allUsers = [] } = useQuery<TaskFilterUser[]>({
+    queryKey: ["staff-profiles-for-task-filter"],
     enabled: isAdmin,
     queryFn: async () => {
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("role", ["admin", "manager", "booking_agent"]);
+
+      if (rolesError) throw rolesError;
+
+      const eligibleUserIds = Array.from(new Set((roles || []).map((r) => r.user_id)));
+      if (eligibleUserIds.length === 0) return [];
+
+      const { data: excludedRoles, error: excludedRolesError } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("user_id", eligibleUserIds)
+        .in("role", ["agent", "host"]);
+
+      if (excludedRolesError) throw excludedRolesError;
+
+      const excludedUserIds = new Set((excludedRoles || []).map((r) => r.user_id));
+      const staffUserIds = eligibleUserIds.filter((id) => !excludedUserIds.has(id));
+      if (staffUserIds.length === 0) return [];
+
       const { data, error } = await supabase
         .from("profiles")
         .select("id, first_name, last_name, email")
+        .in("id", staffUserIds)
         .order("first_name");
       if (error) throw error;
       return data || [];
@@ -49,7 +89,7 @@ export const AllTasksView = () => {
   const { data: tasks, isLoading } = useMyTasks({
     assignedToMe,
     createdByMe,
-    allTasks: isAdmin && (allTasks || filterUserId !== "all"),
+    allTasks: isAdmin && (allTasks || (!!selectedFilterUserId && selectedFilterUserId !== user?.id)),
   });
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
@@ -95,19 +135,28 @@ export const AllTasksView = () => {
     setActiveFilter(null);
   };
 
+  const userFilteredTasks = useMemo(() => {
+    if (!tasks) return [];
+    if (!isAdmin || !selectedFilterUserId) return tasks;
+
+    return tasks.filter(task =>
+      (task.task_assignments || []).some((a) => a.user_id === selectedFilterUserId)
+    );
+  }, [tasks, isAdmin, selectedFilterUserId]);
+
   // Calculate pending tasks
   const pendingTasks = useMemo(() => {
-    return tasks?.filter(task => !isTaskFinished(task.status)) || [];
-  }, [tasks]);
+    return userFilteredTasks.filter(task => !isTaskFinished(task.status));
+  }, [userFilteredTasks]);
 
   // Apply search filters to all tasks first
   const searchFilteredTasks = useMemo(() => {
-    if (!tasks) return [];
+    if (!userFilteredTasks) return [];
     
     const hasFilters = Object.values(searchFilters).some(value => value !== undefined && value !== '');
-    if (!hasFilters) return tasks;
+    if (!hasFilters) return userFilteredTasks;
     
-    return tasks.filter(task => {
+    return userFilteredTasks.filter(task => {
       if (searchFilters.search && !task.title.toLowerCase().includes(searchFilters.search.toLowerCase())) {
         return false;
       }
@@ -140,16 +189,9 @@ export const AllTasksView = () => {
         if (taskDate > endDate) return false;
       }
 
-      if (isAdmin && filterUserId !== "all") {
-        const assigned = (task.task_assignments || []).some(
-          (a: any) => a.user_id === filterUserId
-        );
-        if (!assigned) return false;
-      }
-
       return true;
     });
-  }, [tasks, searchFilters, isAdmin, filterUserId]);
+  }, [userFilteredTasks, searchFilters]);
 
   // Get filtered tasks based on active filter
   const currentFilteredTasks = useMemo(() => {
@@ -319,7 +361,7 @@ export const AllTasksView = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All users</SelectItem>
-                    {(allUsers || []).map((u: any) => {
+                    {allUsers.map((u) => {
                       const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "Unknown";
                       return (
                         <SelectItem key={u.id} value={u.id}>{name}</SelectItem>
