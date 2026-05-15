@@ -14,6 +14,7 @@ export interface TaskTemplate {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  assignee_user_ids?: string[];
 }
 
 export const useTaskTemplates = () => {
@@ -32,10 +33,42 @@ export const useTaskTemplates = () => {
         throw error;
       }
 
-      console.log('Task templates fetched successfully:', data?.length || 0, 'templates');
-      return data as TaskTemplate[];
+      const { data: assignees, error: aErr } = await supabase
+        .from('task_template_assignees' as any)
+        .select('template_id, user_id');
+      if (aErr) console.error('Error fetching template assignees:', aErr);
+
+      const byTemplate = new Map<string, string[]>();
+      ((assignees as any[]) || []).forEach((row) => {
+        const arr = byTemplate.get(row.template_id) || [];
+        arr.push(row.user_id);
+        byTemplate.set(row.template_id, arr);
+      });
+
+      const result = (data || []).map((t: any) => ({
+        ...t,
+        assignee_user_ids: byTemplate.get(t.id) || [],
+      })) as TaskTemplate[];
+
+      console.log('Task templates fetched successfully:', result.length, 'templates');
+      return result;
     },
   });
+};
+
+const syncAssignees = async (templateId: string, userIds: string[] | undefined) => {
+  if (!userIds) return;
+  const { error: delErr } = await supabase
+    .from('task_template_assignees' as any)
+    .delete()
+    .eq('template_id', templateId);
+  if (delErr) throw delErr;
+  if (userIds.length > 0) {
+    const { error: insErr } = await supabase
+      .from('task_template_assignees' as any)
+      .insert(userIds.map((user_id) => ({ template_id: templateId, user_id })));
+    if (insErr) throw insErr;
+  }
 };
 
 export const useCreateTaskTemplate = () => {
@@ -51,6 +84,7 @@ export const useCreateTaskTemplate = () => {
       days_before_tour?: number;
       date_field_type?: TaskTemplate['date_field_type'];
       is_active?: boolean;
+      assignee_user_ids?: string[];
     }) => {
       const { data, error } = await supabase
         .from('task_templates')
@@ -67,6 +101,7 @@ export const useCreateTaskTemplate = () => {
         .single();
 
       if (error) throw error;
+      await syncAssignees(data.id, templateData.assignee_user_ids);
       return data;
     },
     onSuccess: () => {
@@ -94,16 +129,20 @@ export const useUpdateTaskTemplate = () => {
   return useMutation({
     mutationFn: async (data: {
       templateId: string;
-      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active'>>;
+      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active' | 'assignee_user_ids'>>;
     }) => {
+      const { assignee_user_ids, ...rest } = data.updates as any;
       const { data: template, error } = await supabase
         .from('task_templates')
-        .update(data.updates)
+        .update(rest)
         .eq('id', data.templateId)
         .select()
         .single();
 
       if (error) throw error;
+      if (assignee_user_ids !== undefined) {
+        await syncAssignees(data.templateId, assignee_user_ids);
+      }
       return template;
     },
     onSuccess: () => {

@@ -2648,6 +2648,32 @@ export type Database = {
           },
         ]
       }
+      task_template_assignees: {
+        Row: {
+          created_at: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_template_assignees_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_templates: {
         Row: {
           category: Database["public"]["Enums"]["task_category"]
