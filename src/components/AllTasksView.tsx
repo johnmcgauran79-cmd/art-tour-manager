@@ -223,15 +223,15 @@ export const AllTasksView = () => {
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add Task</span>
               </Button>
-              <Button
-                onClick={() => setNotificationsModalOpen(true)}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-1"
-              >
-                <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Task Notifications</span>
-              </Button>
+                <Button
+                  onClick={() => setNotificationsModalOpen(true)}
+                  size="sm"
+                  variant="outline"
+                  className="flex items-center gap-1"
+                >
+                  <Bell className="h-4 w-4" />
+                  <span className="hidden sm:inline">Task Reminders</span>
+                </Button>
             </div>
           </div>
           
