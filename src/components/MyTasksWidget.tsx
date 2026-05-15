@@ -262,7 +262,7 @@ export const MyTasksWidget = ({ hideAddButton = false, limitToTop5 = false, onVi
                     className="flex items-center gap-2"
                   >
                     <Bell className="h-4 w-4" />
-                    Task Notifications
+                    Task Reminders
                   </Button>
                 )}
               </div>

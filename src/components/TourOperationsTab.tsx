@@ -608,7 +608,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                 className="flex items-center gap-2"
               >
                 <BellRing className="h-4 w-4" />
-                Task Notifications
+                Task Reminders
               </Button>
             </div>
           </div>

@@ -53,7 +53,7 @@ export const TaskNotificationsModal = ({ open, onOpenChange }: Props) => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" /> Task Notifications
+              <Bell className="h-5 w-5" /> Task Reminders
             </DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-12">
@@ -123,7 +123,7 @@ export const TaskNotificationsModal = ({ open, onOpenChange }: Props) => {
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-brand-navy" /> Task Notifications
+            <Bell className="h-5 w-5 text-brand-navy" /> Task Reminders
           </DialogTitle>
           <DialogDescription>
             Configure how and when you receive task alerts and summaries. These settings apply only to you.
