@@ -361,7 +361,7 @@ export const AllTasksView = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All users</SelectItem>
-                    {(allUsers || []).map((u: any) => {
+                    {allUsers.map((u) => {
                       const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "Unknown";
                       return (
                         <SelectItem key={u.id} value={u.id}>{name}</SelectItem>
