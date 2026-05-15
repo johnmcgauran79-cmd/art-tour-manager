@@ -14,6 +14,9 @@ import { TaskCategoriesGrid } from "@/components/TaskCategoriesGrid";
 import { TaskSearch } from "@/components/TaskSearch";
 import { useAuth } from "@/hooks/useAuth";
 import { isTaskFinished } from "@/lib/taskStatuses";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const AllTasksView = () => {
   console.log('AllTasksView rendering');
@@ -26,6 +29,22 @@ export const AllTasksView = () => {
   const [assignedToMe, setAssignedToMe] = useState(true);
   const [createdByMe, setCreatedByMe] = useState(false);
   const [allTasks, setAllTasks] = useState(false);
+  const [filterUserId, setFilterUserId] = useState<string>("all");
+
+  // Admin-only: fetch all profiles for the user filter dropdown
+  const { data: allUsers } = useQuery({
+    queryKey: ["all-profiles-for-task-filter"],
+    enabled: isAdmin,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .order("first_name");
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data: tasks, isLoading } = useMyTasks({
     assignedToMe,
@@ -120,10 +139,17 @@ export const AllTasksView = () => {
         const endDate = new Date(searchFilters.endDate);
         if (taskDate > endDate) return false;
       }
-      
+
+      if (isAdmin && filterUserId !== "all") {
+        const assigned = (task.task_assignments || []).some(
+          (a: any) => a.user_id === filterUserId
+        );
+        if (!assigned) return false;
+      }
+
       return true;
     });
-  }, [tasks, searchFilters]);
+  }, [tasks, searchFilters, isAdmin, filterUserId]);
 
   // Get filtered tasks based on active filter
   const currentFilteredTasks = useMemo(() => {
@@ -283,6 +309,25 @@ export const AllTasksView = () => {
                 <Globe className="h-3.5 w-3.5 text-brand-navy" />
                 <span>All tasks (admin)</span>
               </label>
+            )}
+            {isAdmin && (
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs font-medium text-muted-foreground">Filter by user:</span>
+                <Select value={filterUserId} onValueChange={setFilterUserId}>
+                  <SelectTrigger className="h-8 w-[200px] text-sm">
+                    <SelectValue placeholder="All users" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All users</SelectItem>
+                    {(allUsers || []).map((u: any) => {
+                      const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || u.email || "Unknown";
+                      return (
+                        <SelectItem key={u.id} value={u.id}>{name}</SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
             )}
           </div>
         </CardHeader>
