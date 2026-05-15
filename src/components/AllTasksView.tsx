@@ -49,7 +49,7 @@ export const AllTasksView = () => {
   const { data: tasks, isLoading } = useMyTasks({
     assignedToMe,
     createdByMe,
-    allTasks: isAdmin && allTasks,
+    allTasks: isAdmin && (allTasks || filterUserId !== "all"),
   });
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
