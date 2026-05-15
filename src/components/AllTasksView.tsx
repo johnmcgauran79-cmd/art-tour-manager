@@ -18,6 +18,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
+type TaskFilterUser = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+};
+
 export const AllTasksView = () => {
   console.log('AllTasksView rendering');
   
@@ -42,7 +49,7 @@ export const AllTasksView = () => {
     : undefined;
 
   // Admin-only: fetch staff users for the user filter dropdown, excluding agents and hosts
-  const { data: allUsers } = useQuery({
+  const { data: allUsers = [] } = useQuery<TaskFilterUser[]>({
     queryKey: ["staff-profiles-for-task-filter"],
     enabled: isAdmin,
     queryFn: async () => {
@@ -53,7 +60,7 @@ export const AllTasksView = () => {
 
       if (rolesError) throw rolesError;
 
-      const eligibleUserIds = Array.from(new Set((roles || []).map((r: any) => r.user_id)));
+      const eligibleUserIds = Array.from(new Set((roles || []).map((r) => r.user_id)));
       if (eligibleUserIds.length === 0) return [];
 
       const { data: excludedRoles, error: excludedRolesError } = await supabase
@@ -64,7 +71,7 @@ export const AllTasksView = () => {
 
       if (excludedRolesError) throw excludedRolesError;
 
-      const excludedUserIds = new Set((excludedRoles || []).map((r: any) => r.user_id));
+      const excludedUserIds = new Set((excludedRoles || []).map((r) => r.user_id));
       const staffUserIds = eligibleUserIds.filter((id) => !excludedUserIds.has(id));
       if (staffUserIds.length === 0) return [];
 
@@ -133,7 +140,7 @@ export const AllTasksView = () => {
     if (!isAdmin || !selectedFilterUserId) return tasks;
 
     return tasks.filter(task =>
-      (task.task_assignments || []).some((a: any) => a.user_id === selectedFilterUserId)
+      (task.task_assignments || []).some((a) => a.user_id === selectedFilterUserId)
     );
   }, [tasks, isAdmin, selectedFilterUserId]);
 
