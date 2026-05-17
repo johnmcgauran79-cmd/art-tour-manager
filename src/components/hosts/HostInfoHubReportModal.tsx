@@ -19,6 +19,7 @@ interface HostInfoHubReportModalProps {
   tourId: string;
   tourName: string;
   pickupLocationRequired?: boolean;
+  onReady?: (url: string) => void;
 }
 
 const escapeHtml = (s: any): string =>
@@ -72,6 +73,7 @@ export const HostInfoHubReportModal = ({
   tourId,
   tourName,
   pickupLocationRequired = false,
+  onReady,
 }: HostInfoHubReportModalProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
@@ -531,6 +533,7 @@ export const HostInfoHubReportModal = ({
         if (cancelled) return;
         createdUrl = URL.createObjectURL(blob);
         setCombinedUrl(createdUrl);
+        if (onReady) onReady(createdUrl);
       } catch (err: any) {
         console.error("Failed to build combined report:", err);
         if (!cancelled) {
