@@ -20,6 +20,7 @@ interface HostInfoHubReportModalProps {
   tourName: string;
   pickupLocationRequired?: boolean;
   onReady?: (url: string) => void;
+  headless?: boolean;
 }
 
 const escapeHtml = (s: any): string =>
@@ -74,6 +75,7 @@ export const HostInfoHubReportModal = ({
   tourName,
   pickupLocationRequired = false,
   onReady,
+  headless = false,
 }: HostInfoHubReportModalProps) => {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
@@ -584,6 +586,7 @@ export const HostInfoHubReportModal = ({
   };
 
   return (
+    headless ? null :
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
