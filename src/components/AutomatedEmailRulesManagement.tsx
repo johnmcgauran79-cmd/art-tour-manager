@@ -878,6 +878,59 @@ export const AutomatedEmailRulesManagement = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Send Test Host Briefing Dialog */}
+      <Dialog open={testHostOpen} onOpenChange={setTestHostOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Test Host Briefing</DialogTitle>
+            <DialogDescription>
+              Pick a tour. The briefing email (with that tour's real data) will be sent to your own email address so you can verify the content.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label>Tour</Label>
+            <Select value={testTourId} onValueChange={setTestTourId}>
+              <SelectTrigger><SelectValue placeholder="Select a tour..." /></SelectTrigger>
+              <SelectContent>
+                {(allTours || [])
+                  .slice()
+                  .sort((a: any, b: any) => (b.start_date || '').localeCompare(a.start_date || ''))
+                  .map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} {t.start_date ? `(${t.start_date.slice(0, 10).split('-').reverse().join('/')})` : ''}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTestHostOpen(false)}>Cancel</Button>
+            <Button
+              disabled={!testTourId || !user || sendingTest}
+              onClick={async () => {
+                if (!testTourId || !user) return;
+                setSendingTest(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('send-host-briefing-email', {
+                    body: { tourId: testTourId, hostUserId: user.id },
+                  });
+                  if (error) throw error;
+                  if (data?.error) throw new Error(data.error);
+                  toast({ title: 'Test sent', description: `Sent to ${data?.sentTo || 'your email'}` });
+                  setTestHostOpen(false);
+                } catch (e: any) {
+                  toast({ title: 'Send failed', description: e.message, variant: 'destructive' });
+                } finally {
+                  setSendingTest(false);
+                }
+              }}
+            >
+              {sendingTest ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : 'Send Test'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
