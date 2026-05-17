@@ -13,6 +13,69 @@ const corsHeaders = {
 
 const ADMIN_WEBSITE_URL = "https://admin.australianracingtours.com.au";
 const ADMIN_CC = "admin@australianracingtours.com.au";
+const DEFAULT_HEADER_IMAGE_URL =
+  "https://art-tour-manager.lovable.app/images/email-header-default.png";
+
+// Branded ART email wrapper — same chrome as booking confirmation emails
+const wrapBrandedEmail = (content: string, headerImageUrl?: string): string => {
+  const logoUrl = headerImageUrl || DEFAULT_HEADER_IMAGE_URL;
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .email-body p, .email-body li, .email-body div {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #55575d;
+    }
+    .email-body h1, .email-body h2, .email-body h3, .email-body h4 {
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.3;
+      color: #1a2332;
+    }
+    .email-body h1 { font-size: 22px; }
+    .email-body h2 { font-size: 18px; }
+    .email-body h3 { font-size: 16px; }
+    .email-body h4 { font-size: 15px; }
+    .email-body strong, .email-body b { color: #1a2332; }
+    .email-body p { margin: 0 0 12px 0; }
+    .email-body ul, .email-body ol { margin: 0 0 16px 0; padding-left: 24px; }
+    .email-body li { margin-bottom: 4px; }
+    .email-body a { color: #1a6fb5; }
+    .email-body hr { border: none; border-top: 2px solid #e5e7eb; margin: 24px 0; }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f4f5; font-family: Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f5; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table cellpadding="0" cellspacing="0" style="width: 100%; max-width: 800px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background-color: #232628; padding: 32px 40px; text-align: center;">
+              <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
+            </td>
+          </tr>
+          <tr>
+            <td class="email-body" style="padding: 40px; font-family: Arial, Helvetica, sans-serif; font-size: 14px; line-height: 1.6; color: #55575d;">
+              ${content}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">Australian Racing Tours</p>
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 5px 0 0;">Host pre-tour briefing.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+};
 
 // Australian dd/mm/yyyy date formatter
 const fmtDate = (d: string | null | undefined) => {
@@ -123,6 +186,18 @@ serve(async (req) => {
 
     if (!template) throw new Error("No active host_pre_tour_briefing email template");
 
+    // Look up branded header image (template-specific override or global default)
+    const { data: headerSetting } = await supabase
+      .from("general_settings")
+      .select("setting_value")
+      .eq("setting_key", "email_header_image_url")
+      .maybeSingle();
+    const globalHeader =
+      typeof headerSetting?.setting_value === "string"
+        ? headerSetting.setting_value
+        : DEFAULT_HEADER_IMAGE_URL;
+    const headerImageUrl = (template as any).header_image_url || globalHeader;
+
     const mergeData = {
       host_first_name: hostFirstName || "there",
       host_username: hostEmail,
@@ -143,7 +218,8 @@ serve(async (req) => {
     };
 
     const subject = render(template.subject_template, mergeData);
-    const html = render(template.content_template, mergeData);
+    const rawHtml = render(template.content_template, mergeData);
+    const html = wrapBrandedEmail(rawHtml, headerImageUrl);
     const fromAddress = template.from_email || "bookings@australianracingtours.com.au";
 
     const emailResponse: any = await resend.emails.send({
