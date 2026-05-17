@@ -64,7 +64,7 @@ export const AutomatedEmailRulesManagement = () => {
     email_template_id: "",
     is_active: true,
     requires_approval: true,
-    recipient_filter: "all" as "all" | "with_accommodation" | "without_accommodation",
+    recipient_filter: "all" as "all" | "with_accommodation" | "without_accommodation" | "assigned_hosts",
     status_filter: [] as string[],
     trigger_conditions: null as ConditionGroup | null,
   });
@@ -248,8 +248,9 @@ export const AutomatedEmailRulesManagement = () => {
               <span>Type: {RULE_TYPES.find(rt => rt.value === rule.rule_type)?.label || rule.rule_type}</span>
             </div>
             <Badge variant="outline">
-              {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
-               rule.recipient_filter === 'without_accommodation' ? 'Activities Only' : 'All Bookings'}
+              {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' :
+               rule.recipient_filter === 'without_accommodation' ? 'Activities Only' :
+               rule.recipient_filter === 'assigned_hosts' ? 'Assigned Hosts' : 'All Bookings'}
             </Badge>
             {rule.status_filter && rule.status_filter.length > 0 && (
               <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
@@ -552,7 +553,20 @@ export const AutomatedEmailRulesManagement = () => {
               <Label htmlFor="rule_type">Email Type</Label>
               <Select
                 value={formData.rule_type}
-                onValueChange={(value) => setFormData({ ...formData, rule_type: value, email_template_id: '' })}
+                onValueChange={(value) => {
+                  const updates: any = { ...formData, rule_type: value, email_template_id: '' };
+                  if (value === 'host_pre_tour_briefing') {
+                    updates.recipient_filter = 'assigned_hosts';
+                    updates.trigger_type = 'days_before_tour';
+                    updates.trigger_conditions = null;
+                    if (!formData.days_before_tour || formData.days_before_tour === 100) {
+                      updates.days_before_tour = 7;
+                    }
+                  } else if (formData.recipient_filter === 'assigned_hosts') {
+                    updates.recipient_filter = 'all';
+                  }
+                  setFormData(updates);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -687,11 +701,22 @@ export const AutomatedEmailRulesManagement = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Bookings</SelectItem>
-                  <SelectItem value="with_accommodation">With Accommodation Only</SelectItem>
-                  <SelectItem value="without_accommodation">Activities Only (No Accommodation)</SelectItem>
+                  {formData.rule_type === 'host_pre_tour_briefing' ? (
+                    <SelectItem value="assigned_hosts">Assigned Tour Hosts</SelectItem>
+                  ) : (
+                    <>
+                      <SelectItem value="all">All Bookings</SelectItem>
+                      <SelectItem value="with_accommodation">With Accommodation Only</SelectItem>
+                      <SelectItem value="without_accommodation">Activities Only (No Accommodation)</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
+              {formData.rule_type === 'host_pre_tour_briefing' && (
+                <p className="text-sm text-muted-foreground">
+                  Sent to each host assigned to the tour. Hosts receive their own briefing email with a secure link to the Combined Host Report.
+                </p>
+              )}
             </div>
 
             {formData.trigger_type === 'days_after_booking' && (
