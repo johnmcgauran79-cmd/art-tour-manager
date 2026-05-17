@@ -220,7 +220,19 @@ serve(async (req) => {
     const subject = render(template.subject_template, mergeData);
     const rawHtml = render(template.content_template, mergeData);
     const html = wrapBrandedEmail(rawHtml, headerImageUrl);
-    const fromAddress = template.from_email || "bookings@australianracingtours.com.au";
+    // Look up configured default sender name
+    const { data: senderNameSetting } = await supabase
+      .from("general_settings")
+      .select("setting_value")
+      .eq("setting_key", "default_sender_name")
+      .maybeSingle();
+    const senderName =
+      (typeof senderNameSetting?.setting_value === "string" && senderNameSetting.setting_value.trim()) ||
+      "Australian Racing Tours";
+    const fromEmail = template.from_email || "bookings@australianracingtours.com.au";
+    // Strip any existing "Name <email>" formatting from from_email before re-wrapping
+    const bareEmail = fromEmail.match(/<([^>]+)>/)?.[1] || fromEmail;
+    const fromAddress = `${senderName} <${bareEmail}>`;
 
     const emailResponse: any = await resend.emails.send({
       from: fromAddress,
