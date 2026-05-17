@@ -212,10 +212,23 @@ serve(async (req) => {
       errors.push({ type: 'travel_docs', error: travelDocsError });
     }
 
+    // Also process host pre-tour briefing rules
+    let hostBriefingBatches = 0;
+    let hostBriefingEmails = 0;
+    try {
+      console.log('--- Processing host pre-tour briefing rules ---');
+      const hostResult = await processHostBriefingRules(supabase, errors);
+      hostBriefingBatches = hostResult.batchesCreated;
+      hostBriefingEmails = hostResult.emailsSent;
+    } catch (hostError) {
+      console.error('Error processing host briefing rules:', hostError);
+      errors.push({ type: 'host_pre_tour_briefing', error: hostError });
+    }
+
     const result = {
       success: true,
-      totalBatchesCreated: totalBatchesCreated + travelDocsBatches,
-      totalEmailsSent: totalEmailsSent + travelDocsEmails,
+      totalBatchesCreated: totalBatchesCreated + travelDocsBatches + hostBriefingBatches,
+      totalEmailsSent: totalEmailsSent + travelDocsEmails + hostBriefingEmails,
       rulesProcessed: rules?.length || 0,
       toursChecked: upcomingTours?.length || 0,
       errors: errors.length > 0 ? errors : undefined,
@@ -591,4 +604,128 @@ async function processBatchEmails(
   console.log(`  Sent: ${sentCount}, Failed: ${failedCount}, Total: ${eligibleBookings.length}`);
   
   return sentCount;
+}
+
+// Process host pre-tour briefing rules
+async function processHostBriefingRules(
+  supabase: any,
+  errors: any[],
+): Promise<{ batchesCreated: number; emailsSent: number }> {
+  let batchesCreated = 0;
+  let emailsSent = 0;
+
+  const { data: rules, error: rulesError } = await supabase
+    .from('automated_email_rules')
+    .select('*')
+    .eq('is_active', true)
+    .eq('rule_type', 'host_pre_tour_briefing')
+    .eq('trigger_type', 'days_before_tour')
+    .order('days_before_tour', { ascending: true });
+
+  if (rulesError) throw rulesError;
+  if (!rules || rules.length === 0) {
+    console.log('No active host briefing rules');
+    return { batchesCreated, emailsSent };
+  }
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+
+  const { data: tours, error: toursError } = await supabase
+    .from('tours')
+    .select('id, name, start_date')
+    .gte('start_date', todayStr)
+    .neq('status', 'archived');
+  if (toursError) throw toursError;
+
+  for (const tour of tours || []) {
+    try {
+      const daysUntilTour = Math.floor(
+        (new Date(tour.start_date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      let applicableRule = null;
+      for (const rule of rules) {
+        if (daysUntilTour <= rule.days_before_tour) {
+          applicableRule = rule;
+          break;
+        }
+      }
+      if (!applicableRule) continue;
+
+      // Find all hosts assigned to this tour
+      const { data: assignments } = await supabase
+        .from('tour_host_assignments')
+        .select('host_user_id')
+        .eq('tour_id', tour.id);
+      if (!assignments || assignments.length === 0) {
+        console.log(`No hosts assigned to tour "${tour.name}"`);
+        continue;
+      }
+
+      for (const a of assignments) {
+        // Idempotency: one log row per host per rule
+        const { data: existing } = await supabase
+          .from('automated_email_log')
+          .select('id, approval_status, sent_at')
+          .eq('tour_id', tour.id)
+          .eq('rule_id', applicableRule.id)
+          .eq('host_user_id', a.host_user_id)
+          .maybeSingle();
+
+        if (existing) {
+          if (existing.approval_status === 'sent' || existing.approval_status === 'processing') continue;
+          if (existing.approval_status === 'rejected') continue;
+
+          if (existing.approval_status === 'approved') {
+            await supabase
+              .from('automated_email_log')
+              .update({ approval_status: 'processing' })
+              .eq('id', existing.id);
+
+            const { data: result, error: invokeError } = await supabase.functions.invoke(
+              'send-host-briefing-email',
+              { body: { tourId: tour.id, hostUserId: a.host_user_id, ruleId: applicableRule.id, batchId: existing.id } },
+            );
+
+            if (invokeError || result?.success === false) {
+              console.error('Host briefing send failed:', invokeError || result);
+              errors.push({ tour: tour.name, host: a.host_user_id, error: invokeError || result?.error });
+              await supabase
+                .from('automated_email_log')
+                .update({ approval_status: 'approved' })
+                .eq('id', existing.id);
+            } else {
+              await supabase
+                .from('automated_email_log')
+                .update({ approval_status: 'sent', sent_at: new Date().toISOString() })
+                .eq('id', existing.id);
+              emailsSent++;
+            }
+          }
+          continue;
+        }
+
+        // Create new log row
+        const { error: insertError } = await supabase
+          .from('automated_email_log')
+          .insert({
+            tour_id: tour.id,
+            booking_id: null,
+            host_user_id: a.host_user_id,
+            rule_id: applicableRule.id,
+            tour_start_date: tour.start_date,
+            days_before_send: applicableRule.days_before_tour,
+            booking_count: 1,
+            approval_status: applicableRule.requires_approval ? 'pending_approval' : 'approved',
+          });
+        if (!insertError) batchesCreated++;
+      }
+    } catch (tourError) {
+      console.error(`Error processing host briefing for tour ${tour.name}:`, tourError);
+      errors.push({ tour: tour.name, type: 'host_pre_tour_briefing', error: tourError });
+    }
+  }
+
+  return { batchesCreated, emailsSent };
 }
