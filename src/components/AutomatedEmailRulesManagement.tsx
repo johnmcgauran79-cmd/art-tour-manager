@@ -64,7 +64,7 @@ export const AutomatedEmailRulesManagement = () => {
     email_template_id: "",
     is_active: true,
     requires_approval: true,
-    recipient_filter: "all" as "all" | "with_accommodation" | "without_accommodation",
+    recipient_filter: "all" as "all" | "with_accommodation" | "without_accommodation" | "assigned_hosts",
     status_filter: [] as string[],
     trigger_conditions: null as ConditionGroup | null,
   });
