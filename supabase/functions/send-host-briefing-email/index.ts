@@ -59,8 +59,8 @@ serve(async (req) => {
     // Fetch host profile + email
     const { data: hostProfile } = await supabase
       .from("profiles")
-      .select("user_id, first_name, last_name, email")
-      .eq("user_id", hostUserId)
+      .select("id, first_name, last_name, email")
+      .eq("id", hostUserId)
       .maybeSingle();
 
     let hostEmail = hostProfile?.email;
