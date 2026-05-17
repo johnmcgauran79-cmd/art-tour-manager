@@ -212,10 +212,23 @@ serve(async (req) => {
       errors.push({ type: 'travel_docs', error: travelDocsError });
     }
 
+    // Also process host pre-tour briefing rules
+    let hostBriefingBatches = 0;
+    let hostBriefingEmails = 0;
+    try {
+      console.log('--- Processing host pre-tour briefing rules ---');
+      const hostResult = await processHostBriefingRules(supabase, errors);
+      hostBriefingBatches = hostResult.batchesCreated;
+      hostBriefingEmails = hostResult.emailsSent;
+    } catch (hostError) {
+      console.error('Error processing host briefing rules:', hostError);
+      errors.push({ type: 'host_pre_tour_briefing', error: hostError });
+    }
+
     const result = {
       success: true,
-      totalBatchesCreated: totalBatchesCreated + travelDocsBatches,
-      totalEmailsSent: totalEmailsSent + travelDocsEmails,
+      totalBatchesCreated: totalBatchesCreated + travelDocsBatches + hostBriefingBatches,
+      totalEmailsSent: totalEmailsSent + travelDocsEmails + hostBriefingEmails,
       rulesProcessed: rules?.length || 0,
       toursChecked: upcomingTours?.length || 0,
       errors: errors.length > 0 ? errors : undefined,
