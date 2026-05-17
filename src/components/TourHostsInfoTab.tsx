@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,19 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
 
   // Fetch profile info for assigned hosts to display names
   const [hostProfiles, setHostProfiles] = useState<Record<string, { first_name?: string; last_name?: string; email?: string }>>({});
-  useState(() => {});
+  useEffect(() => {
+    const ids = (hostAssignments || []).map((a) => a.host_user_id);
+    if (ids.length === 0) return;
+    supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email')
+      .in('id', ids)
+      .then(({ data }) => {
+        const map: Record<string, any> = {};
+        (data || []).forEach((p: any) => { map[p.id] = p; });
+        setHostProfiles(map);
+      });
+  }, [hostAssignments]);
 
   const handleSendBriefing = async (targetUserId: string) => {
     if (!targetUserId) return;
@@ -294,6 +306,66 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
         tourName={tourName}
         pickupLocationRequired={pickupLocationRequired}
       />
+
+      {/* Send Host Briefing Email Dialog */}
+      <Dialog open={briefingOpen} onOpenChange={setBriefingOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send Host Briefing Email</DialogTitle>
+            <DialogDescription>
+              Sends the full pre-tour briefing email (with combined report link, hotel & pax info) for <strong>{tourName}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label>Recipient</Label>
+            <div className="space-y-1.5 max-h-64 overflow-y-auto border rounded-md p-2">
+              {(hostAssignments || []).length === 0 && (
+                <p className="text-sm text-muted-foreground p-2">No hosts assigned to this tour.</p>
+              )}
+              {(hostAssignments || []).map((a) => {
+                const p = hostProfiles[a.host_user_id];
+                const name = p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.email : a.host_user_id;
+                return (
+                  <label key={a.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer">
+                    <input
+                      type="radio"
+                      name="briefing-host"
+                      value={a.host_user_id}
+                      checked={selectedHostId === a.host_user_id}
+                      onChange={() => setSelectedHostId(a.host_user_id)}
+                    />
+                    <div className="text-sm">
+                      <div className="font-medium">{name}</div>
+                      {p?.email && <div className="text-xs text-muted-foreground">{p.email}</div>}
+                    </div>
+                  </label>
+                );
+              })}
+              {user && (
+                <label className="flex items-center gap-2 p-2 rounded hover:bg-muted cursor-pointer border-t mt-1 pt-2">
+                  <input
+                    type="radio"
+                    name="briefing-host"
+                    value={user.id}
+                    checked={selectedHostId === user.id}
+                    onChange={() => setSelectedHostId(user.id)}
+                  />
+                  <div className="text-sm">
+                    <div className="font-medium">Send test to me</div>
+                    <div className="text-xs text-muted-foreground">{user.email}</div>
+                  </div>
+                </label>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBriefingOpen(false)}>Cancel</Button>
+            <Button disabled={!selectedHostId || sendingBriefing} onClick={() => handleSendBriefing(selectedHostId)}>
+              {sendingBriefing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : <><Send className="h-4 w-4 mr-2" />Send Now</>}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
