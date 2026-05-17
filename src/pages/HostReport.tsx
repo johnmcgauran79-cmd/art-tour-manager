@@ -128,6 +128,7 @@ const HostReport = () => {
         tourId={validation.tourId!}
         tourName={validation.tourName!}
         pickupLocationRequired={validation.pickupLocationRequired ?? false}
+        headless
         onReady={(url) => {
           // Replace the tab with the native PDF view
           window.location.replace(url);
