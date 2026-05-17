@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays, FileImage, FileDown } from "lucide-react";
+import { Phone, Utensils, Users, Hotel, Bus, ChevronDown, ChevronUp, Download, FileText, CalendarDays, FileImage, FileDown, Send, Loader2, Mail } from "lucide-react";
 import { useReportData } from "@/components/reports/useReportData";
 import { ContactsReport } from "@/components/reports/ContactsReport";
 import { DietaryReport } from "@/components/reports/DietaryReport";
@@ -18,6 +18,11 @@ import { exportReportToCSV } from "@/components/reports/ReportExportUtils";
 import { HostActivitiesSection } from "@/components/hosts/HostActivitiesSection";
 import { ItinerarySnapshotSection } from "@/components/itinerary/ItinerarySnapshotSection";
 import { HostInfoHubReportModal } from "@/components/hosts/HostInfoHubReportModal";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTourHostAssignments } from "@/hooks/useTourHostAssignments";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface TourHostsInfoTabProps {
   tourId: string;
@@ -82,6 +87,34 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [selectedHotel, setSelectedHotel] = useState<any>(null);
   const [combinedReportOpen, setCombinedReportOpen] = useState(false);
+  const [briefingOpen, setBriefingOpen] = useState(false);
+  const [selectedHostId, setSelectedHostId] = useState<string>("");
+  const [sendingBriefing, setSendingBriefing] = useState(false);
+  const { data: hostAssignments } = useTourHostAssignments(tourId);
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  // Fetch profile info for assigned hosts to display names
+  const [hostProfiles, setHostProfiles] = useState<Record<string, { first_name?: string; last_name?: string; email?: string }>>({});
+  useState(() => {});
+
+  const handleSendBriefing = async (targetUserId: string) => {
+    if (!targetUserId) return;
+    setSendingBriefing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-host-briefing-email', {
+        body: { tourId, hostUserId: targetUserId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Briefing email sent', description: `Sent to ${data?.sentTo || 'host'}` });
+      setBriefingOpen(false);
+    } catch (e: any) {
+      toast({ title: 'Send failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setSendingBriefing(false);
+    }
+  };
 
   const contactsReport = reports.find(r => r.type === 'contacts');
   const dietaryReport = reports.find(r => r.type === 'dietary');
@@ -94,10 +127,16 @@ export const TourHostsInfoTab = ({ tourId, tourName, pickupLocationRequired = fa
           <h2 className="text-lg font-semibold">Host Information Hub</h2>
           <p className="text-sm text-muted-foreground">Key reports and information for tour hosts</p>
         </div>
-        <Button onClick={() => setCombinedReportOpen(true)} size="sm">
-          <FileDown className="h-4 w-4 mr-1" />
-          Generate Combined Report
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setBriefingOpen(true)} size="sm" variant="outline">
+            <Mail className="h-4 w-4 mr-1" />
+            Send Briefing Email
+          </Button>
+          <Button onClick={() => setCombinedReportOpen(true)} size="sm">
+            <FileDown className="h-4 w-4 mr-1" />
+            Generate Combined Report
+          </Button>
+        </div>
       </div>
 
       {/* Itinerary Snapshot */}
