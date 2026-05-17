@@ -1,87 +1,54 @@
-## Goal
+# Host Pre-Tour Briefing Email
 
-Add a "Task Notifications" button next to **Add Task** on the Tasks tab and Action Items area. It opens a per-user preferences modal that controls:
+Automated email sent to each assigned tour host 7 days before tour start. Contains tour overview, meeting location, admin login info, first hotel, passenger summary, and a secure link to view/print the full Combined Host Information Report.
 
-1. **Due-soon alerts** (multi-threshold + overdue reminders)
-2. **Upcoming-task digests** (daily / weekly / chosen weekdays, configurable look-ahead)
-3. **Channel** (Teams, Email, or Both) — independent for alerts vs digests
-4. **Scope** (assigned / watching / mentioned — user-configurable)
-5. **Filters** (priority, include subtasks, include overdue section)
+## What gets built
 
-Each user manages their own settings only.
+### 1. Database (migration)
+- Add new rule type value `host_pre_tour_briefing` (no enum change needed — `rule_type` is already a free text column).
+- Insert a default `email_template` of type `host_pre_tour_briefing` with the briefing content + merge fields.
+- New table `host_briefing_tokens` (id, tour_id, host_user_id, token, expires_at, created_at). 7-day expiry per project convention. RLS: only service role + the host themselves can read.
+- Track sends in existing `automated_email_log` (one row per host per tour).
 
----
+### 2. Secure host report page
+- New public route `/host-report/:token` rendering the exact same HTML as the existing `HostInfoHubReportModal` (reuses `useReportData` + same builder).
+- Edge function `validate-host-report-token` checks token validity + expiry, returns `tourId` and host info.
+- Page shows the report inline with a Print button (`window.print()`), so the host can view in browser or print to PDF themselves.
+- No host login required to view via token (token is the auth).
 
-## Database
+### 3. Default email template content
+Subject: `Your upcoming tour: {{tour_name}} — host briefing`
 
-New table **`task_notification_preferences`** (one row per user):
+Body merge fields:
+- `{{host_first_name}}`, `{{tour_name}}`, `{{tour_start_date}}`, `{{tour_end_date}}`
+- `{{meeting_location}}` (from tour)
+- `{{admin_website_url}}`, `{{host_username}}` (their email) + "use Forgot Password if needed" link
+- `{{first_hotel_name}}`, `{{first_hotel_address}}`, `{{first_hotel_checkin}}`
+- `{{passenger_count}}`, `{{booking_count}}`
+- `{{combined_report_link}}` — token URL to the secure report page
+- Editable from Settings → Email Management → Email Templates
 
-- `user_id` (PK, FK profiles)
-- **Channels**: `alerts_channel`, `digest_channel` — enum `email | teams | both | off`
-- **Scope**: `scope_assigned`, `scope_watching`, `scope_mentioned` (booleans)
-- **Due-soon alerts**:
-  - `alert_thresholds_hours` int[] (e.g. `{168, 24, 2}` = 7d / 24h / 2h before due)
-  - `alert_on_overdue` bool
-  - `overdue_reminder_interval_hours` int (e.g. 24 = once a day while overdue)
-  - `alert_priority_filter` text[] (empty = all; e.g. `{high,urgent}`)
-- **Digests**:
-  - `digest_enabled` bool
-  - `digest_cadence` enum `daily | weekly | custom_weekdays`
-  - `digest_weekdays` int[] (0–6, Mon=1)
-  - `digest_time_local` time (e.g. `08:00`)
-  - `digest_lookahead_days` int (default 7)
-  - `digest_include_overdue`, `digest_include_due_today`, `digest_include_upcoming`, `digest_include_newly_assigned`, `digest_include_watched`, `digest_include_subtasks` (booleans)
-  - `digest_priority_filter` text[]
-- `last_digest_sent_at` timestamptz
+### 4. Edge function `send-host-briefing-email`
+- Input: `tourId`, `hostUserId`
+- Looks up tour, host profile, first hotel by checkin date, passenger summary, generates 7-day token, renders template, sends via Resend.
+- From: configured sender. To: host email. CC: admin@australianracingtours.com.au.
 
-Plus a **`task_notification_log`** table to dedupe sends (`user_id`, `task_id`, `threshold_hours`, `kind`, `sent_at`) so a 24h alert isn't sent twice.
+### 5. Scheduler — extend `process-automated-emails`
+- New branch processing `rule_type = 'host_pre_tour_briefing'` rules.
+- For each tour where `daysUntilTour <= rule.days_before_tour` (default 7), find all `tour_host_assignments`.
+- For each host: create `automated_email_log` row (one per host), respect approval flow (`pending_approval` → `approved` → invoke `send-host-briefing-email`).
+- Idempotency by `(tour_id, rule_id, host_user_id)`.
 
-RLS: each user can select/insert/update their own row. Admins (via `has_role`) can read.
-
----
-
-## Edge functions
-
-1. **`process-task-due-alerts`** — runs every 15 min via pg_cron.
-   - For each user pref with alerts enabled, find tasks in scope that cross a threshold within the last 15 min, plus overdue tasks ready for next reminder.
-   - Render an alert (subject + html) per task, send via existing `send-task-notification` channel logic (Teams + Email + suppression dedupe through `task_notification_log`).
-
-2. **`process-task-digests`** — runs every 15 min via pg_cron.
-   - For each user pref with digest enabled where local clock has just passed `digest_time_local` on a matching weekday and `last_digest_sent_at` is older than 12h: build sections (Overdue / Due today / Next X days / Newly assigned since last digest / Watched), apply priority filter, send via chosen channel, update `last_digest_sent_at`.
-   - Skip empty digests if user toggles "Skip if nothing".
-
-Both functions reuse the existing email header + Teams adapter from `send-task-notification` / `send-teams-notification`.
-
----
-
-## Frontend
-
-- **`useTaskNotificationPreferences.ts`** — fetch/upsert hook for current user's prefs (with defaults if no row).
-- **`TaskNotificationsModal.tsx`** — tabbed dialog:
-  - **Channels** (alerts vs digest, each Email / Teams / Both / Off)
-  - **Scope** (3 checkboxes)
-  - **Due alerts** (toggle per threshold chip: 7d / 3d / 24h / 4h / 1h, custom add; overdue toggle + reminder interval; priority multi-select)
-  - **Digests** (cadence radio; weekday picker if custom; time picker; look-ahead days slider 1–30; section checkboxes; priority multi-select)
-  - "Send test now" button that invokes the digest function once for the current user
-- Add **Bell icon button "Task Notifications"** next to **Add Task** in:
-  - `src/components/TourTasksTab.tsx`
-  - `src/pages/Index.tsx` Action Items area (existing tasks section)
-  - Global `/tasks` view if present
-
----
+### 6. UI updates
+- Add `{ value: 'host_pre_tour_briefing', label: 'Host Pre-Tour Briefing', templateType: 'host_pre_tour_briefing' }` to `RULE_TYPES` in `AutomatedEmailRulesManagement.tsx`.
+- Add `recipient_filter = 'hosts'` option (recipient is the host, not bookings).
+- Seed a default rule: 7 days before tour, requires approval, active.
 
 ## Out of scope
+- Post-tour emails (will be next, per user request).
+- Modifying the combined report itself (uses existing generator).
 
-- No org-wide defaults, no admin-on-behalf editing, no SMS, no push.
-- Existing per-event notifications (assignment / mention / subtask) remain unchanged — these new prefs are additive.
-
----
-
-## Files
-
-- New: `supabase/migrations/<ts>_task_notification_preferences.sql`
-- New: `supabase/functions/process-task-due-alerts/index.ts`
-- New: `supabase/functions/process-task-digests/index.ts`
-- New: `src/hooks/useTaskNotificationPreferences.ts`
-- New: `src/components/tasks/TaskNotificationsModal.tsx`
-- Edit: `src/components/TourTasksTab.tsx`, `src/pages/Index.tsx` (and any other Tasks list header)
+## Notes
+- Token expiry: 7 days (matches project convention for customer access links).
+- One log row per host (not per booking) — keeps the "Email Approvals" panel grouped by tour + rule.
+- Hosts also receive their existing login (the email tells them their username = their email and to use Forgot Password).
