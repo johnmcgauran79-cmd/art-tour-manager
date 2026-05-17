@@ -40,6 +40,7 @@ const RULE_TYPES = [
   { value: 'welcome_email', label: 'Welcome Email', templateType: 'welcome_email' },
   { value: 'dietary_request', label: 'Dietary Requirements Request', templateType: 'dietary_request' },
   { value: 'travel_documents_request', label: 'Passport Details Request', templateType: 'travel_documents_request' },
+  { value: 'host_pre_tour_briefing', label: 'Host Pre-Tour Briefing', templateType: 'host_pre_tour_briefing' },
 ];
 
 export const AutomatedEmailRulesManagement = () => {
