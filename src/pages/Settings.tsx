@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,10 +17,39 @@ interface SettingsProps {
 }
 
 export const Settings = ({ onBack }: SettingsProps) => {
-  const [activeTab, setActiveTab] = useState("email-management");
-  const [emailSubTab, setEmailSubTab] = useState("templates");
+  const [searchParams, setSearchParams] = useSearchParams();
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
+
+  // Persist the active settings tab + email sub-tab in the URL so links
+  // can be shared and reflect exactly what the user is viewing.
+  const activeTab = searchParams.get('stab') || 'email-management';
+  const emailSubTab = searchParams.get('ssub') || 'templates';
+
+  const setActiveTab = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'settings');
+    next.set('stab', value);
+    if (value !== 'email-management') next.delete('ssub');
+    setSearchParams(next, { replace: true });
+  };
+
+  const setEmailSubTab = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('tab', 'settings');
+    next.set('stab', 'email-management');
+    next.set('ssub', value);
+    setSearchParams(next, { replace: true });
+  };
+
+  // If a non-admin lands on the admin-only system tab via a shared link,
+  // silently redirect them to the default tab.
+  useEffect(() => {
+    if (activeTab === 'system' && !isAdmin) {
+      setActiveTab('email-management');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAdmin]);
 
   return (
     <div className="space-y-6">

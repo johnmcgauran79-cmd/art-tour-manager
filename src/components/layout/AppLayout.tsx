@@ -5,6 +5,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ShareButton } from "@/components/ShareButton";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -137,6 +138,18 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </main>
+
+      {/* Global floating Share button — copies the current URL (including
+          tab/sub-tab query params) so teammates can deep-link to whatever
+          page or settings sub-tab is currently open. */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <ShareButton
+          title="Current page"
+          context="Link"
+          variant="default"
+          className="shadow-lg"
+        />
+      </div>
     </div>
   );
 };
