@@ -137,3 +137,9 @@ verify_jwt = false
 
 [functions.teams-oauth-callback]
 verify_jwt = false
+
+[functions.validate-host-briefing-token]
+verify_jwt = false
+
+[functions.send-host-briefing-email]
+verify_jwt = false
