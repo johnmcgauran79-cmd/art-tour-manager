@@ -423,6 +423,7 @@ export type Database = {
           days_before_send: number
           email_log_id: string | null
           email_template_id: string | null
+          host_user_id: string | null
           id: string
           rejection_reason: string | null
           rule_id: string
@@ -439,6 +440,7 @@ export type Database = {
           days_before_send: number
           email_log_id?: string | null
           email_template_id?: string | null
+          host_user_id?: string | null
           id?: string
           rejection_reason?: string | null
           rule_id: string
@@ -455,6 +457,7 @@ export type Database = {
           days_before_send?: number
           email_log_id?: string | null
           email_template_id?: string | null
+          host_user_id?: string | null
           id?: string
           rejection_reason?: string | null
           rule_id?: string
@@ -1533,6 +1536,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      host_briefing_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          host_user_id: string
+          id: string
+          token: string
+          tour_id: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          host_user_id: string
+          id?: string
+          token: string
+          tour_id: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          host_user_id?: string
+          id?: string
+          token?: string
+          tour_id?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "host_briefing_tokens_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hotel_attachments: {
         Row: {
