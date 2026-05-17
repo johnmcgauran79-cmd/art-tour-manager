@@ -15,6 +15,10 @@ import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { TriggerConditionBuilder, ConditionGroup } from "@/components/TriggerConditionBuilder";
+import { useTours } from "@/hooks/useTours";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Send, Loader2 } from "lucide-react";
 
 const BOOKING_STATUSES = [
   { value: 'invoiced', label: 'Invoiced' },
@@ -56,6 +60,11 @@ export const AutomatedEmailRulesManagement = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<any>(null);
   const [editingRule, setEditingRule] = useState<any>(null);
+  const [testHostOpen, setTestHostOpen] = useState(false);
+  const [testTourId, setTestTourId] = useState<string>("");
+  const [sendingTest, setSendingTest] = useState(false);
+  const { data: allTours } = useTours();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     rule_name: "",
     rule_type: "booking_confirmation",
@@ -170,6 +179,7 @@ export const AutomatedEmailRulesManagement = () => {
     const isAfterBooking = rule.trigger_type === 'days_after_booking';
     const isStatusChange = rule.trigger_type === 'on_status_change';
     const isTravelDocs = rule.rule_type === 'travel_documents_request';
+    const isHostBriefing = rule.rule_type === 'host_pre_tour_briefing';
     
     return (
       <Card key={rule.id}>
@@ -215,6 +225,16 @@ export const AutomatedEmailRulesManagement = () => {
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            {isHostBriefing && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => { setTestTourId(""); setTestHostOpen(true); }}
+                title="Send test to me"
+              >
+                <Send className="h-4 w-4 mr-1" /> Test
+              </Button>
+            )}
             <Button variant="outline" size="sm" onClick={() => handleEdit(rule)}>
               <Edit className="h-4 w-4" />
             </Button>
