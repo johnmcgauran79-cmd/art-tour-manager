@@ -111,6 +111,15 @@ const HostReport = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center space-y-3">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">
+            Preparing the combined host report for <strong>{validation.tourName}</strong>…
+          </p>
+          <p className="text-xs text-muted-foreground">The PDF will open in this tab once ready.</p>
+        </div>
+      </div>
       <HostInfoHubReportModal
         open={true}
         onOpenChange={() => {
@@ -119,6 +128,11 @@ const HostReport = () => {
         tourId={validation.tourId!}
         tourName={validation.tourName!}
         pickupLocationRequired={validation.pickupLocationRequired ?? false}
+        headless
+        onReady={(url) => {
+          // Replace the tab with the native PDF view
+          window.location.replace(url);
+        }}
       />
     </div>
   );
