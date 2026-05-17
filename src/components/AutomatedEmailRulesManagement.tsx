@@ -248,8 +248,9 @@ export const AutomatedEmailRulesManagement = () => {
               <span>Type: {RULE_TYPES.find(rt => rt.value === rule.rule_type)?.label || rule.rule_type}</span>
             </div>
             <Badge variant="outline">
-              {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' : 
-               rule.recipient_filter === 'without_accommodation' ? 'Activities Only' : 'All Bookings'}
+              {rule.recipient_filter === 'with_accommodation' ? 'With Accommodation' :
+               rule.recipient_filter === 'without_accommodation' ? 'Activities Only' :
+               rule.recipient_filter === 'assigned_hosts' ? 'Assigned Hosts' : 'All Bookings'}
             </Badge>
             {rule.status_filter && rule.status_filter.length > 0 && (
               <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
