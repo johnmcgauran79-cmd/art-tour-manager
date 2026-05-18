@@ -7,8 +7,19 @@ import {
   useTaskApprovers,
   useRecordApprovalDecision,
   useRemoveApprover,
+  ApprovalDecision,
 } from "@/hooks/useTaskApprovers";
 import { RequestApprovalDialog } from "./RequestApprovalDialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 
 interface Props {
@@ -21,6 +32,28 @@ export const TaskApproversSection = ({ taskId }: Props) => {
   const decide = useRecordApprovalDecision();
   const remove = useRemoveApprover();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [decisionDialog, setDecisionDialog] = useState<{
+    open: boolean;
+    approverId: string;
+    decision: ApprovalDecision;
+  } | null>(null);
+  const [notes, setNotes] = useState("");
+
+  const openDecisionDialog = (approverId: string, decision: ApprovalDecision) => {
+    setNotes("");
+    setDecisionDialog({ open: true, approverId, decision });
+  };
+
+  const submitDecision = async () => {
+    if (!decisionDialog) return;
+    await decide.mutateAsync({
+      id: decisionDialog.approverId,
+      taskId,
+      decision: decisionDialog.decision,
+      notes: notes.trim() || undefined,
+    });
+    setDecisionDialog(null);
+  };
 
   const displayName = (u: any) =>
     u ? `${u.first_name || ""} ${u.last_name || ""}`.trim() || u.email : "Unknown";
@@ -67,7 +100,7 @@ export const TaskApproversSection = ({ taskId }: Props) => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => decide.mutate({ id: a.id, taskId, decision: "approved" })}
+                        onClick={() => openDecisionDialog(a.id, "approved")}
                         disabled={decide.isPending}
                       >
                         Approve
@@ -75,7 +108,7 @@ export const TaskApproversSection = ({ taskId }: Props) => {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => decide.mutate({ id: a.id, taskId, decision: "changes_requested" })}
+                        onClick={() => openDecisionDialog(a.id, "changes_requested")}
                         disabled={decide.isPending}
                       >
                         Request changes
@@ -93,12 +126,61 @@ export const TaskApproversSection = ({ taskId }: Props) => {
                   </Button>
                 </div>
               </div>
+              {a.notes && (
+                <div className="mt-2 text-xs text-muted-foreground italic border-l-2 border-border pl-2">
+                  "{a.notes}"
+                </div>
+              )}
             );
           })}
         </div>
       )}
 
       <RequestApprovalDialog taskId={taskId} open={dialogOpen} onOpenChange={setDialogOpen} />
+
+      <Dialog
+        open={!!decisionDialog?.open}
+        onOpenChange={(o) => !o && setDecisionDialog(null)}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {decisionDialog?.decision === "approved" ? "Approve task" : "Request changes"}
+            </DialogTitle>
+            <DialogDescription>
+              {decisionDialog?.decision === "approved"
+                ? "Optionally add a note for the requester."
+                : "Tell the requester what needs to change."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="approval-notes">Notes {decisionDialog?.decision === "changes_requested" ? "(recommended)" : "(optional)"}</Label>
+            <Textarea
+              id="approval-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={
+                decisionDialog?.decision === "approved"
+                  ? "Looks good!"
+                  : "Please update the date and resend…"
+              }
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDecisionDialog(null)}>
+              Cancel
+            </Button>
+            <Button onClick={submitDecision} disabled={decide.isPending}>
+              {decide.isPending
+                ? "Saving…"
+                : decisionDialog?.decision === "approved"
+                ? "Approve"
+                : "Request changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
