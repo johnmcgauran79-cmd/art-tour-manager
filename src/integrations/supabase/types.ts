@@ -2769,6 +2769,35 @@ export type Database = {
           },
         ]
       }
+      task_template_approvers: {
+        Row: {
+          created_at: string
+          id: string
+          template_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          template_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          template_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_template_approvers_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "task_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_template_assignees: {
         Row: {
           created_at: string
@@ -2797,39 +2826,51 @@ export type Database = {
       }
       task_templates: {
         Row: {
+          approval_policy: string
           category: Database["public"]["Enums"]["task_category"]
           created_at: string
           date_field_type: string | null
           days_before_tour: number | null
+          default_status: string
+          default_url_reference: string | null
           description: string | null
           id: string
           is_active: boolean
           name: string
           priority: Database["public"]["Enums"]["task_priority"]
+          template_type: string
           updated_at: string
         }
         Insert: {
+          approval_policy?: string
           category?: Database["public"]["Enums"]["task_category"]
           created_at?: string
           date_field_type?: string | null
           days_before_tour?: number | null
+          default_status?: string
+          default_url_reference?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
           name: string
           priority?: Database["public"]["Enums"]["task_priority"]
+          template_type?: string
           updated_at?: string
         }
         Update: {
+          approval_policy?: string
           category?: Database["public"]["Enums"]["task_category"]
           created_at?: string
           date_field_type?: string | null
           days_before_tour?: number | null
+          default_status?: string
+          default_url_reference?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
           name?: string
           priority?: Database["public"]["Enums"]["task_priority"]
+          template_type?: string
           updated_at?: string
         }
         Relationships: []

@@ -15,6 +15,11 @@ export interface TaskTemplate {
   created_at: string;
   updated_at: string;
   assignee_user_ids?: string[];
+  template_type: 'tour' | 'standalone';
+  default_status: string;
+  approval_policy: 'all' | 'any';
+  default_url_reference: string | null;
+  approver_user_ids?: string[];
 }
 
 export const useTaskTemplates = () => {
@@ -45,9 +50,21 @@ export const useTaskTemplates = () => {
         byTemplate.set(row.template_id, arr);
       });
 
+      const { data: approvers, error: apErr } = await supabase
+        .from('task_template_approvers' as any)
+        .select('template_id, user_id');
+      if (apErr) console.error('Error fetching template approvers:', apErr);
+      const approversByTemplate = new Map<string, string[]>();
+      ((approvers as any[]) || []).forEach((row) => {
+        const arr = approversByTemplate.get(row.template_id) || [];
+        arr.push(row.user_id);
+        approversByTemplate.set(row.template_id, arr);
+      });
+
       const result = (data || []).map((t: any) => ({
         ...t,
         assignee_user_ids: byTemplate.get(t.id) || [],
+        approver_user_ids: approversByTemplate.get(t.id) || [],
       })) as TaskTemplate[];
 
       console.log('Task templates fetched successfully:', result.length, 'templates');
@@ -71,6 +88,21 @@ const syncAssignees = async (templateId: string, userIds: string[] | undefined) 
   }
 };
 
+const syncApprovers = async (templateId: string, userIds: string[] | undefined) => {
+  if (!userIds) return;
+  const { error: delErr } = await supabase
+    .from('task_template_approvers' as any)
+    .delete()
+    .eq('template_id', templateId);
+  if (delErr) throw delErr;
+  if (userIds.length > 0) {
+    const { error: insErr } = await supabase
+      .from('task_template_approvers' as any)
+      .insert(userIds.map((user_id) => ({ template_id: templateId, user_id })));
+    if (insErr) throw insErr;
+  }
+};
+
 export const useCreateTaskTemplate = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -85,6 +117,11 @@ export const useCreateTaskTemplate = () => {
       date_field_type?: TaskTemplate['date_field_type'];
       is_active?: boolean;
       assignee_user_ids?: string[];
+      template_type?: 'tour' | 'standalone';
+      default_status?: string;
+      approval_policy?: 'all' | 'any';
+      default_url_reference?: string | null;
+      approver_user_ids?: string[];
     }) => {
       const { data, error } = await supabase
         .from('task_templates')
@@ -96,12 +133,17 @@ export const useCreateTaskTemplate = () => {
           days_before_tour: templateData.days_before_tour || null,
           date_field_type: templateData.date_field_type || 'tour_start_date',
           is_active: templateData.is_active ?? true,
-        })
+          template_type: templateData.template_type ?? 'tour',
+          default_status: templateData.default_status ?? 'not_started',
+          approval_policy: templateData.approval_policy ?? 'all',
+          default_url_reference: templateData.default_url_reference ?? null,
+        } as any)
         .select()
         .single();
 
       if (error) throw error;
       await syncAssignees(data.id, templateData.assignee_user_ids);
+      await syncApprovers(data.id, templateData.approver_user_ids);
       return data;
     },
     onSuccess: () => {
@@ -129,9 +171,9 @@ export const useUpdateTaskTemplate = () => {
   return useMutation({
     mutationFn: async (data: {
       templateId: string;
-      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active' | 'assignee_user_ids'>>;
+      updates: Partial<Pick<TaskTemplate, 'name' | 'description' | 'category' | 'priority' | 'days_before_tour' | 'date_field_type' | 'is_active' | 'assignee_user_ids' | 'template_type' | 'default_status' | 'approval_policy' | 'default_url_reference' | 'approver_user_ids'>>;
     }) => {
-      const { assignee_user_ids, ...rest } = data.updates as any;
+      const { assignee_user_ids, approver_user_ids, ...rest } = data.updates as any;
       const { data: template, error } = await supabase
         .from('task_templates')
         .update(rest)
@@ -142,6 +184,9 @@ export const useUpdateTaskTemplate = () => {
       if (error) throw error;
       if (assignee_user_ids !== undefined) {
         await syncAssignees(data.templateId, assignee_user_ids);
+      }
+      if (approver_user_ids !== undefined) {
+        await syncApprovers(data.templateId, approver_user_ids);
       }
       return template;
     },
