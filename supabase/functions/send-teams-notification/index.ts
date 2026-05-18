@@ -10,7 +10,7 @@ const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 const TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
 interface TeamsNotificationRequest {
-  type: "mention" | "assignment";
+  type: "mention" | "assignment" | "subtask_assignment" | "approval_request";
   taskId: string;
   recipientUserIds: string[];
   actorUserId: string;
@@ -289,9 +289,14 @@ Deno.serve(async (req) => {
         })}</strong></p>`
       : "";
 
-    const verbHtml = body.type === "mention"
-      ? "mentioned you in a comment on"
-      : "assigned you to";
+    const verbHtml =
+      body.type === "mention"
+        ? "mentioned you in a comment on"
+        : body.type === "approval_request"
+        ? "has requested your approval on"
+        : body.type === "subtask_assignment"
+        ? "assigned you a subtask on"
+        : "assigned you to";
 
     const messageBlock = escapedMessage ? `<blockquote>${escapedMessage}</blockquote>` : "";
 
