@@ -314,6 +314,25 @@ export default function TaskEdit() {
             <div className="border-t pt-4">
               <TaskAssignmentSection taskId={task.id} />
             </div>
+
+            {(["approval_required", "approved", "changes_needed"].includes(
+              (editedTask.status || task.status) as string
+            )) && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-base font-semibold">Approvers</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setApprovalDialogOpen(true)}
+                  >
+                    Add approvers
+                  </Button>
+                </div>
+                <TaskApproversSection taskId={task.id} />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
