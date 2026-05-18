@@ -2627,6 +2627,39 @@ export type Database = {
         }
         Relationships: []
       }
+      task_statuses: {
+        Row: {
+          created_at: string
+          id: string
+          is_finished: boolean
+          is_system: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_finished?: boolean
+          is_system?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_finished?: boolean
+          is_system?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       task_subtasks: {
         Row: {
           assignee_id: string | null
