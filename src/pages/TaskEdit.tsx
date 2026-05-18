@@ -16,6 +16,9 @@ import { useTours } from "@/hooks/useTours";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { useToast } from "@/hooks/use-toast";
 import { TaskCommentsSection } from "@/components/TaskCommentsSection";
+import { useTaskStatuses } from "@/hooks/useTaskStatuses";
+import { RequestApprovalDialog } from "@/components/tasks/RequestApprovalDialog";
+import { TaskApproversSection } from "@/components/tasks/TaskApproversSection";
 
 export default function TaskEdit() {
   const { id } = useParams();
@@ -28,6 +31,8 @@ export default function TaskEdit() {
   
   const updateTask = useUpdateTask();
   const { data: tours } = useTours();
+  const { data: taskStatuses } = useTaskStatuses();
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -213,21 +218,22 @@ export default function TaskEdit() {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={editedTask.status}
-                  onValueChange={(value) => setEditedTask({ ...editedTask, status: value as any })}
+                  onValueChange={(value) => {
+                    setEditedTask({ ...editedTask, status: value as any });
+                    if (value === "approval_required" && task) {
+                      setApprovalDialogOpen(true);
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="not_started">Not Started</SelectItem>
-                    <SelectItem value="not_required">Not Required</SelectItem>
-                    <SelectItem value="in_progress">In Progress</SelectItem>
-                    <SelectItem value="waiting">Waiting</SelectItem>
-                    <SelectItem value="awaiting_further_information">Awaiting Further Information</SelectItem>
-                    <SelectItem value="with_third_party">With Third Party</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
+                    {(taskStatuses ?? []).map((s) => (
+                      <SelectItem key={s.id} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -308,6 +314,25 @@ export default function TaskEdit() {
             <div className="border-t pt-4">
               <TaskAssignmentSection taskId={task.id} />
             </div>
+
+            {(["approval_required", "approved", "changes_needed"].includes(
+              (editedTask.status || task.status) as string
+            )) && (
+              <div className="border-t pt-4">
+                <div className="flex items-center justify-between mb-3">
+                  <Label className="text-base font-semibold">Approvers</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setApprovalDialogOpen(true)}
+                  >
+                    Add approvers
+                  </Button>
+                </div>
+                <TaskApproversSection taskId={task.id} />
+              </div>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-4 border-t">
@@ -331,6 +356,12 @@ export default function TaskEdit() {
           <TaskCommentsSection taskId={task.id} />
         </TabsContent>
       </Tabs>
+
+      <RequestApprovalDialog
+        taskId={task.id}
+        open={approvalDialogOpen}
+        onOpenChange={setApprovalDialogOpen}
+      />
     </div>
   );
 }
