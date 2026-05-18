@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Clock, UserPlus, X } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, UserPlus, X, RotateCcw } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useTaskApprovers,
   useRecordApprovalDecision,
   useRemoveApprover,
+  useReRequestApproval,
   ApprovalDecision,
 } from "@/hooks/useTaskApprovers";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { RequestApprovalDialog } from "./RequestApprovalDialog";
 import {
   Dialog,
@@ -31,6 +34,19 @@ export const TaskApproversSection = ({ taskId }: Props) => {
   const { data: approvers } = useTaskApprovers(taskId);
   const decide = useRecordApprovalDecision();
   const remove = useRemoveApprover();
+  const reRequest = useReRequestApproval();
+  const { data: taskMeta } = useQuery({
+    queryKey: ["task-approval-meta", taskId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("tasks")
+        .select("approval_policy, status")
+        .eq("id", taskId)
+        .single();
+      return data as { approval_policy: "any" | "all" | null; status: string } | null;
+    },
+    enabled: !!taskId,
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [decisionDialog, setDecisionDialog] = useState<{
     open: boolean;
@@ -69,14 +85,34 @@ export const TaskApproversSection = ({ taskId }: Props) => {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
-          {approvers && approvers.length > 0
-            ? `${approvers.length} approver${approvers.length === 1 ? "" : "s"} requested`
-            : "No approvers requested yet"}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="text-sm text-muted-foreground">
+            {approvers && approvers.length > 0
+              ? `${approvers.length} approver${approvers.length === 1 ? "" : "s"} requested`
+              : "No approvers requested yet"}
+          </div>
+          {taskMeta?.approval_policy && approvers && approvers.length > 0 && (
+            <Badge variant="outline" className="text-xs">
+              {taskMeta.approval_policy === "any" ? "Any one approves" : "All required"}
+            </Badge>
+          )}
         </div>
-        <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-1" /> Add approver
-        </Button>
+        <div className="flex items-center gap-2">
+          {taskMeta?.status === "changes_needed" && approvers && approvers.length > 0 && (
+            <Button
+              size="sm"
+              variant="default"
+              onClick={() => reRequest.mutate({ taskId })}
+              disabled={reRequest.isPending}
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Re-request approval
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setDialogOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-1" /> Add approver
+          </Button>
+        </div>
       </div>
 
       {approvers && approvers.length > 0 && (
