@@ -27,6 +27,7 @@ import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/li
 import { cn } from "@/lib/utils";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 import { TaskLinkedItemsPanel } from "@/components/entityLinks/TaskLinkedItemsPanel";
+import { useTaskStatuses } from "@/hooks/useTaskStatuses";
 
 type EditableFields = Pick<Task, "title" | "description" | "priority" | "category" | "due_date" | "url_reference">;
 
@@ -37,6 +38,7 @@ export default function TaskDetail() {
   const { toast } = useToast();
   const { data: allTasks, isLoading } = useTasks();
   const task = allTasks?.find((t) => t.id === id);
+  const { data: statusList } = useTaskStatuses();
   const [currentTab, setCurrentTab] = useState(searchParams.get("tab") || "comments");
 
   const updateTask = useUpdateTask();
@@ -326,15 +328,9 @@ export default function TaskDetail() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="not_started">Not Started</SelectItem>
-                <SelectItem value="not_required">Not Required</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="waiting">Waiting</SelectItem>
-                <SelectItem value="awaiting_further_information">Awaiting Further Information</SelectItem>
-                <SelectItem value="with_third_party">With Third Party</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="archived">Archived</SelectItem>
+                {(statusList ?? []).map((s) => (
+                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
