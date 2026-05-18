@@ -10,7 +10,7 @@ const GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 const TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
 interface TeamsNotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment" | "approval_request";
+  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision";
   taskId: string;
   recipientUserIds: string[];
   actorUserId: string;
@@ -294,6 +294,8 @@ Deno.serve(async (req) => {
         ? "mentioned you in a comment on"
         : body.type === "approval_request"
         ? "has requested your approval on"
+        : body.type === "approval_decision"
+        ? "responded to your approval request on"
         : body.type === "subtask_assignment"
         ? "assigned you a subtask on"
         : "assigned you to";

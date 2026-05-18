@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment" | "approval_request";
+  type: "mention" | "assignment" | "subtask_assignment" | "approval_request" | "approval_decision";
   taskId: string;
   recipientUserIds: string[];
   actorUserId: string;
@@ -113,6 +113,8 @@ Deno.serve(async (req) => {
         ? `${actorName} assigned you a subtask`
         : body.type === "approval_request"
         ? `${actorName} requested your approval on a task`
+        : body.type === "approval_decision"
+        ? `${actorName} responded to your approval request`
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
@@ -122,6 +124,8 @@ Deno.serve(async (req) => {
         ? "You have been assigned a subtask"
         : body.type === "approval_request"
         ? "Your approval is required"
+        : body.type === "approval_decision"
+        ? "Approval update on your task"
         : "You have been assigned a new task";
 
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
@@ -164,7 +168,7 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:32px 36px;">
 <h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
-<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : "assigned you to"} the task below.</p>
+<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? "responded to your approval request on" : "assigned you to"} the task below.</p>
 <h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
 <p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
 ${dueLine}
@@ -200,6 +204,8 @@ ${messageBlock}
                 ? "Subtask Assignment"
                 : body.type === "approval_request"
                 ? "Task Approval Request"
+                : body.type === "approval_decision"
+                ? "Task Approval Decision"
                 : "Task Assignment",
             sent_by: body.actorUserId,
           });
