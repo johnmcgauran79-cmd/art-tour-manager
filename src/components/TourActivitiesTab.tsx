@@ -119,7 +119,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
     
     const activityIds = sortedActivities.map(activity => activity.id);
     
-    // Get activity bookings for these activities with confirmed bookings only (exclude cancelled)
+    // Get activity bookings for these activities with confirmed bookings only (exclude cancelled and waitlisted)
     const { data, error } = await supabase
       .from('activity_bookings')
       .select(`
@@ -128,7 +128,7 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
         bookings!inner(id, status)
       `)
       .in('activity_id', activityIds)
-      .not('bookings.status', 'eq', 'cancelled');
+      .not('bookings.status', 'in', '("cancelled","waitlisted")');
 
     if (error) {
       console.error('Error fetching activity bookings:', error);
@@ -231,12 +231,12 @@ export const TourActivitiesTab = ({ tourId, alerts, onAddActivity, onEditActivit
   // Reset all activity allocations mutation
   const resetActivitiesMutation = useMutation({
     mutationFn: async () => {
-      // Fetch all bookings for this tour (excluding cancelled)
+      // Fetch all bookings for this tour (excluding cancelled and waitlisted)
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select('id, passenger_count')
         .eq('tour_id', tourId)
-        .neq('status', 'cancelled');
+        .not('status', 'in', '("cancelled","waitlisted")');
 
       if (bookingsError) throw bookingsError;
       if (!bookings || bookings.length === 0) {
