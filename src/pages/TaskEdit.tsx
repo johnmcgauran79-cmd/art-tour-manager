@@ -356,6 +356,12 @@ export default function TaskEdit() {
           <TaskCommentsSection taskId={task.id} />
         </TabsContent>
       </Tabs>
+
+      <RequestApprovalDialog
+        taskId={task.id}
+        open={approvalDialogOpen}
+        onOpenChange={setApprovalDialogOpen}
+      />
     </div>
   );
 }
