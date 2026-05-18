@@ -15,6 +15,8 @@ import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 import { TaskFilesSection } from "@/components/TaskFilesSection";
 import { TaskDependencyChain } from "@/components/TaskDependencyChain";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
+import { TaskApproversSection } from "@/components/tasks/TaskApproversSection";
+import { RequestApprovalDialog } from "@/components/tasks/RequestApprovalDialog";
 import { TaskActivityFeed } from "@/components/tasks/TaskActivityFeed";
 import { TaskSubtasksSection } from "@/components/tasks/TaskSubtasksSection";
 import { TaskWatchersSection } from "@/components/tasks/TaskWatchersSection";
@@ -40,6 +42,7 @@ export default function TaskDetail() {
   const task = allTasks?.find((t) => t.id === id);
   const { data: statusList } = useTaskStatuses();
   const [currentTab, setCurrentTab] = useState(searchParams.get("tab") || "comments");
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
 
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -127,6 +130,12 @@ export default function TaskDetail() {
 
   const handleStatusChange = (newStatus: string) => {
     if (!task) return;
+    // When moving to Approval Required, prompt to pick approvers first.
+    // The dialog will handle setting the status itself.
+    if (newStatus === "approval_required") {
+      setApprovalDialogOpen(true);
+      return;
+    }
     updateTask.mutate(
       { taskId: task.id, updates: { status: newStatus as any } },
       {
@@ -392,11 +401,26 @@ export default function TaskDetail() {
           <TaskAssignmentSection taskId={task.id} />
         </div>
 
+        {(task.status === "approval_required" ||
+          task.status === "approved" ||
+          task.status === "changes_needed") && (
+          <div className="border-t pt-4">
+            <Label className="mb-2 block">Approvers</Label>
+            <TaskApproversSection taskId={task.id} />
+          </div>
+        )}
+
         <div className="border-t pt-4">
           <Label className="mb-2 block">Linked Records</Label>
           <TaskLinkedItemsPanel taskId={task.id} />
         </div>
       </div>
+
+      <RequestApprovalDialog
+        taskId={task.id}
+        open={approvalDialogOpen}
+        onOpenChange={setApprovalDialogOpen}
+      />
 
       {/* Quick Update */}
       <TaskQuickUpdate
