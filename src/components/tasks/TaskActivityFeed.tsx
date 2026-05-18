@@ -1,5 +1,5 @@
 import { useTaskActivity, TaskActivityEvent } from "@/hooks/useTaskActivity";
-import { Activity, MessageSquare, UserPlus, UserMinus, CheckCircle2, RotateCcw, Paperclip, Calendar, Flag, FileEdit, Edit3, ListChecks } from "lucide-react";
+import { Activity, MessageSquare, UserPlus, UserMinus, CheckCircle2, RotateCcw, Paperclip, Calendar, Flag, FileEdit, Edit3, ListChecks, ThumbsUp, XCircle } from "lucide-react";
 import { format } from "date-fns";
 import { LinkedTextRenderer } from "@/components/entityLinks/LinkedTextRenderer";
 
@@ -21,6 +21,9 @@ const EVENT_META: Record<string, { icon: any; label: string }> = {
   subtask_added: { icon: ListChecks, label: "added a subtask" },
   subtask_completed: { icon: CheckCircle2, label: "completed a subtask" },
   subtask_reopened: { icon: RotateCcw, label: "reopened a subtask" },
+  approval_approved: { icon: ThumbsUp, label: "approved this task" },
+  approval_changes_requested: { icon: XCircle, label: "requested changes" },
+  approval_decision: { icon: CheckCircle2, label: "recorded an approval decision" },
 };
 
 const formatActor = (actor: TaskActivityEvent["actor"]) => {
@@ -38,6 +41,9 @@ const renderDelta = (e: TaskActivityEvent) => {
       return <span className="text-muted-foreground">{e.new_value?.due_date ? format(new Date(e.new_value.due_date), 'dd/MM/yyyy') : 'cleared'}</span>;
     case "comment_added":
     case "quick_update_changed":
+    case "approval_approved":
+    case "approval_changes_requested":
+    case "approval_decision":
       return e.message ? (
         <span className="text-foreground italic">
           "<LinkedTextRenderer text={e.message} />"
