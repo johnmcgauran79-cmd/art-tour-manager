@@ -103,6 +103,7 @@ export const useRequestApproval = () => {
       qc.invalidateQueries({ queryKey: ["task-assignments", vars.taskId] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-pending-approvals"] });
       toast({ title: "Approval requested", description: "Approvers have been notified." });
     },
     onError: (e: any) => {
@@ -121,6 +122,7 @@ export const useRemoveApprover = () => {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["task-approvers", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["my-pending-approvals"] });
     },
     onError: (e: any) => {
       toast({ title: "Error", description: e?.message || "Failed to remove approver", variant: "destructive" });
