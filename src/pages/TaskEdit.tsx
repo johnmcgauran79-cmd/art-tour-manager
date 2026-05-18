@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Clock } from "lucide-react";
 import { Task, useUpdateTask, useTasks } from "@/hooks/useTasks";
 import { format } from "date-fns";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
