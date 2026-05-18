@@ -25,6 +25,8 @@ import { isTaskFinished } from "@/lib/taskStatuses";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTaskTemplates } from "@/hooks/useTaskTemplates";
+import { Sparkles } from "lucide-react";
 
 interface DraftSubtask {
   id: string; // local-only id for keying
@@ -64,6 +66,26 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const { data: taskStatuses } = useTaskStatuses();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { data: allTemplates } = useTaskTemplates();
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("none");
+
+  const usableTemplates = (allTemplates || []).filter((t) => t.is_active);
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (templateId === "none") return;
+    const tpl = usableTemplates.find((t) => t.id === templateId);
+    if (!tpl) return;
+    setTitle(tpl.name);
+    setDescription(tpl.description || "");
+    setPriority(tpl.priority);
+    setCategory(tpl.category);
+    setUrlReference(tpl.default_url_reference || "");
+    setStatus(tpl.default_status || "not_started");
+    setApprovalPolicy((tpl.approval_policy || "all") as ApprovalPolicy);
+    setApproverIds(tpl.approver_user_ids || []);
+    setSelectedUsers(tpl.assignee_user_ids || []);
+  };
 
   // Fetch tours for the dropdown
   const { data: tours } = useTours();
@@ -266,6 +288,32 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             Create a new task with details, priority, and assignments.
           </DialogDescription>
         </DialogHeader>
+
+        {usableTemplates.length > 0 && (
+          <div className="space-y-2 p-3 border rounded-md bg-muted/30">
+            <Label className="flex items-center gap-2 text-sm">
+              <Sparkles className="h-4 w-4" />
+              Start from a template (optional)
+            </Label>
+            <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a template or create fresh" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Create fresh task</SelectItem>
+                {usableTemplates.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                    {t.template_type === 'standalone' ? '' : ' (tour-based)'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              All loaded values can be edited below before saving.
+            </p>
+          </div>
+        )}
 
         {/* Validation Messages */}
         {validationErrors.length > 0 && (
