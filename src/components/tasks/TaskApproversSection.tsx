@@ -84,7 +84,8 @@ export const TaskApproversSection = ({ taskId }: Props) => {
           {approvers.map((a) => {
             const isMine = a.user_id === user?.id && a.decision === "pending";
             return (
-              <div key={a.id} className="flex items-center justify-between gap-2 p-2 rounded-md border">
+              <div key={a.id} className="p-2 rounded-md border">
+                <div className="flex items-center justify-between gap-2">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium">{displayName(a.user)}</span>
                   <span className="text-xs text-muted-foreground">
@@ -125,12 +126,13 @@ export const TaskApproversSection = ({ taskId }: Props) => {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-              </div>
+                </div>
               {a.notes && (
                 <div className="mt-2 text-xs text-muted-foreground italic border-l-2 border-border pl-2">
                   "{a.notes}"
                 </div>
               )}
+              </div>
             );
           })}
         </div>
