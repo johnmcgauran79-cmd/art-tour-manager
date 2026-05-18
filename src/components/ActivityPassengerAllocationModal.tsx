@@ -62,7 +62,7 @@ export const ActivityPassengerAllocationModal = ({
           )
         `)
         .eq('tour_id', tourId)
-        .neq('status', 'cancelled')
+        .not('status', 'in', '("cancelled","waitlisted")')
         .order('created_at', { ascending: true });
 
       if (error) throw error;

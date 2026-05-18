@@ -71,12 +71,17 @@ export const ActivityMatrixReport = ({ data, onBookingClick }: ActivityMatrixRep
           });
         }
 
-        // Calculate total bookings for each activity
+        // Calculate total bookings for each activity (exclude cancelled and waitlisted)
+        const countedBookingIds = new Set(
+          bookings
+            .filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted')
+            .map(b => b.id)
+        );
         const totalBookings: {[activityId: string]: number} = {};
         activities.forEach(activity => {
           totalBookings[activity.id] = activityBookings 
             ? activityBookings
-                .filter(ab => ab.activity_id === activity.id)
+                .filter(ab => ab.activity_id === activity.id && countedBookingIds.has(ab.booking_id))
                 .reduce((sum, ab) => sum + ab.passengers_attending, 0)
             : 0;
         });

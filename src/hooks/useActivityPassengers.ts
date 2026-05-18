@@ -41,9 +41,9 @@ export const useActivityPassengers = (activityId: string) => {
         throw error;
       }
 
-      // Filter out cancelled bookings and transform the data
+      // Filter out cancelled and waitlisted bookings and transform the data
       const passengers: ActivityPassenger[] = data
-        ?.filter(item => item.bookings.status !== 'cancelled')
+        ?.filter(item => item.bookings.status !== 'cancelled' && item.bookings.status !== 'waitlisted')
         .map(item => {
           // Only use customer dietary requirements (booking dietary_restrictions field is deprecated)
           const customerDietary = item.bookings.customers.dietary_requirements;
