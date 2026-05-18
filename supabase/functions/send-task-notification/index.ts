@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 interface NotificationRequest {
-  type: "mention" | "assignment" | "subtask_assignment";
+  type: "mention" | "assignment" | "subtask_assignment" | "approval_request";
   taskId: string;
   recipientUserIds: string[];
   actorUserId: string;
@@ -111,6 +111,8 @@ Deno.serve(async (req) => {
         ? `${actorName} mentioned you on a task`
         : body.type === "subtask_assignment"
         ? `${actorName} assigned you a subtask`
+        : body.type === "approval_request"
+        ? `${actorName} requested your approval on a task`
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
@@ -118,6 +120,8 @@ Deno.serve(async (req) => {
         ? "You were mentioned in a comment"
         : body.type === "subtask_assignment"
         ? "You have been assigned a subtask"
+        : body.type === "approval_request"
+        ? "Your approval is required"
         : "You have been assigned a new task";
 
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
@@ -160,7 +164,7 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:32px 36px;">
 <h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
-<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : "assigned you to"} the task below.</p>
+<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : "assigned you to"} the task below.</p>
 <h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
 <p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
 ${dueLine}
@@ -194,6 +198,8 @@ ${messageBlock}
                 ? "Task Mention"
                 : body.type === "subtask_assignment"
                 ? "Subtask Assignment"
+                : body.type === "approval_request"
+                ? "Task Approval Request"
                 : "Task Assignment",
             sent_by: body.actorUserId,
           });

@@ -2294,6 +2294,53 @@ export type Database = {
           },
         ]
       }
+      task_approvers: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decision: Database["public"]["Enums"]["task_approval_decision"]
+          id: string
+          notes: string | null
+          requested_at: string
+          requested_by: string | null
+          task_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decision?: Database["public"]["Enums"]["task_approval_decision"]
+          id?: string
+          notes?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          task_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decision?: Database["public"]["Enums"]["task_approval_decision"]
+          id?: string
+          notes?: string | null
+          requested_at?: string
+          requested_by?: string | null
+          task_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_approvers_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_assignments: {
         Row: {
           assigned_at: string
@@ -4350,6 +4397,7 @@ export type Database = {
         | "partially_paid"
         | "fully_paid"
         | "cancelled"
+      task_approval_decision: "pending" | "approved" | "changes_requested"
       task_category:
         | "operations"
         | "finance"
@@ -4595,6 +4643,7 @@ export const Constants = {
         "fully_paid",
         "cancelled",
       ],
+      task_approval_decision: ["pending", "approved", "changes_requested"],
       task_category: [
         "operations",
         "finance",
