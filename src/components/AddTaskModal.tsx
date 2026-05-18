@@ -14,7 +14,8 @@ import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useUpdateTask } from "@/hooks/useTaskMutations";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
-import { useRequestApproval } from "@/hooks/useTaskApprovers";
+import { useRequestApproval, ApprovalPolicy } from "@/hooks/useTaskApprovers";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useTours } from "@/hooks/useTours";
 import { cn } from "@/lib/utils";
 import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
@@ -50,6 +51,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [urlReference, setUrlReference] = useState("");
   const [status, setStatus] = useState<string>("not_started");
   const [approverIds, setApproverIds] = useState<string[]>([]);
+  const [approvalPolicy, setApprovalPolicy] = useState<ApprovalPolicy>("all");
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
@@ -132,7 +134,11 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       // Apply selected status / approval flow after creation
       if (created?.id) {
         if (status === "approval_required" && approverIds.length > 0) {
-          await requestApproval.mutateAsync({ taskId: created.id, userIds: approverIds });
+          await requestApproval.mutateAsync({
+            taskId: created.id,
+            userIds: approverIds,
+            policy: approvalPolicy,
+          });
         } else if (status && status !== "not_started") {
           await updateTask.mutateAsync({
             taskId: created.id,
@@ -184,6 +190,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setUrlReference("");
       setStatus("not_started");
       setApproverIds([]);
+      setApprovalPolicy("all");
       setValidationErrors([]);
       setValidationWarnings([]);
       setDraftSubtasks([]);
@@ -499,6 +506,23 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                   {approverIds.length} approver(s) selected
                 </p>
               )}
+              <div className="space-y-1 pt-2">
+                <Label className="text-sm">Approval policy</Label>
+                <RadioGroup
+                  value={approvalPolicy}
+                  onValueChange={(v) => setApprovalPolicy(v as ApprovalPolicy)}
+                  className="flex gap-4"
+                >
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <RadioGroupItem value="all" id="add-policy-all" />
+                    All required
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <RadioGroupItem value="any" id="add-policy-any" />
+                    Any one is enough
+                  </label>
+                </RadioGroup>
+              </div>
             </div>
           )}
 

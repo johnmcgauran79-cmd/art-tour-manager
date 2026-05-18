@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Clock } from "lucide-react";
 import { Task, useUpdateTask, useTasks } from "@/hooks/useTasks";
 import { format } from "date-fns";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
@@ -192,6 +192,15 @@ export default function TaskEdit() {
         </TabsList>
 
         <TabsContent value="details" className="space-y-4 mt-6">
+          {(editedTask.status || task.status) === "approval_required" && (
+            <div className="rounded-lg border-2 border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900 flex items-start gap-2">
+              <Clock className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <strong>This task is under review.</strong> Editing it now may invalidate pending approvals.
+                Consider waiting for a decision, or noting your changes in a comment.
+              </div>
+            </div>
+          )}
           <div className="bg-card rounded-lg border p-6 space-y-4">
             <div>
               <Label htmlFor="title">Title *</Label>

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export type ApprovalDecision = "pending" | "approved" | "changes_requested";
+export type ApprovalPolicy = "any" | "all";
 
 export interface TaskApproverRow {
   id: string;
@@ -45,8 +46,8 @@ export const useRequestApproval = () => {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (params: { taskId: string; userIds: string[] }) => {
-      const { taskId, userIds } = params;
+    mutationFn: async (params: { taskId: string; userIds: string[]; policy?: ApprovalPolicy }) => {
+      const { taskId, userIds, policy } = params;
       if (!userIds.length) return { added: 0 };
       const { data: authUser } = await supabase.auth.getUser();
       const actorId = authUser.user?.id;
@@ -78,11 +79,25 @@ export const useRequestApproval = () => {
       );
       if (error) throw error;
 
-      // Set task status to approval_required
+      // Set task status to approval_required and store policy
       await supabase
         .from("tasks")
-        .update({ status: "approval_required" as any })
+        .update({
+          status: "approval_required" as any,
+          ...(policy ? { approval_policy: policy } : {}),
+        } as any)
         .eq("id", taskId);
+
+      // Log activity
+      await supabase.from("task_activity_log").insert({
+        task_id: taskId,
+        actor_id: actorId,
+        event_type: "approval_requested",
+        message: `Requested approval from ${userIds.length} ${userIds.length === 1 ? "person" : "people"}${
+          policy ? ` (${policy === "any" ? "any one" : "all required"})` : ""
+        }`,
+        new_value: { policy: policy || null, count: userIds.length },
+      });
 
       // Notify approvers
       supabase.functions
@@ -108,6 +123,72 @@ export const useRequestApproval = () => {
     },
     onError: (e: any) => {
       toast({ title: "Error", description: e?.message || "Failed to request approval", variant: "destructive" });
+    },
+  });
+};
+
+export const useReRequestApproval = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (params: { taskId: string }) => {
+      const { taskId } = params;
+      const { data: authUser } = await supabase.auth.getUser();
+      const actorId = authUser.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+
+      // Reset all decisions to pending
+      const { data: existing } = await supabase
+        .from("task_approvers")
+        .select("user_id")
+        .eq("task_id", taskId);
+      const userIds = (existing || []).map((r: any) => r.user_id);
+      if (!userIds.length) throw new Error("No approvers to re-request from");
+
+      await supabase
+        .from("task_approvers")
+        .update({ decision: "pending", notes: null, decided_at: null, requested_at: new Date().toISOString() })
+        .eq("task_id", taskId);
+
+      // Set task back to approval_required
+      await supabase
+        .from("tasks")
+        .update({ status: "approval_required" as any })
+        .eq("id", taskId);
+
+      // Activity
+      await supabase.from("task_activity_log").insert({
+        task_id: taskId,
+        actor_id: actorId,
+        event_type: "approval_re_requested",
+        message: `Re-requested approval from ${userIds.length} ${userIds.length === 1 ? "person" : "people"}`,
+      });
+
+      // Notify
+      supabase.functions
+        .invoke("send-task-notification", {
+          body: {
+            type: "approval_request",
+            taskId,
+            recipientUserIds: userIds,
+            actorUserId: actorId,
+          },
+        })
+        .catch((e) => console.error("Notification failed:", e));
+
+      return { count: userIds.length };
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task-approvers", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-pending-approvals"] });
+      qc.invalidateQueries({ queryKey: ["task-activity", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId] });
+      toast({ title: "Approval re-requested", description: "Approvers have been notified." });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Failed to re-request approval", variant: "destructive" });
     },
   });
 };
@@ -149,19 +230,25 @@ export const useRecordApprovalDecision = () => {
         .eq("id", params.id);
       if (error) throw error;
 
-      // Re-fetch all approvers to determine the resulting task status
-      const { data: allApprovers } = await supabase
-        .from("task_approvers")
-        .select("user_id, decision, requested_by")
-        .eq("task_id", params.taskId);
+      // Re-fetch all approvers + task policy to determine resulting status
+      const [{ data: allApprovers }, { data: taskRow }] = await Promise.all([
+        supabase
+          .from("task_approvers")
+          .select("user_id, decision, requested_by")
+          .eq("task_id", params.taskId),
+        supabase.from("tasks").select("approval_policy").eq("id", params.taskId).single(),
+      ]);
 
       const rows = (allApprovers || []) as any[];
+      const policy = ((taskRow as any)?.approval_policy as ApprovalPolicy) || "all";
       const anyChanges = rows.some((r) => r.decision === "changes_requested");
+      const anyApproved = rows.some((r) => r.decision === "approved");
       const allApproved = rows.length > 0 && rows.every((r) => r.decision === "approved");
 
       let newStatus: string | null = null;
       if (anyChanges) newStatus = "changes_needed";
-      else if (allApproved) newStatus = "approved";
+      else if (policy === "any" && anyApproved) newStatus = "approved";
+      else if (policy === "all" && allApproved) newStatus = "approved";
 
       if (newStatus) {
         await supabase

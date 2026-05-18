@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { useAssignableUsers } from "@/hooks/useAssignableUsers";
-import { useRequestApproval, useTaskApprovers } from "@/hooks/useTaskApprovers";
+import { useRequestApproval, useTaskApprovers, ApprovalPolicy } from "@/hooks/useTaskApprovers";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Props {
   taskId: string;
@@ -19,9 +20,13 @@ export const RequestApprovalDialog = ({ taskId, open, onOpenChange, onCompleted 
   const { data: existingApprovers } = useTaskApprovers(taskId);
   const request = useRequestApproval();
   const [selected, setSelected] = useState<string[]>([]);
+  const [policy, setPolicy] = useState<ApprovalPolicy>("all");
 
   useEffect(() => {
-    if (!open) setSelected([]);
+    if (!open) {
+      setSelected([]);
+      setPolicy("all");
+    }
   }, [open]);
 
   const existingIds = new Set((existingApprovers || []).map((a) => a.user_id));
@@ -36,7 +41,7 @@ export const RequestApprovalDialog = ({ taskId, open, onOpenChange, onCompleted 
 
   const submit = async () => {
     if (!selected.length) return;
-    await request.mutateAsync({ taskId, userIds: selected });
+    await request.mutateAsync({ taskId, userIds: selected, policy });
     onOpenChange(false);
     onCompleted?.();
   };
@@ -64,6 +69,26 @@ export const RequestApprovalDialog = ({ taskId, open, onOpenChange, onCompleted 
             ))}
           </div>
         </ScrollArea>
+
+        <div className="space-y-2 pt-2 border-t">
+          <Label className="text-sm">Approval policy</Label>
+          <RadioGroup value={policy} onValueChange={(v) => setPolicy(v as ApprovalPolicy)}>
+            <label className="flex items-start gap-2 cursor-pointer p-2 rounded-md hover:bg-muted">
+              <RadioGroupItem value="all" id="policy-all" className="mt-0.5" />
+              <div>
+                <div className="text-sm font-medium">All required</div>
+                <div className="text-xs text-muted-foreground">Every approver must approve before the task is marked approved.</div>
+              </div>
+            </label>
+            <label className="flex items-start gap-2 cursor-pointer p-2 rounded-md hover:bg-muted">
+              <RadioGroupItem value="any" id="policy-any" className="mt-0.5" />
+              <div>
+                <div className="text-sm font-medium">Any one is enough</div>
+                <div className="text-xs text-muted-foreground">First approval marks the task approved. Good for quick comms sign-off.</div>
+              </div>
+            </label>
+          </RadioGroup>
+        </div>
 
         {existingApprovers && existingApprovers.length > 0 && (
           <div className="text-xs text-muted-foreground">

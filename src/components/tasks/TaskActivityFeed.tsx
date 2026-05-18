@@ -24,6 +24,8 @@ const EVENT_META: Record<string, { icon: any; label: string }> = {
   approval_approved: { icon: ThumbsUp, label: "approved this task" },
   approval_changes_requested: { icon: XCircle, label: "requested changes" },
   approval_decision: { icon: CheckCircle2, label: "recorded an approval decision" },
+  approval_requested: { icon: UserPlus, label: "requested approval" },
+  approval_re_requested: { icon: RotateCcw, label: "re-requested approval" },
 };
 
 const formatActor = (actor: TaskActivityEvent["actor"]) => {
@@ -44,6 +46,8 @@ const renderDelta = (e: TaskActivityEvent) => {
     case "approval_approved":
     case "approval_changes_requested":
     case "approval_decision":
+    case "approval_requested":
+    case "approval_re_requested":
       return e.message ? (
         <span className="text-foreground italic">
           "<LinkedTextRenderer text={e.message} />"

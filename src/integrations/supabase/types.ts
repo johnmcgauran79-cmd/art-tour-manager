@@ -2868,6 +2868,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          approval_policy: string
           automated_rule: string | null
           category: Database["public"]["Enums"]["task_category"]
           completed_at: string | null
@@ -2891,6 +2892,7 @@ export type Database = {
           url_reference: string | null
         }
         Insert: {
+          approval_policy?: string
           automated_rule?: string | null
           category?: Database["public"]["Enums"]["task_category"]
           completed_at?: string | null
@@ -2914,6 +2916,7 @@ export type Database = {
           url_reference?: string | null
         }
         Update: {
+          approval_policy?: string
           automated_rule?: string | null
           category?: Database["public"]["Enums"]["task_category"]
           completed_at?: string | null

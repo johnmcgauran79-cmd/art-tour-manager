@@ -1,0 +1,1 @@
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS approval_policy TEXT NOT NULL DEFAULT 'all' CHECK (approval_policy IN ('any', 'all'));
