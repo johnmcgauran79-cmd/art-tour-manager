@@ -88,11 +88,18 @@ const ThemeApplier = () => {
   return null;
 };
 
+import { useTaskStatuses } from "@/hooks/useTaskStatuses";
+const TaskStatusesLoader = () => {
+  useTaskStatuses();
+  return null;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeApplier />
+        <TaskStatusesLoader />
         <TooltipProvider>
           <Toaster />
           <Sonner />
