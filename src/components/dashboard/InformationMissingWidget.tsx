@@ -43,13 +43,13 @@ export const InformationMissingWidget = () => {
 
   return (
     <>
-      <Card className="border-brand-navy/20 shadow-lg">
+      <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-brand-navy flex items-center gap-2">
-            <FileWarning className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <FileWarning className="h-4 w-4 text-primary" />
             Information Missing
             {totalMissing > 0 && (
-              <Badge variant="destructive" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto">
                 {totalMissing}
               </Badge>
             )}
@@ -57,12 +57,12 @@ export const InformationMissingWidget = () => {
         </CardHeader>
         <CardContent className="space-y-2">
           {isLoading ? (
-            <div className="text-center text-muted-foreground py-4">Loading...</div>
+            <p className="text-sm text-muted-foreground">Loading…</p>
           ) : totalMissing === 0 ? (
-            <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-600" />
               All information complete
-            </div>
+            </p>
           ) : (
             <>
               {totalPassports > 0 && (
