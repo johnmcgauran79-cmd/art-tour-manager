@@ -1,0 +1,152 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+
+export type ApprovalDecision = "pending" | "approved" | "changes_requested";
+
+export interface TaskApproverRow {
+  id: string;
+  task_id: string;
+  user_id: string;
+  requested_by: string | null;
+  requested_at: string;
+  decision: ApprovalDecision;
+  decided_at: string | null;
+  notes: string | null;
+  user?: { id: string; first_name: string | null; last_name: string | null; email: string | null } | null;
+}
+
+export const useTaskApprovers = (taskId: string | undefined) => {
+  return useQuery({
+    queryKey: ["task-approvers", taskId],
+    queryFn: async (): Promise<TaskApproverRow[]> => {
+      if (!taskId) return [];
+      const { data, error } = await supabase
+        .from("task_approvers")
+        .select("*")
+        .eq("task_id", taskId)
+        .order("requested_at", { ascending: true });
+      if (error) throw error;
+      const rows = (data || []) as any[];
+      if (rows.length === 0) return [];
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", userIds);
+      const map = new Map((profiles || []).map((p: any) => [p.id, p]));
+      return rows.map((r) => ({ ...r, user: map.get(r.user_id) || null })) as TaskApproverRow[];
+    },
+    enabled: !!taskId,
+  });
+};
+
+export const useRequestApproval = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (params: { taskId: string; userIds: string[] }) => {
+      const { taskId, userIds } = params;
+      if (!userIds.length) return { added: 0 };
+      const { data: authUser } = await supabase.auth.getUser();
+      const actorId = authUser.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+
+      // Auto-assign each approver to the task (if not already assigned)
+      const { data: existingAssignments } = await supabase
+        .from("task_assignments")
+        .select("user_id")
+        .eq("task_id", taskId)
+        .in("user_id", userIds);
+      const assignedSet = new Set((existingAssignments || []).map((a: any) => a.user_id));
+      const toAssign = userIds.filter((u) => !assignedSet.has(u));
+      if (toAssign.length) {
+        await supabase.from("task_assignments").insert(
+          toAssign.map((uid) => ({ task_id: taskId, user_id: uid, assigned_by: actorId }))
+        );
+      }
+
+      // Insert approvers (ignore duplicates)
+      const { error } = await supabase.from("task_approvers").upsert(
+        userIds.map((uid) => ({
+          task_id: taskId,
+          user_id: uid,
+          requested_by: actorId,
+          decision: "pending" as const,
+        })),
+        { onConflict: "task_id,user_id", ignoreDuplicates: true }
+      );
+      if (error) throw error;
+
+      // Set task status to approval_required
+      await supabase
+        .from("tasks")
+        .update({ status: "approval_required" as any })
+        .eq("id", taskId);
+
+      // Notify approvers
+      supabase.functions
+        .invoke("send-task-notification", {
+          body: {
+            type: "approval_request",
+            taskId,
+            recipientUserIds: userIds,
+            actorUserId: actorId,
+          },
+        })
+        .catch((e) => console.error("Notification failed:", e));
+
+      return { added: userIds.length };
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task-approvers", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["task-assignments", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      toast({ title: "Approval requested", description: "Approvers have been notified." });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Failed to request approval", variant: "destructive" });
+    },
+  });
+};
+
+export const useRemoveApprover = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (params: { id: string; taskId: string }) => {
+      const { error } = await supabase.from("task_approvers").delete().eq("id", params.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task-approvers", vars.taskId] });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Failed to remove approver", variant: "destructive" });
+    },
+  });
+};
+
+export const useRecordApprovalDecision = () => {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (params: { id: string; taskId: string; decision: ApprovalDecision; notes?: string }) => {
+      const { error } = await supabase
+        .from("task_approvers")
+        .update({ decision: params.decision, notes: params.notes ?? null })
+        .eq("id", params.id);
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task-approvers", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      toast({ title: "Decision recorded" });
+    },
+    onError: (e: any) => {
+      toast({ title: "Error", description: e?.message || "Failed to record decision", variant: "destructive" });
+    },
+  });
+};
