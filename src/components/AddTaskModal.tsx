@@ -693,7 +693,12 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </Button>
             <Button
               type="submit"
-              disabled={validationErrors.length > 0 || !title.trim() || createTask.isPending}
+              disabled={
+                validationErrors.length > 0 ||
+                !title.trim() ||
+                createTask.isPending ||
+                (status === "approval_required" && approverIds.length === 0)
+              }
             >
               {createTask.isPending ? "Creating..." : "Create Task"}
             </Button>
