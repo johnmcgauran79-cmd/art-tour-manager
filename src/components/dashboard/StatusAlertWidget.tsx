@@ -19,13 +19,13 @@ export const StatusAlertWidget = () => {
   };
 
   return (
-    <Card className="border-brand-navy/20 shadow-lg">
+    <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-brand-navy flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-base">
+          <AlertTriangle className="h-4 w-4 text-primary" />
           Booking Status Alerts
           {totalCount > 0 && (
-            <Badge variant="destructive" className="ml-auto">
+            <Badge variant="secondary" className="ml-auto">
               {totalCount}
             </Badge>
           )}
@@ -33,11 +33,9 @@ export const StatusAlertWidget = () => {
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (
-          <div className="text-center text-muted-foreground py-4">Loading...</div>
+          <p className="text-sm text-muted-foreground">Loading…</p>
         ) : totalCount === 0 ? (
-          <div className="text-center text-muted-foreground py-4">
-            No status alerts
-          </div>
+          <p className="text-sm text-muted-foreground">No status alerts</p>
         ) : (
           <>
             <div className="space-y-2">
@@ -69,7 +67,8 @@ export const StatusAlertWidget = () => {
             
             <Button
               variant="ghost"
-              className="w-full mt-2 text-brand-navy hover:text-brand-navy/80"
+              size="sm"
+              className="w-full mt-2"
               onClick={handleClick}
             >
               View Outstanding

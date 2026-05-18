@@ -48,13 +48,13 @@ export const PendingEmailApprovalsWidget = () => {
   };
 
   return (
-    <Card className="border-brand-navy/20 shadow-lg">
+    <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-brand-navy flex items-center gap-2">
-          <Mail className="h-5 w-5" />
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Mail className="h-4 w-4 text-primary" />
           Email Approvals
           {totalCount > 0 && (
-            <Badge variant="destructive" className="ml-auto">
+            <Badge variant="secondary" className="ml-auto">
               {totalCount}
             </Badge>
           )}
@@ -62,11 +62,9 @@ export const PendingEmailApprovalsWidget = () => {
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading ? (
-          <div className="text-center text-muted-foreground py-4">Loading...</div>
+          <p className="text-sm text-muted-foreground">Loading…</p>
         ) : allRows.length === 0 ? (
-          <div className="text-center text-muted-foreground py-4">
-            No pending approvals
-          </div>
+          <p className="text-sm text-muted-foreground">No pending approvals</p>
         ) : (
           <>
             <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -111,7 +109,8 @@ export const PendingEmailApprovalsWidget = () => {
 
             <Button
               variant="ghost"
-              className="w-full mt-2 text-brand-navy hover:text-brand-navy/80"
+              size="sm"
+              className="w-full mt-2"
               onClick={handleClick}
             >
               View Approvals

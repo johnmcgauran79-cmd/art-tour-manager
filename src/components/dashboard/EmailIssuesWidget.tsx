@@ -26,13 +26,13 @@ export const EmailIssuesWidget = () => {
 
   return (
     <>
-      <Card className="border-brand-navy/20 shadow-lg">
+      <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-brand-navy flex items-center gap-2">
-            <MailX className="h-5 w-5" />
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MailX className="h-4 w-4 text-primary" />
             Email Delivery Issues
             {totalCount > 0 && (
-              <Badge variant="destructive" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto">
                 {totalCount}
               </Badge>
             )}
@@ -40,11 +40,9 @@ export const EmailIssuesWidget = () => {
         </CardHeader>
         <CardContent className="space-y-3">
           {isLoading ? (
-            <div className="text-center text-muted-foreground py-4">Loading...</div>
+            <p className="text-sm text-muted-foreground">Loading…</p>
           ) : totalCount === 0 ? (
-            <div className="text-center text-muted-foreground py-4">
-              No email issues
-            </div>
+            <p className="text-sm text-muted-foreground">No email issues</p>
           ) : (
             <div className="space-y-2">
               {bouncedCount > 0 && (

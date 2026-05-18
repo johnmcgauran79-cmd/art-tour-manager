@@ -77,14 +77,14 @@ export const AlertsWidget = () => {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-brand-navy flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Bell className="h-4 w-4 text-primary" />
             Operations Alerts
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-muted-foreground py-4">Loading...</div>
+          <p className="text-sm text-muted-foreground">Loading…</p>
         </CardContent>
       </Card>
     );
@@ -98,13 +98,13 @@ export const AlertsWidget = () => {
   return (
     <>
       <div className="w-full md:w-1/3">
-        <Card className="border-brand-navy/20 shadow-lg">
+        <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-brand-navy flex items-center gap-2">
-              <Bell className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Bell className="h-4 w-4 text-primary" />
               Operations Alerts
               {unacknowledgedCount > 0 && (
-                <Badge variant="destructive" className="ml-auto">
+                <Badge variant="secondary" className="ml-auto">
                   {unacknowledgedCount}
                 </Badge>
               )}
@@ -112,9 +112,7 @@ export const AlertsWidget = () => {
           </CardHeader>
           <CardContent className="space-y-2">
             {recentAlerts.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                No active alerts
-              </div>
+              <p className="text-sm text-muted-foreground">No active alerts</p>
             ) : (
               <>
                 <div className="space-y-1">
@@ -163,7 +161,8 @@ export const AlertsWidget = () => {
                 
                 <Button
                   variant="ghost"
-                  className="w-full mt-2 text-brand-navy hover:text-brand-navy/80"
+                  size="sm"
+                  className="w-full mt-2"
                   onClick={() => setAlertsModalOpen(true)}
                 >
                   View All Alerts
