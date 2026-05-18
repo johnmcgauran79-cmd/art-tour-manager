@@ -206,14 +206,19 @@ export const TaskTemplatesManagement = () => {
                                 <Badge className={getPriorityColor(template.priority)}>
                                   {template.priority}
                                 </Badge>
-                                {template.days_before_tour && (
+                                <Badge variant="outline" className="text-xs">
+                                  {template.template_type === 'standalone' ? 'Standalone' : 'Tour-based'}
+                                </Badge>
+                                {template.template_type !== 'standalone' && template.days_before_tour && (
                                   <Badge variant="outline" className="text-xs">
                                     {template.days_before_tour} days before {getDateFieldLabel(template.date_field_type)}
                                   </Badge>
                                 )}
-                                <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
-                                  {getDateFieldLabel(template.date_field_type)}
-                                </Badge>
+                                {template.template_type !== 'standalone' && (
+                                  <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                                    {getDateFieldLabel(template.date_field_type)}
+                                  </Badge>
+                                )}
                               </div>
                               {template.description && (
                                 <p className="text-sm text-gray-600 mb-2">{template.description}</p>
@@ -297,9 +302,14 @@ export const TaskTemplatesManagement = () => {
                                 <Badge variant="secondary" className="bg-gray-200 text-gray-600">
                                   Inactive
                                 </Badge>
-                                <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
-                                  {getDateFieldLabel(template.date_field_type)}
+                                <Badge variant="outline" className="text-xs">
+                                  {template.template_type === 'standalone' ? 'Standalone' : 'Tour-based'}
                                 </Badge>
+                                {template.template_type !== 'standalone' && (
+                                  <Badge variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                                    {getDateFieldLabel(template.date_field_type)}
+                                  </Badge>
+                                )}
                               </div>
                               {template.description && (
                                 <p className="text-sm text-gray-600 mb-2">{template.description}</p>
