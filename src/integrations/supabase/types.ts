@@ -4376,6 +4376,9 @@ export type Database = {
         | "not_required"
         | "with_third_party"
         | "awaiting_further_information"
+        | "approval_required"
+        | "approved"
+        | "changes_needed"
       tour_status:
         | "pending"
         | "available"
@@ -4620,6 +4623,9 @@ export const Constants = {
         "not_required",
         "with_third_party",
         "awaiting_further_information",
+        "approval_required",
+        "approved",
+        "changes_needed",
       ],
       tour_status: [
         "pending",
