@@ -133,16 +133,84 @@ export const useRecordApprovalDecision = () => {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (params: { id: string; taskId: string; decision: ApprovalDecision; notes?: string }) => {
+      const { data: authUser } = await supabase.auth.getUser();
+      const actorId = authUser.user?.id;
+      if (!actorId) throw new Error("Not authenticated");
+
       const { error } = await supabase
         .from("task_approvers")
-        .update({ decision: params.decision, notes: params.notes ?? null })
+        .update({
+          decision: params.decision,
+          notes: params.notes?.trim() || null,
+          decided_at: new Date().toISOString(),
+        })
         .eq("id", params.id);
       if (error) throw error;
+
+      // Re-fetch all approvers to determine the resulting task status
+      const { data: allApprovers } = await supabase
+        .from("task_approvers")
+        .select("user_id, decision, requested_by")
+        .eq("task_id", params.taskId);
+
+      const rows = (allApprovers || []) as any[];
+      const anyChanges = rows.some((r) => r.decision === "changes_requested");
+      const allApproved = rows.length > 0 && rows.every((r) => r.decision === "approved");
+
+      let newStatus: string | null = null;
+      if (anyChanges) newStatus = "changes_needed";
+      else if (allApproved) newStatus = "approved";
+
+      if (newStatus) {
+        await supabase
+          .from("tasks")
+          .update({ status: newStatus as any })
+          .eq("id", params.taskId);
+      }
+
+      // Log to task activity feed
+      await supabase.from("task_activity_log").insert({
+        task_id: params.taskId,
+        actor_id: actorId,
+        event_type:
+          params.decision === "approved"
+            ? "approval_approved"
+            : params.decision === "changes_requested"
+            ? "approval_changes_requested"
+            : "approval_decision",
+        message: params.notes?.trim() || null,
+        new_value: { decision: params.decision },
+      });
+
+      // Notify the requester(s) — dedupe and exclude the actor themselves
+      const requesterIds = Array.from(
+        new Set(rows.map((r) => r.requested_by).filter((id) => id && id !== actorId))
+      ) as string[];
+      if (requesterIds.length) {
+        supabase.functions
+          .invoke("send-task-notification", {
+            body: {
+              type: "approval_decision",
+              taskId: params.taskId,
+              recipientUserIds: requesterIds,
+              actorUserId: actorId,
+              message: `${params.decision === "approved" ? "approved" : "requested changes on"} this task${
+                params.notes?.trim() ? `: ${params.notes.trim()}` : ""
+              }`,
+            },
+          })
+          .catch((e) => console.error("Notification failed:", e));
+      }
+
+      return { newStatus };
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ["task-approvers", vars.taskId] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
       qc.invalidateQueries({ queryKey: ["my-tasks"] });
+      qc.invalidateQueries({ queryKey: ["my-pending-approvals"] });
+      qc.invalidateQueries({ queryKey: ["task-activity", vars.taskId] });
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId] });
       toast({ title: "Decision recorded" });
     },
     onError: (e: any) => {
