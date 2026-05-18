@@ -505,6 +505,23 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
                   {approverIds.length} approver(s) selected
                 </p>
               )}
+              <div className="space-y-1 pt-2">
+                <Label className="text-sm">Approval policy</Label>
+                <RadioGroup
+                  value={approvalPolicy}
+                  onValueChange={(v) => setApprovalPolicy(v as ApprovalPolicy)}
+                  className="flex gap-4"
+                >
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <RadioGroupItem value="all" id="add-policy-all" />
+                    All required
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer text-sm">
+                    <RadioGroupItem value="any" id="add-policy-any" />
+                    Any one is enough
+                  </label>
+                </RadioGroup>
+              </div>
             </div>
           )}
 
