@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Settings, Database, Mail, Shield, Users, FileText, Upload } from "lucide-react";
+import { Settings, Database, Mail, Shield, Users, FileText, Upload, ListChecks } from "lucide-react";
 import { XeroIntegrationSettings } from "./XeroIntegrationSettings";
 import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
@@ -11,6 +11,7 @@ import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
 import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 import { WaiverSettingsCard } from "./WaiverSettingsCard";
+import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
 
 interface SystemSettingsProps {
   // Remove the external handlers since we'll handle modals internally
@@ -21,6 +22,7 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
   const [userManagementOpen, setUserManagementOpen] = useState(false);
   const [systemLogOpen, setSystemLogOpen] = useState(false);
   const [emergencyContactImportOpen, setEmergencyContactImportOpen] = useState(false);
+  const [taskStatusesOpen, setTaskStatusesOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -149,6 +151,29 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
           </CardContent>
         </Card>
 
+        {/* Task Statuses */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ListChecks className="h-5 w-5" />
+              Task Statuses
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              Add, rename, reorder or remove the statuses available to tasks (e.g. Approval
+              Required, Approved, Changes Needed).
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTaskStatusesOpen(true)}
+            >
+              Manage Statuses
+            </Button>
+          </CardContent>
+        </Card>
+
       </div>
 
       {/* Theme & Appearance */}
@@ -245,6 +270,11 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
       <EmergencyContactImportModal
         open={emergencyContactImportOpen}
         onOpenChange={setEmergencyContactImportOpen}
+      />
+
+      <TaskStatusManagementModal
+        open={taskStatusesOpen}
+        onOpenChange={setTaskStatusesOpen}
       />
     </div>
   );
