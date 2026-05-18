@@ -12,6 +12,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
+import { useUpdateTask } from "@/hooks/useTaskMutations";
+import { useTaskStatuses } from "@/hooks/useTaskStatuses";
+import { useRequestApproval } from "@/hooks/useTaskApprovers";
 import { useTours } from "@/hooks/useTours";
 import { cn } from "@/lib/utils";
 import { validateTaskData, sanitizeTaskInput } from "@/utils/taskValidation";
@@ -45,6 +48,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
   const [dependsOnTaskId, setDependsOnTaskId] = useState<string | undefined>();
   const [urlReference, setUrlReference] = useState("");
+  const [status, setStatus] = useState<string>("not_started");
+  const [approverIds, setApproverIds] = useState<string[]>([]);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
@@ -52,6 +57,9 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
 
   const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
+  const requestApproval = useRequestApproval();
+  const { data: taskStatuses } = useTaskStatuses();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -121,6 +129,19 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         tour_id: selectedTourId,
       });
 
+      // Apply selected status / approval flow after creation
+      if (created?.id) {
+        if (status === "approval_required" && approverIds.length > 0) {
+          await requestApproval.mutateAsync({ taskId: created.id, userIds: approverIds });
+        } else if (status && status !== "not_started") {
+          await updateTask.mutateAsync({
+            taskId: created.id,
+            updates: { status: status as any },
+            silent: true,
+          });
+        }
+      }
+
       // Persist any draft subtasks created in this modal
       const subtasksToInsert = draftSubtasks
         .map((s) => ({ ...s, title: s.title.trim() }))
@@ -161,6 +182,8 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setSelectedTourId(tourId);
       setDependsOnTaskId(undefined);
       setUrlReference("");
+      setStatus("not_started");
+      setApproverIds([]);
       setValidationErrors([]);
       setValidationWarnings([]);
       setDraftSubtasks([]);
@@ -415,6 +438,70 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             />
           </div>
 
+          {/* Initial Status */}
+          <div className="space-y-2">
+            <Label htmlFor="status">Initial Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger id="status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(taskStatuses ?? []).map((s) => (
+                  <SelectItem key={s.id} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {status === "approval_required" && (
+              <p className="text-xs text-muted-foreground">
+                Select approvers below — they will be auto-assigned to the task and notified.
+              </p>
+            )}
+          </div>
+
+          {/* Approvers (only when status is approval_required) */}
+          {status === "approval_required" && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Required Approvers
+              </Label>
+              <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
+                {users && users.length > 0 ? (
+                  <div className="space-y-2">
+                    {users.map((user) => (
+                      <div key={`approver-${user.id}`} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`approver-${user.id}`}
+                          checked={approverIds.includes(user.id)}
+                          onCheckedChange={(checked) =>
+                            setApproverIds((prev) =>
+                              checked ? [...prev, user.id] : prev.filter((id) => id !== user.id)
+                            )
+                          }
+                        />
+                        <Label
+                          htmlFor={`approver-${user.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {getUserDisplayName(user)}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No eligible approvers available</p>
+                )}
+              </div>
+              {approverIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {approverIds.length} approver(s) selected
+                </p>
+              )}
+            </div>
+          )}
+
           {/* User Assignment Section */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
@@ -606,7 +693,12 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </Button>
             <Button
               type="submit"
-              disabled={validationErrors.length > 0 || !title.trim() || createTask.isPending}
+              disabled={
+                validationErrors.length > 0 ||
+                !title.trim() ||
+                createTask.isPending ||
+                (status === "approval_required" && approverIds.length === 0)
+              }
             >
               {createTask.isPending ? "Creating..." : "Create Task"}
             </Button>
