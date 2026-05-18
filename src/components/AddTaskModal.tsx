@@ -190,6 +190,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setUrlReference("");
       setStatus("not_started");
       setApproverIds([]);
+      setApprovalPolicy("all");
       setValidationErrors([]);
       setValidationWarnings([]);
       setDraftSubtasks([]);
