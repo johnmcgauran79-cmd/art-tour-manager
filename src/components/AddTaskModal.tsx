@@ -438,6 +438,70 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             />
           </div>
 
+          {/* Initial Status */}
+          <div className="space-y-2">
+            <Label htmlFor="status">Initial Status</Label>
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger id="status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(taskStatuses ?? []).map((s) => (
+                  <SelectItem key={s.id} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {status === "approval_required" && (
+              <p className="text-xs text-muted-foreground">
+                Select approvers below — they will be auto-assigned to the task and notified.
+              </p>
+            )}
+          </div>
+
+          {/* Approvers (only when status is approval_required) */}
+          {status === "approval_required" && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Required Approvers
+              </Label>
+              <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
+                {users && users.length > 0 ? (
+                  <div className="space-y-2">
+                    {users.map((user) => (
+                      <div key={`approver-${user.id}`} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`approver-${user.id}`}
+                          checked={approverIds.includes(user.id)}
+                          onCheckedChange={(checked) =>
+                            setApproverIds((prev) =>
+                              checked ? [...prev, user.id] : prev.filter((id) => id !== user.id)
+                            )
+                          }
+                        />
+                        <Label
+                          htmlFor={`approver-${user.id}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {getUserDisplayName(user)}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No eligible approvers available</p>
+                )}
+              </div>
+              {approverIds.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {approverIds.length} approver(s) selected
+                </p>
+              )}
+            </div>
+          )}
+
           {/* User Assignment Section */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
