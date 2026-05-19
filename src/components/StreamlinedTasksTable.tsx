@@ -12,6 +12,7 @@ import { PermissionButton } from "@/components/ui/permission-button";
 import { TaskAssigneeAvatars } from "@/components/tasks/TaskAssigneeAvatars";
 import { TaskLatestCell } from "@/components/tasks/TaskLatestCell";
 import { getTaskStatusColor, formatStatusText } from "@/lib/statusColors";
+import { RequestApprovalDialog } from "@/components/tasks/RequestApprovalDialog";
 import { cn } from "@/lib/utils";
 
 interface StreamlinedTasksTableProps {
@@ -76,6 +77,7 @@ export const StreamlinedTasksTable = ({
 
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [approvalTaskId, setApprovalTaskId] = useState<string | null>(null);
 
   const handleSort = (key: SortKey) => {
     if (sortKey !== key) {
@@ -301,13 +303,17 @@ export const StreamlinedTasksTable = ({
                     {canEditInline ? (
                       <Select
                         value={task.status}
-                        onValueChange={(value) =>
+                        onValueChange={(value) => {
+                          if (value === "approval_required") {
+                            setApprovalTaskId(task.id);
+                            return;
+                          }
                           updateTask.mutate({
                             taskId: task.id,
                             updates: { status: value as any },
                             silent: true,
-                          })
-                        }
+                          });
+                        }}
                       >
                         <SelectTrigger
                           className={cn(
@@ -324,6 +330,9 @@ export const StreamlinedTasksTable = ({
                           <SelectItem value="waiting">Waiting</SelectItem>
                           <SelectItem value="awaiting_further_information">Awaiting Further Information</SelectItem>
                           <SelectItem value="with_third_party">With Third Party</SelectItem>
+                          <SelectItem value="approval_required">Approval Required</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="changes_needed">Changes Needed</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                           <SelectItem value="archived">Archived</SelectItem>
@@ -404,6 +413,16 @@ export const StreamlinedTasksTable = ({
           </TableBody>
         </Table>
       </div>
+
+      {approvalTaskId && (
+        <RequestApprovalDialog
+          taskId={approvalTaskId}
+          open={!!approvalTaskId}
+          onOpenChange={(open) => {
+            if (!open) setApprovalTaskId(null);
+          }}
+        />
+      )}
     </div>
   );
 };
