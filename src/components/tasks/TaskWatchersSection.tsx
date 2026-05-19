@@ -34,7 +34,7 @@ export const TaskWatchersSection = ({ taskId }: TaskWatchersSectionProps) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Eye className="h-4 w-4" />
-          <h4 className="font-medium text-sm">Watchers ({watchers?.length || 0})</h4>
+          <h4 className="font-medium text-sm">Followers ({watchers?.length || 0})</h4>
         </div>
         {user?.id && (
           <Button
@@ -45,7 +45,7 @@ export const TaskWatchersSection = ({ taskId }: TaskWatchersSectionProps) => {
               : addWatcher.mutate({ task_id: taskId, user_id: user.id })
             }
           >
-            {isWatching ? <><EyeOff className="h-3 w-3 mr-1" />Unwatch</> : <><Eye className="h-3 w-3 mr-1" />Watch</>}
+            {isWatching ? <><EyeOff className="h-3 w-3 mr-1" />Unfollow</> : <><Eye className="h-3 w-3 mr-1" />Follow</>}
           </Button>
         )}
       </div>
