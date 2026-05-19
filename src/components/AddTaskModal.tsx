@@ -208,6 +208,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setCategory('operations');
       setDueDate(undefined);
       setSelectedUsers([]);
+      setSelectedFollowers([]);
       setSelectedTourId(tourId);
       setDependsOnTaskId(undefined);
       setUrlReference("");
