@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon } from "lucide-react";
+import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useUpdateTask } from "@/hooks/useTaskMutations";
@@ -48,6 +48,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [category, setCategory] = useState<'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general'>('operations');
   const [dueDate, setDueDate] = useState<Date>();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
   const [dependsOnTaskId, setDependsOnTaskId] = useState<string | undefined>();
   const [urlReference, setUrlReference] = useState("");
@@ -198,6 +199,30 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         }
       }
 
+      // Persist any selected followers (no notification — follower != assignee)
+      if (created?.id && selectedFollowers.length > 0) {
+        const { data: userRes } = await supabase.auth.getUser();
+        const actorId = userRes.user?.id ?? null;
+        const watcherRows = selectedFollowers.map((uid) => ({
+          task_id: created.id,
+          user_id: uid,
+          added_by: actorId,
+        }));
+        const { error: watcherError } = await supabase
+          .from('task_watchers')
+          .insert(watcherRows);
+        if (watcherError) {
+          console.error('Error adding followers:', watcherError);
+          toast({
+            title: "Followers not added",
+            description: watcherError.message,
+            variant: "destructive",
+          });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['task-watchers', created.id] });
+        }
+      }
+
       console.log('Task created successfully, resetting form');
 
       // Reset form
@@ -207,6 +232,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setCategory('operations');
       setDueDate(undefined);
       setSelectedUsers([]);
+      setSelectedFollowers([]);
       setSelectedTourId(tourId);
       setDependsOnTaskId(undefined);
       setUrlReference("");
@@ -606,6 +632,46 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             {selectedUsers.length > 0 && (
               <p className="text-xs text-gray-600">
                 {selectedUsers.length} user(s) selected
+              </p>
+            )}
+          </div>
+
+          {/* Followers Section */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Followers (optional)
+            </Label>
+            <div className="border rounded-md p-3 max-h-32 overflow-y-auto">
+              {users && users.length > 0 ? (
+                <div className="space-y-2">
+                  {users.map((user) => (
+                    <div key={`follower-${user.id}`} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`follower-${user.id}`}
+                        checked={selectedFollowers.includes(user.id)}
+                        onCheckedChange={(checked) =>
+                          setSelectedFollowers((prev) =>
+                            checked ? [...prev, user.id] : prev.filter((id) => id !== user.id)
+                          )
+                        }
+                      />
+                      <Label
+                        htmlFor={`follower-${user.id}`}
+                        className="text-sm font-normal cursor-pointer flex-1"
+                      >
+                        {getUserDisplayName(user)}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No users available to follow</p>
+              )}
+            </div>
+            {selectedFollowers.length > 0 && (
+              <p className="text-xs text-gray-600">
+                {selectedFollowers.length} follower(s) selected — they'll see updates but won't be notified about being added.
               </p>
             )}
           </div>
