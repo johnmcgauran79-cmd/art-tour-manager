@@ -314,58 +314,50 @@ export const AllTasksView = () => {
             />
           </div>
 
-          {/* Scope filters: choose which tasks to include in the list */}
+          {/* Scope filters: on/off toggle buttons. Default = Assigned + Following. */}
           <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
             <span className="text-xs font-medium text-muted-foreground mr-1">Show:</span>
-            <label
-              htmlFor="filter-assigned-to-me"
-              className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+            <Button
+              type="button"
+              size="sm"
+              variant={assignedToMe ? "default" : "outline"}
+              onClick={() => setAssignedToMe((v) => !v)}
+              className="h-8"
             >
-              <Checkbox
-                id="filter-assigned-to-me"
-                checked={assignedToMe}
-                onCheckedChange={(checked) => setAssignedToMe(checked as boolean)}
-              />
-              <UserCheck className="h-3.5 w-3.5 text-brand-navy" />
-              <span>Assigned to me</span>
-            </label>
-            <label
-              htmlFor="filter-created-by-me"
-              className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              <UserCheck className="h-3.5 w-3.5 mr-1.5" />
+              Assigned to me
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={followingByMe ? "default" : "outline"}
+              onClick={() => setFollowingByMe((v) => !v)}
+              className="h-8"
             >
-              <Checkbox
-                id="filter-created-by-me"
-                checked={createdByMe}
-                onCheckedChange={(checked) => setCreatedByMe(checked as boolean)}
-              />
-              <PenSquare className="h-3.5 w-3.5 text-brand-navy" />
-              <span>Created by me</span>
-            </label>
-            <label
-              htmlFor="filter-following-by-me"
-              className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              <Eye className="h-3.5 w-3.5 mr-1.5" />
+              Following
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={createdByMe ? "default" : "outline"}
+              onClick={() => setCreatedByMe((v) => !v)}
+              className="h-8"
             >
-              <Checkbox
-                id="filter-following-by-me"
-                checked={followingByMe}
-                onCheckedChange={(checked) => setFollowingByMe(checked as boolean)}
-              />
-              <Eye className="h-3.5 w-3.5 text-brand-navy" />
-              <span>Tasks I'm following</span>
-            </label>
+              <PenSquare className="h-3.5 w-3.5 mr-1.5" />
+              Created by me
+            </Button>
             {isAdmin && (
-              <label
-                htmlFor="filter-all-tasks"
-                className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+              <Button
+                type="button"
+                size="sm"
+                variant={allTasks ? "default" : "outline"}
+                onClick={() => setAllTasks((v) => !v)}
+                className="h-8"
               >
-                <Checkbox
-                  id="filter-all-tasks"
-                  checked={allTasks}
-                  onCheckedChange={(checked) => setAllTasks(checked as boolean)}
-                />
-                <Globe className="h-3.5 w-3.5 text-brand-navy" />
-                <span>All tasks (admin)</span>
-              </label>
+                <Globe className="h-3.5 w-3.5 mr-1.5" />
+                All tasks (admin)
+              </Button>
             )}
             {isAdmin && (
               <div className="flex items-center gap-2 ml-auto">
