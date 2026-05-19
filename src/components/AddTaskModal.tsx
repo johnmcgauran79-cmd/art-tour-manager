@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon } from "lucide-react";
+import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useUpdateTask } from "@/hooks/useTaskMutations";
@@ -48,6 +48,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [category, setCategory] = useState<'booking' | 'operations' | 'finance' | 'marketing' | 'maintenance' | 'general'>('operations');
   const [dueDate, setDueDate] = useState<Date>();
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedFollowers, setSelectedFollowers] = useState<string[]>([]);
   const [selectedTourId, setSelectedTourId] = useState<string | undefined>(tourId);
   const [dependsOnTaskId, setDependsOnTaskId] = useState<string | undefined>();
   const [urlReference, setUrlReference] = useState("");
