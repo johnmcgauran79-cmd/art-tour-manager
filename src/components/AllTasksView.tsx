@@ -33,9 +33,10 @@ export const AllTasksView = () => {
   const isAdmin = userRole === 'admin';
 
   // Default view = assigned-to-me only. Other toggles are additive.
+  // Default scope: assigned-to-me + following. Users toggle any on/off.
   const [assignedToMe, setAssignedToMe] = useState(true);
   const [createdByMe, setCreatedByMe] = useState(false);
-  const [followingByMe, setFollowingByMe] = useState(false);
+  const [followingByMe, setFollowingByMe] = useState(true);
   const [allTasks, setAllTasks] = useState(false);
   const [filterUserId, setFilterUserId] = useState<string>("all");
 
