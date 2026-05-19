@@ -413,6 +413,17 @@ export const StreamlinedTasksTable = ({
           </TableBody>
         </Table>
       </div>
+
+      {approvalTaskId && (
+        <RequestApprovalDialog
+          taskId={approvalTaskId}
+          open={!!approvalTaskId}
+          onOpenChange={(open) => {
+            if (!open) setApprovalTaskId(null);
+          }}
+        />
+      )}
+      </div>
     </div>
   );
 };
