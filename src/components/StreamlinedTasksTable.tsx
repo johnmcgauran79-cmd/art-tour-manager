@@ -303,13 +303,17 @@ export const StreamlinedTasksTable = ({
                     {canEditInline ? (
                       <Select
                         value={task.status}
-                        onValueChange={(value) =>
+                        onValueChange={(value) => {
+                          if (value === "approval_required") {
+                            setApprovalTaskId(task.id);
+                            return;
+                          }
                           updateTask.mutate({
                             taskId: task.id,
                             updates: { status: value as any },
                             silent: true,
-                          })
-                        }
+                          });
+                        }}
                       >
                         <SelectTrigger
                           className={cn(
@@ -326,6 +330,9 @@ export const StreamlinedTasksTable = ({
                           <SelectItem value="waiting">Waiting</SelectItem>
                           <SelectItem value="awaiting_further_information">Awaiting Further Information</SelectItem>
                           <SelectItem value="with_third_party">With Third Party</SelectItem>
+                          <SelectItem value="approval_required">Approval Required</SelectItem>
+                          <SelectItem value="approved">Approved</SelectItem>
+                          <SelectItem value="changes_needed">Changes Needed</SelectItem>
                           <SelectItem value="completed">Completed</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                           <SelectItem value="archived">Archived</SelectItem>
