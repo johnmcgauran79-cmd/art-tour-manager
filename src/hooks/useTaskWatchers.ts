@@ -55,7 +55,7 @@ export const useAddWatcher = () => {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['task-watchers', vars.task_id] });
     },
-    onError: (e: any) => toast({ title: "Failed to add watcher", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Failed to add follower", description: e.message, variant: "destructive" }),
   });
 };
 
