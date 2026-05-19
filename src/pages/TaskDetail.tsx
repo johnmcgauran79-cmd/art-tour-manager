@@ -437,7 +437,7 @@ export default function TaskDetail() {
             <TabsTrigger value="files">Files</TabsTrigger>
             {/* Dependencies tab hidden — feature dormant, can be re-enabled when fully built out */}
             {/* <TabsTrigger value="dependencies">Dependencies</TabsTrigger> */}
-            <TabsTrigger value="watchers">Watchers</TabsTrigger>
+            <TabsTrigger value="watchers">Followers</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
           </TabsList>
         </div>
