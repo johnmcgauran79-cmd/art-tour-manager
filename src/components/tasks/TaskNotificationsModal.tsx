@@ -402,7 +402,7 @@ export const TaskNotificationsModal = ({ open, onOpenChange }: Props) => {
                     checked={prefs.scope_watching}
                     onCheckedChange={(v) => update("scope_watching", !!v)}
                   />
-                  Tasks I'm watching
+                  Tasks I'm following
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
