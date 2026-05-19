@@ -141,11 +141,15 @@ export const AllTasksView = () => {
   const userFilteredTasks = useMemo(() => {
     if (!tasks) return [];
     if (!isAdmin || !selectedFilterUserId) return tasks;
+    // Viewing own list: useMyTasks already applied the scope toggles
+    // (assigned / following / created). Don't re-narrow to assignee-only,
+    // or followed tasks disappear.
+    if (selectedFilterUserId === user?.id) return tasks;
 
     return tasks.filter(task =>
       (task.task_assignments || []).some((a) => a.user_id === selectedFilterUserId)
     );
-  }, [tasks, isAdmin, selectedFilterUserId]);
+  }, [tasks, isAdmin, selectedFilterUserId, user?.id]);
 
   // Calculate pending tasks
   const pendingTasks = useMemo(() => {
