@@ -157,6 +157,7 @@ export const useTasks = (tourId?: string, filters?: {
 export interface MyTasksFilters {
   assignedToMe?: boolean;
   createdByMe?: boolean;
+  followingByMe?: boolean;
   allTasks?: boolean;
 }
 
@@ -166,10 +167,11 @@ export const useMyTasks = (filters?: MyTasksFilters) => {
   // Default: assigned-to-me only
   const assignedToMe = filters?.assignedToMe ?? true;
   const createdByMe = filters?.createdByMe ?? false;
+  const followingByMe = filters?.followingByMe ?? false;
   const showAllTasks = filters?.allTasks ?? false;
 
   return useQuery({
-    queryKey: ['my-tasks', { assignedToMe, createdByMe, showAllTasks }],
+    queryKey: ['my-tasks', { assignedToMe, createdByMe, followingByMe, showAllTasks }],
     queryFn: async () => {
       try {
         console.log('[useMyTasks] Starting query...');
@@ -178,6 +180,16 @@ export const useMyTasks = (filters?: MyTasksFilters) => {
         if (!user?.id) {
           console.log('[useMyTasks] No user found, returning empty array');
           return [] as Task[];
+        }
+
+        // Resolve task ids the current user is following (watching).
+        let followedTaskIds = new Set<string>();
+        if (followingByMe) {
+          const { data: watched } = await supabase
+            .from('task_watchers')
+            .select('task_id')
+            .eq('user_id', user.id);
+          followedTaskIds = new Set((watched || []).map((w: any) => w.task_id));
         }
 
         // RLS now restricts visibility to: tasks the user created, is assigned
@@ -214,6 +226,7 @@ export const useMyTasks = (filters?: MyTasksFilters) => {
           if (showAllTasks) return true;
           if (assignedToMe && task.task_assignments?.some(a => a.user_id === user.id)) return true;
           if (createdByMe && task.created_by === user.id) return true;
+          if (followingByMe && followedTaskIds.has(task.id)) return true;
           return false;
         }) || [];
 
