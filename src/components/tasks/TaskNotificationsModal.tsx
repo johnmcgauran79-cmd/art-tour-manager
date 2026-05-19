@@ -323,7 +323,7 @@ export const TaskNotificationsModal = ({ open, onOpenChange }: Props) => {
                   { key: "digest_include_due_today" as const, label: "Due today" },
                   { key: "digest_include_upcoming" as const, label: "Upcoming (next X days)" },
                   { key: "digest_include_newly_assigned" as const, label: "Newly assigned to me" },
-                  { key: "digest_include_watched" as const, label: "Watched (non-assigned)" },
+                  { key: "digest_include_watched" as const, label: "Followed (non-assigned)" },
                   { key: "digest_include_subtasks" as const, label: "Include subtasks" },
                 ].map((opt) => (
                   <label key={opt.key} className="flex items-center gap-2 cursor-pointer">
