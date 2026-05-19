@@ -31,7 +31,9 @@ import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 import { TaskLinkedItemsPanel } from "@/components/entityLinks/TaskLinkedItemsPanel";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
 
-type EditableFields = Pick<Task, "title" | "description" | "priority" | "category" | "due_date" | "url_reference">;
+type EditableFields = Pick<Task, "title" | "description" | "priority" | "category" | "due_date" | "url_reference"> & {
+  tour_id: string | null;
+};
 
 export default function TaskDetail() {
   const { id } = useParams();
@@ -61,6 +63,7 @@ export default function TaskDetail() {
         category: task.category,
         due_date: task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd'T'HH:mm") : "",
         url_reference: task.url_reference || "",
+        tour_id: task.tour_id ?? null,
       });
     }
   }, [
@@ -71,6 +74,7 @@ export default function TaskDetail() {
     task?.category,
     task?.due_date,
     task?.url_reference,
+    task?.tour_id,
   ]);
 
   // Update tab when URL changes
@@ -89,7 +93,8 @@ export default function TaskDetail() {
       (edited.priority ?? "") !== (task.priority ?? "") ||
       (edited.category ?? "") !== (task.category ?? "") ||
       (edited.due_date ?? "") !== originalDue ||
-      (edited.url_reference ?? "") !== (task.url_reference ?? "")
+      (edited.url_reference ?? "") !== (task.url_reference ?? "") ||
+      (edited.tour_id ?? null) !== (task.tour_id ?? null)
     );
   }, [edited, task]);
 
@@ -175,6 +180,7 @@ export default function TaskDetail() {
       category: task.category,
       due_date: task.due_date ? format(new Date(task.due_date), "yyyy-MM-dd'T'HH:mm") : "",
       url_reference: task.url_reference || "",
+      tour_id: task.tour_id ?? null,
     });
   };
 
@@ -396,9 +402,34 @@ export default function TaskDetail() {
           </div>
         </div>
 
+        <div>
+          <Label htmlFor="tour_id">Tour</Label>
+          <Select
+            value={edited.tour_id ?? "none"}
+            onValueChange={(value) =>
+              setEdited({ ...edited, tour_id: value === "none" ? null : value })
+            }
+          >
+            <SelectTrigger id="tour_id">
+              <SelectValue placeholder="Select a tour or leave unassigned" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">No tour (unassigned)</SelectItem>
+              {(tours || []).map((t) => (
+                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="border-t pt-4">
           <Label className="mb-2 block">Assignments</Label>
           <TaskAssignmentSection taskId={task.id} />
+        </div>
+
+        <div className="border-t pt-4">
+          <Label className="mb-2 block">Followers</Label>
+          <TaskWatchersSection taskId={task.id} />
         </div>
 
         {(task.status === "approval_required" ||
@@ -437,7 +468,6 @@ export default function TaskDetail() {
             <TabsTrigger value="files">Files</TabsTrigger>
             {/* Dependencies tab hidden — feature dormant, can be re-enabled when fully built out */}
             {/* <TabsTrigger value="dependencies">Dependencies</TabsTrigger> */}
-            <TabsTrigger value="watchers">Followers</TabsTrigger>
             <TabsTrigger value="audit">Audit</TabsTrigger>
           </TabsList>
         </div>
@@ -460,12 +490,6 @@ export default function TaskDetail() {
 
         <TabsContent value="dependencies" className="mt-6">
           <TaskDependencyChain task={task} allTasks={allTasks || []} />
-        </TabsContent>
-
-        <TabsContent value="watchers" className="mt-6">
-          <div className="bg-card rounded-lg border p-6">
-            <TaskWatchersSection taskId={task.id} />
-          </div>
         </TabsContent>
 
         <TabsContent value="audit" className="mt-6">
