@@ -77,6 +77,7 @@ export const StreamlinedTasksTable = ({
 
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [approvalTaskId, setApprovalTaskId] = useState<string | null>(null);
 
   const handleSort = (key: SortKey) => {
     if (sortKey !== key) {
