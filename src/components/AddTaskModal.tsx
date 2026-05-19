@@ -199,6 +199,30 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         }
       }
 
+      // Persist any selected followers (no notification — follower != assignee)
+      if (created?.id && selectedFollowers.length > 0) {
+        const { data: userRes } = await supabase.auth.getUser();
+        const actorId = userRes.user?.id ?? null;
+        const watcherRows = selectedFollowers.map((uid) => ({
+          task_id: created.id,
+          user_id: uid,
+          added_by: actorId,
+        }));
+        const { error: watcherError } = await supabase
+          .from('task_watchers')
+          .insert(watcherRows);
+        if (watcherError) {
+          console.error('Error adding followers:', watcherError);
+          toast({
+            title: "Followers not added",
+            description: watcherError.message,
+            variant: "destructive",
+          });
+        } else {
+          queryClient.invalidateQueries({ queryKey: ['task-watchers', created.id] });
+        }
+      }
+
       console.log('Task created successfully, resetting form');
 
       // Reset form
