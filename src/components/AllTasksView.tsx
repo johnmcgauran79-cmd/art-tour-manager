@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ClipboardList, Plus, ArrowLeft, UserCheck, PenSquare, Globe, Bell } from "lucide-react";
+import { ClipboardList, Plus, ArrowLeft, UserCheck, PenSquare, Globe, Bell, Eye } from "lucide-react";
 import { useMyTasks, Task } from "@/hooks/useTasks";
 import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
 import { AddTaskModal } from "@/components/AddTaskModal";
@@ -35,6 +35,7 @@ export const AllTasksView = () => {
   // Default view = assigned-to-me only. Other toggles are additive.
   const [assignedToMe, setAssignedToMe] = useState(true);
   const [createdByMe, setCreatedByMe] = useState(false);
+  const [followingByMe, setFollowingByMe] = useState(false);
   const [allTasks, setAllTasks] = useState(false);
   const [filterUserId, setFilterUserId] = useState<string>("all");
 
@@ -89,6 +90,7 @@ export const AllTasksView = () => {
   const { data: tasks, isLoading } = useMyTasks({
     assignedToMe,
     createdByMe,
+    followingByMe,
     allTasks: isAdmin && (allTasks || (!!selectedFilterUserId && selectedFilterUserId !== user?.id)),
   });
   const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
@@ -337,6 +339,18 @@ export const AllTasksView = () => {
               />
               <PenSquare className="h-3.5 w-3.5 text-brand-navy" />
               <span>Created by me</span>
+            </label>
+            <label
+              htmlFor="filter-following-by-me"
+              className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-1.5 text-sm cursor-pointer hover:bg-muted/50 transition-colors"
+            >
+              <Checkbox
+                id="filter-following-by-me"
+                checked={followingByMe}
+                onCheckedChange={(checked) => setFollowingByMe(checked as boolean)}
+              />
+              <Eye className="h-3.5 w-3.5 text-brand-navy" />
+              <span>Tasks I'm following</span>
             </label>
             {isAdmin && (
               <label
