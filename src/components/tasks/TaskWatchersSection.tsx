@@ -67,7 +67,7 @@ export const TaskWatchersSection = ({ taskId }: TaskWatchersSectionProps) => {
               </Button>
             </Badge>
           )) : (
-            <span className="text-sm text-muted-foreground">No watchers yet</span>
+            <span className="text-sm text-muted-foreground">No followers yet</span>
           )}
         </div>
       )}
@@ -75,7 +75,7 @@ export const TaskWatchersSection = ({ taskId }: TaskWatchersSectionProps) => {
       <div className="flex gap-2">
         <Select value={selectedUser} onValueChange={setSelectedUser}>
           <SelectTrigger className="h-9">
-            <SelectValue placeholder="Add watcher..." />
+            <SelectValue placeholder="Add follower..." />
           </SelectTrigger>
           <SelectContent>
             {users?.filter(u => !watcherIds.has(u.id)).map(u => (
