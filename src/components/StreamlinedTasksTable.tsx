@@ -12,6 +12,7 @@ import { PermissionButton } from "@/components/ui/permission-button";
 import { TaskAssigneeAvatars } from "@/components/tasks/TaskAssigneeAvatars";
 import { TaskLatestCell } from "@/components/tasks/TaskLatestCell";
 import { getTaskStatusColor, formatStatusText } from "@/lib/statusColors";
+import { RequestApprovalDialog } from "@/components/tasks/RequestApprovalDialog";
 import { cn } from "@/lib/utils";
 
 interface StreamlinedTasksTableProps {
