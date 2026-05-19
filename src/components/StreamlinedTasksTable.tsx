@@ -423,7 +423,6 @@ export const StreamlinedTasksTable = ({
           }}
         />
       )}
-      </div>
     </div>
   );
 };
