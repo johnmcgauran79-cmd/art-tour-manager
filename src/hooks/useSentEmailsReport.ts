@@ -4,6 +4,21 @@ import { subDays } from "date-fns";
 
 export type SentEmailsRange = "7d" | "30d" | "90d" | "all";
 
+/**
+ * Template names used by internal staff notification emails (task assignments,
+ * mentions, approvals, etc.). These are excluded from the Sent Emails Report
+ * which is intended to show client/host-facing communications only.
+ */
+const INTERNAL_NOTIFICATION_TEMPLATE_NAMES = [
+  "Task Assignment",
+  "Task Mention",
+  "Subtask Assignment",
+  "Task Approval Request",
+  "Task Approval Decision",
+];
+
+const internalTemplateInList = `(${INTERNAL_NOTIFICATION_TEMPLATE_NAMES.map((n) => `"${n}"`).join(",")})`;
+
 export interface RawEmailLog {
   id: string;
   message_id: string;
@@ -142,6 +157,11 @@ export const useSentEmailsReport = (options: Options = {}) => {
       if (fromDate) q = q.gte("sent_at", fromDate);
       if (tourId) q = q.eq("tour_id", tourId);
       if (templateId) q = q.eq("template_id", templateId);
+      // Exclude internal staff notification emails (task assignments etc.) —
+      // this report is for client/host-facing emails only.
+      q = q.or(
+        `template_name.is.null,template_name.not.in.${internalTemplateInList}`
+      );
 
       const { data, error } = await q;
       if (error) throw error;
@@ -284,6 +304,9 @@ export const useTourTemplateSendSummaries = (tourId: string) => {
         )
         .eq("tour_id", tourId)
         .gte("sent_at", fromDate)
+        .or(
+          `template_name.is.null,template_name.not.in.${internalTemplateInList}`
+        )
         .order("sent_at", { ascending: false })
         .limit(500);
 
