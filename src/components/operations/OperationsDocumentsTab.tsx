@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useOperationsDocuments";
 import { useOperationsDocumentSections } from "@/hooks/useOperationsDocumentSections";
 import { AddOperationsDocumentModal } from "./AddOperationsDocumentModal";
+import { EditOperationsDocumentModal } from "./EditOperationsDocumentModal";
 import { ManageSectionsModal } from "./ManageSectionsModal";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +54,7 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
   const [modalOpen, setModalOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [defaultSection, setDefaultSection] = useState<string | undefined>();
+  const [editingDoc, setEditingDoc] = useState<OperationsDocument | null>(null);
 
   const grouped = useMemo(() => {
     const map: Record<string, OperationsDocument[]> = {};
@@ -120,7 +122,13 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
               {items.map(doc => (
                 <TableRow key={doc.id} className="cursor-default">
                   <TableCell className="font-medium align-top">
-                    {doc.name}
+                    <button
+                      type="button"
+                      onClick={() => setEditingDoc(doc)}
+                      className="text-left hover:underline text-primary"
+                    >
+                      {doc.name}
+                    </button>
                     {doc.file_name && (
                       <div className="text-xs text-muted-foreground truncate">{doc.file_name}</div>
                     )}
@@ -191,6 +199,12 @@ export const OperationsDocumentsTab = ({ category, title, description }: Props) 
         onOpenChange={setModalOpen}
         category={category}
         defaultSection={defaultSection}
+      />
+
+      <EditOperationsDocumentModal
+        open={!!editingDoc}
+        onOpenChange={(o) => { if (!o) setEditingDoc(null); }}
+        doc={editingDoc}
       />
 
       <ManageSectionsModal
