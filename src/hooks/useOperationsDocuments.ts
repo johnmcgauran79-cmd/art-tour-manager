@@ -127,6 +127,75 @@ export const useUpdateOperationsDocumentNote = () => {
   });
 };
 
+export interface UpdateOperationsDocumentInput {
+  id: string;
+  category: OperationsDocCategory;
+  department?: string;
+  name?: string;
+  description?: string | null;
+  note?: string | null;
+  file?: File | null; // new file to replace
+  external_url?: string | null;
+  clearFile?: boolean; // remove existing file
+  existing_file_path?: string | null;
+}
+
+export const useUpdateOperationsDocument = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (input: UpdateOperationsDocumentInput) => {
+      const patch: Record<string, unknown> = {};
+      if (input.department !== undefined) patch.department = input.department;
+      if (input.name !== undefined) patch.name = input.name;
+      if (input.description !== undefined) patch.description = input.description;
+      if (input.note !== undefined) patch.note = input.note;
+      if (input.external_url !== undefined) patch.external_url = input.external_url;
+
+      if (input.file) {
+        // upload new file, remove old if present
+        if (input.existing_file_path) {
+          await supabase.storage.from("operations-documents").remove([input.existing_file_path]);
+        }
+        const safeName = `${Date.now()}-${input.file.name}`;
+        const path = `${input.category}/${input.department || "misc"}/${safeName}`;
+        const { error: upErr } = await supabase.storage
+          .from("operations-documents")
+          .upload(path, input.file);
+        if (upErr) throw upErr;
+        patch.file_path = path;
+        patch.file_name = input.file.name;
+        patch.external_url = null;
+      } else if (input.clearFile && input.existing_file_path) {
+        await supabase.storage.from("operations-documents").remove([input.existing_file_path]);
+        patch.file_path = null;
+        patch.file_name = null;
+      }
+
+      const { data, error } = await supabase
+        .from("operations_documents")
+        .update(patch)
+        .eq("id", input.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as OperationsDocument;
+    },
+    onSuccess: (doc) => {
+      queryClient.invalidateQueries({ queryKey: ["operations-documents", doc.category] });
+      toast({ title: "Document updated" });
+    },
+    onError: (err) => {
+      toast({
+        title: "Failed to update",
+        description: err instanceof Error ? err.message : "Unknown error",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useDeleteOperationsDocument = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
