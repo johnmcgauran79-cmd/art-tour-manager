@@ -175,6 +175,24 @@ export const HotelAllocationTab = ({
                         />
                       </div>
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Room Upgrade</Label>
+                        <Input
+                          value={allocation.room_upgrade || ''}
+                          onChange={(e) => handleAllocationChange(hotel.id, 'room_upgrade', e.target.value)}
+                          placeholder="e.g. Suite, Sea view"
+                        />
+                      </div>
+                      <div>
+                        <Label>Room Requests</Label>
+                        <Input
+                          value={allocation.room_requests || ''}
+                          onChange={(e) => handleAllocationChange(hotel.id, 'room_requests', e.target.value)}
+                          placeholder="e.g. High floor, quiet room"
+                        />
+                      </div>
+                    </div>
                   </CardContent>
                 )}
               </Card>
