@@ -77,10 +77,10 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface">
       <DashboardHeader isAdmin={isAdmin} />
 
-      <div className="border-b bg-white sticky top-0 z-40">
+      <div className="border-b border-border/70 bg-white/85 backdrop-blur-md supports-[backdrop-filter]:bg-white/70 sticky top-0 z-40 shadow-elevation-xs">
         <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8">
           <Tabs value={getActiveTab()} className="w-full">
             <TabsList className={`w-full h-auto p-1 ${
