@@ -262,34 +262,41 @@
   body {
     @apply bg-background text-foreground;
     @apply text-base leading-normal;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.005em;
   }
 
   /* Consistent heading styles */
   h1 {
-    @apply text-4xl font-bold leading-tight text-foreground;
+    @apply text-4xl font-bold leading-tight tracking-tight text-foreground;
+    font-family: var(--font-display);
   }
 
   h2 {
-    @apply text-3xl font-bold leading-tight text-foreground;
+    @apply text-3xl font-bold leading-tight tracking-tight text-foreground;
+    font-family: var(--font-display);
   }
 
   h3 {
-    @apply text-2xl font-semibold leading-snug text-foreground;
+    @apply text-2xl font-semibold leading-snug tracking-tight text-foreground;
+    font-family: var(--font-display);
   }
 
   h4 {
-    @apply text-xl font-semibold leading-snug text-foreground;
+    @apply text-xl font-semibold leading-snug tracking-tight text-foreground;
+    font-family: var(--font-display);
   }
 
   h5 {
     @apply text-lg font-semibold leading-normal text-foreground;
+    font-family: var(--font-display);
   }
 
   h6 {
     @apply text-base font-semibold leading-normal text-foreground;
+    font-family: var(--font-display);
   }
 
   /* Paragraph styles */
@@ -320,5 +327,52 @@
 .prose .email-hotel-card strong {
   color: inherit !important;
   font-size: inherit !important;
+}
+
+/* ============== Modern polish layer ============== */
+@layer utilities {
+  .shadow-elevation-xs { box-shadow: var(--shadow-xs); }
+  .shadow-elevation-sm { box-shadow: var(--shadow-sm); }
+  .shadow-elevation-md { box-shadow: var(--shadow-md); }
+  .shadow-elevation-lg { box-shadow: var(--shadow-lg); }
+  .shadow-brand { box-shadow: var(--shadow-brand); }
+  .font-display { font-family: var(--font-display); }
+  .bg-surface { background-color: hsl(var(--surface)); }
+  .bg-gradient-brand { background-image: var(--gradient-brand); }
+}
+
+/* Subtle, global UI refinements — visual only */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select,
+button {
+  transition: border-color 150ms ease, box-shadow 150ms ease,
+    background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+button:not(:disabled):active {
+  transform: translateY(0.5px);
+}
+
+/* Table headers — refined display type */
+thead tr th {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  font-weight: 600;
+}
+
+/* Scrollbar polish (WebKit) */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+  background-clip: content-box;
+  border: 2px solid transparent;
 }
 
