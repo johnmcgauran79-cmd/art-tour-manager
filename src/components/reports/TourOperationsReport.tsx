@@ -167,20 +167,20 @@ export const TourOperationsReport = ({
           <Badge variant="secondary">{activities.length} activities</Badge>
         </h3>
         {sortedActivities.length > 0 ? (
-          <div className="border rounded-lg overflow-x-auto">
+          <div className="border rounded-lg overflow-auto max-h-[65vh]">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
                 <TableRow>
-                   <TableHead className="font-semibold">Date</TableHead>
-                   <TableHead className="font-semibold">Activity Name</TableHead>
-                   <TableHead className="font-semibold">Location</TableHead>
-                   <TableHead className="font-semibold">Status</TableHead>
-                   <TableHead className="font-semibold">Depart Time</TableHead>
-                   <TableHead className="font-semibold">Start Time</TableHead>
-                   <TableHead className="font-semibold">End Time</TableHead>
-                  <TableHead className="font-semibold">Transport Mode</TableHead>
-                  <TableHead className="font-semibold">Hospitality Inclusions</TableHead>
-                  <TableHead className="font-semibold">Activity Notes</TableHead>
+                   <TableHead className="font-semibold bg-background">Date</TableHead>
+                   <TableHead className="font-semibold bg-background">Activity Name</TableHead>
+                   <TableHead className="font-semibold bg-background">Location</TableHead>
+                   <TableHead className="font-semibold bg-background">Status</TableHead>
+                   <TableHead className="font-semibold bg-background">Depart Time</TableHead>
+                   <TableHead className="font-semibold bg-background">Start Time</TableHead>
+                   <TableHead className="font-semibold bg-background">End Time</TableHead>
+                  <TableHead className="font-semibold bg-background">Transport Mode</TableHead>
+                  <TableHead className="font-semibold bg-background">Hospitality Inclusions</TableHead>
+                  <TableHead className="font-semibold bg-background">Activity Notes</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
