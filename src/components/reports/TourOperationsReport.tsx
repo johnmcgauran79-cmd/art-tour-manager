@@ -167,22 +167,15 @@ export const TourOperationsReport = ({
           <Badge variant="secondary">{activities.length} activities</Badge>
         </h3>
         {sortedActivities.length > 0 ? (
-          <div className="border rounded-lg overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                   <TableHead className="font-semibold">Date</TableHead>
-                   <TableHead className="font-semibold">Activity Name</TableHead>
-                   <TableHead className="font-semibold">Location</TableHead>
-                   <TableHead className="font-semibold">Status</TableHead>
-                   <TableHead className="font-semibold">Depart Time</TableHead>
-                   <TableHead className="font-semibold">Start Time</TableHead>
-                   <TableHead className="font-semibold">End Time</TableHead>
-                  <TableHead className="font-semibold">Transport Mode</TableHead>
-                  <TableHead className="font-semibold">Hospitality Inclusions</TableHead>
-                  <TableHead className="font-semibold">Activity Notes</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="border rounded-lg overflow-auto max-h-[65vh] relative w-full">
+            <table className="w-full caption-bottom text-sm">
+              <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
+                <tr className="border-b">
+                  {['Date','Activity Name','Location','Status','Depart Time','Start Time','End Time','Transport Mode','Hospitality Inclusions','Activity Notes'].map(h => (
+                    <th key={h} className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground bg-background shadow-[inset_0_-1px_0_0_hsl(var(--border))]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
               <TableBody>
                 {sortedActivities.map(activity => {
                   const key = `activity_${activity.id}`;
@@ -214,7 +207,7 @@ export const TourOperationsReport = ({
                   );
                 })}
               </TableBody>
-            </Table>
+            </table>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No activities configured for this tour.</p>
