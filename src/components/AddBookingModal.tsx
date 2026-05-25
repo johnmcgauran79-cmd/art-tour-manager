@@ -344,18 +344,22 @@ export const AddBookingModal = ({
       const isFullTourBooking = formData.whatsapp_group_comms !== false && formData.accommodation_required !== false;
       const isHost = status === 'host';
       const isComplimentary = status === 'complimentary';
+      const isWaitlisted = status === 'waitlisted';
       const tourForBooking = tours?.find(t => t.id === formData.tour_id);
       const isTestTour = !!(tourForBooking as any)?.is_test_tour;
       const tourManualBilling = !!(tourForBooking as any)?.manual_billing;
 
-      const shouldTriggerXero = !isTestTour && !tourManualBilling && !isHost && !isComplimentary && isFullTourBooking;
-      const shouldTriggerKeap = !isTestTour && !tourManualBilling && (isHost || isFullTourBooking);
+      const shouldTriggerXero = !isTestTour && !tourManualBilling && !isWaitlisted && !isHost && !isComplimentary && isFullTourBooking;
+      const shouldTriggerKeap = !isTestTour && !tourManualBilling && !isWaitlisted && (isHost || isFullTourBooking);
 
       if (isTestTour) {
         console.log('Test Tour: Skipping Xero & Keap integrations for booking', newBooking.id);
       }
       if (tourManualBilling) {
         console.log('Manual Billing tour: Skipping Xero & Keap integrations for booking', newBooking.id);
+      }
+      if (isWaitlisted) {
+        console.log('Waitlist booking: Skipping Xero & Keap integrations for booking', newBooking.id);
       }
 
       // Track integration failures so we can warn the user without losing the booking.
