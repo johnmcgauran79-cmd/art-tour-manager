@@ -167,22 +167,15 @@ export const TourOperationsReport = ({
           <Badge variant="secondary">{activities.length} activities</Badge>
         </h3>
         {sortedActivities.length > 0 ? (
-          <div className="border rounded-lg overflow-auto max-h-[65vh]">
-            <Table>
-              <TableHeader className="sticky top-0 z-10 bg-background shadow-[0_1px_0_0_hsl(var(--border))]">
-                <TableRow>
-                   <TableHead className="font-semibold bg-background">Date</TableHead>
-                   <TableHead className="font-semibold bg-background">Activity Name</TableHead>
-                   <TableHead className="font-semibold bg-background">Location</TableHead>
-                   <TableHead className="font-semibold bg-background">Status</TableHead>
-                   <TableHead className="font-semibold bg-background">Depart Time</TableHead>
-                   <TableHead className="font-semibold bg-background">Start Time</TableHead>
-                   <TableHead className="font-semibold bg-background">End Time</TableHead>
-                  <TableHead className="font-semibold bg-background">Transport Mode</TableHead>
-                  <TableHead className="font-semibold bg-background">Hospitality Inclusions</TableHead>
-                  <TableHead className="font-semibold bg-background">Activity Notes</TableHead>
-                </TableRow>
-              </TableHeader>
+          <div className="border rounded-lg overflow-auto max-h-[65vh] relative w-full">
+            <table className="w-full caption-bottom text-sm">
+              <thead className="[&_tr]:border-b sticky top-0 z-10 bg-background">
+                <tr className="border-b">
+                  {['Date','Activity Name','Location','Status','Depart Time','Start Time','End Time','Transport Mode','Hospitality Inclusions','Activity Notes'].map(h => (
+                    <th key={h} className="h-12 px-4 text-left align-middle font-semibold text-muted-foreground bg-background shadow-[inset_0_-1px_0_0_hsl(var(--border))]">{h}</th>
+                  ))}
+                </tr>
+              </thead>
               <TableBody>
                 {sortedActivities.map(activity => {
                   const key = `activity_${activity.id}`;
@@ -214,7 +207,7 @@ export const TourOperationsReport = ({
                   );
                 })}
               </TableBody>
-            </Table>
+            </table>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No activities configured for this tour.</p>
