@@ -1280,6 +1280,51 @@ export type Database = {
         }
         Relationships: []
       }
+      email_attachments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          file_name: string
+          file_path: string
+          file_url: string
+          id: string
+          label: string
+          mime_type: string | null
+          size_bytes: number | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_url: string
+          id?: string
+          label: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_url?: string
+          id?: string
+          label?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_events: {
         Row: {
           created_at: string
