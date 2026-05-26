@@ -379,72 +379,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-            <div 
-              className="text-center p-3 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => setAlertsModalOpen(true)}
-            >
-              <div className="bg-yellow-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-yellow-200 transition-colors relative">
-                <Bell className="h-5 w-5 text-yellow-600" />
-                {unacknowledgedCount > 0 && (
-                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
-                    {unacknowledgedCount}
-                  </Badge>
-                )}
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Alerts</p>
-              <p className="text-xs text-gray-600">{unacknowledgedCount} active</p>
-            </div>
-            <div
-              className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('contacts')}
-            >
-              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-blue-200 transition-colors">
-                <Phone className="h-5 w-5 text-blue-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-blue-700 text-xs">Contact Lists</p>
-              <p className="text-xs text-gray-600">{contactList.length} contacts</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('dietary')}
-            >
-              <div className="bg-green-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-green-200 transition-colors">
-                <Utensils className="h-5 w-5 text-green-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-green-700 text-xs">Dietary Requirements</p>
-              <p className="text-xs text-gray-600">{dietaryRequirements.length} special diets</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('summary')}
-            >
-              <div className="bg-purple-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-purple-200 transition-colors">
-                <Users className="h-5 w-5 text-purple-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Passenger Summary</p>
-              <p className="text-xs text-gray-600">{tourBookings.length} bookings</p>
-            </div>
-            {/* Passenger List report hidden - kept for potential future use */}
-            <div 
-              className="text-center p-3 border-2 border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('tourattendees')}
-            >
-              <div className="bg-emerald-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-emerald-200 transition-colors">
-                <UserCheck className="h-5 w-5 text-emerald-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-emerald-700 text-xs">Tour Attendees</p>
-              <p className="text-xs text-gray-600">Guest Information</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleReportClick('hotel')}
-            >
-              <div className="bg-indigo-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-indigo-200 transition-colors">
-                <Hotel className="h-5 w-5 text-indigo-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-indigo-700 text-xs">Hotel Reports</p>
-              <p className="text-xs text-gray-600">{hotels?.length || 0} hotels</p>
-            </div>
+            {/* 1. Activity Discrepancy Report */}
             <div 
               className="text-center p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('activitymatrix')}
@@ -460,6 +395,23 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Activity Discrepancy Report</p>
               <p className="text-xs text-gray-600">{bookingsWithDiscrepancies.length} alerts</p>
             </div>
+            {/* 2. Tour Alerts */}
+            <div 
+              className="text-center p-3 border-2 border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-50 hover:border-yellow-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => setAlertsModalOpen(true)}
+            >
+              <div className="bg-yellow-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-yellow-200 transition-colors relative">
+                <Bell className="h-5 w-5 text-yellow-600" />
+                {unacknowledgedCount > 0 && (
+                  <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-[10px]">
+                    {unacknowledgedCount}
+                  </Badge>
+                )}
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Alerts</p>
+              <p className="text-xs text-gray-600">{unacknowledgedCount} active</p>
+            </div>
+            {/* 3. Tour Ops Report */}
             <div 
               className="text-center p-3 border-2 border-amber-200 rounded-lg cursor-pointer hover:bg-amber-50 hover:border-amber-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('tourops')}
@@ -475,6 +427,62 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
               <p className="font-semibold text-gray-800 group-hover:text-amber-700 text-xs">Tour Ops Report</p>
               <p className="text-xs text-gray-600">{tourOpsChangeCount > 0 ? `${tourOpsChangeCount} changes` : 'Hotels & Activities'}</p>
             </div>
+            {/* 4. Passenger Summary */}
+            <div 
+              className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('summary')}
+            >
+              <div className="bg-purple-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-purple-200 transition-colors">
+                <Users className="h-5 w-5 text-purple-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Passenger Summary</p>
+              <p className="text-xs text-gray-600">{tourBookings.length} bookings</p>
+            </div>
+            {/* 5. Dietary Requirements */}
+            <div 
+              className="text-center p-3 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('dietary')}
+            >
+              <div className="bg-green-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-green-200 transition-colors">
+                <Utensils className="h-5 w-5 text-green-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-green-700 text-xs">Dietary Requirements</p>
+              <p className="text-xs text-gray-600">{dietaryRequirements.length} special diets</p>
+            </div>
+            {/* 6. Hotel Reports */}
+            <div 
+              className="text-center p-3 border-2 border-indigo-200 rounded-lg cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('hotel')}
+            >
+              <div className="bg-indigo-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-indigo-200 transition-colors">
+                <Hotel className="h-5 w-5 text-indigo-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-indigo-700 text-xs">Hotel Reports</p>
+              <p className="text-xs text-gray-600">{hotels?.length || 0} hotels</p>
+            </div>
+            {/* 7. Contact List */}
+            <div
+              className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('contacts')}
+            >
+              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-blue-200 transition-colors">
+                <Phone className="h-5 w-5 text-blue-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-blue-700 text-xs">Contact Lists</p>
+              <p className="text-xs text-gray-600">{contactList.length} contacts</p>
+            </div>
+            {/* 8. Tour Attendees */}
+            <div 
+              className="text-center p-3 border-2 border-emerald-200 rounded-lg cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-md transition-all duration-200 group"
+              onClick={() => handleReportClick('tourattendees')}
+            >
+              <div className="bg-emerald-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-emerald-200 transition-colors">
+                <UserCheck className="h-5 w-5 text-emerald-600" />
+              </div>
+              <p className="font-semibold text-gray-800 group-hover:text-emerald-700 text-xs">Tour Attendees</p>
+              <p className="text-xs text-gray-600">Guest Information</p>
+            </div>
+            {/* 9. Email Tracking */}
             <div 
               className="text-center p-3 border-2 border-cyan-200 rounded-lg cursor-pointer hover:bg-cyan-50 hover:border-cyan-300 hover:shadow-md transition-all duration-200 group"
               onClick={() => handleReportClick('emailtracking')}
