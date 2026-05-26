@@ -18,6 +18,7 @@ interface PassportDetailsReportProps {
     nationality: string;
     dateOfBirth: string;
     hasDocuments: boolean;
+    passportNotRequired?: boolean;
   }>;
 }
 
@@ -52,7 +53,7 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
     }
   };
 
-  const missingCount = data.filter(p => !p.hasDocuments).length;
+  const missingCount = data.filter(p => !p.hasDocuments && !p.passportNotRequired).length;
 
   return (
     <div>
@@ -83,7 +84,9 @@ export const PassportDetailsReport = ({ data }: PassportDetailsReportProps) => {
         {data.map((passenger, index) => (
           <TableRow key={index}>
             <TableCell>
-              {passenger.hasDocuments ? (
+              {passenger.passportNotRequired ? (
+                <Badge variant="outline" className="text-xs">Not required</Badge>
+              ) : passenger.hasDocuments ? (
                 <CheckCircle2 className="h-5 w-5 text-emerald-600" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-amber-500" />

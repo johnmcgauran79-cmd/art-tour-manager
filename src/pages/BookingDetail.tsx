@@ -757,6 +757,7 @@ export default function BookingDetail() {
                 <BookingTravelDocsDisplay
                   bookingId={booking.id}
                   passengerCount={booking.passenger_count}
+                  passportNotRequired={(booking as any).passport_not_required}
                   leadPassenger={booking.customers}
                   passenger2={(booking as any).passenger_2}
                   passenger3={(booking as any).passenger_3}

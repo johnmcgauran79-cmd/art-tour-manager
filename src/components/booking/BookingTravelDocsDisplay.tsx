@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface BookingTravelDocsDisplayProps {
   bookingId: string;
   passengerCount: number;
+  passportNotRequired?: boolean;
   leadPassenger?: {
     first_name: string;
     last_name: string;
@@ -25,6 +26,7 @@ interface BookingTravelDocsDisplayProps {
 export const BookingTravelDocsDisplay = ({
   bookingId,
   passengerCount,
+  passportNotRequired = false,
   leadPassenger,
   passenger2,
   passenger3,
@@ -72,6 +74,17 @@ export const BookingTravelDocsDisplay = ({
 
   if (isLoading) {
     return <div className="text-muted-foreground">Loading travel documents...</div>;
+  }
+
+  if (passportNotRequired) {
+    return (
+      <Alert>
+        <CheckCircle2 className="h-4 w-4" />
+        <AlertDescription>
+          Passport details are not required for this booking.
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   // Build array of expected passengers based on passenger_count
