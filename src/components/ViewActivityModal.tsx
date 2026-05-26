@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Edit } from "lucide-react";
+import { Edit, ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
@@ -223,7 +223,8 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                 </p>
               </div>
               <details className="group pt-2 border-t">
-                <summary className="cursor-pointer list-none flex items-center gap-2 text-xs sm:text-sm font-medium text-primary hover:underline">
+                <summary className="cursor-pointer list-none mt-1 inline-flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs sm:text-sm font-semibold text-primary shadow-elevation-xs hover:bg-primary/10 hover:border-primary/50 transition-colors">
+                  <ChevronDown className="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
                   <span className="group-open:hidden">Show transport contact &amp; driver details</span>
                   <span className="hidden group-open:inline">Hide transport contact &amp; driver details</span>
                 </summary>
