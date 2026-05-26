@@ -7,6 +7,7 @@ import { Settings, Save, Loader2 } from "lucide-react";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
 import { EmailHeaderSettingsCard } from "@/components/EmailHeaderSettingsCard";
 import { AdditionalFromEmailsCard } from "@/components/AdditionalFromEmailsCard";
+import { EmailAttachmentsCard } from "@/components/EmailAttachmentsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUserEmails } from "@/hooks/useUserEmails";
 
@@ -81,6 +82,8 @@ export const EmailSettingsTab = () => {
       <EmailHeaderSettingsCard />
 
       <AdditionalFromEmailsCard />
+
+      <EmailAttachmentsCard />
 
       <Card>
         <CardHeader>
