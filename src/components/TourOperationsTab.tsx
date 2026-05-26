@@ -408,7 +408,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                   </Badge>
                 )}
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Alerts</p>
+              <p className="font-semibold text-gray-800 group-hover:text-yellow-700 text-xs">Tour Operations Alerts</p>
               <p className="text-xs text-gray-600">{unacknowledgedCount} active</p>
             </div>
             {/* 3. Tour Ops Report */}
@@ -424,7 +424,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
                   </Badge>
                 )}
               </div>
-              <p className="font-semibold text-gray-800 group-hover:text-amber-700 text-xs">Tour Ops Report</p>
+              <p className="font-semibold text-gray-800 group-hover:text-amber-700 text-xs">Tour Comms Report</p>
               <p className="text-xs text-gray-600">{tourOpsChangeCount > 0 ? `${tourOpsChangeCount} changes` : 'Hotels & Activities'}</p>
             </div>
             {/* 4. Passenger Summary */}
