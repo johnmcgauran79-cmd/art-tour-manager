@@ -84,7 +84,9 @@ export const MERGE_FIELDS: Record<string, string[]> = {
     '{{hotel_details}}',
     '--- Smart Cards ---',
     '{{tour_details_card}}',
-    '{{passenger_info_card}}'
+    '{{passenger_info_card}}',
+    '--- Email Attachments ---',
+    '{{attachment:slug}}'
   ],
   conditions: [
     '--- Passenger Conditions ---',

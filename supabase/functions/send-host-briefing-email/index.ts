@@ -218,7 +218,24 @@ serve(async (req) => {
     };
 
     const subject = render(template.subject_template, mergeData);
-    const rawHtml = render(template.content_template, mergeData);
+    // Resolve {{attachment:slug}} tokens to public URLs from email_attachments
+    let contentWithAttachments = template.content_template as string;
+    const attachmentSlugs = Array.from(
+      contentWithAttachments.matchAll(/\{\{\s*attachment:([a-zA-Z0-9_-]+)\s*\}\}/g),
+    ).map((m) => m[1]);
+    if (attachmentSlugs.length > 0) {
+      const uniqueSlugs = Array.from(new Set(attachmentSlugs));
+      const { data: atts } = await supabase
+        .from("email_attachments")
+        .select("slug, file_url")
+        .in("slug", uniqueSlugs);
+      const urlBySlug = new Map((atts || []).map((a: any) => [a.slug, a.file_url]));
+      contentWithAttachments = contentWithAttachments.replace(
+        /\{\{\s*attachment:([a-zA-Z0-9_-]+)\s*\}\}/g,
+        (_m, slug) => urlBySlug.get(slug) || "",
+      );
+    }
+    const rawHtml = render(contentWithAttachments, mergeData);
     const html = wrapBrandedEmail(rawHtml, headerImageUrl);
     // Look up configured default sender name
     const { data: senderNameSetting } = await supabase
