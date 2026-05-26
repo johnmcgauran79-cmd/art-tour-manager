@@ -212,39 +212,44 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </details>
           )}
 
-          {/* Transport Details - Collapsible on mobile */}
-          <details className="group">
-            <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none flex items-center gap-2">
-              <span>Transport Details</span>
-              <span className="text-xs text-muted-foreground/60 group-open:hidden">(tap to expand)</span>
-            </summary>
-            <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 mt-1">
-              <div className="grid grid-cols-2 gap-2">
-                <InfoRow label="Company" value={activity.transport_company} />
-                <InfoRow 
-                  label="Status" 
-                  value={
-                    <Badge variant="outline" className="text-xs">
-                      {(activity.transport_status || 'pending').replace(/_/g, ' ').toUpperCase()}
-                    </Badge>
-                  } 
-                />
+          {/* Transport Details - Notes always visible, rest collapsible */}
+          <div className="space-y-1">
+            <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Transport Details</h4>
+            <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 space-y-2">
+              <div>
+                <span className="text-xs text-muted-foreground uppercase">Transport Notes</span>
+                <p className="text-xs sm:text-sm whitespace-pre-wrap mt-1">
+                  {activity.transport_notes || '-'}
+                </p>
               </div>
-              <InfoRow label="Contact" value={activity.transport_contact_name} />
-              <InfoRow label="Phone" value={activity.transport_phone} />
-              <InfoRow label="Email" value={activity.transport_email} />
-              <div className="grid grid-cols-2 gap-2">
-                <InfoRow label="Driver Name" value={activity.driver_name} />
-                <InfoRow label="Driver Phone" value={activity.driver_phone} />
-              </div>
-              {activity.transport_notes && (
-                <div className="mt-2 pt-2 border-t">
-                  <span className="text-xs text-muted-foreground uppercase">Transport Notes</span>
-                  <p className="text-xs sm:text-sm whitespace-pre-wrap mt-1">{activity.transport_notes}</p>
+              <details className="group pt-2 border-t">
+                <summary className="cursor-pointer list-none flex items-center gap-2 text-xs sm:text-sm font-medium text-primary hover:underline">
+                  <span className="group-open:hidden">Show transport contact &amp; driver details</span>
+                  <span className="hidden group-open:inline">Hide transport contact &amp; driver details</span>
+                </summary>
+                <div className="mt-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <InfoRow label="Company" value={activity.transport_company} />
+                    <InfoRow
+                      label="Status"
+                      value={
+                        <Badge variant="outline" className="text-xs">
+                          {(activity.transport_status || 'pending').replace(/_/g, ' ').toUpperCase()}
+                        </Badge>
+                      }
+                    />
+                  </div>
+                  <InfoRow label="Contact" value={activity.transport_contact_name} />
+                  <InfoRow label="Phone" value={activity.transport_phone} />
+                  <InfoRow label="Email" value={activity.transport_email} />
+                  <div className="grid grid-cols-2 gap-2">
+                    <InfoRow label="Driver Name" value={activity.driver_name} />
+                    <InfoRow label="Driver Phone" value={activity.driver_phone} />
+                  </div>
                 </div>
-              )}
+              </details>
             </div>
-          </details>
+          </div>
 
           {/* Journeys */}
           {activity.activity_journeys && activity.activity_journeys.length > 0 && (
