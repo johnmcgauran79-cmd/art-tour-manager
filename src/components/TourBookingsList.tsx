@@ -37,6 +37,8 @@ const getStatusOrder = (status: string) => {
     case "deposited": return 3;
     case "instalment_paid": return 4;
     case "fully_paid": return 5;
+    case "complimentary": return 5;
+    case "racing_breaks_invoice": return 5;
     case "host": return 6;
     case "waitlisted": return 7;
     case "cancelled": return 8;
