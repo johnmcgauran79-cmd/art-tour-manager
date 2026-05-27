@@ -444,7 +444,7 @@ export const HostInfoHubReportModal = ({
     try {
       reportPdfBlob = await html2pdf()
         .set({
-          margin: [0.5, 0.5, 0.5, 0.5],
+          margin: [15, 15, 15, 15], // mm — matches jsPDF.unit below
           image: { type: "png", quality: 1 },
           html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false, windowWidth: 794 },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
