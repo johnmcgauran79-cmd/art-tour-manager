@@ -63,7 +63,7 @@ async function findOrCreateTag(tagName: string): Promise<number> {
   }
   const newTag = await keapRequest('/tags', {
     method: 'POST',
-    body: JSON.stringify({ name: tagName, description: 'Auto-created tag for tour bookings', category: { id: 0 } }),
+    body: JSON.stringify({ name: tagName, description: 'Auto-created tag for tour bookings' }),
   });
   return newTag.id;
 }

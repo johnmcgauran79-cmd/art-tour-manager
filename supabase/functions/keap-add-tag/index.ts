@@ -100,7 +100,6 @@ async function findOrCreateTag(tagName: string): Promise<number> {
     body: JSON.stringify({
       name: tagName,
       description: `Auto-created tag for tour bookings`,
-      category: { id: 0 },
     }),
   });
 
