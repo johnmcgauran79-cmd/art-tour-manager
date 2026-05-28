@@ -117,7 +117,9 @@ export const TourBookingsList = ({ tourId, tourName, currentTab }: TourBookingsL
 
   // Get all bookings for this tour
   const allTourBookings = (allBookings || [])
-    .filter(booking => booking.tour_id === tourId);
+    .filter(booking => booking.tour_id === tourId)
+    // Hosts should never see cancelled or waitlisted bookings to avoid confusion
+    .filter(booking => !isHost || (booking.status !== 'cancelled' && booking.status !== 'waitlisted'));
 
   // Apply all filters
   const filteredBookings = allTourBookings
