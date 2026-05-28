@@ -60,7 +60,8 @@ export const HostActivityViewModal = ({ activity, open, onOpenChange }: HostActi
       `)
       .eq('activity_id', activityId)
       .gt('passengers_attending', 0)
-      .neq('bookings.status', 'cancelled');
+      .neq('bookings.status', 'cancelled')
+      .neq('bookings.status', 'waitlisted');
 
     if (error) {
       console.error('Error fetching activity bookings:', error);
