@@ -5,6 +5,7 @@ import { useActivityAttachments, useUploadActivityAttachment, useDeleteActivityA
 import { Paperclip, Download, Upload, Trash2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { PDFViewer } from "./PDFViewer";
+import { ImageViewer } from "./ImageViewer";
 import { downloadFromStorage } from "@/lib/fileDownload";
 
 interface ActivityAttachmentsSectionProps {
@@ -14,6 +15,11 @@ interface ActivityAttachmentsSectionProps {
 export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSectionProps) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [pdfViewer, setPdfViewer] = useState<{ isOpen: boolean; fileName: string; filePath: string }>({
+    isOpen: false,
+    fileName: "",
+    filePath: ""
+  });
+  const [imageViewer, setImageViewer] = useState<{ isOpen: boolean; fileName: string; filePath: string }>({
     isOpen: false,
     fileName: "",
     filePath: ""
@@ -84,6 +90,18 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
     return fileType === 'application/pdf';
   };
 
+  const isImage = (fileType: string) => {
+    return typeof fileType === 'string' && fileType.startsWith('image/');
+  };
+
+  const handleViewImage = (attachment: ActivityAttachment) => {
+    setImageViewer({
+      isOpen: true,
+      fileName: attachment.file_name,
+      filePath: attachment.file_path,
+    });
+  };
+
   if (isLoading) {
     return <div className="text-sm text-muted-foreground">Loading attachments...</div>;
   }
@@ -125,11 +143,17 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
             <div key={attachment.id} className="flex items-center justify-between p-2 border rounded bg-background">
               <div className="flex-1 min-w-0">
                 <p 
-                  className={`text-sm font-medium truncate ${isPDF(attachment.file_type) ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
-                  onClick={() => isPDF(attachment.file_type) && handleViewPDF(attachment)}
+                  className={`text-sm font-medium truncate ${isPDF(attachment.file_type) || isImage(attachment.file_type) ? 'cursor-pointer hover:text-blue-600 hover:underline' : ''}`}
+                  onClick={() => {
+                    if (isPDF(attachment.file_type)) handleViewPDF(attachment);
+                    else if (isImage(attachment.file_type)) handleViewImage(attachment);
+                  }}
                 >
                   {attachment.file_name}
                   {isPDF(attachment.file_type) && (
+                    <span className="ml-2 text-xs text-blue-600">(Click to view)</span>
+                  )}
+                  {isImage(attachment.file_type) && (
                     <span className="ml-2 text-xs text-blue-600">(Click to view)</span>
                   )}
                 </p>
@@ -142,6 +166,17 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
                 {isPDF(attachment.file_type) && (
                   <Button
                     onClick={() => handleViewPDF(attachment)}
+                    size="sm"
+                    variant="outline"
+                    className="flex items-center gap-1 px-2"
+                  >
+                    <Eye className="h-3 w-3" />
+                    <span className="hidden sm:inline">View</span>
+                  </Button>
+                )}
+                {isImage(attachment.file_type) && (
+                  <Button
+                    onClick={() => handleViewImage(attachment)}
                     size="sm"
                     variant="outline"
                     className="flex items-center gap-1 px-2"
@@ -182,6 +217,13 @@ export const ActivityAttachmentsSection = ({ activityId }: ActivityAttachmentsSe
         onClose={closePDFViewer}
         fileName={pdfViewer.fileName}
         filePath={pdfViewer.filePath}
+      />
+
+      <ImageViewer
+        isOpen={imageViewer.isOpen}
+        onClose={() => setImageViewer({ isOpen: false, fileName: "", filePath: "" })}
+        fileName={imageViewer.fileName}
+        filePath={imageViewer.filePath}
       />
     </div>
   );
