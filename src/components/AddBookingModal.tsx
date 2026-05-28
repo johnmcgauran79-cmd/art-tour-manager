@@ -259,17 +259,16 @@ export const AddBookingModal = ({
       return;
     }
 
-    // Validate tour has required integration codes
+    // Validate tour has required integration codes.
+    // Note: Keap tag is auto-created by the keap-add-tag edge function on first
+    // booking (named "Booked: <Tour Name>") and saved back to the tour, so we
+    // only require the Xero Product Code up-front.
     const selectedTour = tours?.find(t => t.id === formData.tour_id);
     if (selectedTour) {
       // Skip integration validation for test tours
       if (!(selectedTour as any).is_test_tour) {
-        const missingCodes: string[] = [];
-        if (!selectedTour.xero_product_id) missingCodes.push('Xero Product Code');
-        if (!selectedTour.keap_tag_id) missingCodes.push('Keap Tag');
-
-        if (missingCodes.length > 0) {
-          setValidationError(`Tour is missing ${missingCodes.join(' and ')}. Please set up the tour properly before creating a booking.`);
+        if (!selectedTour.xero_product_id) {
+          setValidationError(`Tour is missing Xero Product Code. Please set up the tour properly before creating a booking.`);
           return;
         }
       }
