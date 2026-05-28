@@ -21,7 +21,7 @@ export const BulkDietaryModal = ({ open, onOpenChange, tourId }: BulkDietaryModa
   const updateCustomer = useUpdateCustomer();
   const { toast } = useToast();
 
-  const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId);
+  const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled' && booking.status !== 'waitlisted');
 
   useEffect(() => {
     if (open && tourBookings.length > 0) {

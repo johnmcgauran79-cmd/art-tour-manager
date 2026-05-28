@@ -31,7 +31,7 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
   const { data: allTourBookings = [], isLoading } = useTourBookings(tourId);
   const { toast } = useToast();
 
-  const tourBookings = allTourBookings.filter(b => b.status !== 'cancelled');
+  const tourBookings = allTourBookings.filter(b => b.status !== 'cancelled' && b.status !== 'waitlisted');
 
   useEffect(() => {
     if (!open || tourBookings.length === 0) return;
