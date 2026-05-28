@@ -104,6 +104,7 @@ export const HostInfoHubReportModal = ({
         .eq("bookings.tour_id", tourId)
         .eq("allocated", true)
         .neq("bookings.status", "cancelled")
+        .neq("bookings.status", "waitlisted")
         .is("cancelled_at", null);
       if (error) throw error;
       const grouped: Record<string, any[]> = {};
@@ -130,7 +131,8 @@ export const HostInfoHubReportModal = ({
         `)
         .eq("activities.tour_id", tourId)
         .gt("passengers_attending", 0)
-        .neq("bookings.status", "cancelled");
+        .neq("bookings.status", "cancelled")
+        .neq("bookings.status", "waitlisted");
       if (error) throw error;
       const grouped: Record<string, any[]> = {};
       for (const row of data || []) {
