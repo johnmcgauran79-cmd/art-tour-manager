@@ -515,7 +515,18 @@ export const AddBookingModal = ({
         const failures: string[] = [];
         if (xeroFailed) failures.push(`Xero invoice (${xeroErrorMsg})`);
         if (keapFailed) failures.push(`Keap tagging (${keapErrorMsg})`);
-        const message = `Booking was saved successfully, but the following integration(s) failed: ${failures.join(', ')}. Open the booking from the bookings list and use the "Retry Xero Invoice" button, or contact an admin.`;
+
+        // Tailor the recovery hint to which integration actually failed.
+        let recovery: string;
+        if (xeroFailed && keapFailed) {
+          recovery = `Open the booking from the bookings list and use the "Retry Xero Invoice" button (this also re-runs Keap tagging), or contact an admin.`;
+        } else if (xeroFailed) {
+          recovery = `Open the booking from the bookings list and use the "Retry Xero Invoice" button, or contact an admin.`;
+        } else {
+          recovery = `The Xero invoice was created successfully — only Keap tagging failed. Open the booking from the bookings list and use the "Retry Xero Invoice" button (it also re-runs Keap tagging), or contact an admin.`;
+        }
+
+        const message = `Booking was saved successfully, but the following integration(s) failed: ${failures.join(', ')}. ${recovery}`;
         setValidationError(message);
         toast({
           title: "Booking saved — integration issue",
