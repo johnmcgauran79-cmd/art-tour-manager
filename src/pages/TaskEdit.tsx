@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, Clock } from "lucide-react";
+import { ArrowLeft, Save, Clock, ExternalLink } from "lucide-react";
 import { Task, useUpdateTask, useTasks } from "@/hooks/useTasks";
 import { format } from "date-fns";
 import { TaskAssignmentSection } from "@/components/TaskAssignmentSection";
@@ -311,12 +311,26 @@ export default function TaskEdit() {
 
               <div className="md:col-span-2">
                 <Label htmlFor="url_reference">Reference URL</Label>
-                <Input
-                  id="url_reference"
-                  value={editedTask.url_reference || ''}
-                  onChange={(e) => setEditedTask({ ...editedTask, url_reference: e.target.value })}
-                  placeholder="https://..."
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="url_reference"
+                    value={editedTask.url_reference || ''}
+                    onChange={(e) => setEditedTask({ ...editedTask, url_reference: e.target.value })}
+                    placeholder="https://..."
+                  />
+                  {editedTask.url_reference && (
+                    <a
+                      href={/^https?:\/\//i.test(editedTask.url_reference) ? editedTask.url_reference : `https://${editedTask.url_reference}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center h-10 w-10 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground shrink-0"
+                      title="Open link in new tab"
+                      aria-label="Open reference URL"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 

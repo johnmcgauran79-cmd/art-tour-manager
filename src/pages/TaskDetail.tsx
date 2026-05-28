@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Clock, AlertTriangle, Trash2, Save, ArrowLeft } from "lucide-react";
+import { Clock, AlertTriangle, Trash2, Save, ArrowLeft, ExternalLink } from "lucide-react";
 import { useUpdateTask, useDeleteTask, useTasks, Task } from "@/hooks/useTasks";
 import { useAutoUnblockTasks } from "@/hooks/useTaskDependencies";
 import { formatDistanceToNow, format } from "date-fns";
@@ -393,12 +393,26 @@ export default function TaskDetail() {
 
           <div>
             <Label htmlFor="url_reference">Reference URL</Label>
-            <Input
-              id="url_reference"
-              value={edited.url_reference || ""}
-              onChange={(e) => setEdited({ ...edited, url_reference: e.target.value })}
-              placeholder="https://..."
-            />
+            <div className="flex gap-2">
+              <Input
+                id="url_reference"
+                value={edited.url_reference || ""}
+                onChange={(e) => setEdited({ ...edited, url_reference: e.target.value })}
+                placeholder="https://..."
+              />
+              {edited.url_reference && (
+                <a
+                  href={/^https?:\/\//i.test(edited.url_reference) ? edited.url_reference : `https://${edited.url_reference}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center h-10 w-10 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground shrink-0"
+                  title="Open link in new tab"
+                  aria-label="Open reference URL"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              )}
+            </div>
           </div>
         </div>
 
