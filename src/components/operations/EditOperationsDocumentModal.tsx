@@ -103,7 +103,7 @@ export const EditOperationsDocumentModal = ({ open, onOpenChange, doc }: Props) 
               </Button>
             </div>
             {sourceType === "keep" && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground break-all">
                 {doc.file_name ? `Current file: ${doc.file_name}` : doc.external_url ? `Current URL: ${doc.external_url}` : "No file or URL set."}
               </p>
             )}
