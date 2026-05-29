@@ -1,0 +1,1 @@
+UPDATE public.bookings SET passenger_2_name = 'Gay Wales' WHERE id = '8c9a8b63-387e-499e-b912-02a04aa909a0' AND passenger_2_name = 'Gay';
