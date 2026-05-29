@@ -164,7 +164,9 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   });
 
   // Get all dietary requirements - includes pax 2 & 3 from linked contacts
-  const dietaryRequirements = tourBookings.flatMap(booking => {
+  // Use activeTourBookings (excludes cancelled/waitlisted) so the tile count
+  // matches the report, which also excludes those statuses.
+  const dietaryRequirements = activeTourBookings.flatMap(booking => {
     const items = [];
     if (booking.customers?.dietary_requirements?.trim()) {
       items.push({ name: `${booking.customers.first_name} ${booking.customers.last_name}`, dietary: booking.customers.dietary_requirements });
