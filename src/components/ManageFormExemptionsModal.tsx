@@ -194,7 +194,9 @@ export function ManageFormExemptionsModal({
 
       for (const key of desiredExemptKeys) {
         if (!currentExemptKeys.has(key)) {
-          const [bookingId, slotStr] = key.split("-");
+          const idx = key.lastIndexOf("-");
+          const bookingId = key.slice(0, idx);
+          const slotStr = key.slice(idx + 1);
           toAdd.push({
             form_id: formId,
             booking_id: bookingId,
@@ -205,7 +207,9 @@ export function ManageFormExemptionsModal({
       }
       for (const key of currentExemptKeys) {
         if (!desiredExemptKeys.has(key)) {
-          const [bookingId, slotStr] = key.split("-");
+          const idx = key.lastIndexOf("-");
+          const bookingId = key.slice(0, idx);
+          const slotStr = key.slice(idx + 1);
           toRemove.push({ booking_id: bookingId, passenger_slot: Number(slotStr) });
         }
       }
