@@ -72,6 +72,7 @@ export const AddBookingModal = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
+  const [beddingMismatchWarning, setBeddingMismatchWarning] = useState<string | null>(null);
   
   const {
     formData,
@@ -314,6 +315,24 @@ export const AddBookingModal = ({
         setValidationError("Second passenger name is required when booking for 2 or more passengers. Please add the second passenger's name in the Details tab.");
         setActiveTab("details");
         return;
+      }
+    }
+
+    // Soft warning: multiple allocated hotels with mismatched bedding types.
+    // Does NOT block — user can approve the difference and continue.
+    if (formData.accommodation_required) {
+      const allocatedHotels = hotels.filter(h => hotelAllocations[h.id]?.allocated);
+      if (allocatedHotels.length > 1) {
+        const distinctBedding = Array.from(
+          new Set(allocatedHotels.map(h => hotelAllocations[h.id].bedding))
+        );
+        if (distinctBedding.length > 1) {
+          const detail = allocatedHotels
+            .map(h => `${h.name}: ${hotelAllocations[h.id].bedding}`)
+            .join('\n');
+          setBeddingMismatchWarning(detail);
+          return;
+        }
       }
     }
 
@@ -770,6 +789,35 @@ export const AddBookingModal = ({
               setShowConfirmation(true);
             }}>
               OK, Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!beddingMismatchWarning} onOpenChange={() => setBeddingMismatchWarning(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bedding Types Don't Match</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">
+              This booking has different bedding types across hotels. Please confirm this is intended before continuing:
+              {"\n\n"}{beddingMismatchWarning}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBeddingMismatchWarning(null);
+                setActiveTab("hotels");
+              }}
+            >
+              Go to Hotels
+            </Button>
+            <AlertDialogAction onClick={() => {
+              setBeddingMismatchWarning(null);
+              setShowConfirmation(true);
+            }}>
+              Approve &amp; Continue
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
