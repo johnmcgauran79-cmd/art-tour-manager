@@ -72,6 +72,7 @@ export const AddBookingModal = ({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showNoHotelsWarning, setShowNoHotelsWarning] = useState(false);
+  const [beddingMismatchWarning, setBeddingMismatchWarning] = useState<string | null>(null);
   
   const {
     formData,
