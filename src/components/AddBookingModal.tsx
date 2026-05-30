@@ -318,6 +318,24 @@ export const AddBookingModal = ({
       }
     }
 
+    // Soft warning: multiple allocated hotels with mismatched bedding types.
+    // Does NOT block — user can approve the difference and continue.
+    if (formData.accommodation_required) {
+      const allocatedHotels = hotels.filter(h => hotelAllocations[h.id]?.allocated);
+      if (allocatedHotels.length > 1) {
+        const distinctBedding = Array.from(
+          new Set(allocatedHotels.map(h => hotelAllocations[h.id].bedding))
+        );
+        if (distinctBedding.length > 1) {
+          const detail = allocatedHotels
+            .map(h => `${h.name}: ${hotelAllocations[h.id].bedding}`)
+            .join('\n');
+          setBeddingMismatchWarning(detail);
+          return;
+        }
+      }
+    }
+
     setShowConfirmation(true);
   };
 
