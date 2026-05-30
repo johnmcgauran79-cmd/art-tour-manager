@@ -793,6 +793,35 @@ export const AddBookingModal = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={!!beddingMismatchWarning} onOpenChange={() => setBeddingMismatchWarning(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bedding Types Don't Match</AlertDialogTitle>
+            <AlertDialogDescription className="whitespace-pre-line">
+              This booking has different bedding types across hotels. Please confirm this is intended before continuing:
+              {"\n\n"}{beddingMismatchWarning}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBeddingMismatchWarning(null);
+                setActiveTab("hotels");
+              }}
+            >
+              Go to Hotels
+            </Button>
+            <AlertDialogAction onClick={() => {
+              setBeddingMismatchWarning(null);
+              setShowConfirmation(true);
+            }}>
+              Approve &amp; Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
