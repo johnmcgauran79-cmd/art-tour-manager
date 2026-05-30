@@ -54,7 +54,7 @@ export default function PaymentStatus() {
       const tour = toursMap.get(b.tour_id);
       if (!tour?.instalment_required || !tour.instalment_date) return false;
       if (today <= new Date(tour.instalment_date)) return false;
-      return b.status !== 'instalment_paid' && b.status !== 'fully_paid';
+      return b.status !== 'instalment_paid' && b.status !== 'fully_paid' && b.status !== 'racing_breaks_invoice';
     });
 
     // Final payment due

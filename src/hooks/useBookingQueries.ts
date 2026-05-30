@@ -269,13 +269,14 @@ export const useFilterCounts = () => {
 
       // Instalments owing: tour has instalment_required, past instalment_date,
       // status is not instalment_paid, fully_paid, or complimentary
-      const { count: instalmentsOwingCount } = await supabase
+        const { count: instalmentsOwingCount } = await supabase
         .from('bookings')
         .select('*, tours!inner(instalment_required, instalment_date)', { count: 'exact', head: true })
         .eq('tours.instalment_required', true)
         .lt('tours.instalment_date', today.toISOString().split('T')[0])
         .neq('status', 'instalment_paid')
         .neq('status', 'fully_paid')
+        .neq('status', 'racing_breaks_invoice')
         .neq('status', 'complimentary')
         .neq('status', 'host')
         .neq('status', 'cancelled')
