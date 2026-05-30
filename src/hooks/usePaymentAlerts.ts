@@ -60,7 +60,7 @@ export const usePaymentAlerts = (
       const instalmentDate = new Date(tour.instalment_date);
       if (today > instalmentDate) {
         const level2Bookings = activeBookings.filter(
-          (b) => b.status !== "instalment_paid" && b.status !== "fully_paid"
+          (b) => b.status !== "instalment_paid" && b.status !== "fully_paid" && b.status !== "racing_breaks_invoice"
         );
         level2Count = level2Bookings.length;
       }
