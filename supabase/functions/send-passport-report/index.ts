@@ -67,23 +67,31 @@ const handler = async (req: Request): Promise<Response> => {
     // Create filename-safe tour name
     const safeFileName = tourName.replace(/[^a-zA-Z0-9]/g, '_');
     
-    // Encode CSV content to base64 using Deno's native encoding
-    const encoder = new TextEncoder();
-    const csvBytes = encoder.encode(csvContent);
-    const base64Content = btoa(String.fromCharCode(...csvBytes));
-    
     const emailData: any = {
       from: `Tour Operations <${from}>`,
       to: [to],
       subject: subject,
       html: emailHtml,
-      attachments: [
+    };
+
+    // Only attach a CSV when there is actual content. An empty/undefined CSV
+    // produces an empty attachment which Resend rejects with
+    // "Attachment must have either a `content` or `path`."
+    if (csvContent && csvContent.trim().length > 0) {
+      const encoder = new TextEncoder();
+      const csvBytes = encoder.encode(csvContent);
+      let binary = "";
+      for (let i = 0; i < csvBytes.length; i++) {
+        binary += String.fromCharCode(csvBytes[i]);
+      }
+      const base64Content = btoa(binary);
+      emailData.attachments = [
         {
           filename: `${safeFileName}_Passport_Details.csv`,
           content: base64Content,
-        }
-      ]
-    };
+        },
+      ];
+    }
 
     // Add CC if provided
     if (cc) {
