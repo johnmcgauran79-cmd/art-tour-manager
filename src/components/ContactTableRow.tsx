@@ -1,5 +1,5 @@
 
-import { Phone, Mail } from "lucide-react";
+import { Phone, Mail, Calendar } from "lucide-react";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { formatAustralianMobile, Customer } from "@/hooks/useCustomers";
 
@@ -25,8 +25,19 @@ export const ContactTableRow = ({ customer, onClick }: ContactTableRowProps) => 
       onClick={() => onClick(customer)}
       key={customer.id}
     >
+      <TableCell className="text-muted-foreground">{customer.title || "-"}</TableCell>
       <TableCell className="font-medium">{customer.first_name}</TableCell>
       <TableCell>{customer.last_name}</TableCell>
+      <TableCell className="text-muted-foreground text-sm">
+        {customer.date_of_birth ? (
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            <span>{new Date(customer.date_of_birth).toLocaleDateString('en-GB')}</span>
+          </div>
+        ) : (
+          "-"
+        )}
+      </TableCell>
       <TableCell>
         {customer.email ? (
           <div className="flex items-center gap-2">

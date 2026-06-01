@@ -260,8 +260,10 @@ export const ContactsTable = () => {
                           />
                         </TableHead>
                       )}
+                      <TableHead className="min-w-[60px]">Title</TableHead>
                       <TableHead className="min-w-[100px]">First Name</TableHead>
                       <TableHead className="min-w-[100px]">Last Name</TableHead>
+                      <TableHead className="min-w-[90px]">DOB</TableHead>
                       <TableHead className="min-w-[150px]">Email</TableHead>
                       <TableHead className="min-w-[120px]">Phone</TableHead>
                       <TableHead className="min-w-[100px]">Spouse</TableHead>
@@ -285,8 +287,14 @@ export const ContactsTable = () => {
                             />
                           </TableCell>
                         )}
+                        <TableCell className="text-muted-foreground">{customer.title || "-"}</TableCell>
                         <TableCell className="font-medium">{customer.first_name}</TableCell>
                         <TableCell>{customer.last_name}</TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {customer.date_of_birth ? (
+                            <span>{new Date(customer.date_of_birth).toLocaleDateString('en-GB')}</span>
+                          ) : "-"}
+                        </TableCell>
                         <TableCell>
                           {customer.email ? (
                             <div className="flex items-center gap-2">

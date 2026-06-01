@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Phone, Mail, Eye } from "lucide-react";
+import { Phone, Mail, Eye, Calendar } from "lucide-react";
 import { formatAustralianMobile, Customer } from "@/hooks/useCustomers";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { typography } from "@/lib/typography";
 import { ContactAvatar } from "@/components/ContactAvatar";
 
@@ -33,8 +34,14 @@ export const ContactCard = ({ customer, onClick }: ContactCardProps) => {
             </div>
             <div className="min-w-0">
               <h3 className={`${typography.cardTitle} truncate`}>
-                {customer.first_name} {customer.last_name}
+                {formatNameWithTitle(customer.title, customer.first_name, customer.last_name)}
               </h3>
+              {customer.date_of_birth && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {new Date(customer.date_of_birth).toLocaleDateString('en-GB')}
+                </p>
+              )}
               {customer.spouse_name && (
                 <p className="text-xs text-muted-foreground truncate">
                   Spouse: {customer.spouse_name}
