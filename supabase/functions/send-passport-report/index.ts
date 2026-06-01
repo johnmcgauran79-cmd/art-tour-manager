@@ -16,8 +16,9 @@ interface PassportReportRequest {
   bcc?: string;
   subject: string;
   message: string;
-  htmlContent: string;
-  csvContent: string;
+  htmlContent?: string;
+  reportHtml?: string;
+  csvContent?: string;
   tourName: string;
 }
 
@@ -35,6 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
       subject,
       message,
       htmlContent,
+      reportHtml,
       csvContent,
       tourName
     }: PassportReportRequest = await req.json();
@@ -48,14 +50,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Build the email HTML with the message and report content
     const htmlBody = message.replace(/\n/g, '<br>');
-    
+    const reportContent = htmlContent || reportHtml || "";
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
         <div style="margin: 20px 0;">
           ${htmlBody}
         </div>
         
-        ${htmlContent}
+        ${reportContent}
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
           <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
@@ -67,23 +70,31 @@ const handler = async (req: Request): Promise<Response> => {
     // Create filename-safe tour name
     const safeFileName = tourName.replace(/[^a-zA-Z0-9]/g, '_');
     
-    // Encode CSV content to base64 using Deno's native encoding
-    const encoder = new TextEncoder();
-    const csvBytes = encoder.encode(csvContent);
-    const base64Content = btoa(String.fromCharCode(...csvBytes));
-    
     const emailData: any = {
       from: `Tour Operations <${from}>`,
       to: [to],
       subject: subject,
       html: emailHtml,
-      attachments: [
+    };
+
+    // Only attach a CSV when there is actual content. An empty/undefined CSV
+    // produces an empty attachment which Resend rejects with
+    // "Attachment must have either a `content` or `path`."
+    if (csvContent && csvContent.trim().length > 0) {
+      const encoder = new TextEncoder();
+      const csvBytes = encoder.encode(csvContent);
+      let binary = "";
+      for (let i = 0; i < csvBytes.length; i++) {
+        binary += String.fromCharCode(csvBytes[i]);
+      }
+      const base64Content = btoa(binary);
+      emailData.attachments = [
         {
           filename: `${safeFileName}_Passport_Details.csv`,
           content: base64Content,
-        }
-      ]
-    };
+        },
+      ];
+    }
 
     // Add CC if provided
     if (cc) {
