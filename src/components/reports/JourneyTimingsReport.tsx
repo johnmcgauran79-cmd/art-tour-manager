@@ -181,3 +181,39 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
 </body>
 </html>`;
 };
+
+export const generateJourneyTimingsCSV = (activities: Activity[]): string => {
+  const coachActivities = getCoachActivities(activities);
+  const escape = (v: string) => `"${(v || "").replace(/"/g, '""')}"`;
+  const header = ["Date", "Activity", "Location", "Depart", "Start", "End", "Leg", "Pickup Time", "Pickup Location", "Destination"];
+  const rows: string[] = [header.map(escape).join(",")];
+
+  coachActivities.forEach((activity) => {
+    const base = [
+      activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : "Date TBC",
+      activity.name || "",
+      activity.location || "",
+      formatTime(activity.depart_for_activity),
+      formatTime(activity.start_time),
+      formatTime(activity.end_time),
+    ];
+    const journeys = sortedJourneys(activity);
+    if (journeys.length === 0) {
+      rows.push([...base, "", "", "", ""].map(escape).join(","));
+    } else {
+      journeys.forEach((leg) => {
+        rows.push(
+          [
+            ...base,
+            String(leg.journey_number ?? ""),
+            formatTime(leg.pickup_time),
+            leg.pickup_location || "",
+            leg.destination || "",
+          ].map(escape).join(",")
+        );
+      });
+    }
+  });
+
+  return rows.join("\n");
+};
