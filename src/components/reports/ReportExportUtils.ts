@@ -63,17 +63,19 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'passport':
-      headers = ['Passenger Name', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+      headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name (Passport)', 'Middle Name (Passport)', 'Surname (Passport)', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
       csvData = report.data.map(item => ({
         passengername: item.passengerName,
         bookingref: item.bookingReference,
         group: item.groupName || '',
-        nameasperpassport: item.nameAsPerPassport || '',
+        'firstname(passport)': item.passportFirstName || '',
+        'middlename(passport)': item.passportMiddleName || '',
+        'surname(passport)': item.passportSurname || '',
         passportno: item.passportNumber || '',
         country: item.passportCountry || '',
         nationality: item.nationality || '',
-        dateofbirth: item.dateOfBirth || '',
-        expiry: item.passportExpiry || ''
+        dateofbirth: formatReportDate(item.dateOfBirth),
+        expiry: formatReportDate(item.passportExpiry)
       }));
       break;
   }
