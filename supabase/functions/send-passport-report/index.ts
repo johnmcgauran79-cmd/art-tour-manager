@@ -16,8 +16,9 @@ interface PassportReportRequest {
   bcc?: string;
   subject: string;
   message: string;
-  htmlContent: string;
-  csvContent: string;
+  htmlContent?: string;
+  reportHtml?: string;
+  csvContent?: string;
   tourName: string;
 }
 
@@ -35,6 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
       subject,
       message,
       htmlContent,
+      reportHtml,
       csvContent,
       tourName
     }: PassportReportRequest = await req.json();
@@ -48,14 +50,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Build the email HTML with the message and report content
     const htmlBody = message.replace(/\n/g, '<br>');
-    
+    const reportContent = htmlContent || reportHtml || "";
+
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px;">
         <div style="margin: 20px 0;">
           ${htmlBody}
         </div>
         
-        ${htmlContent}
+        ${reportContent}
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
           <p>If you have any questions or need clarification, please don't hesitate to contact us.</p>
