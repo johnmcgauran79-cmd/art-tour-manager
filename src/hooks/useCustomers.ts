@@ -9,6 +9,8 @@ export interface Customer {
   first_name: string;
   last_name: string;
   preferred_name: string | null;
+  title: string | null;
+  date_of_birth: string | null;
   email: string | null;
   phone: string | null;
   city: string | null;
