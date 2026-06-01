@@ -44,9 +44,10 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'passengerlist':
-      headers = ['Passenger Name', 'Dietary Requirements', 'Notes'];
+      headers = ['Passenger Name', 'Date of Birth', 'Dietary Requirements', 'Notes'];
       csvData = report.data.map(item => ({
         passengername: item.name,
+        dateofbirth: item.dateOfBirth || '',
         dietaryrequirements: item.dietaryRequirements,
         notes: ''
       }));
@@ -138,11 +139,12 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'passengerlist':
       tableHTML = `
         <table class="passenger-list">
-          <thead><tr><th>Passenger Name</th><th>Dietary Requirements</th><th>Notes / Meal Orders</th></tr></thead>
+          <thead><tr><th>Passenger Name</th><th>Date of Birth</th><th>Dietary Requirements</th><th>Notes / Meal Orders</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr class="passenger-row">
                 <td>${item.name}</td>
+                <td>${item.dateOfBirth || '-'}</td>
                 <td>${item.dietaryRequirements || '-'}</td>
                 <td class="notes-column">_________________________</td>
               </tr>
@@ -297,6 +299,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
           <thead>
             <tr>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passenger Name</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Date of Birth</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Dietary Requirements</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Notes / Meal Orders</th>
             </tr>
@@ -305,6 +308,7 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
             ${report.data.map(item => `
               <tr style="height: 50px;">
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.name}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.dateOfBirth || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.dietaryRequirements || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px; border-left: 3px solid #333; min-height: 40px;">_________________________</td>
               </tr>

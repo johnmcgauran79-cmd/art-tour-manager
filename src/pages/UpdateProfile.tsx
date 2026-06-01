@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CONTACT_TITLE_OPTIONS } from "@/lib/contactTitles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +17,8 @@ interface CustomerData {
   first_name: string;
   last_name: string;
   preferred_name: string | null;
+  title: string | null;
+  date_of_birth: string | null;
   email: string | null;
   phone: string | null;
   city: string | null;
@@ -89,9 +93,11 @@ export default function UpdateProfile() {
         body: { 
           token, 
           updates: {
+            title: formData.title,
             first_name: formData.first_name,
             last_name: formData.last_name,
             preferred_name: formData.preferred_name,
+            date_of_birth: formData.date_of_birth,
             email: formData.email,
             phone: formData.phone,
             city: formData.city,
@@ -213,6 +219,23 @@ export default function UpdateProfile() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
+                    <Label htmlFor="title">Title</Label>
+                    <Select
+                      value={formData.title || ""}
+                      onValueChange={(value) => handleInputChange("title", value)}
+                    >
+                      <SelectTrigger id="title">
+                        <SelectValue placeholder="Select" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CONTACT_TITLE_OPTIONS.map((t) => (
+                          <SelectItem key={t} value={t}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="first_name">First Name</Label>
                     <Input
                       id="first_name"
@@ -237,6 +260,16 @@ export default function UpdateProfile() {
                       value={formData.preferred_name || ""}
                       onChange={(e) => handleInputChange("preferred_name", e.target.value)}
                       placeholder="What would you like to be called?"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="date_of_birth">Date of Birth</Label>
+                    <Input
+                      id="date_of_birth"
+                      type="date"
+                      value={formData.date_of_birth || ""}
+                      onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
                     />
                   </div>
                 </div>

@@ -10,7 +10,7 @@ const corsHeaders = {
 async function generatePassengerListData(supabase: any, tourId: string) {
   const { data: bookings } = await supabase
     .from('bookings')
-    .select('*, customers!bookings_lead_passenger_id_fkey(*)')
+    .select('*, customers!bookings_lead_passenger_id_fkey(*), passenger_2:customers!passenger_2_id(*), passenger_3:customers!passenger_3_id(*)')
     .eq('tour_id', tourId)
     .neq('status', 'cancelled')
     .order('created_at');
@@ -19,18 +19,74 @@ async function generatePassengerListData(supabase: any, tourId: string) {
     return { passengers: [], count: 0 };
   }
 
-  const passengers = bookings.map((booking: any) => {
+  const formatDob = (dob: string | null) => {
+    if (!dob) return '';
+    const [y, m, d] = dob.split('-');
+    return d && m && y ? `${d}/${m}/${y}` : dob;
+  };
+  const buildName = (c: any) =>
+    [c.title, c.first_name, c.last_name].filter(Boolean).join(' ').trim();
+
+  const passengers: any[] = [];
+  for (const booking of bookings) {
     const customer = booking.customers || {};
-    return {
-      name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unknown',
+    passengers.push({
+      name: buildName(customer) || 'Unknown',
+      dateOfBirth: formatDob(customer.date_of_birth),
       email: customer.email || 'N/A',
       phone: customer.phone || 'N/A',
       passengerCount: booking.passenger_count || 1,
       dietaryRequirements: customer.dietary_requirements || 'None',
       status: booking.status || 'N/A',
       bookingReference: booking.id
-    };
-  });
+    });
+    const p2 = booking.passenger_2;
+    if (p2) {
+      passengers.push({
+        name: buildName(p2) || 'Unknown',
+        dateOfBirth: formatDob(p2.date_of_birth),
+        email: p2.email || 'N/A',
+        phone: p2.phone || 'N/A',
+        passengerCount: booking.passenger_count || 1,
+        dietaryRequirements: p2.dietary_requirements || 'None',
+        status: booking.status || 'N/A',
+        bookingReference: booking.id
+      });
+    } else if (booking.passenger_2_name) {
+      passengers.push({
+        name: booking.passenger_2_name,
+        dateOfBirth: '',
+        email: 'N/A', phone: 'N/A',
+        passengerCount: booking.passenger_count || 1,
+        dietaryRequirements: 'None',
+        status: booking.status || 'N/A',
+        bookingReference: booking.id
+      });
+    }
+    const p3 = booking.passenger_3;
+    if (p3) {
+      passengers.push({
+        name: buildName(p3) || 'Unknown',
+        dateOfBirth: formatDob(p3.date_of_birth),
+        email: p3.email || 'N/A',
+        phone: p3.phone || 'N/A',
+        passengerCount: booking.passenger_count || 1,
+        dietaryRequirements: p3.dietary_requirements || 'None',
+        status: booking.status || 'N/A',
+        bookingReference: booking.id
+      });
+    } else if (booking.passenger_3_name) {
+      passengers.push({
+        name: booking.passenger_3_name,
+        dateOfBirth: '',
+        email: 'N/A', phone: 'N/A',
+        passengerCount: booking.passenger_count || 1,
+        dietaryRequirements: 'None',
+        status: booking.status || 'N/A',
+        bookingReference: booking.id
+      });
+    }
+  }
 
   return { passengers, count: passengers.length };
 }
@@ -41,15 +97,15 @@ function generatePassengerListHTML(passengers: any[], tourName: string): string 
   }
 
   let html = '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; margin-bottom: 20px;">';
-  html += '<thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Passengers</th><th>Dietary Requirements</th><th>Status</th></tr></thead>';
+  html += '<thead><tr><th>Name</th><th>Date of Birth</th><th>Email</th><th>Phone</th><th>Dietary Requirements</th><th>Status</th></tr></thead>';
   html += '<tbody>';
 
   for (const passenger of passengers) {
     html += '<tr>';
     html += `<td>${passenger.name}</td>`;
+    html += `<td>${passenger.dateOfBirth || '-'}</td>`;
     html += `<td>${passenger.email}</td>`;
     html += `<td>${passenger.phone}</td>`;
-    html += `<td>${passenger.passengerCount}</td>`;
     html += `<td>${passenger.dietaryRequirements}</td>`;
     html += `<td>${passenger.status}</td>`;
     html += '</tr>';

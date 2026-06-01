@@ -6,6 +6,7 @@ import { useActivityBookings } from "@/hooks/useActivityBookings";
 import { usePickupOptions } from "@/hooks/usePickupOptions";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
+import { formatNameWithTitle } from "@/lib/contactTitles";
 import { Phone, Utensils, Users, ClipboardList, Grid3X3 } from "lucide-react";
 import React from "react";
 
@@ -181,10 +182,13 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
   // Individual Passenger List Report
   const passengerList = tourBookings.flatMap(booking => {
     const passengers = [];
+    const p2 = (booking as any).passenger_2;
+    const p3 = (booking as any).passenger_3;
     
     // Add lead passenger
     passengers.push({
-      name: `${booking.customers?.first_name} ${booking.customers?.last_name}`,
+      name: formatNameWithTitle(booking.customers?.title, booking.customers?.first_name, booking.customers?.last_name),
+      dateOfBirth: booking.customers?.date_of_birth ? formatDateToDDMMYYYY(booking.customers.date_of_birth) : '',
       bookingReference: booking.id.substring(0, 8),
       groupName: booking.group_name || '',
       dietaryRequirements: booking.customers?.dietary_requirements || '',
@@ -192,9 +196,19 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
     });
 
     // Add additional passengers
-    if (booking.passenger_2_name) {
+    if (p2) {
+      passengers.push({
+        name: formatNameWithTitle(p2.title, p2.first_name, p2.last_name),
+        dateOfBirth: p2.date_of_birth ? formatDateToDDMMYYYY(p2.date_of_birth) : '',
+        bookingReference: booking.id.substring(0, 8),
+        groupName: booking.group_name || '',
+        dietaryRequirements: p2.dietary_requirements || '',
+        notes: ''
+      });
+    } else if (booking.passenger_2_name) {
       passengers.push({
         name: booking.passenger_2_name,
+        dateOfBirth: '',
         bookingReference: booking.id.substring(0, 8),
         groupName: booking.group_name || '',
         dietaryRequirements: '',
@@ -202,9 +216,19 @@ export const useReportData = (tourId: string, options: UseReportDataOptions = {}
       });
     }
 
-    if (booking.passenger_3_name) {
+    if (p3) {
+      passengers.push({
+        name: formatNameWithTitle(p3.title, p3.first_name, p3.last_name),
+        dateOfBirth: p3.date_of_birth ? formatDateToDDMMYYYY(p3.date_of_birth) : '',
+        bookingReference: booking.id.substring(0, 8),
+        groupName: booking.group_name || '',
+        dietaryRequirements: p3.dietary_requirements || '',
+        notes: ''
+      });
+    } else if (booking.passenger_3_name) {
       passengers.push({
         name: booking.passenger_3_name,
+        dateOfBirth: '',
         bookingReference: booking.id.substring(0, 8),
         groupName: booking.group_name || '',
         dietaryRequirements: '',

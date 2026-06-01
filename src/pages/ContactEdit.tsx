@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CONTACT_TITLE_OPTIONS } from "@/lib/contactTitles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save } from "lucide-react";
 import { useCustomerById } from "@/hooks/useCustomers";
@@ -27,9 +29,11 @@ export default function ContactEdit() {
   useEffect(() => {
     if (contact) {
       setEditedContact({
+        title: contact.title || '',
         first_name: contact.first_name,
         last_name: contact.last_name,
         preferred_name: contact.preferred_name || '',
+        date_of_birth: contact.date_of_birth || '',
         email: contact.email,
         phone: contact.phone || '',
         city: contact.city || '',
@@ -52,9 +56,14 @@ export default function ContactEdit() {
     if (!contact) return;
 
     try {
+      const payload = {
+        ...editedContact,
+        title: editedContact.title || null,
+        date_of_birth: editedContact.date_of_birth || null,
+      };
       const { error } = await supabase
         .from('customers')
-        .update(editedContact)
+        .update(payload)
         .eq('id', contact.id);
 
       if (error) throw error;
@@ -149,7 +158,23 @@ export default function ContactEdit() {
           <CardTitle>Contact Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Select
+                value={editedContact.title || ''}
+                onValueChange={(value) => setEditedContact({ ...editedContact, title: value })}
+              >
+                <SelectTrigger id="title">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTACT_TITLE_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
               <Input
@@ -180,6 +205,15 @@ export default function ContactEdit() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                value={editedContact.date_of_birth || ''}
+                onChange={(e) => setEditedContact({ ...editedContact, date_of_birth: e.target.value })}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input

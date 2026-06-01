@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { ContactBookingsList } from "@/components/ContactBookingsList";
+import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useState, useEffect, type ReactNode } from "react";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
@@ -304,9 +305,11 @@ export default function ContactDetail() {
               <CardTitle>Contact Information</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InfoRow label="Title" value={contact.title} />
               <InfoRow label="First Name" value={contact.first_name} />
               <InfoRow label="Last Name" value={contact.last_name} />
               <InfoRow label="Preferred Name" value={contact.preferred_name} />
+              <InfoRow label="Date of Birth" value={contact.date_of_birth ? formatDateToDDMMYYYY(contact.date_of_birth) : null} />
               <InfoRow label="Email" value={contact.email} />
               <InfoRow 
                 label="Phone" 
