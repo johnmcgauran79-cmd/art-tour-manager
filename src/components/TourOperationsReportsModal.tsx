@@ -360,6 +360,8 @@ export const TourOperationsReportsModal = ({
 
   // Handle tour operations report
   if (reportType === 'tourops') {
+    return <JourneyTimingsModalGuard />;
+  }
     return <TourOpsReportModal
       tourId={tourId}
       tourName={tourName}
