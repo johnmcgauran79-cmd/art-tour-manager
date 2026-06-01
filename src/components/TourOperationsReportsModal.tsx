@@ -135,7 +135,7 @@ export const TourOperationsReportsModal = ({
   const attendees = useTourAttendeesData(tourId);
 
   // Get the specific report to display
-  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops' && reportType !== 'tourattendees' && reportType !== 'pickup'
+  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops' && reportType !== 'tourattendees' && reportType !== 'pickup' && reportType !== 'journeytimings'
     ? reports.find(r => r.type === reportType) || null 
     : null;
 
