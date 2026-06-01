@@ -71,9 +71,11 @@ const handler = async (req: Request): Promise<Response> => {
         valid: true,
         customer: {
           id: customer.id,
+          title: customer.title,
           first_name: customer.first_name,
           last_name: customer.last_name,
           preferred_name: customer.preferred_name,
+          date_of_birth: customer.date_of_birth,
           email: customer.email,
           phone: customer.phone,
           city: customer.city,
