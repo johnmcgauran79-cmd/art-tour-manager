@@ -210,7 +210,7 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     return total + booking.passenger_count;
   }, 0);
 
-  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup') => {
+  const handleReportClick = (reportType: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | 'journeytimings') => {
     setSelectedReportType(reportType);
     setReportsModalOpen(true);
   };
