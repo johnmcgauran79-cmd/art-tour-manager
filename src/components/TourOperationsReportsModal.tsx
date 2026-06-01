@@ -28,6 +28,7 @@ import { ReportPDFViewer } from "@/components/reports/ReportPDFViewer";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { TourAttendeesReport, useTourAttendeesData, generateTourAttendeesHTML } from "@/components/reports/TourAttendeesReport";
 import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
+import { JourneyTimingsReport, generateJourneyTimingsHTML, generateJourneyTimingsCSV } from "@/components/reports/JourneyTimingsReport";
 import { ViewActivityModal } from "@/components/ViewActivityModal";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | 'journeytimings' | null;
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
@@ -134,7 +135,7 @@ export const TourOperationsReportsModal = ({
   const attendees = useTourAttendeesData(tourId);
 
   // Get the specific report to display
-  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops' && reportType !== 'tourattendees' && reportType !== 'pickup'
+  const displayReport = reportType && reportType !== 'hotel' && reportType !== 'emailtracking' && reportType !== 'passport' && reportType !== 'tourops' && reportType !== 'tourattendees' && reportType !== 'pickup' && reportType !== 'journeytimings'
     ? reports.find(r => r.type === reportType) || null 
     : null;
 
@@ -367,6 +368,50 @@ export const TourOperationsReportsModal = ({
       open={open}
       onOpenChange={onOpenChange}
     />;
+  }
+
+  // Handle journey timings report (private coach activities)
+  if (reportType === 'journeytimings') {
+    const handlePrintJourney = () => {
+      const htmlContent = generateJourneyTimingsHTML(activities || [], tourName);
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => printWindow.print(), 500);
+      }
+    };
+
+    const handleDownloadJourneyCSV = () => {
+      const csv = generateJourneyTimingsCSV(activities || []);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      downloadBlob(blob, `journey-timings-${tourName.replace(/\s+/g, '-').toLowerCase()}.csv`);
+    };
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Journey Timings - {tourName}</DialogTitle>
+              <div className="flex items-center gap-2 mr-6">
+                <Button onClick={handleDownloadJourneyCSV} variant="outline" size="sm" className="flex items-center gap-2">
+                  <Download className="h-4 w-4" />
+                  CSV
+                </Button>
+                <Button onClick={handlePrintJourney} variant="outline" size="sm" className="flex items-center gap-2">
+                  <Printer className="h-4 w-4" />
+                  Print PDF
+                </Button>
+                <ShareButton title={`Journey Timings — ${tourName}`} context="Report" />
+              </div>
+            </div>
+          </DialogHeader>
+          <JourneyTimingsReport activities={activities || []} tourName={tourName} />
+        </DialogContent>
+      </Dialog>
+    );
   }
 
   // Handle passport report
