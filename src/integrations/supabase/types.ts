@@ -1212,6 +1212,7 @@ export type Database = {
           city: string | null
           country: string | null
           created_at: string | null
+          date_of_birth: string | null
           dietary_requirements: string | null
           email: string | null
           emergency_contact_email: string | null
@@ -1228,6 +1229,7 @@ export type Database = {
           preferred_name: string | null
           spouse_name: string | null
           state: string | null
+          title: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1236,6 +1238,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           dietary_requirements?: string | null
           email?: string | null
           emergency_contact_email?: string | null
@@ -1252,6 +1255,7 @@ export type Database = {
           preferred_name?: string | null
           spouse_name?: string | null
           state?: string | null
+          title?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1260,6 +1264,7 @@ export type Database = {
           city?: string | null
           country?: string | null
           created_at?: string | null
+          date_of_birth?: string | null
           dietary_requirements?: string | null
           email?: string | null
           emergency_contact_email?: string | null
@@ -1276,6 +1281,7 @@ export type Database = {
           preferred_name?: string | null
           spouse_name?: string | null
           state?: string | null
+          title?: string | null
           updated_at?: string | null
         }
         Relationships: []
