@@ -1,5 +1,15 @@
 import { formatPhoneForWhatsApp } from '@/utils/phoneFormatter';
 import { downloadBlob } from '@/lib/fileDownload';
+import { format, parseISO } from 'date-fns';
+
+const formatReportDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  try {
+    return format(parseISO(dateStr), 'dd/MM/yyyy');
+  } catch {
+    return dateStr;
+  }
+};
 
 interface ReportItem {
   id: string;
@@ -53,17 +63,19 @@ export const exportReportToCSV = (report: ReportItem, tourName: string) => {
       }));
       break;
     case 'passport':
-      headers = ['Passenger Name', 'Booking Ref', 'Group', 'Name as per Passport', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
+      headers = ['Passenger Name', 'Booking Ref', 'Group', 'First Name (Passport)', 'Middle Name (Passport)', 'Surname (Passport)', 'Passport No', 'Country', 'Nationality', 'Date of Birth', 'Expiry'];
       csvData = report.data.map(item => ({
         passengername: item.passengerName,
         bookingref: item.bookingReference,
         group: item.groupName || '',
-        nameasperpassport: item.nameAsPerPassport || '',
+        'firstname(passport)': item.passportFirstName || '',
+        'middlename(passport)': item.passportMiddleName || '',
+        'surname(passport)': item.passportSurname || '',
         passportno: item.passportNumber || '',
         country: item.passportCountry || '',
         nationality: item.nationality || '',
-        dateofbirth: item.dateOfBirth || '',
-        expiry: item.passportExpiry || ''
+        dateofbirth: formatReportDate(item.dateOfBirth),
+        expiry: formatReportDate(item.passportExpiry)
       }));
       break;
   }
@@ -156,17 +168,19 @@ export const printReport = (report: ReportItem, tourName: string) => {
     case 'passport':
       tableHTML = `
         <table>
-          <thead><tr><th>Passenger</th><th>Name as per Passport</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
+          <thead><tr><th>Passenger</th><th>First Name (Passport)</th><th>Middle Name (Passport)</th><th>Surname (Passport)</th><th>Passport No.</th><th>Country</th><th>Nationality</th><th>DOB</th><th>Expiry</th></tr></thead>
           <tbody>
             ${report.data.map(item => `
               <tr>
                 <td>${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
-                <td>${item.nameAsPerPassport || '-'}</td>
+                <td>${item.passportFirstName || '-'}</td>
+                <td>${item.passportMiddleName || '-'}</td>
+                <td>${item.passportSurname || '-'}</td>
                 <td>${item.passportNumber || '-'}</td>
                 <td>${item.passportCountry || '-'}</td>
                 <td>${item.nationality || '-'}</td>
-                <td>${item.dateOfBirth || '-'}</td>
-                <td>${item.passportExpiry || '-'}</td>
+                <td>${formatReportDate(item.dateOfBirth) || '-'}</td>
+                <td>${formatReportDate(item.passportExpiry) || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -323,7 +337,9 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
           <thead>
             <tr>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passenger</th>
-              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Name as per Passport</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">First Name (Passport)</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Middle Name (Passport)</th>
+              <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Surname (Passport)</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Passport No.</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Country</th>
               <th style="border: 1px solid #ddd; padding: 12px; background-color: #f5f5f5; text-align: left; font-weight: bold;">Nationality</th>
@@ -335,12 +351,14 @@ export const generateReportHTML = (report: ReportItem, tourName: string): string
             ${report.data.map(item => `
               <tr>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.passengerName}${item.groupName ? `<br><small style="color:#666">${item.groupName}</small>` : ''}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.nameAsPerPassport || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passportFirstName || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passportMiddleName || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${item.passportSurname || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px; font-family: monospace;">${item.passportNumber || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.passportCountry || '-'}</td>
                 <td style="border: 1px solid #ddd; padding: 12px;">${item.nationality || '-'}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.dateOfBirth || '-'}</td>
-                <td style="border: 1px solid #ddd; padding: 12px;">${item.passportExpiry || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${formatReportDate(item.dateOfBirth) || '-'}</td>
+                <td style="border: 1px solid #ddd; padding: 12px;">${formatReportDate(item.passportExpiry) || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
