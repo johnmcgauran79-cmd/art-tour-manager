@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface PassengerListReportProps {
   data: Array<{
     name: string;
+    dateOfBirth?: string;
     bookingReference: string;
     groupName: string;
     dietaryRequirements: string;
@@ -17,6 +18,7 @@ export const PassengerListReport = ({ data }: PassengerListReportProps) => {
       <TableHeader>
         <TableRow>
           <TableHead className="w-[300px]">Passenger Name</TableHead>
+          <TableHead className="w-[140px]">Date of Birth</TableHead>
           <TableHead className="w-[250px]">Dietary Requirements</TableHead>
           <TableHead className="w-[400px]">Notes / Meal Orders</TableHead>
         </TableRow>
@@ -25,6 +27,7 @@ export const PassengerListReport = ({ data }: PassengerListReportProps) => {
         {data.map((passenger, index) => (
           <TableRow key={index} className="h-16">
             <TableCell className="font-medium">{passenger.name}</TableCell>
+            <TableCell className="text-sm">{passenger.dateOfBirth || '-'}</TableCell>
             <TableCell className="text-sm">{passenger.dietaryRequirements || '-'}</TableCell>
             <TableCell className="border-l-2 border-gray-200">
               <div className="h-10 w-full border-b border-gray-300"></div>
