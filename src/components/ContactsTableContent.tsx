@@ -12,8 +12,10 @@ export const ContactsTableContent = ({ customers, onContactClick }: ContactsTabl
   <Table>
     <TableHeader>
       <TableRow>
+        <TableHead>Title</TableHead>
         <TableHead>First Name</TableHead>
         <TableHead>Surname</TableHead>
+        <TableHead>DOB</TableHead>
         <TableHead>Email</TableHead>
         <TableHead>Phone</TableHead>
         <TableHead>Spouse</TableHead>
