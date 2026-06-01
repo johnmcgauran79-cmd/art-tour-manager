@@ -10,9 +10,11 @@ const corsHeaders = {
 interface UpdateProfilePayload {
   token: string;
   updates: {
+    title?: string;
     first_name?: string;
     last_name?: string;
     preferred_name?: string;
+    date_of_birth?: string;
     email?: string;
     phone?: string;
     city?: string;
