@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CONTACT_TITLE_OPTIONS } from "@/lib/contactTitles";
 import { useCreateCustomer } from "@/hooks/useCustomers";
 
 interface AddContactModalProps {
@@ -16,9 +18,11 @@ interface AddContactModalProps {
 
 export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddContactModalProps) => {
   const [formData, setFormData] = useState({
+    title: "",
     first_name: "",
     last_name: "",
     preferred_name: "",
+    date_of_birth: "",
     email: "",
     phone: "",
     city: "",
@@ -43,7 +47,9 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
     const customerData = {
       ...formData,
       // Convert empty strings to null for optional fields
+      title: formData.title || null,
       preferred_name: formData.preferred_name || null,
+      date_of_birth: formData.date_of_birth || null,
       email: formData.email || null,
       phone: formData.phone || null,
       city: formData.city || null,
@@ -68,9 +74,11 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
           onContactCreated(data);
         }
         setFormData({
+          title: "",
           first_name: "",
           last_name: "",
           preferred_name: "",
+          date_of_birth: "",
           email: "",
           phone: "",
           city: "",
@@ -105,7 +113,23 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Select
+                value={formData.title}
+                onValueChange={(value) => handleInputChange("title", value)}
+              >
+                <SelectTrigger id="title">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTACT_TITLE_OPTIONS.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="first_name">First Name *</Label>
               <Input
@@ -137,6 +161,15 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                value={formData.date_of_birth}
+                onChange={(e) => handleInputChange("date_of_birth", e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -145,6 +178,9 @@ export const AddContactModal = ({ open, onOpenChange, onContactCreated }: AddCon
                 onChange={(e) => handleInputChange("email", e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <PhoneInput
                 value={formData.phone}
