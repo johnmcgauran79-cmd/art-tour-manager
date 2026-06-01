@@ -1,5 +1,15 @@
 import { formatPhoneForWhatsApp } from '@/utils/phoneFormatter';
 import { downloadBlob } from '@/lib/fileDownload';
+import { format, parseISO } from 'date-fns';
+
+const formatReportDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  try {
+    return format(parseISO(dateStr), 'dd/MM/yyyy');
+  } catch {
+    return dateStr;
+  }
+};
 
 interface ReportItem {
   id: string;
