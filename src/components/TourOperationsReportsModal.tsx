@@ -28,6 +28,7 @@ import { ReportPDFViewer } from "@/components/reports/ReportPDFViewer";
 import { EmailPassportReportModal } from "@/components/reports/EmailPassportReportModal";
 import { TourAttendeesReport, useTourAttendeesData, generateTourAttendeesHTML } from "@/components/reports/TourAttendeesReport";
 import { PickupLocationReport } from "@/components/reports/PickupLocationReport";
+import { JourneyTimingsReport, generateJourneyTimingsHTML, generateJourneyTimingsCSV } from "@/components/reports/JourneyTimingsReport";
 import { ViewActivityModal } from "@/components/ViewActivityModal";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,7 @@ interface TourOperationsReportsModalProps {
   tourName: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | null;
+  reportType?: 'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | 'journeytimings' | null;
   hotelId?: string;
   onBookingClick?: (bookingId: string) => void;
 }
