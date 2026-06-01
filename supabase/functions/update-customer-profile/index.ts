@@ -96,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Track what changed
     const changes: Record<string, { old: any; new: any }> = {};
     const allowedFields = [
-      'first_name', 'last_name', 'preferred_name', 
+      'title', 'first_name', 'last_name', 'preferred_name', 'date_of_birth',
       'email', 'phone', 'city', 'state', 'country',
       'dietary_requirements', 'emergency_contact_name', 
       'emergency_contact_phone', 'emergency_contact_relationship',
