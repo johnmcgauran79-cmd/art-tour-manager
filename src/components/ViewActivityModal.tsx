@@ -275,7 +275,7 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
           )}
 
           {/* Notes */}
-          {(activity.notes || activity.operations_notes || (activity as any).cancellation_terms) && (
+          {(activity.notes || activity.operations_notes) && (
             <details className="group" open>
               <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
                 Notes
@@ -293,10 +293,38 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
                     <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
                   </div>
                 )}
-                {(activity as any).cancellation_terms && userRole !== 'host' && (
+              </div>
+            </details>
+          )}
+
+          {/* Cancellation - only shown if any cancel field contains data */}
+          {userRole !== 'host' &&
+            ((activity as any).cancellation_terms ||
+              (activity as any).cancellation_details ||
+              (activity as any).cancellation_status) && (
+            <details className="group">
+              <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
+                Cancellation
+              </summary>
+              <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 space-y-2 sm:space-y-3 mt-1">
+                {(activity as any).cancellation_terms && (
                   <div>
                     <span className="text-xs text-muted-foreground uppercase">Cancellation / Terms</span>
                     <p className="text-xs sm:text-sm whitespace-pre-wrap">{(activity as any).cancellation_terms}</p>
+                  </div>
+                )}
+                {(activity as any).cancellation_details && (
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase">Cancellation Details</span>
+                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{(activity as any).cancellation_details}</p>
+                  </div>
+                )}
+                {(activity as any).cancellation_status && (
+                  <div>
+                    <span className="text-xs text-muted-foreground uppercase">Cancellation Status</span>
+                    <p className="text-xs sm:text-sm font-medium">
+                      {String((activity as any).cancellation_status).replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                    </p>
                   </div>
                 )}
               </div>
