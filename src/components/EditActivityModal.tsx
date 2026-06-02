@@ -362,10 +362,22 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
             </Select>
           </div>
 
-          {/* Hospitality */}
+          {/* Hospitality & Notes group */}
           <div className="space-y-2">
             <Label htmlFor="hospitality_inclusions">Hospitality Inclusions</Label>
             <Textarea id="hospitality_inclusions" value={formData.hospitality_inclusions} onChange={(e) => handleInputChange("hospitality_inclusions", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Activity Notes</Label>
+            <Textarea id="notes" value={formData.notes} onChange={(e) => handleInputChange("notes", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="transport_notes">Transport Notes</Label>
+            <Textarea id="transport_notes" value={formData.transport_notes} onChange={(e) => handleInputChange("transport_notes", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="operations_notes">Operations Notes</Label>
+            <Textarea id="operations_notes" value={formData.operations_notes} onChange={(e) => handleInputChange("operations_notes", e.target.value)} rows={3} />
           </div>
 
           {/* Transport Details */}
