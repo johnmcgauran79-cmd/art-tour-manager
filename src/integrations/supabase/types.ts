@@ -4462,6 +4462,7 @@ export type Database = {
         | "enquiry_sent"
         | "quote_received"
         | "on_hold"
+        | "contract_signed"
         | "booked"
         | "confirmed"
         | "finalised"
@@ -4703,6 +4704,7 @@ export const Constants = {
         "enquiry_sent",
         "quote_received",
         "on_hold",
+        "contract_signed",
         "booked",
         "confirmed",
         "finalised",
