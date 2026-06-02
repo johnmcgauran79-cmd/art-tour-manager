@@ -16,6 +16,7 @@ export const BOOKING_WORKFLOW_STATUS_OPTIONS: WorkflowStatusOption[] = [
   { value: "enquiry_sent", label: "Enquiry Sent" },
   { value: "quote_received", label: "Quote Received" },
   { value: "on_hold", label: "On Hold / Provisional Booking" },
+  { value: "contract_signed", label: "Contract Signed" },
   { value: "booked", label: "Booked" },
   { value: "confirmed", label: "Confirmed" },
   { value: "finalised", label: "Finalised" },
