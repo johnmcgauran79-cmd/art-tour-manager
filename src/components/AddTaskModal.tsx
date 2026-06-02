@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon, Eye } from "lucide-react";
+import { CalendarIcon, Users, Link, AlertTriangle, ListChecks, Plus, Trash2, User as UserIcon, Eye, Paperclip, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { useCreateTask, useTasks } from "@/hooks/useTasks";
 import { useUpdateTask } from "@/hooks/useTaskMutations";
@@ -60,6 +60,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
   const [draftSubtasks, setDraftSubtasks] = useState<DraftSubtask[]>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState("");
+  const [draftAttachments, setDraftAttachments] = useState<File[]>([]);
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -223,6 +224,39 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         }
       }
 
+      // Upload any attachments selected in this modal
+      if (created?.id && draftAttachments.length > 0) {
+        const { data: userRes } = await supabase.auth.getUser();
+        const actorId = userRes.user?.id ?? null;
+        for (const file of draftAttachments) {
+          try {
+            const fileName = `${Date.now()}-${file.name}`;
+            const filePath = `tasks/${created.id}/${fileName}`;
+            const { error: uploadError } = await supabase.storage
+              .from('attachments')
+              .upload(filePath, file);
+            if (uploadError) throw uploadError;
+            const { error: dbError } = await supabase.from('task_attachments').insert({
+              task_id: created.id,
+              file_name: file.name,
+              file_path: filePath,
+              file_size: file.size,
+              file_type: file.type,
+              uploaded_by: actorId!,
+            });
+            if (dbError) throw dbError;
+          } catch (attachError) {
+            console.error('Error uploading attachment:', attachError);
+            toast({
+              title: "Attachment not uploaded",
+              description: `Failed to upload ${file.name}.`,
+              variant: "destructive",
+            });
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ['task-attachments', created.id] });
+      }
+
       console.log('Task created successfully, resetting form');
 
       // Reset form
@@ -243,6 +277,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setValidationWarnings([]);
       setDraftSubtasks([]);
       setNewSubtaskTitle("");
+      setDraftAttachments([]);
       
       onOpenChange(false);
     } catch (error) {
@@ -289,6 +324,21 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
 
   const removeDraftSubtask = (id: string) => {
     setDraftSubtasks((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const addDraftAttachments = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setDraftAttachments((prev) => [...prev, ...Array.from(files)]);
+  };
+
+  const removeDraftAttachment = (index: number) => {
+    setDraftAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -818,6 +868,74 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </div>
             <p className="text-xs text-muted-foreground">
               Subtasks will be created with the main task.
+            </p>
+          </div>
+
+          {/* Attachments Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              <Label className="font-medium">
+                Attachments{" "}
+                {draftAttachments.length > 0 && (
+                  <span className="text-muted-foreground font-normal">
+                    ({draftAttachments.length})
+                  </span>
+                )}
+              </Label>
+            </div>
+
+            {draftAttachments.length > 0 && (
+              <div className="space-y-2">
+                {draftAttachments.map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex items-center gap-2 rounded border border-border/60 px-3 py-2"
+                  >
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm truncate flex-1">{file.name}</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {formatFileSize(file.size)}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeDraftAttachment(index)}
+                      aria-label="Remove attachment"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <Input
+                id="task-attachments"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  addDraftAttachments(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById("task-attachments")?.click()}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add files
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Files will be uploaded when the task is created.
             </p>
           </div>
 
