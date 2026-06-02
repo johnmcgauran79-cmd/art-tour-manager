@@ -76,13 +76,13 @@ export const JourneyTimingsReport = ({ activities, tourName }: JourneyTimingsRep
                 <span className="text-xs uppercase tracking-wide">Private Coach</span>
               </div>
             </div>
-            <Table>
+            <Table className="table-fixed w-full">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-16">Leg</TableHead>
-                  <TableHead className="w-32">Pickup Time</TableHead>
-                  <TableHead>Pickup Location</TableHead>
-                  <TableHead>Destination</TableHead>
+                  <TableHead className="w-12">Leg</TableHead>
+                  <TableHead className="w-24">Pickup Time</TableHead>
+                  <TableHead className="w-[calc((100%-9rem)/2)]">Pickup Location</TableHead>
+                  <TableHead className="w-[calc((100%-9rem)/2)]">Destination</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -140,7 +140,7 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
           </div>
           <table>
             <thead>
-              <tr><th style="width:50px;">Leg</th><th style="width:110px;">Pickup Time</th><th>Pickup Location</th><th>Destination</th></tr>
+              <tr><th style="width:40px;">Leg</th><th style="width:90px;">Pickup Time</th><th style="width:auto;">Pickup Location</th><th style="width:auto;">Destination</th></tr>
             </thead>
             <tbody>${legRows}</tbody>
           </table>
@@ -166,7 +166,8 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
     .activity-header { background: #f4f4f7; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 13px; }
     .badge { border: 1px solid #bbb; border-radius: 4px; padding: 2px 8px; font-weight: 600; }
     .loc { color: #666; }
-    table { width: 100%; border-collapse: collapse; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    td { word-wrap: break-word; overflow-wrap: break-word; }
     th, td { text-align: left; padding: 6px 12px; border-top: 1px solid #eee; font-size: 13px; }
     th { background: #fafafa; }
   </style>
