@@ -323,9 +323,13 @@ Deno.serve(async (req) => {
     const fallback: string[] = [];
 
     for (const recipient of (recipients || []) as ProfileRecipient[]) {
+      const introLine =
+        body.type === "approval_decision"
+          ? `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} <strong>${escapeHtml(task.title)}</strong>.</p>`
+          : `<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} the task <strong>${escapeHtml(task.title)}</strong>.</p>`;
       const html = `
 <p>Hi ${escapeHtml(recipient.first_name || "there")},</p>
-<p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} the task <strong>${escapeHtml(task.title)}</strong>.</p>
+${introLine}
 ${dueLine}
 ${decisionBlock}
 ${messageBlock}
