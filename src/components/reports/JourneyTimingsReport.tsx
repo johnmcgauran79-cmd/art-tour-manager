@@ -166,7 +166,6 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
     .activity-header { background: #f4f4f7; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 13px; }
     .badge { border: 1px solid #bbb; border-radius: 4px; padding: 2px 8px; font-weight: 600; }
     .loc { color: #666; }
-    .times { margin-left: auto; color: #444; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 6px 12px; border-top: 1px solid #eee; font-size: 13px; }
     th { background: #fafafa; }
