@@ -182,7 +182,7 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
 export const generateJourneyTimingsCSV = (activities: Activity[]): string => {
   const coachActivities = getCoachActivities(activities);
   const escape = (v: string) => `"${(v || "").replace(/"/g, '""')}"`;
-  const header = ["Date", "Activity", "Location", "Depart", "Start", "End", "Leg", "Pickup Time", "Pickup Location", "Destination"];
+  const header = ["Date", "Activity", "Location", "Leg", "Pickup Time", "Pickup Location", "Destination"];
   const rows: string[] = [header.map(escape).join(",")];
 
   coachActivities.forEach((activity) => {
@@ -190,9 +190,6 @@ export const generateJourneyTimingsCSV = (activities: Activity[]): string => {
       activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : "Date TBC",
       activity.name || "",
       activity.location || "",
-      formatTime(activity.depart_for_activity),
-      formatTime(activity.start_time),
-      formatTime(activity.end_time),
     ];
     const journeys = sortedJourneys(activity);
     if (journeys.length === 0) {
