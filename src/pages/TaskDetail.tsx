@@ -54,6 +54,13 @@ export default function TaskDetail() {
   const autoUnblock = useAutoUnblockTasks();
   const { data: tours } = useTours();
 
+  const { data: commentsData } = useTaskComments(id || "");
+  const { data: subtasksData } = useTaskSubtasks(id || "");
+  const { data: attachmentsData } = useTaskAttachments(id || "");
+  const commentsCount = commentsData?.length || 0;
+  const subtasksCount = subtasksData?.length || 0;
+  const filesCount = attachmentsData?.length || 0;
+
   // Editable form state
   const [edited, setEdited] = useState<Partial<EditableFields>>({});
 
