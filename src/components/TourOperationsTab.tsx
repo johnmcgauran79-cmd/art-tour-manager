@@ -5,19 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Phone, Utensils, Hotel, Users, FileText, ClipboardList, Settings, Plus, Wrench, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck, BellRing, Bus } from "lucide-react";
+import { Phone, Utensils, Hotel, Users, FileText, Grid3X3, Mail, Bell, BookUser, Megaphone, UserCheck, MapPin, ClipboardCheck, Bus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTourBookings } from "@/hooks/useTourBookings";
 import { useHotels } from "@/hooks/useHotels";
 import { useActivities } from "@/hooks/useActivities";
-import { useTasks, Task } from "@/hooks/useTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { TourOperationsReportsModal } from "@/components/TourOperationsReportsModal";
-import { StreamlinedTasksTable } from "@/components/StreamlinedTasksTable";
-import { AddTaskModal } from "@/components/AddTaskModal";
-import { TaskNotificationsModal } from "@/components/tasks/TaskNotificationsModal";
-import { FilteredTasksModal } from "@/components/FilteredTasksModal";
-import { CleanupAutomatedTasksModal } from "@/components/CleanupAutomatedTasksModal";
 import { TourOperationsNotesSection } from "@/components/TourOperationsNotesSection";
 import { usePickupReportData } from "@/components/reports/PickupLocationReport";
 import { HostFlightsSection } from "@/components/HostFlightsSection";
@@ -47,19 +41,12 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const { data: tourBookings = [] } = useTourBookings(tourId);
   const { data: hotels } = useHotels(tourId);
   const { data: activities } = useActivities(tourId);
-  const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
   const { userRole } = useAuth();
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
-  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
-  const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
-  const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   
   const [formResponsesModalOpen, setFormResponsesModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | 'journeytimings' | null>(null);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-  const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
   const { unacknowledgedCount } = useTourAlerts(tourId);
   const { changeCount: tourOpsChangeCount } = useTourOpsReview(tourId);
@@ -229,73 +216,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
     
     // Navigate to booking detail page
     navigate(`/bookings/${bookingId}`);
-  };
-
-  const handleTaskClick = (task: Task) => {
-    navigate(`/tasks/${task.id}`);
-  };
-
-  const handleFilteredTasksModalClose = (open: boolean) => {
-    setFilteredTasksModalOpen(open);
-    if (!open) {
-      setFilteredTasks([]);
-      setFilteredTasksTitle("");
-    }
-  };
-
-  // Task statistics
-  const activeTasks = tasks?.filter(task => task.status !== 'completed' && task.status !== 'cancelled') || [];
-  const completedTasks = tasks?.filter(task => task.status === 'completed' || task.status === 'cancelled') || [];
-  const criticalTasks = activeTasks.filter(task => task.priority === 'critical');
-  const overdueTasks = activeTasks.filter(task => 
-    task.due_date && new Date(task.due_date) < new Date()
-  );
-  const automatedTasks = tasks?.filter(task => task.is_automated) || [];
-
-  // Check for duplicates in automated tasks
-  const automatedTaskTitles = automatedTasks.map(task => task.title);
-  const duplicateCount = automatedTaskTitles.length - new Set(automatedTaskTitles).size;
-  const hasDuplicates = duplicateCount > 0;
-  const hasAutomatedTasks = automatedTasks.length > 0;
-  
-  // Only show sync button for admin users
-  const isAdmin = userRole === 'admin';
-  const shouldShowCleanupButton = hasAutomatedTasks && isAdmin;
-
-  const handleTaskStatsClick = (type: 'total' | 'active' | 'critical' | 'overdue' | 'automated' | 'completed') => {
-    let filtered: Task[] = [];
-    let title = "";
-
-    switch (type) {
-      case 'total':
-        filtered = tasks || [];
-        title = "All Tasks";
-        break;
-      case 'active':
-        filtered = activeTasks;
-        title = "Active Tasks";
-        break;
-      case 'critical':
-        filtered = criticalTasks;
-        title = "Critical Tasks";
-        break;
-      case 'overdue':
-        filtered = overdueTasks;
-        title = "Overdue Tasks";
-        break;
-      case 'automated':
-        filtered = automatedTasks;
-        title = "Automated Tasks";
-        break;
-      case 'completed':
-        filtered = completedTasks;
-        title = "Completed Tasks";
-        break;
-    }
-
-    setFilteredTasks(filtered);
-    setFilteredTasksTitle(title);
-    setFilteredTasksModalOpen(true);
   };
 
   const { toast: toastFn } = useToast();
@@ -581,154 +501,6 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         onNavigate={onNavigate}
       />
 
-      {/* Tour Tasks Management */}
-      <Card className="border-brand-navy/20 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Settings className="h-5 w-5 text-brand-navy" />
-              <CardTitle className="text-brand-navy">Tour Task Management</CardTitle>
-              <Badge variant="secondary" className="bg-brand-yellow/20 text-brand-navy">
-                Operations Control
-              </Badge>
-              {hasDuplicates && (
-                <Badge variant="destructive" className="ml-2">
-                  {duplicateCount} Duplicates
-                </Badge>
-              )}
-              {!hasAutomatedTasks && (
-                <Badge variant="outline" className="ml-2 border-orange-200 text-orange-700">
-                  No Auto Tasks
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {shouldShowCleanupButton && (
-                <Button
-                  onClick={() => setCleanupModalOpen(true)}
-                  size="sm"
-                  variant="outline"
-                  className="flex items-center gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
-                >
-                  <Wrench className="h-4 w-4" />
-                  Sync Tasks
-                </Button>
-              )}
-              <Button
-                onClick={() => setAddTaskModalOpen(true)}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                Add Task
-              </Button>
-              <Button
-                onClick={() => setNotificationsModalOpen(true)}
-                size="sm"
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <BellRing className="h-4 w-4" />
-                Task Reminders
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {/* Task Statistics Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-6">
-            <div 
-              className="text-center p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 hover:border-gray-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleTaskStatsClick('total')}
-            >
-              <div className="bg-gray-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-gray-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-gray-600" />
-              </div>
-              <p className="font-semibold text-gray-800 text-xs">Total Tasks</p>
-              <p className="text-xs text-gray-600">{tasks?.length || 0} tasks</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-blue-200 rounded-lg cursor-pointer hover:bg-blue-50 hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleTaskStatsClick('active')}
-            >
-              <div className="bg-blue-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-blue-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-blue-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-blue-700 text-xs">Active Tasks</p>
-              <p className="text-xs text-gray-600">{activeTasks.length} pending</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-50 hover:border-red-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleTaskStatsClick('critical')}
-            >
-              <div className="bg-red-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-red-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-red-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-red-700 text-xs">Critical Tasks</p>
-              <p className="text-xs text-gray-600">{criticalTasks.length} urgent</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-orange-200 rounded-lg cursor-pointer hover:bg-orange-50 hover:border-orange-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleTaskStatsClick('overdue')}
-            >
-              <div className="bg-orange-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-orange-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-orange-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-orange-700 text-xs">Overdue Tasks</p>
-              <p className="text-xs text-gray-600">{overdueTasks.length} overdue</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-green-200 rounded-lg cursor-pointer hover:bg-green-50 hover:border-green-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleTaskStatsClick('completed')}
-            >
-              <div className="bg-green-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-green-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-green-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-green-700 text-xs">Completed Tasks</p>
-              <p className="text-xs text-gray-600">{completedTasks.length} done</p>
-            </div>
-            <div 
-              className="text-center p-3 border-2 border-purple-200 rounded-lg cursor-pointer hover:bg-purple-50 hover:border-purple-300 hover:shadow-md transition-all duration-200 group"
-              onClick={() => handleTaskStatsClick('automated')}
-            >
-              <div className="bg-purple-100 p-2 rounded-full mx-auto mb-2 w-fit group-hover:bg-purple-200 transition-colors">
-                <ClipboardList className="h-5 w-5 text-purple-600" />
-              </div>
-              <p className="font-semibold text-gray-800 group-hover:text-purple-700 text-xs">Automated Tasks</p>
-              <p className="text-xs text-gray-600">{automatedTasks.length} auto</p>
-            </div>
-          </div>
-          
-          <div className="p-3 bg-brand-navy/5 border border-brand-navy/20 rounded-lg">
-            <p className="text-xs text-brand-navy">
-              <strong className="text-brand-navy">Task Synchronization:</strong> Use "Sync Tasks" to ensure all automated tasks 
-              are up-to-date with current tour dates and remove duplicates. This ensures proper task scheduling and eliminates conflicts.
-              {!hasAutomatedTasks && (
-                <span className="text-orange-700 ml-2">
-                  <strong>Notice:</strong> This tour has no automated tasks. Use "Sync Tasks" to generate the standard operation tasks.
-                </span>
-              )}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tour Tasks Table */}
-      <Card className="border-brand-navy/20">
-        <CardHeader>
-          <CardTitle className="text-brand-navy">Tour Tasks</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <StreamlinedTasksTable
-            tasks={activeTasks}
-            loading={tasksLoading}
-            title=""
-            onCreateTask={() => setAddTaskModalOpen(true)}
-            onTaskClick={handleTaskClick}
-          />
-        </CardContent>
-      </Card>
-
       {/* Host Flights Section */}
       <HostFlightsSection tourId={tourId} />
 
@@ -747,38 +519,11 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
         tourId={tourId}
       />
 
-      <AddTaskModal
-        open={addTaskModalOpen}
-        onOpenChange={setAddTaskModalOpen}
-        tourId={tourId}
-      />
-
-      <FilteredTasksModal
-        open={filteredTasksModalOpen}
-        onOpenChange={handleFilteredTasksModalClose}
-        tasks={filteredTasks}
-        title={filteredTasksTitle}
-        onTaskClick={handleTaskClick}
-      />
-
-      <CleanupAutomatedTasksModal
-        tourId={tourId}
-        tourName={tourName}
-        open={cleanupModalOpen}
-        onOpenChange={setCleanupModalOpen}
-      />
-
-
       <FormResponsesModal
         open={formResponsesModalOpen}
         onOpenChange={setFormResponsesModalOpen}
         tourId={tourId}
         tourName={tourName}
-      />
-
-      <TaskNotificationsModal
-        open={notificationsModalOpen}
-        onOpenChange={setNotificationsModalOpen}
       />
     </div>
   );
