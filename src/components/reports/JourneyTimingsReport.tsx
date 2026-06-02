@@ -137,7 +137,6 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
             <span class="badge">${activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : "Date TBC"}</span>
             <strong>${activity.name || ""}</strong>
             ${activity.location ? `<span class="loc">${activity.location}</span>` : ""}
-            <span class="times">Depart: <b>${formatTime(activity.depart_for_activity)}</b> &nbsp; Start: <b>${formatTime(activity.start_time)}</b> &nbsp; End: <b>${formatTime(activity.end_time)}</b></span>
           </div>
           <table>
             <thead>
