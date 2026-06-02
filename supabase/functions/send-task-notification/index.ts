@@ -147,6 +147,40 @@ Deno.serve(async (req) => {
           : "Approval update on your task"
         : "You have been assigned a new task";
 
+    // ---- In-app notifications -------------------------------------------------
+    // Always write an in-app notification row for every recipient (regardless of
+    // their Teams/email channel preference) so the bell/panel stays in sync.
+    const inAppType =
+      body.type === "mention"
+        ? "task_mention"
+        : body.type === "assignment"
+        ? "task_assignment"
+        : body.type; // subtask_assignment | approval_request | approval_decision
+    const inAppMessage =
+      body.type === "approval_decision"
+        ? `${actorName} ${decisionVerb}${body.message ? `: ${body.message}` : ""}`
+        : body.type === "subtask_assignment"
+        ? `${actorName} assigned you the subtask "${(body.message || "").trim()}"`
+        : body.type === "mention"
+        ? `${actorName} mentioned you in a comment`
+        : body.type === "approval_request"
+        ? `${actorName} requested your approval`
+        : `${actorName} assigned you this task`;
+    try {
+      await supabase.from("user_notifications").insert(
+        recipientIds.map((uid) => ({
+          user_id: uid,
+          title: task.title,
+          message: inAppMessage,
+          type: inAppType,
+          priority: (task as any).priority || "medium",
+          related_id: task.id,
+        }))
+      );
+    } catch (notifErr) {
+      console.error("Failed to write in-app notifications:", notifErr);
+    }
+
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
     const dueLine = task.due_date
       ? `<p style="margin:0 0 8px;color:#55575d;font-size:14px;">Due: <strong>${new Date(task.due_date).toLocaleString("en-AU", { day: "2-digit", month: "short", year: "numeric" })}</strong></p>`

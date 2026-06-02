@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { UserDropdown } from "@/components/UserDropdown";
 import { DateTimeDisplay } from "./DateTimeDisplay";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { useIsMobile } from "@/hooks/use-mobile";
 interface DashboardHeaderProps {
   isAdmin: boolean;
@@ -38,6 +39,7 @@ export const DashboardHeader = ({
           </div>
           <div className="flex items-center space-x-6">
             {!isMobile && <DateTimeDisplay />}
+            <NotificationBell />
             <UserDropdown />
           </div>
         </div>
