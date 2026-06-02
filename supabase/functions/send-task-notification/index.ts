@@ -14,6 +14,8 @@ interface NotificationRequest {
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
+  decision?: "approved" | "changes_requested";
+  resultingStatus?: string | null;
 }
 
 const APP_URL = "https://art-tour-manager.lovable.app";
