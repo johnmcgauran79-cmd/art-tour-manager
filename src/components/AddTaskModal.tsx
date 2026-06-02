@@ -224,6 +224,39 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
         }
       }
 
+      // Upload any attachments selected in this modal
+      if (created?.id && draftAttachments.length > 0) {
+        const { data: userRes } = await supabase.auth.getUser();
+        const actorId = userRes.user?.id ?? null;
+        for (const file of draftAttachments) {
+          try {
+            const fileName = `${Date.now()}-${file.name}`;
+            const filePath = `tasks/${created.id}/${fileName}`;
+            const { error: uploadError } = await supabase.storage
+              .from('attachments')
+              .upload(filePath, file);
+            if (uploadError) throw uploadError;
+            const { error: dbError } = await supabase.from('task_attachments').insert({
+              task_id: created.id,
+              file_name: file.name,
+              file_path: filePath,
+              file_size: file.size,
+              file_type: file.type,
+              uploaded_by: actorId!,
+            });
+            if (dbError) throw dbError;
+          } catch (attachError) {
+            console.error('Error uploading attachment:', attachError);
+            toast({
+              title: "Attachment not uploaded",
+              description: `Failed to upload ${file.name}.`,
+              variant: "destructive",
+            });
+          }
+        }
+        queryClient.invalidateQueries({ queryKey: ['task-attachments', created.id] });
+      }
+
       console.log('Task created successfully, resetting form');
 
       // Reset form
@@ -244,6 +277,7 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
       setValidationWarnings([]);
       setDraftSubtasks([]);
       setNewSubtaskTitle("");
+      setDraftAttachments([]);
       
       onOpenChange(false);
     } catch (error) {
