@@ -187,7 +187,6 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:32px 36px;">
 <h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
-<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? "responded to your approval request on" : "assigned you to"} the task below.</p>
 <p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? decisionVerb : "assigned you to"}${body.type === "approval_decision" ? "" : " the task below"}${body.type === "approval_decision" ? "." : "."}</p>
 <h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
 <p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
