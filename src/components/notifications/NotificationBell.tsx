@@ -53,6 +53,9 @@ export const NotificationBell = () => {
     }
   };
 
+  // Only show unread notifications — reading or marking all read removes them from the list
+  const visibleNotifications = notifications.filter((n) => !n.read);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -91,18 +94,18 @@ export const NotificationBell = () => {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-[420px]">
+        <ScrollArea className="h-[420px]">
           {isLoading ? (
             <div className="px-4 py-10 text-center text-sm text-muted-foreground">
               Loading…
             </div>
-          ) : notifications.length === 0 ? (
+          ) : visibleNotifications.length === 0 ? (
             <div className="px-4 py-10 text-center text-sm text-muted-foreground">
               You're all caught up.
             </div>
           ) : (
             <ul className="divide-y">
-              {notifications.map((n) => (
+              {visibleNotifications.map((n) => (
                 <li key={n.id}>
                   <button
                     onClick={() => handleClick(n)}
