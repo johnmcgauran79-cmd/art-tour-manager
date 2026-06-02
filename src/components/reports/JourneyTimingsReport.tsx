@@ -71,10 +71,9 @@ export const JourneyTimingsReport = ({ activities, tourName }: JourneyTimingsRep
               {activity.location && (
                 <span className="text-sm text-muted-foreground">{activity.location}</span>
               )}
-              <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
-                <span>Depart: <strong className="text-foreground">{formatTime(activity.depart_for_activity)}</strong></span>
-                <span>Start: <strong className="text-foreground">{formatTime(activity.start_time)}</strong></span>
-                <span>End: <strong className="text-foreground">{formatTime(activity.end_time)}</strong></span>
+              <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                <Bus className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-wide">Private Coach</span>
               </div>
             </div>
             <Table>
