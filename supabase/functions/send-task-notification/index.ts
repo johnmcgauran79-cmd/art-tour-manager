@@ -108,6 +108,14 @@ Deno.serve(async (req) => {
     const emailHeaderImageUrl = (headerSetting?.setting_value as string) ||
       "https://art-tour-manager.lovable.app/images/email-header-default.png";
 
+    // Human-readable decision label for approval_decision notifications
+    const decisionLabel =
+      body.decision === "approved"
+        ? "Approved"
+        : body.decision === "changes_requested"
+        ? "Changes Requested"
+        : null;
+
     const subjectLine =
       body.type === "mention"
         ? `${actorName} mentioned you on a task`
@@ -116,7 +124,7 @@ Deno.serve(async (req) => {
         : body.type === "approval_request"
         ? `${actorName} requested your approval on a task`
         : body.type === "approval_decision"
-        ? `${actorName} responded to your approval request`
+        ? `${actorName} ${decisionLabel ? decisionLabel : "responded to"}${decisionLabel ? "" : " your approval request"}: ${task.title}`
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
@@ -127,7 +135,9 @@ Deno.serve(async (req) => {
         : body.type === "approval_request"
         ? "Your approval is required"
         : body.type === "approval_decision"
-        ? "Approval update on your task"
+        ? decisionLabel
+          ? `Approval ${decisionLabel}`
+          : "Approval update on your task"
         : "You have been assigned a new task";
 
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
