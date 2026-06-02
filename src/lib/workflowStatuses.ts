@@ -63,6 +63,7 @@ export const getBookingWorkflowStatusColor = (
     enquiry_sent: "bg-status-pending text-status-pending-foreground",
     quote_received: "bg-status-waiting text-status-waiting-foreground",
     on_hold: "bg-status-waiting text-status-waiting-foreground",
+    contract_signed: "bg-status-instalment-paid text-status-instalment-paid-foreground",
     booked: "bg-status-deposited text-status-deposited-foreground",
     confirmed: "bg-status-fully-paid text-status-fully-paid-foreground",
     finalised: "bg-status-completed text-status-completed-foreground",
