@@ -291,18 +291,33 @@ Deno.serve(async (req) => {
         })}</strong></p>`
       : "";
 
+    const decisionLabel =
+      body.decision === "approved"
+        ? "Approved"
+        : body.decision === "changes_requested"
+        ? "Changes Requested"
+        : null;
+
     const verbHtml =
       body.type === "mention"
         ? "mentioned you in a comment on"
         : body.type === "approval_request"
         ? "has requested your approval on"
         : body.type === "approval_decision"
-        ? "responded to your approval request on"
+        ? body.decision === "approved"
+          ? "approved your task"
+          : body.decision === "changes_requested"
+          ? "requested changes on your task"
+          : "responded to your approval request on"
         : body.type === "subtask_assignment"
         ? "assigned you a subtask on"
         : "assigned you to";
 
     const messageBlock = escapedMessage ? `<blockquote>${escapedMessage}</blockquote>` : "";
+    const decisionBlock =
+      body.type === "approval_decision" && decisionLabel
+        ? `<p><strong>Decision:</strong> ${decisionLabel}</p>`
+        : "";
 
     const sent: string[] = [];
     const fallback: string[] = [];
@@ -312,6 +327,7 @@ Deno.serve(async (req) => {
 <p>Hi ${escapeHtml(recipient.first_name || "there")},</p>
 <p><strong>${escapeHtml(actorName)}</strong> ${verbHtml} the task <strong>${escapeHtml(task.title)}</strong>.</p>
 ${dueLine}
+${decisionBlock}
 ${messageBlock}
 <p><a href="${taskUrl}">Open task</a></p>
 `.trim();
