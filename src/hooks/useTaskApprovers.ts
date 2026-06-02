@@ -283,9 +283,9 @@ export const useRecordApprovalDecision = () => {
               taskId: params.taskId,
               recipientUserIds: requesterIds,
               actorUserId: actorId,
-              message: `${params.decision === "approved" ? "approved" : "requested changes on"} this task${
-                params.notes?.trim() ? `: ${params.notes.trim()}` : ""
-              }`,
+              decision: params.decision,
+              resultingStatus: newStatus,
+              message: params.notes?.trim() || undefined,
             },
           })
           .catch((e) => console.error("Notification failed:", e));

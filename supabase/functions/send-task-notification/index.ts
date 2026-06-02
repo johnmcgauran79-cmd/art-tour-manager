@@ -14,6 +14,8 @@ interface NotificationRequest {
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
+  decision?: "approved" | "changes_requested";
+  resultingStatus?: string | null;
 }
 
 const APP_URL = "https://art-tour-manager.lovable.app";
@@ -106,6 +108,21 @@ Deno.serve(async (req) => {
     const emailHeaderImageUrl = (headerSetting?.setting_value as string) ||
       "https://art-tour-manager.lovable.app/images/email-header-default.png";
 
+    // Human-readable decision label for approval_decision notifications
+    const decisionLabel =
+      body.decision === "approved"
+        ? "Approved"
+        : body.decision === "changes_requested"
+        ? "Changes Requested"
+        : null;
+
+    const decisionVerb =
+      body.decision === "approved"
+        ? "approved your task"
+        : body.decision === "changes_requested"
+        ? "requested changes on your task"
+        : "responded to your approval request on";
+
     const subjectLine =
       body.type === "mention"
         ? `${actorName} mentioned you on a task`
@@ -114,7 +131,7 @@ Deno.serve(async (req) => {
         : body.type === "approval_request"
         ? `${actorName} requested your approval on a task`
         : body.type === "approval_decision"
-        ? `${actorName} responded to your approval request`
+        ? `${actorName} ${decisionVerb}: ${task.title}`
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
@@ -125,7 +142,9 @@ Deno.serve(async (req) => {
         : body.type === "approval_request"
         ? "Your approval is required"
         : body.type === "approval_decision"
-        ? "Approval update on your task"
+        ? decisionLabel
+          ? `Approval ${decisionLabel}`
+          : "Approval update on your task"
         : "You have been assigned a new task";
 
     const taskUrl = `${APP_URL}/tasks/${task.id}`;
@@ -168,10 +187,11 @@ Deno.serve(async (req) => {
 </td></tr>
 <tr><td style="padding:32px 36px;">
 <h2 style="color:#1a2332;margin:0 0 8px;font-size:18px;">Hi ${r.first_name || "there"},</h2>
-<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? "responded to your approval request on" : "assigned you to"} the task below.</p>
+<p style="color:#55575d;font-size:15px;line-height:1.6;margin:0 0 18px;"><strong>${actorName}</strong> ${body.type === "mention" ? "mentioned you in a comment on" : body.type === "subtask_assignment" ? "assigned you a subtask on" : body.type === "approval_request" ? "has requested your approval on" : body.type === "approval_decision" ? decisionVerb : "assigned you to"}${body.type === "approval_decision" ? "" : " the task below"}${body.type === "approval_decision" ? "." : "."}</p>
 <h3 style="color:#1a2332;margin:0 0 8px;font-size:17px;">${bodyHeading}</h3>
 <p style="margin:0 0 4px;color:#1a2332;font-size:16px;font-weight:600;">${task.title}</p>
 ${dueLine}
+${body.type === "approval_decision" && decisionLabel ? `<p style="margin:8px 0 0;"><span style="display:inline-block;background-color:${body.decision === "approved" ? "#dcfce7" : "#fef3c7"};color:${body.decision === "approved" ? "#166534" : "#92400e"};font-size:13px;font-weight:700;padding:5px 12px;border-radius:14px;">${decisionLabel}</span></p>` : ""}
 ${subtaskBlock}
 ${messageBlock}
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:8px 0 0;">
