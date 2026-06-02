@@ -30,6 +30,9 @@ import { cn } from "@/lib/utils";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 import { TaskLinkedItemsPanel } from "@/components/entityLinks/TaskLinkedItemsPanel";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
+import { useTaskComments } from "@/hooks/useTaskComments";
+import { useTaskSubtasks } from "@/hooks/useTaskSubtasks";
+import { useTaskAttachments } from "@/hooks/useTaskAttachments";
 
 type EditableFields = Pick<Task, "title" | "description" | "priority" | "category" | "due_date" | "url_reference"> & {
   tour_id: string | null;
@@ -50,6 +53,13 @@ export default function TaskDetail() {
   const deleteTask = useDeleteTask();
   const autoUnblock = useAutoUnblockTasks();
   const { data: tours } = useTours();
+
+  const { data: commentsData } = useTaskComments(id || "");
+  const { data: subtasksData } = useTaskSubtasks(id || "");
+  const { data: attachmentsData } = useTaskAttachments(id || "");
+  const commentsCount = commentsData?.length || 0;
+  const subtasksCount = subtasksData?.length || 0;
+  const filesCount = attachmentsData?.length || 0;
 
   // Editable form state
   const [edited, setEdited] = useState<Partial<EditableFields>>({});
@@ -477,9 +487,9 @@ export default function TaskDetail() {
       <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
         <div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-thin">
           <TabsList className="inline-flex w-max min-w-full justify-start">
-            <TabsTrigger value="comments">Comments</TabsTrigger>
-            <TabsTrigger value="subtasks">Subtasks</TabsTrigger>
-            <TabsTrigger value="files">Files</TabsTrigger>
+            <TabsTrigger value="comments">Comments{commentsCount > 0 ? ` (${commentsCount})` : ""}</TabsTrigger>
+            <TabsTrigger value="subtasks">Subtasks{subtasksCount > 0 ? ` (${subtasksCount})` : ""}</TabsTrigger>
+            <TabsTrigger value="files">Files{filesCount > 0 ? ` (${filesCount})` : ""}</TabsTrigger>
             {/* Dependencies tab hidden — feature dormant, can be re-enabled when fully built out */}
             {/* <TabsTrigger value="dependencies">Dependencies</TabsTrigger> */}
             <TabsTrigger value="audit">Audit</TabsTrigger>
