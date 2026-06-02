@@ -284,25 +284,17 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </details>
           )}
 
-          {/* Notes */}
-          {(activity.notes || activity.operations_notes) && (
+          {/* Operations Notes */}
+          {activity.operations_notes && userRole !== 'host' && (
             <details className="group" open>
               <summary className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider cursor-pointer list-none">
                 Notes
               </summary>
               <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4 space-y-2 sm:space-y-3 mt-1">
-                {activity.notes && (
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase">Activity Notes</span>
-                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.notes}</p>
-                  </div>
-                )}
-                {activity.operations_notes && userRole !== 'host' && (
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase">Operations Notes</span>
-                    <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
-                  </div>
-                )}
+                <div>
+                  <span className="text-xs text-muted-foreground uppercase">Operations Notes</span>
+                  <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.operations_notes}</p>
+                </div>
               </div>
             </details>
           )}
