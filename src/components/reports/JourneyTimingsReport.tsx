@@ -71,10 +71,9 @@ export const JourneyTimingsReport = ({ activities, tourName }: JourneyTimingsRep
               {activity.location && (
                 <span className="text-sm text-muted-foreground">{activity.location}</span>
               )}
-              <div className="ml-auto flex items-center gap-4 text-sm text-muted-foreground">
-                <span>Depart: <strong className="text-foreground">{formatTime(activity.depart_for_activity)}</strong></span>
-                <span>Start: <strong className="text-foreground">{formatTime(activity.start_time)}</strong></span>
-                <span>End: <strong className="text-foreground">{formatTime(activity.end_time)}</strong></span>
+              <div className="ml-auto flex items-center gap-2 text-sm text-muted-foreground">
+                <Bus className="h-4 w-4" />
+                <span className="text-xs uppercase tracking-wide">Private Coach</span>
               </div>
             </div>
             <Table>
@@ -138,7 +137,6 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
             <span class="badge">${activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : "Date TBC"}</span>
             <strong>${activity.name || ""}</strong>
             ${activity.location ? `<span class="loc">${activity.location}</span>` : ""}
-            <span class="times">Depart: <b>${formatTime(activity.depart_for_activity)}</b> &nbsp; Start: <b>${formatTime(activity.start_time)}</b> &nbsp; End: <b>${formatTime(activity.end_time)}</b></span>
           </div>
           <table>
             <thead>
@@ -168,7 +166,6 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
     .activity-header { background: #f4f4f7; padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 13px; }
     .badge { border: 1px solid #bbb; border-radius: 4px; padding: 2px 8px; font-weight: 600; }
     .loc { color: #666; }
-    .times { margin-left: auto; color: #444; }
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 6px 12px; border-top: 1px solid #eee; font-size: 13px; }
     th { background: #fafafa; }
@@ -185,7 +182,7 @@ export const generateJourneyTimingsHTML = (activities: Activity[], tourName: str
 export const generateJourneyTimingsCSV = (activities: Activity[]): string => {
   const coachActivities = getCoachActivities(activities);
   const escape = (v: string) => `"${(v || "").replace(/"/g, '""')}"`;
-  const header = ["Date", "Activity", "Location", "Depart", "Start", "End", "Leg", "Pickup Time", "Pickup Location", "Destination"];
+  const header = ["Date", "Activity", "Location", "Leg", "Pickup Time", "Pickup Location", "Destination"];
   const rows: string[] = [header.map(escape).join(",")];
 
   coachActivities.forEach((activity) => {
@@ -193,9 +190,6 @@ export const generateJourneyTimingsCSV = (activities: Activity[]): string => {
       activity.activity_date ? formatDateToDDMMYYYY(activity.activity_date) : "Date TBC",
       activity.name || "",
       activity.location || "",
-      formatTime(activity.depart_for_activity),
-      formatTime(activity.start_time),
-      formatTime(activity.end_time),
     ];
     const journeys = sortedJourneys(activity);
     if (journeys.length === 0) {
