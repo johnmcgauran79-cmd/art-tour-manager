@@ -15,6 +15,8 @@ interface TeamsNotificationRequest {
   recipientUserIds: string[];
   actorUserId: string;
   message?: string;
+  decision?: "approved" | "changes_requested";
+  resultingStatus?: string | null;
 }
 
 interface ProfileRecipient {
