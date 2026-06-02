@@ -116,6 +116,13 @@ Deno.serve(async (req) => {
         ? "Changes Requested"
         : null;
 
+    const decisionVerb =
+      body.decision === "approved"
+        ? "approved your task"
+        : body.decision === "changes_requested"
+        ? "requested changes on your task"
+        : "responded to your approval request on";
+
     const subjectLine =
       body.type === "mention"
         ? `${actorName} mentioned you on a task`
@@ -124,7 +131,7 @@ Deno.serve(async (req) => {
         : body.type === "approval_request"
         ? `${actorName} requested your approval on a task`
         : body.type === "approval_decision"
-        ? `${actorName} ${decisionLabel ? decisionLabel : "responded to"}${decisionLabel ? "" : " your approval request"}: ${task.title}`
+        ? `${actorName} ${decisionVerb}: ${task.title}`
         : `${actorName} assigned you a task`;
 
     const bodyHeading =
