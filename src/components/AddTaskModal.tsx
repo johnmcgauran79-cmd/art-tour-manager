@@ -871,6 +871,74 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
             </p>
           </div>
 
+          {/* Attachments Section */}
+          <div className="space-y-3 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <Paperclip className="h-4 w-4" />
+              <Label className="font-medium">
+                Attachments{" "}
+                {draftAttachments.length > 0 && (
+                  <span className="text-muted-foreground font-normal">
+                    ({draftAttachments.length})
+                  </span>
+                )}
+              </Label>
+            </div>
+
+            {draftAttachments.length > 0 && (
+              <div className="space-y-2">
+                {draftAttachments.map((file, index) => (
+                  <div
+                    key={`${file.name}-${index}`}
+                    className="flex items-center gap-2 rounded border border-border/60 px-3 py-2"
+                  >
+                    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm truncate flex-1">{file.name}</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {formatFileSize(file.size)}
+                    </span>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      onClick={() => removeDraftAttachment(index)}
+                      aria-label="Remove attachment"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div>
+              <Input
+                id="task-attachments"
+                type="file"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  addDraftAttachments(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById("task-attachments")?.click()}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add files
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Files will be uploaded when the task is created.
+            </p>
+          </div>
+
           <div className="flex justify-end gap-2 pt-4">
             <Button
               type="button"
