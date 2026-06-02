@@ -171,6 +171,16 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
             </div>
           </div>
 
+          {/* Activity Notes - shown first after Basic Information */}
+          {activity.notes && (
+            <div className="space-y-1">
+              <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground uppercase tracking-wider">Activity Notes</h4>
+              <div className="bg-muted/30 rounded-lg p-2.5 sm:p-4">
+                <p className="text-xs sm:text-sm whitespace-pre-wrap">{activity.notes}</p>
+              </div>
+            </div>
+          )}
+
           {/* Contact Details */}
           {(activity.contact_name || activity.contact_phone || activity.contact_email) && (
             <div className="space-y-1">
