@@ -30,6 +30,9 @@ import { cn } from "@/lib/utils";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
 import { TaskLinkedItemsPanel } from "@/components/entityLinks/TaskLinkedItemsPanel";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
+import { useTaskComments } from "@/hooks/useTaskComments";
+import { useTaskSubtasks } from "@/hooks/useTaskSubtasks";
+import { useTaskAttachments } from "@/hooks/useTaskAttachments";
 
 type EditableFields = Pick<Task, "title" | "description" | "priority" | "category" | "due_date" | "url_reference"> & {
   tour_id: string | null;
