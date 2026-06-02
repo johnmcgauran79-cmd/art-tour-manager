@@ -326,6 +326,21 @@ export const AddTaskModal = ({ open, onOpenChange, tourId }: AddTaskModalProps) 
     setDraftSubtasks((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const addDraftAttachments = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setDraftAttachments((prev) => [...prev, ...Array.from(files)]);
+  };
+
+  const removeDraftAttachment = (index: number) => {
+    setDraftAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const handleDateSelect = (date: Date | undefined) => {
     setDueDate(date);
     setIsDatePickerOpen(false);
