@@ -41,19 +41,12 @@ export const TourOperationsTab = ({ tourId, tourName, travelDocumentsRequired = 
   const { data: tourBookings = [] } = useTourBookings(tourId);
   const { data: hotels } = useHotels(tourId);
   const { data: activities } = useActivities(tourId);
-  const { data: tasks, isLoading: tasksLoading } = useTasks(tourId);
   const { userRole } = useAuth();
   const [reportsModalOpen, setReportsModalOpen] = useState(false);
-  const [addTaskModalOpen, setAddTaskModalOpen] = useState(false);
-  const [notificationsModalOpen, setNotificationsModalOpen] = useState(false);
-  const [filteredTasksModalOpen, setFilteredTasksModalOpen] = useState(false);
-  const [cleanupModalOpen, setCleanupModalOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   
   const [formResponsesModalOpen, setFormResponsesModalOpen] = useState(false);
   const [selectedReportType, setSelectedReportType] = useState<'contacts' | 'dietary' | 'summary' | 'hotel' | 'passengerlist' | 'activitymatrix' | 'emailtracking' | 'passport' | 'tourops' | 'tourattendees' | 'pickup' | 'journeytimings' | null>(null);
-  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
-  const [filteredTasksTitle, setFilteredTasksTitle] = useState("");
   const [activityBookingsData, setActivityBookingsData] = useState<any>({});
   const { unacknowledgedCount } = useTourAlerts(tourId);
   const { changeCount: tourOpsChangeCount } = useTourOpsReview(tourId);
