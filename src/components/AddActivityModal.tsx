@@ -238,44 +238,6 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
             </div>
           </div>
 
-          {/* Cancellation */}
-          <div className="space-y-4 rounded-md border border-border p-4">
-            <div className="space-y-2">
-              <Label htmlFor="cancellation_details">Cancellation Details</Label>
-              <Textarea
-                id="cancellation_details"
-                value={formData.cancellation_details}
-                onChange={(e) => handleInputChange("cancellation_details", e.target.value)}
-                rows={3}
-                placeholder="Notes about the cancellation (refund amount, contact, dates, etc.)"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="cancellation_status">Cancellation Status</Label>
-              <Select
-                value={formData.cancellation_status || NONE_CANCELLATION_STATUS}
-                onValueChange={(value) =>
-                  handleInputChange(
-                    "cancellation_status",
-                    value === NONE_CANCELLATION_STATUS ? "" : value
-                  )
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Not set" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NONE_CANCELLATION_STATUS}>Not set</SelectItem>
-                  {CANCELLATION_REFUND_STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
           {/* Row 3: Spots Available */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -356,10 +318,22 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
             </Select>
           </div>
 
-          {/* Hospitality */}
+          {/* Hospitality & Notes group */}
           <div className="space-y-2">
             <Label htmlFor="hospitality_inclusions">Hospitality Inclusions</Label>
             <Textarea id="hospitality_inclusions" value={formData.hospitality_inclusions} onChange={(e) => handleInputChange("hospitality_inclusions", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="notes">Activity Notes</Label>
+            <Textarea id="notes" value={formData.notes} onChange={(e) => handleInputChange("notes", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="transport_notes">Transport Notes</Label>
+            <Textarea id="transport_notes" value={formData.transport_notes} onChange={(e) => handleInputChange("transport_notes", e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="operations_notes">Operations Notes</Label>
+            <Textarea id="operations_notes" value={formData.operations_notes} onChange={(e) => handleInputChange("operations_notes", e.target.value)} rows={3} />
           </div>
 
           {/* Transport Details Section */}
@@ -418,25 +392,49 @@ export const AddActivityModal = ({ tourId, open, onOpenChange, onActivityCreated
               <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Journeys</h4>
               <JourneysEditor journeys={journeys} onChange={setJourneys} />
             </div>
+          </div>
 
+          {/* Cancellation (rarely used — kept at the bottom) */}
+          <div className="space-y-4 rounded-md border border-border p-4">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Cancellation</h3>
             <div className="space-y-2">
-              <Label htmlFor="transport_notes">Transport Notes</Label>
-              <Textarea id="transport_notes" value={formData.transport_notes} onChange={(e) => handleInputChange("transport_notes", e.target.value)} rows={3} />
+              <Label htmlFor="cancellation_terms">Cancellation / Terms</Label>
+              <Textarea id="cancellation_terms" value={formData.cancellation_terms} onChange={(e) => handleInputChange("cancellation_terms", e.target.value)} rows={3} placeholder="Booking terms, cancellation fees, costs..." />
             </div>
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-2">
-            <Label htmlFor="notes">Activity Notes</Label>
-            <Textarea id="notes" value={formData.notes} onChange={(e) => handleInputChange("notes", e.target.value)} rows={3} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="operations_notes">Operations Notes</Label>
-            <Textarea id="operations_notes" value={formData.operations_notes} onChange={(e) => handleInputChange("operations_notes", e.target.value)} rows={3} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="cancellation_terms">Cancellation / Terms</Label>
-            <Textarea id="cancellation_terms" value={formData.cancellation_terms} onChange={(e) => handleInputChange("cancellation_terms", e.target.value)} rows={3} placeholder="Booking terms, cancellation fees, costs..." />
+            <div className="space-y-2">
+              <Label htmlFor="cancellation_details">Cancellation Details</Label>
+              <Textarea
+                id="cancellation_details"
+                value={formData.cancellation_details}
+                onChange={(e) => handleInputChange("cancellation_details", e.target.value)}
+                rows={3}
+                placeholder="Notes about the cancellation (refund amount, contact, dates, etc.)"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cancellation_status">Cancellation Status</Label>
+              <Select
+                value={formData.cancellation_status || NONE_CANCELLATION_STATUS}
+                onValueChange={(value) =>
+                  handleInputChange(
+                    "cancellation_status",
+                    value === NONE_CANCELLATION_STATUS ? "" : value
+                  )
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Not set" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NONE_CANCELLATION_STATUS}>Not set</SelectItem>
+                  {CANCELLATION_REFUND_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
           {/* Queued Attachments */}
