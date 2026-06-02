@@ -19,12 +19,22 @@ import {
 import { cn } from "@/lib/utils";
 
 const TASK_TYPES = new Set([
+  "task",
   "task_assignment",
   "subtask_assignment",
   "task_mention",
   "approval_request",
   "approval_decision",
 ]);
+
+const BOOKING_TYPES = new Set(["booking"]);
+
+const routeForNotification = (n: UserNotification): string | null => {
+  if (!n.related_id) return null;
+  if (TASK_TYPES.has(n.type)) return `/tasks/${n.related_id}`;
+  if (BOOKING_TYPES.has(n.type)) return `/bookings/${n.related_id}`;
+  return null;
+};
 
 const priorityDot = (priority: string) => {
   switch (priority) {
@@ -47,8 +57,9 @@ export const NotificationBell = () => {
 
   const handleClick = (n: UserNotification) => {
     if (!n.read) markRead.mutate(n.id);
-    if (n.related_id && TASK_TYPES.has(n.type)) {
-      navigate(`/tasks/${n.related_id}`);
+    const route = routeForNotification(n);
+    if (route) {
+      navigate(route);
       setOpen(false);
     }
   };
