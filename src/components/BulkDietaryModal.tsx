@@ -23,76 +23,54 @@ export const BulkDietaryModal = ({ open, onOpenChange, tourId }: BulkDietaryModa
 
   const tourBookings = (allBookings || []).filter(booking => booking.tour_id === tourId && booking.status !== 'cancelled' && booking.status !== 'waitlisted');
 
-  useEffect(() => {
-    if (open && tourBookings.length > 0) {
-      console.log('Dietary modal opened, initializing dietary updates for tour bookings:', tourBookings);
-      const initialDietary: Record<string, string> = {};
-      tourBookings.forEach(booking => {
-        if (booking.customers?.id) {
-          initialDietary[booking.customers.id] = booking.customers.dietary_requirements || '';
+  // Flatten to a deduplicated list of all passengers (lead, pax 2, pax 3) across bookings
+  const passengers = (() => {
+    const seen = new Map<string, { id: string; name: string; dietary: string }>();
+    for (const booking of tourBookings) {
+      for (const customer of [booking.customers, (booking as any).passenger_2, (booking as any).passenger_3]) {
+        if (customer?.id && !seen.has(customer.id)) {
+          seen.set(customer.id, {
+            id: customer.id,
+            name: `${customer.first_name} ${customer.last_name}`,
+            dietary: customer.dietary_requirements || '',
+          });
         }
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  })();
+
+  useEffect(() => {
+    if (open && passengers.length > 0) {
+      const initialDietary: Record<string, string> = {};
+      passengers.forEach(p => {
+        initialDietary[p.id] = p.dietary;
       });
       setDietaryUpdates(initialDietary);
-      console.log('Initial dietary updates set:', initialDietary);
     }
   }, [open, tourId]);
 
   const handleDietaryChange = (customerId: string, newDietary: string) => {
-    console.log('handleDietaryChange called:', { customerId, newDietary });
-    console.log('Previous dietaryUpdates:', dietaryUpdates);
-    
-    setDietaryUpdates(prev => {
-      const updated = {
-        ...prev,
-        [customerId]: newDietary
-      };
-      console.log('Dietary updates after change:', updated);
-      return updated;
-    });
+    setDietaryUpdates(prev => ({ ...prev, [customerId]: newDietary }));
   };
 
   const handleBulkUpdate = async () => {
-    console.log('Starting bulk dietary update with current updates:', dietaryUpdates);
     setIsUpdating(true);
     
     try {
-      const updates = [];
-      
-      for (const booking of tourBookings) {
-        if (!booking.customers?.id) continue;
-        
-        const customerId = booking.customers.id;
-        const newDietary = dietaryUpdates[customerId];
-        const currentDietary = booking.customers.dietary_requirements || '';
-        
-        console.log(`Checking customer ${customerId}: current="${currentDietary}", new="${newDietary}"`);
-        
-        if (newDietary !== currentDietary) {
-          console.log(`Adding update for customer ${customerId}: "${currentDietary}" -> "${newDietary}"`);
-          updates.push({
-            customerId,
-            updatePromise: updateCustomer.mutateAsync({
-              id: customerId,
-              dietary_requirements: newDietary
-            })
-          });
-        }
-      }
+      const changed = passengers.filter(p => (dietaryUpdates[p.id] ?? p.dietary) !== p.dietary);
 
-      console.log(`Found ${updates.length} customers to update`);
+      if (changed.length > 0) {
+        await Promise.all(changed.map(p =>
+          updateCustomer.mutateAsync({ id: p.id, dietary_requirements: dietaryUpdates[p.id] })
+        ));
 
-      if (updates.length > 0) {
-        const updatePromises = updates.map(update => update.updatePromise);
-        await Promise.all(updatePromises);
-        console.log('All dietary updates completed successfully');
-        
         toast({
           title: "Success",
-          description: `Updated dietary requirements for ${updates.length} customer${updates.length > 1 ? 's' : ''}.`,
+          description: `Updated dietary requirements for ${changed.length} contact${changed.length > 1 ? 's' : ''}.`,
         });
         onOpenChange(false);
       } else {
-        console.log('No dietary changes detected');
         toast({
           title: "No Changes",
           description: "No dietary requirements were changed.",
@@ -110,18 +88,8 @@ export const BulkDietaryModal = ({ open, onOpenChange, tourId }: BulkDietaryModa
     }
   };
 
-  const hasChanges = tourBookings.some(booking => {
-    if (!booking.customers?.id) return false;
-    const customerId = booking.customers.id;
-    const newDietary = dietaryUpdates[customerId];
-    const currentDietary = booking.customers.dietary_requirements || '';
-    const hasChange = newDietary !== currentDietary;
-    console.log(`Customer ${customerId} has changes:`, hasChange, `("${currentDietary}" -> "${newDietary}")`);
-    return hasChange;
-  });
-
-  console.log('Render - Has dietary changes:', hasChanges);
-  console.log('Current dietaryUpdates state:', dietaryUpdates);
+  const changedCount = passengers.filter(p => (dietaryUpdates[p.id] ?? p.dietary) !== p.dietary).length;
+  const hasChanges = changedCount > 0;
 
   if (isLoading) {
     return (
@@ -140,44 +108,28 @@ export const BulkDietaryModal = ({ open, onOpenChange, tourId }: BulkDietaryModa
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Bulk Update Dietary Requirements ({tourBookings.length} bookings)</DialogTitle>
+          <DialogTitle>Bulk Update Dietary Requirements ({passengers.length} contacts)</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
-          {tourBookings.length === 0 ? (
+          {passengers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              No bookings found for this tour.
+              No contacts found for this tour.
             </div>
           ) : (
             <div className="space-y-3">
-              {tourBookings.map((booking) => {
-                if (!booking.customers?.id) return null;
-                
-                const customerId = booking.customers.id;
-                const currentDietary = dietaryUpdates[customerId] || '';
-                console.log(`Rendering customer ${customerId} with dietary:`, currentDietary);
-                
+              {passengers.map((p) => {
+                const currentDietary = dietaryUpdates[p.id] ?? '';
                 return (
-                  <div key={booking.id} className="flex items-start gap-4 p-4 border rounded-lg">
+                  <div key={p.id} className="flex items-start gap-4 p-4 border rounded-lg">
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium">
-                        {booking.customers.first_name} {booking.customers.last_name}
-                        {booking.group_name && (
-                          <span className="text-sm text-muted-foreground ml-2">
-                            (Group: {booking.group_name})
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {booking.passenger_count} passenger{booking.passenger_count > 1 ? 's' : ''}
-                      </div>
+                      <div className="font-medium">{p.name}</div>
                     </div>
-                    
                     <div className="flex-1 max-w-md">
                       <Textarea
                         placeholder="Enter dietary requirements..."
                         value={currentDietary}
-                        onChange={(e) => handleDietaryChange(customerId, e.target.value)}
+                        onChange={(e) => handleDietaryChange(p.id, e.target.value)}
                         className="min-h-[80px] resize-none"
                         rows={3}
                       />
@@ -200,16 +152,10 @@ export const BulkDietaryModal = ({ open, onOpenChange, tourId }: BulkDietaryModa
           </Button>
           <Button
             onClick={handleBulkUpdate}
-            disabled={isUpdating || !hasChanges || tourBookings.length === 0}
+            disabled={isUpdating || !hasChanges || passengers.length === 0}
             className="bg-brand-navy hover:bg-brand-navy/90 text-brand-yellow"
           >
-            {isUpdating ? "Updating..." : `Update All Changes${hasChanges ? ` (${tourBookings.filter(b => {
-              if (!b.customers?.id) return false;
-              const customerId = b.customers.id;
-              const newDietary = dietaryUpdates[customerId];
-              const currentDietary = b.customers.dietary_requirements || '';
-              return newDietary !== currentDietary;
-            }).length})` : ''}`}
+            {isUpdating ? "Updating..." : `Update All Changes${hasChanges ? ` (${changedCount})` : ''}`}
           </Button>
         </DialogFooter>
       </DialogContent>

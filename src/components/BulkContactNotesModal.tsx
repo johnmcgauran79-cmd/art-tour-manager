@@ -42,10 +42,12 @@ export const BulkContactNotesModal = ({ open, onOpenChange, tourId }: BulkContac
       const customerNames = new Map<string, string>();
 
       for (const booking of tourBookings) {
-        const customer = booking.customers;
-        if (customer && !customerIds.has(customer.id)) {
-          customerIds.add(customer.id);
-          customerNames.set(customer.id, `${customer.first_name} ${customer.last_name}`);
+        const passengers = [booking.customers, booking.passenger_2, booking.passenger_3];
+        for (const customer of passengers) {
+          if (customer?.id && !customerIds.has(customer.id)) {
+            customerIds.add(customer.id);
+            customerNames.set(customer.id, `${customer.first_name} ${customer.last_name}`);
+          }
         }
       }
 
