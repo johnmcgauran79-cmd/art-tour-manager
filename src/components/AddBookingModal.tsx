@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -95,7 +95,16 @@ export const AddBookingModal = ({
     isOpen: open,
   });
 
-  const { data: tours } = useTours();
+  const { data: allTours } = useTours();
+  const tours = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (allTours || []).filter((tour) => {
+      const tourEnd = new Date(tour.end_date);
+      tourEnd.setHours(0, 0, 0, 0);
+      return tourEnd >= today && tour.status !== 'cancelled' && tour.status !== 'past';
+    });
+  }, [allTours]);
   const createBooking = useCreateBooking();
   const updateCustomer = useUpdateCustomer();
   const recalculateBookingDates = useRecalculateBookingDates();
