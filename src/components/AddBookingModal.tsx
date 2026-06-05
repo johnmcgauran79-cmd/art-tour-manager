@@ -95,7 +95,16 @@ export const AddBookingModal = ({
     isOpen: open,
   });
 
-  const { data: tours } = useTours();
+  const { data: allTours } = useTours();
+  const tours = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return (allTours || []).filter((tour) => {
+      const tourEnd = new Date(tour.end_date);
+      tourEnd.setHours(0, 0, 0, 0);
+      return tourEnd >= today && tour.status !== 'cancelled' && tour.status !== 'past';
+    });
+  }, [allTours]);
   const createBooking = useCreateBooking();
   const updateCustomer = useUpdateCustomer();
   const recalculateBookingDates = useRecalculateBookingDates();
