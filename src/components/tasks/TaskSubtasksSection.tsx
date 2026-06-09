@@ -50,6 +50,8 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
   const deleteSubtask = useDeleteSubtask();
   const updateSubtask = useUpdateSubtask();
   const [newTitle, setNewTitle] = useState("");
+  const [newAssigneeId, setNewAssigneeId] = useState<string | null>(defaultAssigneeId ?? null);
+  const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
 
   // Only Admin and Manager users can be assigned to subtasks.
   const { data: users } = useAssignableUsers();
@@ -61,9 +63,12 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
     await createSubtask.mutateAsync({
       task_id: taskId,
       title: newTitle.trim(),
-      assignee_id: defaultAssigneeId ?? null,
+      assignee_id: newAssigneeId,
+      due_date: newDueDate ? format(newDueDate, "yyyy-MM-dd") : null,
     });
     setNewTitle("");
+    setNewAssigneeId(defaultAssigneeId ?? null);
+    setNewDueDate(undefined);
   };
 
   const total = subtasks?.length || 0;
