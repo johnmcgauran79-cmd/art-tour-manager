@@ -28,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getTaskStatusColor, getTaskPriorityColor, formatStatusText } from "@/lib/statusColors";
 import { cn } from "@/lib/utils";
 import { LinkableTextarea } from "@/components/entityLinks/LinkableTextarea";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
 import { TaskLinkedItemsPanel } from "@/components/entityLinks/TaskLinkedItemsPanel";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
 import { useTaskComments } from "@/hooks/useTaskComments";
@@ -393,11 +394,10 @@ export default function TaskDetail() {
 
           <div>
             <Label htmlFor="due_date">Due Date</Label>
-            <Input
+            <DateTimePicker
               id="due_date"
-              type="datetime-local"
               value={edited.due_date || ""}
-              onChange={(e) => setEdited({ ...edited, due_date: e.target.value })}
+              onChange={(value) => setEdited({ ...edited, due_date: value })}
             />
           </div>
 

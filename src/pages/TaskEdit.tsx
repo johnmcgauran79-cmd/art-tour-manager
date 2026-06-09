@@ -19,6 +19,7 @@ import { TaskCommentsSection } from "@/components/TaskCommentsSection";
 import { useTaskStatuses } from "@/hooks/useTaskStatuses";
 import { RequestApprovalDialog } from "@/components/tasks/RequestApprovalDialog";
 import { TaskApproversSection } from "@/components/tasks/TaskApproversSection";
+import { DateTimePicker } from "@/components/ui/datetime-picker";
 
 export default function TaskEdit() {
   const { id } = useParams();
@@ -276,11 +277,10 @@ export default function TaskEdit() {
 
               <div>
                 <Label htmlFor="due_date">Due Date</Label>
-                <Input
+                <DateTimePicker
                   id="due_date"
-                  type="datetime-local"
                   value={editedTask.due_date || ''}
-                  onChange={(e) => setEditedTask({ ...editedTask, due_date: e.target.value })}
+                  onChange={(value) => setEditedTask({ ...editedTask, due_date: value })}
                 />
               </div>
 
