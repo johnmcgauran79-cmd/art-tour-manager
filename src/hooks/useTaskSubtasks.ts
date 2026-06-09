@@ -49,7 +49,8 @@ export const useCreateSubtask = () => {
           task_id: input.task_id,
           title: input.title,
           created_by: user.user.id,
-          assignee_id: input.assignee_id ?? user.user.id,
+          assignee_id: input.assignee_id ?? null,
+          due_date: input.due_date ?? null,
         })
         .select()
         .single();
