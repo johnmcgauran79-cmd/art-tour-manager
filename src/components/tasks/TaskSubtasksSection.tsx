@@ -50,6 +50,8 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
   const deleteSubtask = useDeleteSubtask();
   const updateSubtask = useUpdateSubtask();
   const [newTitle, setNewTitle] = useState("");
+  const [newAssigneeId, setNewAssigneeId] = useState<string | null>(defaultAssigneeId ?? null);
+  const [newDueDate, setNewDueDate] = useState<Date | undefined>(undefined);
 
   // Only Admin and Manager users can be assigned to subtasks.
   const { data: users } = useAssignableUsers();
@@ -61,9 +63,12 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
     await createSubtask.mutateAsync({
       task_id: taskId,
       title: newTitle.trim(),
-      assignee_id: defaultAssigneeId ?? null,
+      assignee_id: newAssigneeId,
+      due_date: newDueDate ? format(newDueDate, "yyyy-MM-dd") : null,
     });
     setNewTitle("");
+    setNewAssigneeId(defaultAssigneeId ?? null);
+    setNewDueDate(undefined);
   };
 
   const total = subtasks?.length || 0;
@@ -110,7 +115,7 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
         </div>
       )}
 
-      <div className="flex gap-2 pt-1">
+      <div className="space-y-2 pt-1">
         <Input
           placeholder="Add a subtask..."
           value={newTitle}
@@ -123,13 +128,79 @@ export const TaskSubtasksSection = ({ taskId, defaultAssigneeId }: TaskSubtasksS
           }}
           className="h-9"
         />
-        <Button
-          onClick={handleAdd}
-          size="sm"
-          disabled={!newTitle.trim() || createSubtask.isPending}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Assignee picker */}
+          <Select
+            value={newAssigneeId ?? "unassigned"}
+            onValueChange={(val) =>
+              setNewAssigneeId(val === "unassigned" ? null : val)
+            }
+          >
+            <SelectTrigger className="h-8 w-auto min-w-[8rem] gap-1 px-2 text-xs">
+              <UserIcon className="h-3 w-3 text-muted-foreground" />
+              <SelectValue>
+                <span className="truncate">
+                  {userLabel(newAssigneeId ? usersById.get(newAssigneeId) : null)}
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {users?.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {userLabel(u)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Due date picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className={cn(
+                  "h-8 gap-1 px-2 text-xs font-normal",
+                  !newDueDate && "text-muted-foreground"
+                )}
+              >
+                <CalendarIcon className="h-3 w-3" />
+                {newDueDate ? format(newDueDate, "d MMM yyyy") : "Due date"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={newDueDate}
+                onSelect={(date) => setNewDueDate(date)}
+                initialFocus
+                className="pointer-events-auto"
+              />
+              {newDueDate && (
+                <div className="p-2 border-t">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-full h-7 text-xs"
+                    onClick={() => setNewDueDate(undefined)}
+                  >
+                    Clear due date
+                  </Button>
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            onClick={handleAdd}
+            size="sm"
+            disabled={!newTitle.trim() || createSubtask.isPending}
+            className="ml-auto"
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );

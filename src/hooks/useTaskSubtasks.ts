@@ -40,7 +40,7 @@ export const useCreateSubtask = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async (input: { task_id: string; title: string; assignee_id?: string | null }) => {
+    mutationFn: async (input: { task_id: string; title: string; assignee_id?: string | null; due_date?: string | null }) => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error('Not authenticated');
       const { data, error } = await supabase
@@ -49,7 +49,8 @@ export const useCreateSubtask = () => {
           task_id: input.task_id,
           title: input.title,
           created_by: user.user.id,
-          assignee_id: input.assignee_id ?? user.user.id,
+          assignee_id: input.assignee_id ?? null,
+          due_date: input.due_date ?? null,
         })
         .select()
         .single();
