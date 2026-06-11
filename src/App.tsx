@@ -18,6 +18,9 @@ import BookingDetail from "./pages/BookingDetail";
 import BookingEdit from "./pages/BookingEdit";
 import TaskDetail from "./pages/TaskDetail";
 import TaskEdit from "./pages/TaskEdit";
+import PersonalTodos from "./pages/PersonalTodos";
+import PersonalNotes from "./pages/PersonalNotes";
+import PersonalCalendar from "./pages/PersonalCalendar";
 import ContactDetail from "./pages/ContactDetail";
 import ContactEdit from "./pages/ContactEdit";
 import BulkBookingStatus from "./pages/BulkBookingStatus";
@@ -172,6 +175,36 @@ function App() {
                   <TaskRoute>
                     <AppLayout>
                       <TaskEdit />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/todos"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <PersonalTodos />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/notes"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <PersonalNotes />
+                    </AppLayout>
+                  </TaskRoute>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <TaskRoute>
+                    <AppLayout>
+                      <PersonalCalendar />
                     </AppLayout>
                   </TaskRoute>
                 }
