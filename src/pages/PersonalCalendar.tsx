@@ -255,12 +255,21 @@ const PersonalCalendar = () => {
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary" /> Personal event</span>
-        <span className="flex items-center gap-1"><CheckSquare className="h-3 w-3" /> Task due</span>
-        <span className="flex items-center gap-1"><MapIcon className="h-3 w-3" /> Tour</span>
-        <span className="flex items-center gap-1"><Plane className="h-3 w-3" /> Staff leave</span>
+      {/* Filters / legend */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground mr-1">Show:</span>
+        <Toggle size="sm" pressed={filters.events} onPressedChange={() => toggleFilter("events")} className="h-7 gap-1 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary" /> Events
+        </Toggle>
+        <Toggle size="sm" pressed={filters.tasks} onPressedChange={() => toggleFilter("tasks")} className="h-7 gap-1 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+          <CheckSquare className="h-3 w-3" /> Tasks
+        </Toggle>
+        <Toggle size="sm" pressed={filters.tours} onPressedChange={() => toggleFilter("tours")} className="h-7 gap-1 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+          <MapIcon className="h-3 w-3" /> Tours
+        </Toggle>
+        <Toggle size="sm" pressed={filters.leave} onPressedChange={() => toggleFilter("leave")} className="h-7 gap-1 text-xs data-[state=on]:bg-primary data-[state=on]:text-primary-foreground">
+          <Plane className="h-3 w-3" /> Leave
+        </Toggle>
       </div>
 
       {isMobile ? (
