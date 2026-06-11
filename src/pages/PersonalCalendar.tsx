@@ -351,7 +351,7 @@ const PersonalCalendar = () => {
                             </button>
                           ))}
                           {tasksForDay(day).map((t) => {
-                            const c = getTourColor(t.tour_id);
+                            const c = TASK_COLOR;
                             return (
                               <button
                                 key={`task-${t.id}`}
@@ -363,6 +363,18 @@ const PersonalCalendar = () => {
                               </button>
                             );
                           })}
+                          {leaveForDay(day).map((l) => (
+                            <div
+                              key={`leave-${l.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 flex items-center gap-1 border-l-2"
+                              style={{ backgroundColor: LEAVE_COLOR.bg, color: LEAVE_COLOR.text, borderColor: LEAVE_COLOR.border }}
+                              title={leaveLabel(l)}
+                            >
+                              <Plane className="h-2.5 w-2.5 shrink-0" />
+                              <span className="truncate">{leaveLabel(l)}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
