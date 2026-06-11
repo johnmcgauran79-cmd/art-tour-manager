@@ -23,8 +23,16 @@ import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getTourColor } from "@/lib/tourColors";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Split the flat day list into weeks of 7 for spanning tour bars.
+function chunkWeeks<T>(arr: T[]): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += 7) out.push(arr.slice(i, i + 7));
+  return out;
+}
 
 const PersonalCalendar = () => {
   const navigate = useNavigate();
@@ -43,6 +51,8 @@ const PersonalCalendar = () => {
     const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [cursor]);
+
+  const weeks = useMemo(() => chunkWeeks(days), [days]);
 
   // Days of the current month only, used for the mobile agenda/list view.
   const monthDays = useMemo(
@@ -71,6 +81,51 @@ const PersonalCalendar = () => {
         return false;
       }
     });
+
+  // Build spanning tour segments (with stacking lanes) for a single week row.
+  const segmentsForWeek = (week: Date[]) => {
+    const overlapping = tours.filter((t) => {
+      if (!t.start_date || !t.end_date) return false;
+      if (t.status === "cancelled") return false;
+      try {
+        const s = parseISO(t.start_date);
+        const e = parseISO(t.end_date);
+        return week.some((d) => isWithinInterval(d, { start: s, end: e }));
+      } catch {
+        return false;
+      }
+    });
+
+    const raw = overlapping
+      .map((t) => {
+        const s = parseISO(t.start_date as string);
+        const e = parseISO(t.end_date as string);
+        let startCol = -1;
+        let endCol = -1;
+        week.forEach((d, i) => {
+          if (isWithinInterval(d, { start: s, end: e })) {
+            if (startCol === -1) startCol = i;
+            endCol = i;
+          }
+        });
+        return { tour: t, startCol, endCol };
+      })
+      .filter((seg) => seg.startCol !== -1)
+      .sort((a, b) => a.startCol - b.startCol || a.tour.name.localeCompare(b.tour.name));
+
+    // Greedy lane assignment so overlapping tours stack vertically.
+    const laneEnds: number[] = [];
+    return raw.map((seg) => {
+      let lane = laneEnds.findIndex((end) => end < seg.startCol);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(seg.endCol);
+      } else {
+        laneEnds[lane] = seg.endCol;
+      }
+      return { ...seg, lane };
+    });
+  };
 
   const openCreate = (day: Date) => {
     setEditEvent(null);
