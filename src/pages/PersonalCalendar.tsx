@@ -24,7 +24,7 @@ import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getTourColor, TASK_COLOR, LEAVE_COLOR } from "@/lib/tourColors";
+import { getTourColor, TASK_COLOR, LEAVE_COLOR, TourColor } from "@/lib/tourColors";
 import {
   useStaffLeave,
   useStaffMembers,
@@ -120,34 +120,75 @@ const PersonalCalendar = () => {
 
   // Build spanning tour segments (with stacking lanes) for a single week row.
   const segmentsForWeek = (week: Date[]) => {
-    const overlapping = tours.filter((t) => {
-      if (!t.start_date || !t.end_date) return false;
-      if (t.status === "cancelled") return false;
+    type Span = {
+      key: string;
+      kind: "tour" | "leave";
+      label: string;
+      color: TourColor;
+      onClick?: () => void;
+      start: Date;
+      end: Date;
+      startCol: number;
+      endCol: number;
+    };
+
+    const spans: Omit<Span, "startCol" | "endCol">[] = [];
+
+    tours.forEach((t) => {
+      if (!t.start_date || !t.end_date || t.status === "cancelled") return;
       try {
         const s = parseISO(t.start_date);
         const e = parseISO(t.end_date);
-        return week.some((d) => isWithinInterval(d, { start: s, end: e }));
+        if (week.some((d) => isWithinInterval(d, { start: s, end: e }))) {
+          spans.push({
+            key: `tour-${t.id}`,
+            kind: "tour",
+            label: t.name,
+            color: getTourColor(t.id),
+            onClick: () => navigate(`/tours/${t.id}`),
+            start: s,
+            end: e,
+          });
+        }
       } catch {
-        return false;
+        /* ignore */
       }
     });
 
-    const raw = overlapping
-      .map((t) => {
-        const s = parseISO(t.start_date as string);
-        const e = parseISO(t.end_date as string);
+    leave.forEach((l) => {
+      try {
+        const s = parseISO(l.start_date);
+        const e = parseISO(l.end_date);
+        if (week.some((d) => isWithinInterval(d, { start: s, end: e }))) {
+          spans.push({
+            key: `leave-${l.id}`,
+            kind: "leave",
+            label: leaveLabel(l),
+            color: LEAVE_COLOR,
+            onClick: canDeleteLeave(l) ? () => deleteLeave.mutate(l.id) : undefined,
+            start: s,
+            end: e,
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    const raw: Span[] = spans
+      .map((sp) => {
         let startCol = -1;
         let endCol = -1;
         week.forEach((d, i) => {
-          if (isWithinInterval(d, { start: s, end: e })) {
+          if (isWithinInterval(d, { start: sp.start, end: sp.end })) {
             if (startCol === -1) startCol = i;
             endCol = i;
           }
         });
-        return { tour: t, startCol, endCol };
+        return { ...sp, startCol, endCol };
       })
       .filter((seg) => seg.startCol !== -1)
-      .sort((a, b) => a.startCol - b.startCol || a.tour.name.localeCompare(b.tour.name));
+      .sort((a, b) => a.startCol - b.startCol || a.label.localeCompare(b.label));
 
     // Greedy lane assignment so overlapping tours stack vertically.
     const laneEnds: number[] = [];
@@ -363,18 +404,6 @@ const PersonalCalendar = () => {
                               </button>
                             );
                           })}
-                          {leaveForDay(day).map((l) => (
-                            <div
-                              key={`leave-${l.id}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 flex items-center gap-1 border-l-2"
-                              style={{ backgroundColor: LEAVE_COLOR.bg, color: LEAVE_COLOR.text, borderColor: LEAVE_COLOR.border }}
-                              title={leaveLabel(l)}
-                            >
-                              <Plane className="h-2.5 w-2.5 shrink-0" />
-                              <span className="truncate">{leaveLabel(l)}</span>
-                            </div>
-                          ))}
                         </div>
                       </div>
                     );
@@ -386,11 +415,12 @@ const PersonalCalendar = () => {
                   style={{ top: 28 }}
                 >
                   {segments.map((seg) => {
-                    const c = getTourColor(seg.tour.id);
+                    const c = seg.color;
+                    const Icon = seg.kind === "leave" ? Plane : MapIcon;
                     return (
                       <button
-                        key={`tour-${seg.tour.id}`}
-                        onClick={() => navigate(`/tours/${seg.tour.id}`)}
+                        key={seg.key}
+                        onClick={() => seg.onClick?.()}
                         className="pointer-events-auto text-left text-[10px] truncate rounded px-1.5 h-[18px] leading-[18px] flex items-center gap-1 border-l-2"
                         style={{
                           gridColumn: `${seg.startCol + 1} / ${seg.endCol + 2}`,
@@ -399,9 +429,9 @@ const PersonalCalendar = () => {
                           color: c.text,
                           borderColor: c.border,
                         }}
-                        title={seg.tour.name}
+                        title={seg.label}
                       >
-                        <MapIcon className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
+                        <Icon className="h-2.5 w-2.5 shrink-0" /> {seg.label}
                       </button>
                     );
                   })}
