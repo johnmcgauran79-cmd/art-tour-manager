@@ -206,21 +206,21 @@ function App() {
               <Route
                 path="/todos"
                 element={
-                  <TaskRoute>
+                  <WorkspaceRoute>
                     <AppLayout>
                       <PersonalTodos />
                     </AppLayout>
-                  </TaskRoute>
+                  </WorkspaceRoute>
                 }
               />
               <Route
                 path="/notes"
                 element={
-                  <TaskRoute>
+                  <WorkspaceRoute>
                     <AppLayout>
                       <PersonalNotes />
                     </AppLayout>
-                  </TaskRoute>
+                  </WorkspaceRoute>
                 }
               />
               <Route
