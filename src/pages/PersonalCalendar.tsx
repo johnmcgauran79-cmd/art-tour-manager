@@ -120,34 +120,75 @@ const PersonalCalendar = () => {
 
   // Build spanning tour segments (with stacking lanes) for a single week row.
   const segmentsForWeek = (week: Date[]) => {
-    const overlapping = tours.filter((t) => {
-      if (!t.start_date || !t.end_date) return false;
-      if (t.status === "cancelled") return false;
+    type Span = {
+      key: string;
+      kind: "tour" | "leave";
+      label: string;
+      color: TourColor;
+      onClick?: () => void;
+      start: Date;
+      end: Date;
+      startCol: number;
+      endCol: number;
+    };
+
+    const spans: Omit<Span, "startCol" | "endCol">[] = [];
+
+    tours.forEach((t) => {
+      if (!t.start_date || !t.end_date || t.status === "cancelled") return;
       try {
         const s = parseISO(t.start_date);
         const e = parseISO(t.end_date);
-        return week.some((d) => isWithinInterval(d, { start: s, end: e }));
+        if (week.some((d) => isWithinInterval(d, { start: s, end: e }))) {
+          spans.push({
+            key: `tour-${t.id}`,
+            kind: "tour",
+            label: t.name,
+            color: getTourColor(t.id),
+            onClick: () => navigate(`/tours/${t.id}`),
+            start: s,
+            end: e,
+          });
+        }
       } catch {
-        return false;
+        /* ignore */
       }
     });
 
-    const raw = overlapping
-      .map((t) => {
-        const s = parseISO(t.start_date as string);
-        const e = parseISO(t.end_date as string);
+    leave.forEach((l) => {
+      try {
+        const s = parseISO(l.start_date);
+        const e = parseISO(l.end_date);
+        if (week.some((d) => isWithinInterval(d, { start: s, end: e }))) {
+          spans.push({
+            key: `leave-${l.id}`,
+            kind: "leave",
+            label: leaveLabel(l),
+            color: LEAVE_COLOR,
+            onClick: canDeleteLeave(l) ? () => deleteLeave.mutate(l.id) : undefined,
+            start: s,
+            end: e,
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    });
+
+    const raw: Span[] = spans
+      .map((sp) => {
         let startCol = -1;
         let endCol = -1;
         week.forEach((d, i) => {
-          if (isWithinInterval(d, { start: s, end: e })) {
+          if (isWithinInterval(d, { start: sp.start, end: sp.end })) {
             if (startCol === -1) startCol = i;
             endCol = i;
           }
         });
-        return { tour: t, startCol, endCol };
+        return { ...sp, startCol, endCol };
       })
       .filter((seg) => seg.startCol !== -1)
-      .sort((a, b) => a.startCol - b.startCol || a.tour.name.localeCompare(b.tour.name));
+      .sort((a, b) => a.startCol - b.startCol || a.label.localeCompare(b.label));
 
     // Greedy lane assignment so overlapping tours stack vertically.
     const laneEnds: number[] = [];
