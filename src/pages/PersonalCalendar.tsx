@@ -419,6 +419,12 @@ const PersonalCalendar = () => {
         event={editEvent}
         defaultDate={defaultDate}
       />
+
+      <LeaveDialog
+        open={leaveDialogOpen}
+        onOpenChange={setLeaveDialogOpen}
+        defaultDate={defaultDate}
+      />
     </div>
   );
 };
