@@ -113,7 +113,7 @@ export const AppSidebar = () => {
   };
 
   const NavContent = (
-    <nav className="flex flex-col gap-4 p-2">
+    <nav className="flex flex-col gap-4 px-2 pb-2 pt-6">
       <div className="flex flex-col gap-1">
         {mainItems.map((item) => (
           <NavButton key={item.key} item={item} />
@@ -154,7 +154,7 @@ export const AppSidebar = () => {
       <aside
         className={cn(
           "shrink-0 self-stretch overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear",
-          collapsed ? "w-[3.5rem]" : "w-64"
+          collapsed ? "w-[3.5rem]" : "w-44"
         )}
       >
         {NavContent}
