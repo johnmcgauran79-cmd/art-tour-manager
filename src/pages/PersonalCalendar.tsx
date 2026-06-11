@@ -46,14 +46,32 @@ function chunkWeeks<T>(arr: T[]): T[][] {
 const PersonalCalendar = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { userRole } = usePermissions();
+  const isAdmin = userRole === "admin";
   const [cursor, setCursor] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEvent, setEditEvent] = useState<PersonalEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
   const { data: events = [] } = usePersonalEvents();
   const { data: tasks = [] } = useMyTasks();
   const { data: tours = [] } = useTours();
+  const { data: leave = [] } = useStaffLeave();
+  const { data: staff = [] } = useStaffMembers();
+  const deleteLeave = useDeleteStaffLeave();
+
+  const staffById = useMemo(() => {
+    const m = new Map<string, (typeof staff)[number]>();
+    staff.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [staff]);
+
+  const leaveLabel = (l: { user_id: string; description: string }) =>
+    `${staffDisplayName(staffById.get(l.user_id))} - ${l.description}`;
+
+  const canDeleteLeave = (l: { user_id: string }) => isAdmin || l.user_id === user?.id;
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
