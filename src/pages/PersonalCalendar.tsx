@@ -97,10 +97,12 @@ const PersonalCalendar = () => {
   );
 
   const eventsForDay = (day: Date) =>
-    events.filter((e) => isSameDay(parseISO(e.starts_at), day));
+    filters.events ? events.filter((e) => isSameDay(parseISO(e.starts_at), day)) : [];
 
   const tasksForDay = (day: Date) =>
-    tasks.filter(
+    !filters.tasks
+      ? []
+      : tasks.filter(
       (t) =>
         t.due_date &&
         !["completed", "cancelled", "archived"].includes(t.status) &&
@@ -108,7 +110,9 @@ const PersonalCalendar = () => {
     );
 
   const toursForDay = (day: Date) =>
-    tours.filter((t) => {
+    !filters.tours
+      ? []
+      : tours.filter((t) => {
       if (!t.start_date || !t.end_date) return false;
       if (t.status === "cancelled") return false;
       try {
@@ -119,7 +123,9 @@ const PersonalCalendar = () => {
     });
 
   const leaveForDay = (day: Date) =>
-    leave.filter((l) => {
+    !filters.leave
+      ? []
+      : leave.filter((l) => {
       try {
         return isWithinInterval(day, { start: parseISO(l.start_date), end: parseISO(l.end_date) });
       } catch {
