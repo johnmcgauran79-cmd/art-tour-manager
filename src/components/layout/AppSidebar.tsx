@@ -154,7 +154,7 @@ export const AppSidebar = () => {
       <aside
         className={cn(
           "shrink-0 self-stretch overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear",
-          collapsed ? "w-[3.5rem]" : "w-64"
+          collapsed ? "w-[3.5rem]" : "w-44"
         )}
       >
         {NavContent}
