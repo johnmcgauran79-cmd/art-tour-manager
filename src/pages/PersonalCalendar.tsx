@@ -24,7 +24,7 @@ import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getTourColor, TASK_COLOR, LEAVE_COLOR } from "@/lib/tourColors";
+import { getTourColor, TASK_COLOR, LEAVE_COLOR, TourColor } from "@/lib/tourColors";
 import {
   useStaffLeave,
   useStaffMembers,
