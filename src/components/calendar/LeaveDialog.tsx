@@ -21,6 +21,9 @@ import { usePermissions } from "@/hooks/usePermissions";
 import {
   useStaffMembers,
   useCreateStaffLeave,
+  useUpdateStaffLeave,
+  useDeleteStaffLeave,
+  StaffLeave,
   staffDisplayName,
 } from "@/hooks/useStaffLeave";
 
@@ -28,14 +31,19 @@ interface LeaveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultDate?: string;
+  leave?: StaffLeave | null;
 }
 
-export const LeaveDialog = ({ open, onOpenChange, defaultDate }: LeaveDialogProps) => {
+export const LeaveDialog = ({ open, onOpenChange, defaultDate, leave }: LeaveDialogProps) => {
   const { user } = useAuth();
   const { userRole } = usePermissions();
   const isAdmin = userRole === "admin";
   const { data: staff = [] } = useStaffMembers();
   const createLeave = useCreateStaffLeave();
+  const updateLeave = useUpdateStaffLeave();
+  const deleteLeave = useDeleteStaffLeave();
+  const isEdit = !!leave;
+  const canModify = isAdmin || leave?.user_id === user?.id;
 
   const [userId, setUserId] = useState("");
   const [description, setDescription] = useState("");
@@ -44,11 +52,11 @@ export const LeaveDialog = ({ open, onOpenChange, defaultDate }: LeaveDialogProp
 
   useEffect(() => {
     if (!open) return;
-    setUserId(user?.id ?? "");
-    setDescription("");
-    setStartDate(defaultDate ?? "");
-    setEndDate(defaultDate ?? "");
-  }, [open, user?.id, defaultDate]);
+    setUserId(leave?.user_id ?? user?.id ?? "");
+    setDescription(leave?.description ?? "");
+    setStartDate(leave?.start_date ?? defaultDate ?? "");
+    setEndDate(leave?.end_date ?? defaultDate ?? "");
+  }, [open, user?.id, defaultDate, leave]);
 
   const canSave = useMemo(
     () => !!userId && description.trim() && startDate && endDate && endDate >= startDate,
@@ -57,12 +65,27 @@ export const LeaveDialog = ({ open, onOpenChange, defaultDate }: LeaveDialogProp
 
   const handleSave = async () => {
     if (!canSave) return;
-    await createLeave.mutateAsync({
-      user_id: userId,
-      description: description.trim(),
-      start_date: startDate,
-      end_date: endDate,
-    });
+    if (isEdit && leave) {
+      await updateLeave.mutateAsync({
+        id: leave.id,
+        description: description.trim(),
+        start_date: startDate,
+        end_date: endDate,
+      });
+    } else {
+      await createLeave.mutateAsync({
+        user_id: userId,
+        description: description.trim(),
+        start_date: startDate,
+        end_date: endDate,
+      });
+    }
+    onOpenChange(false);
+  };
+
+  const handleDelete = async () => {
+    if (!leave) return;
+    await deleteLeave.mutateAsync(leave.id);
     onOpenChange(false);
   };
 
@@ -70,10 +93,10 @@ export const LeaveDialog = ({ open, onOpenChange, defaultDate }: LeaveDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add leave</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit leave" : "Add leave"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          {isAdmin && (
+          {isAdmin && !isEdit && (
             <div className="space-y-1.5">
               <Label>Staff member</Label>
               <Select value={userId} onValueChange={setUserId}>
@@ -109,9 +132,14 @@ export const LeaveDialog = ({ open, onOpenChange, defaultDate }: LeaveDialogProp
             </div>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleSave} disabled={!canSave}>Save</Button>
+        <DialogFooter className="sm:justify-between">
+          {isEdit && canModify ? (
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+          ) : <span />}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button onClick={handleSave} disabled={!canSave || (isEdit && !canModify)}>Save</Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
