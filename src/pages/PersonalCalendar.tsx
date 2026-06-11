@@ -56,7 +56,7 @@ const PersonalCalendar = () => {
   const toursForDay = (day: Date) =>
     tours.filter((t) => {
       if (!t.start_date || !t.end_date) return false;
-      if (t.status === "archived") return false;
+      if (t.status === "cancelled") return false;
       try {
         return isWithinInterval(day, { start: parseISO(t.start_date), end: parseISO(t.end_date) });
       } catch {
