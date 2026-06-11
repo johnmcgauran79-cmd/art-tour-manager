@@ -38,8 +38,6 @@ import {
   StaffLeave,
   staffDisplayName,
 } from "@/hooks/useStaffLeave";
-import { useAuth } from "@/hooks/useAuth";
-import { usePermissions } from "@/hooks/usePermissions";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -62,9 +60,6 @@ function chunkWeeks<T>(arr: T[]): T[][] {
 const PersonalCalendar = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
-  const { userRole } = usePermissions();
-  const isAdmin = userRole === "admin";
   const [cursor, setCursor] = useState(new Date());
   const [view, setView] = useState<CalendarView>("month");
   const [dialogOpen, setDialogOpen] = useState(false);
