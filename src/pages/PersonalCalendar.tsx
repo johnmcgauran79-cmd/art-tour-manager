@@ -109,6 +109,15 @@ const PersonalCalendar = () => {
       }
     });
 
+  const leaveForDay = (day: Date) =>
+    leave.filter((l) => {
+      try {
+        return isWithinInterval(day, { start: parseISO(l.start_date), end: parseISO(l.end_date) });
+      } catch {
+        return false;
+      }
+    });
+
   // Build spanning tour segments (with stacking lanes) for a single week row.
   const segmentsForWeek = (week: Date[]) => {
     const overlapping = tours.filter((t) => {
