@@ -14,7 +14,7 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map, Plane, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -191,7 +191,7 @@ const PersonalCalendar = () => {
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary" /> Personal event</span>
         <span className="flex items-center gap-1"><CheckSquare className="h-3 w-3" /> Task due</span>
-        <span className="flex items-center gap-1"><Map className="h-3 w-3" /> Tour</span>
+        <span className="flex items-center gap-1"><MapIcon className="h-3 w-3" /> Tour</span>
       </div>
 
       {isMobile ? (
@@ -231,7 +231,7 @@ const PersonalCalendar = () => {
                         className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
                         style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
                       >
-                        <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
+                        <MapIcon className="h-3.5 w-3.5 shrink-0" /> {t.name}
                       </button>
                     );
                   })}
@@ -360,7 +360,7 @@ const PersonalCalendar = () => {
                         }}
                         title={seg.tour.name}
                       >
-                        <Map className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
+                        <MapIcon className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
                       </button>
                     );
                   })}
