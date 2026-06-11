@@ -17,6 +17,7 @@ import {
 import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Toggle } from "@/components/ui/toggle";
 import { cn } from "@/lib/utils";
 import { EventDialog } from "@/components/calendar/EventDialog";
 import { LeaveDialog } from "@/components/calendar/LeaveDialog";
