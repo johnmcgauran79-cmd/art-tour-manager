@@ -213,7 +213,8 @@ const PersonalCalendar = () => {
             const dayEvents = eventsForDay(day);
             const dayTasks = tasksForDay(day);
             const dayTours = toursForDay(day);
-            const total = dayEvents.length + dayTasks.length + dayTours.length;
+            const dayLeave = leaveForDay(day);
+            const total = dayEvents.length + dayTasks.length + dayTours.length + dayLeave.length;
             if (total === 0) return null;
             const today = isSameDay(day, new Date());
             return (
@@ -259,8 +260,23 @@ const PersonalCalendar = () => {
                       <span className="truncate">{ev.title}</span>
                     </button>
                   ))}
+                  {dayLeave.map((l) => (
+                    <div
+                      key={`leave-${l.id}`}
+                      className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
+                      style={{ backgroundColor: LEAVE_COLOR.bg, color: LEAVE_COLOR.text, borderColor: LEAVE_COLOR.border }}
+                    >
+                      <Plane className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate flex-1">{leaveLabel(l)}</span>
+                      {canDeleteLeave(l) && (
+                        <button onClick={() => deleteLeave.mutate(l.id)} aria-label="Delete leave">
+                          <Trash2 className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                   {dayTasks.map((t) => {
-                    const c = getTourColor(t.tour_id);
+                    const c = TASK_COLOR;
                     return (
                       <button
                         key={`task-${t.id}`}
@@ -277,7 +293,7 @@ const PersonalCalendar = () => {
             );
           })}
           {monthDays.every(
-            (day) => eventsForDay(day).length + tasksForDay(day).length + toursForDay(day).length === 0
+            (day) => eventsForDay(day).length + tasksForDay(day).length + toursForDay(day).length + leaveForDay(day).length === 0
           ) && (
             <p className="text-sm text-muted-foreground text-center py-8">
               Nothing scheduled this month.
