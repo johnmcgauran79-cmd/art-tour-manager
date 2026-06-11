@@ -11,18 +11,15 @@ import {
   StickyNote,
   CalendarDays,
 } from "lucide-react";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useSidebar } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
 
@@ -41,7 +38,8 @@ export const AppSidebar = () => {
   const [searchParams] = useSearchParams();
   const { userRole } = useAuth();
   const { isAdminOrManager } = useIsAdminOrManager();
-  const { setOpenMobile, isMobile } = useSidebar();
+  const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
+  const collapsed = state === "collapsed";
 
   const isAgent = userRole === "agent";
   const isHost = userRole === "host";
@@ -85,63 +83,82 @@ export const AppSidebar = () => {
     return location.pathname === "/" && activeTab === item.tab;
   };
 
-  return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-1 py-2">
-          <img
-            src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png"
-            alt="Australian Racing Tours"
-            className="h-8 w-auto shrink-0"
-          />
-          <span className="font-display text-sm font-semibold leading-tight group-data-[collapsible=icon]:hidden">
-            Australian Racing Tours
-          </span>
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>System</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {mainItems.map((item) => (
-                <SidebarMenuItem key={item.key}>
-                  <SidebarMenuButton
-                    tooltip={item.label}
-                    isActive={isItemActive(item)}
-                    onClick={() => handleNavigate(item)}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {showWorkspace && (
-          <SidebarGroup>
-            <SidebarGroupLabel>My Workspace</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {workspaceItems.map((item) => (
-                  <SidebarMenuItem key={item.key}>
-                    <SidebarMenuButton
-                      tooltip={item.label}
-                      isActive={isItemActive(item)}
-                      onClick={() => handleNavigate(item)}
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+  const NavButton = ({ item }: { item: NavItem }) => {
+    const active = isItemActive(item);
+    const button = (
+      <button
+        type="button"
+        onClick={() => handleNavigate(item)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-md p-2 text-left text-sm outline-none transition-colors",
+          "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+          active && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+          collapsed && !isMobile && "justify-center"
         )}
-      </SidebarContent>
-    </Sidebar>
+      >
+        <item.icon className="h-4 w-4 shrink-0" />
+        {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
+      </button>
+    );
+
+    if (collapsed && !isMobile) {
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent side="right">{item.label}</TooltipContent>
+        </Tooltip>
+      );
+    }
+    return button;
+  };
+
+  const NavContent = (
+    <nav className="flex flex-col gap-4 p-2">
+      <div className="flex flex-col gap-1">
+        {mainItems.map((item) => (
+          <NavButton key={item.key} item={item} />
+        ))}
+      </div>
+      {showWorkspace && (
+        <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3">
+          {(!collapsed || isMobile) && (
+            <span className="px-2 pb-1 text-xs font-medium text-sidebar-foreground/70">
+              My Workspace
+            </span>
+          )}
+          {workspaceItems.map((item) => (
+            <NavButton key={item.key} item={item} />
+          ))}
+        </div>
+      )}
+    </nav>
+  );
+
+  // Mobile: off-canvas sheet driven by the header trigger.
+  if (isMobile) {
+    return (
+      <Sheet open={openMobile} onOpenChange={setOpenMobile}>
+        <SheetContent
+          side="left"
+          className="w-[16rem] bg-sidebar p-0 text-sidebar-foreground"
+        >
+          <div className="h-full overflow-auto pt-4">{NavContent}</div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  // Desktop: collapsible left column under the full-width header.
+  return (
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "shrink-0 self-stretch overflow-y-auto border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-linear",
+          collapsed ? "w-[3.5rem]" : "w-64"
+        )}
+      >
+        {NavContent}
+      </aside>
+    </TooltipProvider>
   );
 };

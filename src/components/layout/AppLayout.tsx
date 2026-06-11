@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
+import { useNavigate } from "react-router-dom";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { DateTimeDisplay } from "@/components/dashboard/DateTimeDisplay";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -13,16 +14,27 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-surface">
-        <AppSidebar />
-        <SidebarInset className="flex flex-col min-w-0">
-          <header className="sticky top-0 z-40 flex items-center justify-between gap-2 border-b border-border/70 bg-gradient-brand px-3 sm:px-6 py-3 shadow-brand">
-            <div className="flex items-center gap-2 min-w-0">
-              <SidebarTrigger className="text-brand-yellow hover:bg-white/10" />
-              <div className="min-w-0">
+      <div className="min-h-screen flex flex-col w-full bg-surface">
+        {/* Full-width header across the whole page */}
+        <header className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-border/70 bg-gradient-brand px-3 sm:px-6 py-3 shadow-brand">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <SidebarTrigger className="text-brand-yellow hover:bg-white/10" />
+            <button
+              type="button"
+              onClick={() => navigate("/")}
+              className="flex items-center gap-2 min-w-0 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-yellow"
+              aria-label="Go to home"
+            >
+              <img
+                src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png"
+                alt="Australian Racing Tours"
+                className="h-8 w-auto shrink-0"
+              />
+              <div className="min-w-0 text-left">
                 <h1 className="font-display text-base sm:text-lg font-bold tracking-tight text-brand-yellow leading-none truncate">
                   Tour Operations
                 </h1>
@@ -30,18 +42,22 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                   Management System
                 </p>
               </div>
-            </div>
-            <div className="flex items-center gap-3 sm:gap-5">
-              {!isMobile && <DateTimeDisplay />}
-              <NotificationBell />
-              <UserDropdown />
-            </div>
-          </header>
+            </button>
+          </div>
+          <div className="flex items-center gap-3 sm:gap-5">
+            {!isMobile && <DateTimeDisplay />}
+            <NotificationBell />
+            <UserDropdown />
+          </div>
+        </header>
 
-          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-6 max-w-7xl w-full mx-auto">
-            {children}
+        {/* Below header: menu on the left, main panel on the right */}
+        <div className="flex flex-1 w-full min-h-0">
+          <AppSidebar />
+          <main className="flex-1 min-w-0 overflow-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl w-full mx-auto">{children}</div>
           </main>
-        </SidebarInset>
+        </div>
       </div>
 
       {/* Global floating Share button — copies the current URL so teammates can
