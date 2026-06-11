@@ -149,7 +149,7 @@ const PersonalCalendar = () => {
 
     const spans: Omit<Span, "startCol" | "endCol">[] = [];
 
-    tours.forEach((t) => {
+    if (filters.tours) tours.forEach((t) => {
       if (!t.start_date || !t.end_date || t.status === "cancelled") return;
       try {
         const s = parseISO(t.start_date);
@@ -170,7 +170,7 @@ const PersonalCalendar = () => {
       }
     });
 
-    leave.forEach((l) => {
+    if (filters.leave) leave.forEach((l) => {
       try {
         const s = parseISO(l.start_date);
         const e = parseISO(l.end_date);
