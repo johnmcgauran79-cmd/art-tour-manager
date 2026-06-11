@@ -22,11 +22,13 @@ import { EventDialog } from "@/components/calendar/EventDialog";
 import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const PersonalCalendar = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [cursor, setCursor] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEvent, setEditEvent] = useState<PersonalEvent | null>(null);
@@ -41,6 +43,12 @@ const PersonalCalendar = () => {
     const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [cursor]);
+
+  // Days of the current month only, used for the mobile agenda/list view.
+  const monthDays = useMemo(
+    () => eachDayOfInterval({ start: startOfMonth(cursor), end: endOfMonth(cursor) }),
+    [cursor]
+  );
 
   const eventsForDay = (day: Date) =>
     events.filter((e) => isSameDay(parseISO(e.starts_at), day));
