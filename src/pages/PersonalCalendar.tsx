@@ -546,6 +546,34 @@ const PersonalCalendar = () => {
         </div>
       </div>
 
+      {/* Legend — what each colour/icon means */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-primary" /> Events
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: TASK_COLOR.bg, border: `1px solid ${TASK_COLOR.border}` }}
+          />
+          Tasks
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: getTourColor("sample").bg, border: `1px solid ${getTourColor("sample").border}` }}
+          />
+          Tours (each tour has its own colour)
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: LEAVE_COLOR.bg, border: `1px solid ${LEAVE_COLOR.border}` }}
+          />
+          Staff Leave
+        </span>
+      </div>
+
       {/* View toggle + filters */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         {!isMobile && (

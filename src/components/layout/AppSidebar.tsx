@@ -22,6 +22,8 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { usePersonalTodos } from "@/hooks/usePersonalTodos";
+import { useMyTasks } from "@/hooks/useTaskQueries";
 
 interface NavItem {
   key: string;
@@ -30,6 +32,8 @@ interface NavItem {
   /** Query-param tab on the Index page, or a standalone route path. */
   tab?: string;
   path?: string;
+  /** Optional count badge shown on the nav item. */
+  badge?: number;
 }
 
 export const AppSidebar = () => {
@@ -44,17 +48,33 @@ export const AppSidebar = () => {
   const isAgent = userRole === "agent";
   const isHost = userRole === "host";
 
+  // Counts for nav badges.
+  const { data: todos = [] } = usePersonalTodos();
+  const { data: myTasks = [] } = useMyTasks();
+  const todoCount = todos.filter((t) => !t.completed).length;
+  const overdueTaskCount = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return myTasks.filter((t) => {
+      if (!t.due_date) return false;
+      if (["completed", "cancelled", "archived", "not_required"].includes(t.status)) return false;
+      const due = new Date(t.due_date);
+      due.setHours(0, 0, 0, 0);
+      return due < today;
+    }).length;
+  })();
+
   const mainItems: NavItem[] = [];
   if (!isAgent && !isHost) mainItems.push({ key: "dashboard", label: "Dashboard", icon: LayoutDashboard, tab: "dashboard" });
   if (!isAgent && !isHost) mainItems.push({ key: "operations", label: "Operations", icon: ClipboardList, tab: "operations" });
-  if (isAdminOrManager) mainItems.push({ key: "tasks", label: "Tasks", icon: CheckSquare, tab: "tasks" });
+  if (isAdminOrManager) mainItems.push({ key: "tasks", label: "Tasks", icon: CheckSquare, tab: "tasks", badge: overdueTaskCount });
   mainItems.push({ key: "tours", label: "Tours", icon: Map, tab: "tours" });
   if (!isHost) mainItems.push({ key: "bookings", label: "Bookings", icon: BookOpen, tab: "bookings" });
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
 
   const workspaceItems: NavItem[] = [
-    { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos" },
+    { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos", badge: todoCount },
     { key: "notes", label: "Notes", icon: StickyNote, path: "/notes" },
     // Calendar is Admin/Manager only; hosts get To-Do + Notes for on-the-go use.
     ...(isAdminOrManager
@@ -85,6 +105,20 @@ export const AppSidebar = () => {
 
   const NavButton = ({ item }: { item: NavItem }) => {
     const active = isItemActive(item);
+    const showBadge = !!item.badge && item.badge > 0;
+    const isTaskBadge = item.key === "tasks";
+    const badgeEl = showBadge ? (
+      <span
+        className={cn(
+          "ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-none",
+          isTaskBadge
+            ? "bg-destructive text-destructive-foreground"
+            : "bg-primary text-primary-foreground"
+        )}
+      >
+        {item.badge! > 99 ? "99+" : item.badge}
+      </span>
+    ) : null;
     const button = (
       <button
         type="button"
@@ -96,8 +130,23 @@ export const AppSidebar = () => {
           collapsed && !isMobile && "justify-center"
         )}
       >
-        <item.icon className="h-4 w-4 shrink-0" />
+        <span className="relative shrink-0">
+          <item.icon className="h-4 w-4" />
+          {showBadge && collapsed && !isMobile && (
+            <span
+              className={cn(
+                "absolute -right-1.5 -top-1.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full px-0.5 text-[8px] font-semibold leading-none",
+                isTaskBadge
+                  ? "bg-destructive text-destructive-foreground"
+                  : "bg-primary text-primary-foreground"
+              )}
+            >
+              {item.badge! > 9 ? "9+" : item.badge}
+            </span>
+          )}
+        </span>
         {(!collapsed || isMobile) && <span className="truncate">{item.label}</span>}
+        {(!collapsed || isMobile) && badgeEl}
       </button>
     );
 
