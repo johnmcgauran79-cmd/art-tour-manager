@@ -190,6 +190,9 @@ const PersonalCalendar = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button variant="outline" onClick={() => setCursor(new Date())}>Today</Button>
+          <Button variant="outline" onClick={() => { setDefaultDate(undefined); setLeaveDialogOpen(true); }}>
+            <Plane className="h-4 w-4 mr-2" /> Add Leave
+          </Button>
           <Button onClick={() => openCreate(new Date())}>
             <Plus className="h-4 w-4 mr-2" /> Event
           </Button>
@@ -201,6 +204,7 @@ const PersonalCalendar = () => {
         <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary" /> Personal event</span>
         <span className="flex items-center gap-1"><CheckSquare className="h-3 w-3" /> Task due</span>
         <span className="flex items-center gap-1"><MapIcon className="h-3 w-3" /> Tour</span>
+        <span className="flex items-center gap-1"><Plane className="h-3 w-3" /> Staff leave</span>
       </div>
 
       {isMobile ? (
