@@ -1,0 +1,111 @@
+import { useState } from "react";
+import { format, parseISO } from "date-fns";
+import { Plus, Trash2, CalendarIcon, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import {
+  usePersonalTodos,
+  useCreateTodo,
+  useUpdateTodo,
+  useDeleteTodo,
+} from "@/hooks/usePersonalTodos";
+
+const PersonalTodos = () => {
+  const { data: todos = [], isLoading } = usePersonalTodos();
+  const createTodo = useCreateTodo();
+  const updateTodo = useUpdateTodo();
+  const deleteTodo = useDeleteTodo();
+
+  const [newTitle, setNewTitle] = useState("");
+  const [newDue, setNewDue] = useState<Date | undefined>();
+  const [showCompleted, setShowCompleted] = useState(true);
+
+  const handleAdd = () => {
+    const title = newTitle.trim();
+    if (!title) return;
+    createTodo.mutate({ title, due_date: newDue ? format(newDue, "yyyy-MM-dd") : null });
+    setNewTitle("");
+    setNewDue(undefined);
+  };
+
+  const visible = todos.filter((t) => (showCompleted ? true : !t.completed));
+  const openCount = todos.filter((t) => !t.completed).length;
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold">My To-Do List</h1>
+          <p className="text-sm text-muted-foreground">{openCount} open · private to you</p>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => setShowCompleted((v) => !v)}>
+          {showCompleted ? "Hide completed" : "Show completed"}
+        </Button>
+      </div>
+
+      <Card className="p-3 flex flex-col sm:flex-row gap-2">
+        <Input
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+          placeholder="Add a quick to-do and press Enter…"
+          className="flex-1"
+        />
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn(!newDue && "text-muted-foreground")}>
+                <CalendarIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">{newDue ? format(newDue, "dd/MM/yyyy") : "Due date"}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar mode="single" selected={newDue} onSelect={setNewDue} initialFocus className="p-3 pointer-events-auto" />
+            </PopoverContent>
+          </Popover>
+          <Button onClick={handleAdd} disabled={!newTitle.trim()}>
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+      </Card>
+
+      <div className="space-y-2">
+        {isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+        {!isLoading && visible.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-8">Nothing here yet. Add your first to-do above.</p>
+        )}
+        {visible.map((todo) => (
+          <Card key={todo.id} className="p-3 flex items-center gap-3 group">
+            <Checkbox
+              checked={todo.completed}
+              onCheckedChange={(checked) => updateTodo.mutate({ id: todo.id, completed: !!checked })}
+            />
+            <span className={cn("flex-1 text-sm", todo.completed && "line-through text-muted-foreground")}>
+              {todo.title}
+            </span>
+            {todo.due_date && (
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {format(parseISO(todo.due_date), "dd/MM/yyyy")}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 opacity-0 group-hover:opacity-100"
+              onClick={() => deleteTodo.mutate(todo.id)}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default PersonalTodos;
