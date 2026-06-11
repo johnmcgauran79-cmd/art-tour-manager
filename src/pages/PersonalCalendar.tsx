@@ -251,60 +251,93 @@ const PersonalCalendar = () => {
             <div key={d} className="px-2 py-2 text-xs font-medium text-muted-foreground text-center">{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
-          {days.map((day) => {
-            const dayEvents = eventsForDay(day);
-            const dayTasks = tasksForDay(day);
-            const dayTours = toursForDay(day);
-            const inMonth = isSameMonth(day, cursor);
-            const today = isSameDay(day, new Date());
+        <div>
+          {weeks.map((week, wi) => {
+            const segments = segmentsForWeek(week);
+            const laneCount = segments.reduce((m, s) => Math.max(m, s.lane + 1), 0);
             return (
-              <div
-                key={day.toISOString()}
-                onClick={() => openCreate(day)}
-                className={cn(
-                  "min-h-[96px] border-b border-r p-1.5 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors",
-                  !inMonth && "bg-muted/20 text-muted-foreground"
-                )}
-              >
-                <div className="flex justify-end">
-                  <span
-                    className={cn(
-                      "text-xs h-5 w-5 flex items-center justify-center rounded-full",
-                      today && "bg-primary text-primary-foreground font-semibold"
-                    )}
-                  >
-                    {format(day, "d")}
-                  </span>
+              <div key={wi} className="relative border-b last:border-b-0">
+                {/* Day cells */}
+                <div className="grid grid-cols-7">
+                  {week.map((day) => {
+                    const inMonth = isSameMonth(day, cursor);
+                    const today = isSameDay(day, new Date());
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        onClick={() => openCreate(day)}
+                        className={cn(
+                          "min-h-[110px] border-r last:border-r-0 p-1.5 cursor-pointer hover:bg-muted/40 transition-colors",
+                          !inMonth && "bg-muted/20 text-muted-foreground"
+                        )}
+                      >
+                        <div className="flex justify-end">
+                          <span
+                            className={cn(
+                              "text-xs h-5 w-5 flex items-center justify-center rounded-full",
+                              today && "bg-primary text-primary-foreground font-semibold"
+                            )}
+                          >
+                            {format(day, "d")}
+                          </span>
+                        </div>
+                        {/* Reserve space for the spanning tour bars overlay */}
+                        <div style={{ height: laneCount * 20 }} />
+                        <div className="space-y-1 mt-1">
+                          {eventsForDay(day).map((ev) => (
+                            <button
+                              key={ev.id}
+                              onClick={(e) => { e.stopPropagation(); openEdit(ev); }}
+                              className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 text-white"
+                              style={{ backgroundColor: ev.color }}
+                            >
+                              {!ev.all_day && format(parseISO(ev.starts_at), "HH:mm") + " "}{ev.title}
+                            </button>
+                          ))}
+                          {tasksForDay(day).map((t) => {
+                            const c = getTourColor(t.tour_id);
+                            return (
+                              <button
+                                key={`task-${t.id}`}
+                                onClick={(e) => { e.stopPropagation(); navigate(`/tasks/${t.id}`); }}
+                                className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 flex items-center gap-1 border-l-2"
+                                style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
+                              >
+                                <CheckSquare className="h-2.5 w-2.5 shrink-0" /> {t.title}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {dayTours.map((t) => (
-                  <button
-                    key={`tour-${t.id}`}
-                    onClick={(e) => { e.stopPropagation(); navigate(`/tours/${t.id}`); }}
-                    className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 bg-amber-100 text-amber-900 flex items-center gap-1"
-                  >
-                    <Map className="h-2.5 w-2.5 shrink-0" /> {t.name}
-                  </button>
-                ))}
-                {dayEvents.map((ev) => (
-                  <button
-                    key={ev.id}
-                    onClick={(e) => { e.stopPropagation(); openEdit(ev); }}
-                    className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 text-white"
-                    style={{ backgroundColor: ev.color }}
-                  >
-                    {!ev.all_day && format(parseISO(ev.starts_at), "HH:mm") + " "}{ev.title}
-                  </button>
-                ))}
-                {dayTasks.map((t) => (
-                  <button
-                    key={`task-${t.id}`}
-                    onClick={(e) => { e.stopPropagation(); navigate(`/tasks/${t.id}`); }}
-                    className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 bg-slate-200 text-slate-800 flex items-center gap-1"
-                  >
-                    <CheckSquare className="h-2.5 w-2.5 shrink-0" /> {t.title}
-                  </button>
-                ))}
+                {/* Spanning tour bars overlay */}
+                <div
+                  className="pointer-events-none absolute left-0 right-0 grid grid-cols-7 gap-px px-1"
+                  style={{ top: 28 }}
+                >
+                  {segments.map((seg) => {
+                    const c = getTourColor(seg.tour.id);
+                    return (
+                      <button
+                        key={`tour-${seg.tour.id}`}
+                        onClick={() => navigate(`/tours/${seg.tour.id}`)}
+                        className="pointer-events-auto text-left text-[10px] truncate rounded px-1.5 h-[18px] leading-[18px] flex items-center gap-1 border-l-2"
+                        style={{
+                          gridColumn: `${seg.startCol + 1} / ${seg.endCol + 2}`,
+                          gridRow: seg.lane + 1,
+                          backgroundColor: c.bg,
+                          color: c.text,
+                          borderColor: c.border,
+                        }}
+                        title={seg.tour.name}
+                      >
+                        <Map className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
