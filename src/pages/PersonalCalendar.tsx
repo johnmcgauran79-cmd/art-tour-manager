@@ -20,7 +20,7 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
