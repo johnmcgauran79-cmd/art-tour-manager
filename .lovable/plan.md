@@ -1,54 +1,69 @@
-# Host Pre-Tour Briefing Email
+## Goal
 
-Automated email sent to each assigned tour host 7 days before tour start. Contains tour overview, meeting location, admin login info, first hotel, passenger summary, and a secure link to view/print the full Combined Host Information Report.
+Turn the ART system into a daily workspace by adding per-user personal productivity tools and replacing the top-tab navigation with a collapsible, mobile-friendly sidebar.
 
-## What gets built
+## 1. Navigation: top tabs → collapsible sidebar
 
-### 1. Database (migration)
-- Add new rule type value `host_pre_tour_briefing` (no enum change needed — `rule_type` is already a free text column).
-- Insert a default `email_template` of type `host_pre_tour_briefing` with the briefing content + merge fields.
-- New table `host_briefing_tokens` (id, tour_id, host_user_id, token, expires_at, created_at). 7-day expiry per project convention. RLS: only service role + the host themselves can read.
-- Track sends in existing `automated_email_log` (one row per host per tour).
+Replace the `AppLayout` top-tab bar with a shadcn `Sidebar` (`collapsible="icon"`).
 
-### 2. Secure host report page
-- New public route `/host-report/:token` rendering the exact same HTML as the existing `HostInfoHubReportModal` (reuses `useReportData` + same builder).
-- Edge function `validate-host-report-token` checks token validity + expiry, returns `tourId` and host info.
-- Page shows the report inline with a Print button (`window.print()`), so the host can view in browser or print to PDF themselves.
-- No host login required to view via token (token is the auth).
+- **Desktop**: left sidebar, collapses to a narrow icon rail. Brand header + ART logo at top. Trigger always visible in a slim top app bar (keeps DateTime, Notifications, User dropdown).
+- **Mobile / hosts on the go**: sidebar uses off-canvas sheet behaviour (shadcn default on mobile) opened by a hamburger in the top bar — full-width tap targets, closes on navigate. Hosts (who only see Tours) get a minimal menu.
+- Same role gating as today: dashboard/operations/contacts/settings hidden for agents & hosts; Tasks + new personal tools = Admin/Manager only; Tours for everyone; Bookings hidden for hosts.
+- Nav items get lucide icons. Active route highlighting via `useLocation`.
+- New "My Workspace" group in the sidebar (Admin/Manager only): **To-Do**, **Notes**, **Calendar**.
 
-### 3. Default email template content
-Subject: `Your upcoming tour: {{tour_name}} — host briefing`
+```text
+┌────────────┬───────────────────────────┐
+│ [ART logo] │  top bar: ☰  …  🔔  user   │
+│ Dashboard  ├───────────────────────────┤
+│ Operations │                           │
+│ Tasks      │        page content       │
+│ Tours      │                           │
+│ Bookings   │                           │
+│ Contacts   │                           │
+│ Settings   │                           │
+│ ── My ──   │                           │
+│ To-Do      │                           │
+│ Notes      │                           │
+│ Calendar   │                           │
+└────────────┴───────────────────────────┘
+```
 
-Body merge fields:
-- `{{host_first_name}}`, `{{tour_name}}`, `{{tour_start_date}}`, `{{tour_end_date}}`
-- `{{meeting_location}}` (from tour)
-- `{{admin_website_url}}`, `{{host_username}}` (their email) + "use Forgot Password if needed" link
-- `{{first_hotel_name}}`, `{{first_hotel_address}}`, `{{first_hotel_checkin}}`
-- `{{passenger_count}}`, `{{booking_count}}`
-- `{{combined_report_link}}` — token URL to the secure report page
-- Editable from Settings → Email Management → Email Templates
+## 2. Personal To-Do list (Admin/Manager)
 
-### 4. Edge function `send-host-briefing-email`
-- Input: `tourId`, `hostUserId`
-- Looks up tour, host profile, first hotel by checkin date, passenger summary, generates 7-day token, renders template, sends via Resend.
-- From: configured sender. To: host email. CC: admin@australianracingtours.com.au.
+Quick private checklist, fully separate from the Tasks system.
+- New table `personal_todos` (user_id, title, completed, position/order, optional due date).
+- UI: single column, add-on-enter input, check to complete, inline edit, delete, drag-to-reorder, "show/hide completed".
+- Strictly private — RLS scoped to `auth.uid()`.
 
-### 5. Scheduler — extend `process-automated-emails`
-- New branch processing `rule_type = 'host_pre_tour_briefing'` rules.
-- For each tour where `daysUntilTour <= rule.days_before_tour` (default 7), find all `tour_host_assignments`.
-- For each host: create `automated_email_log` row (one per host), respect approval flow (`pending_approval` → `approved` → invoke `send-host-briefing-email`).
-- Idempotency by `(tour_id, rule_id, host_user_id)`.
+## 3. Personal Notes (Admin/Manager)
 
-### 6. UI updates
-- Add `{ value: 'host_pre_tour_briefing', label: 'Host Pre-Tour Briefing', templateType: 'host_pre_tour_briefing' }` to `RULE_TYPES` in `AutomatedEmailRulesManagement.tsx`.
-- Add `recipient_filter = 'hosts'` option (recipient is the host, not bookings).
-- Seed a default rule: 7 days before tour, requires approval, active.
+Simple rich-text notes, searchable.
+- New table `personal_notes` (user_id, title, content (HTML), pinned, updated_at).
+- UI: list/sidebar of notes + editor pane. Reuse the existing Quill rich-text editor used elsewhere. Search by title/content, pin to top, autosave on blur, delete with confirm.
+- Private — RLS scoped to `auth.uid()`.
 
-## Out of scope
-- Post-tour emails (will be next, per user request).
-- Modifying the combined report itself (uses existing generator).
+## 4. Personal Calendar (Admin/Manager)
 
-## Notes
-- Token expiry: 7 days (matches project convention for customer access links).
-- One log row per host (not per booking) — keeps the "Email Approvals" panel grouped by tour + rule.
-- Hosts also receive their existing login (the email tells them their username = their email and to use Forgot Password).
+Month/agenda calendar overlaying three sources:
+- **Personal events** — new table `personal_events` (user_id, title, description, start, end, all_day, colour). Full create/edit/delete.
+- **My Tasks** — tasks assigned to the current user, shown on their due dates (read-only, click → task detail).
+- **Tours** — tours the user is involved with, shown across their date range (read-only, click → tour).
+- Month grid + list/agenda view. Australian dd/mm/yyyy formatting throughout. Mobile = agenda list by default.
+
+## Technical notes
+
+- Routes: `/todos`, `/notes`, `/calendar` (guarded to Admin/Manager, redirect others like Tasks does).
+- Three migrations, each: `CREATE TABLE` → `GRANT` (authenticated + service_role, no anon) → enable RLS → policies scoped to `auth.uid()` → `updated_at` trigger.
+- Data fetching via React Query hooks (`usePersonalTodos`, `usePersonalNotes`, `usePersonalEvents`) following existing hook patterns.
+- All dates stored/handled timezone-safe; due dates as literal `yyyy-MM-dd` per project rules.
+- Calendar lib: lightweight custom month grid built on existing `date-fns` + shadcn (avoids heavy deps); reuse `Calendar` primitives where helpful.
+
+## Suggested build order
+
+1. Sidebar navigation (foundation — everything hangs off it).
+2. Personal To-Do.
+3. Personal Notes.
+4. Personal Calendar.
+
+I can build all four in this round, or stop after the sidebar so you can review the new shell first.
