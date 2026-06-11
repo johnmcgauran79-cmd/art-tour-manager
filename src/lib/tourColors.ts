@@ -40,9 +40,9 @@ export const NEUTRAL_TASK_COLOR = NEUTRAL;
 // A single, high-contrast colour used for ALL tasks on the calendar so tasks
 // due stand out clearly regardless of which tour they belong to.
 export const TASK_COLOR: TourColor = {
-  bg: "hsl(0 84% 95%)",
-  border: "hsl(0 72% 51%)",
-  text: "hsl(0 72% 35%)",
+  bg: "hsl(210 100% 12%)",
+  border: "hsl(210 100% 8%)",
+  text: "hsl(45 100% 55%)",
 };
 
 // A single distinct colour for staff leave shown across all users' calendars.
