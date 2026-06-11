@@ -22,6 +22,8 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsAdminOrManager } from "@/hooks/useUserRoles";
+import { usePersonalTodos } from "@/hooks/usePersonalTodos";
+import { useMyTasks } from "@/hooks/useTaskQueries";
 
 interface NavItem {
   key: string;
@@ -30,6 +32,8 @@ interface NavItem {
   /** Query-param tab on the Index page, or a standalone route path. */
   tab?: string;
   path?: string;
+  /** Optional count badge shown on the nav item. */
+  badge?: number;
 }
 
 export const AppSidebar = () => {
