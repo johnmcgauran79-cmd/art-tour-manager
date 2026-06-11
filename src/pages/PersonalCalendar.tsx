@@ -427,11 +427,12 @@ const PersonalCalendar = () => {
                   style={{ top: 28 }}
                 >
                   {segments.map((seg) => {
-                    const c = getTourColor(seg.tour.id);
+                    const c = seg.color;
+                    const Icon = seg.kind === "leave" ? Plane : MapIcon;
                     return (
                       <button
-                        key={`tour-${seg.tour.id}`}
-                        onClick={() => navigate(`/tours/${seg.tour.id}`)}
+                        key={seg.key}
+                        onClick={() => seg.onClick?.()}
                         className="pointer-events-auto text-left text-[10px] truncate rounded px-1.5 h-[18px] leading-[18px] flex items-center gap-1 border-l-2"
                         style={{
                           gridColumn: `${seg.startCol + 1} / ${seg.endCol + 2}`,
@@ -440,9 +441,9 @@ const PersonalCalendar = () => {
                           color: c.text,
                           borderColor: c.border,
                         }}
-                        title={seg.tour.name}
+                        title={seg.label}
                       >
-                        <MapIcon className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
+                        <Icon className="h-2.5 w-2.5 shrink-0" /> {seg.label}
                       </button>
                     );
                   })}
