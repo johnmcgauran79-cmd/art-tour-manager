@@ -48,17 +48,33 @@ export const AppSidebar = () => {
   const isAgent = userRole === "agent";
   const isHost = userRole === "host";
 
+  // Counts for nav badges.
+  const { data: todos = [] } = usePersonalTodos();
+  const { data: myTasks = [] } = useMyTasks();
+  const todoCount = todos.filter((t) => !t.completed).length;
+  const overdueTaskCount = (() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return myTasks.filter((t) => {
+      if (!t.due_date) return false;
+      if (["completed", "cancelled", "archived", "not_required"].includes(t.status)) return false;
+      const due = new Date(t.due_date);
+      due.setHours(0, 0, 0, 0);
+      return due < today;
+    }).length;
+  })();
+
   const mainItems: NavItem[] = [];
   if (!isAgent && !isHost) mainItems.push({ key: "dashboard", label: "Dashboard", icon: LayoutDashboard, tab: "dashboard" });
   if (!isAgent && !isHost) mainItems.push({ key: "operations", label: "Operations", icon: ClipboardList, tab: "operations" });
-  if (isAdminOrManager) mainItems.push({ key: "tasks", label: "Tasks", icon: CheckSquare, tab: "tasks" });
+  if (isAdminOrManager) mainItems.push({ key: "tasks", label: "Tasks", icon: CheckSquare, tab: "tasks", badge: overdueTaskCount });
   mainItems.push({ key: "tours", label: "Tours", icon: Map, tab: "tours" });
   if (!isHost) mainItems.push({ key: "bookings", label: "Bookings", icon: BookOpen, tab: "bookings" });
   if (!isAgent && !isHost) mainItems.push({ key: "contacts", label: "Contacts", icon: Users, tab: "contacts" });
   if (isAdminOrManager) mainItems.push({ key: "settings", label: "Settings", icon: SettingsIcon, tab: "settings" });
 
   const workspaceItems: NavItem[] = [
-    { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos" },
+    { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos", badge: todoCount },
     { key: "notes", label: "Notes", icon: StickyNote, path: "/notes" },
     // Calendar is Admin/Manager only; hosts get To-Do + Notes for on-the-go use.
     ...(isAdminOrManager
