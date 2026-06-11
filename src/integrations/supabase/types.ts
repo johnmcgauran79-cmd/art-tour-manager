@@ -2313,6 +2313,39 @@ export type Database = {
           },
         ]
       }
+      staff_leave: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string
+          end_date: string
+          id: string
+          start_date: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description: string
+          end_date: string
+          id?: string
+          start_date: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          end_date?: string
+          id?: string
+          start_date?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       status_change_email_queue: {
         Row: {
           approval_status: string | null

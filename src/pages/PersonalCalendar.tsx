@@ -14,16 +14,25 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { EventDialog } from "@/components/calendar/EventDialog";
+import { LeaveDialog } from "@/components/calendar/LeaveDialog";
 import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getTourColor } from "@/lib/tourColors";
+import { getTourColor, TASK_COLOR, LEAVE_COLOR } from "@/lib/tourColors";
+import {
+  useStaffLeave,
+  useStaffMembers,
+  useDeleteStaffLeave,
+  staffDisplayName,
+} from "@/hooks/useStaffLeave";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -37,14 +46,32 @@ function chunkWeeks<T>(arr: T[]): T[][] {
 const PersonalCalendar = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const { userRole } = usePermissions();
+  const isAdmin = userRole === "admin";
   const [cursor, setCursor] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEvent, setEditEvent] = useState<PersonalEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
   const { data: events = [] } = usePersonalEvents();
   const { data: tasks = [] } = useMyTasks();
   const { data: tours = [] } = useTours();
+  const { data: leave = [] } = useStaffLeave();
+  const { data: staff = [] } = useStaffMembers();
+  const deleteLeave = useDeleteStaffLeave();
+
+  const staffById = useMemo(() => {
+    const m = new Map<string, (typeof staff)[number]>();
+    staff.forEach((s) => m.set(s.id, s));
+    return m;
+  }, [staff]);
+
+  const leaveLabel = (l: { user_id: string; description: string }) =>
+    `${staffDisplayName(staffById.get(l.user_id))} - ${l.description}`;
+
+  const canDeleteLeave = (l: { user_id: string }) => isAdmin || l.user_id === user?.id;
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 });
@@ -77,6 +104,15 @@ const PersonalCalendar = () => {
       if (t.status === "cancelled") return false;
       try {
         return isWithinInterval(day, { start: parseISO(t.start_date), end: parseISO(t.end_date) });
+      } catch {
+        return false;
+      }
+    });
+
+  const leaveForDay = (day: Date) =>
+    leave.filter((l) => {
+      try {
+        return isWithinInterval(day, { start: parseISO(l.start_date), end: parseISO(l.end_date) });
       } catch {
         return false;
       }
@@ -154,6 +190,9 @@ const PersonalCalendar = () => {
             <ChevronRight className="h-4 w-4" />
           </Button>
           <Button variant="outline" onClick={() => setCursor(new Date())}>Today</Button>
+          <Button variant="outline" onClick={() => { setDefaultDate(undefined); setLeaveDialogOpen(true); }}>
+            <Plane className="h-4 w-4 mr-2" /> Add Leave
+          </Button>
           <Button onClick={() => openCreate(new Date())}>
             <Plus className="h-4 w-4 mr-2" /> Event
           </Button>
@@ -164,7 +203,8 @@ const PersonalCalendar = () => {
       <div className="flex items-center gap-4 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><span className="h-2.5 w-2.5 rounded-full bg-primary" /> Personal event</span>
         <span className="flex items-center gap-1"><CheckSquare className="h-3 w-3" /> Task due</span>
-        <span className="flex items-center gap-1"><Map className="h-3 w-3" /> Tour</span>
+        <span className="flex items-center gap-1"><MapIcon className="h-3 w-3" /> Tour</span>
+        <span className="flex items-center gap-1"><Plane className="h-3 w-3" /> Staff leave</span>
       </div>
 
       {isMobile ? (
@@ -173,7 +213,8 @@ const PersonalCalendar = () => {
             const dayEvents = eventsForDay(day);
             const dayTasks = tasksForDay(day);
             const dayTours = toursForDay(day);
-            const total = dayEvents.length + dayTasks.length + dayTours.length;
+            const dayLeave = leaveForDay(day);
+            const total = dayEvents.length + dayTasks.length + dayTours.length + dayLeave.length;
             if (total === 0) return null;
             const today = isSameDay(day, new Date());
             return (
@@ -204,7 +245,7 @@ const PersonalCalendar = () => {
                         className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
                         style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
                       >
-                        <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
+                        <MapIcon className="h-3.5 w-3.5 shrink-0" /> {t.name}
                       </button>
                     );
                   })}
@@ -219,8 +260,23 @@ const PersonalCalendar = () => {
                       <span className="truncate">{ev.title}</span>
                     </button>
                   ))}
+                  {dayLeave.map((l) => (
+                    <div
+                      key={`leave-${l.id}`}
+                      className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
+                      style={{ backgroundColor: LEAVE_COLOR.bg, color: LEAVE_COLOR.text, borderColor: LEAVE_COLOR.border }}
+                    >
+                      <Plane className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate flex-1">{leaveLabel(l)}</span>
+                      {canDeleteLeave(l) && (
+                        <button onClick={() => deleteLeave.mutate(l.id)} aria-label="Delete leave">
+                          <Trash2 className="h-3.5 w-3.5 shrink-0 opacity-60" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                   {dayTasks.map((t) => {
-                    const c = getTourColor(t.tour_id);
+                    const c = TASK_COLOR;
                     return (
                       <button
                         key={`task-${t.id}`}
@@ -237,7 +293,7 @@ const PersonalCalendar = () => {
             );
           })}
           {monthDays.every(
-            (day) => eventsForDay(day).length + tasksForDay(day).length + toursForDay(day).length === 0
+            (day) => eventsForDay(day).length + tasksForDay(day).length + toursForDay(day).length + leaveForDay(day).length === 0
           ) && (
             <p className="text-sm text-muted-foreground text-center py-8">
               Nothing scheduled this month.
@@ -295,7 +351,7 @@ const PersonalCalendar = () => {
                             </button>
                           ))}
                           {tasksForDay(day).map((t) => {
-                            const c = getTourColor(t.tour_id);
+                            const c = TASK_COLOR;
                             return (
                               <button
                                 key={`task-${t.id}`}
@@ -307,6 +363,18 @@ const PersonalCalendar = () => {
                               </button>
                             );
                           })}
+                          {leaveForDay(day).map((l) => (
+                            <div
+                              key={`leave-${l.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 flex items-center gap-1 border-l-2"
+                              style={{ backgroundColor: LEAVE_COLOR.bg, color: LEAVE_COLOR.text, borderColor: LEAVE_COLOR.border }}
+                              title={leaveLabel(l)}
+                            >
+                              <Plane className="h-2.5 w-2.5 shrink-0" />
+                              <span className="truncate">{leaveLabel(l)}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
@@ -333,7 +401,7 @@ const PersonalCalendar = () => {
                         }}
                         title={seg.tour.name}
                       >
-                        <Map className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
+                        <MapIcon className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
                       </button>
                     );
                   })}
@@ -349,6 +417,12 @@ const PersonalCalendar = () => {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         event={editEvent}
+        defaultDate={defaultDate}
+      />
+
+      <LeaveDialog
+        open={leaveDialogOpen}
+        onOpenChange={setLeaveDialogOpen}
         defaultDate={defaultDate}
       />
     </div>
