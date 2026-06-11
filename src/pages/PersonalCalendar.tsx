@@ -23,8 +23,16 @@ import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getTourColor } from "@/lib/tourColors";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Split the flat day list into weeks of 7 for spanning tour bars.
+function chunkWeeks<T>(arr: T[]): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += 7) out.push(arr.slice(i, i + 7));
+  return out;
+}
 
 const PersonalCalendar = () => {
   const navigate = useNavigate();
@@ -43,6 +51,8 @@ const PersonalCalendar = () => {
     const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [cursor]);
+
+  const weeks = useMemo(() => chunkWeeks(days), [days]);
 
   // Days of the current month only, used for the mobile agenda/list view.
   const monthDays = useMemo(
@@ -71,6 +81,51 @@ const PersonalCalendar = () => {
         return false;
       }
     });
+
+  // Build spanning tour segments (with stacking lanes) for a single week row.
+  const segmentsForWeek = (week: Date[]) => {
+    const overlapping = tours.filter((t) => {
+      if (!t.start_date || !t.end_date) return false;
+      if (t.status === "cancelled") return false;
+      try {
+        const s = parseISO(t.start_date);
+        const e = parseISO(t.end_date);
+        return week.some((d) => isWithinInterval(d, { start: s, end: e }));
+      } catch {
+        return false;
+      }
+    });
+
+    const raw = overlapping
+      .map((t) => {
+        const s = parseISO(t.start_date as string);
+        const e = parseISO(t.end_date as string);
+        let startCol = -1;
+        let endCol = -1;
+        week.forEach((d, i) => {
+          if (isWithinInterval(d, { start: s, end: e })) {
+            if (startCol === -1) startCol = i;
+            endCol = i;
+          }
+        });
+        return { tour: t, startCol, endCol };
+      })
+      .filter((seg) => seg.startCol !== -1)
+      .sort((a, b) => a.startCol - b.startCol || a.tour.name.localeCompare(b.tour.name));
+
+    // Greedy lane assignment so overlapping tours stack vertically.
+    const laneEnds: number[] = [];
+    return raw.map((seg) => {
+      let lane = laneEnds.findIndex((end) => end < seg.startCol);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(seg.endCol);
+      } else {
+        laneEnds[lane] = seg.endCol;
+      }
+      return { ...seg, lane };
+    });
+  };
 
   const openCreate = (day: Date) => {
     setEditEvent(null);
@@ -140,15 +195,19 @@ const PersonalCalendar = () => {
                   </Button>
                 </div>
                 <div className="space-y-1.5">
-                  {dayTours.map((t) => (
-                    <button
-                      key={`tour-${t.id}`}
-                      onClick={() => navigate(`/tours/${t.id}`)}
-                      className="w-full text-left text-xs rounded px-2 py-1.5 bg-amber-100 text-amber-900 flex items-center gap-2"
-                    >
-                      <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
-                    </button>
-                  ))}
+                  {dayTours.map((t) => {
+                    const c = getTourColor(t.id);
+                    return (
+                      <button
+                        key={`tour-${t.id}`}
+                        onClick={() => navigate(`/tours/${t.id}`)}
+                        className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
+                        style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
+                      >
+                        <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
+                      </button>
+                    );
+                  })}
                   {dayEvents.map((ev) => (
                     <button
                       key={ev.id}
@@ -160,15 +219,19 @@ const PersonalCalendar = () => {
                       <span className="truncate">{ev.title}</span>
                     </button>
                   ))}
-                  {dayTasks.map((t) => (
-                    <button
-                      key={`task-${t.id}`}
-                      onClick={() => navigate(`/tasks/${t.id}`)}
-                      className="w-full text-left text-xs rounded px-2 py-1.5 bg-slate-200 text-slate-800 flex items-center gap-2"
-                    >
-                      <CheckSquare className="h-3.5 w-3.5 shrink-0" /> {t.title}
-                    </button>
-                  ))}
+                  {dayTasks.map((t) => {
+                    const c = getTourColor(t.tour_id);
+                    return (
+                      <button
+                        key={`task-${t.id}`}
+                        onClick={() => navigate(`/tasks/${t.id}`)}
+                        className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
+                        style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
+                      >
+                        <CheckSquare className="h-3.5 w-3.5 shrink-0" /> {t.title}
+                      </button>
+                    );
+                  })}
                 </div>
               </Card>
             );
@@ -188,60 +251,93 @@ const PersonalCalendar = () => {
             <div key={d} className="px-2 py-2 text-xs font-medium text-muted-foreground text-center">{d}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
-          {days.map((day) => {
-            const dayEvents = eventsForDay(day);
-            const dayTasks = tasksForDay(day);
-            const dayTours = toursForDay(day);
-            const inMonth = isSameMonth(day, cursor);
-            const today = isSameDay(day, new Date());
+        <div>
+          {weeks.map((week, wi) => {
+            const segments = segmentsForWeek(week);
+            const laneCount = segments.reduce((m, s) => Math.max(m, s.lane + 1), 0);
             return (
-              <div
-                key={day.toISOString()}
-                onClick={() => openCreate(day)}
-                className={cn(
-                  "min-h-[96px] border-b border-r p-1.5 space-y-1 cursor-pointer hover:bg-muted/40 transition-colors",
-                  !inMonth && "bg-muted/20 text-muted-foreground"
-                )}
-              >
-                <div className="flex justify-end">
-                  <span
-                    className={cn(
-                      "text-xs h-5 w-5 flex items-center justify-center rounded-full",
-                      today && "bg-primary text-primary-foreground font-semibold"
-                    )}
-                  >
-                    {format(day, "d")}
-                  </span>
+              <div key={wi} className="relative border-b last:border-b-0">
+                {/* Day cells */}
+                <div className="grid grid-cols-7">
+                  {week.map((day) => {
+                    const inMonth = isSameMonth(day, cursor);
+                    const today = isSameDay(day, new Date());
+                    return (
+                      <div
+                        key={day.toISOString()}
+                        onClick={() => openCreate(day)}
+                        className={cn(
+                          "min-h-[110px] border-r last:border-r-0 p-1.5 cursor-pointer hover:bg-muted/40 transition-colors",
+                          !inMonth && "bg-muted/20 text-muted-foreground"
+                        )}
+                      >
+                        <div className="flex justify-end">
+                          <span
+                            className={cn(
+                              "text-xs h-5 w-5 flex items-center justify-center rounded-full",
+                              today && "bg-primary text-primary-foreground font-semibold"
+                            )}
+                          >
+                            {format(day, "d")}
+                          </span>
+                        </div>
+                        {/* Reserve space for the spanning tour bars overlay */}
+                        <div style={{ height: laneCount * 20 }} />
+                        <div className="space-y-1 mt-1">
+                          {eventsForDay(day).map((ev) => (
+                            <button
+                              key={ev.id}
+                              onClick={(e) => { e.stopPropagation(); openEdit(ev); }}
+                              className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 text-white"
+                              style={{ backgroundColor: ev.color }}
+                            >
+                              {!ev.all_day && format(parseISO(ev.starts_at), "HH:mm") + " "}{ev.title}
+                            </button>
+                          ))}
+                          {tasksForDay(day).map((t) => {
+                            const c = getTourColor(t.tour_id);
+                            return (
+                              <button
+                                key={`task-${t.id}`}
+                                onClick={(e) => { e.stopPropagation(); navigate(`/tasks/${t.id}`); }}
+                                className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 flex items-center gap-1 border-l-2"
+                                style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
+                              >
+                                <CheckSquare className="h-2.5 w-2.5 shrink-0" /> {t.title}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {dayTours.map((t) => (
-                  <button
-                    key={`tour-${t.id}`}
-                    onClick={(e) => { e.stopPropagation(); navigate(`/tours/${t.id}`); }}
-                    className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 bg-amber-100 text-amber-900 flex items-center gap-1"
-                  >
-                    <Map className="h-2.5 w-2.5 shrink-0" /> {t.name}
-                  </button>
-                ))}
-                {dayEvents.map((ev) => (
-                  <button
-                    key={ev.id}
-                    onClick={(e) => { e.stopPropagation(); openEdit(ev); }}
-                    className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 text-white"
-                    style={{ backgroundColor: ev.color }}
-                  >
-                    {!ev.all_day && format(parseISO(ev.starts_at), "HH:mm") + " "}{ev.title}
-                  </button>
-                ))}
-                {dayTasks.map((t) => (
-                  <button
-                    key={`task-${t.id}`}
-                    onClick={(e) => { e.stopPropagation(); navigate(`/tasks/${t.id}`); }}
-                    className="w-full text-left text-[10px] truncate rounded px-1 py-0.5 bg-slate-200 text-slate-800 flex items-center gap-1"
-                  >
-                    <CheckSquare className="h-2.5 w-2.5 shrink-0" /> {t.title}
-                  </button>
-                ))}
+                {/* Spanning tour bars overlay */}
+                <div
+                  className="pointer-events-none absolute left-0 right-0 grid grid-cols-7 gap-px px-1"
+                  style={{ top: 28 }}
+                >
+                  {segments.map((seg) => {
+                    const c = getTourColor(seg.tour.id);
+                    return (
+                      <button
+                        key={`tour-${seg.tour.id}`}
+                        onClick={() => navigate(`/tours/${seg.tour.id}`)}
+                        className="pointer-events-auto text-left text-[10px] truncate rounded px-1.5 h-[18px] leading-[18px] flex items-center gap-1 border-l-2"
+                        style={{
+                          gridColumn: `${seg.startCol + 1} / ${seg.endCol + 2}`,
+                          gridRow: seg.lane + 1,
+                          backgroundColor: c.bg,
+                          color: c.text,
+                          borderColor: c.border,
+                        }}
+                        title={seg.tour.name}
+                      >
+                        <Map className="h-2.5 w-2.5 shrink-0" /> {seg.tour.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             );
           })}
