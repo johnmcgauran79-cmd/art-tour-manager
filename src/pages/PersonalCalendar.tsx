@@ -195,15 +195,19 @@ const PersonalCalendar = () => {
                   </Button>
                 </div>
                 <div className="space-y-1.5">
-                  {dayTours.map((t) => (
-                    <button
-                      key={`tour-${t.id}`}
-                      onClick={() => navigate(`/tours/${t.id}`)}
-                      className="w-full text-left text-xs rounded px-2 py-1.5 bg-amber-100 text-amber-900 flex items-center gap-2"
-                    >
-                      <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
-                    </button>
-                  ))}
+                  {dayTours.map((t) => {
+                    const c = getTourColor(t.id);
+                    return (
+                      <button
+                        key={`tour-${t.id}`}
+                        onClick={() => navigate(`/tours/${t.id}`)}
+                        className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
+                        style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
+                      >
+                        <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
+                      </button>
+                    );
+                  })}
                   {dayEvents.map((ev) => (
                     <button
                       key={ev.id}
@@ -215,15 +219,19 @@ const PersonalCalendar = () => {
                       <span className="truncate">{ev.title}</span>
                     </button>
                   ))}
-                  {dayTasks.map((t) => (
-                    <button
-                      key={`task-${t.id}`}
-                      onClick={() => navigate(`/tasks/${t.id}`)}
-                      className="w-full text-left text-xs rounded px-2 py-1.5 bg-slate-200 text-slate-800 flex items-center gap-2"
-                    >
-                      <CheckSquare className="h-3.5 w-3.5 shrink-0" /> {t.title}
-                    </button>
-                  ))}
+                  {dayTasks.map((t) => {
+                    const c = getTourColor(t.tour_id);
+                    return (
+                      <button
+                        key={`task-${t.id}`}
+                        onClick={() => navigate(`/tasks/${t.id}`)}
+                        className="w-full text-left text-xs rounded px-2 py-1.5 flex items-center gap-2 border-l-4"
+                        style={{ backgroundColor: c.bg, color: c.text, borderColor: c.border }}
+                      >
+                        <CheckSquare className="h-3.5 w-3.5 shrink-0" /> {t.title}
+                      </button>
+                    );
+                  })}
                 </div>
               </Card>
             );
