@@ -20,7 +20,7 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map as MapIcon, Plane, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Toggle } from "@/components/ui/toggle";
@@ -546,31 +546,19 @@ const PersonalCalendar = () => {
         </div>
       </div>
 
-      {/* Legend — what each colour/icon means */}
+      {/* Legend — what each icon means */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-primary" /> Events
+          <CalendarDays className="h-3.5 w-3.5" /> Events
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: TASK_COLOR.bg, border: `1px solid ${TASK_COLOR.border}` }}
-          />
-          Tasks
+          <CheckSquare className="h-3.5 w-3.5" /> Tasks
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: getTourColor("sample").bg, border: `1px solid ${getTourColor("sample").border}` }}
-          />
-          Tours (each tour has its own colour)
+          <MapIcon className="h-3.5 w-3.5" /> Tours
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            className="h-2.5 w-2.5 rounded-full"
-            style={{ backgroundColor: LEAVE_COLOR.bg, border: `1px solid ${LEAVE_COLOR.border}` }}
-          />
-          Staff Leave
+          <Plane className="h-3.5 w-3.5" /> Staff Leave
         </span>
       </div>
 
