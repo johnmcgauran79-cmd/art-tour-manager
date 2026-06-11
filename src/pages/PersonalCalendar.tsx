@@ -55,6 +55,14 @@ const PersonalCalendar = () => {
   const [editEvent, setEditEvent] = useState<PersonalEvent | null>(null);
   const [defaultDate, setDefaultDate] = useState<string | undefined>();
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [filters, setFilters] = useState({
+    events: true,
+    tasks: true,
+    tours: true,
+    leave: true,
+  });
+  const toggleFilter = (key: keyof typeof filters) =>
+    setFilters((f) => ({ ...f, [key]: !f[key] }));
 
   const { data: events = [] } = usePersonalEvents();
   const { data: tasks = [] } = useMyTasks();
