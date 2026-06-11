@@ -86,6 +86,30 @@ const TaskRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+/**
+ * Guards the personal workspace tools (To-Do, Notes) which are available to
+ * Admin, Manager AND Host roles — hosts use them for on-the-go note taking
+ * while running tours. Agents/booking agents are redirected to the dashboard.
+ */
+const WorkspaceRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading, userRole } = useAuth();
+  const { isAdminOrManager, isLoading: rolesLoading } = useIsAdminOrManager();
+
+  if (loading || rolesLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!isAdminOrManager && userRole !== "host") {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const ThemeApplier = () => {
   useThemeProvider();
   return null;
@@ -182,21 +206,21 @@ function App() {
               <Route
                 path="/todos"
                 element={
-                  <TaskRoute>
+                  <WorkspaceRoute>
                     <AppLayout>
                       <PersonalTodos />
                     </AppLayout>
-                  </TaskRoute>
+                  </WorkspaceRoute>
                 }
               />
               <Route
                 path="/notes"
                 element={
-                  <TaskRoute>
+                  <WorkspaceRoute>
                     <AppLayout>
                       <PersonalNotes />
                     </AppLayout>
-                  </TaskRoute>
+                  </WorkspaceRoute>
                 }
               />
               <Route

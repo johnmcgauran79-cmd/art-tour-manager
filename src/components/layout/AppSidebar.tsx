@@ -58,8 +58,13 @@ export const AppSidebar = () => {
   const workspaceItems: NavItem[] = [
     { key: "todos", label: "To-Do", icon: ListTodo, path: "/todos" },
     { key: "notes", label: "Notes", icon: StickyNote, path: "/notes" },
-    { key: "calendar", label: "Calendar", icon: CalendarDays, path: "/calendar" },
+    // Calendar is Admin/Manager only; hosts get To-Do + Notes for on-the-go use.
+    ...(isAdminOrManager
+      ? [{ key: "calendar", label: "Calendar", icon: CalendarDays, path: "/calendar" } as NavItem]
+      : []),
   ];
+
+  const showWorkspace = isAdminOrManager || isHost;
 
   const activeTab = (() => {
     if (location.pathname === "/") return searchParams.get("tab") || (isHost ? "tours" : "dashboard");
@@ -115,7 +120,7 @@ export const AppSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {isAdminOrManager && (
+        {showWorkspace && (
           <SidebarGroup>
             <SidebarGroupLabel>My Workspace</SidebarGroupLabel>
             <SidebarGroupContent>

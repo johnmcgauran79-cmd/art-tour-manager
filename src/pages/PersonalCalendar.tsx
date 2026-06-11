@@ -22,11 +22,13 @@ import { EventDialog } from "@/components/calendar/EventDialog";
 import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const PersonalCalendar = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [cursor, setCursor] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editEvent, setEditEvent] = useState<PersonalEvent | null>(null);
@@ -41,6 +43,12 @@ const PersonalCalendar = () => {
     const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
     return eachDayOfInterval({ start, end });
   }, [cursor]);
+
+  // Days of the current month only, used for the mobile agenda/list view.
+  const monthDays = useMemo(
+    () => eachDayOfInterval({ start: startOfMonth(cursor), end: endOfMonth(cursor) }),
+    [cursor]
+  );
 
   const eventsForDay = (day: Date) =>
     events.filter((e) => isSameDay(parseISO(e.starts_at), day));
@@ -104,6 +112,76 @@ const PersonalCalendar = () => {
         <span className="flex items-center gap-1"><Map className="h-3 w-3" /> Tour</span>
       </div>
 
+      {isMobile ? (
+        <div className="space-y-2">
+          {monthDays.map((day) => {
+            const dayEvents = eventsForDay(day);
+            const dayTasks = tasksForDay(day);
+            const dayTours = toursForDay(day);
+            const total = dayEvents.length + dayTasks.length + dayTours.length;
+            if (total === 0) return null;
+            const today = isSameDay(day, new Date());
+            return (
+              <Card key={day.toISOString()} className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "text-sm font-semibold",
+                        today && "text-primary"
+                      )}
+                    >
+                      {format(day, "EEE dd/MM/yyyy")}
+                    </span>
+                    {today && <span className="text-[10px] rounded-full bg-primary px-1.5 py-0.5 text-primary-foreground">Today</span>}
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openCreate(day)}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-1.5">
+                  {dayTours.map((t) => (
+                    <button
+                      key={`tour-${t.id}`}
+                      onClick={() => navigate(`/tours/${t.id}`)}
+                      className="w-full text-left text-xs rounded px-2 py-1.5 bg-amber-100 text-amber-900 flex items-center gap-2"
+                    >
+                      <Map className="h-3.5 w-3.5 shrink-0" /> {t.name}
+                    </button>
+                  ))}
+                  {dayEvents.map((ev) => (
+                    <button
+                      key={ev.id}
+                      onClick={() => openEdit(ev)}
+                      className="w-full text-left text-xs rounded px-2 py-1.5 text-white flex items-center gap-2"
+                      style={{ backgroundColor: ev.color }}
+                    >
+                      <span className="shrink-0">{ev.all_day ? "All day" : format(parseISO(ev.starts_at), "HH:mm")}</span>
+                      <span className="truncate">{ev.title}</span>
+                    </button>
+                  ))}
+                  {dayTasks.map((t) => (
+                    <button
+                      key={`task-${t.id}`}
+                      onClick={() => navigate(`/tasks/${t.id}`)}
+                      className="w-full text-left text-xs rounded px-2 py-1.5 bg-slate-200 text-slate-800 flex items-center gap-2"
+                    >
+                      <CheckSquare className="h-3.5 w-3.5 shrink-0" /> {t.title}
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            );
+          })}
+          {monthDays.every(
+            (day) => eventsForDay(day).length + tasksForDay(day).length + toursForDay(day).length === 0
+          ) && (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nothing scheduled this month.
+            </p>
+          )}
+        </div>
+      ) : (
       <Card className="overflow-hidden">
         <div className="grid grid-cols-7 border-b bg-muted/40">
           {WEEKDAYS.map((d) => (
@@ -169,6 +247,7 @@ const PersonalCalendar = () => {
           })}
         </div>
       </Card>
+      )}
 
       <EventDialog
         open={dialogOpen}
