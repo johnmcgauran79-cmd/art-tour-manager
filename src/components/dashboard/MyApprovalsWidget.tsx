@@ -51,7 +51,7 @@ export const MyApprovalsWidget = () => {
       const [{ data: tasks }, { data: profiles }] = await Promise.all([
         supabase
           .from("tasks")
-          .select("id, title, due_date, priority")
+          .select("id, title, due_date, priority, status")
           .in("id", taskIds),
         requesterIds.length
           ? supabase
@@ -64,13 +64,22 @@ export const MyApprovalsWidget = () => {
       const taskMap = new Map((tasks || []).map((t: any) => [t.id, t]));
       const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
-      return rows.map((r) => ({
-        id: r.id,
-        task_id: r.task_id,
-        requested_at: r.requested_at,
-        task: taskMap.get(r.task_id) || null,
-        requester: r.requested_by ? profileMap.get(r.requested_by) || null : null,
-      }));
+      return rows
+        // Only show approvals for tasks that are still awaiting a decision.
+        // Tasks that are already approved/completed/closed (e.g. "any one"
+        // policy resolved by another approver, or the task was completed)
+        // should not keep appearing as outstanding for this user.
+        .filter((r) => {
+          const t = taskMap.get(r.task_id);
+          return t && t.status === "approval_required";
+        })
+        .map((r) => ({
+          id: r.id,
+          task_id: r.task_id,
+          requested_at: r.requested_at,
+          task: taskMap.get(r.task_id) || null,
+          requester: r.requested_by ? profileMap.get(r.requested_by) || null : null,
+        }));
     },
     enabled: !!user?.id,
     refetchInterval: 60_000,
