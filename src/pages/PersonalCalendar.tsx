@@ -14,16 +14,25 @@ import {
   parseISO,
   isWithinInterval,
 } from "date-fns";
-import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, CheckSquare, Map, Plane, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { EventDialog } from "@/components/calendar/EventDialog";
+import { LeaveDialog } from "@/components/calendar/LeaveDialog";
 import { usePersonalEvents, PersonalEvent } from "@/hooks/usePersonalEvents";
 import { useMyTasks } from "@/hooks/useTaskQueries";
 import { useTours } from "@/hooks/useTours";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getTourColor } from "@/lib/tourColors";
+import { getTourColor, TASK_COLOR, LEAVE_COLOR } from "@/lib/tourColors";
+import {
+  useStaffLeave,
+  useStaffMembers,
+  useDeleteStaffLeave,
+  staffDisplayName,
+} from "@/hooks/useStaffLeave";
+import { useAuth } from "@/hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
