@@ -106,15 +106,9 @@ export const AppSidebar = () => {
   const NavButton = ({ item }: { item: NavItem }) => {
     const active = isItemActive(item);
     const showBadge = !!item.badge && item.badge > 0;
-    const isTaskBadge = item.key === "tasks";
     const badgeEl = showBadge ? (
       <span
-        className={cn(
-          "ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-semibold leading-none",
-          isTaskBadge
-            ? "bg-destructive text-destructive-foreground"
-            : "bg-primary text-primary-foreground"
-        )}
+        className="ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-secondary px-1.5 text-[10px] font-semibold leading-none text-secondary-foreground"
       >
         {item.badge! > 99 ? "99+" : item.badge}
       </span>
@@ -134,12 +128,7 @@ export const AppSidebar = () => {
           <item.icon className="h-4 w-4" />
           {showBadge && collapsed && !isMobile && (
             <span
-              className={cn(
-                "absolute -right-1.5 -top-1.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full px-0.5 text-[8px] font-semibold leading-none",
-                isTaskBadge
-                  ? "bg-destructive text-destructive-foreground"
-                  : "bg-primary text-primary-foreground"
-              )}
+              className="absolute -right-1.5 -top-1.5 inline-flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-secondary px-0.5 text-[8px] font-semibold leading-none text-secondary-foreground"
             >
               {item.badge! > 9 ? "9+" : item.badge}
             </span>
