@@ -113,7 +113,7 @@ export const AppSidebar = () => {
   };
 
   const NavContent = (
-    <nav className="flex flex-col gap-4 p-2">
+    <nav className="flex flex-col gap-4 px-2 pb-2 pt-6">
       <div className="flex flex-col gap-1">
         {mainItems.map((item) => (
           <NavButton key={item.key} item={item} />
