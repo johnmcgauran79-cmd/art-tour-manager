@@ -91,3 +91,23 @@ export const useDeleteStaffLeave = () => {
     onError: (e: any) => toast({ title: "Could not delete leave", description: e.message, variant: "destructive" }),
   });
 };
+
+export const useUpdateStaffLeave = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  return useMutation({
+    mutationFn: async (input: { id: string; description: string; start_date: string; end_date: string }) => {
+      const { id, ...fields } = input;
+      const { data, error } = await supabase
+        .from("staff_leave")
+        .update(fields)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as StaffLeave;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["staff_leave"] }),
+    onError: (e: any) => toast({ title: "Could not update leave", description: e.message, variant: "destructive" }),
+  });
+};
