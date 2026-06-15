@@ -162,7 +162,22 @@ export const UserMentionInput = ({
     
     // Create the structured mention format for the actual value
     const mentionText = `@[${displayName}](${user.id})`;
-    const newValue = beforeMention + mentionText + " " + textAfterCursor;
+    // Restore any previously-inserted mentions (which appear as plain "@Name" in the
+    // display text) back to their structured "@[Name](id)" form. Without this, only
+    // the most recently added mention keeps its id and earlier tags are lost.
+    const toStructured = (segment: string) => {
+      let result = segment;
+      [...mentionPositions]
+        .sort((a, b) => b.displayName.length - a.displayName.length)
+        .forEach((mention) => {
+          result = result.split(`@${mention.displayName}`).join(
+            `@[${mention.displayName}](${mention.userId})`
+          );
+        });
+      return result;
+    };
+    const newValue =
+      toStructured(beforeMention) + mentionText + " " + toStructured(textAfterCursor);
     
     console.log('Adding mention for user:', user.id, 'Display:', displayName);
     console.log('New structured value:', newValue);
