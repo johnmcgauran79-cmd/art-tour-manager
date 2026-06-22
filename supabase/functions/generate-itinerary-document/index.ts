@@ -555,12 +555,15 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   html += `</div>`;
 
   // ===== Additional information =====
-  if (options.includeAdditionalInfo && additionalInfoSections.length > 0) {
+  if (options.includeAdditionalInfo && (cancellationPolicy || additionalInfoSections.length > 0)) {
     html += `
       <div class="page section">
         <div class="run-head"><strong>${runningTitle}</strong></div>
         <h2 class="section-title">Additional Information</h2>
     `;
+    if (cancellationPolicy) {
+      html += `<div class="info-block">${buildCancellationPolicyTableHtml(cancellationPolicy, NAVY)}</div>`;
+    }
     additionalInfoSections.forEach((section: any) => {
       html += `
         <div class="info-block">
