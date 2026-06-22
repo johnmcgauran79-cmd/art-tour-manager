@@ -190,6 +190,33 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     });
   };
 
+  const formatDateShort = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-AU', {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Brand palette (matches branded itinerary design)
+  const NAVY = '#1d3155';
+  const NAVY_DARK = '#16263f';
+  const GOLD = '#b8860b';
+  const INK = '#2b2b2b';
+  const MUTED = '#6b6b6b';
+
+  const subtitle = tour.location ? tour.location : '';
+  const runningTitle = `${(tour.name || '').toUpperCase()}${subtitle ? `&nbsp;&nbsp;|&nbsp;&nbsp;${subtitle}` : ''}`;
+
+  // Build inclusions / exclusions
+  const inclusions = tour.inclusions
+    ? tour.inclusions.split('\n').map((l: string) => l.trim()).filter(Boolean)
+    : [];
+  const exclusions = tour.exclusions
+    ? tour.exclusions.split('\n').map((l: string) => l.trim()).filter(Boolean)
+    : [];
+
   let html = `
     <!DOCTYPE html>
     <html lang="en">
@@ -198,383 +225,274 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${tour.name} - Itinerary</title>
       <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
         body {
-          font-family: Arial, sans-serif;
-          line-height: 1.4;
-          max-width: 800px;
+          font-family: Helvetica, Arial, sans-serif;
+          line-height: 1.55;
+          color: ${INK};
+          font-size: 10.5pt;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .page {
+          max-width: 760px;
           margin: 0 auto;
-          padding: 4px;
-          color: #333;
-          font-size: 9pt;
+          padding: 0 8px;
         }
-        .header {
+        /* ---------- Cover ---------- */
+        .cover {
+          page-break-after: always;
+          break-after: page;
+        }
+        .cover-banner {
+          background: ${NAVY};
+          color: #fff;
           text-align: center;
-          margin-bottom: 8px;
-          border-bottom: 1px solid hsl(220, 8%, 15%);
-          padding-bottom: 6px;
+          padding: 70px 40px 56px;
         }
-        .tour-title {
-          color: hsl(220, 8%, 15%);
-          font-size: 1.5em;
-          margin-bottom: 4px;
+        .cover-title {
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 40pt;
+          font-weight: 700;
+          letter-spacing: 1px;
+          margin: 0;
+          line-height: 1.1;
+          text-transform: uppercase;
+        }
+        .cover-dates {
+          color: ${GOLD};
+          font-size: 15pt;
+          margin-top: 26px;
+        }
+        .cover-meta {
+          color: #c9d2df;
+          font-size: 12pt;
+          margin-top: 14px;
+          letter-spacing: 0.5px;
+        }
+        .cover-rule {
+          height: 10px;
+          background: ${GOLD};
+        }
+        .glance {
+          text-align: center;
+          padding: 48px 30px 10px;
+        }
+        .glance h2 {
+          color: ${NAVY};
+          font-size: 13pt;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          margin: 0 0 26px;
+        }
+        .glance-item {
+          color: ${INK};
+          font-size: 11.5pt;
+          margin: 9px 0;
+        }
+        .glance-item .tick { color: ${GOLD}; font-weight: 700; margin-right: 6px; }
+        .glance-divider {
+          width: 80%;
+          margin: 34px auto 22px;
+          border: none;
+          border-top: 1px solid ${GOLD};
+        }
+        .glance-excl {
+          color: ${MUTED};
+          font-style: italic;
+          font-size: 10.5pt;
+          text-align: center;
+          padding: 0 30px;
+        }
+        /* ---------- Running header ---------- */
+        .run-head {
+          border-bottom: 2px solid ${GOLD};
+          padding: 26px 0 8px;
+          margin-bottom: 22px;
+          font-size: 10pt;
+          color: ${MUTED};
+        }
+        .run-head strong { color: ${NAVY}; letter-spacing: 0.5px; }
+        /* ---------- Section headings ---------- */
+        .section { page-break-before: always; break-before: page; }
+        .section-first { page-break-before: avoid; break-before: avoid; }
+        .section-title {
+          color: ${NAVY};
+          font-size: 17pt;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
+          margin: 0 0 4px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid ${GOLD};
+        }
+        /* ---------- Accommodation table ---------- */
+        .acc-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 18px 0 8px;
+          font-size: 10pt;
+        }
+        .acc-table th {
+          background: ${NAVY};
+          color: #fff;
+          text-align: left;
+          padding: 9px 12px;
           font-weight: 700;
         }
-        .tour-dates {
-          font-size: 0.95em;
-          color: #666;
-          margin-bottom: 2px;
-        }
-        .tour-duration {
-          font-size: 0.9em;
-          color: #666;
-        }
-        .first-page-content {
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .tour-info {
-          background: #f8f9fa;
-          padding: 6px 8px;
-          border-radius: 4px;
-          margin-bottom: 8px;
-          border-left: 3px solid hsl(45, 100%, 55%);
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .tour-info p {
-          margin: 3px 0;
-          font-size: 9pt;
-        }
-        .tour-info ul {
-          margin: 4px 0;
-          padding-left: 1.1em;
-        }
-        .tour-info li {
-          margin: 1px 0;
-          font-size: 9pt;
-        }
-        .hotels-section {
-          margin-bottom: 8px;
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .hotel-card {
-          background: #fff;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          padding: 6px 8px;
-          margin-bottom: 6px;
-          border-left: 3px solid hsl(42, 87%, 55%);
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .hotel-card p {
-          margin: 2px 0;
-          font-size: 9pt;
-        }
-        .hotel-name {
-          font-size: 1em;
-          color: hsl(220, 8%, 15%);
-          margin-bottom: 4px;
-          font-weight: 600;
-        }
-        .day-card {
-          background: #fff;
-          border: 1px solid #ddd;
-          border-left: 3px solid hsl(220, 8%, 15%);
-          border-radius: 4px;
-          padding: 8px;
-          margin-bottom: 10px;
-          page-break-inside: avoid;
-          break-inside: avoid;
-        }
-        .day-header {
-          background: hsl(220, 8%, 15%);
-          color: white;
+        .acc-table td {
+          background: #f1f1ee;
           padding: 10px 12px;
-          margin: -8px -8px 12px -8px;
-          border-radius: 3px 3px 0 0;
-          font-size: 9pt;
+          vertical-align: top;
+          border-bottom: 4px solid #fff;
         }
-        .day-number {
-          font-weight: bold;
-          font-size: 0.95em;
+        /* ---------- Day by day ---------- */
+        .day {
+          padding: 14px 0 16px;
+          border-bottom: 1px solid ${GOLD};
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
-        .activity {
-          background: #f8f9fa;
-          border-radius: 3px;
-          padding: 6px 8px;
-          margin-bottom: 6px;
-          border-left: 2px solid hsl(45, 100%, 55%);
-        }
+        .day-head { margin: 0 0 8px; }
+        .day-num { color: ${NAVY}; font-weight: 700; font-size: 12.5pt; }
+        .day-date { color: ${MUTED}; font-size: 11pt; margin: 0 8px; }
+        .day-name { color: ${GOLD}; font-weight: 700; font-size: 11.5pt; letter-spacing: 0.5px; text-transform: uppercase; }
+        .activity { margin: 8px 0; }
         .activity-time {
-          background: hsl(220, 8%, 15%);
-          color: white;
-          padding: 2px 5px;
-          border-radius: 2px;
-          font-size: 0.85em;
-          display: inline-block;
-          margin-bottom: 4px;
+          color: ${NAVY}; font-weight: 700; font-size: 10pt; margin-right: 6px;
         }
-        .activity-title {
-          font-weight: bold;
-          color: hsl(220, 8%, 15%);
-          margin-bottom: 4px;
-          font-size: 9pt;
+        .activity-title { font-weight: 700; color: ${NAVY}; }
+        .activity-content { color: ${INK}; margin-top: 2px; }
+        .activity-content p { margin: 0.4em 0; }
+        .activity-content ul, .activity-content ol { margin: 0.4em 0; padding-left: 1.2em; }
+        .activity-content a { color: ${NAVY}; }
+        /* ---------- Additional info ---------- */
+        .info-block { margin: 16px 0; page-break-inside: avoid; break-inside: avoid; }
+        .info-name {
+          color: ${NAVY}; font-weight: 700; font-size: 11.5pt; text-transform: uppercase;
+          letter-spacing: 0.5px; margin: 0 0 4px;
         }
-        .activity-content {
-          color: #555;
-          line-height: 1.4;
-          font-size: 9pt;
-        }
-        .activity-content p {
-          margin: 0.3em 0;
-        }
-        .activity-content ul, .activity-content ol {
-          margin: 0.3em 0;
-          padding-left: 1.2em;
-        }
-        .activity-content li {
-          margin: 0.15em 0;
-        }
-        .activity-content strong {
-          font-weight: 600;
-        }
-        .activity-content em {
-          font-style: italic;
-        }
-        .activity-content a {
-          color: hsl(220, 8%, 15%);
-          text-decoration: underline;
-        }
-        .section-title {
-          color: hsl(220, 8%, 15%);
-          border-bottom: 1px solid hsl(45, 100%, 55%);
-          padding-bottom: 3px;
-          margin-bottom: 8px;
-          font-size: 1.1em;
-        }
-        .additional-info-section {
-          margin-top: 16px;
-        }
-        .additional-info-card {
-          background: #fff;
-          border: 1px solid #ddd;
-          border-left: 3px solid hsl(45, 100%, 55%);
-          border-radius: 4px;
-          padding: 8px 10px;
-          margin-bottom: 8px;
-        }
-        .additional-info-header {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          margin-bottom: 6px;
-        }
-        .additional-info-name {
-          font-weight: 600;
-          font-size: 1em;
-          color: hsl(220, 8%, 15%);
-        }
-        .additional-info-content {
-          color: #555;
-          line-height: 1.5;
-          font-size: 9pt;
-        }
-        .additional-info-content p {
-          margin: 0.3em 0;
-        }
-        .additional-info-content ul, .additional-info-content ol {
-          margin: 0.3em 0;
-          padding-left: 1.2em;
-        }
-        .additional-info-content li {
-          margin: 0.15em 0;
-        }
-        .additional-info-content strong {
-          font-weight: 600;
-        }
-        .additional-info-content a {
-          color: hsl(220, 8%, 15%);
-          text-decoration: underline;
-        }
+        .info-content { color: ${INK}; }
+        .info-content p { margin: 0.4em 0; }
+        .info-content ul, .info-content ol { margin: 0.4em 0; padding-left: 1.2em; }
+        .info-content a { color: ${NAVY}; }
         @media print {
-          @page {
-            margin: 10mm;
-            size: A4;
-          }
-          body { 
-            font-size: 9pt;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          .first-page-content {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .header {
-            page-break-after: avoid !important;
-          }
-          .tour-info {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .hotels-section {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .hotel-card {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          .day-card { 
-            page-break-before: auto;
-            page-break-after: auto;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            margin-bottom: 8px;
-          }
-          .day-header {
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-          }
-          .activity {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
-          h2.section-title {
-            page-break-after: avoid !important;
-            break-after: avoid !important;
-          }
-          .itinerary-section {
-            page-break-before: always;
-          }
-          .additional-info-section {
-            page-break-before: always;
-          }
-          .additional-info-card {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-          }
+          @page { margin: 14mm; size: A4; }
+          @page :first { margin: 0; }
+          .cover { margin: 0; }
+          .page { max-width: none; padding: 0; }
         }
       </style>
     </head>
     <body>
-      <div class="first-page-content">
-        <div class="header">
-          <h1 class="tour-title">${tour.name}</h1>
-          <div class="tour-dates">${formatDate(tour.start_date)} - ${formatDate(tour.end_date)}</div>
-          <div class="tour-duration">${tour.days} Days, ${tour.nights} Nights</div>
+      <!-- ===== Cover ===== -->
+      <div class="cover">
+        <div class="cover-banner">
+          <h1 class="cover-title">${tour.name}</h1>
+          <div class="cover-dates">${formatDate(tour.start_date)} &ndash; ${formatDate(tour.end_date)}</div>
+          <div class="cover-meta">${tour.days} Days &nbsp;&middot;&nbsp; ${tour.nights} Nights${subtitle ? ` &nbsp;&middot;&nbsp; ${subtitle}` : ''}</div>
         </div>
+        <div class="cover-rule"></div>
   `;
 
-  if (options.includeTourInfo) {
-    // Process inclusions into bullet list
-    const inclusionsList = tour.inclusions 
-      ? tour.inclusions.split('\n').filter((line: string) => line.trim()).map((line: string) => `<li>${line.trim()}</li>`).join('')
-      : '';
-    
-    // Process exclusions into bullet list
-    const exclusionsList = tour.exclusions 
-      ? tour.exclusions.split('\n').filter((line: string) => line.trim()).map((line: string) => `<li>${line.trim()}</li>`).join('')
-      : '';
-    
-    html += `
-      <div class="tour-info">
-        <h2 class="section-title">Tour Information</h2>
-        <p><strong>Location:</strong> ${tour.location || 'N/A'}</p>
-        <p><strong>Starting Point:</strong> ${tour.pickup_point || 'N/A'}</p>
-        ${inclusionsList ? `<div><strong>Inclusions:</strong><ul style="margin-top: 4px;">${inclusionsList}</ul></div>` : ''}
-        ${exclusionsList ? `<div><strong>Exclusions:</strong><ul style="margin-top: 4px;">${exclusionsList}</ul></div>` : ''}
-        
-      </div>
-    `;
+  if (options.includeTourInfo && (inclusions.length > 0 || exclusions.length > 0)) {
+    html += `<div class="glance">`;
+    if (inclusions.length > 0) {
+      html += `<h2>Tour Inclusions at a Glance</h2>`;
+      inclusions.forEach((item: string) => {
+        html += `<div class="glance-item"><span class="tick">&#10003;</span>${item}</div>`;
+      });
+    }
+    if (exclusions.length > 0) {
+      html += `<hr class="glance-divider"><div class="glance-excl">${exclusions.join(' &middot; ')} not included</div>`;
+    }
+    html += `</div>`;
   }
 
+  html += `</div>`; // end cover
+
+  // ===== Accommodation =====
   if (options.includeHotels && hotels.length > 0) {
     html += `
-      <div class="hotels-section">
+      <div class="page section section-first">
+        <div class="run-head"><strong>${runningTitle}</strong></div>
         <h2 class="section-title">Accommodation</h2>
+        <table class="acc-table">
+          <thead>
+            <tr><th>Hotel</th><th>Address</th><th>Room Type</th><th>Check-in</th><th>Check-out</th></tr>
+          </thead>
+          <tbody>
     `;
-
-    hotels.forEach(hotel => {
+    hotels.forEach((hotel: any) => {
       html += `
-        <div class="hotel-card">
-          <div class="hotel-name">${hotel.name}</div>
-          ${hotel.address ? `<p><strong>Address:</strong> ${hotel.address}</p>` : ''}
-          ${hotel.default_room_type ? `<p><strong>Room Type:</strong> ${hotel.default_room_type}</p>` : ''}
-          ${hotel.default_check_in && hotel.default_check_out ? 
-            `<p><strong>Check-in:</strong> ${formatDate(hotel.default_check_in)} | 
-             <strong>Check-out:</strong> ${formatDate(hotel.default_check_out)}</p>` : ''}
-          
-        </div>
+        <tr>
+          <td>${hotel.name || ''}</td>
+          <td>${hotel.address || '&mdash;'}</td>
+          <td>${hotel.default_room_type || '&mdash;'}</td>
+          <td>${hotel.default_check_in ? formatDateShort(hotel.default_check_in) : '&mdash;'}</td>
+          <td>${hotel.default_check_out ? formatDateShort(hotel.default_check_out) : '&mdash;'}</td>
+        </tr>
       `;
     });
-
-    html += '</div>';
+    html += `</tbody></table></div>`;
   }
 
-  // Close first-page-content wrapper
-  html += '</div>';
-
+  // ===== Day by day =====
+  const itinFirstClass = (options.includeHotels && hotels.length > 0) ? '' : ' section-first';
   html += `
-    <div class="itinerary-section">
+    <div class="page section${itinFirstClass}">
+      <div class="run-head"><strong>${runningTitle}</strong></div>
+      <h2 class="section-title">Day-by-Day Itinerary</h2>
   `;
 
-  days.forEach(day => {
+  days.forEach((day: any) => {
+    const firstEntry = day.entries[0];
+    const dayName = firstEntry ? firstEntry.subject : '';
     html += `
-      <div class="day-card">
-        <div class="day-header">
-          <span class="day-number">Day ${day.day_number}</span> - ${formatDate(day.activity_date)}
+      <div class="day">
+        <div class="day-head">
+          <span class="day-num">Day ${day.day_number}</span>
+          <span class="day-date">${formatDate(day.activity_date)}</span>
+          ${dayName ? `<span class="day-name">${dayName}</span>` : ''}
         </div>
     `;
 
     if (day.entries.length === 0) {
-      html += '<p style="color: #666; font-style: italic;">No activities planned for this day.</p>';
+      html += `<p style="color:${MUTED};font-style:italic;">No activities planned for this day.</p>`;
     } else {
-      day.entries.forEach((entry: any) => {
-        html += `
-          <div class="activity">
-            ${entry.time_slot ? `<div class="activity-time">${formatTime(entry.time_slot)}</div>` : ''}
-            <div class="activity-title">${entry.subject}</div>
-            ${entry.content ? `<div class="activity-content">${entry.content}</div>` : ''}
-          </div>
-        `;
+      day.entries.forEach((entry: any, idx: number) => {
+        const showTitle = idx > 0; // first entry's subject already shown in the day header
+        html += `<div class="activity">`;
+        if (entry.time_slot) html += `<span class="activity-time">${formatTime(entry.time_slot)}</span>`;
+        if (showTitle && entry.subject) html += `<span class="activity-title">${entry.subject}</span>`;
+        if (entry.content) html += `<div class="activity-content">${entry.content}</div>`;
+        html += `</div>`;
       });
     }
-
-    html += '</div>';
+    html += `</div>`;
   });
+  html += `</div>`;
 
-  html += `
-      </div>
-  `;
-
-  // Additional Information sections
+  // ===== Additional information =====
   if (options.includeAdditionalInfo && additionalInfoSections.length > 0) {
     html += `
-      <div class="additional-info-section">
+      <div class="page section">
+        <div class="run-head"><strong>${runningTitle}</strong></div>
         <h2 class="section-title">Additional Information</h2>
     `;
-
     additionalInfoSections.forEach((section: any) => {
       html += `
-        <div class="additional-info-card">
-          <div class="additional-info-header">
-            <span class="additional-info-name">${section.name}</span>
-          </div>
-          ${section.content ? `<div class="additional-info-content">${section.content}</div>` : '<p style="color: #999; font-style: italic;">No content.</p>'}
+        <div class="info-block">
+          <div class="info-name">${section.name}</div>
+          ${section.content ? `<div class="info-content">${section.content}</div>` : `<p style="color:${MUTED};font-style:italic;">No content.</p>`}
         </div>
       `;
     });
-
-    html += '</div>';
+    html += `</div>`;
   }
 
-  html += `
-    </body>
-    </html>
-  `;
+  html += `</body></html>`;
 
   return html;
 }
