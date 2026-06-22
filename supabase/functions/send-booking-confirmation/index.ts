@@ -1371,16 +1371,43 @@ const handler = async (req: Request): Promise<Response> => {
         'check-circle': '✅', 'x-circle': '❌',
       };
       
-      if (matchingSections.length > 0) {
-        const blocksHtml = matchingSections.map((section: any) => {
+      // Resolve the standing Cancellation Policy block for this tour (shown first,
+      // independent of per-rule selection). Uses the tour override or the global default.
+      let cancellationPolicyBlock = '';
+      try {
+        const { data: cpTour } = await supabaseClient
+          .from('tours')
+          .select('cancellation_policy_override, cancellation_policy_enabled')
+          .eq('id', booking.tour_id)
+          .maybeSingle();
+        if (cpTour?.cancellation_policy_enabled ?? true) {
+          let cpNavy = '#0a1929';
+          let cpGlobal: any = null;
+          const { data: cpSettings } = await supabaseClient
+            .from('general_settings')
+            .select('setting_key, setting_value')
+            .in('setting_key', ['cancellation_policy', 'theme_primary_color', 'theme_email_button_color']);
+          for (const s of cpSettings || []) {
+            if (s.setting_key === 'cancellation_policy') cpGlobal = s.setting_value;
+            if (s.setting_key === 'theme_primary_color' && typeof s.setting_value === 'string') cpNavy = s.setting_value;
+          }
+          const cpPolicy = normaliseCancellationPolicy(cpTour?.cancellation_policy_override ?? cpGlobal);
+          cancellationPolicyBlock = buildCancellationPolicyTableHtml(cpPolicy, cpNavy);
+        }
+      } catch (cpErr) {
+        console.error('Error building cancellation policy block:', cpErr);
+      }
+
+      if (matchingSections.length > 0 || cancellationPolicyBlock) {
+        const sectionsHtml = matchingSections.map((section: any) => {
           const emoji = iconMap[section.icon_name] || 'ℹ️';
           // Strip HTML tags for plain text content, keep for rich content
           const contentHtml = section.content || '';
           
           return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 16px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;"><tr><td style="padding: 16px;"><table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%"><tr><td style="width: 44px; vertical-align: top; padding-right: 14px;"><div style="width: 40px; height: 40px; background-color: #f3f4f6; border-radius: 8px; text-align: center; line-height: 40px; font-size: 20px;">${emoji}</div></td><td style="vertical-align: top;"><h4 style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #1a2332;">${section.name}</h4><div style="font-size: 14px; color: #55575d; line-height: 1.5;">${contentHtml}</div></td></tr></table></td></tr></table>`;
         }).join('');
-        
-        mergeData.additional_info_blocks = blocksHtml;
+
+        mergeData.additional_info_blocks = cancellationPolicyBlock + sectionsHtml;
       } else {
         mergeData.additional_info_blocks = '';
       }
