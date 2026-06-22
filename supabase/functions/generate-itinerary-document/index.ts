@@ -150,12 +150,6 @@ serve(async (req) => {
         .from('general_settings')
         .select('setting_key, setting_value')
         .in('setting_key', ['cancellation_policy']);
-      const getSetting = (key: string) => {
-        const row = (settingsData || []).find((s: any) => s.setting_key === key);
-        if (!row) return null;
-        const v = row.setting_value;
-        return typeof v === 'string' ? v : (v && typeof v === 'object' && 'value' in v ? v.value : null);
-      };
       const cpRow = (settingsData || []).find((s: any) => s.setting_key === 'cancellation_policy');
       globalCancellationPolicy = cpRow ? cpRow.setting_value : null;
     } catch (_e) {
