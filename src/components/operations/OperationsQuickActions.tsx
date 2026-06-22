@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail, Tag, AlertTriangle } from "lucide-react";
+import { ClipboardCheck, Hotel, Grid3X3, FileText, DollarSign, Mail, Tag, AlertTriangle, PhoneOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { isPlaceholderBooking } from "@/lib/placeholderBookings";
 import { SentEmailsReportModal } from "./SentEmailsReportModal";
 import { NameTagGeneratorModal } from "./NameTagGeneratorModal";
 import { BouncedEmailsReportModal } from "./BouncedEmailsReportModal";
@@ -122,6 +123,26 @@ export const OperationsQuickActions = () => {
     },
   });
 
+  // Missing Phone Numbers count (future bookings, lead passenger without phone)
+  const { data: missingPhoneCount = 0 } = useQuery({
+    queryKey: ['missing-phone-count'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('status, tours!inner(start_date), customers!bookings_lead_passenger_id_fkey(first_name, last_name, phone)')
+        .neq('status', 'cancelled')
+        .gte('tours.start_date', today);
+      if (error) throw error;
+      return (data || []).filter((b: any) => {
+        const c = b.customers;
+        const hasPhone = c?.phone && c.phone.trim() !== '';
+        if (hasPhone) return false;
+        return !isPlaceholderBooking(b.status, c?.first_name, c?.last_name);
+      }).length;
+    },
+  });
+
   const checkActions = [
     {
       icon: Grid3X3,
@@ -150,6 +171,13 @@ export const OperationsQuickActions = () => {
       description: "Outstanding deposits, instalments & payments",
       count: paymentStatusCount,
       onClick: () => navigate("/operations/payment-status"),
+    },
+    {
+      icon: PhoneOff,
+      label: "Missing Phone Numbers",
+      description: "Future bookings whose lead passenger has no phone number",
+      count: missingPhoneCount,
+      onClick: () => navigate("/operations/missing-phone-numbers"),
     },
     {
       icon: Mail,

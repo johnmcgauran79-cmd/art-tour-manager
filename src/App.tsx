@@ -38,6 +38,7 @@ import ActivityBookings from "./pages/operations/ActivityBookings";
 import HotelAllocations from "./pages/operations/HotelAllocations";
 import BookingChanges from "./pages/operations/BookingChanges";
 import PaymentStatus from "./pages/operations/PaymentStatus";
+import MissingPhoneNumbers from "./pages/operations/MissingPhoneNumbers";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -329,6 +330,16 @@ function App() {
                   <ProtectedRoute>
                     <AppLayout>
                       <PaymentStatus />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/operations/missing-phone-numbers"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <MissingPhoneNumbers />
                     </AppLayout>
                   </ProtectedRoute>
                 }
