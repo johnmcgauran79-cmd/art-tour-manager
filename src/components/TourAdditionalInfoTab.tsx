@@ -15,6 +15,7 @@ import { useTourEmailOverrides } from "@/hooks/useTourEmailOverrides";
 import { LucideIconPicker, renderLucideIcon } from "@/components/LucideIconPicker";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { TourCancellationPolicyCard } from "@/components/TourCancellationPolicyCard";
 
 interface TourAdditionalInfoTabProps {
   tourId: string;
@@ -175,6 +176,8 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        <TourCancellationPolicyCard tourId={tourId} />
 
         {sections.length === 0 ? (
           <Card>

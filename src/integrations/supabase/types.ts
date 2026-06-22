@@ -3898,6 +3898,8 @@ export type Database = {
         Row: {
           alerts_enabled: boolean
           alerts_manually_overridden: boolean
+          cancellation_policy_enabled: boolean
+          cancellation_policy_override: Json | null
           capacity: number | null
           created_at: string | null
           days: number
@@ -3952,6 +3954,8 @@ export type Database = {
         Insert: {
           alerts_enabled?: boolean
           alerts_manually_overridden?: boolean
+          cancellation_policy_enabled?: boolean
+          cancellation_policy_override?: Json | null
           capacity?: number | null
           created_at?: string | null
           days: number
@@ -4006,6 +4010,8 @@ export type Database = {
         Update: {
           alerts_enabled?: boolean
           alerts_manually_overridden?: boolean
+          cancellation_policy_enabled?: boolean
+          cancellation_policy_override?: Json | null
           capacity?: number | null
           created_at?: string | null
           days?: number

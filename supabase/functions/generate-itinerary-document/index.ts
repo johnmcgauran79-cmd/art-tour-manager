@@ -7,6 +7,51 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// ===== Cancellation policy helpers (kept in sync with src/lib/cancellationPolicy.ts) =====
+const DEFAULT_CANCELLATION_POLICY = {
+  title: 'Cancellation Policy',
+  rows: [
+    { notice: '180+ days prior to departure', refund: 'Full refund, less 10% administration fee' },
+    { notice: '90\u2013179 days prior to departure', refund: '50% refund of all payments made' },
+    { notice: 'Within 90 days of departure', refund: 'No refund available' },
+  ],
+};
+
+function normaliseCancellationPolicy(value: any) {
+  if (!value || typeof value !== 'object') return { ...DEFAULT_CANCELLATION_POLICY };
+  const title = typeof value.title === 'string' && value.title.trim() ? value.title : DEFAULT_CANCELLATION_POLICY.title;
+  const rawRows = Array.isArray(value.rows) ? value.rows : [];
+  const rows = rawRows
+    .map((r: any) => ({
+      notice: typeof r?.notice === 'string' ? r.notice : '',
+      refund: typeof r?.refund === 'string' ? r.refund : '',
+    }))
+    .filter((r: any) => r.notice.trim() || r.refund.trim());
+  return { title, rows: rows.length ? rows : DEFAULT_CANCELLATION_POLICY.rows };
+}
+
+function escapeCpHtml(str: string): string {
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function buildCancellationPolicyTableHtml(policy: any, navy = '#0a1929'): string {
+  const rowsHtml = (policy.rows || []).map((row: any, i: number) => {
+    const bg = i % 2 === 1 ? '#f3f4f6' : '#ffffff';
+    return `<tr>
+      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#1a2332;border-bottom:1px solid #e5e7eb;width:42%;vertical-align:top;">${escapeCpHtml(row.notice)}</td>
+      <td style="padding:10px 14px;background-color:${bg};font-size:14px;color:#55575d;border-bottom:1px solid #e5e7eb;vertical-align:top;">${escapeCpHtml(row.refund)}</td>
+    </tr>`;
+  }).join('');
+  return `<table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom:16px;border:1px solid #e5e7eb;border-radius:8px;border-collapse:separate;border-spacing:0;overflow:hidden;">
+    <tr><th colspan="2" style="padding:12px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:15px;font-weight:600;">${escapeCpHtml(policy.title)}</th></tr>
+    <tr>
+      <th style="padding:8px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);width:42%;">Notice Period</th>
+      <th style="padding:8px 14px;background-color:${navy};color:#ffffff;text-align:left;font-size:13px;font-weight:600;border-top:1px solid rgba(255,255,255,0.15);">Refund</th>
+    </tr>
+    ${rowsHtml}
+  </table>`;
+}
+
 interface RequestBody {
   tourId: string;
   itineraryId: string;
@@ -99,11 +144,12 @@ serve(async (req) => {
 
     // Fetch brand navy colour from settings so the document matches emails/buttons
     let brandNavy = '#0a1929';
+    let globalCancellationPolicy: any = null;
     try {
       const { data: settingsData } = await supabase
         .from('general_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['theme_primary_color', 'theme_email_button_color']);
+        .in('setting_key', ['theme_primary_color', 'theme_email_button_color', 'cancellation_policy']);
       const getSetting = (key: string) => {
         const row = (settingsData || []).find((s: any) => s.setting_key === key);
         if (!row) return null;
@@ -111,9 +157,16 @@ serve(async (req) => {
         return typeof v === 'string' ? v : (v && typeof v === 'object' && 'value' in v ? v.value : null);
       };
       brandNavy = getSetting('theme_primary_color') || getSetting('theme_email_button_color') || brandNavy;
+      const cpRow = (settingsData || []).find((s: any) => s.setting_key === 'cancellation_policy');
+      globalCancellationPolicy = cpRow ? cpRow.setting_value : null;
     } catch (_e) {
       // fall back to default navy
     }
+
+    // Resolve the cancellation policy for this tour (override falls back to global)
+    const cancellationPolicy = (options.includeAdditionalInfo && (tour.cancellation_policy_enabled ?? true))
+      ? normaliseCancellationPolicy(tour.cancellation_policy_override ?? globalCancellationPolicy)
+      : null;
 
     // Process data
     const daysWithEntries = days.map(day => ({
@@ -122,7 +175,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -189,7 +242,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any): string {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
@@ -502,12 +555,15 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   html += `</div>`;
 
   // ===== Additional information =====
-  if (options.includeAdditionalInfo && additionalInfoSections.length > 0) {
+  if (options.includeAdditionalInfo && (cancellationPolicy || additionalInfoSections.length > 0)) {
     html += `
       <div class="page section">
         <div class="run-head"><strong>${runningTitle}</strong></div>
         <h2 class="section-title">Additional Information</h2>
     `;
+    if (cancellationPolicy) {
+      html += `<div class="info-block">${buildCancellationPolicyTableHtml(cancellationPolicy, NAVY)}</div>`;
+    }
     additionalInfoSections.forEach((section: any) => {
       html += `
         <div class="info-block">
