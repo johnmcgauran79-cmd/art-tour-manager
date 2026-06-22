@@ -53,7 +53,7 @@ function escapeHtml(str: string): string {
  */
 export function buildCancellationPolicyTableHtml(
   policy: CancellationPolicy,
-  navy = "#0a1929",
+  navy = "#232628",
 ): string {
   const rowsHtml = policy.rows
     .map((row, i) => {
