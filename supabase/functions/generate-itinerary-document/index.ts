@@ -199,10 +199,10 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     });
   };
 
-  // Brand palette (matches branded itinerary design)
-  const NAVY = '#1d3155';
-  const NAVY_DARK = '#16263f';
-  const GOLD = '#b8860b';
+  // Brand palette — matches the system colour scheme (navy primary + gold accent)
+  const NAVY = '#001f3d';      // hsl(210 100% 12%) — system primary
+  const NAVY_DARK = '#001530'; // deeper navy for gradient/banner
+  const GOLD = '#c79a2e';      // legible gold derived from system accent hsl(45 100% 55%)
   const INK = '#2b2b2b';
   const MUTED = '#6b6b6b';
 
