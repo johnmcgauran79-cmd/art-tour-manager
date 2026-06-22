@@ -142,25 +142,18 @@ serve(async (req) => {
       additionalInfoSections = sectionsData || [];
     }
 
-    // Fetch brand navy colour from settings so the document matches emails/buttons
-    let brandNavy = '#0a1929';
+    // Brand header colour matches the dark grey/black used by buttons + email header
+    let brandNavy = '#232628';
     let globalCancellationPolicy: any = null;
     try {
       const { data: settingsData } = await supabase
         .from('general_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['theme_primary_color', 'theme_email_button_color', 'cancellation_policy']);
-      const getSetting = (key: string) => {
-        const row = (settingsData || []).find((s: any) => s.setting_key === key);
-        if (!row) return null;
-        const v = row.setting_value;
-        return typeof v === 'string' ? v : (v && typeof v === 'object' && 'value' in v ? v.value : null);
-      };
-      brandNavy = getSetting('theme_primary_color') || getSetting('theme_email_button_color') || brandNavy;
+        .in('setting_key', ['cancellation_policy']);
       const cpRow = (settingsData || []).find((s: any) => s.setting_key === 'cancellation_policy');
       globalCancellationPolicy = cpRow ? cpRow.setting_value : null;
     } catch (_e) {
-      // fall back to default navy
+      // fall back to default brand colour
     }
 
     // Resolve the cancellation policy for this tour (override falls back to global)
