@@ -9,6 +9,7 @@ import { TaskTemplatesManagement } from "@/components/TaskTemplatesManagement";
 import { SystemSettings } from "@/components/SystemSettings";
 import { AutomatedReportRulesManagement } from "@/components/AutomatedReportRulesManagement";
 import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTemplatesManagement";
+import { CancellationPolicySettings } from "@/components/CancellationPolicySettings";
 import { InvoiceLineTemplatesManagement } from "@/components/InvoiceLineTemplatesManagement";
 import { EmailSettingsTab } from "@/components/EmailSettingsTab";
 
@@ -119,6 +120,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
 
         <TabsContent value="additional-info" className="space-y-6">
           <AdditionalInfoTemplatesManagement />
+          <CancellationPolicySettings />
         </TabsContent>
 
         {isAdmin && (
