@@ -37,7 +37,7 @@ function escapeCpHtml(str: string): string {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function buildCancellationPolicyTableHtml(policy: any, navy = "#0a1929"): string {
+function buildCancellationPolicyTableHtml(policy: any, navy = "#232628"): string {
   const rowsHtml = (policy.rows || []).map((row: any, i: number) => {
     const bg = i % 2 === 1 ? "#f3f4f6" : "#ffffff";
     return `<tr>
