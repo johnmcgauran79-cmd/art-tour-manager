@@ -1,69 +1,39 @@
 ## Goal
 
-Turn the ART system into a daily workspace by adding per-user personal productivity tools and replacing the top-tab navigation with a collapsible, mobile-friendly sidebar.
+Turn the Cancellation Policy into a clean **table** (matching the attached design) that lives as its own reusable block. It is defined **once globally in System Settings**, can be **overridden per tour**, and always appears as the **first item in the Additional Information section** of both the Guest Document and the email additional-info blocks.
 
-## 1. Navigation: top tabs → collapsible sidebar
+## Data model
 
-Replace the `AppLayout` top-tab bar with a shadcn `Sidebar` (`collapsible="icon"`).
+**Global default** — new row in `general_settings`:
+- `cancellation_policy` → JSON: `{ "title": "Cancellation Policy", "rows": [{ "notice": "180+ days prior to departure", "refund": "Full refund, less 10% administration fee" }, { "notice": "90–179 days prior to departure", "refund": "50% refund of all payments made" }, { "notice": "Within 90 days of departure", "refund": "No refund available" }] }`
 
-- **Desktop**: left sidebar, collapses to a narrow icon rail. Brand header + ART logo at top. Trigger always visible in a slim top app bar (keeps DateTime, Notifications, User dropdown).
-- **Mobile / hosts on the go**: sidebar uses off-canvas sheet behaviour (shadcn default on mobile) opened by a hamburger in the top bar — full-width tap targets, closes on navigate. Hosts (who only see Tours) get a minimal menu.
-- Same role gating as today: dashboard/operations/contacts/settings hidden for agents & hosts; Tasks + new personal tools = Admin/Manager only; Tours for everyone; Bookings hidden for hosts.
-- Nav items get lucide icons. Active route highlighting via `useLocation`.
-- New "My Workspace" group in the sidebar (Admin/Manager only): **To-Do**, **Notes**, **Calendar**.
+**Per-tour override** — two new columns on `tours`:
+- `cancellation_policy_override` (jsonb, nullable) — when set, replaces the global rows for that tour; when null, the tour uses the global policy.
+- `cancellation_policy_enabled` (boolean, default true) — toggle to include/exclude the block for that tour.
 
-```text
-┌────────────┬───────────────────────────┐
-│ [ART logo] │  top bar: ☰  …  🔔  user   │
-│ Dashboard  ├───────────────────────────┤
-│ Operations │                           │
-│ Tasks      │        page content       │
-│ Tours      │                           │
-│ Bookings   │                           │
-│ Contacts   │                           │
-│ Settings   │                           │
-│ ── My ──   │                           │
-│ To-Do      │                           │
-│ Notes      │                           │
-│ Calendar   │                           │
-└────────────┴───────────────────────────┘
-```
+No new tables, so no new RLS needed (existing `tours`/`general_settings` policies apply).
 
-## 2. Personal To-Do list (Admin/Manager)
+## UI
 
-Quick private checklist, fully separate from the Tasks system.
-- New table `personal_todos` (user_id, title, completed, position/order, optional due date).
-- UI: single column, add-on-enter input, check to complete, inline edit, delete, drag-to-reorder, "show/hide completed".
-- Strictly private — RLS scoped to `auth.uid()`.
+**System Settings** — new "Cancellation Policy" card:
+- Edit the table title.
+- Structured rows editor: add / edit / remove rows, each with **Notice Period** and **Refund** columns.
+- Live table preview styled like the attachment (navy header, zebra rows using brand tokens).
 
-## 3. Personal Notes (Admin/Manager)
+**Tour → Additional Information tab** — pinned card at the very top:
+- Shows the effective policy as a table.
+- Toggle: "Use global policy" vs "Customise for this tour" (reveals the same rows editor).
+- Visibility toggle (maps to `cancellation_policy_enabled`).
 
-Simple rich-text notes, searchable.
-- New table `personal_notes` (user_id, title, content (HTML), pinned, updated_at).
-- UI: list/sidebar of notes + editor pane. Reuse the existing Quill rich-text editor used elsewhere. Search by title/content, pin to top, autosave on blur, delete with confirm.
-- Private — RLS scoped to `auth.uid()`.
+## Rendering (shared table HTML)
 
-## 4. Personal Calendar (Admin/Manager)
+A single table-builder produces consistent HTML (navy `#0a1929` header from `theme_primary_color`, zebra rows, gold not required). Applied in:
 
-Month/agenda calendar overlaying three sources:
-- **Personal events** — new table `personal_events` (user_id, title, description, start, end, all_day, colour). Full create/edit/delete.
-- **My Tasks** — tasks assigned to the current user, shown on their due dates (read-only, click → task detail).
-- **Tours** — tours the user is involved with, shown across their date range (read-only, click → tour).
-- Month grid + list/agenda view. Australian dd/mm/yyyy formatting throughout. Mobile = agenda list by default.
+1. **`generate-itinerary-document`** edge function — fetch the tour override + global setting, render the table as the **first block** under the "Additional Information" heading, before existing sections.
+2. **`send-booking-confirmation`** edge function — when `{{additional_info_blocks}}` is present and the tour has the policy enabled, prepend the cancellation-policy table as the first block (independent of per-rule selection, since it is a standing policy).
 
 ## Technical notes
 
-- Routes: `/todos`, `/notes`, `/calendar` (guarded to Admin/Manager, redirect others like Tasks does).
-- Three migrations, each: `CREATE TABLE` → `GRANT` (authenticated + service_role, no anon) → enable RLS → policies scoped to `auth.uid()` → `updated_at` trigger.
-- Data fetching via React Query hooks (`usePersonalTodos`, `usePersonalNotes`, `usePersonalEvents`) following existing hook patterns.
-- All dates stored/handled timezone-safe; due dates as literal `yyyy-MM-dd` per project rules.
-- Calendar lib: lightweight custom month grid built on existing `date-fns` + shadcn (avoids heavy deps); reuse `Calendar` primitives where helpful.
-
-## Suggested build order
-
-1. Sidebar navigation (foundation — everything hangs off it).
-2. Personal To-Do.
-3. Personal Notes.
-4. Personal Calendar.
-
-I can build all four in this round, or stop after the sidebar so you can review the new shell first.
+- Australian formatting/terminology and existing brand color tokens are respected; navy pulled from `theme_primary_color` exactly as the document generator already does.
+- Both edge functions get redeployed automatically.
+- Falls back gracefully to the global policy (and to hard-coded defaults) if a setting is missing.
