@@ -97,6 +97,24 @@ serve(async (req) => {
       additionalInfoSections = sectionsData || [];
     }
 
+    // Fetch brand navy colour from settings so the document matches emails/buttons
+    let brandNavy = '#0a1929';
+    try {
+      const { data: settingsData } = await supabase
+        .from('general_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['theme_primary_color', 'theme_email_button_color']);
+      const getSetting = (key: string) => {
+        const row = (settingsData || []).find((s: any) => s.setting_key === key);
+        if (!row) return null;
+        const v = row.setting_value;
+        return typeof v === 'string' ? v : (v && typeof v === 'object' && 'value' in v ? v.value : null);
+      };
+      brandNavy = getSetting('theme_primary_color') || getSetting('theme_email_button_color') || brandNavy;
+    } catch (_e) {
+      // fall back to default navy
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
@@ -104,7 +122,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -171,7 +189,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string): string {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
@@ -200,8 +218,17 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   };
 
   // Brand palette — matches the system colour scheme (navy primary + gold accent)
-  const NAVY = '#001f3d';      // hsl(210 100% 12%) — system primary
-  const NAVY_DARK = '#001530'; // deeper navy for gradient/banner
+  const darken = (hex: string, amount = 0.25) => {
+    const m = /^#?([0-9a-fA-F]{6})$/.exec((hex || '').trim());
+    if (!m) return hex;
+    const n = parseInt(m[1], 16);
+    const r = Math.max(0, Math.round(((n >> 16) & 255) * (1 - amount)));
+    const g = Math.max(0, Math.round(((n >> 8) & 255) * (1 - amount)));
+    const b = Math.max(0, Math.round((n & 255) * (1 - amount)));
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  };
+  const NAVY = brandNavy && /^#?[0-9a-fA-F]{6}$/.test(brandNavy.trim()) ? (brandNavy.trim().startsWith('#') ? brandNavy.trim() : `#${brandNavy.trim()}`) : '#0a1929'; // system primary / email header
+  const NAVY_DARK = darken(NAVY, 0.3); // deeper navy for gradient/banner
   const GOLD = '#c79a2e';      // legible gold derived from system accent hsl(45 100% 55%)
   const INK = '#2b2b2b';
   const MUTED = '#6b6b6b';
