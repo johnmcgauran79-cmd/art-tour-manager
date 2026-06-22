@@ -99,11 +99,12 @@ serve(async (req) => {
 
     // Fetch brand navy colour from settings so the document matches emails/buttons
     let brandNavy = '#0a1929';
+    let globalCancellationPolicy: any = null;
     try {
       const { data: settingsData } = await supabase
         .from('general_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['theme_primary_color', 'theme_email_button_color']);
+        .in('setting_key', ['theme_primary_color', 'theme_email_button_color', 'cancellation_policy']);
       const getSetting = (key: string) => {
         const row = (settingsData || []).find((s: any) => s.setting_key === key);
         if (!row) return null;
@@ -111,9 +112,16 @@ serve(async (req) => {
         return typeof v === 'string' ? v : (v && typeof v === 'object' && 'value' in v ? v.value : null);
       };
       brandNavy = getSetting('theme_primary_color') || getSetting('theme_email_button_color') || brandNavy;
+      const cpRow = (settingsData || []).find((s: any) => s.setting_key === 'cancellation_policy');
+      globalCancellationPolicy = cpRow ? cpRow.setting_value : null;
     } catch (_e) {
       // fall back to default navy
     }
+
+    // Resolve the cancellation policy for this tour (override falls back to global)
+    const cancellationPolicy = (options.includeAdditionalInfo && (tour.cancellation_policy_enabled ?? true))
+      ? normaliseCancellationPolicy(tour.cancellation_policy_override ?? globalCancellationPolicy)
+      : null;
 
     // Process data
     const daysWithEntries = days.map(day => ({
@@ -122,7 +130,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
