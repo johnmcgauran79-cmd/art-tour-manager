@@ -37,7 +37,7 @@ function escapeCpHtml(str: string): string {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function buildCancellationPolicyTableHtml(policy: any, navy = "#0a1929"): string {
+function buildCancellationPolicyTableHtml(policy: any, navy = "#232628"): string {
   const rowsHtml = (policy.rows || []).map((row: any, i: number) => {
     const bg = i % 2 === 1 ? "#f3f4f6" : "#ffffff";
     return `<tr>
@@ -1381,15 +1381,15 @@ const handler = async (req: Request): Promise<Response> => {
           .eq('id', booking.tour_id)
           .maybeSingle();
         if (cpTour?.cancellation_policy_enabled ?? true) {
-          let cpNavy = '#0a1929';
+          // Match the dark grey/black brand colour used by buttons + email header image
+          const cpNavy = '#232628';
           let cpGlobal: any = null;
           const { data: cpSettings } = await supabaseClient
             .from('general_settings')
             .select('setting_key, setting_value')
-            .in('setting_key', ['cancellation_policy', 'theme_primary_color', 'theme_email_button_color']);
+            .in('setting_key', ['cancellation_policy']);
           for (const s of cpSettings || []) {
             if (s.setting_key === 'cancellation_policy') cpGlobal = s.setting_value;
-            if (s.setting_key === 'theme_primary_color' && typeof s.setting_value === 'string') cpNavy = s.setting_value;
           }
           const cpPolicy = normaliseCancellationPolicy(cpTour?.cancellation_policy_override ?? cpGlobal);
           cancellationPolicyBlock = buildCancellationPolicyTableHtml(cpPolicy, cpNavy);
