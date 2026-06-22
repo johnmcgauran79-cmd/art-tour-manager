@@ -139,15 +139,26 @@ export const EmailItineraryModal = ({ open, onOpenChange, tour, itineraryId }: E
       const opt = {
         margin: [0.5, 0.5, 0.5, 0.5] as [number, number, number, number],
         filename: `${tour.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_itinerary.pdf`,
-        image: { type: 'png' as const, quality: 1 },
-        html2canvas: { scale: 3, useCORS: true, letterRendering: true, logging: false },
+        image: { type: 'jpeg' as const, quality: 0.85 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
         jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' as const },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
       document.body.removeChild(element);
-      
+
+      // Guard against attachments too large for the edge function / email
+      const maxBytes = 8 * 1024 * 1024; // 8MB
+      if (pdfBlob.size > maxBytes) {
+        toast({
+          title: "Itinerary too large to email",
+          description: "The generated PDF exceeds the size limit. Try unchecking Hotel/Tour Information, or download and send it manually.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Convert blob to base64
       const reader = new FileReader();
       const pdfBase64 = await new Promise<string>((resolve, reject) => {
