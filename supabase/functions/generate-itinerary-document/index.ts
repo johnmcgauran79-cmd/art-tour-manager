@@ -60,6 +60,7 @@ interface RequestBody {
     includeHotels: boolean;
     includeTourInfo: boolean;
     includeAdditionalInfo?: boolean;
+    includeWelcomeMessage?: boolean;
   };
 }
 
@@ -161,6 +162,28 @@ serve(async (req) => {
       ? normaliseCancellationPolicy(tour.cancellation_policy_override ?? globalCancellationPolicy)
       : null;
 
+    // Resolve the welcome message (host welcome) for the cover page
+    let welcomeMessage: any = null;
+    if ((options.includeWelcomeMessage ?? true) && tour.welcome_message_enabled) {
+      let imageUrl: string | null = null;
+      if (tour.welcome_message_image_path) {
+        try {
+          const { data: signed } = await supabase.storage
+            .from('attachments')
+            .createSignedUrl(tour.welcome_message_image_path, 60 * 60 * 24 * 7);
+          imageUrl = signed?.signedUrl ?? null;
+        } catch (_e) {
+          imageUrl = null;
+        }
+      }
+      welcomeMessage = {
+        heading: tour.welcome_message_heading || 'Welcome',
+        body: tour.welcome_message_body || '',
+        signoff: tour.welcome_message_signoff || '',
+        imageUrl,
+      };
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
@@ -168,7 +191,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -235,7 +258,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any): string {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
@@ -365,6 +388,44 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           margin: 9px 0;
         }
         .glance-item .tick { color: ${GOLD}; font-weight: 700; margin-right: 6px; }
+        /* ---------- Welcome message ---------- */
+        .welcome {
+          text-align: center;
+          padding: 48px 48px 20px;
+        }
+        .welcome-photo {
+          width: 130px;
+          height: 130px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid ${GOLD};
+          margin: 0 auto 22px;
+          display: block;
+        }
+        .welcome-heading {
+          color: ${NAVY};
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 22pt;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin: 0 0 10px;
+        }
+        .welcome-rule {
+          width: 70px;
+          height: 2px;
+          background: ${GOLD};
+          border: none;
+          margin: 0 auto 20px;
+        }
+        .welcome-body { color: ${INK}; font-size: 11.5pt; line-height: 1.7; }
+        .welcome-body p { margin: 0 0 12px; }
+        .welcome-signoff {
+          font-family: Georgia, 'Times New Roman', serif;
+          font-style: italic;
+          font-size: 17pt;
+          color: ${NAVY};
+          margin-top: 18px;
+        }
         .glance-divider {
           width: 80%;
           margin: 34px auto 22px;
@@ -468,6 +529,28 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         </div>
         <div class="cover-rule"></div>
   `;
+
+  if (welcomeMessage) {
+    const paragraphs = (welcomeMessage.body || '')
+      .split(/\n\s*\n/)
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+    html += `<div class="welcome">`;
+    if (welcomeMessage.imageUrl) {
+      html += `<img class="welcome-photo" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
+    }
+    html += `<h2 class="welcome-heading">${welcomeMessage.heading || 'Welcome'}</h2>`;
+    html += `<hr class="welcome-rule">`;
+    html += `<div class="welcome-body">`;
+    if (paragraphs.length > 0) {
+      paragraphs.forEach((p: string) => { html += `<p>${p.replace(/\n/g, '<br>')}</p>`; });
+    }
+    html += `</div>`;
+    if (welcomeMessage.signoff) {
+      html += `<div class="welcome-signoff">${welcomeMessage.signoff}</div>`;
+    }
+    html += `</div>`;
+  }
 
   if (options.includeTourInfo && (inclusions.length > 0 || exclusions.length > 0)) {
     html += `<div class="glance">`;

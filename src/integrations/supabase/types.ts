@@ -3948,6 +3948,11 @@ export type Database = {
           travel_documents_required: boolean
           updated_at: string | null
           url_reference: string | null
+          welcome_message_body: string | null
+          welcome_message_enabled: boolean
+          welcome_message_heading: string | null
+          welcome_message_image_path: string | null
+          welcome_message_signoff: string | null
           xero_product_id: string | null
           xero_reference: string | null
         }
@@ -4004,6 +4009,11 @@ export type Database = {
           travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
+          welcome_message_body?: string | null
+          welcome_message_enabled?: boolean
+          welcome_message_heading?: string | null
+          welcome_message_image_path?: string | null
+          welcome_message_signoff?: string | null
           xero_product_id?: string | null
           xero_reference?: string | null
         }
@@ -4060,6 +4070,11 @@ export type Database = {
           travel_documents_required?: boolean
           updated_at?: string | null
           url_reference?: string | null
+          welcome_message_body?: string | null
+          welcome_message_enabled?: boolean
+          welcome_message_heading?: string | null
+          welcome_message_image_path?: string | null
+          welcome_message_signoff?: string | null
           xero_product_id?: string | null
           xero_reference?: string | null
         }
