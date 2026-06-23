@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { ImagePlus, Trash2, Save, Loader2, UserRound } from "lucide-react";
 import { useTourWelcomeMessage } from "@/hooks/useTourWelcomeMessage";
 
@@ -48,7 +48,16 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
     return <div className="text-muted-foreground p-4">Loading welcome message...</div>;
   }
 
-  const bodyParagraphs = body.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+  // Body may be rich-text HTML (new) or legacy plain text. Build preview markup accordingly.
+  const isHtmlBody = /<[a-z][\s\S]*>/i.test(body);
+  const bodyHtml = isHtmlBody
+    ? body
+    : body
+        .split(/\n\s*\n/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
+        .join("");
 
   return (
     <div className="space-y-4">
@@ -88,11 +97,10 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
             </div>
             <div className="space-y-2">
               <Label>Message</Label>
-              <p className="text-xs text-muted-foreground">Separate paragraphs with a blank line.</p>
-              <Textarea
+              <p className="text-xs text-muted-foreground">Use the toolbar to format text with bold, italics, lists and line breaks.</p>
+              <RichTextEditor
                 value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={10}
+                onChange={setBody}
                 placeholder="Welcome to the tour..."
               />
             </div>
@@ -190,12 +198,11 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
                 <div
                   style={{ width: 60, height: 2, background: GOLD, margin: "0 auto 16px" }}
                 />
-                {bodyParagraphs.length > 0 ? (
-                  bodyParagraphs.map((p, i) => (
-                    <p key={i} style={{ fontSize: "13px", lineHeight: 1.6, margin: "0 0 10px" }}>
-                      {p}
-                    </p>
-                  ))
+                {bodyHtml ? (
+                  <div
+                    style={{ fontSize: "13px", lineHeight: 1.6 }}
+                    dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                  />
                 ) : (
                   <p className="text-sm text-muted-foreground italic">
                     Your welcome message will appear here.
