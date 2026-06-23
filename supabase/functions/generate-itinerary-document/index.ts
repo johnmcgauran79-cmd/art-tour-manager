@@ -388,6 +388,44 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           margin: 9px 0;
         }
         .glance-item .tick { color: ${GOLD}; font-weight: 700; margin-right: 6px; }
+        /* ---------- Welcome message ---------- */
+        .welcome {
+          text-align: center;
+          padding: 48px 48px 20px;
+        }
+        .welcome-photo {
+          width: 130px;
+          height: 130px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid ${GOLD};
+          margin: 0 auto 22px;
+          display: block;
+        }
+        .welcome-heading {
+          color: ${NAVY};
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 22pt;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin: 0 0 10px;
+        }
+        .welcome-rule {
+          width: 70px;
+          height: 2px;
+          background: ${GOLD};
+          border: none;
+          margin: 0 auto 20px;
+        }
+        .welcome-body { color: ${INK}; font-size: 11.5pt; line-height: 1.7; }
+        .welcome-body p { margin: 0 0 12px; }
+        .welcome-signoff {
+          font-family: Georgia, 'Times New Roman', serif;
+          font-style: italic;
+          font-size: 17pt;
+          color: ${NAVY};
+          margin-top: 18px;
+        }
         .glance-divider {
           width: 80%;
           margin: 34px auto 22px;
