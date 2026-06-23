@@ -3602,6 +3602,53 @@ export type Database = {
           },
         ]
       }
+      tour_document_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          file_path: string
+          height: number | null
+          id: string
+          sort_order: number
+          tour_id: string
+          updated_at: string
+          uploaded_by: string | null
+          width: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          file_path: string
+          height?: number | null
+          id?: string
+          sort_order?: number
+          tour_id: string
+          updated_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          file_path?: string
+          height?: number | null
+          id?: string
+          sort_order?: number
+          tour_id?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_document_images_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_email_rule_overrides: {
         Row: {
           created_at: string

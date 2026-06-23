@@ -34,6 +34,7 @@ export const GenerateDocumentModal = ({
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
   const [includeAdditionalInfo, setIncludeAdditionalInfo] = useState(true);
   const [includeWelcomeMessage, setIncludeWelcomeMessage] = useState(true);
+  const [includeFillerImages, setIncludeFillerImages] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState('');
@@ -53,7 +54,8 @@ export const GenerateDocumentModal = ({
             includeHotels,
             includeTourInfo,
             includeAdditionalInfo,
-            includeWelcomeMessage
+            includeWelcomeMessage,
+            includeFillerImages
           }
         }
       });
@@ -138,6 +140,15 @@ export const GenerateDocumentModal = ({
                     onCheckedChange={(checked) => setIncludeAdditionalInfo(checked as boolean)}
                   />
                   <Label htmlFor="additional-info">Additional Information Sections</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="filler-images"
+                    checked={includeFillerImages}
+                    onCheckedChange={(checked) => setIncludeFillerImages(checked as boolean)}
+                  />
+                  <Label htmlFor="filler-images">Fill blank space with tour images</Label>
                 </div>
               </div>
             </div>

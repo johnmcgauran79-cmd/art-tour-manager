@@ -184,6 +184,39 @@ serve(async (req) => {
       };
     }
 
+    // Resolve filler/document images used to fill blank space in the document
+    let documentImages: any[] = [];
+    if (options.includeFillerImages ?? true) {
+      const { data: imgRows } = await supabase
+        .from('tour_document_images')
+        .select('id, file_path, caption, width, height, sort_order')
+        .eq('tour_id', tourId)
+        .order('sort_order', { ascending: true });
+      for (const row of (imgRows || [])) {
+        if (!row.file_path) continue;
+        let imageUrl: string | null = null;
+        try {
+          const { data: signed } = await supabase.storage
+            .from('attachments')
+            .createSignedUrl(row.file_path, 60 * 60 * 24 * 7);
+          imageUrl = signed?.signedUrl ?? null;
+        } catch (_e) {
+          imageUrl = null;
+        }
+        if (!imageUrl) continue;
+        const w = row.width || 0;
+        const h = row.height || 0;
+        const ratio = w && h ? w / h : 1.5;
+        documentImages.push({
+          imageUrl,
+          caption: row.caption || '',
+          width: w,
+          height: h,
+          orientation: ratio > 1.25 ? 'landscape' : ratio < 0.8 ? 'portrait' : 'square',
+        });
+      }
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
@@ -191,7 +224,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -258,7 +291,25 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = []): string {
+  // Pool of filler images, consumed as blank spaces are filled
+  const fillerPool: any[] = [...(documentImages || [])];
+  const GOLD_FILLER = '#c79a2e';
+  const takeFiller = (prefer?: 'landscape' | 'portrait' | 'square') => {
+    if (fillerPool.length === 0) return null;
+    let idx = prefer ? fillerPool.findIndex((i) => i.orientation === prefer) : 0;
+    if (idx < 0) idx = 0;
+    return fillerPool.splice(idx, 1)[0];
+  };
+  const renderFiller = (img: any, variant: 'block' | 'full' = 'block') => {
+    if (!img) return '';
+    const cls = variant === 'full' ? 'filler-img filler-full' : 'filler-img';
+    return `
+      <figure class="${cls}">
+        <img src="${img.imageUrl}" alt="${(img.caption || 'Tour image').replace(/"/g, '&quot;')}" />
+        ${img.caption ? `<figcaption>${img.caption}</figcaption>` : ''}
+      </figure>`;
+  };
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
@@ -503,6 +554,28 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         .activity-content a { color: ${NAVY}; }
         /* ---------- Additional info ---------- */
         .info-block { margin: 16px 0; page-break-inside: avoid; break-inside: avoid; }
+        /* ---------- Filler images ---------- */
+        .filler-img {
+          margin: 22px 0 4px;
+          padding: 0;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          text-align: center;
+        }
+        .filler-img img {
+          width: 100%;
+          max-height: 300px;
+          object-fit: cover;
+          border-radius: 4px;
+          border: 1px solid ${GOLD};
+        }
+        .filler-full img { max-height: 380px; }
+        .filler-img figcaption {
+          margin-top: 6px;
+          color: ${MUTED};
+          font-size: 9.5pt;
+          font-style: italic;
+        }
         .info-name {
           color: ${NAVY}; font-weight: 700; font-size: 11.5pt; text-transform: uppercase;
           letter-spacing: 0.5px; margin: 0 0 4px;
@@ -577,6 +650,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   // When there is no welcome message, inclusions sit on the cover (first) page.
   if (hasInclusions && !welcomeMessage) {
     html += inclusionsHtml;
+    // Fill the blank space under the inclusions on the cover with a wide image.
+    html += renderFiller(takeFiller('landscape'), 'full');
   }
 
   html += `</div>`; // end cover
@@ -587,6 +662,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       <div class="page section">
         <div class="run-head"><strong>${runningTitle}</strong></div>
         ${inclusionsHtml}
+        ${renderFiller(takeFiller('landscape'), 'full')}
       </div>
     `;
   }
@@ -649,6 +725,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     }
     html += `</div>`;
   });
+  // Fill the blank space at the bottom of the itinerary page with an image.
+  html += renderFiller(takeFiller('landscape'));
   html += `</div>`;
 
   // ===== Additional information =====
@@ -670,6 +748,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         </div>
       `;
     });
+    // Fill any remaining blank space at the end of the document with leftover images.
+    let leftover = takeFiller();
+    while (leftover) {
+      html += renderFiller(leftover);
+      leftover = takeFiller();
+    }
     html += `</div>`;
   }
 
