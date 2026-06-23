@@ -552,33 +552,55 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     html += `</div>`;
   }
 
-  if (options.includeTourInfo && (inclusions.length > 0 || exclusions.length > 0)) {
-    html += `<div class="glance">`;
+  // Build the inclusions ("at a glance") block once so it can be placed either on
+  // the cover page (no welcome message) or on its own page (welcome message present).
+  const hasInclusions = options.includeTourInfo && (inclusions.length > 0 || exclusions.length > 0);
+  let inclusionsHtml = '';
+  if (hasInclusions) {
+    inclusionsHtml += `<div class="glance">`;
     if (inclusions.length > 0) {
-      html += `<h2>Tour Inclusions at a Glance</h2>`;
+      inclusionsHtml += `<h2>Tour Inclusions at a Glance</h2>`;
       inclusions.forEach((item: string) => {
-        html += `<div class="glance-item"><span class="tick">&#10003;</span>${item}</div>`;
+        inclusionsHtml += `<div class="glance-item"><span class="tick">&#10003;</span>${item}</div>`;
       });
     }
     if (exclusions.length > 0) {
-      html += `<hr class="glance-divider"><div class="glance-excl">${exclusions.join(' &middot; ')} not included</div>`;
+      inclusionsHtml += `<hr class="glance-divider"><div class="glance-excl">${exclusions.join(' &middot; ')} not included</div>`;
     }
-    html += `</div>`;
+    inclusionsHtml += `</div>`;
+  }
+
+  // When there is no welcome message, inclusions sit on the cover (first) page.
+  if (hasInclusions && !welcomeMessage) {
+    html += inclusionsHtml;
   }
 
   html += `</div>`; // end cover
 
-  // ===== Accommodation =====
-  if (options.includeHotels && hotels.length > 0) {
+  // When there IS a welcome message, inclusions move to their own page (page 2).
+  if (hasInclusions && welcomeMessage) {
     html += `
-      <div class="page section section-first">
+      <div class="page section">
         <div class="run-head"><strong>${runningTitle}</strong></div>
-        <h2 class="section-title">Accommodation</h2>
-        <table class="acc-table">
-          <thead>
-            <tr><th>Hotel</th><th>Address</th><th>Room Type</th><th>Check-in</th><th>Check-out</th></tr>
-          </thead>
-          <tbody>
+        ${inclusionsHtml}
+      </div>
+    `;
+  }
+
+  // ===== Accommodation + Itinerary (same page, no break between them) =====
+  const hasHotels = options.includeHotels && hotels.length > 0;
+  html += `
+    <div class="page section">
+      <div class="run-head"><strong>${runningTitle}</strong></div>
+  `;
+  if (hasHotels) {
+    html += `
+      <h2 class="section-title">Accommodation</h2>
+      <table class="acc-table">
+        <thead>
+          <tr><th>Hotel</th><th>Address</th><th>Room Type</th><th>Check-in</th><th>Check-out</th></tr>
+        </thead>
+        <tbody>
     `;
     hotels.forEach((hotel: any) => {
       html += `
@@ -591,16 +613,11 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         </tr>
       `;
     });
-    html += `</tbody></table></div>`;
+    html += `</tbody></table>`;
   }
 
-  // ===== Day by day =====
-  const itinFirstClass = (options.includeHotels && hotels.length > 0) ? '' : ' section-first';
-  html += `
-    <div class="page section${itinFirstClass}">
-      <div class="run-head"><strong>${runningTitle}</strong></div>
-      <h2 class="section-title">Day-by-Day Itinerary</h2>
-  `;
+  // Day-by-day itinerary flows directly under the accommodation table (no page break)
+  html += `<h2 class="section-title"${hasHotels ? ' style="margin-top:26px;"' : ''}>Day-by-Day Itinerary</h2>`;
 
   days.forEach((day: any) => {
     const firstEntry = day.entries[0];
