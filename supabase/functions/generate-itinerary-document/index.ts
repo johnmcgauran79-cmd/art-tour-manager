@@ -530,6 +530,28 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         <div class="cover-rule"></div>
   `;
 
+  if (welcomeMessage) {
+    const paragraphs = (welcomeMessage.body || '')
+      .split(/\n\s*\n/)
+      .map((p: string) => p.trim())
+      .filter(Boolean);
+    html += `<div class="welcome">`;
+    if (welcomeMessage.imageUrl) {
+      html += `<img class="welcome-photo" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
+    }
+    html += `<h2 class="welcome-heading">${welcomeMessage.heading || 'Welcome'}</h2>`;
+    html += `<hr class="welcome-rule">`;
+    html += `<div class="welcome-body">`;
+    if (paragraphs.length > 0) {
+      paragraphs.forEach((p: string) => { html += `<p>${p.replace(/\n/g, '<br>')}</p>`; });
+    }
+    html += `</div>`;
+    if (welcomeMessage.signoff) {
+      html += `<div class="welcome-signoff">${welcomeMessage.signoff}</div>`;
+    }
+    html += `</div>`;
+  }
+
   if (options.includeTourInfo && (inclusions.length > 0 || exclusions.length > 0)) {
     html += `<div class="glance">`;
     if (inclusions.length > 0) {
