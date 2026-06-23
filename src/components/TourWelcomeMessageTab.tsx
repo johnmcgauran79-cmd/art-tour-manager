@@ -166,15 +166,15 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
           <CardContent>
             <div className="rounded-lg border overflow-hidden bg-white">
               <div style={{ background: NAVY, height: 8 }} />
+              {data?.imageUrl && (
+                <img
+                  src={data.imageUrl}
+                  alt="Host"
+                  className="block w-full object-cover"
+                  style={{ maxHeight: 220 }}
+                />
+              )}
               <div className="p-6 text-center" style={{ color: "#2b2b2b" }}>
-                {data?.imageUrl && (
-                  <img
-                    src={data.imageUrl}
-                    alt="Host"
-                    className="h-28 w-28 rounded-full object-cover mx-auto mb-4"
-                    style={{ border: `3px solid ${GOLD}` }}
-                  />
-                )}
                 <h2
                   className="uppercase"
                   style={{
@@ -204,9 +204,10 @@ export const TourWelcomeMessageTab = ({ tourId, tourName }: TourWelcomeMessageTa
                 {signoff && (
                   <p
                     style={{
-                      fontFamily: "Georgia, serif",
-                      fontStyle: "italic",
-                      fontSize: "18px",
+                      fontFamily:
+                        "'Dancing Script', 'Snell Roundhand', 'Segoe Script', cursive",
+                      fontSize: "30px",
+                      fontWeight: 600,
                       color: NAVY,
                       marginTop: 18,
                     }}

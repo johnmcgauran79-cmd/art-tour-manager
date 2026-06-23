@@ -321,6 +321,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${tour.name} - Itinerary</title>
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
@@ -391,16 +392,14 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         /* ---------- Welcome message ---------- */
         .welcome {
           text-align: center;
-          padding: 48px 48px 20px;
+          padding: 36px 48px 20px;
         }
-        .welcome-photo {
-          width: 130px;
-          height: 130px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid ${GOLD};
-          margin: 0 auto 22px;
+        .welcome-photo-full {
           display: block;
+          width: 100%;
+          max-height: 360px;
+          object-fit: cover;
+          margin: 0;
         }
         .welcome-heading {
           color: ${NAVY};
@@ -420,11 +419,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         .welcome-body { color: ${INK}; font-size: 11.5pt; line-height: 1.7; }
         .welcome-body p { margin: 0 0 12px; }
         .welcome-signoff {
-          font-family: Georgia, 'Times New Roman', serif;
-          font-style: italic;
-          font-size: 17pt;
+          font-family: 'Dancing Script', 'Snell Roundhand', 'Apple Chancery', 'Segoe Script', cursive;
+          font-size: 30pt;
+          font-weight: 600;
           color: ${NAVY};
           margin-top: 18px;
+          line-height: 1.2;
         }
         .glance-divider {
           width: 80%;
@@ -527,8 +527,15 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           <div class="cover-dates">${formatDate(tour.start_date)} &ndash; ${formatDate(tour.end_date)}</div>
           <div class="cover-meta">${tour.days} Days &nbsp;&middot;&nbsp; ${tour.nights} Nights${subtitle ? ` &nbsp;&middot;&nbsp; ${subtitle}` : ''}</div>
         </div>
-        <div class="cover-rule"></div>
   `;
+
+  // Full-width host image sits directly beneath the header (no gap) when a welcome
+  // message with a photo is present; otherwise show the gold accent rule.
+  if (welcomeMessage && welcomeMessage.imageUrl) {
+    html += `<img class="welcome-photo-full" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
+  } else {
+    html += `<div class="cover-rule"></div>`;
+  }
 
   if (welcomeMessage) {
     const paragraphs = (welcomeMessage.body || '')
@@ -536,9 +543,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       .map((p: string) => p.trim())
       .filter(Boolean);
     html += `<div class="welcome">`;
-    if (welcomeMessage.imageUrl) {
-      html += `<img class="welcome-photo" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
-    }
     html += `<h2 class="welcome-heading">${welcomeMessage.heading || 'Welcome'}</h2>`;
     html += `<hr class="welcome-rule">`;
     html += `<div class="welcome-body">`;
