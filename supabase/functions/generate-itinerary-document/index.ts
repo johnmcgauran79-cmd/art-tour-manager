@@ -184,6 +184,39 @@ serve(async (req) => {
       };
     }
 
+    // Resolve filler/document images used to fill blank space in the document
+    let documentImages: any[] = [];
+    if (options.includeFillerImages ?? true) {
+      const { data: imgRows } = await supabase
+        .from('tour_document_images')
+        .select('id, file_path, caption, width, height, sort_order')
+        .eq('tour_id', tourId)
+        .order('sort_order', { ascending: true });
+      for (const row of (imgRows || [])) {
+        if (!row.file_path) continue;
+        let imageUrl: string | null = null;
+        try {
+          const { data: signed } = await supabase.storage
+            .from('attachments')
+            .createSignedUrl(row.file_path, 60 * 60 * 24 * 7);
+          imageUrl = signed?.signedUrl ?? null;
+        } catch (_e) {
+          imageUrl = null;
+        }
+        if (!imageUrl) continue;
+        const w = row.width || 0;
+        const h = row.height || 0;
+        const ratio = w && h ? w / h : 1.5;
+        documentImages.push({
+          imageUrl,
+          caption: row.caption || '',
+          width: w,
+          height: h,
+          orientation: ratio > 1.25 ? 'landscape' : ratio < 0.8 ? 'portrait' : 'square',
+        });
+      }
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
@@ -191,7 +224,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
