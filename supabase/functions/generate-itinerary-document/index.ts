@@ -60,6 +60,7 @@ interface RequestBody {
     includeHotels: boolean;
     includeTourInfo: boolean;
     includeAdditionalInfo?: boolean;
+    includeWelcomeMessage?: boolean;
   };
 }
 
