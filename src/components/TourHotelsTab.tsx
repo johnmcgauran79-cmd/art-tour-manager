@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, Bell, Copy, DollarSign } from "lucide-react";
+import { MapPin, Calendar, Bed, Edit, FileText, Users, NotebookPen, Calculator, Bell, Copy, DollarSign, Hash } from "lucide-react";
 import { useHotels, Hotel } from "@/hooks/useHotels";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { HotelNightsBreakdownModal } from "@/components/HotelNightsBreakdownModal";
@@ -29,10 +29,11 @@ interface TourHotelsTabProps {
   onEditHotel: (hotel: any) => void;
   onRoomingList: (hotel: any) => void;
   onBulkEdit: (hotel: any) => void;
+  onBulkConfirmation: (hotel: any) => void;
   onOpenAlerts?: () => void;
 }
 
-export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomingList, onBulkEdit, onOpenAlerts }: TourHotelsTabProps) => {
+export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomingList, onBulkEdit, onBulkConfirmation, onOpenAlerts }: TourHotelsTabProps) => {
   const { data: hotels } = useHotels(tourId);
   const [selectedHotelForBreakdown, setSelectedHotelForBreakdown] = useState<Hotel | null>(null);
   const [duplicateData, setDuplicateData] = useState<any>(null);
@@ -164,6 +165,16 @@ export const TourHotelsTab = ({ tourId, alerts, onAddHotel, onEditHotel, onRoomi
                     >
                       <Users className="h-3 w-3" />
                       Bulk Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onBulkConfirmation(hotel)}
+                      className="flex items-center gap-1"
+                      disabled={isAgent}
+                    >
+                      <Hash className="h-3 w-3" />
+                      Confirmation #s
                     </Button>
                     <Button
                       variant="outline"
