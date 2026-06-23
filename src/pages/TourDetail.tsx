@@ -498,6 +498,10 @@ export default function TourDetail() {
               setSelectedHotel(hotel);
               setBulkEditModalOpen(true);
             }}
+            onBulkConfirmation={(hotel) => {
+              setSelectedHotel(hotel);
+              setBulkConfirmationModalOpen(true);
+            }}
           />
         </TabsContent>
 
