@@ -291,7 +291,25 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = []): string {
+  // Pool of filler images, consumed as blank spaces are filled
+  const fillerPool: any[] = [...(documentImages || [])];
+  const GOLD_FILLER = '#c79a2e';
+  const takeFiller = (prefer?: 'landscape' | 'portrait' | 'square') => {
+    if (fillerPool.length === 0) return null;
+    let idx = prefer ? fillerPool.findIndex((i) => i.orientation === prefer) : 0;
+    if (idx < 0) idx = 0;
+    return fillerPool.splice(idx, 1)[0];
+  };
+  const renderFiller = (img: any, variant: 'block' | 'full' = 'block') => {
+    if (!img) return '';
+    const cls = variant === 'full' ? 'filler-img filler-full' : 'filler-img';
+    return `
+      <figure class="${cls}">
+        <img src="${img.imageUrl}" alt="${(img.caption || 'Tour image').replace(/"/g, '&quot;')}" />
+        ${img.caption ? `<figcaption>${img.caption}</figcaption>` : ''}
+      </figure>`;
+  };
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-AU', {
       weekday: 'long',
