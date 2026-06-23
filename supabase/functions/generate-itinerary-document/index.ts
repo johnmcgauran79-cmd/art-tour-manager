@@ -162,6 +162,28 @@ serve(async (req) => {
       ? normaliseCancellationPolicy(tour.cancellation_policy_override ?? globalCancellationPolicy)
       : null;
 
+    // Resolve the welcome message (host welcome) for the cover page
+    let welcomeMessage: any = null;
+    if ((options.includeWelcomeMessage ?? true) && tour.welcome_message_enabled) {
+      let imageUrl: string | null = null;
+      if (tour.welcome_message_image_path) {
+        try {
+          const { data: signed } = await supabase.storage
+            .from('attachments')
+            .createSignedUrl(tour.welcome_message_image_path, 60 * 60 * 24 * 7);
+          imageUrl = signed?.signedUrl ?? null;
+        } catch (_e) {
+          imageUrl = null;
+        }
+      }
+      welcomeMessage = {
+        heading: tour.welcome_message_heading || 'Welcome',
+        body: tour.welcome_message_body || '',
+        signoff: tour.welcome_message_signoff || '',
+        imageUrl,
+      };
+    }
+
     // Process data
     const daysWithEntries = days.map(day => ({
       ...day,
@@ -169,7 +191,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
