@@ -3,8 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Edit, Trash2, Eye, EyeOff, MoreVertical, FileText, Mail, ArrowUp, ArrowDown } from "lucide-react";
@@ -298,13 +298,11 @@ export const TourAdditionalInfoTab = ({ tourId, tourName }: TourAdditionalInfoTa
             </div>
             <div className="space-y-2">
               <Label>Content</Label>
-              <p className="text-xs text-muted-foreground">Enter the details for this section. HTML formatting is supported.</p>
-              <Textarea
+              <p className="text-xs text-muted-foreground">Use the toolbar to format text with bold, italics, lists and line breaks.</p>
+              <RichTextEditor
                 value={formData.content}
-                onChange={(e) => setFormData(p => ({ ...p, content: e.target.value }))}
+                onChange={(value) => setFormData(p => ({ ...p, content: value }))}
                 placeholder="Enter section content..."
-                rows={10}
-                className="font-mono text-sm"
               />
             </div>
 
