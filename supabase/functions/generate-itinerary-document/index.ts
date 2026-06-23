@@ -321,6 +321,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${tour.name} - Itinerary</title>
       <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap');
         * { box-sizing: border-box; }
         html, body { margin: 0; padding: 0; }
         body {
