@@ -11,6 +11,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
+import { BulkConfirmationNumberModal } from "@/components/BulkConfirmationNumberModal";
 import { ActivityPassengerAllocationModal } from "@/components/ActivityPassengerAllocationModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
@@ -46,6 +47,7 @@ export const TourDetailModalWithHotelsTab = ({
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [roomingListModalOpen, setRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+  const [bulkConfirmationModalOpen, setBulkConfirmationModalOpen] = useState(false);
   const [allocationModalOpen, setAllocationModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
   const [selectedHotel, setSelectedHotel] = useState(null);
@@ -154,6 +156,11 @@ export const TourDetailModalWithHotelsTab = ({
     setBulkEditModalOpen(true);
   };
 
+  const handleBulkConfirmation = (hotel: any) => {
+    setSelectedHotel(hotel);
+    setBulkConfirmationModalOpen(true);
+  };
+
   // Don't render modal content if no tour is provided or modal is not open
   if (!open || !currentTour) {
     return null;
@@ -231,6 +238,7 @@ export const TourDetailModalWithHotelsTab = ({
                 onOpenAlerts={() => {}}
                 onEditHotel={handleEditHotel}
                 onBulkEdit={handleBulkEdit}
+                onBulkConfirmation={handleBulkConfirmation}
                 onRoomingList={handleRoomingList}
               />
             </TabsContent>
@@ -342,6 +350,13 @@ export const TourDetailModalWithHotelsTab = ({
         tourId={currentTour?.id || ""}
         open={bulkEditModalOpen}
         onOpenChange={setBulkEditModalOpen}
+      />
+
+      <BulkConfirmationNumberModal
+        hotel={selectedHotel}
+        tourId={currentTour?.id || ""}
+        open={bulkConfirmationModalOpen}
+        onOpenChange={setBulkConfirmationModalOpen}
       />
     </>
   );
