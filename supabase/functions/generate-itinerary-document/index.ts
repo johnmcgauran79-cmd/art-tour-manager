@@ -391,16 +391,14 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         /* ---------- Welcome message ---------- */
         .welcome {
           text-align: center;
-          padding: 48px 48px 20px;
+          padding: 36px 48px 20px;
         }
-        .welcome-photo {
-          width: 130px;
-          height: 130px;
-          border-radius: 50%;
-          object-fit: cover;
-          border: 3px solid ${GOLD};
-          margin: 0 auto 22px;
+        .welcome-photo-full {
           display: block;
+          width: 100%;
+          max-height: 360px;
+          object-fit: cover;
+          margin: 0;
         }
         .welcome-heading {
           color: ${NAVY};
@@ -420,11 +418,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         .welcome-body { color: ${INK}; font-size: 11.5pt; line-height: 1.7; }
         .welcome-body p { margin: 0 0 12px; }
         .welcome-signoff {
-          font-family: Georgia, 'Times New Roman', serif;
-          font-style: italic;
-          font-size: 17pt;
+          font-family: 'Dancing Script', 'Snell Roundhand', 'Apple Chancery', 'Segoe Script', cursive;
+          font-size: 30pt;
+          font-weight: 600;
           color: ${NAVY};
           margin-top: 18px;
+          line-height: 1.2;
         }
         .glance-divider {
           width: 80%;
