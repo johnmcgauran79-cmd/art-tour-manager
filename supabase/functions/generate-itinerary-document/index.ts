@@ -554,6 +554,28 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         .activity-content a { color: ${NAVY}; }
         /* ---------- Additional info ---------- */
         .info-block { margin: 16px 0; page-break-inside: avoid; break-inside: avoid; }
+        /* ---------- Filler images ---------- */
+        .filler-img {
+          margin: 22px 0 4px;
+          padding: 0;
+          page-break-inside: avoid;
+          break-inside: avoid;
+          text-align: center;
+        }
+        .filler-img img {
+          width: 100%;
+          max-height: 300px;
+          object-fit: cover;
+          border-radius: 4px;
+          border: 1px solid ${GOLD};
+        }
+        .filler-full img { max-height: 380px; }
+        .filler-img figcaption {
+          margin-top: 6px;
+          color: ${MUTED};
+          font-size: 9.5pt;
+          font-style: italic;
+        }
         .info-name {
           color: ${NAVY}; font-weight: 700; font-size: 11.5pt; text-transform: uppercase;
           letter-spacing: 0.5px; margin: 0 0 4px;
