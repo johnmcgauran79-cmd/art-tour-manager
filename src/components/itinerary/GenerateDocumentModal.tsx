@@ -33,6 +33,7 @@ export const GenerateDocumentModal = ({
   const [includeHotels, setIncludeHotels] = useState(true);
   const [includeTourInfo, setIncludeTourInfo] = useState(true);
   const [includeAdditionalInfo, setIncludeAdditionalInfo] = useState(true);
+  const [includeWelcomeMessage, setIncludeWelcomeMessage] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
   const [generatedHTML, setGeneratedHTML] = useState('');
@@ -51,7 +52,8 @@ export const GenerateDocumentModal = ({
           options: {
             includeHotels,
             includeTourInfo,
-            includeAdditionalInfo
+            includeAdditionalInfo,
+            includeWelcomeMessage
           }
         }
       });
@@ -109,6 +111,15 @@ export const GenerateDocumentModal = ({
                     onCheckedChange={(checked) => setIncludeTourInfo(checked as boolean)}
                   />
                   <Label htmlFor="tour-info">Tour Information (dates, location, etc.)</Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="welcome-message"
+                    checked={includeWelcomeMessage}
+                    onCheckedChange={(checked) => setIncludeWelcomeMessage(checked as boolean)}
+                  />
+                  <Label htmlFor="welcome-message">Welcome Message (host welcome)</Label>
                 </div>
                 
                 <div className="flex items-center space-x-2">
