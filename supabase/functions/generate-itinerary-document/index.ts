@@ -650,6 +650,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   // When there is no welcome message, inclusions sit on the cover (first) page.
   if (hasInclusions && !welcomeMessage) {
     html += inclusionsHtml;
+    // Fill the blank space under the inclusions on the cover with a wide image.
+    html += renderFiller(takeFiller('landscape'), 'full');
   }
 
   html += `</div>`; // end cover
@@ -660,6 +662,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       <div class="page section">
         <div class="run-head"><strong>${runningTitle}</strong></div>
         ${inclusionsHtml}
+        ${renderFiller(takeFiller('landscape'), 'full')}
       </div>
     `;
   }
@@ -722,6 +725,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     }
     html += `</div>`;
   });
+  // Fill the blank space at the bottom of the itinerary page with an image.
+  html += renderFiller(takeFiller('landscape'));
   html += `</div>`;
 
   // ===== Additional information =====
@@ -743,6 +748,12 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         </div>
       `;
     });
+    // Fill any remaining blank space at the end of the document with leftover images.
+    let leftover = takeFiller();
+    while (leftover) {
+      html += renderFiller(leftover);
+      leftover = takeFiller();
+    }
     html += `</div>`;
   }
 
