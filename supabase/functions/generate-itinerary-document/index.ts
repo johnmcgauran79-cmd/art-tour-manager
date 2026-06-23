@@ -527,8 +527,15 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
           <div class="cover-dates">${formatDate(tour.start_date)} &ndash; ${formatDate(tour.end_date)}</div>
           <div class="cover-meta">${tour.days} Days &nbsp;&middot;&nbsp; ${tour.nights} Nights${subtitle ? ` &nbsp;&middot;&nbsp; ${subtitle}` : ''}</div>
         </div>
-        <div class="cover-rule"></div>
   `;
+
+  // Full-width host image sits directly beneath the header (no gap) when a welcome
+  // message with a photo is present; otherwise show the gold accent rule.
+  if (welcomeMessage && welcomeMessage.imageUrl) {
+    html += `<img class="welcome-photo-full" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
+  } else {
+    html += `<div class="cover-rule"></div>`;
+  }
 
   if (welcomeMessage) {
     const paragraphs = (welcomeMessage.body || '')
@@ -536,9 +543,6 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
       .map((p: string) => p.trim())
       .filter(Boolean);
     html += `<div class="welcome">`;
-    if (welcomeMessage.imageUrl) {
-      html += `<img class="welcome-photo" src="${welcomeMessage.imageUrl}" alt="Tour Host" />`;
-    }
     html += `<h2 class="welcome-heading">${welcomeMessage.heading || 'Welcome'}</h2>`;
     html += `<hr class="welcome-rule">`;
     html += `<div class="welcome-body">`;
