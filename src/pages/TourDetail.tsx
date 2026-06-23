@@ -30,6 +30,7 @@ import { TourCustomFormsTab } from "@/components/TourCustomFormsTab";
 import { TourPassportDetailsTab } from "@/components/TourPassportDetailsTab";
 import { TourAdditionalInfoTab } from "@/components/TourAdditionalInfoTab";
 import { TourWelcomeMessageTab } from "@/components/TourWelcomeMessageTab";
+import { TourDocumentImagesTab } from "@/components/TourDocumentImagesTab";
 import { TourCommsSettingsTab } from "@/components/TourCommsSettingsTab";
 import { TourWaiverStatusSection } from "@/components/TourWaiverStatusSection";
 import { Separator } from "@/components/ui/separator";
@@ -65,6 +66,10 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
           <MessageSquareQuote className="h-3.5 w-3.5" />
           Welcome Message
         </TabsTrigger>
+        <TabsTrigger value="images" className="flex items-center gap-1.5">
+          <ImageIcon className="h-3.5 w-3.5" />
+          Images
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="itinerary">
         <TourItineraryTab tour={{
@@ -82,6 +87,9 @@ const GuestDocsSubTabs = ({ tour }: { tour: Tour }) => {
       </TabsContent>
       <TabsContent value="welcome-message">
         <TourWelcomeMessageTab tourId={tour.id} tourName={tour.name} />
+      </TabsContent>
+      <TabsContent value="images">
+        <TourDocumentImagesTab tourId={tour.id} tourName={tour.name} />
       </TabsContent>
     </Tabs>
   );
