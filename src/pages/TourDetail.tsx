@@ -14,6 +14,7 @@ import { EditActivityModal } from "@/components/EditActivityModal";
 import { EditHotelModal } from "@/components/EditHotelModal";
 import { RoomingListModal } from "@/components/RoomingListModal";
 import { BulkRoomingEditModal } from "@/components/BulkRoomingEditModal";
+import { BulkConfirmationNumberModal } from "@/components/BulkConfirmationNumberModal";
 import { ActivityPassengerAllocationModal } from "@/components/ActivityPassengerAllocationModal";
 import { TourOverviewTab } from "@/components/TourOverviewTab";
 import { TourActivitiesTab } from "@/components/TourActivitiesTab";
@@ -110,6 +111,7 @@ export default function TourDetail() {
   const [editHotelModalOpen, setEditHotelModalOpen] = useState(false);
   const [roomingListModalOpen, setEditRoomingListModalOpen] = useState(false);
   const [bulkEditModalOpen, setBulkEditModalOpen] = useState(false);
+  const [bulkConfirmationModalOpen, setBulkConfirmationModalOpen] = useState(false);
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [alertsModalOpen, setAlertsModalOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -498,6 +500,10 @@ export default function TourDetail() {
               setSelectedHotel(hotel);
               setBulkEditModalOpen(true);
             }}
+            onBulkConfirmation={(hotel) => {
+              setSelectedHotel(hotel);
+              setBulkConfirmationModalOpen(true);
+            }}
           />
         </TabsContent>
 
@@ -625,6 +631,14 @@ export default function TourDetail() {
         <BulkRoomingEditModal
           open={bulkEditModalOpen}
           onOpenChange={setBulkEditModalOpen}
+          hotel={selectedHotel}
+          tourId={tour.id}
+        />
+      )}
+      {bulkConfirmationModalOpen && selectedHotel && (
+        <BulkConfirmationNumberModal
+          open={bulkConfirmationModalOpen}
+          onOpenChange={setBulkConfirmationModalOpen}
           hotel={selectedHotel}
           tourId={tour.id}
         />
