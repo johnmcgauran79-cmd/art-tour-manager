@@ -611,18 +611,21 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   }
 
   if (welcomeMessage) {
-    const paragraphs = (welcomeMessage.body || '')
-      .split(/\n\s*\n/)
-      .map((p: string) => p.trim())
-      .filter(Boolean);
+    const rawBody = welcomeMessage.body || '';
+    // New content is rich-text HTML; legacy content is plain text with newlines.
+    const isHtmlBody = /<[a-z][\s\S]*>/i.test(rawBody);
+    const bodyHtml = isHtmlBody
+      ? rawBody
+      : rawBody
+          .split(/\n\s*\n/)
+          .map((p: string) => p.trim())
+          .filter(Boolean)
+          .map((p: string) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+          .join('');
     html += `<div class="welcome">`;
     html += `<h2 class="welcome-heading">${welcomeMessage.heading || 'Welcome'}</h2>`;
     html += `<hr class="welcome-rule">`;
-    html += `<div class="welcome-body">`;
-    if (paragraphs.length > 0) {
-      paragraphs.forEach((p: string) => { html += `<p>${p.replace(/\n/g, '<br>')}</p>`; });
-    }
-    html += `</div>`;
+    html += `<div class="welcome-body">${bodyHtml}</div>`;
     if (welcomeMessage.signoff) {
       html += `<div class="welcome-signoff">${welcomeMessage.signoff}</div>`;
     }
