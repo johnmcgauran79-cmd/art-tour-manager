@@ -18,9 +18,9 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex flex-col w-full bg-surface">
+      <div className="h-screen flex flex-col w-full bg-surface overflow-hidden">
         {/* Full-width header across the whole page */}
-        <header className="sticky top-0 z-50 flex items-center justify-between gap-2 border-b border-border/70 bg-gradient-brand px-3 sm:px-6 py-3 shadow-brand">
+        <header className="shrink-0 z-50 flex items-center justify-between gap-2 border-b border-border/70 bg-gradient-brand px-3 sm:px-6 py-3 shadow-brand">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <SidebarTrigger className="text-brand-yellow hover:bg-white/10" />
             <button
@@ -52,7 +52,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </header>
 
         {/* Below header: menu on the left, main panel on the right */}
-        <div className="flex flex-1 w-full min-h-0">
+        <div className="flex flex-1 w-full min-h-0 overflow-hidden">
           <AppSidebar />
           <main className="flex-1 min-w-0 overflow-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl w-full mx-auto">{children}</div>
