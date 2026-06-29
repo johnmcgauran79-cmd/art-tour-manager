@@ -52,7 +52,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
         </header>
 
         {/* Below header: menu on the left, main panel on the right */}
-        <div className="flex flex-1 w-full min-h-0">
+        <div className="flex flex-1 w-full min-h-0 overflow-hidden">
           <AppSidebar />
           <main className="flex-1 min-w-0 overflow-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="max-w-7xl w-full mx-auto">{children}</div>
