@@ -10,7 +10,7 @@ const APP_URL = "https://art-tour-manager.lovable.app";
 const TZ = "Australia/Sydney";
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const FINISHED = new Set(["completed", "cancelled", "done", "complete"]);
+const FINISHED = new Set(["completed", "cancelled", "done", "complete", "not_required", "archived"]);
 
 interface Pref {
   user_id: string;
