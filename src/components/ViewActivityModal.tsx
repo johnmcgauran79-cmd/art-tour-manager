@@ -9,6 +9,7 @@ import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
 import { useAuth } from "@/hooks/useAuth";
 import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
+import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
 import { JourneysEditor } from "./JourneysEditor";
 import { RelatedTasksSection } from "./entityLinks/RelatedTasksSection";
 interface ActivityBookingInfo {
@@ -335,6 +336,9 @@ export const ViewActivityModal = ({ activity, open, onOpenChange, onEdit }: View
 
           {/* Attachments Section */}
           <ActivityAttachmentsSection activityId={activity.id} />
+
+          {/* External Links */}
+          <ActivityExternalLinksSection activityId={activity.id} readOnly />
 
           {/* Related tasks (mentions this activity in description or comments) */}
           <RelatedTasksSection entityType="activity" entityId={activity.id} />
