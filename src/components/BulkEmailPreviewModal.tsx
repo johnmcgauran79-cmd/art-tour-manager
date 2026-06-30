@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Clock, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
+import { useToast } from "@/hooks/use-toast";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useScheduleEmail } from "@/hooks/useScheduledEmails";
 import { useCustomForms } from "@/hooks/useCustomForms";
