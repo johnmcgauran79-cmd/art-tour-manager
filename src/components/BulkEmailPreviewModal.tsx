@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, Clock, Eye } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
+import { useToast } from "@/hooks/use-toast";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useScheduleEmail } from "@/hooks/useScheduledEmails";
 import { useCustomForms } from "@/hooks/useCustomForms";
@@ -71,6 +72,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [hideCompletedForm, setHideCompletedForm] = useState(false);
   
   const scheduleEmailMutation = useScheduleEmail();
+  const { toast } = useToast();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
     setSendProgress({ current, total });
   });
@@ -340,8 +342,34 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   };
 
   const handleConfirmSend = async () => {
-    if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
-    if (isCustomFormTemplate && !selectedFormId) return;
+    // Guard with explicit feedback so the button never appears to do "nothing".
+    if (!tourId || selectedBookingIds.size === 0) {
+      toast({
+        title: "Nothing to send",
+        description: "Select at least one recipient before sending.",
+        variant: "destructive",
+      });
+      setShowConfirmDialog(false);
+      return;
+    }
+    if (!editedContent.trim()) {
+      toast({
+        title: "Email content is empty",
+        description: "Choose a template or write some content before sending.",
+        variant: "destructive",
+      });
+      setShowConfirmDialog(false);
+      return;
+    }
+    if (isCustomFormTemplate && !selectedFormId) {
+      toast({
+        title: "No form selected",
+        description: "Select a published form for this custom form request.",
+        variant: "destructive",
+      });
+      setShowConfirmDialog(false);
+      return;
+    }
     
     // Reset progress
     setSendProgress(null);
@@ -363,7 +391,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         selectedBookingIds: Array.from(selectedBookingIds),
         includeAdditionalPassengers,
-        emailTemplateId: selectedTemplateId || undefined,
+        emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
         customFormId: isCustomFormTemplate ? selectedFormId : undefined,
         attachments: attachments.length > 0 ? attachments : undefined,
       });
