@@ -161,11 +161,28 @@ export const PendingEmailPreviewModal = ({
               Action buttons (profile update, passport request, etc.) are placeholders and won't generate real links in preview.
             </p>
 
-            {/* Rendered email body */}
-            <div
-              className="border rounded-lg p-6 bg-background prose prose-sm max-w-none"
-              dangerouslySetInnerHTML={{ __html: processedContent }}
-            />
+            {/* Rendered email body — mirrors the real sent-email spacing so the
+                preview matches what recipients actually receive. */}
+            <div className="border rounded-lg p-6 bg-background email-preview-body">
+              <style>{`
+                .email-preview-body {
+                  font-family: Arial, Helvetica, sans-serif;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #55575d;
+                }
+                .email-preview-body p { margin: 0 0 12px 0; }
+                .email-preview-body ul,
+                .email-preview-body ol { margin: 0 0 16px 0; padding-left: 24px; }
+                .email-preview-body li { margin-bottom: 4px; }
+                .email-preview-body h1,
+                .email-preview-body h2,
+                .email-preview-body h3,
+                .email-preview-body h4 { color: #1a2332; line-height: 1.3; }
+                .email-preview-body hr { border: none; border-top: 2px solid #e5e7eb; margin: 24px 0; }
+              `}</style>
+              <div dangerouslySetInnerHTML={{ __html: processedContent }} />
+            </div>
           </div>
         )}
       </DialogContent>
