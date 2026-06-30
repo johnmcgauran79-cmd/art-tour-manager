@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatDateToDDMMYYYY } from "@/lib/utils";
 import { Activity } from "@/hooks/useActivities";
 import { ActivityAttachmentsSection } from "@/components/ActivityAttachmentsSection";
+import { ActivityExternalLinksSection } from "@/components/ActivityExternalLinksSection";
 import { JourneysEditor } from "@/components/JourneysEditor";
 
 interface ActivityBookingInfo {
@@ -256,6 +257,9 @@ export const HostActivityViewModal = ({ activity, open, onOpenChange }: HostActi
 
           {/* Attachments */}
           <ActivityAttachmentsSection activityId={activity.id} />
+
+          {/* External Links */}
+          <ActivityExternalLinksSection activityId={activity.id} readOnly />
 
           {/* Bookings List */}
           <div className="space-y-1">
