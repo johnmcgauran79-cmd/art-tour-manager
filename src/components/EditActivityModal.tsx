@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Activity } from "@/hooks/useActivities";
 import { JourneysEditor, Journey } from "./JourneysEditor";
 import { ActivityAttachmentsSection } from "./ActivityAttachmentsSection";
+import { ActivityExternalLinksSection } from "./ActivityExternalLinksSection";
 import {
   BOOKING_WORKFLOW_STATUS_OPTIONS,
   PAYMENT_WORKFLOW_STATUS_OPTIONS,
@@ -485,6 +486,13 @@ export const EditActivityModal = ({ activity, open, onOpenChange }: EditActivity
           {activity && (
             <div className="border-t pt-4">
               <ActivityAttachmentsSection activityId={activity.id} />
+            </div>
+          )}
+
+          {/* External Links */}
+          {activity && (
+            <div className="border-t pt-4">
+              <ActivityExternalLinksSection activityId={activity.id} />
             </div>
           )}
 
