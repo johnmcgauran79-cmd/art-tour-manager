@@ -30,7 +30,7 @@ interface TaskRow {
   status: string;
 }
 
-const FINISHED = new Set(["completed", "cancelled", "done", "complete"]);
+const FINISHED = new Set(["completed", "cancelled", "done", "complete", "not_required", "archived"]);
 
 function isWithinWindow(dueIso: string, hoursBefore: number, windowMinutes: number) {
   const due = new Date(dueIso).getTime();
