@@ -391,7 +391,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
         bccEmails: bccEmails.split(',').map(e => e.trim()).filter(Boolean),
         selectedBookingIds: Array.from(selectedBookingIds),
         includeAdditionalPassengers,
-        emailTemplateId: selectedTemplateId || undefined,
+        emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
         customFormId: isCustomFormTemplate ? selectedFormId : undefined,
         attachments: attachments.length > 0 ? attachments : undefined,
       });
