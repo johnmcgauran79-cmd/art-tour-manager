@@ -270,6 +270,44 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_external_links: {
+        Row: {
+          activity_id: string
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          label: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_external_links_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_journeys: {
         Row: {
           activity_id: string
