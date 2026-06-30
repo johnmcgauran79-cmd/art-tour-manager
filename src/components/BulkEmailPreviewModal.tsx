@@ -72,6 +72,7 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [hideCompletedForm, setHideCompletedForm] = useState(false);
   
   const scheduleEmailMutation = useScheduleEmail();
+  const { toast } = useToast();
   const bulkEmailMutation = useBulkBookingEmail((current, total) => {
     setSendProgress({ current, total });
   });
