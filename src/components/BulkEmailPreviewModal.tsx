@@ -342,8 +342,34 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   };
 
   const handleConfirmSend = async () => {
-    if (!tourId || !selectedTemplateId || selectedBookingIds.size === 0) return;
-    if (isCustomFormTemplate && !selectedFormId) return;
+    // Guard with explicit feedback so the button never appears to do "nothing".
+    if (!tourId || selectedBookingIds.size === 0) {
+      toast({
+        title: "Nothing to send",
+        description: "Select at least one recipient before sending.",
+        variant: "destructive",
+      });
+      setShowConfirmDialog(false);
+      return;
+    }
+    if (!editedContent.trim()) {
+      toast({
+        title: "Email content is empty",
+        description: "Choose a template or write some content before sending.",
+        variant: "destructive",
+      });
+      setShowConfirmDialog(false);
+      return;
+    }
+    if (isCustomFormTemplate && !selectedFormId) {
+      toast({
+        title: "No form selected",
+        description: "Select a published form for this custom form request.",
+        variant: "destructive",
+      });
+      setShowConfirmDialog(false);
+      return;
+    }
     
     // Reset progress
     setSendProgress(null);
