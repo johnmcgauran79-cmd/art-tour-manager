@@ -22,7 +22,7 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
   const headers = rawHeaders.map(h => h.toLowerCase());
   
   // Development logging - consider removing in production
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('Raw headers from CSV:', rawHeaders);
     console.log('Normalized headers (lowercase):', headers);
   }
@@ -34,7 +34,7 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
     const line = lines[i].trim();
     if (!line) continue; // Skip empty lines
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`Processing Row ${i}:`, line);
     }
 
@@ -59,7 +59,7 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
     values.push(currentValue.trim()); // Add the last value
 
     // Development logging
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`Parsed values (${values.length}):`, values);
     }
 
@@ -109,7 +109,7 @@ export const parseCSV = (text: string): { contacts: CSVContact[], errors: string
     contacts.push(formattedContact);
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log(`Total contacts parsed: ${contacts.length}`);
   }
   
