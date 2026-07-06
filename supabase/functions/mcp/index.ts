@@ -10,7 +10,7 @@ import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z } from "npm:zod@^3.25.76";
 
 // src/lib/mcp/tools/_supabase.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.50.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.110.0";
 function supabaseForUser(ctx) {
   return createClient(
     process.env.SUPABASE_URL,
