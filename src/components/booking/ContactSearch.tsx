@@ -27,7 +27,7 @@ export const ContactSearch = ({
 }: ContactSearchProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Debounce search input
   useEffect(() => {

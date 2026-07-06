@@ -134,7 +134,7 @@ export const useUpdateSubtask = () => {
       }
       const { data: updated, error } = await supabase
         .from('task_subtasks')
-        .update(patch)
+        .update(patch as any)
         .eq('id', input.id)
         .select('title, assignee_id')
         .single();

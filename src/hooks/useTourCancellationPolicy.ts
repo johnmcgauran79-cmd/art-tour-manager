@@ -60,7 +60,7 @@ export const useTourCancellationPolicy = (tourId: string) => {
       if (updates.enabled !== undefined) payload.cancellation_policy_enabled = updates.enabled;
       if (updates.override !== undefined)
         payload.cancellation_policy_override = updates.override as unknown as never;
-      const { error } = await supabase.from("tours").update(payload).eq("id", tourId);
+      const { error } = await supabase.from("tours").update(payload as any).eq("id", tourId);
       if (error) throw error;
     },
     onSuccess: () => {

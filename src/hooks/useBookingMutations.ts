@@ -308,7 +308,7 @@ export const useUpdateBooking = () => {
 
       const { data, error } = await supabase
         .from('bookings')
-        .update(finalUpdates)
+        .update(finalUpdates as any)
         .eq('id', id)
         .select()
         .single();

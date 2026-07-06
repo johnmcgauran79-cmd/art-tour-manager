@@ -175,7 +175,7 @@ export const useUpdateOperationsDocument = () => {
 
       const { data, error } = await supabase
         .from("operations_documents")
-        .update(patch)
+        .update(patch as any)
         .eq("id", input.id)
         .select()
         .single();
