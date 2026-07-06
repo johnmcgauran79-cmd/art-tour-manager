@@ -179,14 +179,14 @@ var list_tour_hotels_default = defineTool6({
   handler: async ({ tour_id }, ctx) => {
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
-    const { data, error } = await supabaseForUser(ctx).from("hotel_bookings").select(
-      "id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, hotels (id, name, address, phone, email, city, state, country, check_in_time, check_out_time, notes)"
-    ).eq("tour_id", tour_id).order("check_in_date", { ascending: true });
+    const { data, error } = await supabaseForUser(ctx).from("hotels").select(
+      "id, name, address, contact_name, contact_phone, contact_email, default_check_in, default_check_out, default_room_type, rooms_reserved, rooms_booked, rooms_available, operations_notes, booking_status, payment_status, hotel_bookings (id, booking_id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, required)"
+    ).eq("tour_id", tour_id).order("created_at", { ascending: true });
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { hotel_bookings: data ?? [] }
+      structuredContent: { hotels: data ?? [] }
     };
   }
 });
@@ -207,7 +207,7 @@ var get_tour_itinerary_default = defineTool7({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     const { data, error } = await supabaseForUser(ctx).from("tour_itineraries").select(
       "*, tour_itinerary_days (*, tour_itinerary_entries (*))"
-    ).eq("tour_id", tour_id).maybeSingle();
+    ).eq("tour_id", tour_id).eq("is_current", true).order("version", { ascending: false }).limit(1).maybeSingle();
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
     if (!data)
@@ -288,7 +288,7 @@ var list_tour_custom_forms_default = defineTool10({
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
     const { data, error } = await supabaseForUser(ctx).from("tour_custom_forms").select(
-      "id, title, description, is_required, due_days_before_tour, tour_custom_form_fields (id, label, field_type, is_required, sort_order), tour_custom_form_responses (id, booking_id, submitted_at, responses)"
+      "id, form_title, form_description, is_published, response_mode, tour_custom_form_fields (id, field_label, field_type, field_options, is_required, sort_order), tour_custom_form_responses (id, booking_id, customer_id, passenger_slot, submitted_at, response_data)"
     ).eq("tour_id", tour_id).order("created_at", { ascending: true });
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };

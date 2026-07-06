@@ -18,7 +18,7 @@ export default defineTool({
     const { data, error } = await supabaseForUser(ctx)
       .from("tour_custom_forms")
       .select(
-        "id, title, description, is_required, due_days_before_tour, tour_custom_form_fields (id, label, field_type, is_required, sort_order), tour_custom_form_responses (id, booking_id, submitted_at, responses)",
+        "id, form_title, form_description, is_published, response_mode, tour_custom_form_fields (id, field_label, field_type, field_options, is_required, sort_order), tour_custom_form_responses (id, booking_id, customer_id, passenger_slot, submitted_at, response_data)",
       )
       .eq("tour_id", tour_id)
       .order("created_at", { ascending: true });

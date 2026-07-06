@@ -16,19 +16,19 @@ export default defineTool({
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
 
     const { data, error } = await supabaseForUser(ctx)
-      .from("hotel_bookings")
+      .from("hotels")
       .select(
-        "id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, hotels (id, name, address, phone, email, city, state, country, check_in_time, check_out_time, notes)",
+        "id, name, address, contact_name, contact_phone, contact_email, default_check_in, default_check_out, default_room_type, rooms_reserved, rooms_booked, rooms_available, operations_notes, booking_status, payment_status, hotel_bookings (id, booking_id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, required)",
       )
       .eq("tour_id", tour_id)
-      .order("check_in_date", { ascending: true });
+      .order("created_at", { ascending: true });
 
     if (error)
       return { content: [{ type: "text", text: error.message }], isError: true };
 
     return {
       content: [{ type: "text", text: JSON.stringify(data ?? []) }],
-      structuredContent: { hotel_bookings: data ?? [] },
+      structuredContent: { hotels: data ?? [] },
     };
   },
 });
