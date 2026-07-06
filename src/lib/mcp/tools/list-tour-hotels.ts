@@ -1,0 +1,34 @@
+import { defineTool } from "@lovable.dev/mcp-js";
+import { z } from "zod";
+import { supabaseForUser } from "./_supabase";
+
+export default defineTool({
+  name: "list_tour_hotels",
+  title: "List tour hotels",
+  description:
+    "List hotels and hotel bookings for a given tour id, including check-in/out dates, bedding and allocated rooms.",
+  inputSchema: {
+    tour_id: z.string().describe("The tour id (uuid) to list hotels for."),
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id }, ctx) => {
+    if (!ctx.isAuthenticated())
+      return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
+
+    const { data, error } = await supabaseForUser(ctx)
+      .from("hotel_bookings")
+      .select(
+        "id, check_in_date, check_out_date, nights, bedding, allocated, room_type, room_upgrade, confirmation_number, room_requests, hotels (id, name, address, phone, email, city, state, country, check_in_time, check_out_time, notes)",
+      )
+      .eq("tour_id", tour_id)
+      .order("check_in_date", { ascending: true });
+
+    if (error)
+      return { content: [{ type: "text", text: error.message }], isError: true };
+
+    return {
+      content: [{ type: "text", text: JSON.stringify(data ?? []) }],
+      structuredContent: { hotel_bookings: data ?? [] },
+    };
+  },
+});
