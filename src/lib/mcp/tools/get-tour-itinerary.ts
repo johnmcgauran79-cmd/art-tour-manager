@@ -21,6 +21,9 @@ export default defineTool({
         "*, tour_itinerary_days (*, tour_itinerary_entries (*))",
       )
       .eq("tour_id", tour_id)
+      .eq("is_current", true)
+      .order("version", { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (error)
