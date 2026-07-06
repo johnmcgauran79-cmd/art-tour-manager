@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://upqvgtuxfzsrwjahklij.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "art-tour-manager-mcp",
+      "version": "0.1.0",
+      "title": "Australian Racing Tours MCP"
+    },
+    "tools": [
+      {
+        "name": "list_tours",
+        "title": "List tours",
+        "description": "List tours the signed-in user can access, most recent start date first. Optionally filter by a name/location search term or status.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive match against tour name or location."
+            },
+            "status": {
+              "type": "string",
+              "description": "Filter by tour status (e.g. active, cancelled, archived)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of tours to return (default 25, max 100)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_tour",
+        "title": "Get tour details",
+        "description": "Fetch full details for a single tour by its id, including dates, pricing, capacity and host.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_bookings",
+        "title": "List bookings for a tour",
+        "description": "List bookings for a given tour id, including passenger counts, status and accommodation dates.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "description": "The tour id (uuid) to list bookings for."
+            },
+            "status": {
+              "type": "string",
+              "description": "Optional booking status filter (e.g. paid, deposited, waitlist)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of bookings to return (default 100, max 500)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
