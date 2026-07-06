@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { createClient } from "@supabase/supabase-js";
 import type { ToolContext } from "@lovable.dev/mcp-js";
 
