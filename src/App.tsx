@@ -31,6 +31,7 @@ import SelectPickup from "./pages/SelectPickup";
 import CustomForm from "./pages/CustomForm";
 import ViewItinerary from "./pages/ViewItinerary";
 import TeamsOAuthComplete from "./pages/TeamsOAuthComplete";
+import OAuthConsent from "./pages/OAuthConsent";
 import HostReport from "./pages/HostReport";
 import BeddingReview from "./pages/operations/BeddingReview";
 import ActivityBookings from "./pages/operations/ActivityBookings";
