@@ -146,6 +146,7 @@ function App() {
               <Route path="/host-report/:token" element={<HostReport />} />
               <Route path="/teams-oauth-complete" element={<TeamsOAuthComplete />} />
               <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+              <Route path="/oauth/consent" element={<OAuthConsent />} />
               <Route
                 path="/"
                 element={
