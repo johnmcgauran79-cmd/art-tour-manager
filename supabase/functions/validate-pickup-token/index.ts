@@ -85,6 +85,7 @@ const handler = async (req: Request): Promise<Response> => {
         pickupOptions: pickupOptions || [],
         currentSelection: booking.selected_pickup_option_id,
         expiresAt: tokenData.expires_at,
+        brand: publicBrandPayload(await getBrandForTour(supabase, tourId)),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
