@@ -66,6 +66,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Return customer data (only safe fields)
     const customer = tokenData.customers;
+
+    // Resolve brand via the linked booking's tour (falls back to default).
+    let profileTourId: string | null = null;
+    if ((tokenData as any).booking_id) {
+      const { data: b } = await supabase
+        .from("bookings")
+        .select("tour_id")
+        .eq("id", (tokenData as any).booking_id)
+        .maybeSingle();
+      profileTourId = b?.tour_id ?? null;
+    }
     
     return new Response(
       JSON.stringify({
@@ -91,6 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
           accessibility_needs: customer.accessibility_needs,
         },
         expiresAt: tokenData.expires_at,
+        brand: publicBrandPayload(await getBrandForTour(supabase, profileTourId)),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
