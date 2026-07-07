@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { PublicBrand, DEFAULT_PUBLIC_LOGO } from "@/lib/publicBrand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ interface SignatureData {
 export default function SignWaiver() {
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
+  const [brand, setBrand] = useState<PublicBrand | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -77,6 +79,7 @@ export default function SignWaiver() {
       setEditableSlots(data.editableSlots);
       setSignedSlots(data.signedSlots || []);
       setExpiresAt(data.expiresAt);
+      if (data.brand) setBrand(data.brand);
       setWaiverVersion(data.waiverVersion);
 
       // Parse waiver text - handle JSON-escaped strings
@@ -276,11 +279,11 @@ export default function SignWaiver() {
     <div className="min-h-screen bg-muted/30 py-8 px-4">
       <div className="max-w-3xl mx-auto">
         <Card className="overflow-hidden">
-          <CardHeader className="bg-brand-navy text-white p-6">
+          <CardHeader className="bg-brand-navy text-white p-6" style={brand?.colorPrimary ? { backgroundColor: brand.colorPrimary } : undefined}>
             <div className="flex items-center justify-center gap-4">
               <img
-                src="/lovable-uploads/901098e1-7efa-42e5-a1db-3d16e421375f.png"
-                alt="Australian Racing Tours"
+                src={brand?.logoUrl || DEFAULT_PUBLIC_LOGO}
+                alt={brand?.name || "Australian Racing Tours"}
                 className="h-12"
               />
               <CardTitle className="text-2xl text-white">Tour Waiver Form</CardTitle>
