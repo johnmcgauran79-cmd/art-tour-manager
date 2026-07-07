@@ -40,6 +40,7 @@ export default function CustomForm() {
   const [success, setSuccess] = useState(false);
   
   const [formTitle, setFormTitle] = useState('');
+  const [brand, setBrand] = useState<PublicBrand | null>(null);
   const [formDescription, setFormDescription] = useState('');
   const [fields, setFields] = useState<FormField[]>([]);
   const [passengers, setPassengers] = useState<PassengerInfo[]>([]);
