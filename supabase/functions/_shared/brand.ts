@@ -111,3 +111,16 @@ export async function getBrandForTour(
     return FALLBACK;
   }
 }
+
+/** Subset of brand fields safe to send to public (guest) pages for display. */
+export function publicBrandPayload(brand: ResolvedBrand) {
+  return {
+    name: brand.name,
+    logoUrl: brand.logoUrl || brand.headerImageUrl,
+    colorPrimary: brand.colorPrimary,
+    colorButton: brand.colorButton,
+    colorButtonText: brand.colorButtonText,
+    colorAccent: brand.colorAccent,
+    companyWebsite: brand.companyWebsite,
+  };
+}
