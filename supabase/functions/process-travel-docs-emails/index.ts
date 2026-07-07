@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { getBrandForTour } from "../_shared/brand.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,10 +38,12 @@ serve(async (req) => {
       return typeof val === 'string' ? val : String(val);
     };
     
-    const emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
-    const senderName = getS('default_sender_name', 'Australian Racing Tours');
-    const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
+    let emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    let senderName = getS('default_sender_name', 'Australian Racing Tours');
+    let fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
     const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
+
+    // Resolve tour brand (tourId parsed from body below).
 
     // Check if called with specific batch params (from process-automated-emails)
     let body: any = {};
@@ -78,6 +81,13 @@ serve(async (req) => {
     }
 
     console.log(`Processing travel docs batch: tour=${tourId}, batch=${batchId}`);
+
+    try {
+      const brand = await getBrandForTour(supabase, tourId);
+      emailHeaderImageUrl = brand.headerImageUrl;
+      senderName = brand.senderName;
+      fromEmailAddr = brand.fromEmailClient;
+    } catch (e) { console.error('Brand resolution failed:', e); }
 
     const { data: tour } = await supabase
       .from('tours')

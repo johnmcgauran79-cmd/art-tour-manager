@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { getBrandForTour } from "../_shared/brand.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,9 +65,9 @@ const handler = async (req: Request): Promise<Response> => {
       return typeof val === 'string' ? val : String(val);
     };
     
-    const emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
-    const senderName = getS('default_sender_name', 'Australian Racing Tours');
-    const fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
+    let emailHeaderImageUrl = getS('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    let senderName = getS('default_sender_name', 'Australian Racing Tours');
+    let fromEmailAddr = getS('default_from_email_client', 'bookings@australianracingtours.com.au');
     const tokenExpiryHours = Number(getS('token_expiry_hours', '168')) || 168;
 
     // Get the authorization header to identify the user
@@ -132,6 +133,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const tour = booking.tours;
+    try {
+      const brand = await getBrandForTour(supabase, tour?.id || booking?.tour_id);
+      emailHeaderImageUrl = brand.headerImageUrl;
+      senderName = brand.senderName;
+      fromEmailAddr = brand.fromEmailClient;
+    } catch (e) { console.error('Brand resolution failed:', e); }
 
     if (!tour?.travel_documents_required) {
       return new Response(

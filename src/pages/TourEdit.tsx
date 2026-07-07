@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/utils";
 import { useUpdateTour, useTours } from "@/hooks/useTours";
+import { useBrands } from "@/hooks/useBrands";
 import { supabase } from "@/integrations/supabase/client";
 import { AppBreadcrumbs } from "@/components/AppBreadcrumbs";
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -28,6 +29,7 @@ export default function TourEdit() {
   const { goBack } = useNavigationContext();
 
   const { toast } = useToast();
+  const { data: brands = [] } = useBrands();
   const { data: tours, isLoading } = useTours();
   const tour = tours?.find(t => t.id === id);
   
@@ -55,6 +57,7 @@ export default function TourEdit() {
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
+    brand_id: "" as string,
     keap_tag_id: "",
     xero_product_id: "",
     xero_reference: "",
@@ -134,6 +137,7 @@ export default function TourEdit() {
             capacity: tour.capacity?.toString() || "",
             minimum_passengers_required: data.minimum_passengers_required?.toString() || "",
             tour_type: (data.tour_type as "domestic" | "international") || "domestic",
+            brand_id: (tour as any).brand_id || "",
             keap_tag_id: (data as any).keap_tag_id || "",
             xero_product_id: (data as any).xero_product_id || "",
             xero_reference: (data as any).xero_reference || "",
@@ -202,6 +206,7 @@ export default function TourEdit() {
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
       tour_type: formData.tour_type,
+      brand_id: formData.brand_id || null,
       keap_tag_id: formData.keap_tag_id || null,
       xero_product_id: formData.xero_product_id || null,
       xero_reference: formData.xero_reference || null,
@@ -500,6 +505,29 @@ export default function TourEdit() {
                 <SelectItem value="international">International</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="brand_id">Brand</Label>
+            <Select
+              value={formData.brand_id || "__default__"}
+              onValueChange={(value) => handleInputChange("brand_id", value === "__default__" ? "" : value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select brand" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__default__">Default brand</SelectItem>
+                {brands.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}{b.is_default ? " (default)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Branding used for this tour's emails, itineraries, and guest documents.
+            </p>
           </div>
 
           <div className="space-y-2">

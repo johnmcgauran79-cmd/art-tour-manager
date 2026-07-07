@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useBrands } from "@/hooks/useBrands";
 import { CalendarIcon, Mail, Hand, FlaskConical } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { TourCommsSettingsInline, CommsOverride } from "@/components/TourCommsSettingsInline";
@@ -25,6 +26,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
   const queryClient = useQueryClient();
   const { userRole } = useAuth();
   const isAdmin = userRole === 'admin';
+  const { data: brands = [] } = useBrands();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -49,6 +51,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
     capacity: "",
     minimum_passengers_required: "",
     tour_type: "domestic" as "domestic" | "international",
+    brand_id: "" as string,
     manual_billing: false,
     manual_emails: false,
     is_test_tour: false,
@@ -124,6 +127,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: formData.capacity ? parseInt(formData.capacity) : null,
         minimum_passengers_required: formData.minimum_passengers_required ? parseInt(formData.minimum_passengers_required) : null,
         tour_type: formData.tour_type,
+        brand_id: formData.brand_id || null,
         manual_billing: formData.manual_billing,
         manual_emails: formData.manual_emails,
         is_test_tour: formData.is_test_tour,
@@ -171,6 +175,7 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
         capacity: "",
         minimum_passengers_required: "",
         tour_type: "domestic",
+        brand_id: "",
         manual_billing: false,
         manual_emails: false,
         is_test_tour: false,
@@ -226,6 +231,26 @@ export const AddTourModal = ({ open, onOpenChange }: AddTourModalProps) => {
                 <SelectContent>
                   <SelectItem value="domestic">Domestic</SelectItem>
                   <SelectItem value="international">International</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="brand_id">Brand</Label>
+              <Select
+                value={formData.brand_id || "__default__"}
+                onValueChange={(value) => handleInputChange("brand_id", value === "__default__" ? "" : value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select brand" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__default__">Default brand</SelectItem>
+                  {brands.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>
+                      {b.name}{b.is_default ? " (default)" : ""}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

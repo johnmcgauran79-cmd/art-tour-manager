@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { getBrandForTour } from "../_shared/brand.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -103,7 +104,8 @@ serve(async (req) => {
 
     // Prepare email options
     const emailSubject = subject || `${tour.name} - Tour Itinerary`;
-    const fromAddress = fromEmail || "bookings@australianracingtours.com.au";
+    const brand = await getBrandForTour(supabase, tourId);
+    const fromAddress = fromEmail || `${brand.senderName} <${brand.fromEmailClient}>`;
 
     let emailBody = "";
     if (message) {
