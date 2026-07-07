@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { getBrandForTour, publicBrandPayload } from "../_shared/brand.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -134,6 +135,7 @@ serve(async (req) => {
         valid: true,
         html,
         tourName: tour?.name || "Tour Itinerary",
+        brand: publicBrandPayload(await getBrandForTour(supabase, tourId)),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
