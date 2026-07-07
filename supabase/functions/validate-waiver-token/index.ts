@@ -168,6 +168,7 @@ const handler = async (req: Request): Promise<Response> => {
         waiverVersion: typeof waiverVersion === "number" ? waiverVersion : Number(waiverVersion),
         expiresAt: tokenData.expires_at,
         tokenId: tokenData.id,
+        brand: publicBrandPayload(await getBrandForTour(supabase, (booking.tours as any)?.id || (booking as any).tour_id)),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
