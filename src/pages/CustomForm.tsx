@@ -83,6 +83,7 @@ export default function CustomForm() {
       setCustomerName(`${data.customer.first_name} ${data.customer.last_name}`);
       setExpiresAt(data.expiresAt);
       setResponseMode(data.form.response_mode);
+      if (data.brand) setBrand(data.brand);
 
       // Init form data
       const initial: Record<number, Record<string, any>> = {};
