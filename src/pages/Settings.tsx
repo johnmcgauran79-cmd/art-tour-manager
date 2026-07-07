@@ -12,6 +12,7 @@ import { AdditionalInfoTemplatesManagement } from "@/components/AdditionalInfoTe
 import { CancellationPolicySettings } from "@/components/CancellationPolicySettings";
 import { InvoiceLineTemplatesManagement } from "@/components/InvoiceLineTemplatesManagement";
 import { EmailSettingsTab } from "@/components/EmailSettingsTab";
+import { BrandsManagement } from "@/components/BrandsManagement";
 
 interface SettingsProps {
   onBack: () => void;
@@ -46,7 +47,7 @@ export const Settings = ({ onBack }: SettingsProps) => {
   // If a non-admin lands on the admin-only system tab via a shared link,
   // silently redirect them to the default tab.
   useEffect(() => {
-    if (activeTab === 'system' && !isAdmin) {
+    if ((activeTab === 'system' || activeTab === 'brands') && !isAdmin) {
       setActiveTab('email-management');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,11 +56,12 @@ export const Settings = ({ onBack }: SettingsProps) => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-5' : 'grid-cols-4'} mb-8`}>
+        <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-6' : 'grid-cols-4'} mb-8`}>
           <TabsTrigger value="email-management">Email Management</TabsTrigger>
           <TabsTrigger value="invoice-management">Invoice Management</TabsTrigger>
           <TabsTrigger value="task-templates">Task Templates</TabsTrigger>
           <TabsTrigger value="additional-info">Additional Info</TabsTrigger>
+          {isAdmin && <TabsTrigger value="brands">Brands</TabsTrigger>}
           {isAdmin && <TabsTrigger value="system">System Settings</TabsTrigger>}
         </TabsList>
 
@@ -136,6 +138,12 @@ export const Settings = ({ onBack }: SettingsProps) => {
                 <SystemSettings />
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="brands" className="space-y-6">
+            <BrandsManagement />
           </TabsContent>
         )}
       </Tabs>

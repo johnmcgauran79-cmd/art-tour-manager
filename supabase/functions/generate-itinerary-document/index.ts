@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
+import { getBrandForTour } from "../_shared/brand.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -143,8 +144,11 @@ serve(async (req) => {
       additionalInfoSections = sectionsData || [];
     }
 
-    // Brand header colour matches the dark grey/black used by buttons + email header
-    let brandNavy = '#232628';
+    // Resolve the tour's brand for document colours and footer identity.
+    const brand = await getBrandForTour(supabase, tourId);
+    let brandNavy = brand.colorPrimary || '#232628';
+    const brandAccent = brand.colorAccent || '#c79a2e';
+    const brandName = brand.name;
     let globalCancellationPolicy: any = null;
     try {
       const { data: settingsData } = await supabase
@@ -224,7 +228,7 @@ serve(async (req) => {
     }));
 
     // Generate HTML
-    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages);
+    const html = generateHTML(tour, itinerary, daysWithEntries, hotels, additionalInfoSections, options, brandNavy, cancellationPolicy, welcomeMessage, documentImages, brandAccent, brandName);
 
     if (format === 'html') {
       return new Response(JSON.stringify({ html }), {
@@ -291,7 +295,7 @@ serve(async (req) => {
   }
 });
 
-function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = []): string {
+function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], additionalInfoSections: any[], options: any, brandNavy?: string, cancellationPolicy?: any, welcomeMessage?: any, documentImages: any[] = [], brandAccent?: string, brandName?: string): string {
   // Pool of filler images, consumed as blank spaces are filled
   const fillerPool: any[] = [...(documentImages || [])];
   const GOLD_FILLER = '#c79a2e';
@@ -349,7 +353,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
   };
   const NAVY = brandNavy && /^#?[0-9a-fA-F]{6}$/.test(brandNavy.trim()) ? (brandNavy.trim().startsWith('#') ? brandNavy.trim() : `#${brandNavy.trim()}`) : '#0a1929'; // system primary / email header
   const NAVY_DARK = darken(NAVY, 0.3); // deeper navy for gradient/banner
-  const GOLD = '#c79a2e';      // legible gold derived from system accent hsl(45 100% 55%)
+  const GOLD = brandAccent && /^#?[0-9a-fA-F]{6}$/.test(brandAccent.trim()) ? (brandAccent.trim().startsWith('#') ? brandAccent.trim() : `#${brandAccent.trim()}`) : '#c79a2e'; // brand accent
   const INK = '#2b2b2b';
   const MUTED = '#6b6b6b';
 

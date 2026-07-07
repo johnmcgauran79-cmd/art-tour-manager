@@ -1062,6 +1062,84 @@ export type Database = {
           },
         ]
       }
+      brands: {
+        Row: {
+          color_accent: string
+          color_border: string
+          color_button: string
+          color_button_text: string
+          color_primary: string
+          company_address: string | null
+          company_phone: string | null
+          company_website: string | null
+          created_at: string
+          email_header_image_url: string | null
+          footer_text: string | null
+          from_email_client: string | null
+          from_email_operational: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          legal_name: string | null
+          logo_url: string | null
+          name: string
+          sender_name: string
+          short_name: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color_accent?: string
+          color_border?: string
+          color_button?: string
+          color_button_text?: string
+          color_primary?: string
+          company_address?: string | null
+          company_phone?: string | null
+          company_website?: string | null
+          created_at?: string
+          email_header_image_url?: string | null
+          footer_text?: string | null
+          from_email_client?: string | null
+          from_email_operational?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          legal_name?: string | null
+          logo_url?: string | null
+          name: string
+          sender_name?: string
+          short_name?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color_accent?: string
+          color_border?: string
+          color_button?: string
+          color_button_text?: string
+          color_primary?: string
+          company_address?: string | null
+          company_phone?: string | null
+          company_website?: string | null
+          created_at?: string
+          email_header_image_url?: string | null
+          footer_text?: string | null
+          from_email_client?: string | null
+          from_email_operational?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          legal_name?: string | null
+          logo_url?: string | null
+          name?: string
+          sender_name?: string
+          short_name?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       capacity_monitoring_rules: {
         Row: {
           created_at: string
@@ -3983,6 +4061,7 @@ export type Database = {
         Row: {
           alerts_enabled: boolean
           alerts_manually_overridden: boolean
+          brand_id: string | null
           cancellation_policy_enabled: boolean
           cancellation_policy_override: Json | null
           capacity: number | null
@@ -4044,6 +4123,7 @@ export type Database = {
         Insert: {
           alerts_enabled?: boolean
           alerts_manually_overridden?: boolean
+          brand_id?: string | null
           cancellation_policy_enabled?: boolean
           cancellation_policy_override?: Json | null
           capacity?: number | null
@@ -4105,6 +4185,7 @@ export type Database = {
         Update: {
           alerts_enabled?: boolean
           alerts_manually_overridden?: boolean
+          brand_id?: string | null
           cancellation_policy_enabled?: boolean
           cancellation_policy_override?: Json | null
           capacity?: number | null
@@ -4163,7 +4244,15 @@ export type Database = {
           xero_product_id?: string | null
           xero_reference?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tours_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_departments: {
         Row: {

@@ -2,6 +2,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
+import { getBrandForTour } from "../_shared/brand.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -186,17 +187,9 @@ serve(async (req) => {
 
     if (!template) throw new Error("No active host_pre_tour_briefing email template");
 
-    // Look up branded header image (template-specific override or global default)
-    const { data: headerSetting } = await supabase
-      .from("general_settings")
-      .select("setting_value")
-      .eq("setting_key", "email_header_image_url")
-      .maybeSingle();
-    const globalHeader =
-      typeof headerSetting?.setting_value === "string"
-        ? headerSetting.setting_value
-        : DEFAULT_HEADER_IMAGE_URL;
-    const headerImageUrl = (template as any).header_image_url || globalHeader;
+    // Resolve the tour's brand for header, colours, and sender identity.
+    const brand = await getBrandForTour(supabase, tourId);
+    const headerImageUrl = (template as any).header_image_url || brand.headerImageUrl;
 
     const mergeData = {
       host_first_name: hostFirstName || "there",
@@ -237,16 +230,8 @@ serve(async (req) => {
     }
     const rawHtml = render(contentWithAttachments, mergeData);
     const html = wrapBrandedEmail(rawHtml, headerImageUrl);
-    // Look up configured default sender name
-    const { data: senderNameSetting } = await supabase
-      .from("general_settings")
-      .select("setting_value")
-      .eq("setting_key", "default_sender_name")
-      .maybeSingle();
-    const senderName =
-      (typeof senderNameSetting?.setting_value === "string" && senderNameSetting.setting_value.trim()) ||
-      "Australian Racing Tours";
-    const fromEmail = template.from_email || "bookings@australianracingtours.com.au";
+    const senderName = brand.senderName;
+    const fromEmail = template.from_email || brand.fromEmailClient;
     // Strip any existing "Name <email>" formatting from from_email before re-wrapping
     const bareEmail = fromEmail.match(/<([^>]+)>/)?.[1] || fromEmail;
     const fromAddress = `${senderName} <${bareEmail}>`;

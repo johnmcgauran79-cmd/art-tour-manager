@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { getBrandForTour } from "../_shared/brand.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -355,12 +356,12 @@ const handler = async (req: Request): Promise<Response> => {
       return typeof val === 'string' ? val : String(val);
     };
 
-    const defaultHeaderImageUrl = getGSetting('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
-    const defaultSenderName = getGSetting('default_sender_name', 'Australian Racing Tours');
-    const defaultFromEmailClient = getGSetting('default_from_email_client', 'bookings@australianracingtours.com.au');
+    let defaultHeaderImageUrl = getGSetting('email_header_image_url', 'https://art-tour-manager.lovable.app/images/email-header-default.png');
+    let defaultSenderName = getGSetting('default_sender_name', 'Australian Racing Tours');
+    let defaultFromEmailClient = getGSetting('default_from_email_client', 'bookings@australianracingtours.com.au');
     const tokenExpiryHours = Number(getGSetting('token_expiry_hours', '168')) || 168;
-    const btnBg = getGSetting('theme_email_button_color', '#232628');
-    const btnText = getGSetting('theme_email_button_text', '#F5C518');
+    let btnBg = getGSetting('theme_email_button_color', '#232628');
+    let btnText = getGSetting('theme_email_button_text', '#F5C518');
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -395,7 +396,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Use template-specific header image if set, otherwise use default
-    const emailHeaderImageUrl = template?.header_image_url || defaultHeaderImageUrl;
+    // (overridden below by the tour's brand once the booking is loaded).
+    let emailHeaderImageUrl = template?.header_image_url || defaultHeaderImageUrl;
 
     // Fetch booking details with all related information including additional passengers
     const { data: booking, error: bookingError } = await supabaseClient
@@ -464,6 +466,21 @@ const handler = async (req: Request): Promise<Response> => {
         JSON.stringify({ error: 'No email address found for this booking' }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
+    }
+
+    // Resolve the tour's brand and override branding defaults so this email
+    // uses the correct logo, colours, and sender identity.
+    try {
+      const brand = await getBrandForTour(supabaseClient, booking.tour_id);
+      defaultSenderName = brand.senderName;
+      defaultFromEmailClient = brand.fromEmailClient;
+      btnBg = brand.colorButton;
+      btnText = brand.colorButtonText;
+      // Template-specific header image still wins; otherwise use the brand's.
+      defaultHeaderImageUrl = brand.headerImageUrl;
+      emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
+    } catch (e) {
+      console.error('Brand resolution failed, using defaults:', e);
     }
 
     // Helper function to format dates
