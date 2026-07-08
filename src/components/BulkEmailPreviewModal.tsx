@@ -154,7 +154,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
         `)
         .eq('tour_id', tourId)
         .neq('status', 'cancelled')
-        .not('customers.email', 'is', null)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -609,21 +608,27 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
                         const hasAccommodation = booking.hotel_bookings && booking.hotel_bookings.length > 0;
                         const hasAdditionalPax = booking.passenger_2?.email || booking.passenger_3?.email;
                         const isFormCompleted = isCustomFormTemplate && completedBookingIds?.has(booking.id);
+                        const leadName = `${booking.customers?.first_name || ''} ${booking.customers?.last_name || ''}`.trim();
+                        const hasLeadEmail = !!booking.customers?.email;
                         return (
                           <div key={booking.id} className="flex items-center space-x-2">
                             <Checkbox
                               id={booking.id}
                               checked={selectedBookingIds.has(booking.id)}
                               onCheckedChange={() => toggleBookingSelection(booking.id)}
+                              disabled={!hasLeadEmail}
                             />
                             <label
                               htmlFor={booking.id}
                               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
                             >
-                              {booking.customers?.first_name} {booking.customers?.last_name}
+                              {leadName || 'Unnamed passenger'}
                               <span className="text-muted-foreground ml-2 text-xs">
                                 {hasAccommodation ? '🏨' : '🎯'}
                                 {hasAdditionalPax && ' 👥'}
+                                {!hasLeadEmail && (
+                                  <span className="ml-2 text-amber-600 font-medium">⚠ No email on file</span>
+                                )}
                                 {isFormCompleted && (
                                   <span className="ml-2 text-green-600 font-medium">✓ Done</span>
                                 )}
