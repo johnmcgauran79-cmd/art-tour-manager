@@ -154,7 +154,6 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
         `)
         .eq('tour_id', tourId)
         .neq('status', 'cancelled')
-        .not('customers.email', 'is', null)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
