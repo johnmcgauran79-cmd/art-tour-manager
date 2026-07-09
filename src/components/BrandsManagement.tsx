@@ -13,6 +13,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Palette, Plus, Pencil, Trash2, Upload, Loader2, Star } from "lucide-react";
+import { HexColorPicker } from "react-colorful";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Brand, BrandInput, useBrands, useCreateBrand, useUpdateBrand, useDeleteBrand,
 } from "@/hooks/useBrands";
@@ -41,16 +43,36 @@ const BLANK: BrandInput = {
   is_active: true,
 };
 
-const ColorField = ({ label, value, onChange }: { label: string; value?: string; onChange: (v: string) => void }) => (
-  <div className="space-y-1">
-    <Label className="text-xs">{label}</Label>
-    <div className="flex items-center gap-2">
-      <input type="color" value={value || "#000000"} onChange={(e) => onChange(e.target.value)}
-        className="h-9 w-12 rounded border cursor-pointer bg-transparent" />
-      <Input value={value || ""} onChange={(e) => onChange(e.target.value)} className="font-mono text-xs" />
+const ColorField = ({ label, value, onChange }: { label: string; value?: string; onChange: (v: string) => void }) => {
+  const current = value || "#000000";
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      <div className="flex items-center gap-2">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              aria-label={`Pick ${label} colour`}
+              className="h-9 w-12 rounded border cursor-pointer shrink-0"
+              style={{ backgroundColor: current }}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3 space-y-3" align="start">
+            <HexColorPicker color={current} onChange={onChange} />
+            <Input
+              value={value || ""}
+              onChange={(e) => onChange(e.target.value)}
+              className="font-mono text-xs"
+              placeholder="#000000"
+            />
+          </PopoverContent>
+        </Popover>
+        <Input value={value || ""} onChange={(e) => onChange(e.target.value)} className="font-mono text-xs" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const BrandEditor = ({ brand, open, onOpenChange }: { brand: Brand | null; open: boolean; onOpenChange: (o: boolean) => void }) => {
   const [form, setForm] = useState<BrandInput>(BLANK);
