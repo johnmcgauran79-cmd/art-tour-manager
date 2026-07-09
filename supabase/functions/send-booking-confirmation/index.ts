@@ -1400,8 +1400,8 @@ const handler = async (req: Request): Promise<Response> => {
           .eq('id', booking.tour_id)
           .maybeSingle();
         if (cpTour?.cancellation_policy_enabled ?? true) {
-          // Match the dark grey/black brand colour used by buttons + email header image
-          const cpNavy = '#232628';
+          // Match the tour's brand primary colour so the table matches the branding
+          const cpNavy = brandPrimary;
           let cpGlobal: any = null;
           const { data: cpSettings } = await supabaseClient
             .from('general_settings')
