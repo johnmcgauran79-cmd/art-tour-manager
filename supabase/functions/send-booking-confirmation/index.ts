@@ -362,6 +362,7 @@ const handler = async (req: Request): Promise<Response> => {
     const tokenExpiryHours = Number(getGSetting('token_expiry_hours', '168')) || 168;
     let btnBg = getGSetting('theme_email_button_color', '#232628');
     let btnText = getGSetting('theme_email_button_text', '#F5C518');
+    let brandPrimary = '#232628';
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
