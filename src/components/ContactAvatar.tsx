@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Camera, Trash2, X, ImagePlus, Loader2 } from "lucide-react";
+import { Camera, Trash2, ImagePlus, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -382,14 +382,6 @@ export const ContactAvatar = ({
             {/* Header with close button */}
             <div className="flex items-center justify-between p-3 border-b bg-muted/30 flex-shrink-0">
               <span className="font-medium text-sm">Profile Photo</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setShowFullImage(false)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
             </div>
             
             {/* Image container */}
