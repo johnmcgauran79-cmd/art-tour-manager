@@ -477,6 +477,7 @@ const handler = async (req: Request): Promise<Response> => {
       defaultFromEmailClient = brand.fromEmailClient;
       btnBg = brand.colorButton;
       btnText = brand.colorButtonText;
+      brandPrimary = brand.colorPrimary || brandPrimary;
       // Template-specific header image still wins; otherwise use the brand's.
       defaultHeaderImageUrl = brand.headerImageUrl;
       emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
