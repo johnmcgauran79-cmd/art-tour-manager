@@ -102,11 +102,9 @@ Deno.serve(async (req) => {
     for (const id of teamsFallbackIds) emailRecipientIds.add(id);
     const recipients = (allRecipients || []).filter((r) => emailRecipientIds.has(r.id));
 
-    // Header image
-    const { data: headerSetting } = await supabase
-      .from("general_settings").select("setting_value").eq("setting_key", "email_header_image_url").maybeSingle();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) ||
-      "https://art-tour-manager.lovable.app/images/email-header-default.png";
+    // Header image (from the default brand)
+    const brand = await getDefaultBrand(supabase);
+    const emailHeaderImageUrl = brand.headerImageUrl;
 
     // Human-readable decision label for approval_decision notifications
     const decisionLabel =

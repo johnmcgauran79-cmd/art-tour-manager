@@ -206,14 +206,8 @@ Deno.serve(async (req) => {
     const prefs = prefsResult.data;
     const prefsErr = prefsResult.error;
 
-    const { data: headerSetting } = await supabase
-      .from("general_settings")
-      .select("setting_value")
-      .eq("setting_key", "email_header_image_url")
-      .maybeSingle();
-    const headerImg =
-      (headerSetting?.setting_value as string) ||
-      "https://art-tour-manager.lovable.app/images/email-header-default.png";
+    const brand = await getDefaultBrand(supabase);
+    const headerImg = brand.headerImageUrl;
 
     const nowParts = getLocalParts(TZ);
     let sent = 0;

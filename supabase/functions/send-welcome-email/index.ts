@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { getDefaultBrand } from "../_shared/brand.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -38,8 +39,8 @@ serve(async (req) => {
     const appLoginUrl = loginUrl || "https://art-tour-manager.lovable.app/login";
 
     const supabaseClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: headerSetting } = await supabaseClient.from('general_settings').select('setting_value').eq('setting_key', 'email_header_image_url').single();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+    const brand = await getDefaultBrand(supabaseClient);
+    const emailHeaderImageUrl = brand.headerImageUrl;
     const appName = "Australian Racing Tours";
 
     const roleLabel = {
