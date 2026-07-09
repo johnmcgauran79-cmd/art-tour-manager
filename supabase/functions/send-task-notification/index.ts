@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.50.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { getDefaultBrand } from "../_shared/brand.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -102,11 +103,9 @@ Deno.serve(async (req) => {
     for (const id of teamsFallbackIds) emailRecipientIds.add(id);
     const recipients = (allRecipients || []).filter((r) => emailRecipientIds.has(r.id));
 
-    // Header image
-    const { data: headerSetting } = await supabase
-      .from("general_settings").select("setting_value").eq("setting_key", "email_header_image_url").maybeSingle();
-    const emailHeaderImageUrl = (headerSetting?.setting_value as string) ||
-      "https://art-tour-manager.lovable.app/images/email-header-default.png";
+    // Header image (from the default brand)
+    const brand = await getDefaultBrand(supabase);
+    const emailHeaderImageUrl = brand.headerImageUrl;
 
     // Human-readable decision label for approval_decision notifications
     const decisionLabel =

@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Settings, Save, Loader2 } from "lucide-react";
 import { useGeneralSettings, useUpdateGeneralSetting } from "@/hooks/useGeneralSettings";
-import { EmailHeaderSettingsCard } from "@/components/EmailHeaderSettingsCard";
 import { AdditionalFromEmailsCard } from "@/components/AdditionalFromEmailsCard";
 import { EmailAttachmentsCard } from "@/components/EmailAttachmentsCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -79,8 +78,6 @@ export const EmailSettingsTab = () => {
 
   return (
     <div className="space-y-6">
-      <EmailHeaderSettingsCard />
-
       <AdditionalFromEmailsCard />
 
       <EmailAttachmentsCard />

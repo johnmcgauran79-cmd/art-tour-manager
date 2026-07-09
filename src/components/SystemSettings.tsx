@@ -8,7 +8,6 @@ import { GeneralSettingsModal } from "./GeneralSettingsModal";
 import { UserManagementModal } from "./UserManagementModal";
 import { SystemLogModal } from "./SystemLogModal";
 import { ThemeAppearanceSettings } from "./ThemeAppearanceSettings";
-import { EmailHeaderSettingsCard } from "./EmailHeaderSettingsCard";
 import { EmergencyContactImportModal } from "./EmergencyContactImportModal";
 import { WaiverSettingsCard } from "./WaiverSettingsCard";
 import { TaskStatusManagementModal } from "./TaskStatusManagementModal";
@@ -181,7 +180,6 @@ export const SystemSettings = ({ }: SystemSettingsProps) => {
         <h2 className="text-xl font-semibold">Branding & Appearance</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ThemeAppearanceSettings />
-          <EmailHeaderSettingsCard />
         </div>
       </div>
 
