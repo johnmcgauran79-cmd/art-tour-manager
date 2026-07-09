@@ -744,8 +744,8 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
         <h2 class="section-title">Additional Information</h2>
     `;
     if (cancellationPolicy) {
-      // Use the dark grey/black brand colour (matches buttons + email header), not the navy-blue hero
-      html += `<div class="info-block">${buildCancellationPolicyTableHtml(cancellationPolicy, '#232628')}</div>`;
+      // Use the tour's brand primary colour so the table matches the rest of the branding
+      html += `<div class="info-block">${buildCancellationPolicyTableHtml(cancellationPolicy, NAVY)}</div>`;
     }
     additionalInfoSections.forEach((section: any) => {
       html += `

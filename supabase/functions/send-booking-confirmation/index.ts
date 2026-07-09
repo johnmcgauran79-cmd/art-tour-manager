@@ -362,6 +362,7 @@ const handler = async (req: Request): Promise<Response> => {
     const tokenExpiryHours = Number(getGSetting('token_expiry_hours', '168')) || 168;
     let btnBg = getGSetting('theme_email_button_color', '#232628');
     let btnText = getGSetting('theme_email_button_text', '#F5C518');
+    let brandPrimary = '#232628';
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -476,6 +477,7 @@ const handler = async (req: Request): Promise<Response> => {
       defaultFromEmailClient = brand.fromEmailClient;
       btnBg = brand.colorButton;
       btnText = brand.colorButtonText;
+      brandPrimary = brand.colorPrimary || brandPrimary;
       // Template-specific header image still wins; otherwise use the brand's.
       defaultHeaderImageUrl = brand.headerImageUrl;
       emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
@@ -1398,8 +1400,8 @@ const handler = async (req: Request): Promise<Response> => {
           .eq('id', booking.tour_id)
           .maybeSingle();
         if (cpTour?.cancellation_policy_enabled ?? true) {
-          // Match the dark grey/black brand colour used by buttons + email header image
-          const cpNavy = '#232628';
+          // Match the tour's brand primary colour so the table matches the branding
+          const cpNavy = brandPrimary;
           let cpGlobal: any = null;
           const { data: cpSettings } = await supabaseClient
             .from('general_settings')
