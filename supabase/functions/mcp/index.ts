@@ -1847,23 +1847,26 @@ async function summarizeBookingXero(auth2, bookingId, rows, now = Date.now(), fc
     duplicate_link: duplicate
   };
 }
-function detectCrossBookingDuplicates(rows) {
+function detectSharedInvoiceLinks(rows) {
   const byInvoice = /* @__PURE__ */ new Map();
-  const counts = /* @__PURE__ */ new Map();
+  const numberByInvoice = /* @__PURE__ */ new Map();
   for (const r of rows) {
     if (!r.xero_invoice_id || !r.booking_id) continue;
     if (!byInvoice.has(r.xero_invoice_id)) byInvoice.set(r.xero_invoice_id, /* @__PURE__ */ new Set());
     byInvoice.get(r.xero_invoice_id).add(r.booking_id);
-    counts.set(r.xero_invoice_id, (counts.get(r.xero_invoice_id) || 0) + 1);
+    if (!numberByInvoice.has(r.xero_invoice_id)) {
+      numberByInvoice.set(r.xero_invoice_id, r.xero_invoice_number ?? null);
+    }
   }
   const findings = [];
   for (const [invId, bookings] of byInvoice) {
     if (bookings.size > 1) {
       findings.push({
-        duplicate_type: "same_invoice_mapped_to_multiple_bookings",
-        affected_invoice_id: invId,
-        affected_booking_ids: Array.from(bookings),
-        mapping_count: counts.get(invId) || bookings.size
+        finding_type: "shared_invoice_across_bookings",
+        xero_invoice_id: invId,
+        invoice_number: numberByInvoice.get(invId) ?? null,
+        booking_ids: Array.from(bookings),
+        booking_count: bookings.size
       });
     }
   }
@@ -2064,7 +2067,7 @@ var compare_art_payment_report_to_xero_default = defineTool28({
         mapByBooking.set(m.booking_id, arr);
       }
     }
-    const crossDuplicates = detectCrossBookingDuplicates(allMappingRows);
+    const sharedInvoiceLinks = detectSharedInvoiceLinks(allMappingRows);
     const auth2 = await getXeroAuth();
     const now = Date.now();
     let anyPartial = false;
@@ -2128,7 +2131,7 @@ var compare_art_payment_report_to_xero_default = defineTool28({
       tour: { id: tour.id, name: tour.name ?? null },
       report_type: type,
       count: comparisons.length,
-      cross_booking_duplicates: crossDuplicates,
+      shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth2.ok,
       partial_results: anyPartial || !auth2.ok,
       live_verification_completed: auth2.ok && !anyPartial,

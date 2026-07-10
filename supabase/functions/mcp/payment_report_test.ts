@@ -12,7 +12,7 @@ import {
 } from "../../../src/lib/mcp/tools/_paymentReport.ts";
 import {
   detectBookingDuplicate,
-  detectCrossBookingDuplicates,
+  detectSharedInvoiceLinks,
   summarizeBookingXero,
   type MappingRow,
 } from "../../../src/lib/mcp/tools/_paymentXero.ts";
@@ -204,15 +204,16 @@ Deno.test("same invoice mapped twice to one booking is a duplicate", () => {
   assertEquals(d?.mapping_count, 2);
 });
 
-Deno.test("same invoice mapped to two bookings is a cross-booking duplicate", () => {
+Deno.test("same invoice mapped to two bookings is a shared-invoice link (not a duplicate)", () => {
   const rows: MappingRow[] = [
     { xero_invoice_id: "INV-X", xero_invoice_number: "9", amount_due: 0, amount_paid: 10, total_amount: 10, xero_status: "PAID", updated_at: null, booking_id: "b1" },
     { xero_invoice_id: "INV-X", xero_invoice_number: "9", amount_due: 0, amount_paid: 10, total_amount: 10, xero_status: "PAID", updated_at: null, booking_id: "b2" },
   ];
-  const dups = detectCrossBookingDuplicates(rows);
-  assertEquals(dups.length, 1);
-  assertEquals(dups[0].duplicate_type, "same_invoice_mapped_to_multiple_bookings");
-  assertEquals(dups[0].affected_booking_ids.sort(), ["b1", "b2"]);
+  const shared = detectSharedInvoiceLinks(rows);
+  assertEquals(shared.length, 1);
+  assertEquals(shared[0].finding_type, "shared_invoice_across_bookings");
+  assertEquals(shared[0].booking_ids.sort(), ["b1", "b2"]);
+  assertEquals(shared[0].booking_count, 2);
 });
 
 // ---- summarizeBookingXero (cache path, no live auth) ----

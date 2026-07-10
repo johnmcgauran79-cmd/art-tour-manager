@@ -6,6 +6,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Xero serialises dates as "/Date(1580515200000+0000)/". Postgres timestamptz
+// cannot parse that form, so normalise to ISO 8601 (or null) before writing.
+function parseXeroDate(value: unknown): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const m = value.match(/\/Date\((-?\d+)(?:[+-]\d{4})?\)\//);
+  if (m) {
+    const ms = Number(m[1]);
+    if (!Number.isFinite(ms)) return null;
+    return new Date(ms).toISOString();
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 // Helper: get valid access token, refreshing if needed
 async function getValidAccessToken(supabase: any): Promise<{ token: string; tenantId: string } | null> {
   const { data: settings } = await supabase
@@ -502,7 +516,7 @@ serve(async (req) => {
                 xero_status: change.xero_status,
                 last_payment_date: change.last_payment_date || null,
                 updated_at: new Date().toISOString(),
-              }, { onConflict: 'xero_invoice_id' });
+              }, { onConflict: 'booking_id,xero_invoice_id' });
           }
 
           // Log the sync action
@@ -674,9 +688,9 @@ serve(async (req) => {
                 total_amount: best.Total || 0,
                 currency_code: best.CurrencyCode || 'AUD',
                 xero_status: best.Status,
-                last_payment_date: best.FullyPaidOnDate || null,
+                last_payment_date: parseXeroDate(best.FullyPaidOnDate),
                 updated_at: new Date().toISOString(),
-              }, { onConflict: 'xero_invoice_id' });
+              }, { onConflict: 'booking_id,xero_invoice_id' });
             if (!upErr) wrote++;
             else record.action = `error: ${upErr.message}`;
           }

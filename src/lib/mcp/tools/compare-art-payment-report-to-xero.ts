@@ -10,7 +10,7 @@ import {
 } from "./_paymentReport";
 import {
   summarizeBookingXero,
-  detectCrossBookingDuplicates,
+  detectSharedInvoiceLinks,
   createXeroFetchContext,
   type MappingRow,
 } from "./_paymentXero";
@@ -101,8 +101,10 @@ export default defineTool({
       }
     }
 
-    // Cross-booking duplicate detection within this scope only.
-    const crossDuplicates = detectCrossBookingDuplicates(allMappingRows);
+    // Shared-invoice detection within this scope only. A single invoice linked
+    // to multiple bookings (group/couple bookings) is legitimate and reported
+    // as informational, not as a duplicate/discrepancy.
+    const sharedInvoiceLinks = detectSharedInvoiceLinks(allMappingRows);
 
     const auth = await getXeroAuth();
     const now = Date.now();
@@ -182,7 +184,7 @@ export default defineTool({
       tour: { id: tour.id, name: (tour as any).name ?? null },
       report_type: type,
       count: comparisons.length,
-      cross_booking_duplicates: crossDuplicates,
+      shared_invoice_links: sharedInvoiceLinks,
       xero_connected: auth.ok,
       partial_results: anyPartial || !auth.ok,
       live_verification_completed: auth.ok && !anyPartial,

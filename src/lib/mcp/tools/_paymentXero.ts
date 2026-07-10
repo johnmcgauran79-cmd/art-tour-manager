@@ -62,11 +62,23 @@ export type MoneySource = "live_xero" | "xero_mapping_cache" | "unavailable";
 export interface DuplicateLinkFinding {
   duplicate_type:
     | "same_invoice_mapped_twice_same_booking"
-    | "same_invoice_mapped_to_multiple_bookings"
     | "duplicate_mapping_rows";
   affected_invoice_id: string;
   affected_booking_ids: string[];
   mapping_count: number;
+}
+
+/**
+ * Informational finding: one Xero invoice is intentionally linked to several
+ * bookings (shared/group/couple invoices). This is a supported, legitimate
+ * configuration and is NOT a discrepancy.
+ */
+export interface SharedInvoiceLink {
+  finding_type: "shared_invoice_across_bookings";
+  xero_invoice_id: string;
+  invoice_number: string | null;
+  booking_ids: string[];
+  booking_count: number;
 }
 
 export interface BookingXeroPosition {
@@ -251,28 +263,33 @@ export async function summarizeBookingXero(
 }
 
 /**
- * Detect the same Xero invoice mapped to multiple DIFFERENT bookings across a
- * set of mapping rows (tour/report scoped).
+ * Detect a single Xero invoice linked to multiple DIFFERENT bookings across a
+ * set of mapping rows (tour/report scoped). Shared invoices are legitimate
+ * (group/couple bookings), so these are returned as informational findings,
+ * NOT as duplicates or discrepancies.
  */
-export function detectCrossBookingDuplicates(
+export function detectSharedInvoiceLinks(
   rows: MappingRow[],
-): DuplicateLinkFinding[] {
+): SharedInvoiceLink[] {
   const byInvoice = new Map<string, Set<string>>();
-  const counts = new Map<string, number>();
+  const numberByInvoice = new Map<string, string | null>();
   for (const r of rows) {
     if (!r.xero_invoice_id || !r.booking_id) continue;
     if (!byInvoice.has(r.xero_invoice_id)) byInvoice.set(r.xero_invoice_id, new Set());
     byInvoice.get(r.xero_invoice_id)!.add(r.booking_id);
-    counts.set(r.xero_invoice_id, (counts.get(r.xero_invoice_id) || 0) + 1);
+    if (!numberByInvoice.has(r.xero_invoice_id)) {
+      numberByInvoice.set(r.xero_invoice_id, r.xero_invoice_number ?? null);
+    }
   }
-  const findings: DuplicateLinkFinding[] = [];
+  const findings: SharedInvoiceLink[] = [];
   for (const [invId, bookings] of byInvoice) {
     if (bookings.size > 1) {
       findings.push({
-        duplicate_type: "same_invoice_mapped_to_multiple_bookings",
-        affected_invoice_id: invId,
-        affected_booking_ids: Array.from(bookings),
-        mapping_count: counts.get(invId) || bookings.size,
+        finding_type: "shared_invoice_across_bookings",
+        xero_invoice_id: invId,
+        invoice_number: numberByInvoice.get(invId) ?? null,
+        booking_ids: Array.from(bookings),
+        booking_count: bookings.size,
       });
     }
   }
