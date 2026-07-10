@@ -745,7 +745,7 @@ function generateHTML(tour: any, itinerary: any, days: any[], hotels: any[], add
     `;
     if (cancellationPolicy) {
       // Use the tour's brand primary colour so the table matches the rest of the branding
-      html += `<div class="info-block">${buildCancellationPolicyTableHtml(cancellationPolicy, NAVY)}</div>`;
+      html += `<div class="info-block">${buildCancellationPolicyTableHtml(cancellationPolicy, NAVY, GOLD)}</div>`;
     }
     additionalInfoSections.forEach((section: any) => {
       html += `
