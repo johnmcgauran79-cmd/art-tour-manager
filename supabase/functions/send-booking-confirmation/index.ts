@@ -232,9 +232,11 @@ const sanitizeQuillHtml = (html: string): string => {
 
 // Branded email wrapper - wraps content in ART header with logo
 // Includes CSS normalisation for Quill-generated content
-const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string): string => {
-  const headerTitle = title || 'Australian Racing Tours';
+const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: string, headerBgColor?: string, brandName?: string): string => {
+  const headerTitle = title || brandName || 'Australian Racing Tours';
   const logoUrl = headerImageUrl || 'https://art-tour-manager.lovable.app/images/email-header-default.png';
+  const headerBg = headerBgColor || '#232628';
+  const footerName = brandName || 'Australian Racing Tours';
   const sanitizedContent = sanitizeQuillHtml(content);
   return `<!DOCTYPE html>
 <html>
@@ -291,8 +293,8 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
         <table cellpadding="0" cellspacing="0" style="width: 100%; max-width: 800px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
           <!-- Header -->
           <tr>
-            <td style="background-color: #232628; padding: 32px 40px; text-align: center;">
-              <img src="${logoUrl}" alt="Australian Racing Tours" style="height: 80px; max-width: 400px; width: auto;" />
+            <td style="background-color: ${headerBg}; padding: 32px 40px; text-align: center;">
+              <img src="${logoUrl}" alt="${footerName}" style="height: 80px; max-width: 400px; width: auto;" />
             </td>
           </tr>
           <!-- Body -->
@@ -304,7 +306,7 @@ const wrapBrandedEmail = (content: string, title?: string, headerImageUrl?: stri
           <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 20px 40px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">Australian Racing Tours</p>
+              <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 0;">${footerName}</p>
               <p style="color: #9ca3af; font-size: 12px; text-align: center; margin: 5px 0 0;">This email was sent regarding your tour booking.</p>
             </td>
           </tr>
@@ -377,6 +379,7 @@ const handler = async (req: Request): Promise<Response> => {
     let btnText = getGSetting('theme_email_button_text', '#F5C518');
     let brandPrimary = '#232628';
     let brandAccent = getGSetting('theme_email_button_text', '#F5C518');
+    let brandName = 'Australian Racing Tours';
 
     // Fetch email template. If emailTemplateId is provided (e.g. from automated
     // email rules), use that exact template so logging reflects the real
@@ -493,6 +496,7 @@ const handler = async (req: Request): Promise<Response> => {
       btnText = brand.colorButtonText;
       brandPrimary = brand.colorPrimary || brandPrimary;
       brandAccent = brand.colorAccent || brandAccent;
+      brandName = brand.name || brandName;
       // Template-specific header image still wins; otherwise use the brand's.
       defaultHeaderImageUrl = brand.headerImageUrl;
       emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
@@ -1516,7 +1520,7 @@ const handler = async (req: Request): Promise<Response> => {
       // Wrap the processed content in the branded email wrapper
       // Recolour custom cards to match the tour's brand theme.
       emailHtml = recolorCustomCards(emailHtml, { primary: brandPrimary, accent: brandAccent });
-      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl);
+      emailHtml = wrapBrandedEmail(emailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName);
     } else {
       // Fallback to simple HTML if no template found - use branded wrapper
       const fallbackContent = `
@@ -1525,7 +1529,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p>We will be in touch with more details soon.</p>
         <p>Best regards,<br>The Team</p>
       `;
-      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl);
+      emailHtml = wrapBrandedEmail(fallbackContent, 'Booking Confirmation', emailHeaderImageUrl, brandPrimary, brandName);
     }
 
     // Send email - use provided fromEmail, fallback to template from_email, then default
@@ -1848,7 +1852,7 @@ const handler = async (req: Request): Promise<Response> => {
       
       // Wrap in branded email template
       passengerEmailHtml = recolorCustomCards(passengerEmailHtml, { primary: brandPrimary, accent: brandAccent });
-      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl);
+      passengerEmailHtml = wrapBrandedEmail(passengerEmailHtml, undefined, emailHeaderImageUrl, brandPrimary, brandName);
       
       const subjectToProcess = customSubject || template?.subject_template || emailSubject;
       const passengerSubject = processTemplate(subjectToProcess, passengerMergeData);
