@@ -91,6 +91,13 @@ interface BookingConfirmationRequest {
    * Defaults to true.
    */
   cleanupAttachments?: boolean;
+  /**
+   * When set, the email is sent ONLY to this address (a test/preview send).
+   * It uses the lead passenger's merge data so it renders exactly as the client
+   * would receive it. Additional passengers are skipped and no email_logs row
+   * is written for a test send.
+   */
+  testEmailTo?: string;
 }
 
 // Some rich text editors can inject zero-width characters into text nodes.
