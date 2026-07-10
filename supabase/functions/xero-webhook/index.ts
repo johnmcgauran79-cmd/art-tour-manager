@@ -129,7 +129,10 @@ async function xeroFetchWithRetry(url: string, headers: Record<string, string>, 
 }
 
 // Fetch ALL invoices from Xero in bulk pages (100 per page) and build a lookup map
-async function fetchAllXeroInvoices(auth: { token: string; tenantId: string }): Promise<Map<string, any[]>> {
+async function fetchAllXeroInvoices(
+  auth: { token: string; tenantId: string },
+  whereClauseRaw = 'Status=="AUTHORISED" OR Status=="PAID"',
+): Promise<Map<string, any[]>> {
   const headers = { 'Authorization': `Bearer ${auth.token}`, 'Xero-Tenant-Id': auth.tenantId, 'Accept': 'application/json' };
   const invoiceMap = new Map<string, any[]>(); // key = normalized ref/number, value = invoices
 
@@ -147,8 +150,7 @@ async function fetchAllXeroInvoices(auth: { token: string; tenantId: string }): 
   let page = 1;
   let hasMore = true;
 
-  // Only fetch AUTHORISED and PAID invoices (the ones that matter for status sync)
-  const whereClause = encodeURIComponent('Status=="AUTHORISED" OR Status=="PAID"');
+  const whereClause = encodeURIComponent(whereClauseRaw);
 
   while (hasMore) {
     console.log(`Fetching Xero invoices page ${page}...`);
