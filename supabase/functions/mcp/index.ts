@@ -2194,7 +2194,8 @@ var explain_booking_payment_position_default = defineTool29({
       return toolError("INTERNAL_ERROR");
     }
     const auth2 = await getXeroAuth();
-    const xero = await summarizeBookingXero(auth2, booking_id, mappings ?? []);
+    const fctx = createXeroFetchContext();
+    const xero = await summarizeBookingXero(auth2, booking_id, mappings ?? [], Date.now(), fctx);
     const artFullyPaid = booking.status === "fully_paid";
     let statusFinding = {
       art_status: booking.status,
@@ -2301,7 +2302,12 @@ var explain_booking_payment_position_default = defineTool29({
       stale_warning: xero.stale_warning,
       xero_connected: auth2.ok
     };
-    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count });
+    await auditXeroCall(ctx, { tool: "explain_booking_payment_position", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: xero.active_invoice_count, metrics: {
+      unique_invoice_ids: fctx.metrics.unique_invoice_ids,
+      invoice_fetch_count: fctx.metrics.invoice_fetch_count,
+      invoice_cache_hits: fctx.metrics.invoice_cache_hits,
+      retry_count: fctx.metrics.retry_count
+    } });
     return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
   }
 });
