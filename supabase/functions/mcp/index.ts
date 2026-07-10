@@ -733,13 +733,734 @@ var delete_additional_info_section_default = defineTool22({
   }
 });
 
+// src/lib/mcp/tools/list-booking-invoices.ts
+import { defineTool as defineTool23 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z23 } from "npm:zod@^3.25.76";
+
+// src/lib/mcp/tools/_xeroLogic.ts
+var FINANCIAL_ROLES = ["admin", "manager"];
+function isFinancialRole(roles) {
+  return roles.some((r) => FINANCIAL_ROLES.includes(r));
+}
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(s) {
+  return typeof s === "string" && UUID_RE.test(s);
+}
+function safeErrorMessage(code, detail) {
+  const base = {
+    UNAUTHENTICATED: "You must be signed in to use this tool.",
+    FINANCIAL_ACCESS_DENIED: "Your role does not have access to Xero financial data. This is restricted to admin and manager users.",
+    BOOKING_ACCESS_DENIED: "You do not have access to this booking.",
+    TOUR_ACCESS_DENIED: "You do not have access to this tour.",
+    XERO_NOT_CONNECTED: "The Xero integration is not connected.",
+    XERO_TOKEN_REFRESH_FAILED: "Could not refresh the Xero connection. Please reconnect Xero.",
+    XERO_RATE_LIMITED: "Xero rate limit reached. Please try again in a few moments.",
+    XERO_INVOICE_NOT_FOUND: "No matching Xero invoice was found.",
+    INVALID_INPUT: "The request input was invalid.",
+    STALE_MAPPING_DATA: "Only cached mapping data was available; it may be out of date.",
+    INTERNAL_ERROR: "An unexpected error occurred."
+  };
+  const suffix = detail ? ` ${detail}` : "";
+  return base[code] + suffix;
+}
+function computeStaleWarning(updatedAt, now = Date.now(), thresholdMs = 24 * 60 * 60 * 1e3) {
+  if (!updatedAt) return true;
+  const t = new Date(updatedAt).getTime();
+  if (Number.isNaN(t)) return true;
+  return now - t > thresholdMs;
+}
+var STATUS_ORDER = {
+  invoiced: 1,
+  racing_breaks_invoice: 1,
+  deposited: 2,
+  instalment_paid: 3,
+  fully_paid: 4
+};
+function mapXeroStatusToBookingStatus(xeroStatus, amountDue, amountPaid, instalmentRequired, currentStatus, passengerCount = 1, depositPerPerson = 0) {
+  let proposed = null;
+  if (xeroStatus === "PAID" || amountDue === 0 && amountPaid > 0) {
+    proposed = "fully_paid";
+  } else if (amountPaid > 0 && amountDue > 0) {
+    const totalDepositThreshold = passengerCount * depositPerPerson;
+    if (instalmentRequired && currentStatus === "deposited" && totalDepositThreshold > 0 && amountPaid > totalDepositThreshold) {
+      proposed = "instalment_paid";
+    } else {
+      proposed = "deposited";
+    }
+  } else if (xeroStatus === "AUTHORISED" && amountPaid === 0) {
+    proposed = "invoiced";
+  }
+  if (!proposed) return null;
+  const currentOrder = STATUS_ORDER[currentStatus || ""] || 0;
+  const proposedOrder = STATUS_ORDER[proposed] || 0;
+  if (proposedOrder <= currentOrder) return null;
+  return proposed;
+}
+function xeroDate(...vals) {
+  for (const v of vals) {
+    if (!v) continue;
+    const m = /\/Date\((\d+)/.exec(v);
+    if (m) return new Date(Number(m[1])).toISOString().split("T")[0];
+    const iso = v.split("T")[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
+  }
+  return null;
+}
+function normalizeInvoice(inv) {
+  const creditNotes = Array.isArray(inv?.CreditNotes) ? inv.CreditNotes.reduce(
+    (s, c) => s + (Number(c?.AppliedAmount) || 0),
+    0
+  ) : 0;
+  return {
+    xero_invoice_id: inv?.InvoiceID ?? "",
+    invoice_number: inv?.InvoiceNumber ?? null,
+    type: inv?.Type ?? null,
+    contact_name: inv?.Contact?.Name ?? null,
+    contact_id: inv?.Contact?.ContactID ?? null,
+    reference: inv?.Reference ?? null,
+    date: xeroDate(inv?.DateString, inv?.Date),
+    due_date: xeroDate(inv?.DueDateString, inv?.DueDate),
+    currency: inv?.CurrencyCode ?? null,
+    subtotal: Number(inv?.SubTotal) || 0,
+    tax: Number(inv?.TotalTax) || 0,
+    total: Number(inv?.Total) || 0,
+    amount_paid: Number(inv?.AmountPaid) || 0,
+    amount_due: Number(inv?.AmountDue) || 0,
+    credit_notes_applied: creditNotes,
+    status: inv?.Status ?? null
+  };
+}
+function normalizePayments(inv) {
+  if (!Array.isArray(inv?.Payments)) return [];
+  return inv.Payments.map((p) => ({
+    payment_id: p?.PaymentID ?? null,
+    date: xeroDate(p?.DateString, p?.Date),
+    amount: Number(p?.Amount) || 0,
+    reference: p?.Reference ?? null
+  }));
+}
+function normalizeLineItems(inv) {
+  if (!Array.isArray(inv?.LineItems)) return [];
+  return inv.LineItems.map((li) => ({
+    description: li?.Description ?? null,
+    quantity: Number(li?.Quantity) || 0,
+    unit_amount: Number(li?.UnitAmount) || 0,
+    line_amount: Number(li?.LineAmount) || 0,
+    tax_amount: Number(li?.TaxAmount) || 0,
+    account_code: li?.AccountCode ?? null
+  }));
+}
+function daysOverdue(dueDate, now = /* @__PURE__ */ new Date()) {
+  if (!dueDate) return 0;
+  const due = (/* @__PURE__ */ new Date(dueDate + "T00:00:00Z")).getTime();
+  const today = (/* @__PURE__ */ new Date(now.toISOString().split("T")[0] + "T00:00:00Z")).getTime();
+  if (Number.isNaN(due)) return 0;
+  const diff = Math.floor((today - due) / (24 * 60 * 60 * 1e3));
+  return diff > 0 ? diff : 0;
+}
+function pickLowestProposedStatus(proposals) {
+  const valid = proposals.filter((p) => !!p);
+  if (valid.length === 0) return null;
+  return valid.sort(
+    (a, b) => (STATUS_ORDER[a] || 0) - (STATUS_ORDER[b] || 0)
+  )[0];
+}
+
+// src/lib/mcp/tools/_financial.ts
+function toolError(code, detail) {
+  const message = safeErrorMessage(code, detail);
+  return {
+    content: [{ type: "text", text: `${code}: ${message}` }],
+    structuredContent: { error: { code, message } },
+    isError: true
+  };
+}
+async function assertFinancialAccess(ctx) {
+  if (!ctx.isAuthenticated()) {
+    return { ok: false, code: "UNAUTHENTICATED", error: toolError("UNAUTHENTICATED") };
+  }
+  const supabase = supabaseForUser(ctx);
+  const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", ctx.getUserId());
+  if (error) {
+    return { ok: false, code: "INTERNAL_ERROR", error: toolError("INTERNAL_ERROR") };
+  }
+  const roles = (data ?? []).map((r) => r.role);
+  if (!isFinancialRole(roles)) {
+    return {
+      ok: false,
+      code: "FINANCIAL_ACCESS_DENIED",
+      error: toolError("FINANCIAL_ACCESS_DENIED")
+    };
+  }
+  return { ok: true, value: { roles } };
+}
+async function assertBookingAccess(ctx, bookingId) {
+  if (!isUuid(bookingId)) {
+    return { ok: false, code: "INVALID_INPUT", error: toolError("INVALID_INPUT", "booking_id must be a UUID.") };
+  }
+  const supabase = supabaseForUser(ctx);
+  const { data, error } = await supabase.from("bookings").select(
+    "id, status, tour_id, invoice_reference, passenger_count, group_name, lead_passenger_id, tours!bookings_tour_id_fkey(name, instalment_required, deposit_required), customers!bookings_lead_passenger_id_fkey(first_name, last_name)"
+  ).eq("id", bookingId).maybeSingle();
+  if (error) {
+    return { ok: false, code: "INTERNAL_ERROR", error: toolError("INTERNAL_ERROR") };
+  }
+  if (!data) {
+    return { ok: false, code: "BOOKING_ACCESS_DENIED", error: toolError("BOOKING_ACCESS_DENIED") };
+  }
+  const tour = data.tours;
+  const cust = data.customers;
+  return {
+    ok: true,
+    value: {
+      id: data.id,
+      status: data.status ?? null,
+      tour_id: data.tour_id ?? null,
+      invoice_reference: data.invoice_reference ?? null,
+      passenger_count: data.passenger_count ?? null,
+      group_name: data.group_name ?? null,
+      lead_passenger_id: data.lead_passenger_id ?? null,
+      lead_name: cust ? `${cust.first_name ?? ""} ${cust.last_name ?? ""}`.trim() : null,
+      tour_name: tour?.name ?? null,
+      instalment_required: !!tour?.instalment_required,
+      deposit_required: Number(tour?.deposit_required) || 0
+    }
+  };
+}
+async function assertTourAccess(ctx, tourId) {
+  if (!isUuid(tourId)) {
+    return { ok: false, code: "INVALID_INPUT", error: toolError("INVALID_INPUT", "tour_id must be a UUID.") };
+  }
+  const supabase = supabaseForUser(ctx);
+  const { data, error } = await supabase.from("tours").select("id, name").eq("id", tourId).maybeSingle();
+  if (error) {
+    return { ok: false, code: "INTERNAL_ERROR", error: toolError("INTERNAL_ERROR") };
+  }
+  if (!data) {
+    return { ok: false, code: "TOUR_ACCESS_DENIED", error: toolError("TOUR_ACCESS_DENIED") };
+  }
+  return { ok: true, value: { id: data.id, name: data.name ?? null } };
+}
+async function auditXeroCall(ctx, f) {
+  try {
+    await supabaseForUser(ctx).from("audit_log").insert({
+      user_id: ctx.getUserId(),
+      operation_type: f.success ? "mcp_xero_read" : "mcp_xero_read_error",
+      table_name: f.tool,
+      record_id: f.recordId && isUuid(f.recordId) ? f.recordId : null,
+      details: {
+        tool: f.tool,
+        invoice: f.invoiceRef ?? null,
+        success: f.success,
+        error_category: f.errorCategory ?? null,
+        duration_ms: f.durationMs,
+        result_count: f.resultCount ?? null
+      }
+    });
+  } catch (_) {
+  }
+}
+
+// src/lib/mcp/tools/_xero.ts
+import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.110.0";
+function serviceClient() {
+  return createClient2(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+}
+async function refreshAccessToken(supabase, settings) {
+  const XERO_CLIENT_ID = process.env.XERO_CLIENT_ID;
+  const XERO_CLIENT_SECRET = process.env.XERO_CLIENT_SECRET;
+  if (!XERO_CLIENT_ID || !XERO_CLIENT_SECRET) return null;
+  let tokenResponse;
+  try {
+    tokenResponse = await fetch("https://identity.xero.com/connect/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${btoa(`${XERO_CLIENT_ID}:${XERO_CLIENT_SECRET}`)}`
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: settings.refresh_token
+      })
+    });
+  } catch {
+    return null;
+  }
+  if (!tokenResponse.ok) {
+    await tokenResponse.text().catch(() => {
+    });
+    return null;
+  }
+  const tokens = await tokenResponse.json();
+  await supabase.from("xero_integration_settings").update({
+    access_token: tokens.access_token,
+    refresh_token: tokens.refresh_token,
+    token_expires_at: new Date(Date.now() + tokens.expires_in * 1e3).toISOString(),
+    updated_at: (/* @__PURE__ */ new Date()).toISOString()
+  }).eq("id", settings.id);
+  return tokens.access_token;
+}
+async function getXeroAuth() {
+  const supabase = serviceClient();
+  const { data: settings } = await supabase.from("xero_integration_settings").select("*").eq("is_connected", true).maybeSingle();
+  if (!settings || !settings.refresh_token || !settings.tenant_id) {
+    return { ok: false, code: "XERO_NOT_CONNECTED" };
+  }
+  const expiresAt = new Date(settings.token_expires_at).getTime();
+  if (Date.now() >= expiresAt - 3e5) {
+    const refreshed = await refreshAccessToken(supabase, settings);
+    if (!refreshed) return { ok: false, code: "XERO_TOKEN_REFRESH_FAILED" };
+    return { ok: true, data: { token: refreshed, tenantId: settings.tenant_id } };
+  }
+  return { ok: true, data: { token: settings.access_token, tenantId: settings.tenant_id } };
+}
+var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+async function xeroGet(auth2, path, maxRetries = 3) {
+  const headers = {
+    Authorization: `Bearer ${auth2.token}`,
+    "Xero-Tenant-Id": auth2.tenantId,
+    Accept: "application/json"
+  };
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    let res;
+    try {
+      res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, { headers });
+    } catch {
+      return { ok: false, code: "INTERNAL_ERROR" };
+    }
+    if (res.status === 429) {
+      const retryAfter = parseInt(res.headers.get("Retry-After") || "2", 10);
+      await res.text().catch(() => {
+      });
+      if (attempt === maxRetries - 1) return { ok: false, code: "XERO_RATE_LIMITED" };
+      await sleep(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
+      continue;
+    }
+    if (res.status === 404) {
+      await res.text().catch(() => {
+      });
+      return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
+    }
+    if (!res.ok) {
+      await res.text().catch(() => {
+      });
+      return { ok: false, code: "INTERNAL_ERROR" };
+    }
+    const data = await res.json();
+    return { ok: true, data };
+  }
+  return { ok: false, code: "XERO_RATE_LIMITED" };
+}
+async function fetchInvoiceById(auth2, invoiceId) {
+  const res = await xeroGet(auth2, `Invoices/${encodeURIComponent(invoiceId)}`);
+  if (!res.ok) return res;
+  const inv = res.data?.Invoices?.[0];
+  if (!inv) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
+  return { ok: true, data: inv };
+}
+async function fetchInvoiceByNumber(auth2, invoiceNumber) {
+  const where = encodeURIComponent(`InvoiceNumber=="${invoiceNumber.replace(/"/g, "")}"`);
+  const res = await xeroGet(auth2, `Invoices?where=${where}`);
+  if (!res.ok) return res;
+  const inv = res.data?.Invoices?.[0];
+  if (!inv?.InvoiceID) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
+  return fetchInvoiceById(auth2, inv.InvoiceID);
+}
+
+// src/lib/mcp/tools/list-booking-invoices.ts
+var list_booking_invoices_default = defineTool23({
+  name: "list_booking_invoices",
+  title: "List a booking's Xero invoices",
+  description: "List all Xero invoices linked to an ART booking, with totals, payments received, outstanding balance, invoice statuses and the ART booking payment status. Uses the canonical mapping for linkage and live Xero data for current amounts (falls back to cached mapping data with a stale warning if Xero is unavailable). Restricted to admin/manager.",
+  inputSchema: {
+    booking_id: z23.string().uuid().describe("The ART booking id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    const acc = await assertBookingAccess(ctx, booking_id);
+    if (!acc.ok) {
+      await auditXeroCall(ctx, { tool: "list_booking_invoices", recordId: booking_id, success: false, errorCategory: acc.code, durationMs: Date.now() - started });
+      return acc.error;
+    }
+    const booking = acc.value;
+    const supabase = supabaseForUser(ctx);
+    const { data: mappings, error: mapErr } = await supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, invoice_reference, amount_due, amount_paid, total_amount, currency_code, xero_status, last_payment_date, updated_at").eq("booking_id", booking_id);
+    if (mapErr) {
+      await auditXeroCall(ctx, { tool: "list_booking_invoices", recordId: booking_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const uniqueMappings = Array.from(
+      new Map((mappings ?? []).map((m) => [m.xero_invoice_id, m])).values()
+    );
+    const auth2 = await getXeroAuth();
+    const invoices = [];
+    let anyLive = false;
+    let anyStale = false;
+    const now = Date.now();
+    for (const m of uniqueMappings) {
+      if (auth2.ok && m.xero_invoice_id) {
+        const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+        if (live.ok) {
+          anyLive = true;
+          const n = normalizeInvoice(live.data);
+          const cachedPaid = Number(m.amount_paid) || 0;
+          const stale2 = Math.abs(cachedPaid - n.amount_paid) > 5e-3;
+          if (stale2) anyStale = true;
+          invoices.push({
+            ...n,
+            linkage_type: "mapping",
+            data_source: "live_xero",
+            last_synced_at: m.updated_at ?? null,
+            stale_warning: stale2
+          });
+          continue;
+        }
+      }
+      const stale = computeStaleWarning(m.updated_at, now);
+      anyStale = anyStale || stale;
+      invoices.push({
+        xero_invoice_id: m.xero_invoice_id,
+        invoice_number: m.xero_invoice_number ?? null,
+        reference: m.invoice_reference ?? null,
+        currency: m.currency_code ?? null,
+        total: Number(m.total_amount) || 0,
+        amount_paid: Number(m.amount_paid) || 0,
+        amount_due: Number(m.amount_due) || 0,
+        status: m.xero_status ?? null,
+        linkage_type: "mapping",
+        data_source: "mapping_cache",
+        last_synced_at: m.updated_at ?? null,
+        stale_warning: stale
+      });
+    }
+    const invoice_totals = invoices.reduce((s, i) => s + (Number(i.total) || 0), 0);
+    const payments_received = invoices.reduce((s, i) => s + (Number(i.amount_paid) || 0), 0);
+    const outstanding_balance = invoices.reduce((s, i) => s + (Number(i.amount_due) || 0), 0);
+    const result = {
+      booking_id,
+      booking_status: booking.status,
+      invoice_count: invoices.length,
+      invoice_totals,
+      payments_received,
+      outstanding_balance,
+      statuses: invoices.map((i) => i.status),
+      data_source: anyLive ? invoices.some((i) => i.data_source === "mapping_cache") ? "mixed" : "live_xero" : "mapping_cache",
+      stale_warning: anyStale,
+      xero_connected: auth2.ok,
+      invoices
+    };
+    await auditXeroCall(ctx, { tool: "list_booking_invoices", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: invoices.length });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
+// src/lib/mcp/tools/get-xero-invoice.ts
+import { defineTool as defineTool24 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z24 } from "npm:zod@^3.25.76";
+var get_xero_invoice_default = defineTool24({
+  name: "get_xero_invoice",
+  title: "Get a Xero invoice",
+  description: "Fetch full LIVE detail for a single Xero invoice by invoice_id (Xero InvoiceID/GUID) or invoice_number: summary, line items, payments, contact and reference, plus the linked ART booking and its payment status. Restricted to admin/manager.",
+  inputSchema: {
+    invoice_id: z24.string().optional().describe("Xero InvoiceID (GUID)."),
+    invoice_number: z24.string().optional().describe("Xero invoice number, e.g. INV-1234.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ invoice_id, invoice_number }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    if (!invoice_id && !invoice_number || invoice_id && invoice_number) {
+      return toolError("INVALID_INPUT", "Provide exactly one of invoice_id or invoice_number.");
+    }
+    if (invoice_id && !isUuid(invoice_id)) {
+      return toolError("INVALID_INPUT", "invoice_id must be a Xero GUID.");
+    }
+    const auth2 = await getXeroAuth();
+    if (!auth2.ok) {
+      await auditXeroCall(ctx, { tool: "get_xero_invoice", invoiceRef: invoice_id ?? invoice_number, success: false, errorCategory: auth2.code, durationMs: Date.now() - started });
+      return toolError(auth2.code);
+    }
+    const res = invoice_id ? await fetchInvoiceById(auth2.data, invoice_id) : await fetchInvoiceByNumber(auth2.data, invoice_number);
+    if (!res.ok) {
+      await auditXeroCall(ctx, { tool: "get_xero_invoice", invoiceRef: invoice_id ?? invoice_number, success: false, errorCategory: res.code, durationMs: Date.now() - started });
+      return toolError(res.code);
+    }
+    const summary = normalizeInvoice(res.data);
+    const line_items = normalizeLineItems(res.data);
+    const payments = normalizePayments(res.data);
+    const supabase = supabaseForUser(ctx);
+    let linkage_type = "unlinked";
+    let booking = null;
+    const { data: mapRow } = await supabase.from("xero_invoice_mappings").select("booking_id").eq("xero_invoice_id", summary.xero_invoice_id).maybeSingle();
+    if (mapRow?.booking_id) {
+      linkage_type = "mapping";
+      const { data: b } = await supabase.from("bookings").select("id, status, tour_id, group_name").eq("id", mapRow.booking_id).maybeSingle();
+      booking = b ?? null;
+    } else if (summary.invoice_number || summary.reference) {
+      const candidates = [summary.invoice_number, summary.reference].filter(Boolean);
+      for (const c of candidates) {
+        const { data: b } = await supabase.from("bookings").select("id, status, tour_id, group_name, invoice_reference").ilike("invoice_reference", `%${c.replace(/^INV-/i, "")}%`).limit(1).maybeSingle();
+        if (b) {
+          linkage_type = "reference_match";
+          booking = b;
+          break;
+        }
+      }
+    }
+    const result = {
+      data_source: "live_xero",
+      summary,
+      line_items,
+      payments,
+      contact: { contact_id: summary.contact_id, name: summary.contact_name },
+      reference: summary.reference,
+      linkage_type,
+      booking: booking ? { id: booking.id, status: booking.status, tour_id: booking.tour_id, group_name: booking.group_name } : null,
+      booking_payment_status: booking?.status ?? null
+    };
+    await auditXeroCall(ctx, { tool: "get_xero_invoice", recordId: booking?.id ?? null, invoiceRef: summary.invoice_number ?? summary.xero_invoice_id, success: true, durationMs: Date.now() - started, resultCount: 1 });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
+// src/lib/mcp/tools/get-booking-payment-summary.ts
+import { defineTool as defineTool25 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z25 } from "npm:zod@^3.25.76";
+var get_booking_payment_summary_default = defineTool25({
+  name: "get_booking_payment_summary",
+  title: "Get a booking's payment summary",
+  description: "Summarise a booking's financial position from its linked Xero invoices: total invoiced, total paid, total outstanding, current ART status and the expected status inferred from Xero payments (with a discrepancy flag). booking_contract_total is returned as null unless an authoritative stored total exists; a mismatch is never asserted without one. Restricted to admin/manager.",
+  inputSchema: {
+    booking_id: z25.string().uuid().describe("The ART booking id (uuid).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ booking_id }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    const acc = await assertBookingAccess(ctx, booking_id);
+    if (!acc.ok) {
+      await auditXeroCall(ctx, { tool: "get_booking_payment_summary", recordId: booking_id, success: false, errorCategory: acc.code, durationMs: Date.now() - started });
+      return acc.error;
+    }
+    const booking = acc.value;
+    const supabase = supabaseForUser(ctx);
+    const { data: mappings, error: mapErr } = await supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, amount_due, amount_paid, total_amount, xero_status, updated_at").eq("booking_id", booking_id);
+    if (mapErr) {
+      await auditXeroCall(ctx, { tool: "get_booking_payment_summary", recordId: booking_id, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const unique = Array.from(
+      new Map((mappings ?? []).map((m) => [m.xero_invoice_id, m])).values()
+    );
+    const auth2 = await getXeroAuth();
+    let total_invoiced = 0;
+    let total_paid = 0;
+    let total_outstanding = 0;
+    let credit_notes = 0;
+    let anyLive = false;
+    let anyStale = false;
+    const now = Date.now();
+    const proposals = [];
+    for (const m of unique) {
+      let total = Number(m.total_amount) || 0;
+      let paid = Number(m.amount_paid) || 0;
+      let due = Number(m.amount_due) || 0;
+      let xeroStatus = m.xero_status || "";
+      let cn = 0;
+      if (auth2.ok && m.xero_invoice_id) {
+        const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+        if (live.ok) {
+          anyLive = true;
+          const n = normalizeInvoice(live.data);
+          if (Math.abs((Number(m.amount_paid) || 0) - n.amount_paid) > 5e-3) anyStale = true;
+          total = n.total;
+          paid = n.amount_paid;
+          due = n.amount_due;
+          xeroStatus = n.status || "";
+          cn = n.credit_notes_applied;
+        } else {
+          anyStale = anyStale || computeStaleWarning(m.updated_at, now);
+        }
+      } else {
+        anyStale = anyStale || computeStaleWarning(m.updated_at, now);
+      }
+      total_invoiced += total;
+      total_paid += paid;
+      total_outstanding += due;
+      credit_notes += cn;
+      proposals.push(
+        mapXeroStatusToBookingStatus(
+          xeroStatus,
+          due,
+          paid,
+          booking.instalment_required,
+          booking.status,
+          booking.passenger_count ?? 1,
+          booking.deposit_required
+        )
+      );
+    }
+    const proposed = pickLowestProposedStatus(proposals);
+    const expected_status = proposed ?? booking.status;
+    const discrepancy = !!proposed && proposed !== booking.status;
+    const result = {
+      booking_id,
+      current_status: booking.status,
+      expected_status,
+      discrepancy,
+      discrepancy_explanation: discrepancy ? `Xero payments indicate the booking should be "${expected_status}" but it is currently "${booking.status}".` : null,
+      booking_contract_total: null,
+      booking_price_source: unique.length > 0 ? "invoice_total_only" : "unavailable",
+      total_invoiced,
+      total_paid,
+      total_outstanding,
+      credit_notes: auth2.ok ? credit_notes : null,
+      invoice_count: unique.length,
+      data_source: anyLive ? auth2.ok && unique.length ? "live_xero" : "mapping_cache" : "mapping_cache",
+      stale_warning: anyStale,
+      xero_connected: auth2.ok
+    };
+    await auditXeroCall(ctx, { tool: "get_booking_payment_summary", recordId: booking_id, success: true, durationMs: Date.now() - started, resultCount: unique.length });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
+// src/lib/mcp/tools/list-outstanding-invoices.ts
+import { defineTool as defineTool26 } from "npm:@lovable.dev/mcp-js@0.20.0";
+import { z as z26 } from "npm:zod@^3.25.76";
+var list_outstanding_invoices_default = defineTool26({
+  name: "list_outstanding_invoices",
+  title: "List outstanding invoices",
+  description: "List bookings with outstanding Xero balances (amount due > 0), optionally scoped to a tour. Returns booking, primary client, tour, invoice number, due date, total, amount paid, amount due and days overdue. Candidate invoices come from the canonical mapping cache; each is refreshed against live Xero for the current due date and amounts. Restricted to admin/manager.",
+  inputSchema: {
+    tour_id: z26.string().uuid().optional().describe("Optional tour id to scope results."),
+    overdue_only: z26.boolean().optional().describe("Only include invoices past their due date."),
+    due_before: z26.string().optional().describe("Only include invoices due before this date (YYYY-MM-DD)."),
+    limit: z26.number().int().optional().describe("Max invoices to inspect (default 25, max 100).")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ tour_id, overdue_only, due_before, limit }, ctx) => {
+    const started = Date.now();
+    const fin = await assertFinancialAccess(ctx);
+    if (!fin.ok) return fin.error;
+    if (tour_id) {
+      const tourAcc = await assertTourAccess(ctx, tour_id);
+      if (!tourAcc.ok) {
+        await auditXeroCall(ctx, { tool: "list_outstanding_invoices", recordId: tour_id, success: false, errorCategory: tourAcc.code, durationMs: Date.now() - started });
+        return tourAcc.error;
+      }
+    }
+    if (due_before && !/^\d{4}-\d{2}-\d{2}$/.test(due_before)) {
+      return toolError("INVALID_INPUT", "due_before must be YYYY-MM-DD.");
+    }
+    const capped = Math.min(Math.max(limit ?? 25, 1), 100);
+    const supabase = supabaseForUser(ctx);
+    let query = supabase.from("xero_invoice_mappings").select("xero_invoice_id, xero_invoice_number, amount_due, amount_paid, total_amount, currency_code, xero_status, updated_at, booking_id").gt("amount_due", 0);
+    if (tour_id) {
+      const { data: tourBookings } = await supabase.from("bookings").select("id").eq("tour_id", tour_id);
+      const ids = (tourBookings ?? []).map((b) => b.id);
+      if (ids.length === 0) {
+        const empty = { count: 0, invoices: [], data_source: "mapping_cache", partial_results: false };
+        await auditXeroCall(ctx, { tool: "list_outstanding_invoices", recordId: tour_id, success: true, durationMs: Date.now() - started, resultCount: 0 });
+        return { content: [{ type: "text", text: JSON.stringify(empty) }], structuredContent: empty };
+      }
+      query = query.in("booking_id", ids);
+    }
+    const { data: mappings, error: mapErr } = await query.limit(capped);
+    if (mapErr) {
+      await auditXeroCall(ctx, { tool: "list_outstanding_invoices", recordId: tour_id ?? null, success: false, errorCategory: "INTERNAL_ERROR", durationMs: Date.now() - started });
+      return toolError("INTERNAL_ERROR");
+    }
+    const unique = Array.from(
+      new Map((mappings ?? []).map((m) => [m.xero_invoice_id, m])).values()
+    );
+    const bookingIds = Array.from(new Set(unique.map((m) => m.booking_id).filter(Boolean)));
+    const bookingMap = /* @__PURE__ */ new Map();
+    if (bookingIds.length) {
+      const { data: bookings } = await supabase.from("bookings").select("id, group_name, tour_id, tours!bookings_tour_id_fkey(name), customers!bookings_lead_passenger_id_fkey(first_name, last_name)").in("id", bookingIds);
+      for (const b of bookings ?? []) bookingMap.set(b.id, b);
+    }
+    const auth2 = await getXeroAuth();
+    const now = Date.now();
+    let partial = false;
+    let anyLive = false;
+    const rows = [];
+    for (const m of unique) {
+      let due_date = null;
+      let total = Number(m.total_amount) || 0;
+      let paid = Number(m.amount_paid) || 0;
+      let due = Number(m.amount_due) || 0;
+      let dataSource = "mapping_cache";
+      let stale = computeStaleWarning(m.updated_at, now);
+      if (auth2.ok && m.xero_invoice_id) {
+        const live = await fetchInvoiceById(auth2.data, m.xero_invoice_id);
+        if (live.ok) {
+          anyLive = true;
+          const n = normalizeInvoice(live.data);
+          due_date = n.due_date;
+          total = n.total;
+          paid = n.amount_paid;
+          due = n.amount_due;
+          dataSource = "live_xero";
+          stale = false;
+          if (due <= 0) continue;
+        } else {
+          partial = true;
+        }
+      } else if (!auth2.ok) {
+        partial = true;
+      }
+      if (due_before && due_date && due_date >= due_before) continue;
+      const overdue = daysOverdue(due_date);
+      if (overdue_only && overdue <= 0) continue;
+      const b = bookingMap.get(m.booking_id);
+      const cust = b?.customers;
+      rows.push({
+        booking_id: m.booking_id ?? null,
+        primary_client: cust ? `${cust.first_name ?? ""} ${cust.last_name ?? ""}`.trim() : b?.group_name ?? null,
+        tour: b?.tours?.name ?? null,
+        invoice_number: m.xero_invoice_number ?? null,
+        xero_invoice_id: m.xero_invoice_id,
+        due_date,
+        currency: m.currency_code ?? null,
+        total,
+        amount_paid: paid,
+        amount_due: due,
+        days_overdue: overdue,
+        linkage_type: m.booking_id ? "mapping" : "unlinked",
+        data_source: dataSource,
+        stale_warning: stale
+      });
+    }
+    const result = {
+      count: rows.length,
+      data_source: anyLive ? rows.some((r) => r.data_source === "mapping_cache") ? "mixed" : "live_xero" : "mapping_cache",
+      xero_connected: auth2.ok,
+      partial_results: partial,
+      partial_results_reason: partial ? auth2.ok ? "Some invoices could not be refreshed from live Xero." : "Xero is not connected; amounts and due dates are from cached mappings." : null,
+      invoices: rows
+    };
+    await auditXeroCall(ctx, { tool: "list_outstanding_invoices", recordId: tour_id ?? null, success: true, durationMs: Date.now() - started, resultCount: rows.length });
+    return { content: [{ type: "text", text: JSON.stringify(result) }], structuredContent: result };
+  }
+});
+
 // src/lib/mcp/index.ts
 var projectRef = "upqvgtuxfzsrwjahklij";
 var mcp_default = defineMcp({
   name: "art-tour-manager-mcp",
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
-  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+  instructions: "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices` \u2014 invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
@@ -766,7 +1487,11 @@ var mcp_default = defineMcp({
     delete_itinerary_day_default,
     add_additional_info_section_default,
     update_additional_info_section_default,
-    delete_additional_info_section_default
+    delete_additional_info_section_default,
+    list_booking_invoices_default,
+    get_xero_invoice_default,
+    get_booking_payment_summary_default,
+    list_outstanding_invoices_default
   ]
 });
 

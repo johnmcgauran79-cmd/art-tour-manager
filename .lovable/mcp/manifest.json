@@ -791,6 +791,119 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "list_booking_invoices",
+        "title": "List a booking's Xero invoices",
+        "description": "List all Xero invoices linked to an ART booking, with totals, payments received, outstanding balance, invoice statuses and the ART booking payment status. Uses the canonical mapping for linkage and live Xero data for current amounts (falls back to cached mapping data with a stale warning if Xero is unavailable). Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The ART booking id (uuid)."
+            }
+          },
+          "required": [
+            "booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_xero_invoice",
+        "title": "Get a Xero invoice",
+        "description": "Fetch full LIVE detail for a single Xero invoice by invoice_id (Xero InvoiceID/GUID) or invoice_number: summary, line items, payments, contact and reference, plus the linked ART booking and its payment status. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "invoice_id": {
+              "type": "string",
+              "description": "Xero InvoiceID (GUID)."
+            },
+            "invoice_number": {
+              "type": "string",
+              "description": "Xero invoice number, e.g. INV-1234."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_booking_payment_summary",
+        "title": "Get a booking's payment summary",
+        "description": "Summarise a booking's financial position from its linked Xero invoices: total invoiced, total paid, total outstanding, current ART status and the expected status inferred from Xero payments (with a discrepancy flag). booking_contract_total is returned as null unless an authoritative stored total exists; a mismatch is never asserted without one. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The ART booking id (uuid)."
+            }
+          },
+          "required": [
+            "booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_outstanding_invoices",
+        "title": "List outstanding invoices",
+        "description": "List bookings with outstanding Xero balances (amount due > 0), optionally scoped to a tour. Returns booking, primary client, tour, invoice number, due date, total, amount paid, amount due and days overdue. Candidate invoices come from the canonical mapping cache; each is refreshed against live Xero for the current due date and amounts. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional tour id to scope results."
+            },
+            "overdue_only": {
+              "type": "boolean",
+              "description": "Only include invoices past their due date."
+            },
+            "due_before": {
+              "type": "string",
+              "description": "Only include invoices due before this date (YYYY-MM-DD)."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max invoices to inspect (default 25, max 100)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }

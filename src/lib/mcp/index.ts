@@ -21,6 +21,10 @@ import deleteItineraryDayTool from "./tools/delete-itinerary-day";
 import addAdditionalInfoSectionTool from "./tools/add-additional-info-section";
 import updateAdditionalInfoSectionTool from "./tools/update-additional-info-section";
 import deleteAdditionalInfoSectionTool from "./tools/delete-additional-info-section";
+import listBookingInvoicesTool from "./tools/list-booking-invoices";
+import getXeroInvoiceTool from "./tools/get-xero-invoice";
+import getBookingPaymentSummaryTool from "./tools/get-booking-payment-summary";
+import listOutstandingInvoicesTool from "./tools/list-outstanding-invoices";
 
 // The OAuth issuer MUST be the direct Supabase host, built from the project ref.
 // Vite inlines VITE_SUPABASE_PROJECT_ID at build time, keeping this import-safe.
@@ -32,7 +36,7 @@ export default defineMcp({
   title: "Australian Racing Tours MCP",
   version: "0.1.0",
   instructions:
-    "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
+    "Tools for the Australian Racing Tours tour manager. Read: `list_tours`, `get_tour`, `list_bookings`, `list_tour_activities`, `get_activity`, `list_tour_hotels`, `get_tour_itinerary`, `list_tour_passengers`, `get_booking_passenger_details`, `list_tour_custom_forms`, `list_tour_additional_info`, `list_email_rules`. Xero financial (read-only, admin/manager only): `list_booking_invoices`, `get_xero_invoice`, `get_booking_payment_summary`, `list_outstanding_invoices` — invoice linkage comes from the canonical mapping and current amounts/line items/payments from live Xero; each result labels its data_source (live_xero/mapping_cache) and stale_warning. Write: `create_tour` and `update_tour` for tour details; `create_itinerary`, `add_itinerary_day`, `upsert_itinerary_entry`, `delete_itinerary_entry`, `delete_itinerary_day` for itineraries; `add_additional_info_section`, `update_additional_info_section`, `delete_additional_info_section` for Additional Information blocks (use `include_in_email_rules` with ids from `list_email_rules` to make a section appear in emails). Dates are YYYY-MM-DD. All access is scoped to the signed-in user's permissions.",
   auth: auth.oauth.issuer({
     issuer: `https://${projectRef}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated",
@@ -60,5 +64,9 @@ export default defineMcp({
     addAdditionalInfoSectionTool,
     updateAdditionalInfoSectionTool,
     deleteAdditionalInfoSectionTool,
+    listBookingInvoicesTool,
+    getXeroInvoiceTool,
+    getBookingPaymentSummaryTool,
+    listOutstandingInvoicesTool,
   ],
 });
