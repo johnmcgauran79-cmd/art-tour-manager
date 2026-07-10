@@ -202,7 +202,7 @@ export const EmailTemplatePreviewModal = ({ open, onOpenChange, template, subjec
       ${processedContent}
     </div>
     <div style="text-align:center;padding:20px;color:#666;font-size:12px;">
-      <p style="margin:0;">Australian Racing Tours</p>
+      <p style="margin:0;">${brand?.name || 'Australian Racing Tours'}</p>
       <p style="margin:5px 0;">This email was sent regarding your tour booking.</p>
     </div>
   </div>
