@@ -82,6 +82,7 @@ export const EmailPreviewModal = ({ open, onOpenChange, bookingId, initialRecipi
   const scheduleEmailMutation = useScheduleEmail();
   const { data: emailTemplates, isLoading: templatesLoading } = useEmailTemplates();
   const { data: userEmails } = useUserEmails();
+  const { data: brands } = useBrands();
 
   // Keep the From field in sync with the configured default until the user
   // explicitly changes it.
