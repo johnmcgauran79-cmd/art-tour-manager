@@ -688,7 +688,7 @@ serve(async (req) => {
                 total_amount: best.Total || 0,
                 currency_code: best.CurrencyCode || 'AUD',
                 xero_status: best.Status,
-                last_payment_date: best.FullyPaidOnDate || null,
+                last_payment_date: parseXeroDate(best.FullyPaidOnDate),
                 updated_at: new Date().toISOString(),
               }, { onConflict: 'booking_id,xero_invoice_id' });
             if (!upErr) wrote++;
