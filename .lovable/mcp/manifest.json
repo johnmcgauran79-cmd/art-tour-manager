@@ -904,6 +904,125 @@
           "$schema": "http://json-schema.org/draft-07/schema#"
         },
         "outputSchema": null
+      },
+      {
+        "name": "get_payment_exception_report",
+        "title": "Get payment exception report",
+        "description": "Compute the ART payment-exception report for a tour using the canonical classification rules (deposit/instalment/final-balance). Returns each exception booking with its primary and all applicable exception types, expected due date, expected amount with an explicit source label, and Xero monetary values (received/outstanding) labelled by source. This RE-COMPUTES the rules; it does not fetch a previously generated report artifact. Does NOT change any data. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Required tour id (uuid)."
+            },
+            "report_type": {
+              "type": "string",
+              "enum": [
+                "missing_deposits",
+                "missing_instalments",
+                "overdue_final_balances",
+                "all_payment_exceptions"
+              ],
+              "description": "Which exception category to include."
+            },
+            "as_of_date": {
+              "type": "string",
+              "description": "Optional as-of date (YYYY-MM-DD). Defaults to today."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max records (default 100, max 500)."
+            }
+          },
+          "required": [
+            "tour_id",
+            "report_type"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "compare_art_payment_report_to_xero",
+        "title": "Compare ART payment exceptions to Xero",
+        "description": "For the bookings in a tour's ART payment-exception report, compare the ART position to the live Xero position and surface discrepancies (e.g. ART outstanding but Xero paid, and vice versa) using conservative rules. Scope is TOUR/REPORT SCOPED — it does NOT perform organisation-wide orphan-invoice detection; XERO_INVOICE_NOT_LINKED_TO_BOOKING is only reported for invoices encountered within this scope. Duplicate links, stale cache and incomplete live verification are flagged and never treated as confirmed financial discrepancies. Does NOT change any data. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "tour_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Required tour id (uuid)."
+            },
+            "report_type": {
+              "type": "string",
+              "enum": [
+                "missing_deposits",
+                "missing_instalments",
+                "overdue_final_balances",
+                "all_payment_exceptions"
+              ],
+              "description": "Which exception category to compare (default all_payment_exceptions)."
+            },
+            "as_of_date": {
+              "type": "string",
+              "description": "Optional as-of date (YYYY-MM-DD). Defaults to today."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Max bookings to compare (default 100, max 500)."
+            }
+          },
+          "required": [
+            "tour_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "explain_booking_payment_position",
+        "title": "Explain a booking's payment position",
+        "description": "Explain one booking's payment position: the ART classification (primary + all applicable exceptions with expected amounts and source labels), the live Xero position (active invoices only; voided/deleted excluded, credit notes respected), a conservative status comparison (only 'fully paid' when ALL active linked invoices have no amount due), duplicate-link findings, and informational date differences. Never asserts a discrepancy from stale cache alone or from aggregate-total comparisons. Does NOT change any data. Restricted to admin/manager.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "booking_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "The ART booking id (uuid)."
+            },
+            "as_of_date": {
+              "type": "string",
+              "description": "Optional as-of date (YYYY-MM-DD). Defaults to today."
+            }
+          },
+          "required": [
+            "booking_id"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
       }
     ]
   }
