@@ -480,6 +480,7 @@ const handler = async (req: Request): Promise<Response> => {
       btnBg = brand.colorButton;
       btnText = brand.colorButtonText;
       brandPrimary = brand.colorPrimary || brandPrimary;
+      brandAccent = brand.colorAccent || brandAccent;
       // Template-specific header image still wins; otherwise use the brand's.
       defaultHeaderImageUrl = brand.headerImageUrl;
       emailHeaderImageUrl = template?.header_image_url || brand.headerImageUrl;
