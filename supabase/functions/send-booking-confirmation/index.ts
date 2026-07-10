@@ -1411,7 +1411,7 @@ const handler = async (req: Request): Promise<Response> => {
             if (s.setting_key === 'cancellation_policy') cpGlobal = s.setting_value;
           }
           const cpPolicy = normaliseCancellationPolicy(cpTour?.cancellation_policy_override ?? cpGlobal);
-          cancellationPolicyBlock = buildCancellationPolicyTableHtml(cpPolicy, cpNavy);
+          cancellationPolicyBlock = buildCancellationPolicyTableHtml(cpPolicy, cpNavy, btnText);
         }
       } catch (cpErr) {
         console.error('Error building cancellation policy block:', cpErr);
