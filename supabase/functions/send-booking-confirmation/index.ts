@@ -712,7 +712,7 @@ const handler = async (req: Request): Promise<Response> => {
         .insert({
           customer_id: booking.customers.id,
           // Link the token to this booking so guest pages can resolve the tour's brand/theme.
-          booking_id: booking.id,
+          booking_id: bookingId,
           // IMPORTANT: This column is UUID in the DB; using "system" causes token creation to fail,
           // which means no link/button can be generated.
           created_by: requestUserId || SYSTEM_ACTOR_ID,
