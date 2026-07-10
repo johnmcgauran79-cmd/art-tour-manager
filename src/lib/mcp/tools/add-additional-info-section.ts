@@ -14,9 +14,15 @@ export default defineTool({
     icon_name: z.string().optional().describe("Lucide icon name, defaults to 'Info'."),
     sort_order: z.number().int().optional().describe("Display order."),
     is_visible: z.boolean().optional().describe("Whether the section is shown, default true."),
+    include_in_email_rules: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Automated email rule ids this section should be injected into (as an info block). Use `list_email_rules` to find ids.",
+      ),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
-  handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible }, ctx) => {
+  handler: async ({ tour_id, name, content, icon_name, sort_order, is_visible, include_in_email_rules }, ctx) => {
     if (!ctx.isAuthenticated())
       return { content: [{ type: "text", text: "Not authenticated" }], isError: true };
 
@@ -39,6 +45,7 @@ export default defineTool({
         icon_name: icon_name ?? "Info",
         sort_order: order,
         is_visible: is_visible ?? true,
+        include_in_email_rules: include_in_email_rules ?? [],
         created_by: ctx.getUserId(),
       })
       .select("id, name")

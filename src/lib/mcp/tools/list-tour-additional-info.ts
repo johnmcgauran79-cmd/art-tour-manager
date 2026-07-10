@@ -17,7 +17,7 @@ export default defineTool({
 
     const { data, error } = await supabaseForUser(ctx)
       .from("tour_additional_info_sections")
-      .select("id, name, icon_name, content, sort_order, is_visible")
+      .select("id, name, icon_name, content, sort_order, is_visible, include_in_email_rules")
       .eq("tour_id", tour_id)
       .order("sort_order", { ascending: true });
     if (error)

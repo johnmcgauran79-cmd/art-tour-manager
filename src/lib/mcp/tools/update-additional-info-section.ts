@@ -14,6 +14,12 @@ export default defineTool({
     icon_name: z.string().optional(),
     sort_order: z.number().int().optional(),
     is_visible: z.boolean().optional(),
+    include_in_email_rules: z
+      .array(z.string())
+      .optional()
+      .describe(
+        "Automated email rule ids this section should be injected into (as an info block). Replaces the existing list. Use `list_email_rules` to find ids.",
+      ),
   },
   annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
   handler: async ({ section_id, ...updates }, ctx) => {
