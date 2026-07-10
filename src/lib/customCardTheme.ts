@@ -64,8 +64,6 @@ export function recolorCustomCards(html: string, colors: CardThemeColors): strin
   // the data-card-type/data-card-meta markers (e.g. older TOUR DETAILS cards).
   // These use the baked-in default navy (#0a1929) header + gold (#d4a017) title,
   // so target those exact defaults to avoid touching intentional palettes.
-  const NAVY = "#0a1929";
-  const GOLD = "#d4a017";
   out = out
     .replace(
       /border:1px solid #0a1929;border-radius:8px/gi,
