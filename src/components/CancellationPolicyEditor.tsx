@@ -71,7 +71,7 @@ export const CancellationPolicyEditor = ({ value, onChange }: CancellationPolicy
 export const CancellationPolicyPreview = ({ policy }: { policy: CancellationPolicy }) => (
   <div className="overflow-hidden rounded-lg border border-border">
     <table className="w-full border-collapse text-sm">
-      <thead className="text-white" style={{ backgroundColor: "#232628" }}>
+      <thead className="bg-primary text-primary-foreground">
         <tr>
           <th
             colSpan={2}
@@ -81,10 +81,10 @@ export const CancellationPolicyPreview = ({ policy }: { policy: CancellationPoli
           </th>
         </tr>
         <tr>
-          <th className="w-[42%] px-4 py-2 text-left text-[13px] font-semibold border-t border-white/15">
+          <th className="w-[42%] px-4 py-2 text-left text-[13px] font-semibold border-t border-primary-foreground/15">
             Notice Period
           </th>
-          <th className="px-4 py-2 text-left text-[13px] font-semibold border-t border-white/15">
+          <th className="px-4 py-2 text-left text-[13px] font-semibold border-t border-primary-foreground/15">
             Refund
           </th>
         </tr>
