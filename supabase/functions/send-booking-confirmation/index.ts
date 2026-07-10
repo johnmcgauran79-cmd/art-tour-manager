@@ -1624,8 +1624,8 @@ const handler = async (req: Request): Promise<Response> => {
     const willSendToAdditional = (booking.passenger_2?.email && booking.passenger_2.email !== booking.customers.email) ||
                                  (booking.passenger_3?.email && booking.passenger_3.email !== booking.customers.email);
 
-    // Log email to database for tracking
-    if (emailResponse.data?.id) {
+    // Log email to database for tracking (skipped for test/preview sends)
+    if (emailResponse.data?.id && !isTestSend) {
       const { error: logError } = await supabaseClient
         .from('email_logs')
         .insert({
