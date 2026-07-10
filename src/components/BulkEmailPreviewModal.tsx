@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Clock, Eye } from "lucide-react";
+import { Loader2, Clock, Eye, Send } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useBulkBookingEmail } from "@/hooks/useBulkBookingEmail";
+import { useSendBookingConfirmation } from "@/hooks/useBookingEmail";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useEmailTemplates } from "@/hooks/useEmailTemplates";
 import { useScheduleEmail } from "@/hooks/useScheduledEmails";
@@ -70,6 +72,13 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
   const [hideCompletedForm, setHideCompletedForm] = useState(false);
+  const { user } = useAuth();
+  const [testEmailTo, setTestEmailTo] = useState<string>("");
+  const sendTestMutation = useSendBookingConfirmation();
+
+  useEffect(() => {
+    if (open && user?.email) setTestEmailTo((prev) => prev || user.email!);
+  }, [open, user?.email]);
   
   const scheduleEmailMutation = useScheduleEmail();
   const { toast } = useToast();
@@ -338,6 +347,30 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
 
   const handleSendClick = () => {
     setShowConfirmDialog(true);
+  };
+
+  const handleSendTest = async () => {
+    if (!previewBooking?.id) {
+      toast({ title: "No preview recipient", description: "Select at least one recipient to base the test on.", variant: "destructive" });
+      return;
+    }
+    if (!testEmailTo.trim()) {
+      toast({ title: "No test address", description: "Enter an email address to send the test to.", variant: "destructive" });
+      return;
+    }
+    if (!editedContent.trim()) {
+      toast({ title: "Email content is empty", description: "Choose a template or write some content first.", variant: "destructive" });
+      return;
+    }
+    await sendTestMutation.mutateAsync({
+      bookingId: previewBooking.id,
+      customSubject: editedSubject,
+      customContent: editedContent,
+      fromEmail,
+      emailTemplateId: selectedTemplateId && selectedTemplateId !== "blank" ? selectedTemplateId : undefined,
+      attachments: attachments.length > 0 ? attachments : undefined,
+      testEmailTo: testEmailTo.trim(),
+    });
   };
 
   const handleConfirmSend = async () => {
@@ -759,6 +792,27 @@ export const BulkEmailPreviewModal = ({ open, onOpenChange, tourId, initialTempl
             />
 
             <div className="flex justify-end gap-2 pt-4 border-t sticky bottom-0 bg-background">
+              <div className="mr-auto flex items-end gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Send test to:</Label>
+                  <Input
+                    type="email"
+                    value={testEmailTo}
+                    onChange={(e) => setTestEmailTo(e.target.value)}
+                    placeholder="you@example.com"
+                    className="h-9 w-56"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleSendTest}
+                  disabled={sendTestMutation.isPending || !editedContent.trim() || !previewBooking || !testEmailTo.trim()}
+                  title="Send a one-off test to this address using the preview recipient's data"
+                >
+                  {sendTestMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+                  Send Test
+                </Button>
+              </div>
               <Button 
                 type="button" 
                 variant="outline" 
