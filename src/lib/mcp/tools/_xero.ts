@@ -23,9 +23,13 @@ export interface XeroAuth {
   tenantId: string;
 }
 
-export type XeroResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; code: XeroErrorCode };
+// strictNullChecks is off in this project, so discriminated unions do not
+// narrow. Use a single shape with optional fields.
+export interface XeroResult<T> {
+  ok: boolean;
+  data?: T;
+  code?: XeroErrorCode;
+}
 
 function serviceClient() {
   return createClient(
