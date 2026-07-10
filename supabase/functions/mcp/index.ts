@@ -963,6 +963,90 @@ async function auditXeroCall(ctx, f) {
 
 // src/lib/mcp/tools/_xero.ts
 import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.110.0";
+
+// src/lib/mcp/tools/_xeroHttp.ts
+var DEFAULT_RETRY_CONFIG = {
+  max429Retries: 2,
+  max5xxRetries: 2,
+  globalAttemptCap: 8
+};
+var RETRYABLE_5XX = [500, 502, 503, 504];
+function backoffDelayMs(retryNumber, rnd = Math.random) {
+  const base = Math.min(400 * Math.pow(2, retryNumber - 1), 3200);
+  const jitter = rnd() * 250;
+  return Math.round(base + jitter);
+}
+async function requestWithRetry(doFetch, initialToken, forceRefresh2, opts) {
+  const cfg = opts?.config ?? DEFAULT_RETRY_CONFIG;
+  const sleep = opts?.sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
+  const rnd = opts?.rnd ?? Math.random;
+  const metrics = opts?.metrics;
+  const bump = () => {
+    if (metrics) metrics.retry_count++;
+  };
+  let token = initialToken;
+  let refreshed = false;
+  let retries429 = 0;
+  let retries5xx = 0;
+  let attempts = 0;
+  while (attempts < cfg.globalAttemptCap) {
+    attempts++;
+    let res;
+    try {
+      res = await doFetch(token);
+    } catch {
+      return { ok: false, code: "INTERNAL_ERROR" };
+    }
+    const status = res.status;
+    if (status === 401) {
+      await res.discardBody().catch(() => {
+      });
+      if (refreshed) {
+        return { ok: false, status, code: "XERO_UNAUTHORISED" };
+      }
+      refreshed = true;
+      bump();
+      const newToken = await forceRefresh2();
+      if (!newToken) return { ok: false, status, code: "XERO_TOKEN_REFRESH_FAILED" };
+      token = newToken;
+      continue;
+    }
+    if (status === 429) {
+      const retryAfter = parseInt(res.getHeader("Retry-After") || "2", 10);
+      await res.discardBody().catch(() => {
+      });
+      if (retries429 >= cfg.max429Retries) return { ok: false, status, code: "XERO_RATE_LIMITED" };
+      retries429++;
+      bump();
+      await sleep(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
+      continue;
+    }
+    if (RETRYABLE_5XX.includes(status)) {
+      await res.discardBody().catch(() => {
+      });
+      if (retries5xx >= cfg.max5xxRetries) return { ok: false, status, code: "INTERNAL_ERROR" };
+      retries5xx++;
+      bump();
+      await sleep(backoffDelayMs(retries5xx, rnd));
+      continue;
+    }
+    if (status === 404) {
+      await res.discardBody().catch(() => {
+      });
+      return { ok: false, status, code: "XERO_INVOICE_NOT_FOUND" };
+    }
+    if (status < 200 || status >= 300) {
+      await res.discardBody().catch(() => {
+      });
+      return { ok: false, status, code: "INTERNAL_ERROR" };
+    }
+    const data = await res.json();
+    return { ok: true, status, data };
+  }
+  return { ok: false, code: "INTERNAL_ERROR" };
+}
+
+// src/lib/mcp/tools/_xero.ts
 function serviceClient() {
   return createClient2(
     process.env.SUPABASE_URL,
@@ -1001,8 +1085,14 @@ async function refreshAccessToken(supabase, settings) {
     refresh_token: tokens.refresh_token,
     token_expires_at: new Date(Date.now() + tokens.expires_in * 1e3).toISOString(),
     updated_at: (/* @__PURE__ */ new Date()).toISOString()
-  }).eq("id", settings.id);
+  }).eq("id", settings.id).eq("refresh_token", settings.refresh_token);
   return tokens.access_token;
+}
+async function forceRefresh() {
+  const supabase = serviceClient();
+  const { data: settings } = await supabase.from("xero_integration_settings").select("*").eq("is_connected", true).maybeSingle();
+  if (!settings || !settings.refresh_token) return null;
+  return refreshAccessToken(supabase, settings);
 }
 async function getXeroAuth() {
   const supabase = serviceClient();
@@ -1018,57 +1108,49 @@ async function getXeroAuth() {
   }
   return { ok: true, data: { token: settings.access_token, tenantId: settings.tenant_id } };
 }
-var sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function xeroGet(auth2, path, maxRetries = 3) {
-  const headers = {
-    Authorization: `Bearer ${auth2.token}`,
-    "Xero-Tenant-Id": auth2.tenantId,
-    Accept: "application/json"
+async function xeroFetch(token, tenantId, path) {
+  const res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Xero-Tenant-Id": tenantId,
+      Accept: "application/json"
+    }
+  });
+  return {
+    status: res.status,
+    getHeader: (n) => res.headers.get(n),
+    json: () => res.json(),
+    discardBody: async () => {
+      await res.text().catch(() => {
+      });
+    }
   };
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    let res;
-    try {
-      res = await fetch(`https://api.xero.com/api.xro/2.0/${path}`, { headers });
-    } catch {
-      return { ok: false, code: "INTERNAL_ERROR" };
-    }
-    if (res.status === 429) {
-      const retryAfter = parseInt(res.headers.get("Retry-After") || "2", 10);
-      await res.text().catch(() => {
-      });
-      if (attempt === maxRetries - 1) return { ok: false, code: "XERO_RATE_LIMITED" };
-      await sleep(Math.min(Math.max(retryAfter, 1) * 1e3, 1e4));
-      continue;
-    }
-    if (res.status === 404) {
-      await res.text().catch(() => {
-      });
-      return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
-    }
-    if (!res.ok) {
-      await res.text().catch(() => {
-      });
-      return { ok: false, code: "INTERNAL_ERROR" };
-    }
-    const data = await res.json();
-    return { ok: true, data };
-  }
-  return { ok: false, code: "XERO_RATE_LIMITED" };
 }
-async function fetchInvoiceById(auth2, invoiceId) {
-  const res = await xeroGet(auth2, `Invoices/${encodeURIComponent(invoiceId)}`);
+async function xeroGet(auth2, path, opts) {
+  const res = await requestWithRetry(
+    (token) => xeroFetch(token, auth2.tenantId, path),
+    auth2.token,
+    forceRefresh,
+    { metrics: opts?.metrics }
+  );
+  if (res.ok) return { ok: true, data: res.data };
+  const code = res.code === "XERO_UNAUTHORISED" ? "XERO_TOKEN_REFRESH_FAILED" : res.code;
+  return { ok: false, code };
+}
+async function fetchInvoiceById(auth2, invoiceId, opts) {
+  const res = await xeroGet(auth2, `Invoices/${encodeURIComponent(invoiceId)}`, opts);
   if (!res.ok) return res;
   const inv = res.data?.Invoices?.[0];
   if (!inv) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
   return { ok: true, data: inv };
 }
-async function fetchInvoiceByNumber(auth2, invoiceNumber) {
+async function fetchInvoiceByNumber(auth2, invoiceNumber, opts) {
   const where = encodeURIComponent(`InvoiceNumber=="${invoiceNumber.replace(/"/g, "")}"`);
-  const res = await xeroGet(auth2, `Invoices?where=${where}`);
+  const res = await xeroGet(auth2, `Invoices?where=${where}`, opts);
   if (!res.ok) return res;
   const inv = res.data?.Invoices?.[0];
   if (!inv?.InvoiceID) return { ok: false, code: "XERO_INVOICE_NOT_FOUND" };
-  return fetchInvoiceById(auth2, inv.InvoiceID);
+  return fetchInvoiceById(auth2, inv.InvoiceID, opts);
 }
 
 // src/lib/mcp/tools/list-booking-invoices.ts
